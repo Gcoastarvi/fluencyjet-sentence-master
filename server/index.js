@@ -1,132 +1,75 @@
-// server/index.js
 import express from "express";
-import cors from "cors";
-import bodyParser from "body-parser";
+import { createServer } from "http";
+import { createServer as createViteServer } from "vite";
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { PrismaClient } from "@prisma/client";
-import open from "open"; // ✅ Auto-open live URL
 
-// ---------- Setup ----------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const app = express();
-const prisma = new PrismaClient();
+const isDev = process.env.NODE_ENV === "development";
 
-app.use(cors());
-app.use(bodyParser.json());
+console.log("🚀 Starting server in", isDev ? "DEVELOPMENT" : "PRODUCTION", "mode");
 
-// ---------- API Routes ----------
-app.post("/api/signup", async (req, res) => {
-  const { email, password, name } = req.body;
-  try {
-    const user = await prisma.user.create({ data: { email, password, name } });
-    res.json(user);
-  } catch (e) {
-    console.error("❌ Signup failed:", e.message);
-    res.status(400).json({ error: "Signup failed" });
-  }
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// API routes placeholder
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
 });
 
-app.post("/api/login", async (req, res) => {
-  const { email, password } = req.body;
+const httpServer = createServer(app);
+
+async function startServer() {
   try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.password !== password)
-      return res.status(401).json({ error: "Invalid credentials" });
-    res.json(user);
-  } catch (e) {
-    console.error("❌ Login failed:", e.message);
-    res.status(500).json({ error: "Server error" });
-  }
-});
+    if (isDev) {
+      console.log("📦 Setting up Vite dev server...");
+      // Development: Use Vite dev server
+      const vite = await createViteServer({
+        server: {
+          middlewareMode: true,
+          hmr: { server: httpServer },
+        },
+        appType: "spa",
+      });
 
-app.get("/api/lessons", async (_req, res) => {
-  try {
-    const lessons = await prisma.lesson.findMany();
-    res.json(lessons);
-  } catch (e) {
-    console.error("❌ Lessons fetch failed:", e.message);
-    res.status(500).json({ error: "Failed to fetch lessons" });
-  }
-});
+      console.log("✅ Vite dev server created");
+      app.use(vite.middlewares);
+      
+      app.use("*", async (req, res, next) => {
+        const url = req.originalUrl;
+        console.log("📄 Serving:", url);
+        try {
+          const clientPath = path.resolve(process.cwd(), "client", "index.html");
+          let template = fs.readFileSync(clientPath, "utf-8");
+          template = await vite.transformIndexHtml(url, template);
+          res.status(200).set({ "Content-Type": "text/html" }).end(template);
+        } catch (e) {
+          console.error("❌ Error serving HTML:", e);
+          vite.ssrFixStacktrace(e);
+          next(e);
+        }
+      });
+    } else {
+      // Production: Serve built files
+      const distPath = path.resolve(__dirname, "..", "dist", "public");
+      app.use(express.static(distPath));
+      app.use("*", (req, res) => {
+        res.sendFile(path.resolve(distPath, "index.html"));
+      });
+    }
 
-app.post("/api/admin/toggle-access", async (req, res) => {
-  const { email, hasAccess } = req.body;
-  try {
-    const updated = await prisma.user.update({
-      where: { email },
-      data: { hasAccess },
-    });
-    res.json(updated);
-  } catch (e) {
-    console.error("❌ Toggle access failed:", e.message);
-    res.status(400).json({ error: "User not found" });
-  }
-});
-
-// ---------- Serve Frontend ----------
-const distPath = path.resolve(__dirname, "..", "client", "dist");
-app.use(express.static(distPath));
-
-// SPA fallback: serve index.html for non-API routes
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(distPath, "index.html"));
-});
-
-// ---------- Smart URL Detection + Auto-Open ----------
-const HOST = "0.0.0.0";
-const BASE_PORT = 5000;
-
-// ✅ Updated version — detects correct Replit domain
-function getReplitURL(port) {
-  const internal = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_URL;
-  const slug = process.env.REPL_SLUG;
-  const owner = process.env.REPL_OWNER;
-
-  // Prefer actual active Replit domain (.replit.dev or spock.replit.dev)
-  if (internal) {
-    if (!internal.startsWith("http")) return `https://${internal}`;
-    return internal;
-  }
-
-  // Fallback for older repls
-  if (slug && owner) {
-    return `https://${slug}.${owner}.repl.co`;
-  }
-
-  // Local fallback
-  return `http://localhost:${port}`;
-}
-
-// ---------- Start Server with Auto Port Fallback ----------
-const startServer = async (port = BASE_PORT) => {
-  try {
-    const server = app.listen(port, HOST, async () => {
-      const url = getReplitURL(port);
-      console.log(`✅ Server running on: ${url}`);
-
-      // Auto-open browser
-      try {
-        await open(url);
-      } catch {
-        console.warn("⚠️ Unable to auto-open browser tab.");
-      }
-    });
-
-    // Graceful recovery from “port in use”
-    server.on("error", (err) => {
-      if (err.code === "EADDRINUSE") {
-        console.warn(`⚠️ Port ${port} in use — retrying with ${port + 1}...`);
-        startServer(port + 1);
-      } else {
-        console.error("❌ Server error:", err);
-      }
+    const PORT = 5000;
+    httpServer.listen(PORT, "0.0.0.0", () => {
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`🌐 Visit: https://954f1dba-e950-4b4b-a095-d2b2f79c270f-00-12hckg5pg3qc6.spock.replit.dev`);
     });
   } catch (err) {
-    console.error("❌ Failed to start server:", err.message);
+    console.error("❌ Failed to start server:", err);
+    process.exit(1);
   }
-};
+}
 
 startServer();

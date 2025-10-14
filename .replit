@@ -14,16 +14,17 @@ deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
-# --- Port Configuration ---
-# Expose port 5000 (your Express server) to the public via HTTPS (443)
 [[ports]]
 localPort = 5000
 externalPort = 443
 
-# Optional secondary port (e.g., Vite dev server)
 [[ports]]
 localPort = 5001
 externalPort = 3000
+
+[[ports]]
+localPort = 44689
+externalPort = 80
 
 # Environment variables
 [env]
