@@ -1,5 +1,9 @@
 modules = ["nodejs-20", "web", "postgresql-16"]
+
+# Command Replit runs when you click "Run"
 run = "npm run dev"
+
+# Hide unnecessary folders in sidebar
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
@@ -10,17 +14,22 @@ deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
+# --- Port Configuration ---
+# Expose port 5000 (your Express server) to the public via HTTPS (443)
 [[ports]]
 localPort = 5000
-externalPort = 80
+externalPort = 443
 
+# Optional secondary port (e.g., Vite dev server)
 [[ports]]
-localPort = 43885
+localPort = 5001
 externalPort = 3000
 
+# Environment variables
 [env]
 PORT = "5000"
 
+# --- Run Workflow ---
 [workflows]
 runButton = "Project"
 
@@ -42,5 +51,9 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
+# --- Replit Agent Integrations ---
 [agent]
-integrations = ["javascript_database:1.0.0", "javascript_log_in_with_replit:1.0.0"]
+integrations = [
+  "javascript_database:1.0.0",
+  "javascript_log_in_with_replit:1.0.0",
+]
