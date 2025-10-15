@@ -11,12 +11,9 @@ deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
-# ✅ Correct port mapping for Replit HTTPS proxy
 [[ports]]
 localPort = 5000
-externalPort = 443
-protocol = "https"
-onOpen = "open-url"
+externalPort = 80
 
 [env]
 PORT = "5000"
