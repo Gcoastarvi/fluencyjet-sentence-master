@@ -1,9 +1,6 @@
-modules = ["nodejs-20", "web", "postgresql-16"]
-
-# Command Replit runs when you click "Run"
+modules = ["nodejs-20", "web"]
 run = "npm run dev"
 
-# Hide unnecessary folders in sidebar
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
@@ -14,47 +11,13 @@ deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 run = ["npm", "run", "start"]
 
+# ✅ Correct port mapping for Replit HTTPS proxy
 [[ports]]
 localPort = 5000
 externalPort = 443
+protocol = "https"
+onOpen = "open-url"
 
-[[ports]]
-localPort = 5001
-externalPort = 3000
-
-[[ports]]
-localPort = 44689
-externalPort = 80
-
-# Environment variables
 [env]
 PORT = "5000"
-
-# --- Run Workflow ---
-[workflows]
-runButton = "Project"
-
-[[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
-
-[[workflows.workflow]]
-name = "Start application"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-waitForPort = 5000
-
-# --- Replit Agent Integrations ---
-[agent]
-integrations = [
-  "javascript_database:1.0.0",
-  "javascript_log_in_with_replit:1.0.0",
-]
+HOST = "0.0.0.0"
