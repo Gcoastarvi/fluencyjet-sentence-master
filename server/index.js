@@ -7,17 +7,23 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 const app = express();
 const isDev = process.env.NODE_ENV === "development";
+const PORT = process.env.PORT || 5000;
 
-console.log("🚀 Starting server in", isDev ? "DEVELOPMENT" : "PRODUCTION", "mode");
+console.log(
+  "🚀 Starting server in",
+  isDev ? "DEVELOPMENT" : "PRODUCTION",
+  "mode",
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// API routes placeholder
+// ✅ Basic health check
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok", mode: isDev ? "development" : "production" });
 });
 
 const httpServer = createServer(app);
@@ -25,46 +31,51 @@ const httpServer = createServer(app);
 async function startServer() {
   try {
     if (isDev) {
+      // ---------------------------
+      // 🧩 DEVELOPMENT MODE (Replit)
+      // ---------------------------
       console.log("📦 Setting up Vite dev server...");
-      // Development: Use Vite dev server
       const vite = await createViteServer({
-        server: {
-          middlewareMode: true,
-          hmr: { server: httpServer },
-        },
+        server: { middlewareMode: true, hmr: { server: httpServer } },
+        root: path.resolve(process.cwd(), "client"),
         appType: "spa",
       });
-
       console.log("✅ Vite dev server created");
+
       app.use(vite.middlewares);
-      
+
       app.use("*", async (req, res, next) => {
-        const url = req.originalUrl;
-        console.log("📄 Serving:", url);
         try {
-          const clientPath = path.resolve(process.cwd(), "client", "index.html");
-          let template = fs.readFileSync(clientPath, "utf-8");
+          const url = req.originalUrl;
+          const indexPath = path.resolve(process.cwd(), "client", "index.html");
+          let template = fs.readFileSync(indexPath, "utf-8");
           template = await vite.transformIndexHtml(url, template);
           res.status(200).set({ "Content-Type": "text/html" }).end(template);
         } catch (e) {
-          console.error("❌ Error serving HTML:", e);
           vite.ssrFixStacktrace(e);
           next(e);
         }
       });
     } else {
-      // Production: Serve built files
-      const distPath = path.resolve(__dirname, "..", "dist", "public");
+      // ------------------------
+      // 🚀 PRODUCTION MODE (Railway)
+      // ------------------------
+      const distPath = path.resolve(__dirname, "../client/dist");
       app.use(express.static(distPath));
-      app.use("*", (req, res) => {
-        res.sendFile(path.resolve(distPath, "index.html"));
+
+      app.get("*", (req, res) => {
+        res.sendFile(path.join(distPath, "index.html"));
       });
     }
 
-    const PORT = 5000;
+    // ✅ Listen on the correct port (Railway provides PORT automatically)
     httpServer.listen(PORT, "0.0.0.0", () => {
       console.log(`✅ Server running on port ${PORT}`);
-      console.log(`🌐 Visit: https://954f1dba-e950-4b4b-a095-d2b2f79c270f-00-12hckg5pg3qc6.spock.replit.dev`);
+      if (isDev) {
+        console.log("🌐 Local Dev URL: http://localhost:" + PORT);
+      } else {
+        console.log("🌐 Production URL will be auto-assigned by Railway");
+      }
     });
   } catch (err) {
     console.error("❌ Failed to start server:", err);
