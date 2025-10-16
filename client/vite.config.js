@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc"; // ✅ switched to SWC version (ESM-compatible)
 import path from "path";
 
 const replitHost =
@@ -18,7 +18,6 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
-    // ✅ Allow both Replit URLs and localhost
     allowedHosts: [
       "localhost",
       ".repl.co",
