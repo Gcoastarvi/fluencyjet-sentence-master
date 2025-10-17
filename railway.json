@@ -1,6 +1,8 @@
 {
+  "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "NIXPACKS",
+    "ignoreDockerfile": true
   },
   "nixpacks": {
     "phases": {
@@ -8,11 +10,15 @@
         "nixPkgs": ["nodejs_22", "npm_9_x", "openssl"]
       },
       "install": {
-        "cmds": ["npm install --no-audit --no-fund"]
+        "cmds": [
+          "echo '✅ Custom install phase running...'",
+          "npm install --no-audit --no-fund"
+        ]
       },
       "build": {
         "cmds": [
-          "cd client && npm install --no-audit --no-fund && npm run build && cd .. && esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
+          "echo '✅ Custom build phase running...'",
+          "cd client && npm install --no-audit --no-fund && npm run build && cd .. && npx esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
         ]
       }
     }
