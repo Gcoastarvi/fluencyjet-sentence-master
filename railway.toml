@@ -1,0 +1,18 @@
+[build]
+builder = "NIXPACKS"
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "npm_9_x", "openssl"]
+
+[phases.install]
+cmds = [
+  "npm install --no-audit --no-fund"
+]
+
+[phases.build]
+cmds = [
+  "cd client && npm install --no-audit --no-fund && npm run build && cd .. && esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
+]
+
+[start]
+cmd = "node dist/index.js"
