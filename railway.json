@@ -7,7 +7,7 @@
   "nixpacks": {
     "phases": {
       "setup": {
-        "nixPkgs": ["nodejs_22", "npm_9_x", "openssl"]
+        "nixPkgs": ["nodejs_22_12", "npm_9_x", "openssl"]
       },
       "install": {
         "cmds": [
