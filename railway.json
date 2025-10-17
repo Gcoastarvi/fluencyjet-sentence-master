@@ -1,9 +1,16 @@
 {
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "npm install && npm run build"
+    "buildCommand": "npm install --no-audit --no-fund && cd client && npm install --no-audit --no-fund && npm run build && cd .. && esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
   },
   "deploy": {
-    "startCommand": "npm start"
+    "startCommand": "node dist/index.js"
+  },
+  "nixpacks": {
+    "phases": {
+      "setup": {
+        "nixPkgs": ["nodejs_22", "npm_9_x", "openssl"]
+      }
+    }
   }
 }
