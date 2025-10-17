@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build --force --cacheDir /tmp/vite-cache",
+    "build": "vite build --force --cacheDir ${VITE_CACHE_DIR:-/tmp/vite-cache}",
     "preview": "vite preview --host"
   },
   "dependencies": {
@@ -21,6 +21,4 @@
     "postcss": "^8.4.47",
     "vite": "^5.4.7"
   }
-}
-
 }
