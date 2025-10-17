@@ -7,7 +7,7 @@
     "preview": "vite preview --host"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "^5.0.4",
+    "@vitejs/plugin-react-swc": "^4.1.0",
     "axios": "^1.7.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -16,8 +16,10 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "vite": "^5.4.7"
-  }
+  },
+  "type": "module"
 }
