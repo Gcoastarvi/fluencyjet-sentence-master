@@ -5,22 +5,26 @@
     "ignoreDockerfile": true
   },
   "nixpacks": {
-    "phases": {
-      "setup": {
-        "nixPkgs": ["nodejs_22", "npm_10_x", "openssl"]
-      },
-      "install": {
-        "cmds": [
-          "echo '✅ Installing dependencies...'",
-          "npm install --no-audit --no-fund"
-        ]
-      },
-      "build": {
-        "cmds": [
-          "echo '✅ Building project...'",
-          "cd client && npm install --no-audit --no-fund && npm run build && cd ..",
-          "npx esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
-        ]
+    "plan": {
+      "providers": ["node"],
+      "phases": {
+        "setup": {
+          "nixPkgs": ["nodejs_22", "npm_10_x", "openssl"]
+        },
+        "install": {
+          "cmds": [
+            "echo '✅ Installing dependencies (no workspace)...'",
+            "rm -rf node_modules",
+            "npm install --no-audit --no-fund"
+          ]
+        },
+        "build": {
+          "cmds": [
+            "echo '✅ Building client and server...'",
+            "cd client && npm install --no-audit --no-fund && npm run build && cd ..",
+            "npx esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
+          ]
+        }
       }
     }
   },
