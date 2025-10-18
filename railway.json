@@ -7,18 +7,19 @@
   "nixpacks": {
     "phases": {
       "setup": {
-        "nixPkgs": ["nodejs_22_12", "npm_9_x", "openssl"]
+        "nixPkgs": ["nodejs_22", "npm_10_x", "openssl"]
       },
       "install": {
         "cmds": [
-          "echo '✅ Custom install phase running...'",
+          "echo '✅ Installing dependencies...'",
           "npm install --no-audit --no-fund"
         ]
       },
       "build": {
         "cmds": [
-          "echo '✅ Custom build phase running...'",
-          "cd client && npm install --no-audit --no-fund && npm run build && cd .. && npx esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
+          "echo '✅ Building project...'",
+          "cd client && npm install --no-audit --no-fund && npm run build && cd ..",
+          "npx esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
         ]
       }
     }
