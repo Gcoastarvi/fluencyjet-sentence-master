@@ -1,5 +1,5 @@
 {
-  "_note": "Force redeploy to apply definitive Nixpacks config",
+  "_note": "Final cleanup version - ignore Dockerfile, force Nixpacks only",
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
@@ -14,14 +14,14 @@
         },
         "install": {
           "cmds": [
-            "echo '✅ Installing dependencies (no workspace)...'",
+            "echo '✅ Installing dependencies without workspace…'",
             "rm -rf node_modules",
             "npm install --no-audit --no-fund"
           ]
         },
         "build": {
           "cmds": [
-            "echo '✅ Building client and server...'",
+            "echo '✅ Building client and server…'",
             "cd client && npm install --no-audit --no-fund && npm run build && cd ..",
             "npx esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
           ]
