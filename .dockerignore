@@ -1,16 +1,25 @@
-# keep server/** and client/** INCLUDED
+# Version control & IDE
 .git
 .gitignore
-node_modules
-client/node_modules
-dist
-client/dist
 .vscode
-.cache
-.tmp
+.github
+
+# Logs and temp
 *.log
-*.local
-Dockerfile
-coverage
+.DS_Store
 .env
 .env.*
+
+# Build artifacts
+dist
+build
+tmp
+.cache
+
+# Node modules (exclude from image)
+node_modules
+client/node_modules
+
+# Vite cache
+client/.vite
+client/.cache
