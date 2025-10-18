@@ -1,6 +1,5 @@
 import express from "express";
 import { createServer } from "http";
-import { createServer as createViteServer } from "vite";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -10,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const isDev = process.env.NODE_ENV === "development";
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT || 5000);
 
 console.log(
   "🚀 Starting server in",
@@ -21,8 +20,8 @@ console.log(
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// ✅ Basic health check
-app.get("/api/health", (req, res) => {
+// health check
+app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", mode: isDev ? "development" : "production" });
 });
 
@@ -31,9 +30,8 @@ const httpServer = createServer(app);
 async function startServer() {
   try {
     if (isDev) {
-      // ---------------------------
-      // 🧩 DEVELOPMENT MODE (Replit)
-      // ---------------------------
+      // Only import Vite in development
+      const { createServer: createViteServer } = await import("vite");
       console.log("📦 Setting up Vite dev server...");
       const vite = await createViteServer({
         server: { middlewareMode: true, hmr: { server: httpServer } },
@@ -57,25 +55,16 @@ async function startServer() {
         }
       });
     } else {
-      // ------------------------
-      // 🚀 PRODUCTION MODE (Railway)
-      // ------------------------
+      // Production: serve built client
       const distPath = path.resolve(__dirname, "../client/dist");
       app.use(express.static(distPath));
-
-      app.get("*", (req, res) => {
+      app.get("*", (_req, res) => {
         res.sendFile(path.join(distPath, "index.html"));
       });
     }
 
-    // ✅ Listen on the correct port (Railway provides PORT automatically)
     httpServer.listen(PORT, "0.0.0.0", () => {
       console.log(`✅ Server running on port ${PORT}`);
-      if (isDev) {
-        console.log("🌐 Local Dev URL: http://localhost:" + PORT);
-      } else {
-        console.log("🌐 Production URL will be auto-assigned by Railway");
-      }
     });
   } catch (err) {
     console.error("❌ Failed to start server:", err);
