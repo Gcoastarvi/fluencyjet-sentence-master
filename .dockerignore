@@ -1,11 +1,16 @@
-cat > .dockerignore <<'EOF'
+# keep server/** and client/** INCLUDED
+.git
+.gitignore
 node_modules
 client/node_modules
 dist
 client/dist
-.git
-.gitignore
+.vscode
+.cache
+.tmp
+*.log
+*.local
+Dockerfile
+coverage
 .env
 .env.*
-Dockerfile
-EOF
