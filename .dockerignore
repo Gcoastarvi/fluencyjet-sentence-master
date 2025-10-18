@@ -1,25 +1,55 @@
-# Version control & IDE
+# ===========================
+# 🔹 Version control & IDE
+# ===========================
 .git
 .gitignore
-.vscode
 .github
+.vscode
+.idea
 
-# Logs and temp
-*.log
-.DS_Store
+# ===========================
+# 🔹 Local environment files
+# ===========================
 .env
 .env.*
+*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
 
-# Build artifacts
+# ===========================
+# 🔹 Build outputs (will be regenerated)
+# ===========================
 dist
 build
-tmp
+.tmp
 .cache
+out
+coverage
+*.tsbuildinfo
 
-# Node modules (exclude from image)
+# ===========================
+# 🔹 Node modules (to be reinstalled inside image)
+# ===========================
 node_modules
 client/node_modules
+server/node_modules
 
-# Vite cache
+# ===========================
+# 🔹 Client build caches
+# ===========================
 client/.vite
 client/.cache
+client/.next
+client/build
+
+# ===========================
+# 🔹 Miscellaneous local files
+# ===========================
+*.bak
+*.swp
+*.swo
+*.orig
+Thumbs.db
