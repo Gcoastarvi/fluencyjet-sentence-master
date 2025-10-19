@@ -1,75 +1,46 @@
 import express from "express";
-import { createServer } from "http";
-import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const isDev = process.env.NODE_ENV === "development";
-const PORT = Number(process.env.PORT || 5000);
+const PORT = process.env.PORT || 8080;
 
 console.log(
-  "🚀 Starting server in",
-  isDev ? "DEVELOPMENT" : "PRODUCTION",
-  "mode",
+  `🚀 Starting server in ${isDev ? "DEVELOPMENT" : "PRODUCTION"} mode`,
 );
 
+// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
-// health check
-app.get("/api/health", (_req, res) => {
+// Health check route
+app.get("/api/health", (req, res) => {
   res.json({ status: "ok", mode: isDev ? "development" : "production" });
 });
 
-const httpServer = createServer(app);
+if (!isDev) {
+  // ✅ Serve Vite build from /client/dist
+  const clientDistPath = path.resolve(__dirname, "../client/dist");
+  app.use(express.static(clientDistPath));
 
-async function startServer() {
-  try {
-    if (isDev) {
-      // Only import Vite in development
-      const { createServer: createViteServer } = await import("vite");
-      console.log("📦 Setting up Vite dev server...");
-      const vite = await createViteServer({
-        server: { middlewareMode: true, hmr: { server: httpServer } },
-        root: path.resolve(process.cwd(), "client"),
-        appType: "spa",
-      });
-      console.log("✅ Vite dev server created");
-
-      app.use(vite.middlewares);
-
-      app.use("*", async (req, res, next) => {
-        try {
-          const url = req.originalUrl;
-          const indexPath = path.resolve(process.cwd(), "client", "index.html");
-          let template = fs.readFileSync(indexPath, "utf-8");
-          template = await vite.transformIndexHtml(url, template);
-          res.status(200).set({ "Content-Type": "text/html" }).end(template);
-        } catch (e) {
-          vite.ssrFixStacktrace(e);
-          next(e);
-        }
-      });
-    } else {
-      // Production: serve built client
-      const distPath = path.resolve(__dirname, "../client/dist");
-      app.use(express.static(distPath));
-      app.get("*", (_req, res) => {
-        res.sendFile(path.join(distPath, "index.html"));
-      });
-    }
-
-    httpServer.listen(PORT, "0.0.0.0", () => {
-      console.log(`✅ Server running on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error("❌ Failed to start server:", err);
-    process.exit(1);
-  }
+  // ✅ For any React route, return index.html
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  });
+} else {
+  // 🧩 Development mode (optional local usage)
+  app.get("/", (req, res) => {
+    res.send("Running in development mode");
+  });
 }
 
-startServer();
+// Start server
+const server = createServer(app);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
