@@ -1,20 +1,44 @@
-modules = ["nodejs-20", "web"]
-run = "npm run dev"
+# .replit
+modules = ["nodejs-22", "web"]
+run = """
+bash -lc '
+  cd client
+  echo "🔸 cwd: $(pwd)"
+  # Install client deps if missing
+  if [ ! -d node_modules ]; then
+    echo "📦 Installing client dependencies..."
+    npm ci --no-audit --no-fund
+  fi
+  export PORT=${PORT:-3000}
+  echo "🔹 Starting Vite on port $PORT..."
+  npx vite --host 0.0.0.0 --port "$PORT" --strictPort
+'
+"""
 
-hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+hidden = [
+  ".config",
+  ".git",
+  "generated-icon.png",
+  "node_modules",
+  "client/node_modules",
+  "dist",
+  "client/dist",
+]
 
 [nix]
 channel = "stable-24_05"
 
-[deployment]
-deploymentTarget = "autoscale"
-build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+[env]
+HOST = "0.0.0.0"
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
 
 [[ports]]
 localPort = 5000
-externalPort = 80
+externalPort = 5000
 
-[env]
-PORT = "5000"
-HOST = "0.0.0.0"
+[[ports]]
+localPort = 8080
+externalPort = 80
