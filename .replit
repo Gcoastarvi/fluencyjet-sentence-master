@@ -18,9 +18,6 @@ channel = "stable-24_05"
 [env]
 HOST = "0.0.0.0"
 
-[deployment]
-deploymentTarget = "run"
-
 [[ports]]
 localPort = 8080
 externalPort = 80
