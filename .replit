@@ -38,15 +38,5 @@ HOST = "0.0.0.0"
 deploymentTarget = "run"
 
 [[ports]]
-localPort = 3000
-externalPort = 80
-
-[[ports]]
 localPort = 8080
-externalPort = 8080
-
-[[ports]]
-localPort = 44895
-externalPort = 3000
-
-# You can omit the [[ports]] section entirely — Replit auto-detects the open port.
+externalPort = 80
