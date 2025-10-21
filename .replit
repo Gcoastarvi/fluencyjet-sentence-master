@@ -1,17 +1,20 @@
-# .replit
 modules = ["nodejs-22", "web"]
+
+# Run the production server that serves /client/dist
 run = """
 bash -lc '
-  cd client
-  echo "🔸 cwd: $(pwd)"
-  # Install client deps if missing
-  if [ ! -d node_modules ]; then
-    echo "📦 Installing client dependencies..."
-    npm ci --no-audit --no-fund
-  fi
-  export PORT=${PORT:-3000}
-  echo "🔹 Starting Vite on port $PORT..."
-  npx vite --host 0.0.0.0 --port "$PORT" --strictPort
+  set -e
+  export PORT=${PORT:-8080}
+  echo "▶ Using Replit-assigned port: $PORT"
+
+  echo "📦 Installing client deps (if missing)…"
+  [ -d client/node_modules ] || npm --prefix client install --no-audit --no-fund
+
+  echo "🏗️ Building client…"
+  npm --prefix client run build
+
+  echo "🚀 Starting server (production mode)…"
+  NODE_ENV=production PORT=$PORT node server/index.js
 '
 """
 
@@ -31,14 +34,19 @@ channel = "stable-24_05"
 [env]
 HOST = "0.0.0.0"
 
-[[ports]]
-localPort = 3000
-externalPort = 3000
+[deployment]
+deploymentTarget = "run"
 
 [[ports]]
-localPort = 5000
-externalPort = 5000
+localPort = 3000
+externalPort = 80
 
 [[ports]]
 localPort = 8080
-externalPort = 80
+externalPort = 8080
+
+[[ports]]
+localPort = 44895
+externalPort = 3000
+
+# You can omit the [[ports]] section entirely — Replit auto-detects the open port.

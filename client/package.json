@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port ${PORT:-3000} --strictPort --host 0.0.0.0",
     "build": "vite build --emptyOutDir --minify=esbuild",
-    "preview": "vite preview"
+    "preview": "vite preview --host 0.0.0.0 --port ${PORT:-4173}"
   },
   "dependencies": {
     "react": "^18.3.1",
