@@ -1,22 +1,6 @@
 modules = ["nodejs-22", "web"]
 
-# Run the production server that serves /client/dist
-run = """
-bash -lc '
-  set -e
-  export PORT=${PORT:-8080}
-  echo "▶ Using Replit-assigned port: $PORT"
-
-  echo "📦 Installing client deps (if missing)…"
-  [ -d client/node_modules ] || npm --prefix client install --no-audit --no-fund
-
-  echo "🏗️ Building client…"
-  npm --prefix client run build
-
-  echo "🚀 Starting server (production mode)…"
-  NODE_ENV=production PORT=$PORT node server/index.js
-'
-"""
+run = "bash start-replit.sh"
 
 hidden = [
   ".config",
