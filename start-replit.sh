@@ -5,9 +5,9 @@ set -e
 export PORT=${PORT:-8080}
 echo "▶ Using Replit-assigned port: $PORT"
 
-# Install client dependencies if needed
-echo "📦 Installing client deps (if missing)…"
-[ -d client/node_modules ] || npm --prefix client install --no-audit --no-fund
+# Always ensure client dependencies are installed
+echo "📦 Installing/verifying client deps…"
+npm --prefix client install --no-audit --no-fund
 
 # Build the client
 echo "🏗️ Building client…"
