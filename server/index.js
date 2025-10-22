@@ -1,3 +1,4 @@
+console.log("🚀 New Deployment Test:", new Date().toISOString());
 // server/index.js (same structure you posted earlier)
 import express from "express";
 import { createServer } from "http";

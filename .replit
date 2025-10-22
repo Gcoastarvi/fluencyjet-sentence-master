@@ -22,6 +22,9 @@ HOST = "0.0.0.0"
 localPort = 8080
 externalPort = 80
 
+# 👇 Add this line to auto-open your preview window
+onRun = "open-url http://localhost:8080"
+
 [workflows]
 
 [[workflows.workflow]]
