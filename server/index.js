@@ -4,6 +4,8 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import cors from "cors";
+import authRoutes from "./routes/auth.js"; // ✅ Authentication routes
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,14 +14,18 @@ const app = express();
 const isDev = process.env.NODE_ENV === "development";
 const PORT = process.env.PORT || 8080;
 
-// Middleware
+// 🧩 Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Health check endpoint
+// 🩺 Health check
 app.get("/api/health", (_, res) =>
   res.json({ status: "ok", mode: isDev ? "development" : "production" }),
 );
+
+// ✅ Mount authentication routes
+app.use("/api/auth", authRoutes);
 
 const httpServer = createServer(app);
 
@@ -49,9 +55,7 @@ async function start() {
         }
       });
     } catch {
-      console.warn(
-        "⚠️ Vite not installed. Falling back to production static serving.",
-      );
+      console.warn("⚠️ Vite not installed. Falling back to static serving.");
       const distPath = path.resolve(process.cwd(), "client", "dist");
       app.use(express.static(distPath));
       app.get("*", (_req, res) =>
@@ -67,13 +71,13 @@ async function start() {
     );
   }
 
-  // ✅ Deployment confirmation log (moved here)
+  // ✅ Deployment confirmation log
   const env = process.env.NODE_ENV || "development";
   console.log(
     `🚀 New Deployment Test: ${new Date().toISOString()} | Environment: ${env}`,
   );
 
-  // ✅ Start server
+  // 🌐 Start server
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`🌐 Server running on port ${PORT}`);
   });
