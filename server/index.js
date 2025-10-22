@@ -1,5 +1,4 @@
-console.log("🚀 New Deployment Test:", new Date().toISOString());
-// server/index.js (same structure you posted earlier)
+// server/index.js
 import express from "express";
 import { createServer } from "http";
 import path from "path";
@@ -13,9 +12,11 @@ const app = express();
 const isDev = process.env.NODE_ENV === "development";
 const PORT = process.env.PORT || 8080;
 
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Health check endpoint
 app.get("/api/health", (_, res) =>
   res.json({ status: "ok", mode: isDev ? "development" : "production" }),
 );
@@ -24,6 +25,7 @@ const httpServer = createServer(app);
 
 async function start() {
   if (isDev) {
+    // 🧩 Development mode – Use Vite
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -31,7 +33,9 @@ async function start() {
         root: path.resolve(process.cwd(), "client"),
         appType: "spa",
       });
+
       app.use(vite.middlewares);
+
       app.use("*", async (req, res, next) => {
         try {
           const url = req.originalUrl;
@@ -46,7 +50,7 @@ async function start() {
       });
     } catch {
       console.warn(
-        "Vite not installed. Falling back to production static serving.",
+        "⚠️ Vite not installed. Falling back to production static serving.",
       );
       const distPath = path.resolve(process.cwd(), "client", "dist");
       app.use(express.static(distPath));
@@ -55,6 +59,7 @@ async function start() {
       );
     }
   } else {
+    // 🚀 Production mode – Serve static files
     const distPath = path.resolve(process.cwd(), "client", "dist");
     app.use(express.static(distPath));
     app.get("*", (_req, res) =>
@@ -62,8 +67,15 @@ async function start() {
     );
   }
 
+  // ✅ Deployment confirmation log (moved here)
+  const env = process.env.NODE_ENV || "development";
+  console.log(
+    `🚀 New Deployment Test: ${new Date().toISOString()} | Environment: ${env}`,
+  );
+
+  // ✅ Start server
   httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🌐 Server running on port ${PORT}`);
   });
 }
 
