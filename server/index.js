@@ -5,8 +5,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import cors from "cors";
-import authRoutes from "./routes/auth.js"; // ✅ Authentication routes
-// import progressRoutes from "./routes/progress.js"; // 🚀 Coming soon (Gamification)
+import authRoutes from "./routes/auth.js";
+import progressRoutes from "./routes/progress.js"; // ✅ Added Gamification Routes
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +30,7 @@ app.get("/api/health", (_, res) => {
 
 // ✅ Mount Routes
 app.use("/api/auth", authRoutes);
-// app.use("/api/progress", progressRoutes); // 🔜 For XP, streaks, badges
+app.use("/api/progress", progressRoutes); // ✅ Activated Gamification
 
 // 🌐 Create HTTP Server
 const httpServer = createServer(app);
@@ -70,7 +70,7 @@ async function start() {
       );
     }
   } else {
-    // 🚀 Production Mode (Static Serving)
+    // 🚀 Production Mode
     const distPath = path.resolve(process.cwd(), "client", "dist");
     app.use(express.static(distPath));
     app.get("*", (_req, res) =>
@@ -78,15 +78,15 @@ async function start() {
     );
   }
 
-  // 🧠 Deployment Confirmation Log
-  const env = process.env.NODE_ENV || "development";
-  console.log(`🚀 New Deployment: ${new Date().toISOString()} | Mode: ${env}`);
-  console.log(`✅ Auth & DB Ready | API running on /api/auth`);
+  // 🧠 Deployment Log
+  console.log(
+    `🚀 New Deployment: ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
+  );
+  console.log(`✅ APIs ready: /api/auth + /api/progress`);
 
-  // 🌐 Start Server
-  httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`🌐 Server running on port ${PORT}`);
-  });
+  httpServer.listen(PORT, "0.0.0.0", () =>
+    console.log(`🌐 Server running on port ${PORT}`),
+  );
 }
 
 start();
