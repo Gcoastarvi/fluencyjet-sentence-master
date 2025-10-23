@@ -6,7 +6,8 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import cors from "cors";
 import authRoutes from "./routes/auth.js";
-import progressRoutes from "./routes/progress.js"; // ✅ Added Gamification Routes
+import progressRoutes from "./routes/progress.js";
+import leaderboardRoutes from "./routes/leaderboard.js"; // ✅ NEW import
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +31,8 @@ app.get("/api/health", (_, res) => {
 
 // ✅ Mount Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/progress", progressRoutes); // ✅ Activated Gamification
+app.use("/api/progress", progressRoutes);
+app.use("/api/leaderboard", leaderboardRoutes); // ✅ NEW Leaderboard API
 
 // 🌐 Create HTTP Server
 const httpServer = createServer(app);
@@ -38,7 +40,6 @@ const httpServer = createServer(app);
 // 🚀 Start Server Function
 async function start() {
   if (isDev) {
-    // 🧩 Development Mode (with Vite)
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -82,7 +83,7 @@ async function start() {
   console.log(
     `🚀 New Deployment: ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
   );
-  console.log(`✅ APIs ready: /api/auth + /api/progress`);
+  console.log(`✅ APIs ready: /api/auth + /api/progress + /api/leaderboard`);
 
   httpServer.listen(PORT, "0.0.0.0", () =>
     console.log(`🌐 Server running on port ${PORT}`),
