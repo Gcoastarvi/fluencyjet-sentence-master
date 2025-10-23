@@ -1,3 +1,4 @@
+// server/db/index.js
 import pg from "pg";
 import dotenv from "dotenv";
 dotenv.config();
@@ -12,7 +13,7 @@ const pool = new Pool({
 pool
   .connect()
   .then((client) => {
-    console.log("✅ Connected to PostgreSQL");
+    console.log("✅ Connected to PostgreSQL successfully!");
     client.release();
   })
   .catch((err) => console.error("❌ DB connection error:", err));

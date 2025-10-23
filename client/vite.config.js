@@ -1,3 +1,4 @@
+// client/vite.config.js
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -26,6 +27,13 @@ export default defineConfig({
       replitHost,
       ".railway.app",
     ].filter(Boolean),
+    // 👇 NEW: dev proxy → forwards /api to your Node server at 8080
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     outDir: "dist",
