@@ -1,15 +1,22 @@
-// ...top imports unchanged
+// server/routes/progress.js
+import express from "express";
+import pool from "../db/index.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+// POST /api/progress/update
 router.post("/update", authMiddleware, async (req, res) => {
   try {
     const { id } = req.user;
     const {
       xpEarned, // optional override
       type, // "typing" | "dragdrop" | "cloze" | "bonus"
-      completedQuiz, // bool → +300 if true
-      dailyBonus, // bool → +200 if true
+      completedQuiz, // bool => +300 if true
+      dailyBonus, // bool => +200 if true
     } = req.body;
 
-    // base by type
+    // base XP by type (defaults saved in memory)
     let baseXP = 100;
     if (type === "typing") baseXP = 150;
     if (type === "dragdrop") baseXP = 100;
@@ -19,7 +26,7 @@ router.post("/update", authMiddleware, async (req, res) => {
     if (completedQuiz) award += 300;
     if (dailyBonus) award += 200;
 
-    // get current progress
+    // read current progress (or assume new)
     const { rows } = await pool.query(
       "SELECT xp, streak, last_active, badges FROM user_progress WHERE user_id=$1",
       [id],
@@ -36,21 +43,20 @@ router.post("/update", authMiddleware, async (req, res) => {
         ? new Date(rows[0].last_active)
         : null;
       if (lastActive) {
-        const diff = (new Date(today) - lastActive) / (1000 * 3600 * 24);
-        if (diff === 1) streak += 1;
-        else if (diff > 1) streak = 1;
+        const diffDays = (new Date(today) - lastActive) / (1000 * 3600 * 24);
+        if (diffDays === 1) streak += 1;
+        else if (diffDays > 1) streak = 1;
       } else {
         streak = 1;
       }
     } else {
-      // create a row if missing
       streak = 1;
       badges = [];
     }
 
     xp += award;
 
-    // badges (scaled for larger numbers)
+    // simple milestone badges
     if (xp >= 1000 && !badges.includes("Rising Star"))
       badges.push("Rising Star");
     if (streak >= 3 && !badges.includes("3-Day Streak"))
@@ -69,7 +75,7 @@ router.post("/update", authMiddleware, async (req, res) => {
       [id, xp, streak, today, badges],
     );
 
-    // log the event for leaderboards
+    // log event for leaderboards
     await pool.query(
       "INSERT INTO user_xp_log (user_id, xp, source) VALUES ($1,$2,$3)",
       [id, award, type || "bonus"],
@@ -80,3 +86,5 @@ router.post("/update", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "XP update failed", error: err.message });
   }
 });
+
+export default router;
