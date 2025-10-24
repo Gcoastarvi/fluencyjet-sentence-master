@@ -86,5 +86,34 @@ router.post("/update", authMiddleware, async (req, res) => {
     res.status(500).json({ message: "XP update failed", error: err.message });
   }
 });
+// 🧠 Route: Fetch current user progress
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.user;
+
+    // Fetch progress or default values if user has none yet
+    const { rows } = await pool.query(
+      "SELECT xp, streak, badges, last_active FROM user_progress WHERE user_id=$1",
+      [id],
+    );
+
+    if (rows.length === 0) {
+      return res.json({
+        xp: 0,
+        streak: 0,
+        badges: [],
+        last_active: null,
+      });
+    }
+
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("❌ Failed to fetch progress:", err);
+    res.status(500).json({
+      message: "Could not load progress data",
+      error: err.message,
+    });
+  }
+});
 
 export default router;
