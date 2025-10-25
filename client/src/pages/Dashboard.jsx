@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fetchMyProgress, awardXP } from "@/lib/xpTracker";
 import LessonCard from "@/components/LessonCard";
 import LockBadge from "@/components/LockBadge";
 
@@ -7,53 +8,40 @@ export default function Dashboard() {
   const [hasAccess, setHasAccess] = useState(false);
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
 
-  const token = localStorage.getItem("fj_token");
-
-  // 🧠 Fetch user progress (XP + Streak + Badges)
+  // Load progress
   useEffect(() => {
-    if (!token) return;
-
-    fetch(`${import.meta.env.VITE_API_URL}/api/progress/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        setProgress(data);
+    (async () => {
+      try {
+        const p = await fetchMyProgress();
+        setProgress(p);
+      } catch (e) {
+        setErr(e.message || "Failed to load progress");
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Progress fetch failed:", err);
-        setLoading(false);
-      });
-  }, [token]);
+      }
+    })();
+  }, []);
 
-  // 📚 Load lessons (placeholder)
+  // Placeholder lessons
   useEffect(() => {
     fetch("/api/lessons")
       .then((r) => r.json())
       .then(setLessons)
-      .catch(console.error);
+      .catch(() => setLessons([]));
   }, []);
 
-  // 🏆 Manual XP award (for testing)
-  async function earnXP() {
+  async function simulateXP() {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/progress/update`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ xpEarned: 100 }), // reward for test
-        },
-      );
-      const data = await res.json();
-      setProgress(data);
-    } catch (err) {
-      console.error("XP update failed:", err);
+      const updated = await awardXP({
+        xpEarned: 50,
+        type: "debug",
+        completedQuiz: false,
+      });
+      setProgress(updated);
+    } catch (e) {
+      alert(e.message || "XP add failed");
     }
   }
 
@@ -66,54 +54,39 @@ export default function Dashboard() {
         Earn XP by completing lessons daily!
       </p>
 
-      {/* ⏳ Loading indicator */}
-      {loading && (
-        <p className="text-center text-gray-400">Loading your progress...</p>
-      )}
+      {loading && <p className="text-center text-gray-500">Loading…</p>}
+      {err && <p className="text-center text-red-500">{err}</p>}
 
-      {/* 🔥 Progress Display */}
-      {progress && !loading && (
-        <div className="bg-indigo-50 p-4 rounded-xl shadow text-center">
-          <p className="text-lg font-semibold text-indigo-700">
-            XP: <b>{progress.xp ?? 0}</b>
+      {progress && (
+        <div className="bg-indigo-50 p-4 rounded-xl shadow-sm text-center space-y-2">
+          <p>
+            XP: <b>{progress.xp}</b>
           </p>
-
-          <div className="mt-2 w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 h-2 rounded-full">
             <div
-              className="bg-violet-500 h-3 rounded-full transition-all"
-              style={{
-                width: `${Math.min(((progress.xp ?? 0) / 1000) * 100, 100)}%`,
-              }}
+              className="bg-violet-600 h-2 rounded-full"
+              style={{ width: `${Math.min((progress.xp % 1000) / 10, 100)}%` }}
+              aria-label="XP progress"
             />
           </div>
-          <p className="text-sm text-gray-600 mt-1">
-            Level goal: {Math.floor((progress.xp ?? 0) / 1000) + 1}
-          </p>
-
-          <p className="mt-2">
-            🔥 <b>Streak:</b> {progress.streak ?? 0} day
-            {progress.streak > 1 ? "s" : ""}
-          </p>
-
           <p>
-            🏅 <b>Badges:</b>{" "}
-            {progress.badges?.length
-              ? progress.badges.join(", ")
-              : "None yet — keep learning!"}
+            🔥 Streak: <b>{progress.streak}</b> days
+          </p>
+          <p>
+            🏅 Badges:{" "}
+            {progress.badges?.length ? progress.badges.join(", ") : "None yet"}
           </p>
 
           <button
-            onClick={earnXP}
-            className="mt-3 bg-violet-600 text-white px-5 py-2 rounded-full hover:scale-105 transition"
+            onClick={simulateXP}
+            className="mt-2 bg-violet-600 text-white px-4 py-2 rounded-full hover:scale-105 transition"
           >
-            +100 XP Test
+            +50 XP (simulate)
           </button>
         </div>
       )}
 
-      {/* 🔓 Lessons */}
       <LockBadge hasAccess={hasAccess} />
-
       <div className="grid gap-4">
         {lessons.map((l, i) => (
           <LessonCard

@@ -1,26 +1,15 @@
 // client/src/pages/TypingQuiz.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { awardXP } from "@/lib/xpTracker"; // ✅ Import centralized XP logic
 
 // 🧠 Sample Tamil→English sentences
 const QUESTIONS = [
   { id: 1, tamil: "நான் பள்ளிக்கு போகிறேன்", english: "I am going to school" },
-  {
-    id: 2,
-    tamil: "அவள் புத்தகம் படிக்கிறாள்",
-    english: "She is reading a book",
-  },
+  { id: 2, tamil: "அவள் புத்தகம் படிக்கிறாள்", english: "She is reading a book" },
   { id: 3, tamil: "அவர் ஒரு மருத்துவர்", english: "He is a doctor" },
-  {
-    id: 4,
-    tamil: "அவர்கள் பாடல் பாடுகிறார்கள்",
-    english: "They are singing a song",
-  },
-  {
-    id: 5,
-    tamil: "நாம் ஒன்றாக விளையாடுகிறோம்",
-    english: "We are playing together",
-  },
+  { id: 4, tamil: "அவர்கள் பாடல் பாடுகிறார்கள்", english: "They are singing a song" },
+  { id: 5, tamil: "நாம் ஒன்றாக விளையாடுகிறோம்", english: "We are playing together" },
 ];
 
 export default function TypingQuiz() {
@@ -31,37 +20,13 @@ export default function TypingQuiz() {
   const [feedback, setFeedback] = useState("");
 
   const q = QUESTIONS[current];
-  const token = localStorage.getItem("fj_token");
 
+  // helper: normalize strings for comparison
   function normalize(str) {
     return str.trim().toLowerCase().replace(/\s+/g, " ");
   }
 
-  // 🧠 Award XP securely via backend
-  async function awardXP(xpEarned, type = "typing", completedQuiz = false) {
-    if (!token) {
-      console.warn("No auth token found — XP not updated.");
-      return;
-    }
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/progress/update`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ xpEarned, type, completedQuiz }),
-        },
-      );
-      const data = await res.json();
-      console.log("✅ XP updated:", data);
-    } catch (err) {
-      console.error("❌ XP update failed:", err);
-    }
-  }
-
+  // ✅ Handle answer submission
   async function handleSubmit(e) {
     e.preventDefault();
     if (!answer) return;
@@ -69,7 +34,7 @@ export default function TypingQuiz() {
     if (normalize(answer) === normalize(q.english)) {
       setFeedback("✅ Correct!");
       setScore((s) => s + 1);
-      await awardXP(150, "typing"); // +150 XP for each correct
+      await awardXP({ xpEarned: 150, type: "typing" }); // +150 XP for correct
     } else {
       setFeedback(`❌ Correct answer: "${q.english}"`);
     }
@@ -85,11 +50,13 @@ export default function TypingQuiz() {
     }, 1000);
   }
 
+  // ✅ Handle quiz completion
   async function handleQuizComplete() {
     setFinished(true);
-    await awardXP(300, "typing", true); // +300 bonus XP for quiz completion
+    await awardXP({ xpEarned: 300, type: "typing", completedQuiz: true }); // +300 XP bonus
   }
 
+  // Reset quiz
   function restartQuiz() {
     setCurrent(0);
     setScore(0);
