@@ -1,6 +1,5 @@
 // client/src/pages/TypingQuiz.jsx
 import { useEffect, useState } from "react";
-import { awardXP } from "@/lib/xpTracker";
 import { Link } from "react-router-dom";
 
 // 🧠 Sample Tamil→English sentences
@@ -32,9 +31,35 @@ export default function TypingQuiz() {
   const [feedback, setFeedback] = useState("");
 
   const q = QUESTIONS[current];
+  const token = localStorage.getItem("fj_token");
 
   function normalize(str) {
     return str.trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  // 🧠 Award XP securely via backend
+  async function awardXP(xpEarned, type = "typing", completedQuiz = false) {
+    if (!token) {
+      console.warn("No auth token found — XP not updated.");
+      return;
+    }
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/progress/update`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ xpEarned, type, completedQuiz }),
+        },
+      );
+      const data = await res.json();
+      console.log("✅ XP updated:", data);
+    } catch (err) {
+      console.error("❌ XP update failed:", err);
+    }
   }
 
   async function handleSubmit(e) {
@@ -44,7 +69,7 @@ export default function TypingQuiz() {
     if (normalize(answer) === normalize(q.english)) {
       setFeedback("✅ Correct!");
       setScore((s) => s + 1);
-      await awardXP({ type: "typing" }); // +150 XP for correct
+      await awardXP(150, "typing"); // +150 XP for each correct
     } else {
       setFeedback(`❌ Correct answer: "${q.english}"`);
     }
@@ -62,7 +87,7 @@ export default function TypingQuiz() {
 
   async function handleQuizComplete() {
     setFinished(true);
-    await awardXP({ type: "typing", completedQuiz: true }); // +300 bonus XP
+    await awardXP(300, "typing", true); // +300 bonus XP for quiz completion
   }
 
   function restartQuiz() {
