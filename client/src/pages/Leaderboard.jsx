@@ -1,5 +1,6 @@
+// client/src/pages/Leaderboard.jsx
 import { useEffect, useState } from "react";
-import { fetchLeaderboard } from "@/lib/xpTracker";
+import { API_BASE } from "@/lib/api";
 
 function kFormat(n) {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -13,14 +14,30 @@ export default function Leaderboard() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
 
+  // ✅ Fetch leaderboard dynamically
   useEffect(() => {
     (async () => {
       setLoading(true);
       setErr("");
+      const token = localStorage.getItem("fj_token");
+      if (!token) {
+        setErr("Please log in to view leaderboard.");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const data = await fetchLeaderboard(period);
-        setRows(data.top || []);
+        const res = await fetch(`${API_BASE}/api/leaderboard/${period}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok)
+          throw new Error(data?.error || "Failed to load leaderboard");
+
+        setRows(Array.isArray(data.top) ? data.top : []);
       } catch (e) {
+        console.error("Leaderboard fetch failed:", e);
         setErr(e.message || "Failed to load leaderboard");
         setRows([]);
       } finally {
@@ -40,7 +57,9 @@ export default function Leaderboard() {
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`px-3 py-1 rounded-full ${period === p ? "bg-indigo-600 text-white" : "bg-gray-100"}`}
+            className={`px-3 py-1 rounded-full ${
+              period === p ? "bg-indigo-600 text-white" : "bg-gray-100"
+            }`}
           >
             {p[0].toUpperCase() + p.slice(1)}
           </button>
@@ -64,14 +83,16 @@ export default function Leaderboard() {
                     {i + 1}
                   </span>
                   <div className="text-sm">
-                    <div className="font-semibold">{r.email}</div>
+                    <div className="font-semibold">
+                      {r.email || `User ${r.user_id}`}
+                    </div>
                     <div className="text-gray-500">
-                      XP this {period}: {kFormat(r.total_xp)}
+                      XP this {period}: {kFormat(r.total_xp || 0)}
                     </div>
                   </div>
                 </div>
                 <div className="font-bold text-indigo-700">
-                  {kFormat(r.total_xp)}
+                  {kFormat(r.total_xp || 0)}
                 </div>
               </li>
             ))}

@@ -1,15 +1,27 @@
 // client/src/pages/TypingQuiz.jsx
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { awardXP } from "@/lib/xpTracker"; // ✅ Import centralized XP logic
 
 // 🧠 Sample Tamil→English sentences
 const QUESTIONS = [
   { id: 1, tamil: "நான் பள்ளிக்கு போகிறேன்", english: "I am going to school" },
-  { id: 2, tamil: "அவள் புத்தகம் படிக்கிறாள்", english: "She is reading a book" },
+  {
+    id: 2,
+    tamil: "அவள் புத்தகம் படிக்கிறாள்",
+    english: "She is reading a book",
+  },
   { id: 3, tamil: "அவர் ஒரு மருத்துவர்", english: "He is a doctor" },
-  { id: 4, tamil: "அவர்கள் பாடல் பாடுகிறார்கள்", english: "They are singing a song" },
-  { id: 5, tamil: "நாம் ஒன்றாக விளையாடுகிறோம்", english: "We are playing together" },
+  {
+    id: 4,
+    tamil: "அவர்கள் பாடல் பாடுகிறார்கள்",
+    english: "They are singing a song",
+  },
+  {
+    id: 5,
+    tamil: "நாம் ஒன்றாக விளையாடுகிறோம்",
+    english: "We are playing together",
+  },
 ];
 
 export default function TypingQuiz() {
@@ -18,10 +30,10 @@ export default function TypingQuiz() {
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [loading, setLoading] = useState(false); // ✅ optional visual feedback
 
   const q = QUESTIONS[current];
 
-  // helper: normalize strings for comparison
   function normalize(str) {
     return str.trim().toLowerCase().replace(/\s+/g, " ");
   }
@@ -29,12 +41,20 @@ export default function TypingQuiz() {
   // ✅ Handle answer submission
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!answer) return;
+    if (!answer || loading) return;
 
     if (normalize(answer) === normalize(q.english)) {
       setFeedback("✅ Correct!");
       setScore((s) => s + 1);
-      await awardXP({ xpEarned: 150, type: "typing" }); // +150 XP for correct
+      try {
+        setLoading(true);
+        await awardXP({ xpEarned: 150, type: "typing" }); // +150 XP for correct
+        console.log("XP +150 for correct answer");
+      } catch (err) {
+        console.error("XP update failed during question:", err);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setFeedback(`❌ Correct answer: "${q.english}"`);
     }
@@ -53,10 +73,17 @@ export default function TypingQuiz() {
   // ✅ Handle quiz completion
   async function handleQuizComplete() {
     setFinished(true);
-    await awardXP({ xpEarned: 300, type: "typing", completedQuiz: true }); // +300 XP bonus
+    try {
+      setLoading(true);
+      await awardXP({ xpEarned: 300, type: "typing", completedQuiz: true }); // +300 XP bonus
+      console.log("XP +300 for quiz completion");
+    } catch (err) {
+      console.error("XP update failed on completion:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  // Reset quiz
   function restartQuiz() {
     setCurrent(0);
     setScore(0);
@@ -88,9 +115,13 @@ export default function TypingQuiz() {
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               autoFocus
+              disabled={loading}
             />
-            <button className="bg-indigo-600 text-white py-2 px-4 rounded-full hover:scale-105 transition">
-              Submit
+            <button
+              className="bg-indigo-600 text-white py-2 px-4 rounded-full hover:scale-105 transition disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? "Updating XP..." : "Submit"}
             </button>
           </form>
 

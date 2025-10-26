@@ -1,7 +1,9 @@
+// client/src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import { fetchMyProgress, awardXP } from "@/lib/xpTracker";
 import LessonCard from "@/components/LessonCard";
 import LockBadge from "@/components/LockBadge";
+import { API_BASE } from "@/lib/api"; // ✅ centralized base for /api calls
 
 export default function Dashboard() {
   const [lessons, setLessons] = useState([]);
@@ -10,13 +12,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  // Load progress
+  // ✅ Load user progress once after mount
   useEffect(() => {
     (async () => {
       try {
-        const p = await fetchMyProgress();
-        setProgress(p);
+        const data = await fetchMyProgress();
+        if (data) setProgress(data);
       } catch (e) {
+        console.error("Progress fetch failed:", e);
         setErr(e.message || "Failed to load progress");
       } finally {
         setLoading(false);
@@ -24,14 +27,18 @@ export default function Dashboard() {
     })();
   }, []);
 
-  // Placeholder lessons
+  // ✅ Load lesson list (placeholder until real backend)
   useEffect(() => {
-    fetch("/api/lessons")
+    fetch(`${API_BASE}/api/lessons`)
       .then((r) => r.json())
       .then(setLessons)
-      .catch(() => setLessons([]));
+      .catch((err) => {
+        console.warn("Lesson fetch failed:", err);
+        setLessons([]);
+      });
   }, []);
 
+  // ✅ Simulate XP for debugging
   async function simulateXP() {
     try {
       const updated = await awardXP({
@@ -39,9 +46,10 @@ export default function Dashboard() {
         type: "debug",
         completedQuiz: false,
       });
-      setProgress(updated);
+      if (updated) setProgress(updated);
     } catch (e) {
-      alert(e.message || "XP add failed");
+      console.error("Simulate XP failed:", e);
+      alert(e.message || "XP update failed");
     }
   }
 
@@ -60,17 +68,17 @@ export default function Dashboard() {
       {progress && (
         <div className="bg-indigo-50 p-4 rounded-xl shadow-sm text-center space-y-2">
           <p>
-            XP: <b>{progress.xp}</b>
+            XP: <b>{progress.xp ?? 0}</b>
           </p>
           <div className="w-full bg-gray-200 h-2 rounded-full">
             <div
-              className="bg-violet-600 h-2 rounded-full"
+              className="bg-violet-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${Math.min((progress.xp % 1000) / 10, 100)}%` }}
               aria-label="XP progress"
             />
           </div>
           <p>
-            🔥 Streak: <b>{progress.streak}</b> days
+            🔥 Streak: <b>{progress.streak ?? 0}</b> days
           </p>
           <p>
             🏅 Badges:{" "}
