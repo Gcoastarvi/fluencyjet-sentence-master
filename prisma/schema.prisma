@@ -1,27 +1,74 @@
-datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-}
-
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  hasAccess Boolean  @default(false)
-  xp        Int      @default(0)
-  streak    Int      @default(0)
-  createdAt DateTime @default(now())
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  password    String
+  username    String?   @unique
+  avatar_url  String?
+  has_access  Boolean   @default(false)
+  tier_level  String    @default("free")
+  created_at  DateTime  @default(now())
+
+  xp_events   XpEvent[]
+  user_badges UserBadge[]
+  weekly      UserWeeklyTotals?
 }
 
 model Lesson {
-  id        Int      @id @default(autoincrement())
-  title     String
-  content   String
-  isFree    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          Int       @id @default(autoincrement())
+  slug        String    @unique
+  title       String
+  difficulty  String    @default("beginner")
+  is_locked   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+}
+
+model XpEvent {
+  id          BigInt    @id @default(autoincrement())
+  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id     Int
+  event_type  String
+  xp_delta    Int
+  meta        Json?
+  created_at  DateTime  @default(now())
+
+  @@index([user_id, created_at])
+}
+
+model Badge {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  name        String
+  threshold   Int
+  user_badges UserBadge[]
+}
+
+model UserBadge {
+  id         BigInt   @id @default(autoincrement())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    Int
+  badge      Badge    @relation(fields: [badge_id], references: [id], onDelete: Cascade)
+  badge_id   Int
+  awarded_at DateTime @default(now())
+
+  @@unique([user_id, badge_id])
+}
+
+model UserWeeklyTotals {
+  user_id    Int     @id
+  user       User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  week_key   DateTime
+  week_xp    Int      @default(0)
+  month_key  DateTime
+  month_xp   Int      @default(0)
+  updated_at DateTime @default(now())
 }
