@@ -57,7 +57,6 @@ function authRequired(req, res, next) {
     const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
     if (!token)
       return res.status(401).json({ ok: false, message: "Missing token" });
-
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = { id: decoded.id, email: decoded.email };
     next();
@@ -74,25 +73,23 @@ function authRequired(req, res, next) {
 router.post("/signup", async (req, res) => {
   try {
     const { name, username, email, password, avatar_url } = req.body || {};
-    if (!email || !password) {
+    if (!email || !password)
       return res
         .status(400)
         .json({ ok: false, message: "Email and password required" });
-    }
 
     const emailNorm = String(email).trim().toLowerCase();
     const usernameNorm =
       sanitizeUsername(username || name || emailNorm.split("@")[0]) || null;
 
-    // hash password safely
-    const hashed = await bcrypt.hash(password, 10);
+    // ✅ Hash password and store in the correct field
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Create user via Prisma
+    // ✅ Create user (uses `password` field only; remove password_hash)
     const user = await prisma.user.create({
       data: {
         email: emailNorm,
-        password, // TEMP: Prisma needs a matching field name
-        password_hash: hashed, // ← update based on your schema (see note below)
+        password: hashedPassword,
         username: usernameNorm,
         avatar_url: avatar_url || DEFAULT_AVATAR,
         has_access: false,
@@ -127,11 +124,10 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
-    if (!email || !password) {
+    if (!email || !password)
       return res
         .status(400)
         .json({ ok: false, message: "Email and password required" });
-    }
 
     const emailNorm = String(email).trim().toLowerCase();
     const user = await prisma.user.findUnique({ where: { email: emailNorm } });
@@ -140,13 +136,9 @@ router.post("/login", async (req, res) => {
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });
 
-    // compare hash
-    const ok =
-      (user.password && password === user.password) ||
-      (user.password_hash &&
-        (await bcrypt.compare(password, user.password_hash)));
-
-    if (!ok)
+    // ✅ Compare hashed password correctly
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid)
       return res
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });

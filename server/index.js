@@ -30,11 +30,11 @@ const prisma = new PrismaClient();
 
 /* ───────────────────── Global middleware (order matters) ───────────────────── */
 app.disable("x-powered-by");
-app.set("trust proxy", 1); // Railway/Heroku proxies
+app.set("trust proxy", 1); // Required for Railway/Heroku
 
 app.use(
   helmet({
-    contentSecurityPolicy: false, // relaxed so Vite HMR (dev) won't break
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   }),
 );
@@ -50,14 +50,14 @@ app.use(morgan(isDev ? "dev" : "combined"));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 
-/* ───────────────────── Health & Debug endpoints (keep early) ────────────────── */
+/* ─────────────────────── Health & Debug Endpoints ─────────────────────── */
 
-// Simple health check
+// 1️⃣ Basic health check
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", mode: isDev ? "development" : "production" });
+  res.json({ ok: true, mode: isDev ? "development" : "production" });
 });
 
-// Deep health + table counts
+// 2️⃣ Deep DB check + table counts
 app.get("/api/health/full", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -68,8 +68,8 @@ app.get("/api/health/full", async (_req, res) => {
     ]);
     res.json({
       ok: true,
-      mode: isDev ? "development" : "production",
       db: "up",
+      mode: isDev ? "development" : "production",
       counts: { users, lessons, badges },
       time: new Date().toISOString(),
     });
@@ -79,7 +79,32 @@ app.get("/api/health/full", async (_req, res) => {
   }
 });
 
-// Small, safe user sample (no PII beyond id/email/username/timestamps)
+// 3️⃣ NEW — Unified full system debug route (Phase 3+)
+app.get("/api/debug/full", async (_req, res) => {
+  try {
+    const start = process.uptime();
+    await prisma.$queryRaw`SELECT 1`;
+    const [users, lessons, badges] = await Promise.all([
+      prisma.user.count(),
+      prisma.lesson.count(),
+      prisma.badge.count(),
+    ]);
+    res.json({
+      ok: true,
+      environment: process.env.NODE_ENV,
+      database: "connected",
+      prisma_version: PrismaClient.prismaVersion?.client,
+      uptime_seconds: Math.round(process.uptime()),
+      counts: { users, lessons, badges },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("❌ /api/debug/full error:", err);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// 4️⃣ Debug — recent users (no PII)
 app.get("/api/debug/users", async (_req, res) => {
   try {
     const users = await prisma.user.findMany({
@@ -94,7 +119,7 @@ app.get("/api/debug/users", async (_req, res) => {
   }
 });
 
-// Bearer token validator (useful to confirm FE auth header)
+// 5️⃣ Debug — JWT verification test
 app.get("/api/debug/jwt", (req, res) => {
   try {
     const hdr = req.headers.authorization || "";
@@ -103,45 +128,43 @@ app.get("/api/debug/jwt", (req, res) => {
       return res
         .status(400)
         .json({ ok: false, message: "Missing Bearer token" });
+
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET || "fluencyjet_secret_2025",
     );
     res.json({ ok: true, decoded });
   } catch (err) {
-    res
-      .status(401)
-      .json({
-        ok: false,
-        message: "Invalid or expired token",
-        error: err.message,
-      });
+    res.status(401).json({
+      ok: false,
+      message: "Invalid or expired token",
+      error: err.message,
+    });
   }
 });
 
-/* ───────────────────────── API routes (BEFORE SPA!) ────────────────────────── */
+/* ───────────────────────── API Routes (Before SPA!) ───────────────────────── */
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/xp", xpRoutes);
 
-// Unknown API → JSON 404 (prevents SPA fallback from catching /api/*)
-app.all("/api/*", (_req, res) => {
-  res.status(404).json({ message: "Not Found" });
-});
+// Catch unknown API routes → JSON 404
+app.all("/api/*", (_req, res) =>
+  res.status(404).json({ ok: false, message: "API route not found" }),
+);
 
-// Central error handler for API
+// Central API error handler
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
   res
     .status(err.status || 500)
-    .json({ message: err.message || "Internal Server Error" });
+    .json({ ok: false, message: err.message || "Internal Server Error" });
 });
 
 /* ─────────────────────────── Start server (dev/prod) ───────────────────────── */
 async function start() {
   if (isDev) {
-    // Dev: Vite middleware (optional). If not installed, we fall back to static.
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
@@ -152,7 +175,6 @@ async function start() {
 
       app.use(vite.middlewares);
 
-      // SPA fallback for non-API routes
       app.get(/^\/(?!api).*/, async (req, res, next) => {
         try {
           const url = req.originalUrl;
@@ -166,28 +188,25 @@ async function start() {
         }
       });
     } catch (e) {
-      console.warn(
-        "⚠️ Vite not found; using static fallback:",
-        e?.message || "",
-      );
+      console.warn("⚠️ Vite not found; serving static fallback:", e?.message);
       const distPath = path.resolve(CLIENT_ROOT, "dist");
       app.use(express.static(distPath));
-      app.get(/^\/(?!api).*/, (_req, res) => {
-        res.sendFile(path.join(distPath, "index.html"));
-      });
+      app.get(/^\/(?!api).*/, (_req, res) =>
+        res.sendFile(path.join(distPath, "index.html")),
+      );
     }
   } else {
-    // Prod: serve built SPA
+    // Production static serving
     const distPath = path.resolve(CLIENT_ROOT, "dist");
     app.use(express.static(distPath));
-    app.get(/^\/(?!api).*/, (_req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+    app.get(/^\/(?!api).*/, (_req, res) =>
+      res.sendFile(path.join(distPath, "index.html")),
+    );
   }
 
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(
-      `🚀 Deployed at ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
+      `🚀 Deployed ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
     );
     console.log(
       "✅ APIs: /api/auth /api/progress /api/leaderboard /api/xp /api/debug/*",
@@ -196,13 +215,13 @@ async function start() {
   });
 }
 
-/* ────────────────────────── Graceful shutdown ──────────────────────────────── */
+/* ────────────────────────── Graceful Shutdown ──────────────────────────────── */
 async function shutdown(signal) {
   try {
-    console.log(`\n${signal} received — closing server...`);
+    console.log(`\n${signal} received — shutting down gracefully...`);
     await prisma.$disconnect();
     httpServer.close(() => {
-      console.log("HTTP server closed cleanly. Bye 👋");
+      console.log("✅ Server closed cleanly. Bye 👋");
       process.exit(0);
     });
     setTimeout(() => process.exit(0), 5000).unref();
