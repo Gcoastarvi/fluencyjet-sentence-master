@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,66 +8,114 @@ datasource db {
 }
 
 model User {
-  id          Int       @id @default(autoincrement())
-  email       String    @unique
+  id          Int               @id @default(autoincrement())
+  email       String            @unique @db.VarChar(254)
   password    String
-  username    String?   @unique
+  username    String?           @unique @db.VarChar(32)
   avatar_url  String?
-  has_access  Boolean   @default(false)
-  tier_level  String    @default("free")
-  created_at  DateTime  @default(now())
-
-  xp_events   XpEvent[]
+  has_access  Boolean           @default(false)
+  tier_level  TierLevel         @default(free)
+  created_at  DateTime          @default(now())
   user_badges UserBadge[]
+  progress    UserProgress?
   weekly      UserWeeklyTotals?
+  xp_events   XpEvent[]
+
+  @@index([created_at])
 }
 
 model Lesson {
-  id          Int       @id @default(autoincrement())
-  slug        String    @unique
-  title       String
-  difficulty  String    @default("beginner")
-  is_locked   Boolean   @default(true)
-  created_at  DateTime  @default(now())
+  id         Int        @id @default(autoincrement())
+  slug       String     @unique
+  title      String
+  difficulty Difficulty @default(beginner)
+  is_locked  Boolean    @default(true)
+  created_at DateTime   @default(now())
+
+  @@index([difficulty])
+  @@index([is_locked])
 }
 
 model XpEvent {
-  id          BigInt    @id @default(autoincrement())
-  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id     Int
-  event_type  String
-  xp_delta    Int
-  meta        Json?
-  created_at  DateTime  @default(now())
+  id         BigInt    @id @default(autoincrement())
+  user_id    Int
+  event_type EventType
+  xp_delta   Int
+  meta       Json?
+  created_at DateTime  @default(now())
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, created_at])
+  @@index([created_at])
 }
 
 model Badge {
-  id          Int       @id @default(autoincrement())
-  code        String    @unique
+  id          Int         @id @default(autoincrement())
+  code        String      @unique
   name        String
   threshold   Int
   user_badges UserBadge[]
+
+  @@index([threshold])
 }
 
 model UserBadge {
   id         BigInt   @id @default(autoincrement())
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id    Int
-  badge      Badge    @relation(fields: [badge_id], references: [id], onDelete: Cascade)
   badge_id   Int
   awarded_at DateTime @default(now())
+  badge      Badge    @relation(fields: [badge_id], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, badge_id])
+  @@index([awarded_at])
 }
 
+/// *
+/// * We keep ONE row per user here and "roll" the keys each Monday via the CRON script.
+/// * That makes weekly/monthly leaderboard reads O(1) per user.
 model UserWeeklyTotals {
-  user_id    Int     @id
-  user       User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    Int      @id
   week_key   DateTime
   week_xp    Int      @default(0)
   month_key  DateTime
   month_xp   Int      @default(0)
   updated_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([week_xp])
+  @@index([month_xp])
+}
+
+/// *
+/// * Fast lifetime stats so we don’t SUM(xp_events) every time.
+/// * We still keep xp_events as the source of truth.
+model UserProgress {
+  user_id       Int       @id
+  total_xp      Int       @default(0)
+  last_activity DateTime?
+  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([total_xp])
+}
+
+/// *
+/// * ========================= Enums =========================
+enum Difficulty {
+  beginner
+  intermediate
+  advanced
+}
+
+enum TierLevel {
+  free
+  basic
+  pro
+}
+
+enum EventType {
+  quiz
+  streak
+  bonus
+  admin
 }

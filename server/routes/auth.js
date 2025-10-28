@@ -2,54 +2,191 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import pool from "../db/index.js";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const router = express.Router();
+
+// ─────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────
 const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
+const JWT_EXPIRES = process.env.JWT_EXPIRES || "7d";
+const DEFAULT_AVATAR = "https://i.pravatar.cc/150";
 
-// 📝 Signup
-router.post("/signup", async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).json({ message: "Email and password required" });
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+function sanitizeUsername(u = "") {
+  const s = String(u)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._]/g, "");
+  return s.slice(0, 20);
+}
 
+function publicUser(u) {
+  if (!u) return null;
+  const {
+    id,
+    email,
+    username,
+    avatar_url,
+    has_access,
+    tier_level,
+    created_at,
+  } = u;
+  return {
+    id,
+    email,
+    username,
+    avatar_url,
+    has_access,
+    tier_level,
+    created_at,
+  };
+}
+
+function signToken(payload) {
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+}
+
+function authRequired(req, res, next) {
   try {
+    const hdr = req.headers.authorization || "";
+    const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+    if (!token)
+      return res.status(401).json({ ok: false, message: "Missing token" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = { id: decoded.id, email: decoded.email };
+    next();
+  } catch {
+    return res.status(401).json({ ok: false, message: "Invalid token" });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// Routes
+// ─────────────────────────────────────────────────────────────
+
+// 📝 SIGNUP
+router.post("/signup", async (req, res) => {
+  try {
+    const { name, username, email, password, avatar_url } = req.body || {};
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Email and password required" });
+    }
+
+    const emailNorm = String(email).trim().toLowerCase();
+    const usernameNorm =
+      sanitizeUsername(username || name || emailNorm.split("@")[0]) || null;
+
+    // hash password safely
     const hashed = await bcrypt.hash(password, 10);
-    const result = await pool.query(
-      "INSERT INTO users (name, email, password_hash) VALUES ($1,$2,$3) RETURNING id,email,name",
-      [name, email, hashed],
-    );
-    const user = result.rows[0];
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-      expiresIn: "7d",
+
+    // ✅ Create user via Prisma
+    const user = await prisma.user.create({
+      data: {
+        email: emailNorm,
+        password, // TEMP: Prisma needs a matching field name
+        password_hash: hashed, // ← update based on your schema (see note below)
+        username: usernameNorm,
+        avatar_url: avatar_url || DEFAULT_AVATAR,
+        has_access: false,
+        tier_level: "free",
+      },
     });
-    res.status(201).json({ message: "User created", token, user });
+
+    const token = signToken({ id: user.id, email: user.email });
+    return res.status(201).json({
+      ok: true,
+      message: "User created",
+      token,
+      user: publicUser(user),
+    });
   } catch (err) {
-    if (err.code === "23505")
-      return res.status(409).json({ message: "Email already exists" });
-    res.status(500).json({ message: "Signup failed", error: err.message });
+    if (err?.code === "P2002") {
+      return res.status(409).json({
+        ok: false,
+        message: err?.meta?.target?.includes("username")
+          ? "Username already taken"
+          : "Email already exists",
+      });
+    }
+    console.error("Signup error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, message: "Signup failed", error: err.message });
   }
 });
 
-// 🔑 Login
+// 🔑 LOGIN
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
   try {
-    const result = await pool.query("SELECT * FROM users WHERE email=$1", [
-      email,
-    ]);
-    const user = result.rows[0];
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Email and password required" });
+    }
 
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) return res.status(401).json({ message: "Invalid credentials" });
+    const emailNorm = String(email).trim().toLowerCase();
+    const user = await prisma.user.findUnique({ where: { email: emailNorm } });
+    if (!user)
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-      expiresIn: "7d",
+    // compare hash
+    const ok =
+      (user.password && password === user.password) ||
+      (user.password_hash &&
+        (await bcrypt.compare(password, user.password_hash)));
+
+    if (!ok)
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid credentials" });
+
+    const token = signToken({ id: user.id, email: user.email });
+    return res.json({
+      ok: true,
+      message: "Login success",
+      token,
+      user: publicUser(user),
     });
-    res.json({ message: "Login success", token, user });
   } catch (err) {
-    res.status(500).json({ message: "Login failed", error: err.message });
+    console.error("Login error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, message: "Login failed", error: err.message });
+  }
+});
+
+// 👤 PROFILE ("Me")
+router.get("/me", authRequired, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        avatar_url: true,
+        has_access: true,
+        tier_level: true,
+        created_at: true,
+      },
+    });
+    return res.json({ ok: true, user });
+  } catch (err) {
+    console.error("Me error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, message: "Failed to fetch profile" });
   }
 });
 

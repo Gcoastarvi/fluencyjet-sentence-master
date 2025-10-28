@@ -6,72 +6,157 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import jwt from "jsonwebtoken";
+import { PrismaClient } from "@prisma/client";
 
+// Routes
 import authRoutes from "./routes/auth.js";
 import progressRoutes from "./routes/progress.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
+import xpRoutes from "./routes/xp.js";
 
+/* ───────────────────────────── Basics ───────────────────────────── */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const isDev = process.env.NODE_ENV === "development";
+const PORT = process.env.PORT || 8080;
+const CLIENT_ROOT = path.resolve(process.cwd(), "client");
 
 const app = express();
 const httpServer = createServer(app);
+const prisma = new PrismaClient();
 
-const isDev = process.env.NODE_ENV === "development";
-const PORT = process.env.PORT || 8080;
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Global middleware
-// ──────────────────────────────────────────────────────────────────────────────
+/* ───────────────────── Global middleware (order matters) ───────────────────── */
 app.disable("x-powered-by");
-app.use(cors());
-app.use(express.json());
+app.set("trust proxy", 1); // Railway/Heroku proxies
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // relaxed so Vite HMR (dev) won't break
+    crossOriginEmbedderPolicy: false,
+  }),
+);
+
+app.use(
+  cors({
+    origin: isDev ? true : process.env.CLIENT_ORIGIN || true,
+    credentials: true,
+  }),
+);
+
+app.use(morgan(isDev ? "dev" : "combined"));
+app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 
-// Health check (keep this very early)
+/* ───────────────────── Health & Debug endpoints (keep early) ────────────────── */
+
+// Simple health check
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", mode: isDev ? "development" : "production" });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
-// API ROUTES (MUST come BEFORE any static/SPA middleware)
-// ──────────────────────────────────────────────────────────────────────────────
+// Deep health + table counts
+app.get("/api/health/full", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    const [users, lessons, badges] = await Promise.all([
+      prisma.user.count(),
+      prisma.lesson.count(),
+      prisma.badge.count(),
+    ]);
+    res.json({
+      ok: true,
+      mode: isDev ? "development" : "production",
+      db: "up",
+      counts: { users, lessons, badges },
+      time: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error("❌ /api/health/full error:", err);
+    res.status(500).json({ ok: false, db: "down", error: err.message });
+  }
+});
+
+// Small, safe user sample (no PII beyond id/email/username/timestamps)
+app.get("/api/debug/users", async (_req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: { id: true, email: true, username: true, created_at: true },
+      orderBy: { created_at: "desc" },
+      take: 5,
+    });
+    res.json({ ok: true, users });
+  } catch (e) {
+    console.error("❌ /api/debug/users error:", e);
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+// Bearer token validator (useful to confirm FE auth header)
+app.get("/api/debug/jwt", (req, res) => {
+  try {
+    const hdr = req.headers.authorization || "";
+    const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+    if (!token)
+      return res
+        .status(400)
+        .json({ ok: false, message: "Missing Bearer token" });
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "fluencyjet_secret_2025",
+    );
+    res.json({ ok: true, decoded });
+  } catch (err) {
+    res
+      .status(401)
+      .json({
+        ok: false,
+        message: "Invalid or expired token",
+        error: err.message,
+      });
+  }
+});
+
+/* ───────────────────────── API routes (BEFORE SPA!) ────────────────────────── */
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/xp", xpRoutes);
 
-// Optional: unknown API route 404 (so we never return index.html for /api/*)
+// Unknown API → JSON 404 (prevents SPA fallback from catching /api/*)
 app.all("/api/*", (_req, res) => {
   res.status(404).json({ message: "Not Found" });
 });
 
-// Central error handler (ensures API errors return JSON, not HTML)
+// Central error handler for API
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
-  const status = err.status || 500;
-  res.status(status).json({ message: err.message || "Server Error" });
+  res
+    .status(err.status || 500)
+    .json({ message: err.message || "Internal Server Error" });
 });
 
-// ──────────────────────────────────────────────────────────────────────────────
+/* ─────────────────────────── Start server (dev/prod) ───────────────────────── */
 async function start() {
   if (isDev) {
-    // Vite dev middleware (SPA) — AFTER API routes
+    // Dev: Vite middleware (optional). If not installed, we fall back to static.
     try {
       const { createServer: createViteServer } = await import("vite");
       const vite = await createViteServer({
         server: { middlewareMode: true, hmr: { server: httpServer } },
-        root: path.resolve(process.cwd(), "client"),
+        root: CLIENT_ROOT,
         appType: "spa",
       });
 
-      // Attach Vite middlewares
       app.use(vite.middlewares);
 
-      // SPA fallback only for NON-API paths
+      // SPA fallback for non-API routes
       app.get(/^\/(?!api).*/, async (req, res, next) => {
         try {
           const url = req.originalUrl;
-          const indexPath = path.resolve(process.cwd(), "client", "index.html");
+          const indexPath = path.resolve(CLIENT_ROOT, "index.html");
           let template = fs.readFileSync(indexPath, "utf-8");
           template = await vite.transformIndexHtml(url, template);
           res.status(200).set({ "Content-Type": "text/html" }).end(template);
@@ -82,34 +167,52 @@ async function start() {
       });
     } catch (e) {
       console.warn(
-        "⚠️ Vite not installed. Falling back to static serving.",
+        "⚠️ Vite not found; using static fallback:",
         e?.message || "",
       );
-      const distPath = path.resolve(process.cwd(), "client", "dist");
+      const distPath = path.resolve(CLIENT_ROOT, "dist");
       app.use(express.static(distPath));
       app.get(/^\/(?!api).*/, (_req, res) => {
         res.sendFile(path.join(distPath, "index.html"));
       });
     }
   } else {
-    // Production static serving — AFTER API routes
-    const distPath = path.resolve(process.cwd(), "client", "dist");
+    // Prod: serve built SPA
+    const distPath = path.resolve(CLIENT_ROOT, "dist");
     app.use(express.static(distPath));
-
-    // SPA fallback only for NON-API paths
     app.get(/^\/(?!api).*/, (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
-  console.log(
-    `🚀 New Deployment: ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
-  );
-  console.log("✅ APIs ready: /api/auth + /api/progress + /api/leaderboard");
-
   httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(
+      `🚀 Deployed at ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
+    );
+    console.log(
+      "✅ APIs: /api/auth /api/progress /api/leaderboard /api/xp /api/debug/*",
+    );
     console.log(`🌐 Server running on port ${PORT}`);
   });
 }
+
+/* ────────────────────────── Graceful shutdown ──────────────────────────────── */
+async function shutdown(signal) {
+  try {
+    console.log(`\n${signal} received — closing server...`);
+    await prisma.$disconnect();
+    httpServer.close(() => {
+      console.log("HTTP server closed cleanly. Bye 👋");
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(0), 5000).unref();
+  } catch (err) {
+    console.error("Error during shutdown:", err);
+    process.exit(1);
+  }
+}
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 start();
