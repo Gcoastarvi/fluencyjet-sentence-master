@@ -10,26 +10,20 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.js",
     "start": "NODE_ENV=production node server/index.js",
-
     "build": "npm --prefix client install --omit=dev && npm --prefix client run build",
     "preview": "npm run build && npm run serve:dist",
     "serve:dist": "npx serve client/dist --listen 8080",
-
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:push": "prisma db push",
     "seed": "node prisma/seed.js",
-
     "check": "tsc",
-
-    /* Important for Railway: generate Prisma Client during deploy */
     "postinstall": "prisma generate"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@neondatabase/serverless": "^0.10.4",
     "@prisma/client": "^6.18.0",
-
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -40,18 +34,16 @@
     "pg": "^8.16.3",
     "ws": "^8.18.0",
     "zod": "^3.24.2",
-
-    /* Keep these only if you still use them; safe to remove later */
     "body-parser": "^2.2.0",
     "connect-pg-simple": "^10.0.0",
     "express-session": "^1.18.1",
     "memorystore": "^1.6.7",
-    "drizzle-orm": "^0.39.1"
+    "drizzle-orm": "^0.39.1",
+    "tsx": "^4.20.5"
   },
   "devDependencies": {
     "@types/node": "20.16.11",
-    "typescript": "5.6.3",
     "drizzle-kit": "^0.31.4",
-    "tsx": "^4.20.5"
+    "typescript": "5.6.3"
   }
 }
