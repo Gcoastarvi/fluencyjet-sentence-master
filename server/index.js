@@ -156,8 +156,6 @@ app.get("/api/debug/jwt", (req, res) => {
 });
 
 /* ───────────────────────── API Routes (Before SPA!) ───────────────────────── */
-import fs from "fs";
-import path from "path";
 
 // Diagnostic route listing before mounting
 const routesDir = path.resolve("./server/routes");
