@@ -49,6 +49,18 @@ app.use(
 app.use(morgan(isDev ? "dev" : "combined"));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
+/* ─────────────── Route Diagnostic (Temporary for Debugging) ─────────────── */
+import fs from "fs";
+import path from "path";
+
+const routesDir = path.resolve("./server/routes");
+console.log("📂 Checking routes directory:", routesDir);
+if (fs.existsSync(routesDir)) {
+  console.log("📄 Routes found:", fs.readdirSync(routesDir));
+} else {
+  console.log("⚠️ Routes folder missing at:", routesDir);
+}
+/* ────────────────────────────────────────────────────────────────────────── */
 
 /* ─────────────────────── Health & Debug Endpoints ─────────────────────── */
 
@@ -144,10 +156,26 @@ app.get("/api/debug/jwt", (req, res) => {
 });
 
 /* ───────────────────────── API Routes (Before SPA!) ───────────────────────── */
+import fs from "fs";
+import path from "path";
+
+// Diagnostic route listing before mounting
+const routesDir = path.resolve("./server/routes");
+console.log("📂 Checking routes directory:", routesDir);
+if (fs.existsSync(routesDir)) {
+  console.log("📄 Routes found:", fs.readdirSync(routesDir));
+} else {
+  console.log("⚠️ Routes folder missing at:", routesDir);
+}
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/xp", xpRoutes);
+// TEMP catch-all route logger
+app.all("*", (req, res) => {
+  console.log("❌ Unhandled route:", req.method, req.originalUrl);
+  res.status(404).json({ ok: false, message: "API route not found" });
+});
 
 // Catch unknown API routes → JSON 404
 app.all("/api/*", (_req, res) =>
