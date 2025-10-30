@@ -158,6 +158,10 @@ app.get("/api/debug/jwt", (req, res) => {
 app.get("/api/auth/ping", (_req, res) => {
   res.json({ ok: true, source: "index.js-inline" });
 });
+// TEMP inline ping (for Postman connectivity test)
+app.get("/api/auth/ping", (_req, res) => {
+  res.json({ ok: true, source: "index.js-inline" });
+});
 
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
