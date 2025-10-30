@@ -163,17 +163,52 @@ app.get("/api/auth/ping", (_req, res) => {
   res.json({ ok: true, source: "index.js-inline" });
 });
 
+/* ──────────────────────────────── API ROUTES ──────────────────────────────── */
+
+// ✅ Health check routes (always load first)
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, mode: process.env.NODE_ENV || "unknown" });
+});
+
+// ✅ Temporary inline ping (for Postman connectivity test)
+app.get("/api/auth/ping", (_req, res) => {
+  res.json({ ok: true, source: "index.js-inline" });
+});
+
+// ✅ Mount main routes after health checks
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/xp", xpRoutes);
 
-// Catch unknown API routes → JSON 404
+// ✅ Debug JWT route (optional)
+app.get("/api/debug/jwt", (req, res) => {
+  try {
+    const hdr = req.headers.authorization || "";
+    const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+    if (!token)
+      return res
+        .status(400)
+        .json({ ok: false, message: "Missing Bearer token" });
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "fluencyjet_secret_2025",
+    );
+    res.json({ ok: true, decoded });
+  } catch (err) {
+    res.status(401).json({
+      ok: false,
+      message: "Invalid or expired token",
+      error: err.message,
+    });
+  }
+});
+
+/* ─────────────────────────────── 404 + ERRORS ─────────────────────────────── */
 app.all("/api/*", (_req, res) =>
   res.status(404).json({ ok: false, message: "API route not found" }),
 );
 
-// Central API error handler
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
   res
@@ -181,58 +216,16 @@ app.use((err, _req, res, _next) => {
     .json({ ok: false, message: err.message || "Internal Server Error" });
 });
 
-/* ─────────────────────────── Start server (dev/prod) ───────────────────────── */
-async function start() {
-  if (isDev) {
-    try {
-      const { createServer: createViteServer } = await import("vite");
-      const vite = await createViteServer({
-        server: { middlewareMode: true, hmr: { server: httpServer } },
-        root: CLIENT_ROOT,
-        appType: "spa",
-      });
-
-      app.use(vite.middlewares);
-
-      app.get(/^\/(?!api).*/, async (req, res, next) => {
-        try {
-          const url = req.originalUrl;
-          const indexPath = path.resolve(CLIENT_ROOT, "index.html");
-          let template = fs.readFileSync(indexPath, "utf-8");
-          template = await vite.transformIndexHtml(url, template);
-          res.status(200).set({ "Content-Type": "text/html" }).end(template);
-        } catch (e) {
-          vite.ssrFixStacktrace?.(e);
-          next(e);
-        }
-      });
-    } catch (e) {
-      console.warn("⚠️ Vite not found; serving static fallback:", e?.message);
-      const distPath = path.resolve(CLIENT_ROOT, "dist");
-      app.use(express.static(distPath));
-      app.get(/^\/(?!api).*/, (_req, res) =>
-        res.sendFile(path.join(distPath, "index.html")),
-      );
-    }
-  } else {
-    // Production static serving
-    const distPath = path.resolve(CLIENT_ROOT, "dist");
-    app.use(express.static(distPath));
-    app.get(/^\/(?!api).*/, (_req, res) =>
-      res.sendFile(path.join(distPath, "index.html")),
-    );
-  }
-
-  httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(
-      `🚀 Deployed ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
-    );
-    console.log(
-      "✅ APIs: /api/auth /api/progress /api/leaderboard /api/xp /api/debug/*",
-    );
-    console.log(`🌐 Server running on port ${PORT}`);
-  });
-}
+/* ────────────────────────────── SERVER STARTUP ────────────────────────────── */
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(
+    `🚀 Deployed ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
+  );
+  console.log(
+    "✅ APIs ready → /api/health /api/auth/ping /api/auth /api/progress /api/leaderboard /api/xp",
+  );
+  console.log(`🌐 Server running on port ${PORT}`);
+});
 
 /* ────────────────────────── Graceful Shutdown ──────────────────────────────── */
 async function shutdown(signal) {
