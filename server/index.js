@@ -156,24 +156,15 @@ app.get("/api/debug/jwt", (req, res) => {
 });
 
 /* ───────────────────────── API Routes (Before SPA!) ───────────────────────── */
+// 🔎 TEMP inline ping (bypasses auth.js logic)
+app.get("/api/auth/ping", (_req, res) => {
+  res.json({ ok: true, source: "index.js-inline" });
+});
 
-// Diagnostic route listing before mounting
-const routesDir = path.resolve("./server/routes");
-console.log("📂 Checking routes directory:", routesDir);
-if (fs.existsSync(routesDir)) {
-  console.log("📄 Routes found:", fs.readdirSync(routesDir));
-} else {
-  console.log("⚠️ Routes folder missing at:", routesDir);
-}
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/xp", xpRoutes);
-// TEMP catch-all route logger
-app.all("*", (req, res) => {
-  console.log("❌ Unhandled route:", req.method, req.originalUrl);
-  res.status(404).json({ ok: false, message: "API route not found" });
-});
 
 // Catch unknown API routes → JSON 404
 app.all("/api/*", (_req, res) =>
