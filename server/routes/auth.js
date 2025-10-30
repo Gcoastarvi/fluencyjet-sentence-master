@@ -7,22 +7,22 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// ─────────────────────────────────────────────────────────────
-// Config
-// ─────────────────────────────────────────────────────────────
+/* ───────────────────────────────
+   JWT & Security Config
+─────────────────────────────── */
 const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
 const JWT_EXPIRES = process.env.JWT_EXPIRES || "7d";
 const DEFAULT_AVATAR = "https://i.pravatar.cc/150";
 
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
+/* ───────────────────────────────
+   Helper Functions
+─────────────────────────────── */
 function sanitizeUsername(u = "") {
-  const s = String(u)
+  return String(u)
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9._]/g, "");
-  return s.slice(0, 20);
+    .replace(/[^a-z0-9._]/g, "")
+    .slice(0, 20);
 }
 
 function publicUser(u) {
@@ -61,15 +61,17 @@ function authRequired(req, res, next) {
     req.user = { id: decoded.id, email: decoded.email };
     next();
   } catch {
-    return res.status(401).json({ ok: false, message: "Invalid token" });
+    return res
+      .status(401)
+      .json({ ok: false, message: "Invalid or expired token" });
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Routes
-// ─────────────────────────────────────────────────────────────
+/* ───────────────────────────────
+   Routes
+─────────────────────────────── */
 
-// 📝 SIGNUP
+/** 📝 SIGNUP — Create New User */
 router.post("/signup", async (req, res) => {
   try {
     const { name, username, email, password, avatar_url } = req.body || {};
@@ -81,11 +83,9 @@ router.post("/signup", async (req, res) => {
     const emailNorm = String(email).trim().toLowerCase();
     const usernameNorm =
       sanitizeUsername(username || name || emailNorm.split("@")[0]) || null;
-
-    // ✅ Hash password and store in the correct field
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Create user (uses `password` field only; remove password_hash)
+    // ✅ Create user record
     const user = await prisma.user.create({
       data: {
         email: emailNorm,
@@ -98,7 +98,7 @@ router.post("/signup", async (req, res) => {
     });
 
     const token = signToken({ id: user.id, email: user.email });
-    return res.status(201).json({
+    res.status(201).json({
       ok: true,
       message: "User created",
       token,
@@ -114,13 +114,13 @@ router.post("/signup", async (req, res) => {
       });
     }
     console.error("Signup error:", err);
-    return res
+    res
       .status(500)
       .json({ ok: false, message: "Signup failed", error: err.message });
   }
 });
 
-// 🔑 LOGIN
+/** 🔑 LOGIN — Authenticate User */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
@@ -136,7 +136,6 @@ router.post("/login", async (req, res) => {
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });
 
-    // ✅ Compare hashed password correctly
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid)
       return res
@@ -144,7 +143,7 @@ router.post("/login", async (req, res) => {
         .json({ ok: false, message: "Invalid credentials" });
 
     const token = signToken({ id: user.id, email: user.email });
-    return res.json({
+    res.json({
       ok: true,
       message: "Login success",
       token,
@@ -152,13 +151,13 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    return res
+    res
       .status(500)
       .json({ ok: false, message: "Login failed", error: err.message });
   }
 });
 
-// 👤 PROFILE ("Me")
+/** 👤 PROFILE — Authenticated User Info */
 router.get("/me", authRequired, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -173,13 +172,22 @@ router.get("/me", authRequired, async (req, res) => {
         created_at: true,
       },
     });
-    return res.json({ ok: true, user });
+    res.json({ ok: true, user });
   } catch (err) {
     console.error("Me error:", err);
-    return res
-      .status(500)
-      .json({ ok: false, message: "Failed to fetch profile" });
+    res.status(500).json({ ok: false, message: "Failed to fetch profile" });
   }
 });
 
+/* ───────────────────────────────
+   Diagnostics (Safe to Keep)
+─────────────────────────────── */
+// Optional small log for debugging deploy
+console.log(
+  "✅ auth.js loaded successfully with /signup, /login, and /me routes",
+);
+
+/* ───────────────────────────────
+   Export Router
+─────────────────────────────── */
 export default router;
