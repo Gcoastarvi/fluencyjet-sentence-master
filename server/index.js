@@ -50,7 +50,6 @@ app.use(morgan(isDev ? "dev" : "combined"));
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 /* ─────────────── Route Diagnostic (Temporary for Debugging) ─────────────── */
-import path from "path";
 
 const routesDir = path.resolve("./server/routes");
 console.log("📂 Checking routes directory:", routesDir);
