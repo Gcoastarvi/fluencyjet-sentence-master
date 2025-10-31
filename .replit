@@ -19,11 +19,20 @@ channel = "stable-24_05"
 HOST = "0.0.0.0"
 
 [[ports]]
+localPort = 5555
+externalPort = 3000
+
+[[ports]]
+localPort = 5556
+externalPort = 3001
+
+[[ports]]
+localPort = 5557
+externalPort = 3002
+
+[[ports]]
 localPort = 8080
 externalPort = 80
-
-# 👇 Add this line to auto-open your preview window
-onRun = "open-url http://localhost:8080"
 
 [workflows]
 
