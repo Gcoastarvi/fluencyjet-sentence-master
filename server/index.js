@@ -167,6 +167,26 @@ app.use((err, _req, res, _next) => {
     .json({ ok: false, message: err.message || "Internal Server Error" });
 });
 
+/* ─────────────────────────────── FRONTEND SERVE ───────────────────────────── */
+
+import path from "path";
+import { fileURLToPath } from "url";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// serve the built client
+app.use(express.static(path.join(__dirname, "..", "client", "dist")));
+
+// direct route for your page
+app.get("/typing-quiz", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "client", "dist", "index.html"));
+});
+
+// SPA fallback for client-side routing
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "client", "dist", "index.html"));
+});
+
 /* ────────────────────────────── SERVER STARTUP ────────────────────────────── */
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(
