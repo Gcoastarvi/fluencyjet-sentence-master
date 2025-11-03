@@ -26,6 +26,11 @@ const PORT = process.env.PORT || 8080;
 const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
+// Fix: safely serialize BigInt values in JSON responses
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
+
 
 /* ───────────────────── Global middleware (order matters) ───────────────────── */
 app.disable("x-powered-by");
