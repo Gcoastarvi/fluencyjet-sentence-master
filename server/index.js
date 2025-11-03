@@ -162,6 +162,9 @@ app.use((err, _req, res, _next) => {
     .status(err.status || 500)
     .json({ ok: false, message: err.message || "Internal Server Error" });
 });
+// ✅ Add this below other API routes
+import testRoutes from "./routes/test.js";
+app.use("/api/test", testRoutes);
 
 /* ────────────────────────────── SERVER STARTUP ────────────────────────────── */
 httpServer.listen(PORT, "0.0.0.0", () => {
