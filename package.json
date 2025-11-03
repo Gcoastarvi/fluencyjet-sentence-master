@@ -14,7 +14,8 @@
     "postinstall": "prisma generate",
     "check": "tsc",
     "serve:dist": "npx serve client/dist --listen 8080",
-    "preview": "npm run build && npm run serve:dist"
+    "preview": "npm run build && npm run serve:dist",
+    "patch:enum": "node server/scripts/patch-eventtype-enum.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

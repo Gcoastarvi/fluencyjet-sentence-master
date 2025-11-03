@@ -1,71 +1,96 @@
+// server/routes/progress.js
 import express from "express";
-import pool from "../db/index.js";
+import { PrismaClient } from "@prisma/client";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+const prisma = new PrismaClient();
+
+/* ----------------------------- time helpers ----------------------------- */
+// Monday 00:00 UTC (matches what /api/xp/log returns)
+function weekKeyUTC(d = new Date()) {
+  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = dt.getUTCDay();           // 0..6 Sun..Sat
+  const diff = (day + 6) % 7;           // make Monday = 0
+  dt.setUTCDate(dt.getUTCDate() - diff);
+  dt.setUTCHours(0, 0, 0, 0);
+  return dt;
+}
+// First of month 00:00 UTC
+function monthKeyUTC(d = new Date()) {
+  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+  dt.setUTCHours(0, 0, 0, 0);
+  return dt;
+}
 
 /**
- * 🧠  GET /api/progress/me
- * Returns user’s total XP, streak, badges
+ * 🧠 GET /api/progress/me
+ * Returns the user’s progress. Ensures a row exists and rolls week/month keys forward if stale.
  */
 router.get("/me", authMiddleware, async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT xp, streak, badges, last_active
-       FROM user_progress
-       WHERE user_id = $1`,
-      [req.user.id],
-    );
+    const userId = req.user.id;
+    const wk = weekKeyUTC();
+    const mk = monthKeyUTC();
 
-    if (rows.length === 0) {
-      return res.json({ xp: 0, streak: 0, badges: [] });
+    // Ensure a progress row exists
+    let progress = await prisma.userProgress.findUnique({ where: { user_id: userId } });
+    if (!progress) {
+      progress = await prisma.userProgress.create({
+        data: {
+          user_id: userId,
+          week_key: wk,
+          month_key: mk,
+          week_xp: 0,
+          month_xp: 0,
+          lifetime_xp: 0,
+          badges_awarded: 0,
+        },
+      });
     }
 
-    res.json(rows[0]);
+    // Roll forward week/month buckets if keys are stale
+    const updates: any = {};
+    if (!progress.week_key || progress.week_key.getTime() !== wk.getTime()) {
+      updates.week_key = wk;
+      updates.week_xp = 0;
+    }
+    if (!progress.month_key || progress.month_key.getTime() !== mk.getTime()) {
+      updates.month_key = mk;
+      updates.month_xp = 0;
+    }
+    if (Object.keys(updates).length) {
+      progress = await prisma.userProgress.update({
+        where: { user_id: userId },
+        data: updates,
+      });
+    }
+
+    // Optional: top-10 snapshot for dashboard
+    const weeklyTop = await prisma.userWeeklyTotals.findMany({
+      where: { week_key: wk },
+      orderBy: { week_xp: "desc" },
+      take: 10,
+      select: { user_id: true, week_xp: true, updated_at: true },
+    });
+
+    return res.json({ ok: true, progress, weeklyTop });
   } catch (err) {
-    console.error("❌ Progress fetch failed:", err.message);
-    res
-      .status(500)
-      .json({ message: "Could not load progress data", error: err.message });
+    console.error("❌ /api/progress/me error:", err);
+    return res.status(500).json({ ok: false, message: "Could not load progress data", error: err.message });
   }
 });
 
 /**
- * ⚡ POST /api/progress/update
- * Adds XP + logs the update
+ * ⚠️ POST /api/progress/update  (deprecated)
+ * We now use POST /api/xp/log as the single source of truth for XP writes.
+ * Keep this route for backward compatibility; it forwards a helpful message.
  */
-router.post("/update", authMiddleware, async (req, res) => {
-  const { xpEarned = 0, type = "general", completedQuiz = false } = req.body;
-  const userId = req.user.id;
-
-  try {
-    // Insert or update user_progress cumulatively
-    const upsert = await pool.query(
-      `
-      INSERT INTO user_progress (user_id, xp, streak, badges, last_active)
-      VALUES ($1, $2, 1, '{}', NOW())
-      ON CONFLICT (user_id)
-      DO UPDATE SET
-        xp = user_progress.xp + EXCLUDED.xp,
-        streak = user_progress.streak + 1,
-        last_active = NOW()
-      RETURNING *;
-      `,
-      [userId, xpEarned],
-    );
-
-    // Log the XP event
-    await pool.query(
-      `INSERT INTO user_xp_log (user_id, xp, type)
-       VALUES ($1, $2, $3)`,
-      [userId, xpEarned, type],
-    );
-
-    res.json(upsert.rows[0]);
-  } catch (err) {
-    console.error("❌ XP update failed:", err.message);
-    res.status(500).json({ message: "XP update failed", error: err.message });
-  }
+router.post("/update", authMiddleware, (_req, res) => {
+  return res.status(410).json({
+    ok: false,
+    message: "Deprecated endpoint. Use POST /api/xp/log to record XP events.",
+  });
 });
 
 export default router;
