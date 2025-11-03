@@ -169,11 +169,6 @@ app.use((err, _req, res, _next) => {
 
 /* ─────────────────────────────── FRONTEND SERVE ───────────────────────────── */
 
-import path from "path";
-import { fileURLToPath } from "url";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 // serve the built client
 app.use(express.static(path.join(__dirname, "..", "client", "dist")));
 
