@@ -151,6 +151,10 @@ app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/xp", xpRoutes);
 
+// ✅ Mount test route before 404 handler
+import testRoutes from "./routes/test.js";
+app.use("/api/test", testRoutes);
+
 /* ─────────────────────────────── 404 + ERRORS ─────────────────────────────── */
 app.all("/api/*", (_req, res) =>
   res.status(404).json({ ok: false, message: "API route not found" }),
@@ -162,9 +166,6 @@ app.use((err, _req, res, _next) => {
     .status(err.status || 500)
     .json({ ok: false, message: err.message || "Internal Server Error" });
 });
-// ✅ Add this below other API routes
-import testRoutes from "./routes/test.js";
-app.use("/api/test", testRoutes);
 
 /* ────────────────────────────── SERVER STARTUP ────────────────────────────── */
 httpServer.listen(PORT, "0.0.0.0", () => {
