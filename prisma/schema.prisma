@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,6 +8,8 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+/* ========================= Models ========================= */
 
 model User {
   id          Int               @id @default(autoincrement())
@@ -16,6 +20,7 @@ model User {
   has_access  Boolean           @default(false)
   tier_level  TierLevel         @default(free)
   created_at  DateTime          @default(now())
+
   user_badges UserBadge[]
   progress    UserProgress?
   weekly      UserWeeklyTotals?
@@ -43,6 +48,7 @@ model XpEvent {
   xp_delta   Int
   meta       Json?
   created_at DateTime  @default(now())
+
   user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, created_at])
@@ -51,9 +57,9 @@ model XpEvent {
 
 model Badge {
   id          Int         @id @default(autoincrement())
-  code        String      @unique
+  code        String      @unique        // e.g., B_STARTER, B_7_DAY_STREAK
   name        String
-  threshold   Int
+  threshold   Int                          // e.g., XP needed or streak length
   user_badges UserBadge[]
 
   @@index([threshold])
@@ -64,6 +70,7 @@ model UserBadge {
   user_id    Int
   badge_id   Int
   awarded_at DateTime @default(now())
+
   badge      Badge    @relation(fields: [badge_id], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -71,9 +78,10 @@ model UserBadge {
   @@index([awarded_at])
 }
 
-/// *
-/// * We keep ONE row per user here and "roll" the keys each Monday via the CRON script.
-/// * That makes weekly/monthly leaderboard reads O(1) per user.
+/**
+ * We keep ONE row per user and roll week/month keys via a cron.
+ * Fast reads for weekly/monthly leaderboards.
+ */
 model UserWeeklyTotals {
   user_id    Int      @id
   week_key   DateTime
@@ -81,15 +89,17 @@ model UserWeeklyTotals {
   month_key  DateTime
   month_xp   Int      @default(0)
   updated_at DateTime @default(now())
+
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([week_xp])
   @@index([month_xp])
 }
 
-/// *
-/// * Fast lifetime stats so we don’t SUM(xp_events) every time.
-/// * We still keep xp_events as the source of truth.
+/**
+ * Fast lifetime stats so we don’t SUM(xp_events) each time.
+ * xp_events is still the source of truth.
+ */
 model UserProgress {
   user_id       Int       @id
   total_xp      Int       @default(0)
@@ -99,8 +109,8 @@ model UserProgress {
   @@index([total_xp])
 }
 
-/// *
-/// * ========================= Enums =========================
+/* ========================= Enums ========================= */
+
 enum Difficulty {
   beginner
   intermediate
@@ -113,9 +123,20 @@ enum TierLevel {
   pro
 }
 
+/**
+ * Aligns with the Phase-4 plan and your routes.
+ * Add GENERIC so unknown/legacy values don’t crash writes.
+ */
 enum EventType {
   quiz
   streak
   bonus
   admin
+  QUESTION_CORRECT   // per-question XP
+  QUIZ_COMPLETED     // +300 completion bonus
+  LESSON_COMPLETED   // if you log per-lesson milestones
+  DAILY_STREAK       // +200 first activity of day
+  BADGE_UNLOCK       // informational XP log when a badge is granted
+  ADMIN_ADJUST       // manual admin credit/debit
+  GENERIC            // safe fallback
 }
