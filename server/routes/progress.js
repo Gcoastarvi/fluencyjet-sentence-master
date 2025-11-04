@@ -61,7 +61,12 @@ router.get("/me", authMiddleware, async (req, res) => {
     if (Object.keys(updates).length) {
       progress = await prisma.userProgress.update({
         where: { user_id: userId },
-        data: updates,
+        data: {
+          ...(updates.week_key ? { week_key: new Date(updates.week_key) } : {}),
+          ...(updates.month_key ? { month_key: new Date(updates.month_key) } : {}),
+          ...(updates.week_xp !== undefined ? { week_xp: updates.week_xp } : {}),
+          ...(updates.month_xp !== undefined ? { month_xp: updates.month_xp } : {}),
+        },
       });
     }
 
