@@ -7,16 +7,16 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 /* ----------------------------- time helpers ----------------------------- */
-// Monday 00:00 UTC (matches what /api/xp/log returns)
 function weekKeyUTC(d = new Date()) {
-  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const day = dt.getUTCDay();           // 0..6 Sun..Sat
-  const diff = (day + 6) % 7;           // make Monday = 0
+  const dt = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
+  const day = dt.getUTCDay();
+  const diff = (day + 6) % 7;
   dt.setUTCDate(dt.getUTCDate() - diff);
   dt.setUTCHours(0, 0, 0, 0);
   return dt;
 }
-// First of month 00:00 UTC
 function monthKeyUTC(d = new Date()) {
   const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
   dt.setUTCHours(0, 0, 0, 0);
@@ -25,7 +25,6 @@ function monthKeyUTC(d = new Date()) {
 
 /**
  * 🧠 GET /api/progress/me
- * Returns the user’s progress. Ensures a row exists and rolls week/month keys forward if stale.
  */
 router.get("/me", authMiddleware, async (req, res) => {
   try {
@@ -33,8 +32,9 @@ router.get("/me", authMiddleware, async (req, res) => {
     const wk = weekKeyUTC();
     const mk = monthKeyUTC();
 
-    // Ensure a progress row exists
-    let progress = await prisma.userProgress.findUnique({ where: { user_id: userId } });
+    let progress = await prisma.userProgress.findUnique({
+      where: { user_id: userId },
+    });
     if (!progress) {
       progress = await prisma.userProgress.create({
         data: {
@@ -49,8 +49,7 @@ router.get("/me", authMiddleware, async (req, res) => {
       });
     }
 
-    // Roll forward week/month buckets if keys are stale
-    const updates: any = {};
+    const updates = {};
     if (!progress.week_key || progress.week_key.getTime() !== wk.getTime()) {
       updates.week_key = wk;
       updates.week_xp = 0;
@@ -66,7 +65,6 @@ router.get("/me", authMiddleware, async (req, res) => {
       });
     }
 
-    // Optional: top-10 snapshot for dashboard
     const weeklyTop = await prisma.userWeeklyTotals.findMany({
       where: { week_key: wk },
       orderBy: { week_xp: "desc" },
@@ -77,19 +75,54 @@ router.get("/me", authMiddleware, async (req, res) => {
     return res.json({ ok: true, progress, weeklyTop });
   } catch (err) {
     console.error("❌ /api/progress/me error:", err);
-    return res.status(500).json({ ok: false, message: "Could not load progress data", error: err.message });
+    return res.status(500).json({
+      ok: false,
+      message: "Could not load progress data",
+      error: err.message,
+    });
   }
 });
 
 /**
- * ⚠️ POST /api/progress/update  (deprecated)
- * We now use POST /api/xp/log as the single source of truth for XP writes.
- * Keep this route for backward compatibility; it forwards a helpful message.
+ * 🧾 GET /api/progress/history
+ * Returns last N XP events (default 20)
+ */
+router.get("/history", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const limit = Math.min(parseInt(req.query.limit || "20", 10), 100);
+
+    const events = await prisma.xpEvent.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        event_type: true,
+        xp_delta: true,
+        created_at: true,
+        meta: true,
+      },
+    });
+
+    return res.json({ ok: true, count: events.length, events });
+  } catch (err) {
+    console.error("❌ /api/progress/history error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Could not load XP history",
+      error: err.message,
+    });
+  }
+});
+
+/**
+ * ⚠️ POST /api/progress/update (deprecated)
  */
 router.post("/update", authMiddleware, (_req, res) => {
   return res.status(410).json({
     ok: false,
-    message: "Deprecated endpoint. Use POST /api/xp/log to record XP events.",
+    message: "Deprecated endpoint. Use POST /api/xp/log instead.",
   });
 });
 

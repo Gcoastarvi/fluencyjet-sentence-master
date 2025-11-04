@@ -86,7 +86,6 @@ async function leaderboardDaily(limit = 50) {
 /* -------------------------------- routes ------------------------------- */
 /**
  * GET /api/leaderboard?range=week|month|day&limit=50
- * (Auth optional; add authMiddleware if you want it private)
  */
 router.get("/", async (req, res) => {
   try {
@@ -104,7 +103,7 @@ router.get("/", async (req, res) => {
         ? await leaderboardDaily(limit)
         : await leaderboardFromMaterialized(range, limit);
 
-    res.set("Cache-Control", "public, max-age=30"); // small cache
+    res.set("Cache-Control", "public, max-age=30");
     return res.json({
       ok: true,
       meta: {
@@ -124,7 +123,57 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Convenience aliases (optional)
+/**
+ * 🧍‍♂️ GET /api/leaderboard/me
+ * Returns current user’s rank + a few surrounding peers in the weekly leaderboard.
+ */
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const weekKey = weekKeyUTC();
+
+    // Fetch full ordered leaderboard for the week
+    const all = await prisma.userWeeklyTotals.findMany({
+      where: { week_key: weekKey },
+      orderBy: { week_xp: "desc" },
+      select: { user_id: true, week_xp: true },
+    });
+
+    if (!all.length) {
+      return res.json({ ok: true, message: "No leaderboard data yet" });
+    }
+
+    const idx = all.findIndex((r) => r.user_id === userId);
+    const rank = idx === -1 ? null : idx + 1;
+    const neighbors = all.slice(Math.max(0, idx - 2), idx + 3);
+
+    const ids = neighbors.map((n) => n.user_id);
+    const users = await prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, username: true, avatar_url: true },
+    });
+    const byId = new Map(users.map((u) => [u.id, u]));
+
+    const context = neighbors.map((n) => ({
+      rank: all.findIndex((r) => r.user_id === n.user_id) + 1,
+      user_id: n.user_id,
+      username: byId.get(n.user_id)?.username || `user_${n.user_id}`,
+      avatar_url: byId.get(n.user_id)?.avatar_url || null,
+      week_xp: n.week_xp,
+    }));
+
+    return res.json({ ok: true, rank, context });
+  } catch (err) {
+    console.error("❌ /api/leaderboard/me error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Could not load personal rank",
+      error: err.message,
+    });
+  }
+});
+
+// Convenience aliases
 router.get("/top", (req, res, next) => {
   req.query.range = "week";
   return router.handle(req, res, next);
