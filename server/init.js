@@ -6,19 +6,23 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const prismaSchema = path.resolve(__dirname, "../prisma/schema.prisma");
 const migrationsDir = path.resolve(__dirname, "../prisma/migrations");
 
-function run(cmd, label) {
-  console.log(`🔧 ${label ?? cmd}`);
+function run(cmd, label = "") {
+  console.log(`🔧 ${label || cmd}`);
   try {
-    execSync(cmd, { stdio: "inherit", env: process.env });
-    console.log(`✅ ${label ?? cmd} — OK`);
+    const result = execSync(cmd, { stdio: "pipe", env: process.env });
+    console.log(result.toString());
+    console.log(`✅ ${label || cmd} — OK`);
+    return result.toString();
   } catch (err) {
-    // Preserve the real stdout/stderr that Prisma prints above.
-    console.error(`❌ ${label ?? cmd} — FAILED`);
-    throw err;
+    // combine both stdout and stderr to detect Prisma error codes
+    const output =
+      (err.stdout?.toString() || "") + (err.stderr?.toString() || "");
+    console.error(`❌ ${label || cmd} — FAILED`);
+    console.error(output);
+    return { failed: true, output };
   }
 }
 
@@ -27,52 +31,53 @@ function getFirstMigrationName() {
   const dirs = fs
     .readdirSync(migrationsDir, { withFileTypes: true })
     .filter((d) => d.isDirectory())
-    // migration folders start with a timestamp-like prefix; sort lexicographically
     .map((d) => d.name)
     .sort();
-  return dirs[0] ?? null;
+  return dirs[0] || null;
 }
 
 async function main() {
   console.log("🚀 Prisma bootstrap starting…");
 
-  // 1) Generate client
-  run(
+  // 1️⃣ Generate Prisma client
+  const gen = run(
     `npx prisma generate --schema="${prismaSchema}"`,
     "Generate Prisma Client",
   );
+  if (gen.failed) {
+    console.error("💥 Prisma generate failed. Exiting.");
+    process.exit(1);
+  }
 
-  // 2) Try to deploy migrations
-  try {
-    run(
-      `npx prisma migrate deploy --schema="${prismaSchema}"`,
-      "Deploy Migrations",
-    );
-  } catch (err) {
-    const msg = String(err?.message ?? "");
-    // Auto-baseline only for P3005 (DB not empty, no _prisma_migrations)
-    if (msg.includes("P3005")) {
-      const first = getFirstMigrationName();
-      if (!first) {
-        throw new Error(
-          "No migrations found in prisma/migrations — cannot baseline.",
-        );
-      }
-      console.warn(
-        `⚠️  P3005 detected. Marking "${first}" as applied (baseline) and retrying deploy…`,
-      );
+  // 2️⃣ Try migrations
+  const deploy = run(
+    `npx prisma migrate deploy --schema="${prismaSchema}"`,
+    "Deploy Migrations",
+  );
+
+  if (deploy.failed && deploy.output.includes("P3005")) {
+    console.warn("⚠️ P3005 detected — running baseline resolve...");
+    const first = getFirstMigrationName();
+    if (first) {
       run(
         `npx prisma migrate resolve --applied "${first}" --schema="${prismaSchema}"`,
         `Baseline "${first}"`,
       );
-      // Retry deploy once
-      run(
+      const retry = run(
         `npx prisma migrate deploy --schema="${prismaSchema}"`,
-        "Deploy Migrations (after baseline)",
+        "Retry Deploy After Baseline",
       );
+      if (retry.failed) {
+        console.error("❌ Migration retry failed after baseline.");
+        process.exit(1);
+      }
     } else {
-      throw err; // some other Prisma error; fail fast
+      console.error("❌ No migrations found for baseline. Exiting.");
+      process.exit(1);
     }
+  } else if (deploy.failed) {
+    console.error("💥 Prisma migrate deploy failed with other error.");
+    process.exit(1);
   }
 
   console.log("✅ Prisma ready. Launching Express…");
