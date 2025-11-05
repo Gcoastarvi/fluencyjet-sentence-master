@@ -12,27 +12,28 @@ import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { PrismaClient } from "@prisma/client";
 
-// Routes
+// ── Route imports (declare only here; we'll mount after app is created)
 import authRoutes from "./routes/auth.js";
 import progressRoutes from "./routes/progress.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
 import xpRoutes from "./routes/xp.js";
 import healthRoutes from "./routes/health.js";
-app.use("/api", healthRoutes);
+import testRoutes from "./routes/test.js";
 
 /* ───────────────────────────── Basics ───────────────────────────── */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === "development";
 const PORT = process.env.PORT || 8080;
-const app = express();
+
+const app = express(); // ✅ create app BEFORE using it
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
+
 // Fix: safely serialize BigInt values in JSON responses
 BigInt.prototype.toJSON = function () {
   return this.toString();
 };
-
 
 /* ───────────────────── Global middleware (order matters) ───────────────────── */
 app.disable("x-powered-by");
@@ -80,7 +81,7 @@ app.use((req, _res, next) => {
 app.use(
   rateLimit({
     windowMs: 60 * 1000, // 1 minute
-    max: 100, // limit each IP to 100 requests/min
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
   }),
@@ -95,36 +96,18 @@ if (fs.existsSync(routesDir)) {
   console.log("⚠️ Routes folder missing at:", routesDir);
 }
 
-/* ─────────────────────────── Health & Debug Endpoints ─────────────────────────── */
+/* ──────────────────────────────── API ROUTES ──────────────────────────────── */
 
-// ✅ Lightweight health check
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, mode: isDev ? "development" : "production" });
-});
+// Mount health first (provides /api/health and /api/health/db)
+app.use("/api", healthRoutes);
 
-// ✅ Deep DB check (optional for uptime monitoring)
-app.get("/api/health/full", async (_req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    const [users, lessons, badges] = await Promise.all([
-      prisma.user.count(),
-      prisma.lesson.count(),
-      prisma.badge.count(),
-    ]);
-    res.json({
-      ok: true,
-      db: "up",
-      counts: { users, lessons, badges },
-      mode: isDev ? "development" : "production",
-      time: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.error("❌ /api/health/full error:", err);
-    res.status(500).json({ ok: false, db: "down", error: err.message });
-  }
-});
+// Main APIs
+app.use("/api/auth", authRoutes);
+app.use("/api/progress", progressRoutes);
+app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/xp", xpRoutes);
 
-// 🧩 Optional JWT test — only available in development
+// Dev-only JWT debug helper
 if (isDev) {
   app.get("/api/debug/jwt", (req, res) => {
     try {
@@ -134,32 +117,24 @@ if (isDev) {
         return res
           .status(400)
           .json({ ok: false, message: "Missing Bearer token" });
-
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET || "fluencyjet_secret_2025",
       );
       res.json({ ok: true, decoded });
     } catch (err) {
-      res.status(401).json({
-        ok: false,
-        message: "Invalid or expired token",
-        error: err.message,
-      });
+      res
+        .status(401)
+        .json({
+          ok: false,
+          message: "Invalid or expired token",
+          error: err.message,
+        });
     }
   });
 }
 
-/* ──────────────────────────────── API ROUTES ──────────────────────────────── */
-
-// Mount main APIs
-app.use("/api/auth", authRoutes);
-app.use("/api/progress", progressRoutes);
-app.use("/api/leaderboard", leaderboardRoutes);
-app.use("/api/xp", xpRoutes);
-
-// ✅ Mount test route before 404 handler
-import testRoutes from "./routes/test.js";
+// Test routes (keep before 404)
 app.use("/api/test", testRoutes);
 
 /* ─────────────────────────────── 404 + ERRORS ─────────────────────────────── */
@@ -175,16 +150,13 @@ app.use((err, _req, res, _next) => {
 });
 
 /* ─────────────────────────────── FRONTEND SERVE ───────────────────────────── */
-
-// serve the built client
 app.use(express.static(path.join(__dirname, "..", "client", "dist")));
 
-// direct route for your page
 app.get("/typing-quiz", (_req, res) => {
   res.sendFile(path.join(__dirname, "..", "client", "dist", "index.html"));
 });
 
-// SPA fallback for client-side routing
+// SPA fallback
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "..", "client", "dist", "index.html"));
 });
