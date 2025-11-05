@@ -17,6 +17,8 @@ import authRoutes from "./routes/auth.js";
 import progressRoutes from "./routes/progress.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
 import xpRoutes from "./routes/xp.js";
+import healthRoutes from "./routes/health.js";
+app.use("/api", healthRoutes);
 
 /* ───────────────────────────── Basics ───────────────────────────── */
 const __filename = fileURLToPath(import.meta.url);
