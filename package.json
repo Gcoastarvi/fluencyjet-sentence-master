@@ -12,7 +12,6 @@
     "build": "npm --prefix client install --omit=dev && npm --prefix client run build",
     "start": "NODE_ENV=production node server/init.js",
     "postinstall": "prisma generate",
-    "check": "tsc",
     "serve:dist": "npx serve client/dist --listen 8080",
     "preview": "npm run build && npm run serve:dist",
     "patch:enum": "node server/scripts/patch-eventtype-enum.js"
