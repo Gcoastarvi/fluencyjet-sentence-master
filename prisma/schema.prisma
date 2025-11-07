@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,8 +6,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-/* ========================= Models ========================= */
 
 model User {
   id          Int               @id @default(autoincrement())
@@ -20,7 +16,6 @@ model User {
   has_access  Boolean           @default(false)
   tier_level  TierLevel         @default(free)
   created_at  DateTime          @default(now())
-
   user_badges UserBadge[]
   progress    UserProgress?
   weekly      UserWeeklyTotals?
@@ -48,7 +43,6 @@ model XpEvent {
   xp_delta   Int
   meta       Json?
   created_at DateTime  @default(now())
-
   user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id, created_at])
@@ -57,9 +51,9 @@ model XpEvent {
 
 model Badge {
   id          Int         @id @default(autoincrement())
-  code        String      @unique        // e.g., B_STARTER, B_7_DAY_STREAK
+  code        String      @unique
   name        String
-  threshold   Int                          // e.g., XP needed or streak length
+  threshold   Int
   user_badges UserBadge[]
 
   @@index([threshold])
@@ -70,7 +64,6 @@ model UserBadge {
   user_id    Int
   badge_id   Int
   awarded_at DateTime @default(now())
-
   badge      Badge    @relation(fields: [badge_id], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
@@ -78,10 +71,8 @@ model UserBadge {
   @@index([awarded_at])
 }
 
-/**
- * We keep ONE row per user and roll week/month keys via a cron.
- * Fast reads for weekly/monthly leaderboards.
- */
+/// *
+/// * One row per user; fast reads for weekly/monthly leaderboards.
 model UserWeeklyTotals {
   user_id    Int      @id
   week_key   DateTime
@@ -89,27 +80,31 @@ model UserWeeklyTotals {
   month_key  DateTime
   month_xp   Int      @default(0)
   updated_at DateTime @default(now())
-
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([week_xp])
   @@index([month_xp])
 }
 
-/**
- * Fast lifetime stats so we don’t SUM(xp_events) each time.
- * xp_events is still the source of truth.
- */
+/// *
+/// * Progress snapshot + rolling “bucket” keys used by /api/progress/me.
+/// * We keep legacy fields (total_xp/last_activity) for compatibility.
 model UserProgress {
-  user_id       Int       @id
-  total_xp      Int       @default(0)
-  last_activity DateTime?
-  user          User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id        Int       @id
+  total_xp       Int       @default(0)
+  last_activity  DateTime?
+  week_key       DateTime  @default(dbgenerated("date_trunc('week'::text, (now() AT TIME ZONE 'utc'::text))")) @db.Timestamptz(6)
+  month_key      DateTime  @default(dbgenerated("date_trunc('month'::text, (now() AT TIME ZONE 'utc'::text))")) @db.Timestamptz(6)
+  week_xp        Int       @default(0)
+  month_xp       Int       @default(0)
+  lifetime_xp    Int       @default(0)
+  badges_awarded Int       @default(0)
+  user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([total_xp])
+  @@index([week_key])
+  @@index([month_key])
 }
-
-/* ========================= Enums ========================= */
 
 enum Difficulty {
   beginner
@@ -123,20 +118,16 @@ enum TierLevel {
   pro
 }
 
-/**
- * Aligns with the Phase-4 plan and your routes.
- * Add GENERIC so unknown/legacy values don’t crash writes.
- */
 enum EventType {
   quiz
   streak
   bonus
   admin
-  QUESTION_CORRECT   // per-question XP
-  QUIZ_COMPLETED     // +300 completion bonus
-  LESSON_COMPLETED   // if you log per-lesson milestones
-  DAILY_STREAK       // +200 first activity of day
-  BADGE_UNLOCK       // informational XP log when a badge is granted
-  ADMIN_ADJUST       // manual admin credit/debit
-  GENERIC            // safe fallback
+  QUESTION_CORRECT
+  QUIZ_COMPLETED
+  LESSON_COMPLETED
+  DAILY_STREAK
+  BADGE_UNLOCK
+  ADMIN_ADJUST
+  GENERIC
 }

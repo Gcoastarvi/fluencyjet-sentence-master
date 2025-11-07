@@ -12,7 +12,7 @@ import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { PrismaClient } from "@prisma/client";
 
-// ── Route imports (declare only here; we'll mount after app is created)
+// ── Route imports
 import authRoutes from "./routes/auth.js";
 import progressRoutes from "./routes/progress.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
@@ -26,20 +26,23 @@ const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === "development";
 const PORT = process.env.PORT || 8080;
 
-const app = express(); // ✅ create app BEFORE using it
+const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
 
-// Fix: safely serialize BigInt values in JSON responses
-BigInt.prototype.toJSON = function () {
-  return this.toString();
-};
+// Safely serialize BigInt in JSON responses
+if (!("toJSON" in BigInt.prototype)) {
+  // @ts-ignore
+  BigInt.prototype.toJSON = function () {
+    return this.toString();
+  };
+}
 
 /* ───────────────────── Global middleware (order matters) ───────────────────── */
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
-// 🧠 Security middleware
+// Security
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -47,7 +50,7 @@ app.use(
   }),
 );
 
-// 🌍 Tightened CORS configuration
+// CORS (tight)
 const allowedOrigins = [
   "http://localhost:5173",
   "https://fluencyjet.app",
@@ -56,31 +59,61 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
+      if (!origin || allowedOrigins.includes(origin))
+        return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   }),
 );
 
-// 🧾 Logging & parsing
+// Logging
 app.use(morgan(isDev ? "dev" : "combined"));
-app.use(express.json({ limit: "1mb" }));
+
+/**
+ * 💡 Two small guards that permanently solve
+ * “Unexpected end of JSON input” on GET/HEAD/DELETE when Postman
+ * accidentally sends Content-Type: application/json with no body.
+ */
+
+// 1) Strip stray JSON Content-Type for body-less safe methods
+app.use((req, _res, next) => {
+  const ct = req.headers["content-type"] || "";
+  const safeMethod =
+    req.method === "GET" || req.method === "HEAD" || req.method === "DELETE";
+  const noBody =
+    !req.headers["content-length"] &&
+    !req.headers["transfer-encoding"] &&
+    (req.rawBody == null || req.rawBody === "");
+  if (safeMethod && noBody && ct.includes("application/json")) {
+    delete req.headers["content-type"];
+  }
+  next();
+});
+
+// 2) Safe JSON parser that returns a friendly 400 on bad JSON
+app.use((req, res, next) => {
+  express.json({ limit: "1mb" })(req, res, (err) => {
+    if (err && err.type === "entity.parse.failed") {
+      return res.status(400).json({ ok: false, message: "Invalid JSON body" });
+    }
+    next(err);
+  });
+});
+
+// URL-encoded (after JSON)
 app.use(express.urlencoded({ extended: false }));
 
-// 🧩 URL normalization middleware
+// URL normalization (trims stray spaces)
 app.use((req, _res, next) => {
   req.url = req.url.trim();
   next();
 });
 
-// 🚦 Basic rate limiting (prevents brute force & spam)
+// Basic rate limiting
 app.use(
   rateLimit({
-    windowMs: 60 * 1000, // 1 minute
+    windowMs: 60 * 1000,
     max: 100,
     standardHeaders: true,
     legacyHeaders: false,
@@ -98,7 +131,7 @@ if (fs.existsSync(routesDir)) {
 
 /* ──────────────────────────────── API ROUTES ──────────────────────────────── */
 
-// Mount health first (provides /api/health and /api/health/db)
+// Health first (/api/health, /api/health/db)
 app.use("/api", healthRoutes);
 
 // Main APIs
@@ -123,13 +156,11 @@ if (isDev) {
       );
       res.json({ ok: true, decoded });
     } catch (err) {
-      res
-        .status(401)
-        .json({
-          ok: false,
-          message: "Invalid or expired token",
-          error: err.message,
-        });
+      res.status(401).json({
+        ok: false,
+        message: "Invalid or expired token",
+        error: err.message,
+      });
     }
   });
 }
@@ -142,6 +173,7 @@ app.all("/api/*", (_req, res) =>
   res.status(404).json({ ok: false, message: "API route not found" }),
 );
 
+// Central error handler
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
   res
