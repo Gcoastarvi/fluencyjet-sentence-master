@@ -8,31 +8,28 @@ const router = express.Router();
 
 /* ------------------------------ time helpers ------------------------------ */
 // Monday 00:00:00 UTC (start of current ISO week)
-function weekStartUTC() {
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  // JS: Sunday=0 … Saturday=6; we want Monday start
-  const diff = (d.getUTCDay() + 6) % 7; // Monday -> 0
-  d.setUTCDate(d.getUTCDate() - diff);
-  return d;
+function weekStartUTC(d = new Date()) {
+  const dt = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
+  // JS: Sunday=0 … Saturday=6; we want Monday=1
+  const diff = (dt.getUTCDay() + 6) % 7; // Monday -> 0
+  dt.setUTCDate(dt.getUTCDate() - diff);
+  dt.setUTCHours(0, 0, 0, 0);
+  return dt;
 }
 // Month 1st 00:00:00 UTC
-function monthStartUTC() {
-  const n = new Date();
-  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), 1, 0, 0, 0, 0));
+function monthStartUTC(d = new Date()) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0, 0));
 }
 
 /* ----------------------------- event normalization ----------------------------- */
 /**
- * Your DB enum now contains these **exact** values:
+ * Your DB enum contains these **exact** values:
  *   Lowercase (legacy): 'quiz', 'streak', 'bonus', 'admin'
  *   Uppercase (granular): 'QUESTION_CORRECT', 'QUIZ_COMPLETED', 'LESSON_COMPLETED',
  *                         'DAILY_STREAK', 'BADGE_UNLOCK', 'ADMIN_ADJUST', 'GENERIC'
- *
- * We accept friendly inputs (any case) and normalize to the DB-safe value.
  */
-
-// The exact strings that exist in the DB enum
 const DB_EVENT_TYPES = new Set([
   "quiz",
   "streak",
@@ -47,14 +44,14 @@ const DB_EVENT_TYPES = new Set([
   "GENERIC",
 ]);
 
-// Common aliases → canonical enum value
+// Friendly aliases → canonical enum value
 const EVENT_ALIASES = new Map([
-  // generic forms
+  // generic
   ["generic", "GENERIC"],
   ["default", "GENERIC"],
   ["other", "GENERIC"],
 
-  // granular (uppercase) – allow snake & space & hyphen variations
+  // granular (snake, hyphen, space)
   ["question_correct", "QUESTION_CORRECT"],
   ["question-correct", "QUESTION_CORRECT"],
   ["question correct", "QUESTION_CORRECT"],
@@ -79,172 +76,323 @@ const EVENT_ALIASES = new Map([
   ["admin-adjust", "ADMIN_ADJUST"],
   ["admin adjust", "ADMIN_ADJUST"],
 
-  // legacy lowercase types map to themselves (keep dashboards stable)
+  // legacy lowercase passthroughs
   ["quiz", "quiz"],
   ["streak", "streak"],
   ["bonus", "bonus"],
   ["admin", "admin"],
 ]);
 
-function toKey(s) {
-  return String(s || "")
+const toKey = (s) =>
+  String(s || "")
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ")
-    .replace(/[\s-]+/g, "_"); // normalize spaces/hyphens to underscores
-}
+    .replace(/[\s-]+/g, "_"); // spaces/hyphens → underscores
 
 function normalizeEventType(input) {
-  // Try alias map first
-  const key = toKey(input);
-  const aliased = EVENT_ALIASES.get(key);
-  if (aliased && DB_EVENT_TYPES.has(aliased)) return aliased;
+  const key = EVENT_ALIASES.get(toKey(input));
+  if (key && DB_EVENT_TYPES.has(key)) return key;
 
-  // If caller already passed an exact DB value, keep it
-  if (DB_EVENT_TYPES.has(String(input))) return String(input);
+  const exact = String(input || "");
+  if (DB_EVENT_TYPES.has(exact)) return exact;
 
-  // If they passed an uppercase-ish granular value, try uppercase directly
-  const upper = String(input || "")
-    .trim()
-    .toUpperCase();
+  const upper = exact.trim().toUpperCase();
   if (DB_EVENT_TYPES.has(upper)) return upper;
 
-  // Fallback to a safe enum value that definitely exists in DB
   return "GENERIC";
 }
 
 /* ----------------------------- input validation ---------------------------- */
-function parseXp(x) {
-  const n = parseInt(x, 10);
-  if (Number.isNaN(n)) return null;
+function parseAmount(x) {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return null;
   // guardrails
-  return Math.max(-100000, Math.min(100000, n));
+  return Math.max(-100000, Math.min(100000, Math.trunc(n)));
 }
 
-/* --------------------------------- endpoint -------------------------------- */
+/* ----------------------------- internal helpers ---------------------------- */
 /**
- * POST /api/xp/log
- * Body JSON:
- * {
- *   "event_type":  one of:
- *     - legacy: "quiz" | "streak" | "bonus" | "admin"
- *     - granular: "QUESTION_CORRECT" | "QUIZ_COMPLETED" | "LESSON_COMPLETED" |
- *                 "DAILY_STREAK" | "BADGE_UNLOCK" | "ADMIN_ADJUST" | "GENERIC"
- *     - or a friendly alias like "question_correct", "badge-unlock", "generic", etc.
- *   "xp_delta":   number (positive or negative)
- *   "meta":       object (optional)
- * }
- * Auth: Bearer <jwt>
+ * Ensures a UserProgress row exists for a user. We DO NOT set week/month keys
+ * on create; your DB defaults populate them.
+ */
+async function ensureProgress(tx, userId) {
+  let p = await tx.userProgress.findUnique({ where: { user_id: userId } });
+  if (!p) {
+    p = await tx.userProgress.create({
+      data: {
+        user_id: userId,
+        // week_key/month_key default in DB; don't set them here
+        week_xp: 0,
+        month_xp: 0,
+        lifetime_xp: 0,
+        total_xp: 0,
+        badges_awarded: 0,
+        last_activity: new Date(),
+      },
+    });
+  }
+  return p;
+}
+
+/**
+ * Writes an XP event and updates aggregates in one transaction.
+ * Updates:
+ *   - XpEvent (append)
+ *   - UserWeeklyTotals (upsert + increment week/month)
+ *   - UserProgress (upsert + increment week/month/lifetime/total)
+ */
+async function writeXp(tx, userId, amount, eventType, meta) {
+  const wk = weekStartUTC();
+  const mk = monthStartUTC();
+
+  const event = await tx.xpEvent.create({
+    data: { user_id: userId, event_type: eventType, xp_delta: amount, meta },
+  });
+
+  await tx.userWeeklyTotals.upsert({
+    where: { user_id: userId },
+    update: {
+      week_key: wk,
+      month_key: mk,
+      week_xp: { increment: amount },
+      month_xp: { increment: amount },
+      updated_at: new Date(),
+    },
+    create: {
+      user_id: userId,
+      week_key: wk,
+      month_key: mk,
+      week_xp: amount,
+      month_xp: amount,
+    },
+  });
+
+  await tx.userProgress.upsert({
+    where: { user_id: userId },
+    create: {
+      user_id: userId,
+      // let DB set week_key/month_key
+      week_xp: amount,
+      month_xp: amount,
+      lifetime_xp: amount,
+      total_xp: amount,
+      last_activity: new Date(),
+    },
+    update: {
+      week_xp: { increment: amount },
+      month_xp: { increment: amount },
+      lifetime_xp: { increment: amount },
+      total_xp: { increment: amount },
+      last_activity: new Date(),
+    },
+  });
+
+  return event;
+}
+
+/* --------------------------------- endpoints -------------------------------- */
+
+/**
+ * GET /api/xp/balance
+ * Returns the user's current XP counters.
+ */
+router.get("/balance", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // ensure a progress row so first-time users don't 404
+    const progress = await prisma.$transaction(async (tx) => {
+      await ensureProgress(tx, userId);
+      return tx.userProgress.findUnique({ where: { user_id: userId } });
+    });
+
+    return res.json({
+      ok: true,
+      balance: {
+        week_xp: progress.week_xp,
+        month_xp: progress.month_xp,
+        lifetime_xp: progress.lifetime_xp,
+        total_xp: progress.total_xp ?? progress.lifetime_xp,
+        week_key: progress.week_key,
+        month_key: progress.month_key,
+        last_activity: progress.last_activity,
+      },
+    });
+  } catch (err) {
+    console.error("xp/balance error:", err);
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message: "Failed to load XP balance",
+        error: String(err?.message || err),
+      });
+  }
+});
+
+/**
+ * POST /api/xp/award
+ * Body: { amount: number, event?: string, meta?: object }
+ */
+router.post("/award", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const amount = parseAmount(req.body?.amount);
+    if (amount === null || amount === 0) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "amount must be a non-zero number" });
+    }
+    const eventType = normalizeEventType(req.body?.event || "GENERIC");
+    const meta = req.body?.meta ?? undefined;
+
+    const result = await prisma.$transaction(async (tx) => {
+      await ensureProgress(tx, userId);
+      const ev = await writeXp(tx, userId, amount, eventType, meta);
+      const prog = await tx.userProgress.findUnique({
+        where: { user_id: userId },
+      });
+      return { ev, prog };
+    });
+
+    return res.json({
+      ok: true,
+      message: "XP awarded",
+      event: result.ev,
+      balance: {
+        week_xp: result.prog.week_xp,
+        month_xp: result.prog.month_xp,
+        lifetime_xp: result.prog.lifetime_xp,
+        total_xp: result.prog.total_xp ?? result.prog.lifetime_xp,
+      },
+    });
+  } catch (err) {
+    console.error("xp/award error:", err);
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message: "Failed to award XP",
+        error: String(err?.message || err),
+      });
+  }
+});
+
+/**
+ * POST /api/xp/add
+ * Body: { amount: number, reason?: string, meta?: object }
+ * Admin-style adjust; default event = ADMIN_ADJUST (can be negative).
+ */
+router.post("/add", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const amount = parseAmount(req.body?.amount);
+    if (amount === null || amount === 0) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "amount must be a non-zero number" });
+    }
+    const eventType = normalizeEventType(req.body?.reason || "ADMIN_ADJUST");
+    const meta = req.body?.meta ?? undefined;
+
+    const result = await prisma.$transaction(async (tx) => {
+      await ensureProgress(tx, userId);
+      await writeXp(tx, userId, amount, eventType, meta);
+      return tx.userProgress.findUnique({ where: { user_id: userId } });
+    });
+
+    return res.json({
+      ok: true,
+      balance: {
+        week_xp: result.week_xp,
+        month_xp: result.month_xp,
+        lifetime_xp: result.lifetime_xp,
+        total_xp: result.total_xp ?? result.lifetime_xp,
+      },
+    });
+  } catch (err) {
+    console.error("xp/add error:", err);
+    return res
+      .status(500)
+      .json({
+        ok: false,
+        message: "Failed to add XP",
+        error: String(err?.message || err),
+      });
+  }
+});
+
+/**
+ * POST /api/xp/log   (compat layer for your existing tests)
+ * Body: { event_type: string, xp_delta: number, meta?: object }
+ * Internally delegates to the same logic as /award.
  */
 router.post("/log", authMiddleware, async (req, res) => {
-  const userId = req.user?.id;
-  const xpValue = parseXp(req.body?.xp_delta);
-  const eventType = normalizeEventType(req.body?.event_type);
-  const meta = req.body?.meta ?? {};
-
-  if (!userId)
-    return res.status(401).json({ ok: false, message: "Unauthorized" });
-  if (xpValue === null) {
-    return res
-      .status(400)
-      .json({ ok: false, message: "xp_delta must be a number" });
-  }
-
-  const weekKey = weekStartUTC();
-  const monthKey = monthStartUTC();
-
   try {
-    // 1) Write XP + update aggregates atomically
-    const [log] = await prisma.$transaction([
-      prisma.xpEvent.create({
-        data: {
-          user_id: userId,
-          event_type: eventType, // exact Prisma enum string
-          xp_delta: xpValue,
-          meta,
-        },
-      }),
-      prisma.userWeeklyTotals.upsert({
-        where: { user_id: userId },
-        update: {
-          week_key: weekKey,
-          month_key: monthKey,
-          week_xp: { increment: xpValue },
-          month_xp: { increment: xpValue },
-          updated_at: new Date(),
-        },
-        create: {
-          user_id: userId,
-          week_key: weekKey,
-          month_key: monthKey,
-          week_xp: xpValue,
-          month_xp: xpValue,
-        },
-      }),
-      prisma.userProgress.upsert({
-        where: { user_id: userId },
-        update: {
-          total_xp: { increment: xpValue },
-          last_activity: new Date(),
-        },
-        create: {
-          user_id: userId,
-          total_xp: xpValue,
-          last_activity: new Date(),
-        },
-      }),
-    ]);
-
-    // 2) Lifetime XP from events
-    const lifetimeAgg = await prisma.xpEvent.aggregate({
-      _sum: { xp_delta: true },
-      where: { user_id: userId },
-    });
-    const lifetimeXp = lifetimeAgg._sum.xp_delta || 0;
-
-    // 3) Badge award (if you’ve seeded Badge table)
-    const newlyEarned = await prisma.badge.findMany({
-      where: {
-        threshold: { lte: lifetimeXp },
-        user_badges: { none: { user_id: userId } },
-      },
-      select: { id: true, code: true },
-    });
-
-    if (newlyEarned.length) {
-      await prisma.userBadge.createMany({
-        data: newlyEarned.map((b) => ({ user_id: userId, badge_id: b.id })),
-        skipDuplicates: true,
-      });
+    const userId = req.user.id;
+    const xpValue = parseAmount(req.body?.xp_delta);
+    if (xpValue === null || xpValue === 0) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "xp_delta must be a non-zero number" });
     }
+    const eventType = normalizeEventType(req.body?.event_type || "GENERIC");
+    const meta = req.body?.meta ?? undefined;
 
-    // 4) Return fresh totals
-    const totals = await prisma.userWeeklyTotals.findUnique({
-      where: { user_id: userId },
-      select: {
-        week_xp: true,
-        month_xp: true,
-        week_key: true,
-        month_key: true,
-        updated_at: true,
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      await ensureProgress(tx, userId);
+      const ev = await writeXp(tx, userId, xpValue, eventType, meta);
+      const prog = await tx.userProgress.findUnique({
+        where: { user_id: userId },
+      });
+      return { ev, prog };
     });
 
     return res.json({
       ok: true,
       message: "XP logged successfully",
-      event: log,
-      totals,
-      lifetime_xp: lifetimeXp,
-      badges_awarded: newlyEarned.map((b) => b.code),
+      event: result.ev,
+      balance: {
+        week_xp: result.prog.week_xp,
+        month_xp: result.prog.month_xp,
+        lifetime_xp: result.prog.lifetime_xp,
+        total_xp: result.prog.total_xp ?? result.prog.lifetime_xp,
+      },
     });
   } catch (err) {
-    console.error("❌ XP log error:", err);
+    console.error("xp/log error:", err);
     return res
       .status(500)
       .json({
         ok: false,
         message: "Failed to log XP",
+        error: String(err?.message || err),
+      });
+  }
+});
+
+/**
+ * GET /api/xp/events?limit=50
+ * Quick inspector for recent events of the authenticated user.
+ */
+router.get("/events", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50));
+    const items = await prisma.xpEvent.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
+      take: limit,
+    });
+    res.json({ ok: true, events: items });
+  } catch (err) {
+    console.error("xp/events error:", err);
+    res
+      .status(500)
+      .json({
+        ok: false,
+        message: "Failed to load events",
         error: String(err?.message || err),
       });
   }
