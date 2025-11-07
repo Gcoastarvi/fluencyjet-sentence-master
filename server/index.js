@@ -31,8 +31,9 @@ const httpServer = createServer(app);
 const prisma = new PrismaClient();
 
 // Safely serialize BigInt in JSON responses
+// @ts-ignore
 if (!("toJSON" in BigInt.prototype)) {
-  // @ts-ignore
+  // eslint-disable-next-line no-extend-native
   BigInt.prototype.toJSON = function () {
     return this.toString();
   };
@@ -71,29 +72,29 @@ app.use(
 app.use(morgan(isDev ? "dev" : "combined"));
 
 /**
- * 💡 Two small guards that permanently solve
- * “Unexpected end of JSON input” on GET/HEAD/DELETE when Postman
- * accidentally sends Content-Type: application/json with no body.
+ * 💡 Permanent fix for “Invalid/Unexpected end of JSON input” on GETs
+ * Postman sometimes sends `Content-Type: application/json` with an empty body
+ * for GET/HEAD/OPTIONS. We:
+ * 1) Strip stray JSON content-type when there is no body
+ * 2) Skip JSON parsing entirely for GET/HEAD/OPTIONS
  */
 
 // 1) Strip stray JSON Content-Type for body-less safe methods
 app.use((req, _res, next) => {
   const ct = req.headers["content-type"] || "";
-  const safeMethod =
-    req.method === "GET" || req.method === "HEAD" || req.method === "DELETE";
+  const safeMethod = ["GET", "HEAD", "OPTIONS"].includes(req.method);
   const noBody =
-    !req.headers["content-length"] &&
-    !req.headers["transfer-encoding"] &&
-    (req.rawBody == null || req.rawBody === "");
+    !req.headers["content-length"] && !req.headers["transfer-encoding"];
   if (safeMethod && noBody && ct.includes("application/json")) {
     delete req.headers["content-type"];
   }
   next();
 });
 
-// 2) Safe JSON parser that returns a friendly 400 on bad JSON
+// 2) Safe JSON parser — ONLY for non-safe methods
 app.use((req, res, next) => {
-  express.json({ limit: "1mb" })(req, res, (err) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+  return express.json({ limit: "1mb" })(req, res, (err) => {
     if (err && err.type === "entity.parse.failed") {
       return res.status(400).json({ ok: false, message: "Invalid JSON body" });
     }
@@ -133,6 +134,19 @@ if (fs.existsSync(routesDir)) {
 
 // Health first (/api/health, /api/health/db)
 app.use("/api", healthRoutes);
+
+// Small diag endpoint (optional)
+app.get("/api/_echo", (req, res) => {
+  res.json({
+    ok: true,
+    method: req.method,
+    hasBody: !!req.body,
+    headers: {
+      "content-type": req.headers["content-type"] || null,
+      "content-length": req.headers["content-length"] || null,
+    },
+  });
+});
 
 // Main APIs
 app.use("/api/auth", authRoutes);
@@ -176,9 +190,10 @@ app.all("/api/*", (_req, res) =>
 // Central error handler
 app.use((err, _req, res, _next) => {
   console.error("Unhandled error:", err);
-  res
-    .status(err.status || 500)
-    .json({ ok: false, message: err.message || "Internal Server Error" });
+  res.status(err.status || 500).json({
+    ok: false,
+    message: err.message || "Internal Server Error",
+  });
 });
 
 /* ─────────────────────────────── FRONTEND SERVE ───────────────────────────── */
