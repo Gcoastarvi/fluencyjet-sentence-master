@@ -51,17 +51,35 @@ app.use(
   }),
 );
 
-// CORS (tight)
-const allowedOrigins = [
+// server/index.js  (CORS section)
+
+const allowedOriginsStatic = [
   "http://localhost:5173",
-  "https://fluencyjet.app",
+  "https://app.fluencyjet.com",
   "https://fluencyjet-sentence-master.vercel.app",
+  "https://fluencyjet-sentence-master-production.up.railway.app", // ✅ your backend URL
 ];
+
+// Optionally support comma-separated env list: FRONTEND_ORIGINS="https://a.com,https://b.com"
+const envOrigins = (process.env.FRONTEND_ORIGINS || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set([...allowedOriginsStatic, ...envOrigins]);
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin))
-        return callback(null, true);
+      // Allow non-browser clients (Postman/cURL) which send no Origin
+      if (!origin) return callback(null, true);
+
+      // Exact match in allowlist
+      if (allowedOrigins.has(origin)) return callback(null, true);
+
+      // (Optional) allow any future *.up.railway.app you might spin up
+      if (origin.endsWith(".up.railway.app")) return callback(null, true);
+
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
