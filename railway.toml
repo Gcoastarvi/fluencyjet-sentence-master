@@ -1,5 +1,5 @@
 # =======================================
-# 🚀 FluencyJet Frontend-Only Deployment
+# 🚀 FluencyJet Frontend-Only Deployment (Final Fix)
 # Project: laudable-spirit
 # Framework: Vite + React (Static Build)
 # =======================================
@@ -21,10 +21,10 @@ cmds = [
 ]
 
 [start]
-# ✅ 'serve' must listen on 0.0.0.0 (not localhost)
-cmd = "npx serve -s dist -l tcp://0.0.0.0:8080"
+# ✅ Serve must bind to 0.0.0.0 for Railway
+cmd = "npx serve -s dist --listen 0.0.0.0:8080"
 
-# ✅ Tell Railway which port to expose
+# ✅ Tell Railway to expose the port
 [[ports]]
 internal_port = 8080
 external_port = 8080
