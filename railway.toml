@@ -1,7 +1,7 @@
 # =======================================
 # 🚀 FluencyJet Frontend-Only Deployment
 # Project: laudable-spirit
-# Framework: Vite + React
+# Framework: Vite + React (Static Build)
 # =======================================
 
 [build]
@@ -10,26 +10,27 @@ builder = "NIXPACKS"
 [phases.setup]
 nixPkgs = ["nodejs_22", "npm_9_x", "openssl"]
 
-# --- Install Phase ---
 [phases.install]
 cmds = [
   "npm install --no-audit --no-fund"
 ]
 
-# --- Build Phase ---
 [phases.build]
 cmds = [
   "npm run build"
 ]
 
-# --- Start Command ---
 [start]
-cmd = "npx serve -s dist -l 8080"
+# ✅ 'serve' must listen on 0.0.0.0 (not localhost)
+cmd = "npx serve -s dist -l tcp://0.0.0.0:8080"
 
-# --- Environment Variables ---
+# ✅ Tell Railway which port to expose
+[[ports]]
+internal_port = 8080
+external_port = 8080
+protocol = "http"
+
 [variables]
 NODE_ENV = "production"
 PORT = "8080"
-
-# Your backend API endpoint (already deployed on Railway)
 VITE_API_BASE_URL = "https://fluencyjet-sentence-master-production.up.railway.app"
