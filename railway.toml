@@ -1,8 +1,8 @@
-# ===============================
-# 🚀 FluencyJet Full Stack Config
-# Backend: Express (server/)
-# Frontend: Vite + React (client/)
-# ===============================
+# =======================================
+# 🚀 FluencyJet Frontend-Only Deployment
+# Project: laudable-spirit
+# Framework: Vite + React
+# =======================================
 
 [build]
 builder = "NIXPACKS"
@@ -13,26 +13,23 @@ nixPkgs = ["nodejs_22", "npm_9_x", "openssl"]
 # --- Install Phase ---
 [phases.install]
 cmds = [
-  # install root + server + client dependencies
-  "npm install --no-audit --no-fund",
-  "cd client && npm install --no-audit --no-fund && cd .."
+  "npm install --no-audit --no-fund"
 ]
 
 # --- Build Phase ---
 [phases.build]
 cmds = [
-  # build frontend first
-  "cd client && npm run build && cd ..",
-  # then bundle the backend (if TypeScript used)
-  "mkdir -p dist && esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
+  "npm run build"
 ]
 
 # --- Start Command ---
 [start]
-cmd = "NODE_ENV=production PORT=8080 node dist/index.js"
+cmd = "npx serve -s dist -l 8080"
 
 # --- Environment Variables ---
 [variables]
 NODE_ENV = "production"
 PORT = "8080"
+
+# Your backend API endpoint (already deployed on Railway)
 VITE_API_BASE_URL = "https://fluencyjet-sentence-master-production.up.railway.app"
