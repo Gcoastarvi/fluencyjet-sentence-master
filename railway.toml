@@ -1,7 +1,7 @@
 # =======================================
-# 🚀 FluencyJet Frontend-Only Deployment (Final Fix)
+# 🚀 FluencyJet Frontend-Only Deployment (Final)
 # Project: laudable-spirit
-# Framework: Vite + React (Static Build)
+# Framework: Vite + React
 # =======================================
 
 [build]
@@ -12,7 +12,7 @@ nixPkgs = ["nodejs_22", "npm_9_x", "openssl"]
 
 [phases.install]
 cmds = [
-  "npm install --no-audit --no-fund"
+  "npm ci"
 ]
 
 [phases.build]
@@ -21,10 +21,10 @@ cmds = [
 ]
 
 [start]
-# ✅ Serve must bind to 0.0.0.0 for Railway
+# ✅ Bind to all interfaces, not localhost
 cmd = "npx serve -s dist --listen 0.0.0.0:8080"
 
-# ✅ Tell Railway to expose the port
+# ✅ Tell Railway which port to expose
 [[ports]]
 internal_port = 8080
 external_port = 8080
