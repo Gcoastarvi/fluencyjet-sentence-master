@@ -1,18 +1,38 @@
+# ===============================
+# 🚀 FluencyJet Full Stack Config
+# Backend: Express (server/)
+# Frontend: Vite + React (client/)
+# ===============================
+
 [build]
 builder = "NIXPACKS"
 
 [phases.setup]
 nixPkgs = ["nodejs_22", "npm_9_x", "openssl"]
 
+# --- Install Phase ---
 [phases.install]
 cmds = [
-  "npm install --no-audit --no-fund"
+  # install root + server + client dependencies
+  "npm install --no-audit --no-fund",
+  "cd client && npm install --no-audit --no-fund && cd .."
 ]
 
+# --- Build Phase ---
 [phases.build]
 cmds = [
-  "cd client && npm install --no-audit --no-fund && npm run build && cd .. && esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
+  # build frontend first
+  "cd client && npm run build && cd ..",
+  # then bundle the backend (if TypeScript used)
+  "mkdir -p dist && esbuild server/index.ts --platform=node --bundle --format=esm --outfile=dist/index.js"
 ]
 
+# --- Start Command ---
 [start]
-cmd = "node dist/index.js"
+cmd = "NODE_ENV=production PORT=8080 node dist/index.js"
+
+# --- Environment Variables ---
+[variables]
+NODE_ENV = "production"
+PORT = "8080"
+VITE_API_BASE_URL = "https://fluencyjet-sentence-master-production.up.railway.app"
