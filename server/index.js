@@ -5,6 +5,7 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -39,11 +40,9 @@ if (!("toJSON" in BigInt.prototype)) {
   };
 }
 
-/* ───────────────────── Global middleware (order matters) ───────────────────── */
+/* ───────────────────── Global security & proxy ───────────────────── */
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
-
-// Security
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -51,44 +50,48 @@ app.use(
   }),
 );
 
-// server/index.js  (CORS section)
-
-const allowedOriginsStatic = [
-  "http://localhost:5173",
-  "https://app.fluencyjet.com",
-  "https://fluencyjet-sentence-master.vercel.app",
-  "https://fluencyjet-sentence-master-production.up.railway.app", // ✅ your backend URL
+/* ─────────────────────────────── CORS CONFIG ─────────────────────────────── */
+const allowedOrigins = [
+  "http://localhost:5173", // local dev
+  "https://fluencyjet-sentence-master-production-de09.up.railway.app", // deployed frontend
+  "https://fluencyjet-sentence-master-production.up.railway.app", // backend
+  "https://fluencyjet-sentence-master.vercel.app", // optional
+  "https://app.fluencyjet.com", // future custom domain
+  "https://fluencyjet.com",
 ];
 
-// Optionally support comma-separated env list: FRONTEND_ORIGINS="https://a.com,https://b.com"
-const envOrigins = (process.env.FRONTEND_ORIGINS || "")
+// Merge with comma-separated env list FRONTEND_ORIGINS
+const extraOrigins = (process.env.FRONTEND_ORIGINS || "")
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
 
-const allowedOrigins = new Set([...allowedOriginsStatic, ...envOrigins]);
+const finalAllowlist = new Set([...allowedOrigins, ...extraOrigins]);
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow non-browser clients (Postman/cURL) which send no Origin
-      if (!origin) return callback(null, true);
-
-      // Exact match in allowlist
-      if (allowedOrigins.has(origin)) return callback(null, true);
-
-      // (Optional) allow any future *.up.railway.app you might spin up
+      if (!origin) return callback(null, true); // Postman/cURL
+      if (finalAllowlist.has(origin)) return callback(null, true);
       if (origin.endsWith(".up.railway.app")) return callback(null, true);
-
+      console.warn("🚫 CORS blocked request from:", origin);
       return callback(new Error("Not allowed by CORS"));
     },
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Origin",
+      "Accept",
+      "X-Requested-With",
+    ],
     credentials: true,
+    optionsSuccessStatus: 200,
   }),
 );
 
-// Logging
+/* ─────────────────────────────── Logging ─────────────────────────────── */
 app.use(morgan(isDev ? "dev" : "combined"));
-
 /**
  * 💡 Permanent fix for “Invalid/Unexpected end of JSON input” on GETs
  * Postman sometimes sends `Content-Type: application/json` with an empty body
