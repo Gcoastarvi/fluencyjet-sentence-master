@@ -4,15 +4,12 @@ import { signupUser, loginUser } from "../api";
 import { autoRedirectIfLoggedIn } from "../utils/authRedirect";
 
 export default function Signup() {
+  // 🔁 Auto-redirect if already logged in
   useEffect(() => {
     autoRedirectIfLoggedIn();
   }, []);
 
-  // rest of your existing Signup component continues...
-
-  // ... rest of your component remains the same
-
-export default function Signup() {
+  // 🧩 State management
   const [mode, setMode] = useState("signup");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,6 +17,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // ⚡ Handle form submission
   async function handleSubmit(e) {
     e.preventDefault();
     setMsg("");
@@ -27,6 +25,7 @@ export default function Signup() {
 
     try {
       if (mode === "signup") {
+        // 🔹 API call for signup
         const res = await signupUser({ name, email, password });
         console.log("Signup response:", res.data);
 
@@ -38,6 +37,7 @@ export default function Signup() {
           setMsg(res.data?.message || "Signup complete. Please log in.");
         }
       } else {
+        // 🔹 API call for login
         const res = await loginUser({ email, password });
         console.log("Login response:", res.data);
 
@@ -61,12 +61,14 @@ export default function Signup() {
     }
   }
 
+  // 🧱 UI Rendering
   return (
     <div className="flex flex-col items-center mt-16">
       <h2 className="text-3xl font-bold text-indigo-700 mb-4">
         Join FluencyJet
       </h2>
 
+      {/* Mode toggle (Signup / Login) */}
       <div className="flex space-x-4 mb-6">
         <button
           onClick={() => setMode("signup")}
@@ -90,6 +92,7 @@ export default function Signup() {
         </button>
       </div>
 
+      {/* Auth form */}
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-sm space-y-4 bg-white p-6 rounded-xl shadow-md"
@@ -132,11 +135,13 @@ export default function Signup() {
         </button>
       </form>
 
+      {/* Status message */}
       {msg && (
         <p
-          className={`mt-4 text-sm ${
+          className={`mt-4 text-sm text-center px-4 ${
             msg.toLowerCase().includes("error") ||
-            msg.toLowerCase().includes("failed")
+            msg.toLowerCase().includes("failed") ||
+            msg.toLowerCase().includes("network")
               ? "text-red-600"
               : "text-green-600"
           }`}
