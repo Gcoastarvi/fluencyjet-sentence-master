@@ -7,7 +7,8 @@ import Paywall from "@/pages/Paywall";
 import Admin from "@/pages/Admin";
 import Leaderboard from "@/pages/Leaderboard";
 import TypingQuiz from "@/pages/TypingQuiz";
-import { testHealth } from "@/api/testConnection"; // ✅ Import connection test
+import Login from "@/pages/Login"; // ✅ Added new page
+import { testHealth } from "@/api/testConnection"; // ✅ API health test
 
 export default function App() {
   // 🧠 Test API health when app loads
@@ -31,6 +32,9 @@ export default function App() {
             <Link to="/typing-quiz">Typing Quiz</Link>
             <Link to="/paywall">Paywall</Link>
             <Link to="/admin">Admin</Link>
+            <Link to="/login" className="text-indigo-600 font-semibold">
+              Login
+            </Link>
           </nav>
         </header>
 
@@ -42,6 +46,7 @@ export default function App() {
           <Route path="/typing-quiz" element={<TypingQuiz />} />
           <Route path="/paywall" element={<Paywall />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/login" element={<Login />} /> {/* ✅ Added */}
         </Routes>
       </div>
     </BrowserRouter>

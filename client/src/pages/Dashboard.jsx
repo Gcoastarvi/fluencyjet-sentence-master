@@ -1,18 +1,41 @@
 // client/src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
+import { getUserProfile } from "../api";
 import { fetchMyProgress, awardXP } from "@/lib/xpTracker";
 import LessonCard from "@/components/LessonCard";
 import LockBadge from "@/components/LockBadge";
 import { API_BASE } from "@/lib/api";
 
 export default function Dashboard() {
+  const [user, setUser] = useState(null);
   const [lessons, setLessons] = useState([]);
-  const [hasAccess] = useState(false); // keep as-is until paywall is wired
+  const [hasAccess] = useState(false);
   const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
 
+  // ✅ Load User Profile from Backend
+  useEffect(() => {
+    async function loadUser() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setErr("Please login first.");
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await getUserProfile(token);
+        setUser(res.data);
+      } catch (e) {
+        console.error("Failed to load profile:", e);
+        setErr("Unable to fetch user profile. Please login again.");
+      }
+    }
+    loadUser();
+  }, []);
+
+  // ✅ Load Progress from XP Tracker
   async function loadProgress() {
     setLoading(true);
     setErr("");
@@ -29,24 +52,20 @@ export default function Dashboard() {
     }
   }
 
-  // Load user progress once after mount
+  // Load progress and lessons on mount
   useEffect(() => {
     loadProgress();
-    // Optionally re-fetch when the tab regains focus
+
     const onFocus = () => loadProgress();
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, []);
 
-  // Load lesson list (fallback if endpoint not present)
-  useEffect(() => {
+    // Fetch lesson list (fallback if no API)
     fetch(`${API_BASE}/api/lessons`)
       .then((r) =>
         r.ok ? r.json() : Promise.reject(new Error("No lessons API")),
       )
       .then((list) => setLessons(Array.isArray(list) ? list : []))
       .catch(() => {
-        // harmless placeholder
         setLessons([
           {
             title: "Basics 1",
@@ -57,9 +76,11 @@ export default function Dashboard() {
           { title: "Past Tense", description: "Narrating events" },
         ]);
       });
+
+    return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  // Simulate XP for debugging
+  // ✅ Simulate XP for Debugging
   async function simulateXP() {
     try {
       const updated = await awardXP({
@@ -77,14 +98,16 @@ export default function Dashboard() {
     }
   }
 
+  // 🧩 Render Section
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-5">
+    <div className="max-w-2xl mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-indigo-700">Your Dashboard</h2>
+        <h2 className="text-2xl font-bold text-indigo-700">
+          {user ? `Welcome, ${user.name || "Learner"} 🎉` : "Your Dashboard"}
+        </h2>
         <button
           onClick={loadProgress}
           className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full hover:opacity-90"
-          aria-label="Refresh progress"
         >
           Refresh
         </button>
@@ -94,7 +117,7 @@ export default function Dashboard() {
         Earn XP by completing lessons daily!
       </p>
 
-      {loading && <p className="text-center text-gray-500">Loading…</p>}
+      {loading && <p className="text-center text-gray-500">Loading...</p>}
       {err && !loading && <p className="text-center text-red-500">{err}</p>}
 
       {!loading && !err && !progress && (
@@ -115,8 +138,6 @@ export default function Dashboard() {
               style={{
                 width: `${Math.min(((progress.xp ?? 0) % 1000) / 10, 100)}%`,
               }}
-              aria-label="XP progress"
-              role="progressbar"
             />
           </div>
 
