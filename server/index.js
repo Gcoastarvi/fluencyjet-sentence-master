@@ -5,7 +5,6 @@ import { createServer } from "http";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
-
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -13,7 +12,7 @@ import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { PrismaClient } from "@prisma/client";
 
-// ── Route imports
+// routes...
 import authRoutes from "./routes/auth.js";
 import progressRoutes from "./routes/progress.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
@@ -21,26 +20,17 @@ import xpRoutes from "./routes/xp.js";
 import healthRoutes from "./routes/health.js";
 import testRoutes from "./routes/test.js";
 
-/* ───────────────────────────── Basics ───────────────────────────── */
+// ── basics
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === "development";
 const PORT = process.env.PORT || 8080;
 
-const app = express();
+const app = express(); // ✅ create app FIRST
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
 
-// Safely serialize BigInt in JSON responses
-// @ts-ignore
-if (!("toJSON" in BigInt.prototype)) {
-  // eslint-disable-next-line no-extend-native
-  BigInt.prototype.toJSON = function () {
-    return this.toString();
-  };
-}
-
-/* ───────────────────── Global security & proxy ───────────────────── */
+// security middlewares
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 app.use(
@@ -50,48 +40,40 @@ app.use(
   }),
 );
 
-/* ─────────────────────────────── CORS CONFIG ─────────────────────────────── */
-const allowedOrigins = [
-  "http://localhost:5173", // local dev
-  "https://fluencyjet-sentence-master-production-de09.up.railway.app", // deployed frontend
+// ───────────────────── CORS (place here, before any routes) ─────────────────────
+const allowlist = new Set([
+  "http://localhost:5173",
+  "https://fluencyjet-sentence-master-production-de09.up.railway.app", // frontend
   "https://fluencyjet-sentence-master-production.up.railway.app", // backend
-  "https://fluencyjet-sentence-master.vercel.app", // optional
-  "https://app.fluencyjet.com", // future custom domain
+  "https://fluencyjet-sentence-master.vercel.app",
+  "https://app.fluencyjet.com",
   "https://fluencyjet.com",
-];
+  ...(process.env.FRONTEND_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+]);
 
-// Merge with comma-separated env list FRONTEND_ORIGINS
-const extraOrigins = (process.env.FRONTEND_ORIGINS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
+const corsMiddleware = cors({
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // Postman/cURL
+    if (allowlist.has(origin)) return cb(null, true);
+    if (origin.endsWith(".up.railway.app")) return cb(null, true);
+    console.warn("🚫 CORS blocked:", origin);
+    return cb(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Origin", "Accept"],
+  optionsSuccessStatus: 200,
+});
+app.use(corsMiddleware);
+app.options("*", corsMiddleware); // ✅ preflight replies
 
-const finalAllowlist = new Set([...allowedOrigins, ...extraOrigins]);
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // Postman/cURL
-      if (finalAllowlist.has(origin)) return callback(null, true);
-      if (origin.endsWith(".up.railway.app")) return callback(null, true);
-      console.warn("🚫 CORS blocked request from:", origin);
-      return callback(new Error("Not allowed by CORS"));
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "Origin",
-      "Accept",
-      "X-Requested-With",
-    ],
-    credentials: true,
-    optionsSuccessStatus: 200,
-  }),
-);
-
-/* ─────────────────────────────── Logging ─────────────────────────────── */
+// logging (after CORS so OPTIONS show up cleanly)
 app.use(morgan(isDev ? "dev" : "combined"));
+
+// … your JSON/body middleware, rate limiters, routes, static serve, listen(), etc.
 /**
  * 💡 Permanent fix for “Invalid/Unexpected end of JSON input” on GETs
  * Postman sometimes sends `Content-Type: application/json` with an empty body
