@@ -1,7 +1,7 @@
 // client/src/pages/Signup.jsx
 import { useState, useEffect } from "react";
 import { signupUser, loginUser } from "../api";
-import { autoRedirectIfLoggedIn } from "../utils/authRedirect";
+import { autoRedirectIfLoggedIn } from "@/utils/authRedirect";
 
 export default function Signup() {
   // 🔁 Auto-redirect if already logged in
