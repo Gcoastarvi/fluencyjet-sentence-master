@@ -8,6 +8,8 @@ export default function Signup() {
     autoRedirectIfLoggedIn();
   }, []);
 
+  // rest of your existing Signup component continues...
+
   // ... rest of your component remains the same
 
 export default function Signup() {

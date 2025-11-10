@@ -8,7 +8,8 @@ import Admin from "@/pages/Admin";
 import Leaderboard from "@/pages/Leaderboard";
 import TypingQuiz from "@/pages/TypingQuiz";
 import Login from "@/pages/Login";
-import Signup from "@/pages/Signup"; // ✅ Added Signup page
+import Signup from "@/pages/Signup";
+import ProtectedRoute from "@/components/ProtectedRoute"; // ✅ Added
 import { testHealth } from "@/api/testConnection";
 
 export default function App() {
@@ -61,13 +62,52 @@ export default function App() {
         {/* 🔀 Routes */}
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/typing-quiz" element={<TypingQuiz />} />
-          <Route path="/paywall" element={<Paywall />} />
-          <Route path="/admin" element={<Admin />} />
+
+          {/* ✅ Protected routes (require login) */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <ProtectedRoute>
+                <Leaderboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/typing-quiz"
+            element={
+              <ProtectedRoute>
+                <TypingQuiz />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/paywall"
+            element={
+              <ProtectedRoute>
+                <Paywall />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <Admin />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* 🧾 Public routes */}
           <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} /> {/* ✅ Added */}
+          <Route path="/signup" element={<Signup />} />
         </Routes>
       </div>
     </BrowserRouter>
