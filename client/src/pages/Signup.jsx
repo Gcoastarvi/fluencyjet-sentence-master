@@ -1,6 +1,14 @@
 // client/src/pages/Signup.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signupUser, loginUser } from "../api";
+import { autoRedirectIfLoggedIn } from "../utils/authRedirect";
+
+export default function Signup() {
+  useEffect(() => {
+    autoRedirectIfLoggedIn();
+  }, []);
+
+  // ... rest of your component remains the same
 
 export default function Signup() {
   const [mode, setMode] = useState("signup");
