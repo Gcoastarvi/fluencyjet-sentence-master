@@ -15,27 +15,32 @@ export default function Dashboard() {
   const [err, setErr] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
 
-  // ✅ Load User Profile from Backend
+  /* ────────────────────────────────
+     ✅ 1. Load User Profile
+  ──────────────────────────────── */
   useEffect(() => {
-    async function loadUser() {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setErr("Please login first.");
-        setLoading(false);
-        return;
-      }
+    async function loadUserProfile() {
       try {
-        const res = await getUserProfile(token);
-        setUser(res.data);
+        const res = await getUserProfile();
+        if (res?.data?.user) {
+          setUser(res.data.user);
+        } else if (res?.data?.name) {
+          // some backends return directly { name, email }
+          setUser(res.data);
+        } else {
+          setErr("Please login to view your dashboard.");
+        }
       } catch (e) {
         console.error("Failed to load profile:", e);
-        setErr("Unable to fetch user profile. Please login again.");
+        setErr("Unable to fetch user profile. Please log in again.");
       }
     }
-    loadUser();
+    loadUserProfile();
   }, []);
 
-  // ✅ Load Progress from XP Tracker
+  /* ────────────────────────────────
+     ✅ 2. Load XP Progress
+  ──────────────────────────────── */
   async function loadProgress() {
     setLoading(true);
     setErr("");
@@ -52,14 +57,15 @@ export default function Dashboard() {
     }
   }
 
-  // Load progress and lessons on mount
+  /* ────────────────────────────────
+     ✅ 3. Load Lessons
+  ──────────────────────────────── */
   useEffect(() => {
     loadProgress();
 
     const onFocus = () => loadProgress();
     window.addEventListener("focus", onFocus);
 
-    // Fetch lesson list (fallback if no API)
     fetch(`${API_BASE}/api/lessons`)
       .then((r) =>
         r.ok ? r.json() : Promise.reject(new Error("No lessons API")),
@@ -80,7 +86,9 @@ export default function Dashboard() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  // ✅ Simulate XP for Debugging
+  /* ────────────────────────────────
+     ✅ 4. Simulate XP (Debug)
+  ──────────────────────────────── */
   async function simulateXP() {
     try {
       const updated = await awardXP({
@@ -98,13 +106,16 @@ export default function Dashboard() {
     }
   }
 
-  // 🧩 Render Section
+  /* ────────────────────────────────
+     🧩 5. Render UI
+  ──────────────────────────────── */
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-indigo-700">
           {user ? `Welcome, ${user.name || "Learner"} 🎉` : "Your Dashboard"}
         </h2>
+
         <button
           onClick={loadProgress}
           className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full hover:opacity-90"
