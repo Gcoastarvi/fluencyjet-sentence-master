@@ -2,29 +2,24 @@
 import axios from "axios";
 import { API_BASE_URL } from "./config";
 
-// Auth APIs
-export const signupUser = (data) =>
-  axios.post(`${API_BASE_URL}/api/auth/signup`, data);
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+});
 
-export const loginUser = (data) =>
-  axios.post(`${API_BASE_URL}/api/auth/login`, data);
+// ✅ Signup
+export function signupUser(data) {
+  return api.post("/api/auth/signup", data);
+}
 
-export const getUserProfile = (token) =>
-  axios.get(`${API_BASE_URL}/api/auth/me`, {
+// ✅ Login
+export function loginUser(data) {
+  return api.post("/api/auth/login", data);
+}
+
+// ✅ Profile
+export function getUserProfile(token) {
+  return api.get("/api/auth/me", {
     headers: { Authorization: `Bearer ${token}` },
   });
-
-// Progress APIs
-export const getProgress = (userId) =>
-  axios.get(`${API_BASE_URL}/api/progress/${userId}`);
-
-export const updateProgress = (userId, data) =>
-  axios.post(`${API_BASE_URL}/api/progress/${userId}`, data);
-
-// Leaderboard APIs
-export const getLeaderboard = () =>
-  axios.get(`${API_BASE_URL}/api/leaderboard`);
-
-// XP APIs
-export const addXP = (userId, data) =>
-  axios.post(`${API_BASE_URL}/api/xp/${userId}`, data);
+}
