@@ -1,28 +1,35 @@
 // client/src/utils/authRedirect.js
-import { getUserProfile } from "../api";
 
-/**
- * Checks if user already logged in (token present & valid).
- * If valid → redirect to /dashboard.
- * If invalid → clear token.
- */
-// client/src/utils/authRedirect.js
+/** If already logged in, send user to /dashboard (used on /login and /signup). */
 export function autoRedirectIfLoggedIn() {
-  const token = localStorage.getItem("token");
-  if (token) {
-    window.location.href = "/dashboard";
+  try {
+    const token = localStorage.getItem("token");
+    if (token) window.location.href = "/dashboard";
+  } catch {
+    /* no-op */
   }
 }
 
+/** Guard for pages that should require auth if you want to call it imperatively. */
+export function requireAuth() {
   try {
-    const res = await getUserProfile();
-    if (res?.data?.user || res?.data?.name) {
-      window.location.href = "/dashboard";
-    } else {
-      localStorage.removeItem("token");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+      return false;
     }
-  } catch (err) {
-    console.warn("Token expired or invalid:", err.message);
+    return true;
+  } catch {
+    window.location.href = "/login";
+    return false;
+  }
+}
+
+/** Logout helper for header buttons, etc. */
+export function logoutAndRedirect() {
+  try {
     localStorage.removeItem("token");
+  } finally {
+    window.location.href = "/login";
   }
 }

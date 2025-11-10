@@ -1,4 +1,15 @@
 // client/src/App.jsx
+// at top
+import { logoutAndRedirect } from "@/utils/authRedirect";
+
+// inside <nav> … after Sign Up link:
+<button
+  onClick={logoutAndRedirect}
+  className="text-sm bg-red-500 text-white px-3 py-1 rounded-full hover:opacity-90"
+>
+  Logout
+</button>;
+
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Home from "@/pages/Home";
@@ -9,11 +20,10 @@ import Leaderboard from "@/pages/Leaderboard";
 import TypingQuiz from "@/pages/TypingQuiz";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
-import ProtectedRoute from "@/components/ProtectedRoute"; // ✅ Added
+import ProtectedRoute from "@/components/ProtectedRoute"; // ✅ wrapper
 import { testHealth } from "@/api/testConnection";
 
 export default function App() {
-  // 🧠 Test backend connection once on load
   useEffect(() => {
     testHealth();
   }, []);
@@ -63,7 +73,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
 
-          {/* ✅ Protected routes (require login) */}
+          {/* ✅ Protected pages */}
           <Route
             path="/dashboard"
             element={
@@ -105,7 +115,7 @@ export default function App() {
             }
           />
 
-          {/* 🧾 Public routes */}
+          {/* Public pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Routes>
