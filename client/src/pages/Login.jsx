@@ -1,55 +1,90 @@
-import React, { useState } from "react";
+// client/src/pages/Login.jsx
+import { useState } from "react";
 import { loginUser } from "../api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState("");
 
   async function handleLogin(e) {
     e.preventDefault();
+    setMsg("");
+    setLoading(true);
+
     try {
-      const response = await loginUser({ email, password });
-      console.log("Logged in:", response.data);
-      setMessage("✅ Login successful!");
+      const res = await loginUser({ email, password });
+      console.log("Login response:", res.data);
 
-      // Optionally save token
-      localStorage.setItem("token", response.data.token);
-
-      // Redirect or show Dashboard
-      window.location.href = "/dashboard";
+      if (res.data?.token) {
+        localStorage.setItem("token", res.data.token);
+        setMsg("Login successful! Redirecting...");
+        setTimeout(() => (window.location.href = "/dashboard"), 1000);
+      } else {
+        setMsg(res.data?.message || "Login successful!");
+      }
     } catch (err) {
-      console.error("Login failed:", err.response?.data || err.message);
-      setMessage("❌ Login failed. Please check your credentials.");
+      console.error("Login failed:", err);
+      const apiMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "Network error. Please try again.";
+      setMsg(apiMsg);
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <div className="flex flex-col items-center p-6">
-      <h1 className="text-2xl font-semibold mb-4">Login</h1>
-      <form onSubmit={handleLogin} className="flex flex-col gap-3 w-80">
+    <div className="flex flex-col items-center mt-16">
+      <h2 className="text-3xl font-bold text-indigo-700 mb-4">
+        Join FluencyJet
+      </h2>
+
+      <form
+        onSubmit={handleLogin}
+        className="w-full max-w-sm space-y-4 bg-white p-6 rounded-xl shadow-md"
+      >
         <input
           type="email"
           placeholder="Email"
-          className="border p-2 rounded"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
+          className="w-full border p-2 rounded"
         />
+
         <input
           type="password"
           placeholder="Password"
-          className="border p-2 rounded"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
+          className="w-full border p-2 rounded"
         />
+
         <button
           type="submit"
-          className="bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+          disabled={loading}
+          className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 disabled:opacity-70"
         >
-          Sign In
+          {loading ? "Please wait..." : "Login"}
         </button>
       </form>
-      {message && <p className="mt-4">{message}</p>}
+
+      {msg && (
+        <p
+          className={`mt-4 text-sm ${
+            msg.toLowerCase().includes("error") ||
+            msg.toLowerCase().includes("failed")
+              ? "text-red-600"
+              : "text-green-600"
+          }`}
+        >
+          {msg}
+        </p>
+      )}
     </div>
   );
 }

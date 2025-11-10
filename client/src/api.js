@@ -1,25 +1,29 @@
+// client/src/api.js
 import axios from "axios";
 import { API_BASE_URL } from "./config";
 
 export const api = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: `${API_BASE_URL}/api/auth`, // ✅ ensures calls hit /api/auth/*
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
-// ✅ Signup
-export function signupUser(data) {
-  return api.post("/api/auth/signup", data);
+// ---- Auth APIs ----
+export async function signupUser(data) {
+  return api.post("/signup", data); // -> /api/auth/signup
 }
 
-// ✅ Login
-export function loginUser(data) {
-  return api.post("/api/auth/login", data);
+export async function loginUser(data) {
+  return api.post("/login", data); // -> /api/auth/login
 }
 
-// ✅ Profile
-export function getUserProfile(token) {
-  return api.get("/api/auth/me", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+// ---- Health check (optional) ----
+export async function testHealth() {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/health`);
+    console.log("✅ Backend health:", res.data);
+    return res.data;
+  } catch (err) {
+    console.error("❌ Backend unreachable:", err.message);
+  }
 }

@@ -18,22 +18,34 @@ export default function Signup() {
     try {
       if (mode === "signup") {
         const res = await signupUser({ name, email, password });
+        console.log("Signup response:", res.data);
+
         if (res.data?.token) {
           localStorage.setItem("token", res.data.token);
           setMsg("Signup successful! Redirecting...");
           setTimeout(() => (window.location.href = "/dashboard"), 1000);
         } else {
-          setMsg("Signup completed, please login.");
+          setMsg(res.data?.message || "Signup complete. Please log in.");
         }
       } else {
         const res = await loginUser({ email, password });
-        localStorage.setItem("token", res.data.token);
-        setMsg("Login successful! Redirecting...");
-        setTimeout(() => (window.location.href = "/dashboard"), 1000);
+        console.log("Login response:", res.data);
+
+        if (res.data?.token) {
+          localStorage.setItem("token", res.data.token);
+          setMsg("Login successful! Redirecting...");
+          setTimeout(() => (window.location.href = "/dashboard"), 1000);
+        } else {
+          setMsg(res.data?.message || "Login successful!");
+        }
       }
     } catch (err) {
       console.error("Auth error:", err);
-      setMsg(err.response?.data?.message || "Network error. Please try again.");
+      const apiMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "Network error. Please try again.";
+      setMsg(apiMsg);
     } finally {
       setLoading(false);
     }
@@ -113,7 +125,8 @@ export default function Signup() {
       {msg && (
         <p
           className={`mt-4 text-sm ${
-            msg.toLowerCase().includes("error") || msg.includes("failed")
+            msg.toLowerCase().includes("error") ||
+            msg.toLowerCase().includes("failed")
               ? "text-red-600"
               : "text-green-600"
           }`}
