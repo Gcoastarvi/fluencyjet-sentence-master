@@ -127,11 +127,15 @@ export default function Dashboard() {
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       {/* ✅ Toast stack container */}
+      {/* ✅ Toast stack container with staggered animation */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 space-y-2">
-        {toasts.map((t) => (
+        {toasts.map((t, i) => (
           <div
             key={t.id}
-            className="bg-gray-900 text-white px-4 py-2 rounded-xl shadow-lg animate-slide-down-fade"
+            className="bg-gray-900 text-white px-4 py-2 rounded-xl shadow-lg toast-seq-enter"
+            style={{
+              animationDelay: `${i * 0.15}s`, // ⏱️ each toast enters 150ms after the previous one
+            }}
           >
             {t.msg}
           </div>

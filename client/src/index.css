@@ -51,3 +51,10 @@ body {
 .animate-slide-down-fade {
   animation: slide-down-fade 0.5s ease-out forwards;
 }
+
+/* 🪄 Sequential toast entrance animation */
+.toast-seq-enter {
+  animation: slide-down-fade 0.5s ease-out forwards;
+}
+
+/* Each toast will get a staggered delay via inline style */
