@@ -54,10 +54,9 @@ body {
 
 /* 🪄 Sequential toast entrance animation */
 .toast-seq-enter {
-  animation: slide-down-fade 0.5s ease-out forwards;
+  animation: toastBounceIn 0.55s cubic-bezier(0.22, 1.4, 0.36, 1) forwards;
 }
 
-/* Each toast will get a staggered delay via inline style */
 /* 🌬️ Toast exit animation (soft fade + slide up) */
 @keyframes toastExit {
   from {
@@ -73,7 +72,6 @@ body {
 
 .toast-exit {
   animation: toastExit 0.6s ease forwards;
-  /* was 0.4s */
 }
 
 /* 🪩 Toast entrance bounce animation */
@@ -97,7 +95,45 @@ body {
   }
 }
 
-/* Attach bounce to entry class */
-.toast-seq-enter {
-  animation: toastBounceIn 0.55s cubic-bezier(0.22, 1.4, 0.36, 1) forwards;
+/* 🌈 Toast color themes + glowing shadows */
+.toast-success {
+  background-color: #10b981;
+  /* Tailwind emerald-500 */
+  color: white;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.toast-error {
+  background-color: #ef4444;
+  /* Tailwind red-500 */
+  color: white;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.toast-warning {
+  background-color: #f59e0b;
+  /* Tailwind amber-500 */
+  color: white;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+}
+
+.toast-info {
+  background-color: #3b82f6;
+  /* Tailwind blue-500 */
+  color: white;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+}
+
+/* 🧈 Base toast style */
+.toast {
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.3s ease;
+}
+
+/* 🫧 Hover gently increases glow */
+.toast:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.15), 0 0 14px currentColor;
 }
