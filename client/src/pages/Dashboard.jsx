@@ -22,36 +22,31 @@ export default function Dashboard() {
   // 🔁 Add a toast safely (auto remove after 3s with exit animation)
   // 🔁 Add a toast with automatic type detection + color/icon
   const pushToast = (msg, type = "info") => {
-    // 🔹 Auto-detect type from message text if not provided
+    const id = Date.now();
+    const toast = { id, msg, type, exiting: false, timer: null };
+
+    // Auto-detect type from text if not passed
     const lower = msg.toLowerCase();
     if (!type) {
-      if (
-        lower.includes("success") ||
-        lower.includes("saved") ||
-        lower.includes("done")
-      )
+      if (lower.includes("success") || lower.includes("saved"))
         type = "success";
       else if (lower.includes("error") || lower.includes("fail"))
         type = "error";
       else if (lower.includes("warn") || lower.includes("expire"))
         type = "warning";
-      else type = "info";
     }
 
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, msg, type, exiting: false }]);
-
-    // start exit animation
-    setTimeout(() => {
+    // schedule auto-dismiss
+    toast.timer = setTimeout(() => {
       setToasts((prev) =>
         prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)),
       );
-    }, 2700);
+      setTimeout(() => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      }, 400);
+    }, 3000);
 
-    // remove completely
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3100);
+    setToasts((prev) => [...prev, toast]);
   };
 
   // ✅ Session refresh listener
@@ -158,6 +153,7 @@ export default function Dashboard() {
       {/* ✅ Toast stack container (newest at bottom, like Duolingo/Discord) */}
       {/* ✅ Toast container (Duolingo style, colored + icon) */}
       {/* ✅ Toast container (click-to-dismiss + colors + animation) */}
+      {/* ✅ Toast container (pause on hover + click to dismiss) */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse space-y-reverse space-y-2">
         {toasts.map((t, i) => {
           const colors = {
@@ -174,13 +170,11 @@ export default function Dashboard() {
           };
 
           const handleClick = () => {
-            // Trigger exit animation immediately
             setToasts((prev) =>
               prev.map((toast) =>
                 toast.id === t.id ? { ...toast, exiting: true } : toast,
               ),
             );
-            // Fully remove after short delay (matches exit animation)
             setTimeout(() => {
               setToasts((prev) => prev.filter((toast) => toast.id !== t.id));
             }, 400);
@@ -190,13 +184,38 @@ export default function Dashboard() {
             <div
               key={t.id}
               onClick={handleClick}
+              onMouseEnter={() => {
+                if (t.timer) clearTimeout(t.timer); // 🛑 pause timer
+              }}
+              onMouseLeave={() => {
+                // ⏯ resume timer only if not exiting
+                if (!t.exiting) {
+                  const timeout = setTimeout(() => {
+                    setToasts((prev) =>
+                      prev.map((toast) =>
+                        toast.id === t.id ? { ...toast, exiting: true } : toast,
+                      ),
+                    );
+                    setTimeout(() => {
+                      setToasts((prev) =>
+                        prev.filter((toast) => toast.id !== t.id),
+                      );
+                    }, 400);
+                  }, 3000);
+                  setToasts((prev) =>
+                    prev.map((toast) =>
+                      toast.id === t.id ? { ...toast, timer: timeout } : toast,
+                    ),
+                  );
+                }
+              }}
               className={`${colors[t.type] || "bg-gray-800"} text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-transform active:scale-95 ${
                 t.exiting ? "toast-exit" : "toast-seq-enter"
               }`}
               style={{
                 animationDelay: !t.exiting ? `${i * 0.15}s` : "0s",
               }}
-              title="Click to dismiss"
+              title="Click to dismiss • Hover to pause"
             >
               <span>{icons[t.type] || "💬"}</span>
               <span>{t.msg}</span>
