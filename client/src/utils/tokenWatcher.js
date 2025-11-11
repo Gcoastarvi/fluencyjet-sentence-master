@@ -1,32 +1,25 @@
 // client/src/utils/tokenWatcher.js
 /**
- * 🕒 Token Watcher
- * Automatically checks for token expiry and renews it using /api/auth/refresh
- * Runs in background every X milliseconds.
+ * 🕒 Token Watcher + Toast Event
+ * Checks token expiry and auto-refreshes using /api/auth/refresh.
+ * Emits a window event "sessionRefreshed" when refresh succeeds.
  */
 
 export function startTokenWatcher(intervalMs = 60000) {
-  console.log(
-    "🔍 Token watcher started. Checking every",
-    intervalMs / 1000,
-    "sec",
-  );
+  console.log("🔍 Token watcher running every", intervalMs / 1000, "sec");
 
   async function checkToken() {
     try {
       const token = localStorage.getItem("token");
       const expiry = localStorage.getItem("tokenExpiry");
-
-      // No token → stop here
       if (!token) return;
 
       const now = Date.now();
       const expiryTime = Number(expiry);
 
-      // If expiry is within the next 5 minutes, auto-refresh
+      // 🔄 Refresh 5 min before expiry
       if (expiryTime && expiryTime - now < 5 * 60 * 1000) {
-        console.log("♻️ Token expiring soon, attempting refresh...");
-
+        console.log("♻️ Refreshing token...");
         const res = await fetch("/api/auth/refresh", {
           method: "POST",
           headers: {
@@ -34,26 +27,25 @@ export function startTokenWatcher(intervalMs = 60000) {
             Authorization: `Bearer ${token}`,
           },
         });
-
         const data = await res.json();
 
         if (res.ok && data?.token) {
           localStorage.setItem("token", data.token);
           localStorage.setItem("tokenExpiry", data.expiresAt);
           if (data.name) localStorage.setItem("userName", data.name);
-          console.log(
-            "✅ Token refreshed successfully at",
-            new Date().toLocaleTimeString(),
-          );
+          console.log("✅ Token refreshed", new Date().toLocaleTimeString());
+
+          // 🔔 Dispatch toast event
+          window.dispatchEvent(new CustomEvent("sessionRefreshed"));
         } else {
-          console.warn("⚠️ Token refresh failed:", data?.message);
+          console.warn("⚠️ Refresh failed:", data?.message);
           handleLogout();
         }
       }
 
-      // If expired already, force logout
+      // ⏰ If expired already → logout
       if (expiryTime && now > expiryTime) {
-        console.warn("⏰ Token expired — logging out.");
+        console.warn("⏰ Token expired — logging out");
         handleLogout();
       }
     } catch (err) {
@@ -61,10 +53,7 @@ export function startTokenWatcher(intervalMs = 60000) {
     }
   }
 
-  // 🔁 Run every interval
   const interval = setInterval(checkToken, intervalMs);
-
-  // Cleanup when needed (optional)
   window.addEventListener("beforeunload", () => clearInterval(interval));
 }
 

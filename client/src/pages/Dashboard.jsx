@@ -117,6 +117,24 @@ export default function Dashboard() {
   ──────────────────────────────── */
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
+      // Inside Dashboard component, before return()
+      const [toastMsg, setToastMsg] = useState("");
+
+      useEffect(() => {
+        function handleSessionRefreshed() {
+          setToastMsg("✅ Session refreshed! You're still logged in.");
+          setTimeout(() => setToastMsg(""), 3000); // hide after 3 s
+        }
+        window.addEventListener("sessionRefreshed", handleSessionRefreshed);
+        return () => window.removeEventListener("sessionRefreshed", handleSessionRefreshed);
+      }, []);
+
+      // Inside return(), very top:
+      {toastMsg && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+          {toastMsg}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-indigo-700">
           {user ? `Welcome, ${user.name || "Learner"} 🎉` : "Your Dashboard"}
