@@ -31,6 +31,7 @@ export default function Signup() {
 
         if (res.data?.token) {
           localStorage.setItem("token", res.data.token);
+          localStorage.setItem("userName", res.data?.name || name || "Learner"); // ✅ add this line
           setMsg("Signup successful! Redirecting...");
           setTimeout(() => (window.location.href = "/dashboard"), 1000);
         } else {
@@ -43,6 +44,7 @@ export default function Signup() {
 
         if (res.data?.token) {
           localStorage.setItem("token", res.data.token);
+          localStorage.setItem("userName", res.data?.name || "Learner"); // ✅ add this line
           setMsg("Login successful! Redirecting...");
           setTimeout(() => (window.location.href = "/dashboard"), 1000);
         } else {
