@@ -1,33 +1,76 @@
 // client/src/utils/tokenWatcher.js
-
 /**
- * Periodically checks for token validity and logs user out if expired or invalid.
- * You can expand this later to call a backend endpoint like /api/auth/verify.
+ * 🕒 Token Watcher
+ * Automatically checks for token expiry and renews it using /api/auth/refresh
+ * Runs in background every X milliseconds.
  */
+
 export function startTokenWatcher(intervalMs = 60000) {
-  function checkToken() {
+  console.log(
+    "🔍 Token watcher started. Checking every",
+    intervalMs / 1000,
+    "sec",
+  );
+
+  async function checkToken() {
     try {
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.warn("🔒 No token found — redirecting to login...");
-        window.location.href = "/login";
-        return;
+      const expiry = localStorage.getItem("tokenExpiry");
+
+      // No token → stop here
+      if (!token) return;
+
+      const now = Date.now();
+      const expiryTime = Number(expiry);
+
+      // If expiry is within the next 5 minutes, auto-refresh
+      if (expiryTime && expiryTime - now < 5 * 60 * 1000) {
+        console.log("♻️ Token expiring soon, attempting refresh...");
+
+        const res = await fetch("/api/auth/refresh", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data?.token) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("tokenExpiry", data.expiresAt);
+          if (data.name) localStorage.setItem("userName", data.name);
+          console.log(
+            "✅ Token refreshed successfully at",
+            new Date().toLocaleTimeString(),
+          );
+        } else {
+          console.warn("⚠️ Token refresh failed:", data?.message);
+          handleLogout();
+        }
       }
 
-      // Optional: Add expiration check if you encode expiry in JWT or store timestamp
-      const expiry = localStorage.getItem("tokenExpiry");
-      if (expiry && Date.now() > Number(expiry)) {
-        console.warn("🔒 Token expired — logging out...");
-        localStorage.removeItem("token");
-        localStorage.removeItem("userName");
-        window.location.href = "/login";
+      // If expired already, force logout
+      if (expiryTime && now > expiryTime) {
+        console.warn("⏰ Token expired — logging out.");
+        handleLogout();
       }
-    } catch (e) {
-      console.error("Token watcher error:", e);
+    } catch (err) {
+      console.error("Watcher error:", err);
     }
   }
 
-  // Check immediately on load + every minute
-  checkToken();
-  setInterval(checkToken, intervalMs);
+  // 🔁 Run every interval
+  const interval = setInterval(checkToken, intervalMs);
+
+  // Cleanup when needed (optional)
+  window.addEventListener("beforeunload", () => clearInterval(interval));
+}
+
+function handleLogout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("tokenExpiry");
+  localStorage.removeItem("userName");
+  window.location.href = "/login";
 }
