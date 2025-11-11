@@ -59,18 +59,19 @@ body {
 
 /* Each toast will get a staggered delay via inline style */
 /* 🌬️ Toast exit animation (soft fade + slide up) */
-@keyframes toast-exit {
-  0% {
+@keyframes toastExit {
+  from {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 
-  100% {
+  to {
     opacity: 0;
-    transform: translateY(-10px) scale(0.98);
+    transform: translateY(-10px) scale(0.95);
   }
 }
 
 .toast-exit {
-  animation: toast-exit 0.4s ease-in forwards;
+  animation: toastExit 0.6s ease forwards;
+  /* was 0.4s */
 }

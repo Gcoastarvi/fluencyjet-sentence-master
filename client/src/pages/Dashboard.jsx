@@ -22,11 +22,12 @@ export default function Dashboard() {
   // 🔁 Add a toast safely (auto remove after 3s with exit animation)
   // 🔁 Add a toast with automatic type detection + color/icon
   // 🚀 Smart toast queue (auto-trims to last 4 messages)
+  // 🌊 Smart toast queue with cascading exit animation
   const pushToast = (msg, type = "info") => {
     const id = Date.now();
     const toast = { id, msg, type, exiting: false, timer: null };
 
-    // 🔹 Auto-detect type from message text if not passed
+    // 🔹 Auto-detect type if not provided
     const lower = msg.toLowerCase();
     if (!type) {
       if (lower.includes("success") || lower.includes("saved"))
@@ -38,24 +39,29 @@ export default function Dashboard() {
       else type = "info";
     }
 
-    // ✅ Maintain only the latest 4 toasts
+    // ✅ Maintain only last 4 visible
     setToasts((prev) => {
-      // if more than 4 → mark oldest for exit
-      if (prev.length >= 4) {
-        const trimmed = [...prev];
-        const oldest = trimmed[0];
-        if (oldest && !oldest.exiting) {
-          trimmed[0] = { ...oldest, exiting: true };
+      const updated = [...prev];
+
+      // If more than 4 → cascade exit the oldest
+      if (updated.length >= 4) {
+        updated.forEach((t, i) => {
+          // add staggered delay (0.1s per index)
           setTimeout(() => {
-            setToasts((p) => p.filter((t) => t.id !== oldest.id));
-          }, 400);
-        }
-        return [...trimmed, toast];
+            setToasts((p) =>
+              p.map((x) => (x.id === t.id ? { ...x, exiting: true } : x)),
+            );
+            setTimeout(() => {
+              setToasts((p) => p.filter((x) => x.id !== t.id));
+            }, 400);
+          }, i * 100); // wave timing (100ms apart)
+        });
       }
-      return [...prev, toast];
+
+      return [...updated, toast];
     });
 
-    // schedule auto-dismiss timer
+    // Auto-dismiss after 3s
     toast.timer = setTimeout(() => {
       setToasts((prev) =>
         prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)),
