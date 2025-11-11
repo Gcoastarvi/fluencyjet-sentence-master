@@ -138,7 +138,8 @@ export default function Dashboard() {
       {/* ✅ Toast stack container */}
       {/* ✅ Toast stack container with staggered animation */}
       {/* ✅ Toast stack container with staggered animation and smooth exit */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 space-y-2">
+      {/* ✅ Toast stack container (newest at bottom, like Duolingo/Discord) */}
+      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse space-y-reverse space-y-2">
         {toasts.map((t, i) => (
           <div
             key={t.id}
