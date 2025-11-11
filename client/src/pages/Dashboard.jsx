@@ -120,13 +120,18 @@ export default function Dashboard() {
       // Inside Dashboard component, before return()
       const [toastMsg, setToastMsg] = useState("");
 
+      // Toast for session refresh
       useEffect(() => {
         function handleSessionRefreshed() {
           setToastMsg("✅ Session refreshed! You're still logged in.");
-          setTimeout(() => setToastMsg(""), 3000); // hide after 3 s
+          setTimeout(() => setToastMsg(""), 3000); // hide after 3s
         }
+
+        // ✅ These lines must be *inside* the effect block, not outside any braces
         window.addEventListener("sessionRefreshed", handleSessionRefreshed);
-        return () => window.removeEventListener("sessionRefreshed", handleSessionRefreshed);
+
+        return () =>
+          window.removeEventListener("sessionRefreshed", handleSessionRefreshed);
       }, []);
 
       // Inside return(), very top:
