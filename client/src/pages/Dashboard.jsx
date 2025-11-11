@@ -8,6 +8,7 @@ import { API_BASE } from "@/lib/api";
 import { startTokenWatcher } from "@/utils/tokenWatcher";
 
 export default function Dashboard() {
+  // ---------- state ----------
   const [user, setUser] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [hasAccess] = useState(false);
@@ -15,17 +16,25 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [toastMsg, setToastMsg] = useState(""); // ✅ toast state
 
-  /* ────────────────────────────────
-     ✅ 1. Token Watcher
-  ──────────────────────────────── */
+  // ---------- token watcher (runs every minute) ----------
   useEffect(() => {
-    startTokenWatcher(60000); // every 60 seconds
+    startTokenWatcher(60000);
   }, []);
 
-  /* ────────────────────────────────
-     ✅ 2. Load User Profile
-  ──────────────────────────────── */
+  // ---------- toast for session refresh ----------
+  useEffect(() => {
+    function handleSessionRefreshed() {
+      setToastMsg("✅ Session refreshed! You're still logged in.");
+      setTimeout(() => setToastMsg(""), 3000);
+    }
+    window.addEventListener("sessionRefreshed", handleSessionRefreshed);
+    return () =>
+      window.removeEventListener("sessionRefreshed", handleSessionRefreshed);
+  }, []);
+
+  // ---------- load profile ----------
   useEffect(() => {
     async function loadUserProfile() {
       try {
@@ -45,9 +54,7 @@ export default function Dashboard() {
     loadUserProfile();
   }, []);
 
-  /* ────────────────────────────────
-     ✅ 3. Load XP Progress
-  ──────────────────────────────── */
+  // ---------- load progress ----------
   async function loadProgress() {
     setLoading(true);
     setErr("");
@@ -64,11 +71,10 @@ export default function Dashboard() {
     }
   }
 
-  /* ────────────────────────────────
-     ✅ 4. Load Lessons
-  ──────────────────────────────── */
+  // ---------- load lessons + refresh on focus ----------
   useEffect(() => {
     loadProgress();
+
     const onFocus = () => loadProgress();
     window.addEventListener("focus", onFocus);
 
@@ -92,9 +98,7 @@ export default function Dashboard() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  /* ────────────────────────────────
-     ✅ 5. Simulate XP (Debug)
-  ──────────────────────────────── */
+  // ---------- simulate XP (debug) ----------
   async function simulateXP() {
     try {
       const updated = await awardXP({
@@ -112,37 +116,22 @@ export default function Dashboard() {
     }
   }
 
-  /* ────────────────────────────────
-     🧩 6. Render UI
-  ──────────────────────────────── */
+  // ---------- render ----------
+  const displayName =
+    user?.name || localStorage.getItem("userName") || "Learner";
+
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
-      // Inside Dashboard component, before return()
-      const [toastMsg, setToastMsg] = useState("");
-
-      // Toast for session refresh
-      useEffect(() => {
-        function handleSessionRefreshed() {
-          setToastMsg("✅ Session refreshed! You're still logged in.");
-          setTimeout(() => setToastMsg(""), 3000); // hide after 3s
-        }
-
-        // ✅ These lines must be *inside* the effect block, not outside any braces
-        window.addEventListener("sessionRefreshed", handleSessionRefreshed);
-
-        return () =>
-          window.removeEventListener("sessionRefreshed", handleSessionRefreshed);
-      }, []);
-
-      // Inside return(), very top:
+      {/* ✅ session toast */}
       {toastMsg && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-4 py-2 rounded-xl shadow-lg animate-fade-in">
           {toastMsg}
         </div>
       )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-indigo-700">
-          {user ? `Welcome, ${user.name || "Learner"} 🎉` : "Your Dashboard"}
+          {`Welcome, ${displayName} 🎉`}
         </h2>
         <button
           onClick={loadProgress}
@@ -170,6 +159,7 @@ export default function Dashboard() {
           <p>
             XP: <b>{progress.xp ?? 0}</b>
           </p>
+
           <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
             <div
               className="bg-violet-600 h-2 rounded-full transition-all duration-300"
@@ -178,21 +168,25 @@ export default function Dashboard() {
               }}
             />
           </div>
+
           <p>
             🔥 Streak: <b>{progress.streak ?? 0}</b> days
           </p>
+
           <p>
             🏅 Badges:{" "}
             {Array.isArray(progress.badges) && progress.badges.length
               ? progress.badges.join(", ")
               : "None yet"}
           </p>
+
           <button
             onClick={simulateXP}
             className="bg-violet-600 text-white px-4 py-2 rounded-full hover:scale-105 transition"
           >
             +50 XP (simulate)
           </button>
+
           {lastUpdated && (
             <p className="text-xs text-gray-500">
               Updated {lastUpdated.toLocaleTimeString()}
