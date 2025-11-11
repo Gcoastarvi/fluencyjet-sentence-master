@@ -8,7 +8,6 @@ import { API_BASE } from "@/lib/api";
 import { startTokenWatcher } from "@/utils/tokenWatcher";
 
 export default function Dashboard() {
-  // ---------- state ----------
   const [user, setUser] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [hasAccess] = useState(false);
@@ -16,36 +15,42 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [toastMsg, setToastMsg] = useState(""); // ✅ toast state
 
-  // ---------- token watcher (runs every minute) ----------
-  useEffect(() => {
-    startTokenWatcher(60000);
-  }, []);
+  // 🧩 Multi-toast system
+  const [toasts, setToasts] = useState([]);
 
-  // ---------- toast for session refresh ----------
+  // 🔁 Add a toast safely (auto-remove after 3s)
+  const pushToast = (msg) => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, msg }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  };
+
+  // ✅ Session refresh listener
   useEffect(() => {
     function handleSessionRefreshed() {
-      setToastMsg("✅ Session refreshed! You're still logged in.");
-      setTimeout(() => setToastMsg(""), 3000);
+      pushToast("✅ Session refreshed! You’re still logged in.");
     }
     window.addEventListener("sessionRefreshed", handleSessionRefreshed);
     return () =>
       window.removeEventListener("sessionRefreshed", handleSessionRefreshed);
   }, []);
 
-  // ---------- load profile ----------
+  // ✅ Token watcher
+  useEffect(() => {
+    startTokenWatcher(60000);
+  }, []);
+
+  // ✅ Load user profile
   useEffect(() => {
     async function loadUserProfile() {
       try {
         const res = await getUserProfile();
-        if (res?.data?.user) {
-          setUser(res.data.user);
-        } else if (res?.data?.name) {
-          setUser(res.data);
-        } else {
-          setErr("Please login to view your dashboard.");
-        }
+        if (res?.data?.user) setUser(res.data.user);
+        else if (res?.data?.name) setUser(res.data);
+        else setErr("Please login to view your dashboard.");
       } catch (e) {
         console.error("Failed to load profile:", e);
         setErr("Unable to fetch user profile. Please log in again.");
@@ -54,7 +59,7 @@ export default function Dashboard() {
     loadUserProfile();
   }, []);
 
-  // ---------- load progress ----------
+  // ✅ Load XP Progress
   async function loadProgress() {
     setLoading(true);
     setErr("");
@@ -71,10 +76,9 @@ export default function Dashboard() {
     }
   }
 
-  // ---------- load lessons + refresh on focus ----------
+  // ✅ Lessons & refresh on focus
   useEffect(() => {
     loadProgress();
-
     const onFocus = () => loadProgress();
     window.addEventListener("focus", onFocus);
 
@@ -98,7 +102,7 @@ export default function Dashboard() {
     return () => window.removeEventListener("focus", onFocus);
   }, []);
 
-  // ---------- simulate XP (debug) ----------
+  // ✅ Simulate XP (Debug)
   async function simulateXP() {
     try {
       const updated = await awardXP({
@@ -109,25 +113,30 @@ export default function Dashboard() {
       if (updated) {
         setProgress(updated);
         setLastUpdated(new Date());
+        pushToast("🎉 +50 XP added!");
       }
     } catch (e) {
       console.error("Simulate XP failed:", e);
-      alert(e?.message || "XP update failed");
+      pushToast("⚠️ XP update failed.");
     }
   }
 
-  // ---------- render ----------
   const displayName =
     user?.name || localStorage.getItem("userName") || "Learner";
 
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
-      {/* ✅ session toast */}
-      {toastMsg && (
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 bg-gray-900 text-white px-4 py-2 rounded-xl shadow-lg animate-slide-down-fade">
-          {toastMsg}
-        </div>
-      )}
+      {/* ✅ Toast stack container */}
+      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 space-y-2">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className="bg-gray-900 text-white px-4 py-2 rounded-xl shadow-lg animate-slide-down-fade"
+          >
+            {t.msg}
+          </div>
+        ))}
+      </div>
 
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-indigo-700">
@@ -159,7 +168,6 @@ export default function Dashboard() {
           <p>
             XP: <b>{progress.xp ?? 0}</b>
           </p>
-
           <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
             <div
               className="bg-violet-600 h-2 rounded-full transition-all duration-300"
