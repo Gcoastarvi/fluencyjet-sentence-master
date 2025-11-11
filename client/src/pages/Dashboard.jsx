@@ -21,11 +21,12 @@ export default function Dashboard() {
 
   // 🔁 Add a toast safely (auto remove after 3s with exit animation)
   // 🔁 Add a toast with automatic type detection + color/icon
+  // 🚀 Smart toast queue (auto-trims to last 4 messages)
   const pushToast = (msg, type = "info") => {
     const id = Date.now();
     const toast = { id, msg, type, exiting: false, timer: null };
 
-    // Auto-detect type from text if not passed
+    // 🔹 Auto-detect type from message text if not passed
     const lower = msg.toLowerCase();
     if (!type) {
       if (lower.includes("success") || lower.includes("saved"))
@@ -34,9 +35,27 @@ export default function Dashboard() {
         type = "error";
       else if (lower.includes("warn") || lower.includes("expire"))
         type = "warning";
+      else type = "info";
     }
 
-    // schedule auto-dismiss
+    // ✅ Maintain only the latest 4 toasts
+    setToasts((prev) => {
+      // if more than 4 → mark oldest for exit
+      if (prev.length >= 4) {
+        const trimmed = [...prev];
+        const oldest = trimmed[0];
+        if (oldest && !oldest.exiting) {
+          trimmed[0] = { ...oldest, exiting: true };
+          setTimeout(() => {
+            setToasts((p) => p.filter((t) => t.id !== oldest.id));
+          }, 400);
+        }
+        return [...trimmed, toast];
+      }
+      return [...prev, toast];
+    });
+
+    // schedule auto-dismiss timer
     toast.timer = setTimeout(() => {
       setToasts((prev) =>
         prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)),
@@ -45,8 +64,6 @@ export default function Dashboard() {
         setToasts((prev) => prev.filter((t) => t.id !== id));
       }, 400);
     }, 3000);
-
-    setToasts((prev) => [...prev, toast]);
   };
 
   // ✅ Session refresh listener
