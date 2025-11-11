@@ -209,7 +209,36 @@ router.get("/me", authRequired, async (req, res) => {
 console.log(
   "✅ auth.js loaded successfully with /signup, /login, and /me routes",
 );
+/** ♻️ REFRESH — Renew JWT Token before expiry */
+router.post("/refresh", authRequired, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+    if (!user) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
 
+    const newToken = jwt.sign(
+      { id: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES }, // e.g., 1h
+    );
+
+    const expiresAt = Date.now() + 3600000; // 1 hour
+
+    res.json({
+      ok: true,
+      message: "Token refreshed successfully",
+      token: newToken,
+      expiresAt,
+      name: user.name,
+    });
+  } catch (err) {
+    console.error("Token refresh error:", err);
+    res.status(500).json({ ok: false, message: "Failed to refresh token" });
+  }
+});
 /* ───────────────────────────────
    Export Router
 ─────────────────────────────── */
