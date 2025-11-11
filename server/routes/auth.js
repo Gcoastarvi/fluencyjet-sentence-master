@@ -11,7 +11,7 @@ const router = express.Router();
    JWT & Security Config
 ─────────────────────────────── */
 const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
-const JWT_EXPIRES = process.env.JWT_EXPIRES || "7d";
+const JWT_EXPIRES = process.env.JWT_EXPIRES || "1h"; // 1 hour expiry
 const DEFAULT_AVATAR = "https://i.pravatar.cc/150";
 
 /* ───────────────────────────────
@@ -83,25 +83,41 @@ router.post("/signup", async (req, res) => {
     const emailNorm = String(email).trim().toLowerCase();
     const usernameNorm =
       sanitizeUsername(username || name || emailNorm.split("@")[0]) || null;
-    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ✅ Create user record
+    // ✅ Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email: emailNorm },
+    });
+    if (existingUser)
+      return res
+        .status(400)
+        .json({ ok: false, message: "User already exists" });
+
+    // ✅ Hash password and create user
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
+        name: name || usernameNorm,
         email: emailNorm,
-        password: hashedPassword,
         username: usernameNorm,
+        password: hashedPassword,
         avatar_url: avatar_url || DEFAULT_AVATAR,
         has_access: false,
         tier_level: "free",
       },
     });
 
+    // ✅ Generate token & expiry
     const token = signToken({ id: user.id, email: user.email });
+    const expiresAt = Date.now() + 3600000; // 1 hour
+
+    // ✅ Respond with all needed info
     res.status(201).json({
       ok: true,
-      message: "User created",
+      message: "Signup successful!",
       token,
+      name: user.name,
+      expiresAt,
       user: publicUser(user),
     });
   } catch (err) {
@@ -131,6 +147,7 @@ router.post("/login", async (req, res) => {
 
     const emailNorm = String(email).trim().toLowerCase();
     const user = await prisma.user.findUnique({ where: { email: emailNorm } });
+
     if (!user)
       return res
         .status(401)
@@ -142,11 +159,17 @@ router.post("/login", async (req, res) => {
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });
 
+    // ✅ Generate token & expiry
     const token = signToken({ id: user.id, email: user.email });
+    const expiresAt = Date.now() + 3600000; // 1 hour
+
+    // ✅ Respond with user info
     res.json({
       ok: true,
-      message: "Login success",
+      message: "Login successful!",
       token,
+      name: user.name,
+      expiresAt,
       user: publicUser(user),
     });
   } catch (err) {
@@ -164,6 +187,7 @@ router.get("/me", authRequired, async (req, res) => {
       where: { id: req.user.id },
       select: {
         id: true,
+        name: true,
         email: true,
         username: true,
         avatar_url: true,
@@ -182,7 +206,6 @@ router.get("/me", authRequired, async (req, res) => {
 /* ───────────────────────────────
    Diagnostics (Safe to Keep)
 ─────────────────────────────── */
-// Optional small log for debugging deploy
 console.log(
   "✅ auth.js loaded successfully with /signup, /login, and /me routes",
 );

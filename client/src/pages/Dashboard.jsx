@@ -5,6 +5,7 @@ import { fetchMyProgress, awardXP } from "@/lib/xpTracker";
 import LessonCard from "@/components/LessonCard";
 import LockBadge from "@/components/LockBadge";
 import { API_BASE } from "@/lib/api";
+import { startTokenWatcher } from "@/utils/tokenWatcher";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -16,7 +17,14 @@ export default function Dashboard() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   /* ────────────────────────────────
-     ✅ 1. Load User Profile
+     ✅ 1. Token Watcher
+  ──────────────────────────────── */
+  useEffect(() => {
+    startTokenWatcher(60000); // every 60 seconds
+  }, []);
+
+  /* ────────────────────────────────
+     ✅ 2. Load User Profile
   ──────────────────────────────── */
   useEffect(() => {
     async function loadUserProfile() {
@@ -25,7 +33,6 @@ export default function Dashboard() {
         if (res?.data?.user) {
           setUser(res.data.user);
         } else if (res?.data?.name) {
-          // some backends return directly { name, email }
           setUser(res.data);
         } else {
           setErr("Please login to view your dashboard.");
@@ -39,7 +46,7 @@ export default function Dashboard() {
   }, []);
 
   /* ────────────────────────────────
-     ✅ 2. Load XP Progress
+     ✅ 3. Load XP Progress
   ──────────────────────────────── */
   async function loadProgress() {
     setLoading(true);
@@ -58,11 +65,10 @@ export default function Dashboard() {
   }
 
   /* ────────────────────────────────
-     ✅ 3. Load Lessons
+     ✅ 4. Load Lessons
   ──────────────────────────────── */
   useEffect(() => {
     loadProgress();
-
     const onFocus = () => loadProgress();
     window.addEventListener("focus", onFocus);
 
@@ -87,7 +93,7 @@ export default function Dashboard() {
   }, []);
 
   /* ────────────────────────────────
-     ✅ 4. Simulate XP (Debug)
+     ✅ 5. Simulate XP (Debug)
   ──────────────────────────────── */
   async function simulateXP() {
     try {
@@ -107,7 +113,7 @@ export default function Dashboard() {
   }
 
   /* ────────────────────────────────
-     🧩 5. Render UI
+     🧩 6. Render UI
   ──────────────────────────────── */
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-6">
@@ -115,7 +121,6 @@ export default function Dashboard() {
         <h2 className="text-2xl font-bold text-indigo-700">
           {user ? `Welcome, ${user.name || "Learner"} 🎉` : "Your Dashboard"}
         </h2>
-
         <button
           onClick={loadProgress}
           className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full hover:opacity-90"
@@ -142,7 +147,6 @@ export default function Dashboard() {
           <p>
             XP: <b>{progress.xp ?? 0}</b>
           </p>
-
           <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
             <div
               className="bg-violet-600 h-2 rounded-full transition-all duration-300"
@@ -151,25 +155,21 @@ export default function Dashboard() {
               }}
             />
           </div>
-
           <p>
             🔥 Streak: <b>{progress.streak ?? 0}</b> days
           </p>
-
           <p>
             🏅 Badges:{" "}
             {Array.isArray(progress.badges) && progress.badges.length
               ? progress.badges.join(", ")
               : "None yet"}
           </p>
-
           <button
             onClick={simulateXP}
             className="bg-violet-600 text-white px-4 py-2 rounded-full hover:scale-105 transition"
           >
             +50 XP (simulate)
           </button>
-
           {lastUpdated && (
             <p className="text-xs text-gray-500">
               Updated {lastUpdated.toLocaleTimeString()}

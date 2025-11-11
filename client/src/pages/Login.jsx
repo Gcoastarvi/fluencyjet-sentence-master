@@ -1,12 +1,18 @@
 // client/src/pages/Login.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { loginUser } from "../api";
+import { autoRedirectIfLoggedIn } from "../utils/authRedirect";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+
+  // ✅ Auto redirect if token already valid
+  useEffect(() => {
+    autoRedirectIfLoggedIn();
+  }, []);
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -15,10 +21,13 @@ export default function Login() {
 
     try {
       const res = await loginUser({ email, password });
-      console.log("Login response:", res.data);
-
       if (res.data?.token) {
         localStorage.setItem("token", res.data.token);
+        if (res.data?.expiresAt) {
+          localStorage.setItem("tokenExpiry", res.data.expiresAt);
+        }
+
+        localStorage.setItem("userName", res.data?.name || "Learner"); // ✅ add this
         setMsg("Login successful! Redirecting...");
         setTimeout(() => (window.location.href = "/dashboard"), 1000);
       } else {
