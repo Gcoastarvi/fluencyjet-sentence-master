@@ -157,6 +157,7 @@ export default function Dashboard() {
       {/* ✅ Toast stack container with staggered animation and smooth exit */}
       {/* ✅ Toast stack container (newest at bottom, like Duolingo/Discord) */}
       {/* ✅ Toast container (Duolingo style, colored + icon) */}
+      {/* ✅ Toast container (click-to-dismiss + colors + animation) */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse space-y-reverse space-y-2">
         {toasts.map((t, i) => {
           const colors = {
@@ -172,15 +173,30 @@ export default function Dashboard() {
             info: "💬",
           };
 
+          const handleClick = () => {
+            // Trigger exit animation immediately
+            setToasts((prev) =>
+              prev.map((toast) =>
+                toast.id === t.id ? { ...toast, exiting: true } : toast,
+              ),
+            );
+            // Fully remove after short delay (matches exit animation)
+            setTimeout(() => {
+              setToasts((prev) => prev.filter((toast) => toast.id !== t.id));
+            }, 400);
+          };
+
           return (
             <div
               key={t.id}
-              className={`${colors[t.type] || "bg-gray-800"} text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 ${
+              onClick={handleClick}
+              className={`${colors[t.type] || "bg-gray-800"} text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-transform active:scale-95 ${
                 t.exiting ? "toast-exit" : "toast-seq-enter"
               }`}
               style={{
                 animationDelay: !t.exiting ? `${i * 0.15}s` : "0s",
               }}
+              title="Click to dismiss"
             >
               <span>{icons[t.type] || "💬"}</span>
               <span>{t.msg}</span>
