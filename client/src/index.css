@@ -2,8 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Optional global styles */
+/* 🌍 Global styles */
 body {
   @apply bg-gray-50 text-gray-900;
   font-family: "Poppins", "Noto Sans Tamil", sans-serif;
+}
+
+/* ✨ Toast animation (fade + slide-in) */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.02);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
 }
