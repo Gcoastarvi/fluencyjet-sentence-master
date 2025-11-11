@@ -20,18 +20,35 @@ export default function Dashboard() {
   const [toasts, setToasts] = useState([]);
 
   // 🔁 Add a toast safely (auto remove after 3s with exit animation)
-  const pushToast = (msg) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, msg, exiting: false }]);
+  // 🔁 Add a toast with automatic type detection + color/icon
+  const pushToast = (msg, type = "info") => {
+    // 🔹 Auto-detect type from message text if not provided
+    const lower = msg.toLowerCase();
+    if (!type) {
+      if (
+        lower.includes("success") ||
+        lower.includes("saved") ||
+        lower.includes("done")
+      )
+        type = "success";
+      else if (lower.includes("error") || lower.includes("fail"))
+        type = "error";
+      else if (lower.includes("warn") || lower.includes("expire"))
+        type = "warning";
+      else type = "info";
+    }
 
-    // Start exit animation at 2.7s
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, msg, type, exiting: false }]);
+
+    // start exit animation
     setTimeout(() => {
       setToasts((prev) =>
         prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)),
       );
     }, 2700);
 
-    // Fully remove after 3.1s (gives time for exit animation)
+    // remove completely
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3100);
@@ -139,20 +156,37 @@ export default function Dashboard() {
       {/* ✅ Toast stack container with staggered animation */}
       {/* ✅ Toast stack container with staggered animation and smooth exit */}
       {/* ✅ Toast stack container (newest at bottom, like Duolingo/Discord) */}
+      {/* ✅ Toast container (Duolingo style, colored + icon) */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse space-y-reverse space-y-2">
-        {toasts.map((t, i) => (
-          <div
-            key={t.id}
-            className={`bg-gray-900 text-white px-4 py-2 rounded-xl shadow-lg ${
-              t.exiting ? "toast-exit" : "toast-seq-enter"
-            }`}
-            style={{
-              animationDelay: !t.exiting ? `${i * 0.15}s` : "0s",
-            }}
-          >
-            {t.msg}
-          </div>
-        ))}
+        {toasts.map((t, i) => {
+          const colors = {
+            success: "bg-green-600",
+            error: "bg-red-600",
+            warning: "bg-amber-500",
+            info: "bg-blue-600",
+          };
+          const icons = {
+            success: "✅",
+            error: "❌",
+            warning: "⚠️",
+            info: "💬",
+          };
+
+          return (
+            <div
+              key={t.id}
+              className={`${colors[t.type] || "bg-gray-800"} text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 ${
+                t.exiting ? "toast-exit" : "toast-seq-enter"
+              }`}
+              style={{
+                animationDelay: !t.exiting ? `${i * 0.15}s` : "0s",
+              }}
+            >
+              <span>{icons[t.type] || "💬"}</span>
+              <span>{t.msg}</span>
+            </div>
+          );
+        })}
       </div>
 
       <div className="flex items-center justify-between">
