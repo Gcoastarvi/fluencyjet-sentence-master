@@ -1,16 +1,5 @@
 // client/src/App.jsx
-// at top
-import { logoutAndRedirect } from "@/utils/authRedirect";
-
-// inside <nav> … after Sign Up link:
-<button
-  onClick={logoutAndRedirect}
-  className="text-sm bg-red-500 text-white px-3 py-1 rounded-full hover:opacity-90"
->
-  Logout
-</button>;
-
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
@@ -20,13 +9,31 @@ import Leaderboard from "@/pages/Leaderboard";
 import TypingQuiz from "@/pages/TypingQuiz";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
-import ProtectedRoute from "@/components/ProtectedRoute"; // ✅ wrapper
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { testHealth } from "@/api/testConnection";
+import { logoutAndRedirect } from "@/utils/authRedirect";
 
 export default function App() {
+  const [userName, setUserName] = useState(null);
+
+  // ✅ Load user info from localStorage (or from /api/auth/me in the future)
   useEffect(() => {
     testHealth();
+    try {
+      const storedUser = localStorage.getItem("userName");
+      const token = localStorage.getItem("token");
+
+      if (token && storedUser) setUserName(storedUser);
+      else if (token && !storedUser) {
+        // fallback: decode or placeholder if userName not cached
+        setUserName("Learner");
+      }
+    } catch {
+      setUserName(null);
+    }
   }, []);
+
+  const isLoggedIn = !!localStorage.getItem("token");
 
   return (
     <BrowserRouter>
@@ -38,7 +45,7 @@ export default function App() {
           </Link>
 
           {/* 🧭 Navigation */}
-          <nav className="flex flex-wrap gap-3 text-sm md:text-base">
+          <nav className="flex flex-wrap gap-3 text-sm md:text-base items-center">
             <Link to="/dashboard" className="hover:underline">
               Dashboard
             </Link>
@@ -54,26 +61,43 @@ export default function App() {
             <Link to="/admin" className="hover:underline">
               Admin
             </Link>
-            <Link
-              to="/login"
-              className="text-indigo-600 font-semibold hover:underline"
-            >
-              Login
-            </Link>
-            <Link
-              to="/signup"
-              className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
-            >
-              Sign Up
-            </Link>
+
+            {/* 👇 Conditional Buttons */}
+            {!isLoggedIn ? (
+              <>
+                <Link
+                  to="/login"
+                  className="text-indigo-600 font-semibold hover:underline"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
+                >
+                  Sign Up
+                </Link>
+              </>
+            ) : (
+              <>
+                <span className="text-gray-600 text-sm">
+                  Welcome, <b>{userName || "Learner"}</b>
+                </span>
+                <button
+                  onClick={logoutAndRedirect}
+                  className="text-sm bg-red-500 text-white px-3 py-1 rounded-full hover:opacity-90"
+                >
+                  Logout
+                </button>
+              </>
+            )}
           </nav>
         </header>
 
         {/* 🔀 Routes */}
         <Routes>
           <Route path="/" element={<Home />} />
-
-          {/* ✅ Protected pages */}
+          {/* ✅ Protected Pages */}
           <Route
             path="/dashboard"
             element={
@@ -115,7 +139,7 @@ export default function App() {
             }
           />
 
-          {/* Public pages */}
+          {/* Public Pages */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
         </Routes>
