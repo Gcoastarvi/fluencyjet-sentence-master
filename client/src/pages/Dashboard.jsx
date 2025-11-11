@@ -19,13 +19,22 @@ export default function Dashboard() {
   // 🧩 Multi-toast system
   const [toasts, setToasts] = useState([]);
 
-  // 🔁 Add a toast safely (auto-remove after 3s)
+  // 🔁 Add a toast safely (auto remove after 3s with exit animation)
   const pushToast = (msg) => {
     const id = Date.now();
-    setToasts((prev) => [...prev, { id, msg }]);
+    setToasts((prev) => [...prev, { id, msg, exiting: false }]);
+
+    // Start exit animation at 2.7s
+    setTimeout(() => {
+      setToasts((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)),
+      );
+    }, 2700);
+
+    // Fully remove after 3.1s (gives time for exit animation)
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
+    }, 3100);
   };
 
   // ✅ Session refresh listener
@@ -128,13 +137,16 @@ export default function Dashboard() {
     <div className="max-w-2xl mx-auto p-4 space-y-6">
       {/* ✅ Toast stack container */}
       {/* ✅ Toast stack container with staggered animation */}
+      {/* ✅ Toast stack container with staggered animation and smooth exit */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 space-y-2">
         {toasts.map((t, i) => (
           <div
             key={t.id}
-            className="bg-gray-900 text-white px-4 py-2 rounded-xl shadow-lg toast-seq-enter"
+            className={`bg-gray-900 text-white px-4 py-2 rounded-xl shadow-lg ${
+              t.exiting ? "toast-exit" : "toast-seq-enter"
+            }`}
             style={{
-              animationDelay: `${i * 0.15}s`, // ⏱️ each toast enters 150ms after the previous one
+              animationDelay: !t.exiting ? `${i * 0.15}s` : "0s",
             }}
           >
             {t.msg}
