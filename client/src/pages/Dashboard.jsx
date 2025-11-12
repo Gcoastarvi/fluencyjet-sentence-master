@@ -179,69 +179,60 @@ export default function Dashboard() {
       {/* ✅ Toast container (pause on hover + click to dismiss) */}
       <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse space-y-reverse space-y-2">
         {toasts.map((t, i) => {
-          const colors = {
-            success: "bg-green-600",
-            error: "bg-red-600",
-            warning: "bg-amber-500",
-            info: "bg-blue-600",
-          };
-          const icons = {
-            success: "✅",
-            error: "❌",
-            warning: "⚠️",
-            info: "💬",
-          };
-
-          const handleClick = () => {
-            setToasts((prev) =>
-              prev.map((toast) =>
-                toast.id === t.id ? { ...toast, exiting: true } : toast,
-              ),
-            );
-            setTimeout(() => {
-              setToasts((prev) => prev.filter((toast) => toast.id !== t.id));
-            }, 400);
-          };
+          const isLeaving = leavingIds.has(t.id);
+          const delay = Math.min(i * 80, 400); // your existing stagger
+          const typeClass =
+            t.type === "error"
+              ? "toast-error"
+              : t.type === "warning"
+                ? "toast-warning"
+                : t.type === "info"
+                  ? "toast-info"
+                  : "toast-success"; // default to success
 
           return (
             <div
               key={t.id}
-              onClick={handleClick}
-              onMouseEnter={() => {
-                if (t.timer) clearTimeout(t.timer); // 🛑 pause timer
-              }}
-              onMouseLeave={() => {
-                // ⏯ resume timer only if not exiting
-                if (!t.exiting) {
-                  const timeout = setTimeout(() => {
-                    setToasts((prev) =>
-                      prev.map((toast) =>
-                        toast.id === t.id ? { ...toast, exiting: true } : toast,
-                      ),
-                    );
-                    setTimeout(() => {
-                      setToasts((prev) =>
-                        prev.filter((toast) => toast.id !== t.id),
-                      );
-                    }, 400);
-                  }, 3000);
-                  setToasts((prev) =>
-                    prev.map((toast) =>
-                      toast.id === t.id ? { ...toast, timer: timeout } : toast,
-                    ),
-                  );
-                }
-              }}
-              className={`${colors[t.type] || "bg-gray-800"} text-white px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-transform active:scale-95 ${
-                t.exiting ? "toast-exit" : "toast-seq-enter"
-              }`}
-              style={{
-                animationDelay: !t.exiting ? `${i * 0.15}s` : "0s",
-              }}
-              title="Click to dismiss • Hover to pause"
+              className={`toast ${typeClass} ${isLeaving ? "toast-exit" : "toast-seq-enter"} cursor-pointer`}
+              style={{ animationDelay: `${delay}ms` }}
+              onMouseEnter={() => pauseToast(t.id)} // if you added hover-pause
+              onMouseLeave={() => resumeToast(t.id)} // if you added hover-pause
+              onClick={() => dismissToast(t.id)} // click to dismiss
+              role="status"
+              aria-live="polite"
             >
-              <span>{icons[t.type] || "💬"}</span>
-              <span>{t.msg}</span>
+              {/* 🎉 Confetti only for success toasts */}
+              {t.type === "success" && (
+                <div className="toast-confetti" aria-hidden="true">
+                  {Array.from({ length: 12 }).map((_, k) => {
+                    // distribute to both sides with small variance
+                    const spread = (k - 5.5) * 6; // -33 .. +33 px
+                    const rot = (k % 2 ? 18 : -14) + k; // slight spin variety
+                    const delay = k * 20; // ripple emission
+                    const isBar = k % 4 === 0; // a few bars
+                    return (
+                      <span
+                        key={k}
+                        className={`sparkle ${isBar ? "bar" : ""}`}
+                        style={{
+                          "--dx": `${spread}px`,
+                          "--rot": `${rot}deg`,
+                          "--delay": `${delay}ms`,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* your existing icon + message */}
+              <span className="flex items-center gap-2">
+                {t.type === "error" && "❌"}
+                {t.type === "warning" && "⚠️"}
+                {t.type === "info" && "💬"}
+                {t.type === "success" && "✅"}
+                <span>{t.message}</span>
+              </span>
             </div>
           );
         })}

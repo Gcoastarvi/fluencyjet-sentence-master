@@ -137,3 +137,74 @@ body {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 0 18px rgba(0, 0, 0, 0.15), 0 0 14px currentColor;
 }
+
+/* 🎉 Confetti sparkles for success toasts */
+.toast {
+  position: relative;
+}
+
+/* ensures confetti can anchor */
+.toast-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2;
+}
+
+/* Each sparkle is a tiny dot/rect that flies out + fades */
+.toast-confetti .sparkle {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.7);
+  animation: toastSparkle 700ms ease-out forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+/* Vary colors nicely; success inherits green glow already */
+.toast-success .sparkle:nth-child(3n) {
+  background: #ffffff;
+}
+
+/* white pop */
+.toast-success .sparkle:nth-child(3n + 1) {
+  background: #34d399;
+}
+
+/* emerald-400 */
+.toast-success .sparkle:nth-child(3n + 2) {
+  background: #a7f3d0;
+}
+
+/* emerald-200 */
+
+/* A few sparks look like bars instead of dots for variety */
+.toast-confetti .sparkle.bar {
+  width: 2px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+/* Flight path uses CSS variables for per-piece drift/rotation */
+@keyframes toastSparkle {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7) rotate(0deg);
+  }
+
+  25% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    /* dx = horizontal scatter, rot = spin; both set inline */
+    transform:
+      translate(calc(-50% + var(--dx, 0px)), -120%) scale(0.95) rotate(var(--rot, 0deg));
+  }
+}
