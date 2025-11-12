@@ -12,11 +12,11 @@ import Signup from "@/pages/Signup";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { testHealth } from "@/api/testConnection";
 import { logoutAndRedirect } from "@/utils/authRedirect";
+import { getDisplayName } from "@/utils/displayName"; // ✅ Add this import
 
 export default function App() {
   const [userName, setUserName] = useState(null);
 
-  // ✅ Load user info from localStorage (or from /api/auth/me in the future)
   useEffect(() => {
     testHealth();
     try {
@@ -24,16 +24,14 @@ export default function App() {
       const token = localStorage.getItem("token");
 
       if (token && storedUser) setUserName(storedUser);
-      else if (token && !storedUser) {
-        // fallback: decode or placeholder if userName not cached
-        setUserName("Learner");
-      }
+      else if (token && !storedUser) setUserName("Learner");
     } catch {
       setUserName(null);
     }
   }, []);
 
   const isLoggedIn = !!localStorage.getItem("token");
+  const name = getDisplayName({ name: userName }); // ✅ add this line
 
   return (
     <BrowserRouter>
@@ -80,8 +78,9 @@ export default function App() {
               </>
             ) : (
               <>
+                {/* ✅ Updated greeting */}
                 <span className="text-gray-600 text-sm">
-                  Welcome, <b>{userName || "Learner"}</b>
+                  Welcome, <b>{name}</b>
                 </span>
                 <button
                   onClick={logoutAndRedirect}
@@ -97,7 +96,6 @@ export default function App() {
         {/* 🔀 Routes */}
         <Routes>
           <Route path="/" element={<Home />} />
-          {/* ✅ Protected Pages */}
           <Route
             path="/dashboard"
             element={
