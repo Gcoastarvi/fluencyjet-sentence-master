@@ -7,16 +7,10 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 const router = express.Router();
 
-/* ───────────────────────────────
-   JWT & Security Config
-─────────────────────────────── */
 const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
-const JWT_EXPIRES = process.env.JWT_EXPIRES || "1h"; // 1 hour expiry
+const JWT_EXPIRES = process.env.JWT_EXPIRES || "1h";
 const DEFAULT_AVATAR = "https://i.pravatar.cc/150";
 
-/* ───────────────────────────────
-   Helper Functions
-─────────────────────────────── */
 function sanitizeUsername(u = "") {
   return String(u)
     .trim()
@@ -67,11 +61,7 @@ function authRequired(req, res, next) {
   }
 }
 
-/* ───────────────────────────────
-   Routes
-─────────────────────────────── */
-
-/** 📝 SIGNUP — Create New User */
+/** 📝 SIGNUP */
 router.post("/signup", async (req, res) => {
   try {
     const { name, username, email, password, avatar_url } = req.body || {};
@@ -83,35 +73,30 @@ router.post("/signup", async (req, res) => {
     const emailNorm = String(email).trim().toLowerCase();
     const usernameNorm =
       sanitizeUsername(username || name || emailNorm.split("@")[0]) || null;
-
-    // ✅ Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existing = await prisma.user.findUnique({
       where: { email: emailNorm },
     });
-    if (existingUser)
+    if (existing)
       return res
-        .status(400)
+        .status(409)
         .json({ ok: false, message: "User already exists" });
 
-    // ✅ Hash password and create user
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 10);
     const user = await prisma.user.create({
       data: {
         name: name || usernameNorm,
         email: emailNorm,
         username: usernameNorm,
-        password: hashedPassword,
+        password: hashed,
         avatar_url: avatar_url || DEFAULT_AVATAR,
         has_access: false,
         tier_level: "free",
       },
     });
 
-    // ✅ Generate token & expiry
     const token = signToken({ id: user.id, email: user.email });
-    const expiresAt = Date.now() + 3600000; // 1 hour
+    const expiresAt = Date.now() + 3600000; // 1h
 
-    // ✅ Respond with all needed info
     res.status(201).json({
       ok: true,
       message: "Signup successful!",
@@ -121,14 +106,6 @@ router.post("/signup", async (req, res) => {
       user: publicUser(user),
     });
   } catch (err) {
-    if (err?.code === "P2002") {
-      return res.status(409).json({
-        ok: false,
-        message: err?.meta?.target?.includes("username")
-          ? "Username already taken"
-          : "Email already exists",
-      });
-    }
     console.error("Signup error:", err);
     res
       .status(500)
@@ -136,7 +113,7 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-/** 🔑 LOGIN — Authenticate User */
+/** 🔑 LOGIN */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
@@ -147,7 +124,6 @@ router.post("/login", async (req, res) => {
 
     const emailNorm = String(email).trim().toLowerCase();
     const user = await prisma.user.findUnique({ where: { email: emailNorm } });
-
     if (!user)
       return res
         .status(401)
@@ -159,11 +135,9 @@ router.post("/login", async (req, res) => {
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });
 
-    // ✅ Generate token & expiry
     const token = signToken({ id: user.id, email: user.email });
-    const expiresAt = Date.now() + 3600000; // 1 hour
+    const expiresAt = Date.now() + 3600000; // 1h
 
-    // ✅ Respond with user info
     res.json({
       ok: true,
       message: "Login successful!",
@@ -180,7 +154,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/** 👤 PROFILE — Authenticated User Info */
+/** 👤 PROFILE */
 router.get("/me", authRequired, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -203,29 +177,15 @@ router.get("/me", authRequired, async (req, res) => {
   }
 });
 
-/* ───────────────────────────────
-   Diagnostics (Safe to Keep)
-─────────────────────────────── */
-console.log(
-  "✅ auth.js loaded successfully with /signup, /login, and /me routes",
-);
-/** ♻️ REFRESH — Renew JWT Token before expiry */
+/** ♻️ REFRESH */
 router.post("/refresh", authRequired, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-    });
-    if (!user) {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user)
       return res.status(404).json({ ok: false, message: "User not found" });
-    }
 
-    const newToken = jwt.sign(
-      { id: user.id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES }, // e.g., 1h
-    );
-
-    const expiresAt = Date.now() + 3600000; // 1 hour
+    const newToken = signToken({ id: user.id, email: user.email });
+    const expiresAt = Date.now() + 3600000;
 
     res.json({
       ok: true,
@@ -239,7 +199,9 @@ router.post("/refresh", authRequired, async (req, res) => {
     res.status(500).json({ ok: false, message: "Failed to refresh token" });
   }
 });
-/* ───────────────────────────────
-   Export Router
-─────────────────────────────── */
+
+console.log(
+  "✅ auth.js loaded successfully with /signup, /login, /me, /refresh routes",
+);
+
 export default router;

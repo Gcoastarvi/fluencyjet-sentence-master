@@ -239,8 +239,9 @@ export default function Dashboard() {
       </div>
 
       <div className="flex items-center justify-between">
+        import {getDisplayName} from "@/utils/displayName"; // ...
         <h2 className="text-2xl font-bold text-indigo-700">
-          {`Welcome, ${displayName} 🎉`}
+          {`Welcome, ${getDisplayName(user)} 🎉`}
         </h2>
         <button
           onClick={loadProgress}
