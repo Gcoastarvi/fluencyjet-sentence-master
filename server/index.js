@@ -19,6 +19,8 @@ import leaderboardRoutes from "./routes/leaderboard.js";
 import xpRoutes from "./routes/xp.js";
 import healthRoutes from "./routes/health.js";
 import testRoutes from "./routes/test.js";
+import dashboardRoutes from "./routes/dashboard.js";
+app.use("/api/dashboard", dashboardRoutes);
 
 // ── basics
 const __filename = fileURLToPath(import.meta.url);
@@ -156,6 +158,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/xp", xpRoutes);
+
+import lessonRoutes from "./routes/lessons.js";
+app.use("/api/lessons", lessonRoutes);
 
 // Dev-only JWT debug helper
 if (isDev) {
