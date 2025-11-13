@@ -136,6 +136,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/upload"
+            element={
+              <ProtectedRoute>
+                <AdminUpload />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Public Pages */}
           <Route path="/login" element={<Login />} />

@@ -19,6 +19,8 @@ import leaderboardRoutes from "./routes/leaderboard.js";
 import xpRoutes from "./routes/xp.js";
 import healthRoutes from "./routes/health.js";
 import testRoutes from "./routes/test.js";
+import adminUploadRoutes from "./routes/adminUpload.js";
+app.use("/api/admin", adminUploadRoutes);
 
 // ── basics
 const __filename = fileURLToPath(import.meta.url);

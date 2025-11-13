@@ -14,7 +14,7 @@ hidden = [
 
 [nix]
 channel = "stable-24_05"
-packages = ["railway"]
+packages = ["railway", "postgresql_12"]
 
 [env]
 HOST = "0.0.0.0"

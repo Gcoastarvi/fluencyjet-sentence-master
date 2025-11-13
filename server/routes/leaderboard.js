@@ -1,10 +1,32 @@
 // server/routes/leaderboard.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 const router = express.Router();
+
+/* ───────────────────────────────
+   JWT Auth middleware
+─────────────────────────────── */
+const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
+
+function authRequired(req, res, next) {
+  try {
+    const hdr = req.headers.authorization || "";
+    const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+    if (!token)
+      return res.status(401).json({ ok: false, message: "Missing token" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = { id: decoded.id, email: decoded.email };
+    next();
+  } catch {
+    return res
+      .status(401)
+      .json({ ok: false, message: "Invalid or expired token" });
+  }
+}
 
 /* ----------------------------- time helpers ----------------------------- */
 function weekKeyUTC(d = new Date()) {
@@ -12,7 +34,7 @@ function weekKeyUTC(d = new Date()) {
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
   );
   const day = dt.getUTCDay();
-  const diff = (day + 6) % 7; // Monday = 0
+  const diff = (day + 6) % 7;
   dt.setUTCDate(dt.getUTCDate() - diff);
   dt.setUTCHours(0, 0, 0, 0);
   return dt;
@@ -28,7 +50,7 @@ function daysAgoISO(n) {
   return d.toISOString();
 }
 
-/* ----------------------- core implementations ----------------------- */
+/* ----------------------- leaderboard builders ----------------------- */
 async function leaderboardFromMaterialized(range = "week", limit = 50) {
   const orderField = range === "month" ? "month_xp" : "week_xp";
   const rows = await prisma.userWeeklyTotals.findMany({
@@ -84,10 +106,7 @@ async function leaderboardDaily(limit = 50) {
 }
 
 /* -------------------------------- routes ------------------------------- */
-/**
- * GET /api/leaderboard?range=week|month|day&limit=50
- */
-router.get("/", async (req, res) => {
+router.get("/", authRequired, async (req, res) => {
   try {
     const rangeRaw = String(req.query.range || "week").toLowerCase();
     const range = ["week", "month", "day"].includes(rangeRaw)
@@ -103,7 +122,6 @@ router.get("/", async (req, res) => {
         ? await leaderboardDaily(limit)
         : await leaderboardFromMaterialized(range, limit);
 
-    res.set("Cache-Control", "public, max-age=30");
     return res.json({
       ok: true,
       meta: {
@@ -123,25 +141,20 @@ router.get("/", async (req, res) => {
   }
 });
 
-/**
- * 🧍‍♂️ GET /api/leaderboard/me
- * Returns current user’s rank + a few surrounding peers in the weekly leaderboard.
- */
-router.get("/me", authMiddleware, async (req, res) => {
+/* 🧍‍♂️ Personal Rank */
+router.get("/me", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const weekKey = weekKeyUTC();
 
-    // Fetch full ordered leaderboard for the week
     const all = await prisma.userWeeklyTotals.findMany({
       where: { week_key: weekKey },
       orderBy: { week_xp: "desc" },
       select: { user_id: true, week_xp: true },
     });
 
-    if (!all.length) {
+    if (!all.length)
       return res.json({ ok: true, message: "No leaderboard data yet" });
-    }
 
     const idx = all.findIndex((r) => r.user_id === userId);
     const rank = idx === -1 ? null : idx + 1;
@@ -165,30 +178,14 @@ router.get("/me", authMiddleware, async (req, res) => {
     return res.json({ ok: true, rank, context });
   } catch (err) {
     console.error("❌ /api/leaderboard/me error:", err);
-    res.status(500).json({
-      ok: false,
-      message: "Could not load personal rank",
-      error: err.message,
-    });
+    res
+      .status(500)
+      .json({
+        ok: false,
+        message: "Could not load personal rank",
+        error: err.message,
+      });
   }
-});
-
-// Convenience aliases
-router.get("/top", (req, res, next) => {
-  req.query.range = "week";
-  return router.handle(req, res, next);
-});
-router.get("/weekly", (req, res, next) => {
-  req.query.range = "week";
-  return router.handle(req, res, next);
-});
-router.get("/monthly", (req, res, next) => {
-  req.query.range = "month";
-  return router.handle(req, res, next);
-});
-router.get("/daily", (req, res, next) => {
-  req.query.range = "day";
-  return router.handle(req, res, next);
 });
 
 export default router;
