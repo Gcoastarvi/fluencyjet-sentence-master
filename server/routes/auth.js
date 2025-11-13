@@ -19,6 +19,7 @@ function sanitizeUsername(u = "") {
     .slice(0, 20);
 }
 
+// Converts Prisma user object → minimal public JSON
 function publicUser(u) {
   if (!u) return null;
   const {
@@ -30,6 +31,7 @@ function publicUser(u) {
     tier_level,
     created_at,
   } = u;
+
   return {
     id,
     email,
@@ -45,46 +47,55 @@ function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
+// Middleware for protected routes
 function authRequired(req, res, next) {
   try {
     const hdr = req.headers.authorization || "";
     const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+
     if (!token)
       return res.status(401).json({ ok: false, message: "Missing token" });
+
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = { id: decoded.id, email: decoded.email };
+
     next();
   } catch {
-    return res
-      .status(401)
-      .json({ ok: false, message: "Invalid or expired token" });
+    return res.status(401).json({ ok: false, message: "Invalid token" });
   }
 }
 
-/** 📝 SIGNUP */
+/* ---------------------------------------------------------
+   📝 SIGNUP
+--------------------------------------------------------- */
 router.post("/signup", async (req, res) => {
   try {
-    const { name, username, email, password, avatar_url } = req.body || {};
-    if (!email || !password)
+    const { username, email, password, avatar_url } = req.body || {};
+
+    if (!email || !password) {
       return res
         .status(400)
         .json({ ok: false, message: "Email and password required" });
+    }
 
     const emailNorm = String(email).trim().toLowerCase();
     const usernameNorm =
-      sanitizeUsername(username || name || emailNorm.split("@")[0]) || null;
+      sanitizeUsername(username || emailNorm.split("@")[0]) || null;
+
     const existing = await prisma.user.findUnique({
       where: { email: emailNorm },
     });
-    if (existing)
+
+    if (existing) {
       return res
         .status(409)
         .json({ ok: false, message: "User already exists" });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
       data: {
-        name: name || usernameNorm,
         email: emailNorm,
         username: usernameNorm,
         password: hashed,
@@ -95,13 +106,12 @@ router.post("/signup", async (req, res) => {
     });
 
     const token = signToken({ id: user.id, email: user.email });
-    const expiresAt = Date.now() + 3600000; // 1h
+    const expiresAt = Date.now() + 3600000; // 1 hour
 
     res.status(201).json({
       ok: true,
       message: "Signup successful!",
       token,
-      name: user.name,
       expiresAt,
       user: publicUser(user),
     });
@@ -113,36 +123,45 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-/** 🔑 LOGIN */
+/* ---------------------------------------------------------
+   🔑 LOGIN
+--------------------------------------------------------- */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
-    if (!email || !password)
+
+    if (!email || !password) {
       return res
         .status(400)
         .json({ ok: false, message: "Email and password required" });
+    }
 
     const emailNorm = String(email).trim().toLowerCase();
-    const user = await prisma.user.findUnique({ where: { email: emailNorm } });
-    if (!user)
+
+    const user = await prisma.user.findUnique({
+      where: { email: emailNorm },
+    });
+
+    if (!user) {
       return res
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });
+    }
 
     const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid)
+    if (!isValid) {
       return res
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });
+    }
 
     const token = signToken({ id: user.id, email: user.email });
-    const expiresAt = Date.now() + 3600000; // 1h
+    const expiresAt = Date.now() + 3600000;
 
     res.json({
       ok: true,
       message: "Login successful!",
       token,
-      name: user.name,
       expiresAt,
       user: publicUser(user),
     });
@@ -154,14 +173,15 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/** 👤 PROFILE */
+/* ---------------------------------------------------------
+   👤 PROFILE  (/me)
+--------------------------------------------------------- */
 router.get("/me", authRequired, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: {
         id: true,
-        name: true,
         email: true,
         username: true,
         avatar_url: true,
@@ -170,6 +190,7 @@ router.get("/me", authRequired, async (req, res) => {
         created_at: true,
       },
     });
+
     res.json({ ok: true, user });
   } catch (err) {
     console.error("Me error:", err);
@@ -177,22 +198,26 @@ router.get("/me", authRequired, async (req, res) => {
   }
 });
 
-/** ♻️ REFRESH */
+/* ---------------------------------------------------------
+   ♻️ REFRESH TOKEN
+--------------------------------------------------------- */
 router.post("/refresh", authRequired, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
     if (!user)
       return res.status(404).json({ ok: false, message: "User not found" });
 
-    const newToken = signToken({ id: user.id, email: user.email });
+    const token = signToken({ id: user.id, email: user.email });
     const expiresAt = Date.now() + 3600000;
 
     res.json({
       ok: true,
       message: "Token refreshed successfully",
-      token: newToken,
+      token,
       expiresAt,
-      name: user.name,
     });
   } catch (err) {
     console.error("Token refresh error:", err);
@@ -200,8 +225,5 @@ router.post("/refresh", authRequired, async (req, res) => {
   }
 });
 
-console.log(
-  "✅ auth.js loaded successfully with /signup, /login, /me, /refresh routes",
-);
-
+console.log("✅ auth.js loaded successfully");
 export default router;
