@@ -1,6 +1,7 @@
 // client/src/App.jsx
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+
 import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
 import Paywall from "@/pages/Paywall";
@@ -12,12 +13,18 @@ import Signup from "@/pages/Signup";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { testHealth } from "@/api/testConnection";
 import { logoutAndRedirect } from "@/utils/authRedirect";
-import { getDisplayName } from "@/utils/displayName"; // ✅ Add this import
+import { getDisplayName } from "@/utils/displayName";
+
+// ✅ New lesson pages
+import Lessons from "@/pages/Lessons";
+import LessonDetail from "@/pages/LessonDetail";
+import LessonQuiz from "@/pages/LessonQuiz";
 
 export default function App() {
   const [userName, setUserName] = useState(null);
 
   useEffect(() => {
+    // Simple backend health ping
     testHealth();
     try {
       const storedUser = localStorage.getItem("userName");
@@ -31,7 +38,7 @@ export default function App() {
   }, []);
 
   const isLoggedIn = !!localStorage.getItem("token");
-  const name = getDisplayName({ name: userName }); // ✅ add this line
+  const name = getDisplayName({ name: userName });
 
   return (
     <BrowserRouter>
@@ -46,6 +53,9 @@ export default function App() {
           <nav className="flex flex-wrap gap-3 text-sm md:text-base items-center">
             <Link to="/dashboard" className="hover:underline">
               Dashboard
+            </Link>
+            <Link to="/lessons" className="hover:underline">
+              Lessons
             </Link>
             <Link to="/leaderboard" className="hover:underline">
               Leaderboard
@@ -78,7 +88,6 @@ export default function App() {
               </>
             ) : (
               <>
-                {/* ✅ Updated greeting */}
                 <span className="text-gray-600 text-sm">
                   Welcome, <b>{name}</b>
                 </span>
@@ -95,7 +104,12 @@ export default function App() {
 
         {/* 🔀 Routes */}
         <Routes>
+          {/* Public */}
           <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Protected core */}
           <Route
             path="/dashboard"
             element={
@@ -137,9 +151,31 @@ export default function App() {
             }
           />
 
-          {/* Public Pages */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          {/* ✅ New Lesson routes (also protected) */}
+          <Route
+            path="/lessons"
+            element={
+              <ProtectedRoute>
+                <Lessons />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lessons/:id"
+            element={
+              <ProtectedRoute>
+                <LessonDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lessons/:id/start"
+            element={
+              <ProtectedRoute>
+                <LessonQuiz />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </div>
     </BrowserRouter>
