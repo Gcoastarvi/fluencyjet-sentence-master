@@ -1,7 +1,7 @@
 // client/src/pages/TypingQuiz.jsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { awardXP } from "@/lib/xpTracker"; // ✅ Import centralized XP logic
+import { awardXP } from "@/lib/xpTracker"; // XP system (your existing file)
 
 // 🧠 Sample Tamil→English sentences
 const QUESTIONS = [
@@ -24,39 +24,56 @@ const QUESTIONS = [
   },
 ];
 
+// Normalize English answers
+function normalize(str) {
+  return str.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
 export default function TypingQuiz() {
   const [current, setCurrent] = useState(0);
   const [answer, setAnswer] = useState("");
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ optional visual feedback
+  const [loading, setLoading] = useState(false);
+
+  const [toast, setToast] = useState(null); // 🔥 New: toast feedback
 
   const q = QUESTIONS[current];
 
-  function normalize(str) {
-    return str.trim().toLowerCase().replace(/\s+/g, " ");
+  function showToast(msg, type = "info") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 2000);
   }
 
-  // ✅ Handle answer submission
+  // ====== HANDLE SUBMISSION ======
   async function handleSubmit(e) {
     e.preventDefault();
     if (!answer || loading) return;
 
-    if (normalize(answer) === normalize(q.english)) {
+    const correct = normalize(answer) === normalize(q.english);
+
+    if (correct) {
       setFeedback("✅ Correct!");
       setScore((s) => s + 1);
+      showToast("+150 XP", "success");
+
       try {
         setLoading(true);
-        await awardXP({ xpEarned: 150, type: "typing" }); // +150 XP for correct
-        console.log("XP +150 for correct answer");
+        await awardXP({
+          xpEarned: 150,
+          type: "QUESTION_CORRECT",
+          questionId: q.id,
+          mode: "typing",
+        });
       } catch (err) {
-        console.error("XP update failed during question:", err);
+        console.error("XP award failed (question):", err);
       } finally {
         setLoading(false);
       }
     } else {
       setFeedback(`❌ Correct answer: "${q.english}"`);
+      showToast("Incorrect", "error");
     }
 
     setTimeout(() => {
@@ -70,43 +87,72 @@ export default function TypingQuiz() {
     }, 1000);
   }
 
-  // ✅ Handle quiz completion
+  // ====== QUIZ COMPLETION ======
   async function handleQuizComplete() {
     setFinished(true);
+    showToast("Completed! +300 XP", "success");
+
     try {
       setLoading(true);
-      await awardXP({ xpEarned: 300, type: "typing", completedQuiz: true }); // +300 XP bonus
-      console.log("XP +300 for quiz completion");
+      await awardXP({
+        xpEarned: 300,
+        type: "QUIZ_COMPLETED",
+        totalQuestions: QUESTIONS.length,
+        correct: score,
+        mode: "typing",
+      });
     } catch (err) {
-      console.error("XP update failed on completion:", err);
+      console.error("XP award failed (quiz complete):", err);
     } finally {
       setLoading(false);
     }
   }
 
+  // ====== RESET QUIZ ======
   function restartQuiz() {
     setCurrent(0);
     setScore(0);
     setAnswer("");
     setFeedback("");
     setFinished(false);
+    showToast("Restarted", "info");
   }
 
   return (
     <div className="max-w-xl mx-auto text-center mt-10 p-4 space-y-6">
+      {/* TOAST */}
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50">
+          <div
+            className={`px-4 py-2 rounded-full text-white shadow ${
+              toast.type === "success"
+                ? "bg-emerald-600"
+                : toast.type === "error"
+                  ? "bg-red-600"
+                  : "bg-gray-700"
+            }`}
+          >
+            {toast.msg}
+          </div>
+        </div>
+      )}
+
+      {/* TITLE */}
       <h2 className="text-2xl font-bold text-indigo-700">
-        Typing Translation Quiz
+        ✍️ Typing Translation Quiz
       </h2>
 
       {!finished ? (
         <>
+          {/* QUESTION CARD */}
           <div className="text-gray-700 text-lg">
-            <p className="mb-3">Translate this sentence to English:</p>
+            <p className="mb-3">Translate to English:</p>
             <div className="bg-indigo-50 p-3 rounded-xl text-xl font-semibold">
               {q.tamil}
             </div>
           </div>
 
+          {/* INPUT */}
           <form onSubmit={handleSubmit} className="space-y-3">
             <input
               type="text"
@@ -117,6 +163,7 @@ export default function TypingQuiz() {
               autoFocus
               disabled={loading}
             />
+
             <button
               className="bg-indigo-600 text-white py-2 px-4 rounded-full hover:scale-105 transition disabled:opacity-50"
               disabled={loading}
@@ -125,6 +172,7 @@ export default function TypingQuiz() {
             </button>
           </form>
 
+          {/* FEEDBACK */}
           {feedback && (
             <p
               className={`text-lg font-semibold ${
@@ -135,21 +183,23 @@ export default function TypingQuiz() {
             </p>
           )}
 
+          {/* PROGRESS */}
           <p className="text-gray-500 text-sm">
             Question {current + 1} of {QUESTIONS.length}
           </p>
         </>
       ) : (
-        <div className="space-y-4">
+        <>
           <h3 className="text-xl font-semibold text-green-600">
-            Quiz Completed 🎉
+            🎉 Quiz Completed!
           </h3>
           <p>
             You scored <b>{score}</b> / {QUESTIONS.length}
           </p>
           <p className="text-sm text-gray-600">
-            XP automatically updated to your dashboard!
+            XP has been added to your dashboard.
           </p>
+
           <div className="flex justify-center gap-3">
             <button
               onClick={restartQuiz}
@@ -157,6 +207,7 @@ export default function TypingQuiz() {
             >
               Try Again
             </button>
+
             <Link
               to="/dashboard"
               className="bg-indigo-600 text-white px-4 py-2 rounded-full hover:scale-105 transition"
@@ -164,7 +215,7 @@ export default function TypingQuiz() {
               Go to Dashboard
             </Link>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
