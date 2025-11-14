@@ -1,7 +1,7 @@
 // client/src/pages/LessonDetail.jsx
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { getAuthToken } from "@/lib/auth";
+import { apiRequest } from "@/hooks/useApi";
 
 export default function LessonDetail() {
   const { id } = useParams();
@@ -12,16 +12,14 @@ export default function LessonDetail() {
 
   async function loadLesson() {
     try {
-      const res = await fetch(`/api/lessons/${id}`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
+      const data = await apiRequest(`/api/lessons/${id}`);
 
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.message);
+      if (!data?.ok) throw new Error("Failed to load lesson");
 
       setLesson(data.lesson);
-      setLoading(false);
     } catch (err) {
+      setLesson(null);
+    } finally {
       setLoading(false);
     }
   }
