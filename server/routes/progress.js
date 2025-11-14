@@ -7,20 +7,32 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 /* ------------------------------- TIME HELPERS ------------------------------ */
+
+// Week start (Monday) at 00:00 UTC
 function weekStartUTC(d = new Date()) {
   const dt = new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
   );
-  const diff = (dt.getUTCDay() + 6) % 7;
+  const diff = (dt.getUTCDay() + 6) % 7; // 0 = Monday
   dt.setUTCDate(dt.getUTCDate() - diff);
   dt.setUTCHours(0, 0, 0, 0);
   return dt;
 }
+
+// Month start at 00:00 UTC
 function monthStartUTC(d = new Date()) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0, 0));
 }
 
+// Day (date only) at 00:00 UTC – used for streaks
+function dayStartUTC(d = new Date()) {
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0),
+  );
+}
+
 /* ------------------------------ HELPERS ----------------------------------- */
+
 function parseAmount(x) {
   const n = Number(x);
   if (!Number.isFinite(n)) return null;
@@ -40,6 +52,7 @@ const DB_EVENT_TYPES = new Set([
   "ADMIN_ADJUST",
   "GENERIC",
 ]);
+
 const EVENT_ALIASES = new Map([
   ["generic", "GENERIC"],
   ["default", "GENERIC"],
@@ -49,34 +62,69 @@ const EVENT_ALIASES = new Map([
   ["quiz_completed", "QUIZ_COMPLETED"],
   ["daily_streak", "DAILY_STREAK"],
 ]);
+
 function normalizeEventType(input) {
   const alias = EVENT_ALIASES.get(String(input || "").toLowerCase());
   if (alias && DB_EVENT_TYPES.has(alias)) return alias;
+
   const upper = String(input || "")
     .trim()
     .toUpperCase();
   if (DB_EVENT_TYPES.has(upper)) return upper;
+
   return "GENERIC";
 }
 
+// Ensure userProgress row exists
 async function ensureProgress(tx, userId) {
   let p = await tx.userProgress.findUnique({ where: { user_id: userId } });
   if (!p) {
     p = await tx.userProgress.create({
-      data: { user_id: userId, total_xp: 0, last_activity: new Date() },
+      data: {
+        user_id: userId,
+        total_xp: 0,
+        last_activity: new Date(),
+        // if these columns exist they’ll be set, otherwise Prisma ignores them
+        consecutive_days: 0,
+        lessons_completed: 0,
+      },
     });
   }
   return p;
 }
 
+// Ensure userLessonProgress row exists for (user, lesson)
+async function ensureLessonProgress(tx, userId, lessonId) {
+  let lp = await tx.userLessonProgress.findFirst({
+    where: { user_id: userId, lesson_id: lessonId },
+  });
+
+  if (!lp) {
+    lp = await tx.userLessonProgress.create({
+      data: {
+        user_id: userId,
+        lesson_id: lessonId,
+        attempts: 0,
+        best_score: 0,
+        completed: false,
+        last_attempt_at: new Date(),
+      },
+    });
+  }
+
+  return lp;
+}
+
 /* -------------------------------- ROUTES ---------------------------------- */
 
-// 🧠 GET /api/progress/me
+/**
+ * 🧠 GET /api/progress/me
+ * Basic progress + top weekly leaderboard
+ */
 router.get("/me", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const wk = weekStartUTC();
-    const mk = monthStartUTC();
 
     const progress = await prisma.userProgress.upsert({
       where: { user_id: userId },
@@ -94,17 +142,18 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.json({ ok: true, progress, weeklyTop });
   } catch (err) {
     console.error("❌ /progress/me error:", err);
-    res
-      .status(500)
-      .json({
-        ok: false,
-        message: "Failed to load progress",
-        error: String(err?.message || err),
-      });
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load progress",
+      error: String(err?.message || err),
+    });
   }
 });
 
-// 📊 GET /api/progress/summary
+/**
+ * 📊 GET /api/progress/summary
+ * Rich summary used by dashboard in earlier phases
+ */
 router.get("/summary", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -156,25 +205,27 @@ router.get("/summary", authMiddleware, async (req, res) => {
     res.json({ ok: true, ...result });
   } catch (err) {
     console.error("❌ /progress/summary error:", err);
-    res
-      .status(500)
-      .json({
-        ok: false,
-        message: "Failed to load summary",
-        error: String(err?.message || err),
-      });
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load summary",
+      error: String(err?.message || err),
+    });
   }
 });
 
-// 💾 POST /api/progress/save
+/**
+ * 💾 POST /api/progress/save
+ * Generic XP-save endpoint from earlier phases (kept for compatibility)
+ */
 router.post("/save", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
     const amount = parseAmount(req.body?.amount);
-    if (amount === null || amount === 0)
+    if (amount === null || amount === 0) {
       return res
         .status(400)
         .json({ ok: false, message: "amount must be a non-zero number" });
+    }
 
     const eventType = normalizeEventType(req.body?.event);
     const meta = req.body?.meta ?? {};
@@ -183,6 +234,7 @@ router.post("/save", authMiddleware, async (req, res) => {
 
     const { ev, prog } = await prisma.$transaction(async (tx) => {
       await ensureProgress(tx, userId);
+
       const ev = await tx.xpEvent.create({
         data: {
           user_id: userId,
@@ -191,6 +243,7 @@ router.post("/save", authMiddleware, async (req, res) => {
           meta,
         },
       });
+
       await tx.userWeeklyTotals.upsert({
         where: { user_id: userId },
         update: {
@@ -208,6 +261,7 @@ router.post("/save", authMiddleware, async (req, res) => {
           month_xp: amount,
         },
       });
+
       const prog = await tx.userProgress.upsert({
         where: { user_id: userId },
         create: {
@@ -215,8 +269,12 @@ router.post("/save", authMiddleware, async (req, res) => {
           total_xp: amount,
           last_activity: new Date(),
         },
-        update: { total_xp: { increment: amount }, last_activity: new Date() },
+        update: {
+          total_xp: { increment: amount },
+          last_activity: new Date(),
+        },
       });
+
       return { ev, prog };
     });
 
@@ -224,17 +282,134 @@ router.post("/save", authMiddleware, async (req, res) => {
       ok: true,
       message: "Progress saved / XP awarded",
       event: ev,
-      progress: { total_xp: prog.total_xp, last_activity: prog.last_activity },
+      progress: {
+        total_xp: prog.total_xp,
+        last_activity: prog.last_activity,
+      },
     });
   } catch (err) {
     console.error("❌ /progress/save error:", err);
-    res
-      .status(500)
-      .json({
-        ok: false,
-        message: "Failed to save progress",
-        error: String(err?.message || err),
+    res.status(500).json({
+      ok: false,
+      message: "Failed to save progress",
+      error: String(err?.message || err),
+    });
+  }
+});
+
+/**
+ * ✅ NEW: POST /api/progress/update
+ * Called when a lesson quiz is completed.
+ * - Marks lesson as completed for this user
+ * - Increments lessons_completed (first-time only)
+ * - Updates streak (consecutive_days) and last_activity
+ */
+router.post("/update", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const lessonId = Number(req.body?.lessonId);
+
+    if (!lessonId || Number.isNaN(lessonId)) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "lessonId is required" });
+    }
+
+    const todayUTC = dayStartUTC(new Date());
+    const yesterdayUTC = dayStartUTC(
+      new Date(Date.now() - 24 * 60 * 60 * 1000),
+    );
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Ensure base progress row
+      const existingProgress = await ensureProgress(tx, userId);
+
+      // Ensure lesson exists (defensive)
+      const lesson = await tx.lesson.findUnique({
+        where: { id: lessonId },
+        select: { id: true },
       });
+      if (!lesson) {
+        throw new Error("Lesson not found");
+      }
+
+      // Ensure lesson progress row
+      let lp = await ensureLessonProgress(tx, userId, lessonId);
+      const wasCompleted = lp.completed;
+
+      // Mark lesson as completed + update attempt time
+      lp = await tx.userLessonProgress.update({
+        where: { id: lp.id },
+        data: {
+          completed: true,
+          attempts: (lp.attempts || 0) + 1,
+          last_attempt_at: new Date(),
+        },
+      });
+
+      // If first time completion → increment lessons_completed
+      if (!wasCompleted) {
+        await tx.userProgress.update({
+          where: { user_id: userId },
+          data: {
+            lessons_completed: {
+              increment: 1,
+            },
+          },
+        });
+      }
+
+      // ----- Streak logic -----
+      let newStreak = existingProgress.consecutive_days || 0;
+      const last = existingProgress.last_activity
+        ? dayStartUTC(new Date(existingProgress.last_activity))
+        : null;
+
+      if (!last) {
+        // first ever activity
+        newStreak = 1;
+      } else if (last.getTime() === todayUTC.getTime()) {
+        // already active today – streak unchanged
+        newStreak = existingProgress.consecutive_days || 1;
+      } else if (last.getTime() === yesterdayUTC.getTime()) {
+        // active yesterday → continue streak
+        newStreak = (existingProgress.consecutive_days || 0) + 1;
+      } else {
+        // gap → reset
+        newStreak = 1;
+      }
+
+      const updatedProgress = await tx.userProgress.update({
+        where: { user_id: userId },
+        data: {
+          consecutive_days: newStreak,
+          last_activity: new Date(),
+        },
+      });
+
+      return {
+        lessonProgress: lp,
+        progress: updatedProgress,
+      };
+    });
+
+    res.json({
+      ok: true,
+      message: "Lesson progress updated",
+      lessonProgress: result.lessonProgress,
+      progress: {
+        lessons_completed: result.progress.lessons_completed,
+        consecutive_days: result.progress.consecutive_days,
+        last_activity: result.progress.last_activity,
+      },
+    });
+  } catch (err) {
+    console.error("❌ /progress/update error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to update progress",
+      error: String(err?.message || err),
+    });
   }
 });
 
