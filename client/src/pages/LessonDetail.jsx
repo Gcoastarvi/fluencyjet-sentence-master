@@ -1,7 +1,7 @@
 // client/src/pages/LessonDetail.jsx
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { apiRequest } from "@/hooks/useApi";
+import { apiRequest } from "@/hooks/useApi.js";
 
 export default function LessonDetail() {
   const { id } = useParams();

@@ -1,7 +1,7 @@
 // client/src/pages/Lessons.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiRequest } from "@/hooks/useApi";
+import { apiRequest } from "@/hooks/useApi.js";
 
 export default function Lessons() {
   const [loading, setLoading] = useState(true);
