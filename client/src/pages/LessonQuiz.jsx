@@ -1,7 +1,7 @@
 // client/src/pages/LessonQuiz.jsx
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useApi, useXP } from "@/hooks/useApi";
+import { useApi, useXP } from "@/hooks/useApi.js";
 
 /**
  * LessonQuiz

@@ -1,248 +1,147 @@
 // client/src/pages/Dashboard.jsx
-import React, { useEffect, useState } from "react";
-import { getUserProfile } from "../api";
-import { fetchMyProgress, awardXP } from "@/lib/xpTracker";
-import LessonCard from "@/components/LessonCard";
-import LockBadge from "@/components/LockBadge";
-import { API_BASE } from "@/lib/api";
-import { startTokenWatcher } from "@/utils/tokenWatcher";
-import { getDisplayName } from "@/utils/displayName";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { useApi } from "@/hooks/useApi.js";
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [lessons, setLessons] = useState([]);
-  const [hasAccess] = useState(false);
-  const [progress, setProgress] = useState(null);
+  const api = useApi();
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [toasts, setToasts] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [error, setError] = useState("");
 
-  /* 🔔 Toast utilities */
-  const dismissToast = (id) => {
-    setToasts((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)),
-    );
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 400);
-  };
-
-  const pushToast = (msg, type = "info") => {
-    const id = Date.now();
-    const toast = { id, msg, type, exiting: false };
-
-    // Auto-dismiss after 3s
-    setTimeout(() => dismissToast(id), 3000);
-
-    // Keep only latest 4
-    setToasts((prev) => {
-      const updated = [...prev, toast];
-      return updated.slice(-4);
-    });
-  };
-
-  /* ✅ Token watcher & session refresh listener */
-  useEffect(() => {
-    startTokenWatcher(60000);
-
-    const handleSessionRefreshed = () =>
-      pushToast("✅ Session refreshed! You’re still logged in.", "success");
-
-    window.addEventListener("sessionRefreshed", handleSessionRefreshed);
-    return () =>
-      window.removeEventListener("sessionRefreshed", handleSessionRefreshed);
-  }, []);
-
-  /* ✅ Load user profile */
-  useEffect(() => {
-    async function loadUserProfile() {
-      try {
-        const res = await getUserProfile();
-        if (res?.data?.user) setUser(res.data.user);
-        else if (res?.data?.name) setUser(res.data);
-        else setErr("Please login to view your dashboard.");
-      } catch (e) {
-        console.error("Failed to load profile:", e);
-        setErr("Unable to fetch user profile. Please log in again.");
-      }
-    }
-    loadUserProfile();
-  }, []);
-
-  /* ✅ Load XP Progress */
-  async function loadProgress() {
-    setLoading(true);
+  async function loadSummary() {
     try {
-      const data = await fetchMyProgress();
-      setProgress(data ?? null);
-      setLastUpdated(new Date());
-    } catch (e) {
-      console.error("Progress fetch failed:", e);
-      setErr(e?.message || "Failed to load progress");
-      setProgress(null);
-    } finally {
+      setLoading(true);
+      const data = await api.get("/dashboard/summary");
+      setSummary(data.summary);
+      setLoading(false);
+    } catch (err) {
+      console.error("Dashboard load error:", err);
+      setError("Failed to load dashboard");
       setLoading(false);
     }
   }
 
-  /* ✅ Lessons & refresh on focus */
   useEffect(() => {
-    loadProgress();
-    const onFocus = () => loadProgress();
-    window.addEventListener("focus", onFocus);
-
-    fetch(`${API_BASE}/api/lessons`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((list) => setLessons(Array.isArray(list) ? list : []))
-      .catch(() => {
-        console.warn("No lessons API found — using fallback list");
-        setLessons([
-          {
-            title: "Basics 1",
-            description: "Simple Tamil → English sentences",
-          },
-          { title: "Basics 2", description: "Pronouns & verbs" },
-          { title: "Daily Life", description: "Common phrases" },
-          { title: "Past Tense", description: "Narrating events" },
-        ]);
-      });
-
-    return () => window.removeEventListener("focus", onFocus);
+    loadSummary();
   }, []);
 
-  /* ✅ Simulate XP (debug) */
-  async function simulateXP() {
-    try {
-      const updated = await awardXP({
-        xpEarned: 50,
-        type: "debug",
-        completedQuiz: false,
-      });
-      if (updated) {
-        setProgress(updated);
-        setLastUpdated(new Date());
-        pushToast("🎉 +50 XP added!", "success");
-      }
-    } catch (e) {
-      console.error("Simulate XP failed:", e);
-      pushToast("⚠️ XP update failed.", "error");
-    }
-  }
+  if (loading)
+    return (
+      <div className="text-center mt-20 text-indigo-600 text-xl">
+        Loading dashboard…
+      </div>
+    );
 
-  const displayName = getDisplayName(user);
+  if (error)
+    return (
+      <div className="text-center mt-20 text-red-600 text-xl">{error}</div>
+    );
+
+  const stats = summary || {};
+  const {
+    total_xp = 0,
+    week_xp = 0,
+    month_xp = 0,
+    streak = 0,
+    last_activity,
+    level,
+    next_level_xp,
+    xp_to_next,
+    week_graph = [],
+  } = stats;
 
   return (
-    <div className="max-w-2xl mx-auto p-4 space-y-6">
-      {/* 🪄 Toast Container */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse space-y-reverse space-y-2">
-        {toasts.map((t, i) => {
-          const delay = Math.min(i * 80, 400);
-          const typeClass =
-            t.type === "error"
-              ? "toast-error"
-              : t.type === "warning"
-                ? "toast-warning"
-                : t.type === "info"
-                  ? "toast-info"
-                  : "toast-success";
-          return (
-            <div
-              key={t.id}
-              className={`toast ${typeClass} ${
-                t.exiting ? "toast-exit" : "toast-seq-enter"
-              } cursor-pointer`}
-              style={{ animationDelay: `${delay}ms` }}
-              onClick={() => dismissToast(t.id)}
-              role="status"
-              aria-live="polite"
-            >
-              <span className="flex items-center gap-2">
-                {t.type === "error" && "❌"}
-                {t.type === "warning" && "⚠️"}
-                {t.type === "info" && "💬"}
-                {t.type === "success" && "✅"}
-                <span>{t.msg}</span>
-              </span>
-            </div>
-          );
-        })}
-      </div>
+    <div className="max-w-3xl mx-auto p-6 space-y-6 mt-6">
+      <h1 className="text-3xl font-bold text-indigo-700 text-center">
+        Your Dashboard
+      </h1>
 
-      {/* 🧭 Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-indigo-700">
-          {`Welcome, ${displayName} 🎉`}
-        </h2>
-        <button
-          onClick={loadProgress}
-          className="text-sm bg-indigo-600 text-white px-3 py-1 rounded-full hover:opacity-90"
-        >
-          Refresh
-        </button>
-      </div>
+      {/* XP Overview */}
+      <div className="bg-white shadow-md p-5 rounded-xl space-y-3">
+        <h2 className="text-xl font-semibold text-gray-800">XP Overview</h2>
 
-      <p className="text-center text-gray-500">
-        Earn XP by completing lessons daily!
-      </p>
+        <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="bg-indigo-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-500">Total XP</p>
+            <p className="text-2xl font-bold text-indigo-700">{total_xp}</p>
+          </div>
 
-      {loading && <p className="text-center text-gray-500">Loading...</p>}
-      {err && !loading && <p className="text-center text-red-500">{err}</p>}
+          <div className="bg-indigo-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-500">Weekly XP</p>
+            <p className="text-2xl font-bold text-indigo-700">{week_xp}</p>
+          </div>
 
-      {!loading && !err && !progress && (
-        <p className="text-center text-gray-500">
-          No progress yet — complete a quiz to get started!
-        </p>
-      )}
+          <div className="bg-indigo-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-500">Monthly XP</p>
+            <p className="text-2xl font-bold text-indigo-700">{month_xp}</p>
+          </div>
 
-      {progress && (
-        <div className="bg-indigo-50 p-4 rounded-xl shadow-sm text-center space-y-3">
-          <p>
-            XP: <b>{progress.xp ?? 0}</b>
+          <div className="bg-indigo-50 p-3 rounded-lg">
+            <p className="text-sm text-gray-500">Streak</p>
+            <p className="text-2xl font-bold text-indigo-700">{streak} 🔥</p>
+          </div>
+        </div>
+
+        {/* XP Progress */}
+        <div>
+          <p className="text-sm text-gray-600 mt-2">
+            Level {level} — {xp_to_next} XP to next level
           </p>
-          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-gray-200 h-3 rounded-full mt-1">
             <div
-              className="bg-violet-600 h-2 rounded-full transition-all duration-300"
+              className="h-full bg-indigo-600 rounded-full transition-all"
               style={{
-                width: `${Math.min(((progress.xp ?? 0) % 1000) / 10, 100)}%`,
+                width: `${Math.min((total_xp / next_level_xp) * 100, 100)}%`,
               }}
             />
           </div>
-          <p>
-            🔥 Streak: <b>{progress.streak ?? 0}</b> days
-          </p>
-          <p>
-            🏅 Badges:{" "}
-            {Array.isArray(progress.badges) && progress.badges.length
-              ? progress.badges.join(", ")
-              : "None yet"}
-          </p>
-          <button
-            onClick={simulateXP}
-            className="bg-violet-600 text-white px-4 py-2 rounded-full hover:scale-105 transition"
-          >
-            +50 XP (simulate)
-          </button>
-          {lastUpdated && (
-            <p className="text-xs text-gray-500">
-              Updated {lastUpdated.toLocaleTimeString()}
-            </p>
-          )}
         </div>
-      )}
-
-      <LockBadge hasAccess={hasAccess} />
-
-      <div className="grid gap-4">
-        {lessons.map((l, i) => (
-          <LessonCard
-            key={`${l.title ?? "lesson"}-${i}`}
-            lesson={l}
-            locked={!hasAccess && i > 2}
-            onSelect={() => alert("Lesson Opened!")}
-          />
-        ))}
       </div>
+
+      {/* Weekly XP Graph */}
+      <div className="bg-white shadow p-5 rounded-xl">
+        <h2 className="text-xl font-semibold text-gray-800 mb-2">
+          Weekly Progress
+        </h2>
+
+        <div className="flex items-end gap-3 justify-between h-32">
+          {week_graph.map((xp, i) => (
+            <div key={i} className="flex flex-col items-center w-full">
+              <div
+                className="bg-indigo-500 w-6 rounded-t"
+                style={{ height: `${Math.min(xp, 150)}px` }}
+              ></div>
+              <p className="text-xs mt-1 text-gray-600">
+                {["M", "T", "W", "T", "F", "S", "S"][i]}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <div className="text-center space-y-3">
+        <Link
+          to="/typing-quiz"
+          className="bg-indigo-600 text-white py-2 px-4 rounded-full inline-block hover:scale-105 transition"
+        >
+          Continue Typing Quiz
+        </Link>
+
+        <br />
+
+        <Link
+          to="/lessons"
+          className="bg-violet-600 text-white py-2 px-4 rounded-full inline-block hover:scale-105 transition"
+        >
+          View Lessons
+        </Link>
+      </div>
+
+      <p className="text-center text-gray-400 text-xs">
+        Last activity: {new Date(last_activity).toLocaleString()}
+      </p>
     </div>
   );
 }
