@@ -8,21 +8,34 @@ function kFormat(n) {
   return String(n ?? 0);
 }
 
+// Smooth XP count-up animation
+function animateXP(start, end, setter, duration = 600) {
+  const startTime = performance.now();
+  function tick(now) {
+    const progress = Math.min((now - startTime) / duration, 1);
+    const value = Math.floor(start + (end - start) * progress);
+    setter(value);
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 export default function Leaderboard() {
-  const [period, setPeriod] = useState("daily"); // "daily" | "weekly" | "monthly"
+  const [period, setPeriod] = useState("daily");
   const [rows, setRows] = useState([]);
+  const [displayRows, setDisplayRows] = useState([]);
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState(null);
 
-  // keep a reference to abort previous fetch when period changes/refresh pressed
   const inFlight = useRef(null);
+
+  const currentUserId = localStorage.getItem("fj_uid");
 
   async function loadLeaderboard(p = period) {
     setLoading(true);
     setErr("");
 
-    // abort any previous request
     inFlight.current?.abort();
     const controller = new AbortController();
     inFlight.current = controller;
@@ -31,6 +44,7 @@ export default function Leaderboard() {
     if (!token) {
       setErr("Please log in to view leaderboard.");
       setRows([]);
+      setDisplayRows([]);
       setLoading(false);
       return;
     }
@@ -41,7 +55,6 @@ export default function Leaderboard() {
         signal: controller.signal,
       });
 
-      // Try to parse JSON; if HTML came back (e.g., SPA fallback), this will throw
       let data = {};
       try {
         data = await res.json();
@@ -57,12 +70,34 @@ export default function Leaderboard() {
         throw new Error(data?.error || "Failed to load leaderboard");
       }
 
-      setRows(Array.isArray(data.top) ? data.top : []);
+      setRows(data.top || []);
+
+      // Animate XP-up effect
+      const animated = data.top.map((r) => ({
+        ...r,
+        animatedXP: 0,
+      }));
+      setDisplayRows(animated);
+
+      // start count-up per row
+      requestAnimationFrame(() => {
+        animated.forEach((row, idx) => {
+          animateXP(0, row.total_xp, (v) => {
+            setDisplayRows((old) => {
+              const copy = [...old];
+              copy[idx] = { ...copy[idx], animatedXP: v };
+              return copy;
+            });
+          });
+        });
+      });
+
       setUpdatedAt(new Date());
     } catch (e) {
-      if (e.name === "AbortError") return; // silently ignore aborted fetches
+      if (e.name === "AbortError") return;
       console.error("Leaderboard fetch failed:", e);
       setRows([]);
+      setDisplayRows([]);
       setErr(e.message || "Failed to load leaderboard");
     } finally {
       setLoading(false);
@@ -71,9 +106,8 @@ export default function Leaderboard() {
 
   useEffect(() => {
     loadLeaderboard(period);
-    // cleanup on unmount
     return () => inFlight.current?.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, [period]);
 
   return (
@@ -87,8 +121,10 @@ export default function Leaderboard() {
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`px-3 py-1 rounded-full ${
-              period === p ? "bg-indigo-600 text-white" : "bg-gray-100"
+            className={`px-3 py-1 rounded-full transition ${
+              period === p
+                ? "bg-indigo-600 text-white shadow-md"
+                : "bg-gray-100 hover:bg-gray-200"
             }`}
           >
             {p[0].toUpperCase() + p.slice(1)}
@@ -100,10 +136,11 @@ export default function Leaderboard() {
         <button
           onClick={() => loadLeaderboard()}
           disabled={loading}
-          className="px-4 py-1 rounded-full bg-violet-600 text-white disabled:opacity-60"
+          className="px-4 py-1 rounded-full bg-violet-600 text-white disabled:opacity-60 hover:scale-105 transition"
         >
           {loading ? "Loading…" : "Refresh"}
         </button>
+
         {updatedAt && !loading && (
           <span className="text-xs text-gray-500">
             Updated {updatedAt.toLocaleTimeString()}
@@ -119,29 +156,63 @@ export default function Leaderboard() {
             <p className="text-center text-gray-500">Loading…</p>
           ) : rows.length ? (
             <ol className="space-y-2">
-              {rows.map((r, i) => (
-                <li
-                  key={`${r.user_id ?? i}-${period}`}
-                  className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-indigo-50 text-indigo-700 font-semibold">
-                      {i + 1}
-                    </span>
-                    <div className="text-sm">
-                      <div className="font-semibold">
-                        {r.email || `User ${r.user_id ?? "?"}`}
-                      </div>
-                      <div className="text-gray-500">
-                        XP this {period}: {kFormat(r.total_xp)}
+              {displayRows.map((r, i) => {
+                const isCurrentUser =
+                  String(r.user_id) === String(currentUserId);
+
+                // Rank trophy icons
+                const trophy =
+                  i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+
+                return (
+                  <li
+                    key={`${r.user_id}-${period}`}
+                    className={`
+                      flex items-center justify-between p-3 rounded-xl shadow-sm
+                      bg-white relative overflow-hidden
+                      transition transform hover:scale-[1.01]
+                      animate-fade-in
+                      ${isCurrentUser ? "bg-indigo-50 border border-indigo-300" : ""}
+                      ${i < 10 && !isCurrentUser ? "animate-leaderboard-glow" : ""}
+                    `}
+                    style={{
+                      animationDelay: `${i * 80}ms`,
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`w-8 h-8 flex items-center justify-center rounded-full font-semibold
+                          ${
+                            i < 3
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-indigo-50 text-indigo-700"
+                          }
+                        `}
+                      >
+                        {trophy || i + 1}
+                      </span>
+
+                      <div className="text-sm">
+                        <div
+                          className={`font-semibold ${
+                            isCurrentUser ? "text-indigo-700" : ""
+                          }`}
+                        >
+                          {r.email || `User ${r.user_id}`}
+                          {isCurrentUser && " (You)"}
+                        </div>
+                        <div className="text-gray-500">
+                          XP this {period}: {kFormat(r.animatedXP)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="font-bold text-indigo-700">
-                    {kFormat(r.total_xp)}
-                  </div>
-                </li>
-              ))}
+
+                    <div className="font-bold text-indigo-700 text-lg">
+                      {kFormat(r.animatedXP)}
+                    </div>
+                  </li>
+                );
+              })}
             </ol>
           ) : (
             <p className="text-center text-gray-500">
