@@ -1,190 +1,193 @@
 // server/routes/leaderboard.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import jwt from "jsonwebtoken";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-/* ───────────────────────────────
-   JWT Auth middleware
-─────────────────────────────── */
-const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
+/* -------------------------------------------------------------------------- */
+/*                          VALID PERIODS & HELPERS                           */
+/* -------------------------------------------------------------------------- */
+const VALID_PERIODS = new Set(["daily", "weekly", "monthly"]);
 
-function authRequired(req, res, next) {
-  try {
-    const hdr = req.headers.authorization || "";
-    const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
-    if (!token)
-      return res.status(401).json({ ok: false, message: "Missing token" });
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = { id: decoded.id, email: decoded.email };
-    next();
-  } catch {
-    return res
-      .status(401)
-      .json({ ok: false, message: "Invalid or expired token" });
-  }
-}
-
-/* ----------------------------- time helpers ----------------------------- */
-function weekKeyUTC(d = new Date()) {
-  const dt = new Date(
+function todayUTC() {
+  const d = new Date();
+  return new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
   );
-  const day = dt.getUTCDay();
-  const diff = (day + 6) % 7;
-  dt.setUTCDate(dt.getUTCDate() - diff);
-  dt.setUTCHours(0, 0, 0, 0);
-  return dt;
 }
-function monthKeyUTC(d = new Date()) {
-  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
-  dt.setUTCHours(0, 0, 0, 0);
-  return dt;
+
+function weekStartUTC() {
+  const d = todayUTC();
+  const diff = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - diff);
+  return d;
 }
-function daysAgoISO(n) {
+
+function monthStartUTC() {
   const d = new Date();
-  d.setUTCDate(d.getUTCDate() - n);
-  return d.toISOString();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
 }
 
-/* ----------------------- leaderboard builders ----------------------- */
-async function leaderboardFromMaterialized(range = "week", limit = 50) {
-  const orderField = range === "month" ? "month_xp" : "week_xp";
-  const rows = await prisma.userWeeklyTotals.findMany({
-    where:
-      range === "month"
-        ? { month_key: monthKeyUTC() }
-        : { week_key: weekKeyUTC() },
-    orderBy: { [orderField]: "desc" },
-    take: limit,
-    include: {
-      user: { select: { username: true, email: true, avatar_url: true } },
-    },
+async function getLatestBadgeForUser(userId) {
+  const ub = await prisma.userBadge.findFirst({
+    where: { user_id: userId },
+    include: { badge: true },
+    orderBy: { awarded_at: "desc" },
   });
 
-  return rows.map((r, i) => ({
-    rank: i + 1,
-    user_id: r.user_id,
-    username: r.user.username || r.user.email,
-    avatar_url: r.user.avatar_url,
-    xp: range === "month" ? r.month_xp : r.week_xp,
-    updated_at: r.updated_at,
-  }));
+  if (!ub) return null;
+  return {
+    code: ub.badge.code,
+    label: ub.badge.label,
+    description: ub.badge.description,
+    awarded_at: ub.awarded_at,
+  };
 }
 
-async function leaderboardDaily(limit = 50) {
-  const sinceISO = daysAgoISO(1);
-  const events = await prisma.xpEvent.groupBy({
-    by: ["user_id"],
-    where: { created_at: { gte: new Date(sinceISO) } },
-    _sum: { xp_delta: true },
-    orderBy: { _sum: { xp_delta: "desc" } },
-    take: limit,
-  });
-
-  if (!events.length) return [];
-  const ids = events.map((e) => e.user_id);
-  const users = await prisma.user.findMany({
-    where: { id: { in: ids } },
-    select: { id: true, username: true, email: true, avatar_url: true },
-  });
-  const byId = new Map(users.map((u) => [u.id, u]));
-
-  return events.map((e, i) => {
-    const u = byId.get(e.user_id);
-    return {
-      rank: i + 1,
-      user_id: e.user_id,
-      username: (u?.username || u?.email) ?? "User",
-      avatar_url: u?.avatar_url ?? null,
-      xp: e._sum.xp_delta ?? 0,
-    };
-  });
-}
-
-/* -------------------------------- routes ------------------------------- */
-router.get("/", authRequired, async (req, res) => {
+/* -------------------------------------------------------------------------- */
+/*                           GET /api/leaderboard/:period                     */
+/* -------------------------------------------------------------------------- */
+router.get("/:period", authMiddleware, async (req, res) => {
   try {
-    const rangeRaw = String(req.query.range || "week").toLowerCase();
-    const range = ["week", "month", "day"].includes(rangeRaw)
-      ? rangeRaw
-      : "week";
-    const limit = Math.min(
-      Math.max(parseInt(req.query.limit || "50", 10) || 50, 1),
-      100,
-    );
+    const userId = req.user.id;
+    const period = req.params.period;
 
-    const data =
-      range === "day"
-        ? await leaderboardDaily(limit)
-        : await leaderboardFromMaterialized(range, limit);
+    if (!VALID_PERIODS.has(period)) {
+      return res.status(400).json({
+        ok: false,
+        error: "Invalid leaderboard period",
+      });
+    }
+
+    // ---------------- DAILY (from xpEvent) ----------------
+    if (period === "daily") {
+      const since = todayUTC();
+
+      const events = await prisma.xpEvent.groupBy({
+        by: ["user_id"],
+        where: { created_at: { gte: since } },
+        _sum: { xp_delta: true },
+        orderBy: {
+          _sum: { xp_delta: "desc" },
+        },
+        take: 50,
+      });
+
+      const ids = events.map((e) => e.user_id);
+      const users = await prisma.user.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, email: true, username: true },
+      });
+      const map = new Map(users.map((u) => [u.id, u]));
+
+      const top = events.map((e, i) => ({
+        rank: i + 1,
+        user_id: e.user_id,
+        email: map.get(e.user_id)?.email,
+        username: map.get(e.user_id)?.username || map.get(e.user_id)?.email,
+        total_xp: e._sum.xp_delta || 0,
+      }));
+
+      const youIndex = events.findIndex((e) => e.user_id === userId);
+      const youXP = youIndex === -1 ? 0 : events[youIndex]._sum.xp_delta || 0;
+      const youRank = youIndex === -1 ? null : youIndex + 1;
+      const badge = await getLatestBadgeForUser(userId);
+
+      return res.json({
+        ok: true,
+        top,
+        you: {
+          rank: youRank,
+          xp: youXP,
+          badge,
+        },
+      });
+    }
+
+    // ---------------- WEEKLY / MONTHLY (materialized) ----------------
+    let orderField = "week_xp";
+    let whereKey = { week_key: weekStartUTC() };
+
+    if (period === "monthly") {
+      orderField = "month_xp";
+      whereKey = { month_key: monthStartUTC() };
+    }
+
+    const rows = await prisma.userWeeklyTotals.findMany({
+      where: whereKey,
+      orderBy: { [orderField]: "desc" },
+      take: 50,
+      include: {
+        user: { select: { email: true, username: true } },
+      },
+    });
+
+    const top = rows.map((r, i) => ({
+      rank: i + 1,
+      user_id: r.user_id,
+      email: r.user.email,
+      username: r.user.username || r.user.email,
+      total_xp: r[orderField] ?? 0,
+    }));
+
+    const youIndex = rows.findIndex((r) => r.user_id === userId);
+    const youRow = youIndex === -1 ? null : rows[youIndex];
+    const youXP = youRow ? (youRow[orderField] ?? 0) : 0;
+    const youRank = youIndex === -1 ? null : youIndex + 1;
+    const badge = await getLatestBadgeForUser(userId);
 
     return res.json({
       ok: true,
-      meta: {
-        range,
-        limit,
-        week_key: weekKeyUTC(),
-        month_key: monthKeyUTC(),
-        generated_at: new Date().toISOString(),
+      top,
+      you: {
+        rank: youRank,
+        xp: youXP,
+        badge,
       },
-      leaderboard: data,
     });
-  } catch (e) {
-    console.error("Leaderboard error:", e);
-    return res
-      .status(500)
-      .json({ ok: false, message: "Failed to load leaderboard" });
+  } catch (err) {
+    console.error("❌ /leaderboard/:period error:", err);
+    return res.status(500).json({
+      ok: false,
+      error: "Failed to load leaderboard",
+    });
   }
 });
 
-/* 🧍‍♂️ Personal Rank */
-router.get("/me", authRequired, async (req, res) => {
+/* -------------------------------------------------------------------------- */
+/*                           GET /api/leaderboard/me                          */
+/* -------------------------------------------------------------------------- */
+router.get("/me", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
-    const weekKey = weekKeyUTC();
+    const weekKey = weekStartUTC();
 
-    const all = await prisma.userWeeklyTotals.findMany({
+    const rows = await prisma.userWeeklyTotals.findMany({
       where: { week_key: weekKey },
       orderBy: { week_xp: "desc" },
       select: { user_id: true, week_xp: true },
     });
 
-    if (!all.length)
+    if (!rows.length) {
       return res.json({ ok: true, message: "No leaderboard data yet" });
+    }
 
-    const idx = all.findIndex((r) => r.user_id === userId);
-    const rank = idx === -1 ? null : idx + 1;
-    const neighbors = all.slice(Math.max(0, idx - 2), idx + 3);
+    const index = rows.findIndex((r) => r.user_id === userId);
+    const rank = index === -1 ? null : index + 1;
 
-    const ids = neighbors.map((n) => n.user_id);
-    const users = await prisma.user.findMany({
-      where: { id: { in: ids } },
-      select: { id: true, username: true, avatar_url: true },
+    return res.json({
+      ok: true,
+      rank,
+      week_xp: index === -1 ? 0 : rows[index].week_xp,
     });
-    const byId = new Map(users.map((u) => [u.id, u]));
-
-    const context = neighbors.map((n) => ({
-      rank: all.findIndex((r) => r.user_id === n.user_id) + 1,
-      user_id: n.user_id,
-      username: byId.get(n.user_id)?.username || `user_${n.user_id}`,
-      avatar_url: byId.get(n.user_id)?.avatar_url || null,
-      week_xp: n.week_xp,
-    }));
-
-    return res.json({ ok: true, rank, context });
   } catch (err) {
-    console.error("❌ /api/leaderboard/me error:", err);
-    res
-      .status(500)
-      .json({
-        ok: false,
-        message: "Could not load personal rank",
-        error: err.message,
-      });
+    console.error("❌ /leaderboard/me error:", err);
+    return res.status(500).json({
+      ok: false,
+      error: "Failed to load personal rank",
+    });
   }
 });
 
