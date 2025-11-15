@@ -20,8 +20,22 @@ function animateXP(start, end, setter, duration = 600) {
   requestAnimationFrame(tick);
 }
 
+// Tiny helper: guess flag from email/domain (very lightweight)
+function countryEmojiFromEmail(email = "") {
+  const lower = email.toLowerCase();
+  if (!lower.includes("@")) return "🌐";
+  const domain = lower.split("@")[1] || "";
+
+  if (domain.endsWith(".in")) return "🇮🇳";
+  if (domain.endsWith(".uk")) return "🇬🇧";
+  if (domain.endsWith(".us")) return "🇺🇸";
+  if (domain.includes("gmail")) return "🇮🇳"; // your core audience
+  if (domain.includes("yahoo")) return "🌐";
+  return "🌐";
+}
+
 export default function Leaderboard() {
-  const [period, setPeriod] = useState("daily");
+  const [period, setPeriod] = useState("daily"); // "daily" | "weekly" | "monthly"
   const [rows, setRows] = useState([]);
   const [displayRows, setDisplayRows] = useState([]);
   const [err, setErr] = useState("");
@@ -30,7 +44,9 @@ export default function Leaderboard() {
 
   const inFlight = useRef(null);
 
+  // we use this to highlight "You"
   const currentUserId = localStorage.getItem("fj_uid");
+  const currentUserEmail = localStorage.getItem("fj_email");
 
   async function loadLeaderboard(p = period) {
     setLoading(true);
@@ -70,21 +86,23 @@ export default function Leaderboard() {
         throw new Error(data?.error || "Failed to load leaderboard");
       }
 
-      setRows(data.top || []);
+      const top = Array.isArray(data.top) ? data.top : [];
+      setRows(top);
 
-      // Animate XP-up effect
-      const animated = data.top.map((r) => ({
+      // initialise animated rows
+      const animated = top.map((r) => ({
         ...r,
         animatedXP: 0,
       }));
       setDisplayRows(animated);
 
-      // start count-up per row
+      // count-up animation per row
       requestAnimationFrame(() => {
         animated.forEach((row, idx) => {
           animateXP(0, row.total_xp, (v) => {
             setDisplayRows((old) => {
               const copy = [...old];
+              if (!copy[idx]) return copy;
               copy[idx] = { ...copy[idx], animatedXP: v };
               return copy;
             });
@@ -107,8 +125,14 @@ export default function Leaderboard() {
   useEffect(() => {
     loadLeaderboard(period);
     return () => inFlight.current?.abort();
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
+
+  // max XP for thin bar scaling
+  const maxXP =
+    displayRows.length > 0
+      ? Math.max(...displayRows.map((r) => Number(r.total_xp || 0)))
+      : 0;
 
   return (
     <div className="max-w-xl mx-auto p-4 space-y-4">
@@ -116,15 +140,16 @@ export default function Leaderboard() {
         Leaderboard
       </h2>
 
+      {/* Period selector */}
       <div className="flex gap-2 justify-center">
         {["daily", "weekly", "monthly"].map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
-            className={`px-3 py-1 rounded-full transition ${
+            className={`px-3 py-1 rounded-full text-sm transition ${
               period === p
                 ? "bg-indigo-600 text-white shadow-md"
-                : "bg-gray-100 hover:bg-gray-200"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
             {p[0].toUpperCase() + p.slice(1)}
@@ -132,6 +157,7 @@ export default function Leaderboard() {
         ))}
       </div>
 
+      {/* Refresh + timestamp */}
       <div className="flex items-center justify-center gap-3">
         <button
           onClick={() => loadLeaderboard()}
@@ -140,7 +166,6 @@ export default function Leaderboard() {
         >
           {loading ? "Loading…" : "Refresh"}
         </button>
-
         {updatedAt && !loading && (
           <span className="text-xs text-gray-500">
             Updated {updatedAt.toLocaleTimeString()}
@@ -157,58 +182,101 @@ export default function Leaderboard() {
           ) : rows.length ? (
             <ol className="space-y-2">
               {displayRows.map((r, i) => {
+                const userIdStr = String(r.user_id ?? "");
                 const isCurrentUser =
-                  String(r.user_id) === String(currentUserId);
+                  (currentUserId && String(currentUserId) === userIdStr) ||
+                  (!!currentUserEmail &&
+                    r.email &&
+                    r.email.toLowerCase() === currentUserEmail.toLowerCase());
 
-                // Rank trophy icons
+                const name =
+                  r.name ||
+                  r.display_name ||
+                  r.email ||
+                  `User ${r.user_id ?? "?"}`;
+
+                const initial = name.trim().charAt(0).toUpperCase() || "?";
+                const flag = r.flag || countryEmojiFromEmail(r.email || "");
+
                 const trophy =
                   i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+
+                const xpValue = r.animatedXP ?? r.total_xp ?? 0;
+                let barPct = maxXP > 0 ? (Number(xpValue) / maxXP) * 100 : 0;
+                if (barPct > 100) barPct = 100;
+                if (barPct > 0 && barPct < 8) barPct = 8; // minimum visible bar
 
                 return (
                   <li
                     key={`${r.user_id}-${period}`}
                     className={`
+                      leaderboard-row
                       flex items-center justify-between p-3 rounded-xl shadow-sm
                       bg-white relative overflow-hidden
-                      transition transform hover:scale-[1.01]
-                      animate-fade-in
-                      ${isCurrentUser ? "bg-indigo-50 border border-indigo-300" : ""}
+                      transition transform hover:scale-[1.01] hover:shadow-md
+                      ${isCurrentUser ? "leaderboard-self-glow border border-indigo-300" : ""}
                       ${i < 10 && !isCurrentUser ? "animate-leaderboard-glow" : ""}
                     `}
-                    style={{
-                      animationDelay: `${i * 80}ms`,
-                    }}
+                    style={{ animationDelay: `${i * 70}ms` }}
                   >
                     <div className="flex items-center gap-3">
+                      {/* Rank circle with trophy / rank number */}
                       <span
-                        className={`w-8 h-8 flex items-center justify-center rounded-full font-semibold
+                        className={`w-8 h-8 flex items-center justify-center rounded-full font-semibold text-sm
                           ${
-                            i < 3
+                            i === 0
                               ? "bg-yellow-100 text-yellow-700"
-                              : "bg-indigo-50 text-indigo-700"
+                              : i === 1
+                                ? "bg-slate-100 text-slate-700"
+                                : i === 2
+                                  ? "bg-amber-100 text-amber-700"
+                                  : "bg-indigo-50 text-indigo-700"
                           }
                         `}
                       >
                         {trophy || i + 1}
                       </span>
 
-                      <div className="text-sm">
-                        <div
-                          className={`font-semibold ${
-                            isCurrentUser ? "text-indigo-700" : ""
-                          }`}
-                        >
-                          {r.email || `User ${r.user_id}`}
-                          {isCurrentUser && " (You)"}
+                      {/* Avatar + name + xp text + XP bar */}
+                      <div className="flex items-center gap-3">
+                        {/* Avatar with initial */}
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center text-sm font-semibold shadow-sm">
+                          {initial}
                         </div>
-                        <div className="text-gray-500">
-                          XP this {period}: {kFormat(r.animatedXP)}
+
+                        <div className="text-sm">
+                          <div
+                            className={`font-semibold flex items-center gap-1 ${
+                              isCurrentUser ? "text-indigo-700" : ""
+                            }`}
+                          >
+                            <span>{name}</span>
+                            {isCurrentUser && (
+                              <span className="text-[0.7rem] px-2 py-[1px] rounded-full bg-indigo-100 text-indigo-700 font-semibold">
+                                You
+                              </span>
+                            )}
+                            <span className="text-xs">{flag}</span>
+                          </div>
+
+                          <div className="text-gray-500 text-xs">
+                            XP this {period}: {kFormat(xpValue)}
+                          </div>
+
+                          {/* Thin minimal XP bar */}
+                          <div className="mt-1 w-40 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 transition-all duration-500"
+                              style={{ width: `${barPct}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
 
+                    {/* Right side: big XP number */}
                     <div className="font-bold text-indigo-700 text-lg">
-                      {kFormat(r.animatedXP)}
+                      {kFormat(xpValue)}
                     </div>
                   </li>
                 );
