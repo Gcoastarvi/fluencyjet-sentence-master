@@ -1,73 +1,87 @@
 // server/routes/lessons.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import authRequired from "../middleware/authRequired.js";
+import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
 
-const prisma = new PrismaClient();
 const router = express.Router();
+const prisma = new PrismaClient();
 
-/* --------------------------------------------------------------------
-   GET /api/lessons
-   Returns the list of lessons with lock/unlock info
--------------------------------------------------------------------- */
+/**
+ * Lesson Rules:
+ * - Lesson 1 always unlocked
+ * - A lesson unlocks if previous lesson completed
+ * - UserLessonProgress tracks completion
+ */
+
+/* ---------------- GET /lessons ---------------- */
 router.get("/", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    const progress = await prisma.userProgress.findUnique({
-      where: { user_id: userId },
-    });
-
-    const lastUnlocked = progress?.last_unlocked_order ?? 1;
-
     const lessons = await prisma.lesson.findMany({
       orderBy: { order: "asc" },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        order: true,
-        is_locked: true,
-      },
+      select: { id: true, title: true, description: true, order: true },
     });
 
-    const visible = lessons.map((l) => ({
-      ...l,
-      unlocked:
-        user.has_access || l.order <= lastUnlocked ? true : !l.is_locked,
-    }));
+    if (!lessons.length) {
+      return res.json({ ok: true, lessons: [], unlocked: [] });
+    }
 
-    res.json({ ok: true, lessons: visible });
+    const completed = await prisma.userLessonProgress.findMany({
+      where: { user_id: userId, completed: true },
+      select: { lesson_id: true },
+    });
+
+    const completedSet = new Set(completed.map((x) => x.lesson_id));
+    const unlocked = new Set();
+
+    lessons.forEach((lesson, index) => {
+      if (index === 0) unlocked.add(lesson.id);
+      else {
+        const prev = lessons[index - 1];
+        if (completedSet.has(prev.id)) unlocked.add(lesson.id);
+      }
+    });
+
+    res.json({ ok: true, lessons, unlocked: [...unlocked] });
   } catch (err) {
-    console.error("Lessons error:", err);
-    res.status(500).json({ ok: false, message: "Failed to fetch lessons" });
+    console.error("❌ /api/lessons error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load lessons",
+      error: String(err?.message || err),
+    });
   }
 });
 
-/* --------------------------------------------------------------------
-   GET /api/lessons/:id
-   Returns one lesson + questions
--------------------------------------------------------------------- */
+/* ---------------- GET /lessons/:id ---------------- */
 router.get("/:id", authRequired, async (req, res) => {
   try {
     const lessonId = Number(req.params.id);
+    const userId = req.user.id;
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      include: { questions: true },
+      select: { id: true, title: true, content: true, order: true },
     });
 
-    if (!lesson)
+    if (!lesson) {
       return res.status(404).json({ ok: false, message: "Lesson not found" });
+    }
 
-    res.json({ ok: true, lesson });
+    const progress = await prisma.userLessonProgress.findFirst({
+      where: { user_id: userId, lesson_id: lessonId },
+      select: { completed: true, attempts: true, best_score: true },
+    });
+
+    res.json({ ok: true, lesson, progress });
   } catch (err) {
-    console.error("Lesson detail error:", err);
-    res.status(500).json({ ok: false, message: "Failed to fetch lesson" });
+    console.error("❌ /api/lessons/:id error:", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load lesson details",
+      error: String(err?.message || err),
+    });
   }
 });
 

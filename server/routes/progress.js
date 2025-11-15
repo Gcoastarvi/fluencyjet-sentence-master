@@ -1,7 +1,7 @@
 // server/routes/progress.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -84,7 +84,6 @@ async function ensureProgress(tx, userId) {
         user_id: userId,
         total_xp: 0,
         last_activity: new Date(),
-        // if these columns exist they’ll be set, otherwise Prisma ignores them
         consecutive_days: 0,
         lessons_completed: 0,
       },
@@ -117,11 +116,8 @@ async function ensureLessonProgress(tx, userId, lessonId) {
 
 /* -------------------------------- ROUTES ---------------------------------- */
 
-/**
- * 🧠 GET /api/progress/me
- * Basic progress + top weekly leaderboard
- */
-router.get("/me", authMiddleware, async (req, res) => {
+// 🧠 GET /api/progress/me
+router.get("/me", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const wk = weekStartUTC();
@@ -136,7 +132,6 @@ router.get("/me", authMiddleware, async (req, res) => {
       where: { week_key: wk },
       orderBy: { week_xp: "desc" },
       take: 10,
-      select: { user_id: true, week_xp: true },
     });
 
     res.json({ ok: true, progress, weeklyTop });
@@ -150,11 +145,8 @@ router.get("/me", authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * 📊 GET /api/progress/summary
- * Rich summary used by dashboard in earlier phases
- */
-router.get("/summary", authMiddleware, async (req, res) => {
+// 📊 GET /api/progress/summary
+router.get("/summary", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const wk = weekStartUTC();
@@ -172,31 +164,24 @@ router.get("/summary", authMiddleware, async (req, res) => {
           week_xp: 0,
           month_xp: 0,
         },
-        select: { week_xp: true, month_xp: true, updated_at: true },
       });
 
       const badges = await tx.userBadge.findMany({
         where: { user_id: userId },
         orderBy: { awarded_at: "desc" },
         take: 10,
-        select: {
-          badge: { select: { code: true, name: true } },
-          awarded_at: true,
-        },
       });
 
       const events = await tx.xpEvent.findMany({
         where: { user_id: userId },
         orderBy: { created_at: "desc" },
         take: 10,
-        select: { event_type: true, xp_delta: true, created_at: true },
       });
 
       const weeklyTop = await tx.userWeeklyTotals.findMany({
         where: { week_key: wk },
         orderBy: { week_xp: "desc" },
         take: 10,
-        select: { user_id: true, week_xp: true },
       });
 
       return { progress, weekly, badges, events, weeklyTop };
@@ -213,11 +198,8 @@ router.get("/summary", authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * 💾 POST /api/progress/save
- * Generic XP-save endpoint from earlier phases (kept for compatibility)
- */
-router.post("/save", authMiddleware, async (req, res) => {
+// 💾 POST /api/progress/save
+router.post("/save", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const amount = parseAmount(req.body?.amount);
@@ -282,10 +264,7 @@ router.post("/save", authMiddleware, async (req, res) => {
       ok: true,
       message: "Progress saved / XP awarded",
       event: ev,
-      progress: {
-        total_xp: prog.total_xp,
-        last_activity: prog.last_activity,
-      },
+      progress: prog,
     });
   } catch (err) {
     console.error("❌ /progress/save error:", err);
@@ -297,14 +276,8 @@ router.post("/save", authMiddleware, async (req, res) => {
   }
 });
 
-/**
- * ✅ NEW: POST /api/progress/update
- * Called when a lesson quiz is completed.
- * - Marks lesson as completed for this user
- * - Increments lessons_completed (first-time only)
- * - Updates streak (consecutive_days) and last_activity
- */
-router.post("/update", authMiddleware, async (req, res) => {
+// ✅ UPDATED: POST /api/progress/update
+router.post("/update", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const lessonId = Number(req.body?.lessonId);
@@ -316,28 +289,20 @@ router.post("/update", authMiddleware, async (req, res) => {
     }
 
     const todayUTC = dayStartUTC(new Date());
-    const yesterdayUTC = dayStartUTC(
-      new Date(Date.now() - 24 * 60 * 60 * 1000),
-    );
+    const yesterdayUTC = dayStartUTC(new Date(Date.now() - 86400000));
 
     const result = await prisma.$transaction(async (tx) => {
-      // Ensure base progress row
       const existingProgress = await ensureProgress(tx, userId);
 
-      // Ensure lesson exists (defensive)
       const lesson = await tx.lesson.findUnique({
         where: { id: lessonId },
-        select: { id: true },
       });
-      if (!lesson) {
-        throw new Error("Lesson not found");
-      }
 
-      // Ensure lesson progress row
+      if (!lesson) throw new Error("Lesson not found");
+
       let lp = await ensureLessonProgress(tx, userId, lessonId);
       const wasCompleted = lp.completed;
 
-      // Mark lesson as completed + update attempt time
       lp = await tx.userLessonProgress.update({
         where: { id: lp.id },
         data: {
@@ -347,37 +312,25 @@ router.post("/update", authMiddleware, async (req, res) => {
         },
       });
 
-      // If first time completion → increment lessons_completed
       if (!wasCompleted) {
         await tx.userProgress.update({
           where: { user_id: userId },
-          data: {
-            lessons_completed: {
-              increment: 1,
-            },
-          },
+          data: { lessons_completed: { increment: 1 } },
         });
       }
 
-      // ----- Streak logic -----
+      // streak logic
       let newStreak = existingProgress.consecutive_days || 0;
       const last = existingProgress.last_activity
         ? dayStartUTC(new Date(existingProgress.last_activity))
         : null;
 
-      if (!last) {
-        // first ever activity
-        newStreak = 1;
-      } else if (last.getTime() === todayUTC.getTime()) {
-        // already active today – streak unchanged
+      if (!last) newStreak = 1;
+      else if (last.getTime() === todayUTC.getTime())
         newStreak = existingProgress.consecutive_days || 1;
-      } else if (last.getTime() === yesterdayUTC.getTime()) {
-        // active yesterday → continue streak
+      else if (last.getTime() === yesterdayUTC.getTime())
         newStreak = (existingProgress.consecutive_days || 0) + 1;
-      } else {
-        // gap → reset
-        newStreak = 1;
-      }
+      else newStreak = 1;
 
       const updatedProgress = await tx.userProgress.update({
         where: { user_id: userId },
@@ -387,21 +340,56 @@ router.post("/update", authMiddleware, async (req, res) => {
         },
       });
 
+      // unlock current lesson
+      await tx.unlockedLesson.upsert({
+        where: {
+          user_id_lesson_id: { user_id: userId, lesson_id: lessonId },
+        },
+        update: {},
+        create: {
+          user_id: userId,
+          lesson_id: lessonId,
+        },
+      });
+
+      // unlock next lesson
+      const nextLesson = await tx.lesson.findFirst({
+        where: { order: { gt: lesson.order } },
+        orderBy: { order: "asc" },
+      });
+
+      if (nextLesson) {
+        await tx.unlockedLesson.upsert({
+          where: {
+            user_id_lesson_id: {
+              user_id: userId,
+              lesson_id: nextLesson.id,
+            },
+          },
+          update: {},
+          create: {
+            user_id: userId,
+            lesson_id: nextLesson.id,
+          },
+        });
+      }
+
+      const unlocked = await tx.unlockedLesson.findMany({
+        where: { user_id: userId },
+      });
+
       return {
         lessonProgress: lp,
         progress: updatedProgress,
+        unlockedLessons: unlocked.map((u) => u.lesson_id),
+        nextLessonId: nextLesson?.id || null,
       };
     });
 
     res.json({
       ok: true,
-      message: "Lesson progress updated",
-      lessonProgress: result.lessonProgress,
-      progress: {
-        lessons_completed: result.progress.lessons_completed,
-        consecutive_days: result.progress.consecutive_days,
-        last_activity: result.progress.last_activity,
-      },
+      message: "Lesson progress updated + lessons unlocked",
+      ...result,
     });
   } catch (err) {
     console.error("❌ /progress/update error:", err);
