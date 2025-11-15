@@ -1,14 +1,22 @@
+/* -------------------------------------------------------- */
+/* Tailwind Base                                             */
+/* -------------------------------------------------------- */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 🌍 Global styles */
+/* -------------------------------------------------------- */
+/* GLOBAL                                                     */
+/* -------------------------------------------------------- */
 body {
   @apply bg-gray-50 text-gray-900;
   font-family: "Poppins", "Noto Sans Tamil", sans-serif;
 }
 
-/* ✨ Toast animation (fade + slide-in) */
+/* -------------------------------------------------------- */
+/* TOAST ANIMATIONS                                           */
+/* -------------------------------------------------------- */
+
 @keyframes fade-in {
   0% {
     opacity: 0;
@@ -30,7 +38,6 @@ body {
   animation: fade-in 0.4s ease-out;
 }
 
-/* ✨ Slide-down + fade animation for toasts */
 @keyframes slide-down-fade {
   0% {
     opacity: 0;
@@ -52,12 +59,10 @@ body {
   animation: slide-down-fade 0.5s ease-out forwards;
 }
 
-/* 🪄 Sequential toast entrance animation */
 .toast-seq-enter {
   animation: toastBounceIn 0.55s cubic-bezier(0.22, 1.4, 0.36, 1) forwards;
 }
 
-/* 🌬️ Toast exit animation (soft fade + slide up) */
 @keyframes toastExit {
   from {
     opacity: 1;
@@ -74,7 +79,6 @@ body {
   animation: toastExit 0.6s ease forwards;
 }
 
-/* 🪩 Toast entrance bounce animation */
 @keyframes toastBounceIn {
   0% {
     opacity: 0;
@@ -95,36 +99,31 @@ body {
   }
 }
 
-/* 🌈 Toast color themes + glowing shadows */
+/* Toast colors */
 .toast-success {
   background-color: #10b981;
-  /* Tailwind emerald-500 */
   color: white;
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
 }
 
 .toast-error {
   background-color: #ef4444;
-  /* Tailwind red-500 */
   color: white;
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
 }
 
 .toast-warning {
   background-color: #f59e0b;
-  /* Tailwind amber-500 */
   color: white;
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
 }
 
 .toast-info {
   background-color: #3b82f6;
-  /* Tailwind blue-500 */
   color: white;
   box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
 }
 
-/* 🧈 Base toast style */
 .toast {
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
@@ -132,18 +131,16 @@ body {
   transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.3s ease;
 }
 
-/* 🫧 Hover gently increases glow */
 .toast:hover {
   transform: translateY(-2px) scale(1.02);
   box-shadow: 0 0 18px rgba(0, 0, 0, 0.15), 0 0 14px currentColor;
 }
 
-/* 🎉 Confetti sparkles for success toasts */
+/* Confetti anchors */
 .toast {
   position: relative;
 }
 
-/* ensures confetti can anchor */
 .toast-confetti {
   position: absolute;
   inset: 0;
@@ -152,7 +149,6 @@ body {
   z-index: 2;
 }
 
-/* Each sparkle is a tiny dot/rect that flies out + fades */
 .toast-confetti .sparkle {
   position: absolute;
   left: 50%;
@@ -166,31 +162,24 @@ body {
   animation-delay: var(--delay, 0ms);
 }
 
-/* Vary colors nicely; success inherits green glow already */
 .toast-success .sparkle:nth-child(3n) {
   background: #ffffff;
 }
 
-/* white pop */
 .toast-success .sparkle:nth-child(3n + 1) {
   background: #34d399;
 }
 
-/* emerald-400 */
 .toast-success .sparkle:nth-child(3n + 2) {
   background: #a7f3d0;
 }
 
-/* emerald-200 */
-
-/* A few sparks look like bars instead of dots for variety */
 .toast-confetti .sparkle.bar {
   width: 2px;
   height: 10px;
   border-radius: 2px;
 }
 
-/* Flight path uses CSS variables for per-piece drift/rotation */
 @keyframes toastSparkle {
   0% {
     opacity: 0;
@@ -203,8 +192,103 @@ body {
 
   100% {
     opacity: 0;
-    /* dx = horizontal scatter, rot = spin; both set inline */
-    transform:
-      translate(calc(-50% + var(--dx, 0px)), -120%) scale(0.95) rotate(var(--rot, 0deg));
+    transform: translate(calc(-50% + var(--dx)), -120%) scale(0.95) rotate(var(--rot));
   }
+}
+
+/* -------------------------------------------------------- */
+/* QUIZ UPGRADES / XP ANIMATIONS                            */
+/* -------------------------------------------------------- */
+
+@keyframes xpFloat {
+  0% {
+    transform: translate(-50%, -20%) scale(0.7);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -140%) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.animate-xp-float {
+  animation: xpFloat 0.9s ease-out forwards;
+}
+
+/* Wrong answer shake */
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  50% {
+    transform: translateX(5px);
+  }
+
+  75% {
+    transform: translateX(-5px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.25s;
+}
+
+/* Generic fade-in for final screen + modal */
+@keyframes fadeInSpecial {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeInSpecial 0.4s ease-out;
+}
+
+/* Leaderboard Glow */
+@keyframes leaderboardGlow {
+  0% {
+    box-shadow: 0 0 0 rgba(250, 204, 21, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.8);
+  }
+
+  100% {
+    box-shadow: 0 0 0 rgba(250, 204, 21, 0);
+  }
+}
+
+.animate-leaderboard-glow {
+  animation: leaderboardGlow 1.4s ease-out 1;
+}
+
+/* -------------------------------------------------------- */
+/* LESSON CARD LOCK STYLING                                 */
+/* -------------------------------------------------------- */
+
+.lesson-card.locked {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.lesson-card .lock {
+  font-size: 20px;
+  color: #b00;
 }
