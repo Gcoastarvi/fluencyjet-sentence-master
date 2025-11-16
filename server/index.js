@@ -10,9 +10,11 @@ import helmet from "helmet";
 import morgan from "morgan";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
-import { PrismaClient } from "@prisma/client";
 
-// ROUTES – (only imports here)
+// shared prisma client
+import prisma from "./db/client.js";
+
+// ROUTES
 import authRoutes from "./routes/auth.js";
 import progressRoutes from "./routes/progress.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
@@ -21,18 +23,16 @@ import healthRoutes from "./routes/health.js";
 import testRoutes from "./routes/test.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import lessonRoutes from "./routes/lessons.js";
+import quizRoutes from "./routes/quizzes.js"; // ⬅️ NEW
+// later: import adminRoutes from "./routes/admin.js";
 
-// -------------------------------------------------------------------------
-// BASICS
-// -------------------------------------------------------------------------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = process.env.NODE_ENV === "development";
 const PORT = process.env.PORT || 8080;
 
-const app = express(); // CREATE APP FIRST (important)
+const app = express();
 const httpServer = createServer(app);
-const prisma = new PrismaClient();
 
 // -------------------------------------------------------------------------
 // SECURITY
@@ -133,21 +133,22 @@ console.log(
 );
 
 // -------------------------------------------------------------------------
-// API ROUTES — ORDER MATTERS
+// API ROUTES
 // -------------------------------------------------------------------------
-app.use("/api", healthRoutes); // health + /api/health/db
+app.use("/api", healthRoutes);
 
 app.get("/api/_echo", (req, res) => {
   res.json({ ok: true, method: req.method, hasBody: !!req.body });
 });
 
-// MAIN API
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/xp", xpRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/lessons", lessonRoutes);
+app.use("/api/quizzes", quizRoutes); // ⬅️ NEW
+// app.use("/api/admin", adminRoutes);
 
 if (isDev) {
   app.get("/api/debug/jwt", (req, res) => {
@@ -172,14 +173,14 @@ if (isDev) {
 app.use("/api/test", testRoutes);
 
 // -------------------------------------------------------------------------
-// 404 HANDLER
+// 404
 // -------------------------------------------------------------------------
 app.all("/api/*", (_req, res) =>
   res.status(404).json({ ok: false, message: "API route not found" }),
 );
 
 // -------------------------------------------------------------------------
-// FRONTEND SERVE (PRODUCTION)
+// FRONTEND (PROD)
 // -------------------------------------------------------------------------
 app.use(express.static(path.join(__dirname, "..", "client", "dist")));
 
@@ -188,14 +189,14 @@ app.get("*", (_req, res) => {
 });
 
 // -------------------------------------------------------------------------
-// SERVER START
+// START SERVER
 // -------------------------------------------------------------------------
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(
     `🚀 Deployed ${new Date().toISOString()} | Mode: ${process.env.NODE_ENV}`,
   );
   console.log(
-    "✅ APIs ready → /api/health /api/auth /api/progress /api/leaderboard /api/xp",
+    "✅ APIs ready → /api/health /api/auth /api/progress /api/leaderboard /api/xp /api/dashboard /api/lessons /api/quizzes",
   );
   console.log(`🌐 Server running on port ${PORT}`);
 });
@@ -211,7 +212,6 @@ async function shutdown(signal) {
       console.log("✅ Server closed cleanly. Bye 👋");
       process.exit(0);
     });
-
     setTimeout(() => process.exit(0), 5000).unref();
   } catch (err) {
     console.error("Shutdown error:", err);
