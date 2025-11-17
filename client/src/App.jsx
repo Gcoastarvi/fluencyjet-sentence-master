@@ -19,6 +19,7 @@ import { getDisplayName } from "@/utils/displayName";
 import Lessons from "@/pages/Lessons";
 import LessonDetail from "@/pages/LessonDetail";
 import LessonQuiz from "@/pages/LessonQuiz";
+import Practice from "./pages/Practice";
 
 export default function App() {
   const [userName, setUserName] = useState(null);
@@ -102,14 +103,13 @@ export default function App() {
           </nav>
         </header>
 
-        {/* 🔀 Routes */}
         <Routes>
           {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* Protected core */}
+          {/* Protected */}
           <Route
             path="/dashboard"
             element={
@@ -118,6 +118,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/leaderboard"
             element={
@@ -126,6 +127,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/typing-quiz"
             element={
@@ -134,6 +136,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/paywall"
             element={
@@ -142,6 +145,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/admin"
             element={
@@ -151,7 +155,7 @@ export default function App() {
             }
           />
 
-          {/* ✅ New Lesson routes (also protected) */}
+          {/* Lessons */}
           <Route
             path="/lessons"
             element={
@@ -160,6 +164,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/lessons/:id"
             element={
@@ -168,6 +173,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* OLD route (unused now) */}
           <Route
             path="/lessons/:id/start"
             element={
@@ -176,8 +183,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* NEW PRACTICE ROUTE */}
+          <Route
+            path="/practice"
+            element={
+              <ProtectedRoute>
+                <Practice />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
-      </div>
-    </BrowserRouter>
-  );
-}

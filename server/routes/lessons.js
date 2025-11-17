@@ -1,52 +1,68 @@
 // server/routes/lessons.js
 import express from "express";
-import { PrismaClient } from "@prisma/client";
-import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
+import prisma from "../db/client.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 /**
- * Lesson Rules:
- * - Lesson 1 always unlocked
- * - A lesson unlocks if previous lesson completed
- * - UserLessonProgress tracks completion
+ * Rules:
+ * - Lessons sorted by `order` (fallback by id if needed)
+ * - Lesson #1 always unlocked for a user
+ * - A lesson is unlocked if previous lesson (by order) is completed
  */
 
-/* ---------------- GET /lessons ---------------- */
-router.get("/", authRequired, async (req, res) => {
+// GET /api/lessons
+router.get("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
 
     const lessons = await prisma.lesson.findMany({
-      orderBy: { order: "asc" },
-      select: { id: true, title: true, description: true, order: true },
+      orderBy: [{ order: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        difficulty: true,
+        order: true,
+        is_locked: true,
+      },
     });
 
     if (!lessons.length) {
-      return res.json({ ok: true, lessons: [], unlocked: [] });
+      return res.json({ lessons: [], unlocked: [] });
     }
 
-    const completed = await prisma.userLessonProgress.findMany({
-      where: { user_id: userId, completed: true },
-      select: { lesson_id: true },
+    const progresses = await prisma.userLessonProgress.findMany({
+      where: { user_id: userId },
+      select: { lesson_id: true, completed: true },
     });
 
-    const completedSet = new Set(completed.map((x) => x.lesson_id));
+    const completedSet = new Set(
+      progresses.filter((p) => p.completed).map((p) => p.lesson_id),
+    );
+
     const unlocked = new Set();
 
-    lessons.forEach((lesson, index) => {
-      if (index === 0) unlocked.add(lesson.id);
-      else {
-        const prev = lessons[index - 1];
-        if (completedSet.has(prev.id)) unlocked.add(lesson.id);
+    lessons.forEach((lesson, idx) => {
+      if (idx === 0) {
+        unlocked.add(lesson.id);
+      } else {
+        const prevLessonId = lessons[idx - 1].id;
+        if (completedSet.has(prevLessonId)) {
+          unlocked.add(lesson.id);
+        }
       }
     });
 
-    res.json({ ok: true, lessons, unlocked: [...unlocked] });
+    return res.json({
+      lessons,
+      unlocked: Array.from(unlocked),
+    });
   } catch (err) {
     console.error("❌ /api/lessons error:", err);
-    res.status(500).json({
+    return res.status(500).json({
       ok: false,
       message: "Failed to load lessons",
       error: String(err?.message || err),
@@ -54,15 +70,23 @@ router.get("/", authRequired, async (req, res) => {
   }
 });
 
-/* ---------------- GET /lessons/:id ---------------- */
-router.get("/:id", authRequired, async (req, res) => {
+// GET /api/lessons/:id
+router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const lessonId = Number(req.params.id);
     const userId = req.user.id;
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
-      select: { id: true, title: true, content: true, order: true },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        content: true,
+        difficulty: true,
+        order: true,
+      },
     });
 
     if (!lesson) {
@@ -71,13 +95,22 @@ router.get("/:id", authRequired, async (req, res) => {
 
     const progress = await prisma.userLessonProgress.findFirst({
       where: { user_id: userId, lesson_id: lessonId },
-      select: { completed: true, attempts: true, best_score: true },
+      select: {
+        completed: true,
+        attempts: true,
+        best_score: true,
+        last_attempt_at: true,
+      },
     });
 
-    res.json({ ok: true, lesson, progress });
+    return res.json({
+      ok: true,
+      lesson,
+      progress: progress || null,
+    });
   } catch (err) {
     console.error("❌ /api/lessons/:id error:", err);
-    res.status(500).json({
+    return res.status(500).json({
       ok: false,
       message: "Failed to load lesson details",
       error: String(err?.message || err),

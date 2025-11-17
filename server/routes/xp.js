@@ -98,7 +98,11 @@ async function ensureBadgeCatalog(tx) {
   for (const b of BADGE_THRESHOLDS) {
     await tx.badge.upsert({
       where: { code: b.code },
-      update: { label: b.label, description: b.description, min_xp: b.minXp },
+      update: {
+        label: b.label,
+        description: b.description,
+        min_xp: b.minXp,
+      },
       create: {
         code: b.code,
         label: b.label,

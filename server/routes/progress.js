@@ -1,37 +1,33 @@
 // server/routes/progress.js
 import express from "express";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../db/client.js";
 import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
-/* ------------------------------- TIME HELPERS ------------------------------ */
+/* TIME HELPERS */
 
-// Week start (Monday) at 00:00 UTC
 function weekStartUTC(d = new Date()) {
   const dt = new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
   );
-  const diff = (dt.getUTCDay() + 6) % 7; // 0 = Monday
+  const diff = (dt.getUTCDay() + 6) % 7;
   dt.setUTCDate(dt.getUTCDate() - diff);
   dt.setUTCHours(0, 0, 0, 0);
   return dt;
 }
 
-// Month start at 00:00 UTC
 function monthStartUTC(d = new Date()) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0, 0));
 }
 
-// Day (date only) at 00:00 UTC – used for streaks
 function dayStartUTC(d = new Date()) {
   return new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0, 0),
   );
 }
 
-/* ------------------------------ HELPERS ----------------------------------- */
+/* HELPERS */
 
 function parseAmount(x) {
   const n = Number(x);
@@ -64,18 +60,16 @@ const EVENT_ALIASES = new Map([
 ]);
 
 function normalizeEventType(input) {
-  const alias = EVENT_ALIASES.get(String(input || "").toLowerCase());
+  const key = String(input || "").toLowerCase();
+  const alias = EVENT_ALIASES.get(key);
   if (alias && DB_EVENT_TYPES.has(alias)) return alias;
-
   const upper = String(input || "")
     .trim()
     .toUpperCase();
   if (DB_EVENT_TYPES.has(upper)) return upper;
-
   return "GENERIC";
 }
 
-// Ensure userProgress row exists
 async function ensureProgress(tx, userId) {
   let p = await tx.userProgress.findUnique({ where: { user_id: userId } });
   if (!p) {
@@ -92,7 +86,6 @@ async function ensureProgress(tx, userId) {
   return p;
 }
 
-// Ensure userLessonProgress row exists for (user, lesson)
 async function ensureLessonProgress(tx, userId, lessonId) {
   let lp = await tx.userLessonProgress.findFirst({
     where: { user_id: userId, lesson_id: lessonId },
@@ -110,13 +103,12 @@ async function ensureLessonProgress(tx, userId, lessonId) {
       },
     });
   }
-
   return lp;
 }
 
-/* -------------------------------- ROUTES ---------------------------------- */
+/* ROUTES */
 
-// 🧠 GET /api/progress/me
+// GET /api/progress/me
 router.get("/me", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -145,7 +137,7 @@ router.get("/me", authRequired, async (req, res) => {
   }
 });
 
-// 📊 GET /api/progress/summary
+// GET /api/progress/summary
 router.get("/summary", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -170,6 +162,7 @@ router.get("/summary", authRequired, async (req, res) => {
         where: { user_id: userId },
         orderBy: { awarded_at: "desc" },
         take: 10,
+        include: { badge: true },
       });
 
       const events = await tx.xpEvent.findMany({
@@ -184,7 +177,18 @@ router.get("/summary", authRequired, async (req, res) => {
         take: 10,
       });
 
-      return { progress, weekly, badges, events, weeklyTop };
+      return {
+        progress,
+        weekly,
+        badges: badges.map((ub) => ({
+          code: ub.badge.code,
+          label: ub.badge.label,
+          description: ub.badge.description,
+          awarded_at: ub.awarded_at,
+        })),
+        events,
+        weeklyTop,
+      };
     });
 
     res.json({ ok: true, ...result });
@@ -198,7 +202,7 @@ router.get("/summary", authRequired, async (req, res) => {
   }
 });
 
-// 💾 POST /api/progress/save
+// POST /api/progress/save  (XP alias – kept for compatibility)
 router.post("/save", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -276,7 +280,7 @@ router.post("/save", authRequired, async (req, res) => {
   }
 });
 
-// ✅ UPDATED: POST /api/progress/update
+// POST /api/progress/update  (mark lesson completed + unlock next + streak)
 router.post("/update", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -289,7 +293,9 @@ router.post("/update", authRequired, async (req, res) => {
     }
 
     const todayUTC = dayStartUTC(new Date());
-    const yesterdayUTC = dayStartUTC(new Date(Date.now() - 86400000));
+    const yesterdayUTC = dayStartUTC(
+      new Date(Date.now() - 24 * 60 * 60 * 1000),
+    );
 
     const result = await prisma.$transaction(async (tx) => {
       const existingProgress = await ensureProgress(tx, userId);
@@ -352,7 +358,7 @@ router.post("/update", authRequired, async (req, res) => {
         },
       });
 
-      // unlock next lesson
+      // unlock next lesson (by order)
       const nextLesson = await tx.lesson.findFirst({
         where: { order: { gt: lesson.order } },
         orderBy: { order: "asc" },

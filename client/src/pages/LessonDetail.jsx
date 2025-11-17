@@ -1,24 +1,49 @@
 // client/src/pages/LessonDetail.jsx
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { apiRequest } from "@/hooks/useApi.js";
 
 export default function LessonDetail() {
   const { id } = useParams();
+  const lessonId = Number(id);
   const navigate = useNavigate();
 
   const [lesson, setLesson] = useState(null);
+  const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [locked, setLocked] = useState(false);
+  const [nextLessonId, setNextLessonId] = useState(null);
 
   async function loadLesson() {
     try {
-      const data = await apiRequest(`/api/lessons/${id}`);
+      setLoading(true);
 
-      if (!data?.ok) throw new Error("Failed to load lesson");
+      // Fetch lesson details
+      const data = await apiRequest(`/api/lessons/${lessonId}`);
+      if (!data?.ok) throw new Error(data.message);
 
       setLesson(data.lesson);
+      setProgress(data.progress || {});
+
+      // Unlock list
+      const all = await apiRequest("/api/lessons");
+      const unlockedList = all.unlocked || [];
+
+      if (!unlockedList.includes(lessonId)) {
+        setLocked(true);
+      }
+
+      // Calculate next lesson
+      if (all.lessons && data.lesson) {
+        const lessons = all.lessons.sort((a, b) => a.order - b.order);
+        const index = lessons.findIndex((l) => l.id === data.lesson.id);
+        if (index !== -1 && index < lessons.length - 1) {
+          setNextLessonId(lessons[index + 1].id);
+        }
+      }
     } catch (err) {
-      setLesson(null);
+      console.error("Lesson load error:", err);
     } finally {
       setLoading(false);
     }
@@ -26,56 +51,85 @@ export default function LessonDetail() {
 
   useEffect(() => {
     loadLesson();
-  }, [id]);
+  }, [lessonId]);
 
-  if (loading)
+  // Loading state
+  if (loading) {
     return (
-      <div className="text-center text-indigo-600 text-xl mt-20">
+      <div className="text-center mt-16 text-xl text-indigo-500">
         Loading lesson…
       </div>
     );
+  }
 
-  if (!lesson)
+  // Lesson missing
+  if (!lesson) {
     return (
-      <div className="text-center text-red-600 text-xl mt-20">
-        Lesson not found.
+      <div className="text-center mt-16 text-xl text-red-500">
+        Lesson not found
       </div>
     );
+  }
 
-  if (lesson.is_locked)
+  // Locked state
+  if (locked) {
     return (
-      <div className="max-w-xl mx-auto mt-20 text-center">
-        <h2 className="text-xl font-bold text-gray-800">🔒 Locked</h2>
-        <p className="text-gray-600 mt-3">
-          Complete previous lessons to unlock this.
+      <div className="max-w-xl mx-auto p-6 mt-10 text-center bg-red-50 border border-red-200 rounded-xl">
+        <h2 className="text-2xl font-bold text-red-600 mb-3">
+          🔒 This lesson is locked
+        </h2>
+        <p className="text-gray-700 mb-4">
+          Please complete the previous lesson to unlock this one.
         </p>
         <Link
           to="/lessons"
-          className="mt-4 inline-block bg-indigo-600 text-white px-4 py-2 rounded-full"
+          className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:scale-105 transition"
         >
-          Back to Lessons
+          Go back to Lessons
         </Link>
       </div>
     );
+  }
 
   return (
-    <div className="max-w-xl mx-auto p-6 mt-6 space-y-6">
-      <h1 className="text-2xl font-bold text-indigo-700">{lesson.title}</h1>
-      <p className="text-gray-600">{lesson.description}</p>
+    <div className="max-w-3xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-indigo-700">{lesson.title}</h1>
 
-      <button
-        onClick={() => navigate(`/lessons/${id}/start`)}
-        className="w-full bg-indigo-600 text-white py-3 rounded-full font-semibold hover:scale-105 transition"
-      >
-        Start Lesson →
-      </button>
+        {progress?.completed && (
+          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+            ✓ Completed
+          </span>
+        )}
+      </div>
 
-      <Link
-        to="/lessons"
-        className="block text-center text-gray-600 mt-2 hover:underline"
-      >
-        Back to Lessons
-      </Link>
+      {/* Lesson Content */}
+      <div className="prose max-w-none text-gray-800 bg-white p-5 shadow rounded-xl">
+        <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
+      </div>
+
+      {/* Start Lesson Quiz → NOW GOES TO /practice */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => navigate(`/practice?lessonId=${lessonId}`)}
+          className="px-5 py-3 bg-indigo-600 text-white rounded-xl shadow hover:scale-105 transition text-lg font-semibold"
+        >
+          Start Lesson Quiz →
+        </button>
+      </div>
+
+      {/* Next Lesson */}
+      {progress?.completed && nextLessonId && (
+        <div className="flex justify-center">
+          <Link
+            to={`/lessons/${nextLessonId}`}
+            className="px-5 py-3 bg-green-600 text-white rounded-xl shadow hover:scale-105 transition"
+          >
+            Continue to Next Lesson →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,9 +2,8 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
+import prisma from "../db/client.js";
 
-const prisma = new PrismaClient();
 const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
@@ -19,7 +18,6 @@ function sanitizeUsername(u = "") {
     .slice(0, 20);
 }
 
-// Converts Prisma user object → minimal public JSON
 function publicUser(u) {
   if (!u) return null;
   const {
@@ -29,6 +27,7 @@ function publicUser(u) {
     avatar_url,
     has_access,
     tier_level,
+    role,
     created_at,
   } = u;
 
@@ -39,6 +38,7 @@ function publicUser(u) {
     avatar_url,
     has_access,
     tier_level,
+    role,
     created_at,
   };
 }
@@ -47,7 +47,7 @@ function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
-// Middleware for protected routes
+// inline authRequired for /me & /refresh (other routes use authMiddleware)
 function authRequired(req, res, next) {
   try {
     const hdr = req.headers.authorization || "";
@@ -58,16 +58,13 @@ function authRequired(req, res, next) {
 
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = { id: decoded.id, email: decoded.email };
-
     next();
   } catch {
     return res.status(401).json({ ok: false, message: "Invalid token" });
   }
 }
 
-/* ---------------------------------------------------------
-   📝 SIGNUP
---------------------------------------------------------- */
+/* SIGNUP */
 router.post("/signup", async (req, res) => {
   try {
     const { username, email, password, avatar_url } = req.body || {};
@@ -102,11 +99,12 @@ router.post("/signup", async (req, res) => {
         avatar_url: avatar_url || DEFAULT_AVATAR,
         has_access: false,
         tier_level: "free",
+        role: "USER",
       },
     });
 
     const token = signToken({ id: user.id, email: user.email });
-    const expiresAt = Date.now() + 3600000; // 1 hour
+    const expiresAt = Date.now() + 3600000;
 
     res.status(201).json({
       ok: true,
@@ -123,13 +121,10 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-/* ---------------------------------------------------------
-   🔑 LOGIN
---------------------------------------------------------- */
+/* LOGIN */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
-
     if (!email || !password) {
       return res
         .status(400)
@@ -173,9 +168,7 @@ router.post("/login", async (req, res) => {
   }
 });
 
-/* ---------------------------------------------------------
-   👤 PROFILE  (/me)
---------------------------------------------------------- */
+/* PROFILE (/me) */
 router.get("/me", authRequired, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -187,6 +180,7 @@ router.get("/me", authRequired, async (req, res) => {
         avatar_url: true,
         has_access: true,
         tier_level: true,
+        role: true,
         created_at: true,
       },
     });
@@ -198,9 +192,7 @@ router.get("/me", authRequired, async (req, res) => {
   }
 });
 
-/* ---------------------------------------------------------
-   ♻️ REFRESH TOKEN
---------------------------------------------------------- */
+/* REFRESH TOKEN */
 router.post("/refresh", authRequired, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
