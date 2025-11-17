@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 
+// Core pages
 import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
 import Paywall from "@/pages/Paywall";
@@ -11,28 +12,32 @@ import TypingQuiz from "@/pages/TypingQuiz";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { testHealth } from "@/api/testConnection";
-import { logoutAndRedirect } from "@/utils/authRedirect";
-import { getDisplayName } from "@/utils/displayName";
 
-// ✅ New lesson pages
+// Lessons
 import Lessons from "@/pages/Lessons";
 import LessonDetail from "@/pages/LessonDetail";
 import LessonQuiz from "@/pages/LessonQuiz";
-import Practice from "./pages/Practice";
+
+// Practice (New)
+import Practice from "@/pages/Practice";
+
+// Utility
+import { testHealth } from "@/api/testConnection";
+import { logoutAndRedirect } from "@/utils/authRedirect";
+import { getDisplayName } from "@/utils/displayName";
 
 export default function App() {
   const [userName, setUserName] = useState(null);
 
   useEffect(() => {
-    // Simple backend health ping
     testHealth();
+
     try {
-      const storedUser = localStorage.getItem("userName");
+      const stored = localStorage.getItem("userName");
       const token = localStorage.getItem("token");
 
-      if (token && storedUser) setUserName(storedUser);
-      else if (token && !storedUser) setUserName("Learner");
+      if (token && stored) setUserName(stored);
+      else if (token && !stored) setUserName("Learner");
     } catch {
       setUserName(null);
     }
@@ -44,13 +49,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="max-w-4xl mx-auto p-4">
-        {/* 🏷️ Header */}
+        {/* HEADER */}
         <header className="flex flex-wrap justify-between items-center mb-4 gap-3">
           <Link to="/" className="font-bold text-xl text-indigo-700">
             FluencyJet Sentence Master
           </Link>
 
-          {/* 🧭 Navigation */}
           <nav className="flex flex-wrap gap-3 text-sm md:text-base items-center">
             <Link to="/dashboard" className="hover:underline">
               Dashboard
@@ -64,6 +68,9 @@ export default function App() {
             <Link to="/typing-quiz" className="hover:underline">
               Typing Quiz
             </Link>
+            <Link to="/practice" className="hover:underline">
+              Practice
+            </Link>
             <Link to="/paywall" className="hover:underline">
               Paywall
             </Link>
@@ -71,7 +78,6 @@ export default function App() {
               Admin
             </Link>
 
-            {/* 👇 Conditional Buttons */}
             {!isLoggedIn ? (
               <>
                 <Link
@@ -103,13 +109,14 @@ export default function App() {
           </nav>
         </header>
 
+        {/* ROUTES */}
         <Routes>
-          {/* Public */}
+          {/* PUBLIC */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
-          {/* Protected */}
+          {/* PROTECTED CORE */}
           <Route
             path="/dashboard"
             element={
@@ -138,6 +145,15 @@ export default function App() {
           />
 
           <Route
+            path="/practice"
+            element={
+              <ProtectedRoute>
+                <Practice />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/paywall"
             element={
               <ProtectedRoute>
@@ -155,7 +171,7 @@ export default function App() {
             }
           />
 
-          {/* Lessons */}
+          {/* LESSONS */}
           <Route
             path="/lessons"
             element={
@@ -174,7 +190,6 @@ export default function App() {
             }
           />
 
-          {/* OLD route (unused now) */}
           <Route
             path="/lessons/:id/start"
             element={
@@ -183,14 +198,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* NEW PRACTICE ROUTE */}
-          <Route
-            path="/practice"
-            element={
-              <ProtectedRoute>
-                <Practice />
-              </ProtectedRoute>
-            }
-          />
         </Routes>
+      </div>
+    </BrowserRouter>
+  );
+}
