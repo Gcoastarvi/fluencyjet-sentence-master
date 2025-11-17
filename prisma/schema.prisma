@@ -51,25 +51,21 @@ model XpEvent {
 }
 
 model Badge {
-  id          Int         @id @default(autoincrement())
-  code        String      @unique
-  name        String
-  threshold   Int
-  user_badges UserBadge[]
-
-  @@index([threshold])
+  id       Int     @id @default(autoincrement())
+  code     String  @unique
+  label    String
+  min_xp   Int
+  users    UserBadge[]
 }
 
 model UserBadge {
-  id         BigInt   @id @default(autoincrement())
-  user_id    Int
-  badge_id   Int
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  badge_id  Int
   awarded_at DateTime @default(now())
-  badge      Badge    @relation(fields: [badge_id], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
-  @@unique([user_id, badge_id])
-  @@index([awarded_at])
+  user   User   @relation(fields: [user_id], references: [id])
+  badge  Badge  @relation(fields: [badge_id], references: [id])
 }
 
 /// One row per user; fast reads for weekly/monthly leaderboards.

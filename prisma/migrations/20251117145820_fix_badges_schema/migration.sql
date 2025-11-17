@@ -1,0 +1,3 @@
+-- This migration was already applied manually in production.
+-- Recreated locally to satisfy Prisma migration history.
+-- No SQL needed here.
