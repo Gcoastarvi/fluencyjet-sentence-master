@@ -99,7 +99,6 @@ router.post("/signup", async (req, res) => {
         avatar_url: avatar_url || DEFAULT_AVATAR,
         has_access: false,
         tier_level: "free",
-        role: "USER",
       },
     });
 
