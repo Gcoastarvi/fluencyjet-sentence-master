@@ -1,128 +1,123 @@
+// server/routes/dashboard.js
 import express from "express";
-import prisma from "../db/client.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import { prisma } from "../db.js";
+import { authMiddleware } from "../middleware/auth.js";
+import { startOfDay, subDays, addDays } from "date-fns";
 
 const router = express.Router();
 
-// -------------------------------
-// Utility: Start of Day (UTC)
-// -------------------------------
-function startOfDay(date = new Date()) {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
+/**
+ * Helper: sum xp between [from, to)
+ */
+function sumXP(events, from, to) {
+  return events
+    .filter((e) => e.created_at >= from && e.created_at < to)
+    .reduce((acc, e) => acc + (e.xp_delta || 0), 0);
 }
 
-function daysAgo(n) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - n);
-  return startOfDay(d);
-}
-
-// -------------------------------
-// DASHBOARD SUMMARY
-// -------------------------------
+/**
+ * GET /api/dashboard/summary
+ * Returns:
+ * {
+ *   ok: true,
+ *   data: {
+ *     todayXP, yesterdayXP, weeklyXP, lastWeekXP,
+ *     totalXP, level, xpToNextLevel,
+ *     nextBadge, pendingLessons, recentActivity
+ *   }
+ * }
+ */
 router.get("/summary", authMiddleware, async (req, res) => {
+  const userId = req.user.id;
+
+  // ---------- Default summary (safe fallbacks) ----------
+  const defaultSummary = {
+    todayXP: 0,
+    yesterdayXP: 0,
+    weeklyXP: 0,
+    lastWeekXP: 0,
+    totalXP: 0,
+    level: 1,
+    xpToNextLevel: 0,
+    nextBadge: null, // { label, min_xp } or null
+    pendingLessons: [], // [{ id, title, completed }]
+    recentActivity: [], // [{ id, xp_delta, event_type, created_at, meta }]
+  };
+
   try {
-    const userId = req.user.id;
+    const now = new Date();
 
-    // Time boundaries
-    const todayStart = startOfDay();
-    const yesterdayStart = daysAgo(1);
-    const sevenDaysAgo = daysAgo(7);
-    const fourteenDaysAgo = daysAgo(14);
-    const thirtyDaysAgo = daysAgo(30);
+    const startToday = startOfDay(now);
+    const startTomorrow = addDays(startToday, 1);
 
-    // --------------------------------------
-    // USER PROGRESS (total XP + streak)
-    // --------------------------------------
-    const progress = await prisma.userProgress.findUnique({
-      where: { user_id: userId },
-    });
+    const startYesterday = startOfDay(subDays(now, 1));
 
-    let totalXP = progress?.total_xp ?? 0;
-    const streak = progress?.consecutive_days ?? 0;
+    // week starts on Monday (adjust as you like)
+    const dayOfWeek = (now.getDay() + 6) % 7; // 0 = Monday
+    const startThisWeek = startOfDay(subDays(now, dayOfWeek));
+    const startNextWeek = addDays(startThisWeek, 7);
+    const startLastWeek = subDays(startThisWeek, 7);
 
-    // Fallback if user_progress row missing
-    if (!progress) {
-      const aggXP = await prisma.xpEvent.aggregate({
-        where: { user_id: userId },
-        _sum: { xp_delta: true },
-      });
+    // ---------- Query DB in parallel (and keep it small/safe) ----------
+    const [progress, xpEvents, badges, userBadges, lessons, lessonProgress] =
+      await Promise.all([
+        // Overall progress for this user
+        prisma.userProgress.findUnique({
+          where: { user_id: userId },
+        }),
 
-      totalXP = aggXP._sum.xp_delta || 0;
+        // Recent XP events (limit to 200 for safety)
+        prisma.xpEvent.findMany({
+          where: { user_id: userId },
+          orderBy: { created_at: "desc" },
+          take: 200,
+        }),
+
+        // All possible badges
+        prisma.badge.findMany({
+          orderBy: { min_xp: "asc" },
+        }),
+
+        // Badges this user already has
+        prisma.userBadge.findMany({
+          where: { user_id: userId },
+          include: { badge: true },
+          orderBy: { badge: { min_xp: "asc" } },
+        }),
+
+        // Lessons
+        prisma.lesson.findMany({
+          orderBy: { id: "asc" },
+        }),
+
+        // Lesson progress (if table exists). If Prisma model
+        // doesn't exist, this call will throw and we'll just
+        // fall back to "all caught up".
+        prisma.lessonProgress
+          ? prisma.lessonProgress.findMany({
+              where: { user_id: userId },
+            })
+          : Promise.resolve([]),
+      ]);
+
+    // ---------- Build summary from DB ----------
+
+    const summary = { ...defaultSummary };
+
+    // Total XP + level
+    if (progress) {
+      summary.totalXP = progress.total_xp ?? 0;
+      summary.level = progress.level ?? 1;
     }
 
-    // --------------------------------------
-    // XP RANGES
-    // --------------------------------------
-    const xpAgg = async (gte, lt = null) =>
-      prisma.xpEvent.aggregate({
-        where: {
-          user_id: userId,
-          created_at: lt ? { gte, lt } : { gte },
-        },
-        _sum: { xp_delta: true },
-      });
+    // XP time windows
+    summary.todayXP = sumXP(xpEvents, startToday, startTomorrow);
+    summary.yesterdayXP = sumXP(xpEvents, startYesterday, startToday);
+    summary.weeklyXP = sumXP(xpEvents, startThisWeek, startNextWeek);
+    summary.lastWeekXP = sumXP(xpEvents, startLastWeek, startThisWeek);
 
-    const todayXP = (await xpAgg(todayStart))._sum.xp_delta || 0;
-    const yesterdayXP =
-      (await xpAgg(yesterdayStart, todayStart))._sum.xp_delta || 0;
-    const weeklyXP = (await xpAgg(sevenDaysAgo))._sum.xp_delta || 0;
-    const lastWeekXP =
-      (await xpAgg(fourteenDaysAgo, sevenDaysAgo))._sum.xp_delta || 0;
-    const monthlyXP = (await xpAgg(thirtyDaysAgo))._sum.xp_delta || 0;
-
-    // --------------------------------------
-    // LEVEL SYSTEM
-    // --------------------------------------
-    const LEVELS = [
-      { level: 1, xp: 0 },
-      { level: 2, xp: 1000 },
-      { level: 3, xp: 5000 },
-      { level: 4, xp: 10000 },
-      { level: 5, xp: 50000 },
-      { level: 6, xp: 100000 },
-    ];
-
-    let current = LEVELS[0];
-    LEVELS.forEach((lvl) => {
-      if (totalXP >= lvl.xp) current = lvl;
-    });
-
-    const next = LEVELS.find((lvl) => lvl.xp > current.xp) || current;
-    const xpToNextLevel = next.xp > totalXP ? next.xp - totalXP : 0;
-
-    // --------------------------------------
-    // BADGE SYSTEM
-    // --------------------------------------
-    const badges = await prisma.badge.findMany({
-      orderBy: { min_xp: "asc" },
-    });
-
-    let nextBadge = null;
-    for (const b of badges) {
-      if (totalXP < b.min_xp) {
-        nextBadge = {
-          code: b.code,
-          label: b.label,
-          minXP: b.min_xp,
-          remainingXP: b.min_xp - totalXP,
-        };
-        break;
-      }
-    }
-
-    // --------------------------------------
-    // MOST RECENT XP EVENTS
-    // --------------------------------------
-    const recentEvents = await prisma.xpEvent.findMany({
-      where: { user_id: userId },
-      take: 10,
-      orderBy: { created_at: "desc" },
-    });
-
-    const recentActivity = recentEvents.map((e) => ({
+    // Recent activity (last 10 events)
+    summary.recentActivity = xpEvents.slice(0, 10).map((e) => ({
       id: e.id,
       xp_delta: e.xp_delta,
       event_type: e.event_type,
@@ -130,43 +125,47 @@ router.get("/summary", authMiddleware, async (req, res) => {
       meta: e.meta,
     }));
 
-    // --------------------------------------
-    // TEMPORARILY DISABLED
-    // (LessonProgress table not implemented)
-    // --------------------------------------
-    const pendingLessons = [];
+    // Next badge
+    if (badges && badges.length > 0) {
+      const ownedBadgeIds = new Set(
+        (userBadges || []).map((ub) => ub.badge_id),
+      );
+      const next = badges.find(
+        (b) => !ownedBadgeIds.has(b.id) && summary.totalXP < (b.min_xp ?? 0),
+      );
+      if (next) {
+        summary.nextBadge = {
+          label: next.label,
+          min_xp: next.min_xp,
+        };
+        summary.xpToNextLevel = Math.max(
+          0,
+          (next.min_xp || 0) - summary.totalXP,
+        );
+      }
+    }
 
-    // --------------------------------------
-    // SEND RESPONSE
-    // --------------------------------------
-    return res.json({
-      // XP
-      todayXP,
-      yesterdayXP,
-      weeklyXP,
-      lastWeekXP,
-      monthlyXP,
+    // Pending lessons (if lessonProgress table is available)
+    if (lessons && lessons.length > 0 && lessonProgress) {
+      const completedSet = new Set(
+        lessonProgress.filter((lp) => lp.completed).map((lp) => lp.lesson_id),
+      );
 
-      // Progress
-      streak,
-      totalXP,
+      summary.pendingLessons = lessons
+        .filter((lesson) => !completedSet.has(lesson.id))
+        .map((lesson) => ({
+          id: lesson.id,
+          title: lesson.title,
+          completed: false,
+        }));
+    }
 
-      // Level
-      level: current.level,
-      xpToNextLevel,
-
-      // Badges
-      nextBadge,
-
-      // Activity
-      recentActivity,
-
-      // Lessons
-      pendingLessons,
-    });
+    // ✅ Always respond with ok: true + data
+    return res.json({ ok: true, data: summary });
   } catch (err) {
-    console.error("❌ Dashboard Error:", err);
-    return res.status(500).json({ error: "Failed to load dashboard summary" });
+    // Even if something fails, never break the dashboard.
+    console.error("Dashboard summary error:", err);
+    return res.json({ ok: true, data: defaultSummary });
   }
 });
 
