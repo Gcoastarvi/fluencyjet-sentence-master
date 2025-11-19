@@ -139,19 +139,8 @@ router.get("/summary", authMiddleware, async (req, res) => {
       meta: e.meta,
     }));
 
-    // Lesson Progress (pending lessons)
-    const lessonProgress = await prisma.lessonProgress.findMany({
-      where: { user_id: userId },
-      include: { lesson: true },
-    });
-
-    const pendingLessons = lessonProgress
-      .filter((lp) => !lp.completed)
-      .map((lp) => ({
-        id: lp.lesson_id,
-        title: lp.lesson.title,
-        completed: lp.completed,
-      }));
+    // 🚫 LessonProgress temporarily disabled (table not in schema/database)
+    const pendingLessons = [];
 
     // Streak
     const streak = progress?.consecutive_days ?? 0;
