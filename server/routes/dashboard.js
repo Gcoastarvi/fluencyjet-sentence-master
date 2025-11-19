@@ -1,14 +1,15 @@
-// server/routes/dashboard.js
 import express from "express";
 import prisma from "../db/client.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// --- UTIL FUNCTIONS ---
-function startOfDay(d = new Date()) {
+// -------------------------------
+// Utility: Start of Day (UTC)
+// -------------------------------
+function startOfDay(date = new Date()) {
   return new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
   );
 }
 
@@ -18,76 +19,63 @@ function daysAgo(n) {
   return startOfDay(d);
 }
 
-// --- MAIN DASHBOARD SUMMARY ---
+// -------------------------------
+// DASHBOARD SUMMARY
+// -------------------------------
 router.get("/summary", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
 
     // Time boundaries
-    const now = new Date();
-    const todayStart = startOfDay(now);
+    const todayStart = startOfDay();
     const yesterdayStart = daysAgo(1);
     const sevenDaysAgo = daysAgo(7);
     const fourteenDaysAgo = daysAgo(14);
     const thirtyDaysAgo = daysAgo(30);
 
-    // Load user progress row
+    // --------------------------------------
+    // USER PROGRESS (total XP + streak)
+    // --------------------------------------
     const progress = await prisma.userProgress.findUnique({
       where: { user_id: userId },
     });
 
-    // Total XP
     let totalXP = progress?.total_xp ?? 0;
+    const streak = progress?.consecutive_days ?? 0;
 
-    // If missing, fallback to aggregate
+    // Fallback if user_progress row missing
     if (!progress) {
-      const agg = await prisma.xpEvent.aggregate({
+      const aggXP = await prisma.xpEvent.aggregate({
         where: { user_id: userId },
         _sum: { xp_delta: true },
       });
-      totalXP = agg._sum.xp_delta || 0;
+
+      totalXP = aggXP._sum.xp_delta || 0;
     }
 
-    // XP Queries
-    const todayAgg = await prisma.xpEvent.aggregate({
-      where: { user_id: userId, created_at: { gte: todayStart } },
-      _sum: { xp_delta: true },
-    });
+    // --------------------------------------
+    // XP RANGES
+    // --------------------------------------
+    const xpAgg = async (gte, lt = null) =>
+      prisma.xpEvent.aggregate({
+        where: {
+          user_id: userId,
+          created_at: lt ? { gte, lt } : { gte },
+        },
+        _sum: { xp_delta: true },
+      });
 
-    const yesterdayAgg = await prisma.xpEvent.aggregate({
-      where: {
-        user_id: userId,
-        created_at: { gte: yesterdayStart, lt: todayStart },
-      },
-      _sum: { xp_delta: true },
-    });
+    const todayXP = (await xpAgg(todayStart))._sum.xp_delta || 0;
+    const yesterdayXP =
+      (await xpAgg(yesterdayStart, todayStart))._sum.xp_delta || 0;
+    const weeklyXP = (await xpAgg(sevenDaysAgo))._sum.xp_delta || 0;
+    const lastWeekXP =
+      (await xpAgg(fourteenDaysAgo, sevenDaysAgo))._sum.xp_delta || 0;
+    const monthlyXP = (await xpAgg(thirtyDaysAgo))._sum.xp_delta || 0;
 
-    const weeklyAgg = await prisma.xpEvent.aggregate({
-      where: { user_id: userId, created_at: { gte: sevenDaysAgo } },
-      _sum: { xp_delta: true },
-    });
-
-    const lastWeekAgg = await prisma.xpEvent.aggregate({
-      where: {
-        user_id: userId,
-        created_at: { gte: fourteenDaysAgo, lt: sevenDaysAgo },
-      },
-      _sum: { xp_delta: true },
-    });
-
-    const monthlyAgg = await prisma.xpEvent.aggregate({
-      where: { user_id: userId, created_at: { gte: thirtyDaysAgo } },
-      _sum: { xp_delta: true },
-    });
-
-    // Convert null → 0
-    const todayXP = todayAgg._sum.xp_delta || 0;
-    const yesterdayXP = yesterdayAgg._sum.xp_delta || 0;
-    const weeklyXP = weeklyAgg._sum.xp_delta || 0;
-    const lastWeekXP = lastWeekAgg._sum.xp_delta || 0;
-    const monthlyXP = monthlyAgg._sum.xp_delta || 0;
-
-    // Levels
+    // --------------------------------------
+    // LEVEL SYSTEM
+    // --------------------------------------
     const LEVELS = [
       { level: 1, xp: 0 },
       { level: 2, xp: 1000 },
@@ -98,15 +86,16 @@ router.get("/summary", authMiddleware, async (req, res) => {
     ];
 
     let current = LEVELS[0];
-    for (const l of LEVELS) {
-      if (totalXP >= l.xp) current = l;
-    }
+    LEVELS.forEach((lvl) => {
+      if (totalXP >= lvl.xp) current = lvl;
+    });
 
-    const next = LEVELS.find((l) => l.xp > current.xp) || current;
-    const level = current.level;
+    const next = LEVELS.find((lvl) => lvl.xp > current.xp) || current;
     const xpToNextLevel = next.xp > totalXP ? next.xp - totalXP : 0;
 
-    // Badge System
+    // --------------------------------------
+    // BADGE SYSTEM
+    // --------------------------------------
     const badges = await prisma.badge.findMany({
       orderBy: { min_xp: "asc" },
     });
@@ -124,11 +113,13 @@ router.get("/summary", authMiddleware, async (req, res) => {
       }
     }
 
-    // Recent XP Events
+    // --------------------------------------
+    // MOST RECENT XP EVENTS
+    // --------------------------------------
     const recentEvents = await prisma.xpEvent.findMany({
       where: { user_id: userId },
-      orderBy: { created_at: "desc" },
       take: 10,
+      orderBy: { created_at: "desc" },
     });
 
     const recentActivity = recentEvents.map((e) => ({
@@ -139,28 +130,42 @@ router.get("/summary", authMiddleware, async (req, res) => {
       meta: e.meta,
     }));
 
-    // 🚫 LessonProgress temporarily disabled (table not in schema/database)
+    // --------------------------------------
+    // TEMPORARILY DISABLED
+    // (LessonProgress table not implemented)
+    // --------------------------------------
     const pendingLessons = [];
 
-    // Streak
-    const streak = progress?.consecutive_days ?? 0;
-
+    // --------------------------------------
+    // SEND RESPONSE
+    // --------------------------------------
     return res.json({
+      // XP
       todayXP,
       yesterdayXP,
       weeklyXP,
       lastWeekXP,
       monthlyXP,
+
+      // Progress
       streak,
       totalXP,
-      level,
+
+      // Level
+      level: current.level,
       xpToNextLevel,
+
+      // Badges
       nextBadge,
-      pendingLessons,
+
+      // Activity
       recentActivity,
+
+      // Lessons
+      pendingLessons,
     });
   } catch (err) {
-    console.error("❌ /api/dashboard/summary error:", err);
+    console.error("❌ Dashboard Error:", err);
     return res.status(500).json({ error: "Failed to load dashboard summary" });
   }
 });
