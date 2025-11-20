@@ -1,9 +1,12 @@
 // client/src/pages/Dashboard.jsx
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import customFetch from "../utils/fetch";
+import { getDisplayName } from "../utils/displayName";
 
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -12,9 +15,9 @@ export default function Dashboard() {
     totalXP: 0,
     level: 1,
     xpToNextLevel: 0,
-    nextBadge: null, // { label, min_xp } or null
-    pendingLessons: [], // [{ id, title, completed }]
-    recentActivity: [], // [{ id, xp_delta, event_type, created_at, meta }]
+    nextBadge: null,
+    pendingLessons: [],
+    recentActivity: [],
   });
 
   useEffect(() => {
@@ -23,9 +26,8 @@ export default function Dashboard() {
         setLoading(true);
         setError("");
 
-        const res = await fetch("/api/dashboard/summary", {
-          credentials: "include",
-        });
+        // ⭐ FIXED: use customFetch so Authorization header is ALWAYS sent
+        const res = await customFetch("/api/dashboard/summary");
 
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
@@ -33,8 +35,7 @@ export default function Dashboard() {
 
         const data = await res.json();
 
-        // Defensive mapping so even if some fields are missing,
-        // the dashboard still works instead of crashing.
+        // ⭐ Defensive: avoid crashing if fields missing
         setSummary({
           todayXP: data.todayXP ?? 0,
           yesterdayXP: data.yesterdayXP ?? 0,
@@ -44,16 +45,11 @@ export default function Dashboard() {
           level: data.level ?? 1,
           xpToNextLevel: data.xpToNextLevel ?? 0,
           nextBadge: data.nextBadge ?? null,
-          pendingLessons: Array.isArray(data.pendingLessons)
-            ? data.pendingLessons
-            : [],
-          recentActivity: Array.isArray(data.recentActivity)
-            ? data.recentActivity
-            : [],
+          pendingLessons: data.pendingLessons ?? [],
+          recentActivity: data.recentActivity ?? [],
         });
       } catch (err) {
-        console.error("Dashboard fetch failed:", err);
-        // ❗ IMPORTANT: don't throw again – just show safe fallback
+        console.error("Dashboard summary error:", err);
         setError("Could not load live data. Showing defaults.");
       } finally {
         setLoading(false);
@@ -63,110 +59,65 @@ export default function Dashboard() {
     loadSummary();
   }, []);
 
-  const {
-    todayXP,
-    yesterdayXP,
-    weeklyXP,
-    lastWeekXP,
-    totalXP,
-    level,
-    xpToNextLevel,
-    nextBadge,
-    pendingLessons,
-    recentActivity,
-  } = summary;
-
   return (
-    <main className="page">
-      <h1>Dashboard</h1>
+    <div className="dashboard-container" style={{ padding: "20px" }}>
+      <h2>Dashboard</h2>
 
-      {loading && <p>Loading dashboard…</p>}
+      {error && <p style={{ color: "red", marginBottom: "20px" }}>{error}</p>}
 
-      {!loading && (
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
         <>
-          {error && (
-            <p style={{ color: "#d9534f", marginBottom: "1rem" }}>{error}</p>
+          <h3>Today's XP</h3>
+          <p>{summary.todayXP}</p>
+
+          <h3>Yesterday</h3>
+          <p>{summary.yesterdayXP}</p>
+
+          <h3>This Week</h3>
+          <p>{summary.weeklyXP}</p>
+
+          <h3>Last Week</h3>
+          <p>{summary.lastWeekXP}</p>
+
+          <h3>Total XP</h3>
+          <p>{summary.totalXP}</p>
+
+          <h3>Level</h3>
+          <p>{summary.level}</p>
+
+          <h4>XP to next level: {summary.xpToNextLevel}</h4>
+
+          <h3>Next Badge</h3>
+          <p>{summary.nextBadge ? summary.nextBadge : "No next badge"}</p>
+
+          <h3>Pending Lessons</h3>
+          {summary.pendingLessons.length === 0 ? (
+            <p>All caught up! 🎉</p>
+          ) : (
+            <ul>
+              {summary.pendingLessons.map((lesson) => (
+                <li key={lesson.id}>{lesson.title}</li>
+              ))}
+            </ul>
           )}
 
-          {/* Top stats row */}
-          <section className="card-row">
-            <div className="card">
-              <h3>Today&apos;s XP</h3>
-              <p>{todayXP}</p>
-            </div>
-            <div className="card">
-              <h3>Yesterday</h3>
-              <p>{yesterdayXP}</p>
-            </div>
-            <div className="card">
-              <h3>This Week</h3>
-              <p>{weeklyXP}</p>
-            </div>
-            <div className="card">
-              <h3>Last Week</h3>
-              <p>{lastWeekXP}</p>
-            </div>
-          </section>
-
-          {/* Level + Badge */}
-          <section className="card-row">
-            <div className="card">
-              <h3>Total XP</h3>
-              <p>{totalXP}</p>
-            </div>
-            <div className="card">
-              <h3>Level</h3>
-              <p>{level}</p>
-              <small>XP to next level: {xpToNextLevel}</small>
-            </div>
-            <div className="card">
-              <h3>Next Badge</h3>
-              {nextBadge ? (
-                <>
-                  <p>{nextBadge.label}</p>
-                  <small>Unlock at {nextBadge.min_xp} XP</small>
-                </>
-              ) : (
-                <p>No next badge</p>
-              )}
-            </div>
-          </section>
-
-          {/* Pending lessons */}
-          <section className="card">
-            <h2>Pending Lessons</h2>
-            {pendingLessons.length === 0 ? (
-              <p>All caught up! 🎉</p>
-            ) : (
-              <ul>
-                {pendingLessons.map((lesson) => (
-                  <li key={lesson.id}>
-                    {lesson.title}{" "}
-                    {lesson.completed ? "(Completed)" : "(Pending)"}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* Recent XP activity */}
-          <section className="card">
-            <h2>Recent Activity</h2>
-            {recentActivity.length === 0 ? (
-              <p>No XP events yet. Try a quiz!</p>
-            ) : (
-              <ul>
-                {recentActivity.map((e) => (
-                  <li key={e.id}>
-                    <strong>{e.event_type}</strong> – {e.xp_delta} XP on{" "}
-                    {new Date(e.created_at).toLocaleString()}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <h3>Recent Activity</h3>
+          {summary.recentActivity.length === 0 ? (
+            <p>No XP events yet. Try a quiz!</p>
+          ) : (
+            <ul>
+              {summary.recentActivity.map((ev) => (
+                <li key={ev.id}>
+                  {ev.event_type} → +{ev.xp_delta} XP on{" "}
+                  {new Date(ev.created_at).toLocaleString()}
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
-    </main>
+    </div>
   );
 }
