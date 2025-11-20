@@ -1,3 +1,4 @@
+// server/routes/leaderboard.js
 import express from "express";
 import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
@@ -7,6 +8,7 @@ const router = express.Router();
 /* -------------------------------------------------------------------------- */
 /*                          VALID PERIODS & HELPERS                           */
 /* -------------------------------------------------------------------------- */
+
 const VALID_PERIODS = new Set(["daily", "weekly", "monthly"]);
 
 function todayUTC() {
@@ -36,6 +38,7 @@ async function getLatestBadgeForUser(userId) {
   });
 
   if (!ub) return null;
+
   return {
     code: ub.badge.code,
     label: ub.badge.label,
@@ -47,19 +50,19 @@ async function getLatestBadgeForUser(userId) {
 /* -------------------------------------------------------------------------- */
 /*                           GET /api/leaderboard/:period                     */
 /* -------------------------------------------------------------------------- */
-router.get("/:period", authMiddleware, async (req, res) => {
+
+router.get("/:period", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const period = req.params.period;
 
     if (!VALID_PERIODS.has(period)) {
-      return res.status(400).json({
-        ok: false,
-        error: "Invalid leaderboard period",
-      });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Invalid leaderboard period" });
     }
 
-    // ---------------- DAILY (from xpEvent) ----------------
+    /* ---------------- DAILY (xpEvent grouping) ---------------- */
     if (period === "daily") {
       const since = todayUTC();
 
@@ -67,9 +70,7 @@ router.get("/:period", authMiddleware, async (req, res) => {
         by: ["user_id"],
         where: { created_at: { gte: since } },
         _sum: { xp_delta: true },
-        orderBy: {
-          _sum: { xp_delta: "desc" },
-        },
+        orderBy: { _sum: { xp_delta: "desc" } },
         take: 50,
       });
 
@@ -78,33 +79,33 @@ router.get("/:period", authMiddleware, async (req, res) => {
         where: { id: { in: ids } },
         select: { id: true, email: true, username: true },
       });
-      const map = new Map(users.map((u) => [u.id, u]));
+
+      const userMap = new Map(users.map((u) => [u.id, u]));
 
       const top = events.map((e, i) => ({
         rank: i + 1,
         user_id: e.user_id,
-        email: map.get(e.user_id)?.email,
-        username: map.get(e.user_id)?.username || map.get(e.user_id)?.email,
+        email: userMap.get(e.user_id)?.email,
+        username:
+          userMap.get(e.user_id)?.username || userMap.get(e.user_id)?.email,
         total_xp: e._sum.xp_delta || 0,
       }));
 
       const youIndex = events.findIndex((e) => e.user_id === userId);
       const youXP = youIndex === -1 ? 0 : events[youIndex]._sum.xp_delta || 0;
       const youRank = youIndex === -1 ? null : youIndex + 1;
+
       const badge = await getLatestBadgeForUser(userId);
 
       return res.json({
         ok: true,
         top,
-        you: {
-          rank: youRank,
-          xp: youXP,
-          badge,
-        },
+        you: { rank: youRank, xp: youXP, badge },
       });
     }
 
-    // ---------------- WEEKLY / MONTHLY (materialized) ----------------
+    /* ---------------- WEEKLY / MONTHLY ---------------- */
+
     let orderField = "week_xp";
     let whereKey = { week_key: weekStartUTC() };
 
@@ -117,9 +118,7 @@ router.get("/:period", authMiddleware, async (req, res) => {
       where: whereKey,
       orderBy: { [orderField]: "desc" },
       take: 50,
-      include: {
-        user: { select: { email: true, username: true } },
-      },
+      include: { user: { select: { email: true, username: true } } },
     });
 
     const top = rows.map((r, i) => ({
@@ -132,60 +131,24 @@ router.get("/:period", authMiddleware, async (req, res) => {
 
     const youIndex = rows.findIndex((r) => r.user_id === userId);
     const youRow = youIndex === -1 ? null : rows[youIndex];
-    const youXP = youRow ? (youRow[orderField] ?? 0) : 0;
-    const youRank = youIndex === -1 ? null : youIndex + 1;
+    const youXP = youRow?.[orderField] ?? 0;
+
     const badge = await getLatestBadgeForUser(userId);
 
     return res.json({
       ok: true,
       top,
       you: {
-        rank: youRank,
+        rank: youIndex === -1 ? null : youIndex + 1,
         xp: youXP,
         badge,
       },
     });
   } catch (err) {
-    console.error("❌ /leaderboard/:period error:", err);
-    return res.status(500).json({
-      ok: false,
-      error: "Failed to load leaderboard",
-    });
-  }
-});
-
-/* -------------------------------------------------------------------------- */
-/*                           GET /api/leaderboard/me                          */
-/* -------------------------------------------------------------------------- */
-router.get("/me", authMiddleware, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const weekKey = weekStartUTC();
-
-    const rows = await prisma.userWeeklyTotals.findMany({
-      where: { week_key: weekKey },
-      orderBy: { week_xp: "desc" },
-      select: { user_id: true, week_xp: true },
-    });
-
-    if (!rows.length) {
-      return res.json({ ok: true, message: "No leaderboard data yet" });
-    }
-
-    const index = rows.findIndex((r) => r.user_id === userId);
-    const rank = index === -1 ? null : index + 1;
-
-    return res.json({
-      ok: true,
-      rank,
-      week_xp: index === -1 ? 0 : rows[index].week_xp,
-    });
-  } catch (err) {
-    console.error("❌ /leaderboard/me error:", err);
-    return res.status(500).json({
-      ok: false,
-      error: "Failed to load personal rank",
-    });
+    console.error("❌ Leaderboard error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, error: "Failed to load leaderboard" });
   }
 });
 

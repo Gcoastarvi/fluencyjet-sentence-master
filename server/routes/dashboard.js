@@ -5,7 +5,7 @@ import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// --- UTIL FUNCTIONS ---
+/* TIME HELPERS */
 function startOfDay(d = new Date()) {
   return new Date(
     Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
@@ -18,28 +18,24 @@ function daysAgo(n) {
   return startOfDay(d);
 }
 
-// --- MAIN DASHBOARD SUMMARY ---
-router.get("/summary", authMiddleware, async (req, res) => {
+/* MAIN SUMMARY ENDPOINT */
+router.get("/summary", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Time boundaries
-    const now = new Date();
-    const todayStart = startOfDay(now);
+    const todayStart = startOfDay();
     const yesterdayStart = daysAgo(1);
     const sevenDaysAgo = daysAgo(7);
     const fourteenDaysAgo = daysAgo(14);
     const thirtyDaysAgo = daysAgo(30);
 
-    // Load user progress row
+    /* Load user progress */
     const progress = await prisma.userProgress.findUnique({
       where: { user_id: userId },
     });
 
-    // Total XP
     let totalXP = progress?.total_xp ?? 0;
 
-    // If missing, fallback to aggregate
     if (!progress) {
       const agg = await prisma.xpEvent.aggregate({
         where: { user_id: userId },
@@ -48,46 +44,54 @@ router.get("/summary", authMiddleware, async (req, res) => {
       totalXP = agg._sum.xp_delta || 0;
     }
 
-    // XP Queries
-    const todayAgg = await prisma.xpEvent.aggregate({
-      where: { user_id: userId, created_at: { gte: todayStart } },
-      _sum: { xp_delta: true },
-    });
+    /* Aggregate XP */
+    const todayXP =
+      (
+        await prisma.xpEvent.aggregate({
+          where: { user_id: userId, created_at: { gte: todayStart } },
+          _sum: { xp_delta: true },
+        })
+      )._sum.xp_delta || 0;
 
-    const yesterdayAgg = await prisma.xpEvent.aggregate({
-      where: {
-        user_id: userId,
-        created_at: { gte: yesterdayStart, lt: todayStart },
-      },
-      _sum: { xp_delta: true },
-    });
+    const yesterdayXP =
+      (
+        await prisma.xpEvent.aggregate({
+          where: {
+            user_id: userId,
+            created_at: { gte: yesterdayStart, lt: todayStart },
+          },
+          _sum: { xp_delta: true },
+        })
+      )._sum.xp_delta || 0;
 
-    const weeklyAgg = await prisma.xpEvent.aggregate({
-      where: { user_id: userId, created_at: { gte: sevenDaysAgo } },
-      _sum: { xp_delta: true },
-    });
+    const weeklyXP =
+      (
+        await prisma.xpEvent.aggregate({
+          where: { user_id: userId, created_at: { gte: sevenDaysAgo } },
+          _sum: { xp_delta: true },
+        })
+      )._sum.xp_delta || 0;
 
-    const lastWeekAgg = await prisma.xpEvent.aggregate({
-      where: {
-        user_id: userId,
-        created_at: { gte: fourteenDaysAgo, lt: sevenDaysAgo },
-      },
-      _sum: { xp_delta: true },
-    });
+    const lastWeekXP =
+      (
+        await prisma.xpEvent.aggregate({
+          where: {
+            user_id: userId,
+            created_at: { gte: fourteenDaysAgo, lt: sevenDaysAgo },
+          },
+          _sum: { xp_delta: true },
+        })
+      )._sum.xp_delta || 0;
 
-    const monthlyAgg = await prisma.xpEvent.aggregate({
-      where: { user_id: userId, created_at: { gte: thirtyDaysAgo } },
-      _sum: { xp_delta: true },
-    });
+    const monthlyXP =
+      (
+        await prisma.xpEvent.aggregate({
+          where: { user_id: userId, created_at: { gte: thirtyDaysAgo } },
+          _sum: { xp_delta: true },
+        })
+      )._sum.xp_delta || 0;
 
-    // Convert null → 0
-    const todayXP = todayAgg._sum.xp_delta || 0;
-    const yesterdayXP = yesterdayAgg._sum.xp_delta || 0;
-    const weeklyXP = weeklyAgg._sum.xp_delta || 0;
-    const lastWeekXP = lastWeekAgg._sum.xp_delta || 0;
-    const monthlyXP = monthlyAgg._sum.xp_delta || 0;
-
-    // Levels
+    /* Levels */
     const LEVELS = [
       { level: 1, xp: 0 },
       { level: 2, xp: 1000 },
@@ -98,20 +102,15 @@ router.get("/summary", authMiddleware, async (req, res) => {
     ];
 
     let current = LEVELS[0];
-    for (const l of LEVELS) {
-      if (totalXP >= l.xp) current = l;
-    }
+    for (const l of LEVELS) if (totalXP >= l.xp) current = l;
 
     const next = LEVELS.find((l) => l.xp > current.xp) || current;
-    const level = current.level;
     const xpToNextLevel = next.xp > totalXP ? next.xp - totalXP : 0;
 
-    // Badge System
-    const badges = await prisma.badge.findMany({
-      orderBy: { min_xp: "asc" },
-    });
-
+    /* Badges */
+    const badges = await prisma.badge.findMany({ orderBy: { min_xp: "asc" } });
     let nextBadge = null;
+
     for (const b of badges) {
       if (totalXP < b.min_xp) {
         nextBadge = {
@@ -124,7 +123,7 @@ router.get("/summary", authMiddleware, async (req, res) => {
       }
     }
 
-    // Recent XP Events
+    /* Recent XP Events */
     const recentEvents = await prisma.xpEvent.findMany({
       where: { user_id: userId },
       orderBy: { created_at: "desc" },
@@ -139,10 +138,6 @@ router.get("/summary", authMiddleware, async (req, res) => {
       meta: e.meta,
     }));
 
-    // 🚫 LessonProgress temporarily disabled (table not in schema/database)
-    const pendingLessons = [];
-
-    // Streak
     const streak = progress?.consecutive_days ?? 0;
 
     return res.json({
@@ -153,10 +148,10 @@ router.get("/summary", authMiddleware, async (req, res) => {
       monthlyXP,
       streak,
       totalXP,
-      level,
+      level: current.level,
       xpToNextLevel,
       nextBadge,
-      pendingLessons,
+      pendingLessons: [],
       recentActivity,
     });
   } catch (err) {

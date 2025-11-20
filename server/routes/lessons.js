@@ -5,15 +5,8 @@ import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/**
- * Rules:
- * - Lessons sorted by `order` (fallback by id if needed)
- * - Lesson #1 always unlocked for a user
- * - A lesson is unlocked if previous lesson (by order) is completed
- */
-
-// GET /api/lessons
-router.get("/", authMiddleware, async (req, res) => {
+/* GET /api/lessons */
+router.get("/", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
 
@@ -30,9 +23,7 @@ router.get("/", authMiddleware, async (req, res) => {
       },
     });
 
-    if (!lessons.length) {
-      return res.json({ lessons: [], unlocked: [] });
-    }
+    if (!lessons.length) return res.json({ lessons: [], unlocked: [] });
 
     const progresses = await prisma.userLessonProgress.findMany({
       where: { user_id: userId },
@@ -46,13 +37,10 @@ router.get("/", authMiddleware, async (req, res) => {
     const unlocked = new Set();
 
     lessons.forEach((lesson, idx) => {
-      if (idx === 0) {
-        unlocked.add(lesson.id);
-      } else {
-        const prevLessonId = lessons[idx - 1].id;
-        if (completedSet.has(prevLessonId)) {
-          unlocked.add(lesson.id);
-        }
+      if (idx === 0) unlocked.add(lesson.id);
+      else {
+        const prevId = lessons[idx - 1].id;
+        if (completedSet.has(prevId)) unlocked.add(lesson.id);
       }
     });
 
@@ -62,16 +50,12 @@ router.get("/", authMiddleware, async (req, res) => {
     });
   } catch (err) {
     console.error("❌ /api/lessons error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Failed to load lessons",
-      error: String(err?.message || err),
-    });
+    return res.status(500).json({ ok: false, error: "Failed to load lessons" });
   }
 });
 
-// GET /api/lessons/:id
-router.get("/:id", authMiddleware, async (req, res) => {
+/* GET /api/lessons/:id */
+router.get("/:id", authRequired, async (req, res) => {
   try {
     const lessonId = Number(req.params.id);
     const userId = req.user.id;
@@ -103,18 +87,12 @@ router.get("/:id", authMiddleware, async (req, res) => {
       },
     });
 
-    return res.json({
-      ok: true,
-      lesson,
-      progress: progress || null,
-    });
+    return res.json({ ok: true, lesson, progress: progress || null });
   } catch (err) {
     console.error("❌ /api/lessons/:id error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Failed to load lesson details",
-      error: String(err?.message || err),
-    });
+    return res
+      .status(500)
+      .json({ ok: false, error: "Failed to load lesson details" });
   }
 });
 
