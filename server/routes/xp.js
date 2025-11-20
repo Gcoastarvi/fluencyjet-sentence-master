@@ -1,7 +1,7 @@
 // server/routes/xp.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
+import authRequired from "../middleware/authMiddleware.js";
 
 const prisma = new PrismaClient();
 const router = express.Router();
