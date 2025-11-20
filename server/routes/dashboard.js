@@ -1,79 +1,34 @@
 // server/routes/dashboard.js
 import express from "express";
-import prisma from "../db/client.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import prisma from "../db.js";
+import authMiddleware from "../middleware/auth.js";
 
 const router = express.Router();
 
-/** Helper: beginning of day UTC */
-function startOfDayUTC(date = new Date()) {
-  return new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
-  );
-}
-
-/** Helper: n days ago */
-function daysAgoUTC(n) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - n);
-  return startOfDayUTC(d);
-}
-
+// ----------------------
+// GET /api/dashboard/summary
+// ----------------------
 router.get("/summary", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    console.log("📌 Dashboard summary requested for user:", userId);
-
-    // --- Fetch all XP events for this user ---
-    const events = await prisma.xpEvent.findMany({
+    // --- USER PROGRESS ---
+    const progress = await prisma.userProgress.findUnique({
       where: { user_id: userId },
-      orderBy: { created_at: "desc" },
     });
 
-    console.log("📌 XP events found:", events.length);
+    const totalXP = progress?.total_xp ?? 0;
+    const level = progress?.level ?? 1;
+    const streak = progress?.consecutive_days ?? 0;
 
-    const now = new Date();
+    // --- XP EVENTS ---
+    const recentEvents = await prisma.xpEvent.findMany({
+      where: { user_id: userId },
+      orderBy: { created_at: "desc" },
+      take: 10,
+    });
 
-    // Compute ranges
-    const todayStart = startOfDayUTC(now);
-    const yesterdayStart = daysAgoUTC(1);
-    const weekStart = daysAgoUTC(7);
-    const lastWeekStart = daysAgoUTC(14);
-    const lastWeekEnd = daysAgoUTC(7);
-
-    // XP calculations
-    const todayXP = events
-      .filter((e) => e.created_at >= todayStart)
-      .reduce((sum, e) => sum + e.xp_delta, 0);
-
-    const yesterdayXP = events
-      .filter(
-        (e) => e.created_at >= yesterdayStart && e.created_at < todayStart,
-      )
-      .reduce((sum, e) => sum + e.xp_delta, 0);
-
-    const weeklyXP = events
-      .filter((e) => e.created_at >= weekStart)
-      .reduce((sum, e) => sum + e.xp_delta, 0);
-
-    const lastWeekXP = events
-      .filter(
-        (e) => e.created_at >= lastWeekStart && e.created_at < lastWeekEnd,
-      )
-      .reduce((sum, e) => sum + e.xp_delta, 0);
-
-    const totalXP = events.reduce((sum, e) => sum + e.xp_delta, 0);
-
-    // Basic level formula (can adjust later)
-    const level = Math.floor(totalXP / 100) + 1;
-    const xpToNextLevel = level * 100 - totalXP;
-
-    // No LessonProgress table → return empty safely
-    const pendingLessons = [];
-
-    // Recent events
-    const recentActivity = events.slice(0, 10).map((e) => ({
+    const recentActivity = recentEvents.map((e) => ({
       id: e.id,
       xp_delta: e.xp_delta,
       event_type: e.event_type,
@@ -81,23 +36,66 @@ router.get("/summary", authMiddleware, async (req, res) => {
       meta: e.meta,
     }));
 
-    console.log("📌 Dashboard summary computed successfully");
+    // --- XP COUNTS ---
+    const now = new Date();
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - 7);
+
+    const todayXP =
+      (
+        await prisma.xpEvent.aggregate({
+          where: { user_id: userId, created_at: { gte: todayStart } },
+          _sum: { xp_delta: true },
+        })
+      )._sum.xp_delta ?? 0;
+
+    const yesterdayXP =
+      (
+        await prisma.xpEvent.aggregate({
+          where: {
+            user_id: userId,
+            created_at: { gte: yesterdayStart, lt: todayStart },
+          },
+          _sum: { xp_delta: true },
+        })
+      )._sum.xp_delta ?? 0;
+
+    const weeklyXP =
+      (
+        await prisma.xpEvent.aggregate({
+          where: { user_id: userId, created_at: { gte: weekStart } },
+          _sum: { xp_delta: true },
+        })
+      )._sum.xp_delta ?? 0;
+
+    // --- LESSON PROGRESS (TEMP DISABLED) ---
+    const pendingLessons = [];
+
+    // --- BADGES ---
+    const nextBadge = null;
 
     return res.json({
+      ok: true,
       todayXP,
       yesterdayXP,
       weeklyXP,
-      lastWeekXP,
       totalXP,
       level,
-      xpToNextLevel,
-      nextBadge: null,
+      streak,
+      nextBadge,
       pendingLessons,
       recentActivity,
     });
   } catch (err) {
-    console.error("❌ Dashboard summary API error:", err);
-    return res.status(500).json({ error: "Dashboard failed" });
+    console.error("Dashboard summary error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
 
