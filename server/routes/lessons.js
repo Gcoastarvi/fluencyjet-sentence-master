@@ -1,7 +1,7 @@
 // server/routes/lessons.js
 import express from "express";
 import prisma from "../db/client.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 

@@ -35,3 +35,6 @@ export default function authMiddleware(req, res, next) {
       .json({ ok: false, message: "Invalid or expired token" });
   }
 }
+export default function authRequired(req, res, next) {
+  // ... your jwt verification logic ...
+}
