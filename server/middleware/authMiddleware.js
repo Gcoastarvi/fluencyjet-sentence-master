@@ -1,17 +1,17 @@
 // server/middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
 
-export function authMiddleware(req, res, next) {
+export default function authMiddleware(req, res, next) {
   try {
     let token = null;
 
-    // 1) Try Authorization header: "Bearer <token>"
+    // 1) Check Authorization header
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       token = authHeader.split(" ")[1];
     }
 
-    // 2) Fallback to HTTP-only cookie
+    // 2) Fallback: cookie token
     if (!token && req.cookies && req.cookies.token) {
       token = req.cookies.token;
     }
@@ -20,12 +20,10 @@ export function authMiddleware(req, res, next) {
       return res.status(401).json({ ok: false, message: "Missing token" });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Normalise shape of req.user
     req.user = {
-      id: decoded.userId || decoded.id,
+      id: decoded.id || decoded.userId,
       email: decoded.email,
     };
 
