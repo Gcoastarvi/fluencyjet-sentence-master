@@ -1,6 +1,14 @@
 // client/src/utils/fetch.js
-export async function apiFetch(url, options = {}) {
+
+// Automatically choose API base URL depending on environment:
+const API_BASE =
+  window.location.origin ||
+  "https://fluencyjet-sentence-master-production.up.railway.app";
+
+export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("token");
+
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
 
   const headers = {
     ...(options.headers || {}),
