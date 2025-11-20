@@ -1,6 +1,6 @@
 // client/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
-import customFetch from "../utils/fetch";
+import { apiFetch } from "../utils/fetch";
 import { getDisplayName } from "../utils/displayName";
 
 export default function Dashboard() {
@@ -20,22 +20,20 @@ export default function Dashboard() {
     recentActivity: [],
   });
 
+  // -----------------------
+  // 🟦 Load Summary
+  // -----------------------
   useEffect(() => {
     async function loadSummary() {
       try {
         setLoading(true);
         setError("");
 
-        // ⭐ FIXED: use customFetch so Authorization header is ALWAYS sent
-        const res = await customFetch("/api/dashboard/summary");
+        // 🔥 Correct: token-based custom fetch wrapper
+        const data = await apiFetch("/api/dashboard/summary", {
+          method: "GET",
+        });
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        // ⭐ Defensive: avoid crashing if fields missing
         setSummary({
           todayXP: data.todayXP ?? 0,
           yesterdayXP: data.yesterdayXP ?? 0,
@@ -49,7 +47,7 @@ export default function Dashboard() {
           recentActivity: data.recentActivity ?? [],
         });
       } catch (err) {
-        console.error("Dashboard summary error:", err);
+        console.error("Dashboard Load Error:", err);
         setError("Could not load live data. Showing defaults.");
       } finally {
         setLoading(false);
@@ -59,63 +57,71 @@ export default function Dashboard() {
     loadSummary();
   }, []);
 
+  // -----------------------
+  // 🟦 UI
+  // -----------------------
   return (
-    <div className="dashboard-container" style={{ padding: "20px" }}>
+    <div style={{ padding: "20px" }}>
       <h2>Dashboard</h2>
 
-      {error && <p style={{ color: "red", marginBottom: "20px" }}>{error}</p>}
+      {error && <p style={{ color: "red", marginBottom: "10px" }}>{error}</p>}
 
       {loading ? (
         <p>Loading...</p>
       ) : (
         <>
-          <h3>Today's XP</h3>
-          <p>{summary.todayXP}</p>
+          <h3>{getDisplayName()}</h3>
 
-          <h3>Yesterday</h3>
-          <p>{summary.yesterdayXP}</p>
+          <div style={{ marginTop: "20px" }}>
+            <h4>Today's XP</h4>
+            <p>{summary.todayXP}</p>
 
-          <h3>This Week</h3>
-          <p>{summary.weeklyXP}</p>
+            <h4>Yesterday</h4>
+            <p>{summary.yesterdayXP}</p>
 
-          <h3>Last Week</h3>
-          <p>{summary.lastWeekXP}</p>
+            <h4>This Week</h4>
+            <p>{summary.weeklyXP}</p>
 
-          <h3>Total XP</h3>
-          <p>{summary.totalXP}</p>
+            <h4>Last Week</h4>
+            <p>{summary.lastWeekXP}</p>
 
-          <h3>Level</h3>
-          <p>{summary.level}</p>
+            <h4>Total XP</h4>
+            <p>{summary.totalXP}</p>
 
-          <h4>XP to next level: {summary.xpToNextLevel}</h4>
+            <h4>Level</h4>
+            <p>{summary.level}</p>
 
-          <h3>Next Badge</h3>
-          <p>{summary.nextBadge ? summary.nextBadge : "No next badge"}</p>
+            <h4>XP to next level</h4>
+            <p>{summary.xpToNextLevel}</p>
 
-          <h3>Pending Lessons</h3>
-          {summary.pendingLessons.length === 0 ? (
-            <p>All caught up! 🎉</p>
-          ) : (
-            <ul>
-              {summary.pendingLessons.map((lesson) => (
-                <li key={lesson.id}>{lesson.title}</li>
-              ))}
-            </ul>
-          )}
+            <h4>Next Badge</h4>
+            <p>{summary.nextBadge || "No next badge"}</p>
 
-          <h3>Recent Activity</h3>
-          {summary.recentActivity.length === 0 ? (
-            <p>No XP events yet. Try a quiz!</p>
-          ) : (
-            <ul>
-              {summary.recentActivity.map((ev) => (
-                <li key={ev.id}>
-                  {ev.event_type} → +{ev.xp_delta} XP on{" "}
-                  {new Date(ev.created_at).toLocaleString()}
-                </li>
-              ))}
-            </ul>
-          )}
+            <h4>Pending Lessons</h4>
+            {summary.pendingLessons.length > 0 ? (
+              <ul>
+                {summary.pendingLessons.map((lesson) => (
+                  <li key={lesson.id}>{lesson.title}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>All caught up! 🎉</p>
+            )}
+
+            <h4>Recent Activity</h4>
+            {summary.recentActivity.length > 0 ? (
+              <ul>
+                {summary.recentActivity.map((event) => (
+                  <li key={event.id}>
+                    {event.event_type} — {event.xp_delta} XP on{" "}
+                    {new Date(event.created_at).toLocaleString()}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No XP events yet. Try a quiz!</p>
+            )}
+          </div>
         </>
       )}
     </div>

@@ -3,11 +3,10 @@ export async function apiFetch(url, options = {}) {
   const token = localStorage.getItem("token");
 
   const headers = {
-    "Content-Type": "application/json",
     ...(options.headers || {}),
+    "Content-Type": "application/json",
   };
 
-  // Attach token only if exists
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
   }
@@ -15,7 +14,17 @@ export async function apiFetch(url, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers,
+    credentials: "include",
   });
 
-  return res;
+  if (res.status === 401) {
+    console.warn("Token expired or invalid → redirecting to login");
+    localStorage.removeItem("token");
+    localStorage.removeItem("tokenExpiry");
+    localStorage.removeItem("userName");
+    window.location.href = "/login";
+    return;
+  }
+
+  return res.json();
 }
