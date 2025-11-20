@@ -1,7 +1,7 @@
 // server/routes/quizzes.js
 import express from "express";
 import prisma from "../db/client.js";
-import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
+import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -59,7 +59,7 @@ router.get("/random", authRequired, async (req, res) => {
       where.difficulty = difficulty;
     }
 
-    // Fetch up to 200 candidates then shuffle client-side
+    // Fetch up to 200 candidates then shuffle server-side
     const candidates = await prisma.quizQuestion.findMany({
       where,
       take: 200,
