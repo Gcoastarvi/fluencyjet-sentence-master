@@ -1,27 +1,130 @@
 // server/routes/dashboard.js
 import express from "express";
-import prisma from "../db.js";
-import authMiddleware from "../middleware/auth.js";
+import prisma from "../db/client.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// ----------------------
-// GET /api/dashboard/summary
-// ----------------------
+// --- UTIL FUNCTIONS ---
+function startOfDay(d = new Date()) {
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
+  );
+}
+
+function daysAgo(n) {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - n);
+  return startOfDay(d);
+}
+
+// --- MAIN DASHBOARD SUMMARY ---
 router.get("/summary", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // --- USER PROGRESS ---
+    // Time boundaries
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const yesterdayStart = daysAgo(1);
+    const sevenDaysAgo = daysAgo(7);
+    const fourteenDaysAgo = daysAgo(14);
+    const thirtyDaysAgo = daysAgo(30);
+
+    // Load user progress row
     const progress = await prisma.userProgress.findUnique({
       where: { user_id: userId },
     });
 
-    const totalXP = progress?.total_xp ?? 0;
-    const level = progress?.level ?? 1;
-    const streak = progress?.consecutive_days ?? 0;
+    // Total XP
+    let totalXP = progress?.total_xp ?? 0;
 
-    // --- XP EVENTS ---
+    // If missing, fallback to aggregate
+    if (!progress) {
+      const agg = await prisma.xpEvent.aggregate({
+        where: { user_id: userId },
+        _sum: { xp_delta: true },
+      });
+      totalXP = agg._sum.xp_delta || 0;
+    }
+
+    // XP Queries
+    const todayAgg = await prisma.xpEvent.aggregate({
+      where: { user_id: userId, created_at: { gte: todayStart } },
+      _sum: { xp_delta: true },
+    });
+
+    const yesterdayAgg = await prisma.xpEvent.aggregate({
+      where: {
+        user_id: userId,
+        created_at: { gte: yesterdayStart, lt: todayStart },
+      },
+      _sum: { xp_delta: true },
+    });
+
+    const weeklyAgg = await prisma.xpEvent.aggregate({
+      where: { user_id: userId, created_at: { gte: sevenDaysAgo } },
+      _sum: { xp_delta: true },
+    });
+
+    const lastWeekAgg = await prisma.xpEvent.aggregate({
+      where: {
+        user_id: userId,
+        created_at: { gte: fourteenDaysAgo, lt: sevenDaysAgo },
+      },
+      _sum: { xp_delta: true },
+    });
+
+    const monthlyAgg = await prisma.xpEvent.aggregate({
+      where: { user_id: userId, created_at: { gte: thirtyDaysAgo } },
+      _sum: { xp_delta: true },
+    });
+
+    // Convert null → 0
+    const todayXP = todayAgg._sum.xp_delta || 0;
+    const yesterdayXP = yesterdayAgg._sum.xp_delta || 0;
+    const weeklyXP = weeklyAgg._sum.xp_delta || 0;
+    const lastWeekXP = lastWeekAgg._sum.xp_delta || 0;
+    const monthlyXP = monthlyAgg._sum.xp_delta || 0;
+
+    // Levels
+    const LEVELS = [
+      { level: 1, xp: 0 },
+      { level: 2, xp: 1000 },
+      { level: 3, xp: 5000 },
+      { level: 4, xp: 10000 },
+      { level: 5, xp: 50000 },
+      { level: 6, xp: 100000 },
+    ];
+
+    let current = LEVELS[0];
+    for (const l of LEVELS) {
+      if (totalXP >= l.xp) current = l;
+    }
+
+    const next = LEVELS.find((l) => l.xp > current.xp) || current;
+    const level = current.level;
+    const xpToNextLevel = next.xp > totalXP ? next.xp - totalXP : 0;
+
+    // Badge System
+    const badges = await prisma.badge.findMany({
+      orderBy: { min_xp: "asc" },
+    });
+
+    let nextBadge = null;
+    for (const b of badges) {
+      if (totalXP < b.min_xp) {
+        nextBadge = {
+          code: b.code,
+          label: b.label,
+          minXP: b.min_xp,
+          remainingXP: b.min_xp - totalXP,
+        };
+        break;
+      }
+    }
+
+    // Recent XP Events
     const recentEvents = await prisma.xpEvent.findMany({
       where: { user_id: userId },
       orderBy: { created_at: "desc" },
@@ -36,66 +139,29 @@ router.get("/summary", authMiddleware, async (req, res) => {
       meta: e.meta,
     }));
 
-    // --- XP COUNTS ---
-    const now = new Date();
-    const todayStart = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-    const weekStart = new Date(todayStart);
-    weekStart.setDate(weekStart.getDate() - 7);
-
-    const todayXP =
-      (
-        await prisma.xpEvent.aggregate({
-          where: { user_id: userId, created_at: { gte: todayStart } },
-          _sum: { xp_delta: true },
-        })
-      )._sum.xp_delta ?? 0;
-
-    const yesterdayXP =
-      (
-        await prisma.xpEvent.aggregate({
-          where: {
-            user_id: userId,
-            created_at: { gte: yesterdayStart, lt: todayStart },
-          },
-          _sum: { xp_delta: true },
-        })
-      )._sum.xp_delta ?? 0;
-
-    const weeklyXP =
-      (
-        await prisma.xpEvent.aggregate({
-          where: { user_id: userId, created_at: { gte: weekStart } },
-          _sum: { xp_delta: true },
-        })
-      )._sum.xp_delta ?? 0;
-
-    // --- LESSON PROGRESS (TEMP DISABLED) ---
+    // 🚫 LessonProgress temporarily disabled (table not in schema/database)
     const pendingLessons = [];
 
-    // --- BADGES ---
-    const nextBadge = null;
+    // Streak
+    const streak = progress?.consecutive_days ?? 0;
 
     return res.json({
-      ok: true,
       todayXP,
       yesterdayXP,
       weeklyXP,
+      lastWeekXP,
+      monthlyXP,
+      streak,
       totalXP,
       level,
-      streak,
+      xpToNextLevel,
       nextBadge,
       pendingLessons,
       recentActivity,
     });
   } catch (err) {
-    console.error("Dashboard summary error:", err);
-    return res.status(500).json({ ok: false, message: "Server error" });
+    console.error("❌ /api/dashboard/summary error:", err);
+    return res.status(500).json({ error: "Failed to load dashboard summary" });
   }
 });
 
