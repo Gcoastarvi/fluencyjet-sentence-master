@@ -234,6 +234,50 @@ export default function Dashboard() {
             </div>
           </section>
 
+          {/* Leaderboard Preview */}
+          <section className="fj-dashboard-section">
+            <div className="fj-card">
+              <h2 className="fj-section-title">Leaderboard Snapshot</h2>
+
+              {summary.leaderboard ? (
+                <>
+                  <div className="fj-snapshot-row">
+                    <span className="fj-snapshot-label">Your Rank</span>
+                    <span className="fj-snapshot-value">
+                      #{summary.leaderboard.rank}
+                    </span>
+                  </div>
+
+                  <div className="fj-snapshot-row">
+                    <span className="fj-snapshot-label">Your XP</span>
+                    <span className="fj-snapshot-value">
+                      {summary.leaderboard.yourXP}
+                    </span>
+                  </div>
+
+                  {summary.leaderboard.nextAbove && (
+                    <div className="fj-snapshot-row">
+                      <span className="fj-snapshot-label">Next Above You</span>
+                      <span className="fj-snapshot-value">
+                        {summary.leaderboard.nextAbove.name} —{" "}
+                        {summary.leaderboard.nextAbove.xp} XP
+                      </span>
+                    </div>
+                  )}
+
+                  <a className="fj-link" href="/leaderboard">
+                    View full leaderboard →
+                  </a>
+                </>
+              ) : (
+                <p className="fj-empty-state">
+                  You are not ranked yet. Complete a quiz to appear on the
+                  leaderboard!
+                </p>
+              )}
+            </div>
+          </section>
+
           {/* Recent Activity */}
           <section className="fj-dashboard-section">
             <div className="fj-card">

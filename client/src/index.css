@@ -580,3 +580,15 @@ body {
     font-size: 1.6rem;
   }
 }
+
+.fj-link {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+  margin-top: 12px;
+  display: inline-block;
+}
+
+.fj-link:hover {
+  text-decoration: underline;
+}
