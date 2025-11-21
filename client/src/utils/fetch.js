@@ -1,38 +1,51 @@
 // client/src/utils/fetch.js
+import { toast } from "react-hot-toast";
 
-// Automatically choose API base URL depending on environment:
-const API_BASE =
-  window.location.origin ||
-  "https://fluencyjet-sentence-master-production.up.railway.app";
+// Global redirect helper
+function redirectToLogin() {
+  // Clear old token
+  localStorage.removeItem("token");
+  localStorage.removeItem("userName");
 
-export async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem("token");
+  // Go to login
+  window.location.href = "/login";
+}
 
-  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+export async function customFetch(url, options = {}) {
+  try {
+    const token = localStorage.getItem("token");
 
-  const headers = {
-    ...(options.headers || {}),
-    "Content-Type": "application/json",
-  };
+    const headers = {
+      ...(options.headers || {}),
+      "Content-Type": "application/json",
+    };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+    // Attach token if available
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
+
+    // ---- GLOBAL 401 HANDLER ----
+    if (res.status === 401) {
+      if (!options?.silent) {
+        toast.error("Session expired — please log in again");
+      }
+      redirectToLogin();
+      return null;
+    }
+
+    // Normal JSON response
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    console.error("❌ customFetch error:", err);
+    if (!options?.silent) toast.error("Network error");
+    return { ok: false, message: "Network error" };
   }
-
-  const res = await fetch(url, {
-    ...options,
-    headers,
-    credentials: "include",
-  });
-
-  if (res.status === 401) {
-    console.warn("Token expired or invalid → redirecting to login");
-    localStorage.removeItem("token");
-    localStorage.removeItem("tokenExpiry");
-    localStorage.removeItem("userName");
-    window.location.href = "/login";
-    return;
-  }
-
-  return res.json();
 }
