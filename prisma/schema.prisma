@@ -59,13 +59,13 @@ model Badge {
 }
 
 model UserBadge {
-  id        Int      @id @default(autoincrement())
-  user_id   Int
-  badge_id  Int
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  badge_id   Int
   awarded_at DateTime @default(now())
 
-  user   User   @relation(fields: [user_id], references: [id])
-  badge  Badge  @relation(fields: [badge_id], references: [id])
+  user   User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  badge  Badge  @relation(fields: [badge_id], references: [id], onDelete: Cascade)
 }
 
 /// One row per user; fast reads for weekly/monthly leaderboards.
@@ -109,6 +109,16 @@ model TypingQuiz {
   createdAt DateTime @default(now()) @db.Timestamp(6)
 }
 
+model QuizQuestion {
+  id          Int       @id @default(autoincrement())
+  ta          String
+  en          String
+  difficulty  Difficulty @default(beginner)
+  lesson_id   Int?
+  audio_url   String?   @db.VarChar(512)
+  created_at  DateTime  @default(now())
+}
+
 enum Difficulty {
   beginner
   intermediate
@@ -121,25 +131,24 @@ enum TierLevel {
   pro
 }
 
+// ✅ Updated: keeps ALL old values + adds QUIZ_STARTED & quiz-type completions
 enum EventType {
+  // legacy / generic types
   quiz
   streak
   bonus
   admin
   QUESTION_CORRECT
-  QUIZ_COMPLETED
   LESSON_COMPLETED
   DAILY_STREAK
   BADGE_UNLOCK
   ADMIN_ADJUST
   GENERIC
-}
-model QuizQuestion {
-  id          Int       @id @default(autoincrement())
-  ta          String
-  en          String
-  difficulty  Difficulty @default(beginner)
-  lesson_id   Int?
-  audio_url   String?   @db.VarChar(512)
-  created_at  DateTime  @default(now())
+
+  // new granular XP event types used in Phase-3 / Phase-4 dashboards
+  QUIZ_STARTED
+  QUIZ_COMPLETED
+  CLOZE_COMPLETED
+  DRAGDROP_COMPLETED
+  REORDER_COMPLETED
 }
