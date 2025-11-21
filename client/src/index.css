@@ -304,3 +304,279 @@ body {
     0 0 0 1px rgba(129, 140, 248, 0.9),
     0 0 16px rgba(129, 140, 248, 0.5);
 }
+
+/* ===========================
+   FluencyJet Dashboard Styles
+   =========================== */
+
+.fj-dashboard-page {
+  min-height: calc(100vh - 60px);
+  padding: 32px 16px 48px;
+  background: radial-gradient(circle at top, #eef2ff 0, #f9fafb 45%, #ffffff 100%);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.fj-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  max-width: 1100px;
+  margin: 0 auto 24px;
+}
+
+.fj-dashboard-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #3730a3;
+}
+
+.fj-dashboard-subtitle {
+  margin-top: 4px;
+  font-size: 0.95rem;
+  color: #4b5563;
+}
+
+.fj-dashboard-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.fj-dashboard-error {
+  max-width: 1100px;
+  margin: 0 auto 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 0.9rem;
+}
+
+.fj-dashboard-loading {
+  max-width: 1100px;
+  margin: 32px auto;
+  text-align: center;
+  color: #4b5563;
+}
+
+.fj-dashboard-section {
+  max-width: 1100px;
+  margin: 20px auto;
+}
+
+.fj-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 12px;
+}
+
+.fj-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.fj-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.fj-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.fj-card {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow:
+    0 18px 45px rgba(15, 23, 42, 0.06),
+    0 0 0 1px rgba(148, 163, 184, 0.12);
+}
+
+.fj-card-soft {
+  background: #eef2ff;
+  box-shadow: none;
+  border-radius: 18px;
+}
+
+.fj-card-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.fj-card-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.fj-streak-flame {
+  margin-left: 6px;
+  font-size: 1.5rem;
+}
+
+.fj-level-line {
+  font-size: 0.95rem;
+  color: #4b5563;
+  margin-bottom: 10px;
+}
+
+.fj-level-number {
+  font-weight: 700;
+  color: #111827;
+}
+
+.fj-level-separator {
+  margin: 0 6px;
+  color: #9ca3af;
+}
+
+.fj-progress-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.fj-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4f46e5, #6366f1, #a855f7);
+  transition: width 0.5s ease;
+}
+
+.fj-progress-caption {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.fj-badge-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+.fj-badge-meta {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.fj-badge-hint {
+  font-size: 0.9rem;
+  color: #374151;
+  margin-top: 8px;
+}
+
+.fj-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fj-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.fj-list-item:last-child {
+  border-bottom: none;
+}
+
+.fj-list-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.fj-list-subtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.fj-chip {
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+.fj-empty-state {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.fj-snapshot-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.fj-snapshot-row:last-child {
+  border-bottom: none;
+}
+
+.fj-snapshot-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.fj-snapshot-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.fj-activity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.fj-activity-item {
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.fj-activity-item:last-child {
+  border-bottom: none;
+}
+
+.fj-activity-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.fj-activity-xp {
+  color: #16a34a;
+}
+
+.fj-activity-time {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .fj-dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .fj-dashboard-title {
+    font-size: 1.6rem;
+  }
+}
