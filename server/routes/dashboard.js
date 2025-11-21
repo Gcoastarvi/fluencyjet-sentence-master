@@ -1,175 +1,107 @@
-// server/routes/dashboard.js
 import express from "express";
-import prisma from "../db/client.js";
-import authRequired from "../middleware/authMiddleware.js";
+import prisma from "../db.js";
+import { authMiddleware } from "../middleware/auth.js";
 
 const router = express.Router();
 
-/* ---------- Helpers ---------- */
-
-function startOfDay(d = new Date()) {
-  return new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()),
-  );
-}
-
-function daysAgo(n) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - n);
-  return startOfDay(d);
-}
-
-// Convert BigInt values recursively
-function toCleanJSON(obj) {
-  if (obj === null || obj === undefined) return obj;
-
-  if (typeof obj === "bigint") {
-    return Number(obj); // convert safely
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map(toCleanJSON);
-  }
-
-  if (typeof obj === "object") {
-    const clean = {};
-    for (const [key, value] of Object.entries(obj)) {
-      clean[key] = toCleanJSON(value);
-    }
-    return clean;
-  }
-
-  return obj;
-}
-
-/* ---------- MAIN ROUTE ---------- */
-
-router.get("/summary", authRequired, async (req, res) => {
+/**
+ * Leaderboard API
+ * Returns:
+ *  - top 50 users
+ *  - your ranking
+ *  - your XP
+ *  - nextAbove
+ *  - nextBelow
+ */
+router.get("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const todayStart = startOfDay();
-    const yesterdayStart = daysAgo(1);
-    const sevenDaysAgo = daysAgo(7);
-    const fourteenDaysAgo = daysAgo(14);
-    const thirtyDaysAgo = daysAgo(30);
-
-    /* ---------------- Load user progress ---------------- */
-    const progress = await prisma.userProgress.findUnique({
-      where: { user_id: userId },
+    // 1) Fetch top 50 leaderboard entries
+    const topUsers = await prisma.user.findMany({
+      orderBy: { total_xp: "desc" },
+      take: 50,
+      select: {
+        id: true,
+        name: true,
+        total_xp: true,
+      },
     });
 
-    let totalXP = progress?.total_xp ?? 0;
+    // 2) Get your XP
+    const me = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        total_xp: true,
+      },
+    });
 
-    if (!progress) {
-      const agg = await prisma.xpEvent.aggregate({
-        where: { user_id: userId },
-        _sum: { xp_delta: true },
+    if (!me) {
+      return res.json({
+        ok: false,
+        message: "User not found",
       });
-      totalXP = agg._sum.xp_delta || 0;
     }
 
-    /* ---------------- Aggregations ---------------- */
+    const yourXP = me.total_xp || 0;
 
-    async function sumXP(where) {
-      const agg = await prisma.xpEvent.aggregate({
-        where,
-        _sum: { xp_delta: true },
-      });
-      return Number(agg._sum.xp_delta || 0);
-    }
-
-    const todayXP = await sumXP({
-      user_id: userId,
-      created_at: { gte: todayStart },
-    });
-    const yesterdayXP = await sumXP({
-      user_id: userId,
-      created_at: { gte: yesterdayStart, lt: todayStart },
-    });
-    const weeklyXP = await sumXP({
-      user_id: userId,
-      created_at: { gte: sevenDaysAgo },
-    });
-    const lastWeekXP = await sumXP({
-      user_id: userId,
-      created_at: { gte: fourteenDaysAgo, lt: sevenDaysAgo },
-    });
-    const monthlyXP = await sumXP({
-      user_id: userId,
-      created_at: { gte: thirtyDaysAgo },
+    // 3) Find your rank globally
+    const usersAbove = await prisma.user.count({
+      where: {
+        total_xp: { gt: yourXP },
+      },
     });
 
-    /* ---------------- Levels ---------------- */
-    const LEVELS = [
-      { level: 1, xp: 0 },
-      { level: 2, xp: 1000 },
-      { level: 3, xp: 5000 },
-      { level: 4, xp: 10000 },
-      { level: 5, xp: 50000 },
-      { level: 6, xp: 100000 },
-    ];
+    const yourRank = usersAbove + 1;
 
-    let current = LEVELS[0];
-    for (const l of LEVELS) if (totalXP >= l.xp) current = l;
-    const next = LEVELS.find((l) => l.xp > current.xp) || current;
-
-    const xpToNextLevel = Math.max(next.xp - totalXP, 0);
-
-    /* ---------------- Badge System ---------------- */
-    const badges = await prisma.badge.findMany({
-      orderBy: { min_xp: "asc" },
+    // 4) Find next above you
+    const nextAbove = await prisma.user.findFirst({
+      where: {
+        total_xp: { gt: yourXP },
+      },
+      orderBy: { total_xp: "asc" },
+      select: {
+        id: true,
+        name: true,
+        total_xp: true,
+      },
     });
 
-    let nextBadge = null;
-    for (const b of badges) {
-      if (totalXP < b.min_xp) {
-        nextBadge = {
-          code: b.code,
-          label: b.label,
-          minXP: Number(b.min_xp),
-          remainingXP: Number(b.min_xp) - totalXP,
-        };
-        break;
-      }
-    }
-
-    /* ---------------- Recent XP Events ---------------- */
-    const recentRaw = await prisma.xpEvent.findMany({
-      where: { user_id: userId },
-      orderBy: { created_at: "desc" },
-      take: 10,
+    // 5) Find next below you
+    const nextBelow = await prisma.user.findFirst({
+      where: {
+        total_xp: { lt: yourXP },
+      },
+      orderBy: { total_xp: "desc" },
+      select: {
+        id: true,
+        name: true,
+        total_xp: true,
+      },
     });
 
-    const recentActivity = recentRaw.map((e) => ({
-      id: e.id,
-      xp_delta: Number(e.xp_delta),
-      event_type: e.event_type,
-      created_at: e.created_at,
-      meta: e.meta,
-    }));
-
-    const streak = progress?.consecutive_days ?? 0;
-
-    const response = {
-      todayXP,
-      yesterdayXP,
-      weeklyXP,
-      lastWeekXP,
-      monthlyXP,
-      streak,
-      totalXP: Number(totalXP),
-      level: current.level,
-      xpToNextLevel,
-      nextBadge,
-      pendingLessons: [],
-      recentActivity,
-    };
-
-    return res.json(toCleanJSON(response));
-  } catch (err) {
-    console.error("❌ /api/dashboard/summary error:", err);
-    return res.status(500).json({ error: "Failed to load dashboard summary" });
+    return res.json({
+      ok: true,
+      leaderboard: topUsers,
+      me: {
+        rank: yourRank,
+        yourXP,
+        nextAbove: nextAbove
+          ? { name: nextAbove.name, xp: nextAbove.total_xp }
+          : null,
+        nextBelow: nextBelow
+          ? { name: nextBelow.name, xp: nextBelow.total_xp }
+          : null,
+      },
+    });
+  } catch (error) {
+    console.error("Leaderboard error:", error);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load leaderboard",
+    });
   }
 });
 
