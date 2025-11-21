@@ -1,154 +1,105 @@
 // server/routes/leaderboard.js
 import express from "express";
 import prisma from "../db/client.js";
-import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
+import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/**
- * Helper: build time filter for a given period.
- * period: "weekly" | "monthly" | "all"
- */
+/* Utility: Get time window */
 function getSinceForPeriod(period) {
   const now = new Date();
-
   if (period === "weekly") {
-    const since = new Date(now);
-    since.setDate(since.getDate() - 7);
-    return since;
+    const t = new Date(now);
+    t.setDate(t.getDate() - 7);
+    return t;
   }
-
   if (period === "monthly") {
-    const since = new Date(now);
-    since.setMonth(since.getMonth() - 1);
-    return since;
+    const t = new Date(now);
+    t.setMonth(t.getMonth() - 1);
+    return t;
   }
-
-  // "all" → no time filter
-  return null;
+  return null; // "all"
 }
 
-/**
- * GET /api/leaderboard/:period
- * period: "weekly" | "monthly" | "all"
- *
- * Response:
- * {
- *   ok: true,
- *   period: "weekly",
- *   top: [
- *     { rank: 1, name: "Aravind", xp: 1230, isYou: true/false },
- *     ...
- *   ],
- *   you: { rank: 3, name: "You", xp: 450 } | null
- * }
- */
+/* -------- GET /api/leaderboard/:period -------- */
 router.get("/:period", authRequired, async (req, res) => {
-  const periodParam = (req.params.period || "weekly").toLowerCase();
-  const period = ["weekly", "monthly", "all"].includes(periodParam)
-    ? periodParam
-    : "weekly";
-
   const userId = req.user?.id;
+  const raw = (req.params.period || "").toLowerCase();
+  const period = ["weekly", "monthly", "all"].includes(raw) ? raw : "weekly";
+
   const since = getSinceForPeriod(period);
 
   try {
-    // Build WHERE clause for xpEvent
-    const whereClause = {
+    const where = {
       event_type: "QUIZ_COMPLETED",
       ...(since ? { created_at: { gte: since } } : {}),
     };
 
-    // Group XP by user
-    const xpByUser = await prisma.xpEvent.groupBy({
+    const grouped = await prisma.xpEvent.groupBy({
       by: ["user_id"],
-      where: whereClause,
+      where,
       _sum: { xp_delta: true },
     });
 
-    // Normalize + sort by XP desc
-    const sorted = xpByUser
-      .map((row) => ({
-        user_id: row.user_id,
-        xp: Number(row._sum.xp_delta) || 0,
-      }))
+    const sorted = grouped
+      .map((g) => ({ user_id: g.user_id, xp: Number(g._sum.xp_delta) }))
       .sort((a, b) => b.xp - a.xp);
 
-    // Fetch user info for all IDs we have XP for
-    const userIds = sorted.map((row) => row.user_id);
-    const users = userIds.length
+    const ids = sorted.map((s) => s.user_id);
+
+    const users = ids.length
       ? await prisma.user.findMany({
-          where: { id: { in: userIds } },
-          select: { id: true, name: true, email: true },
+          where: { id: { in: ids } },
+          select: { id: true, email: true, name: true },
         })
       : [];
 
-    const userById = new Map(users.map((u) => [u.id, u]));
+    const map = new Map(users.map((u) => [u.id, u]));
 
-    // Build "top" list (first 50)
     const top = sorted.slice(0, 50).map((row, index) => {
-      const u = userById.get(row.user_id);
-      const displayName =
-        u?.name || (u?.email ? u.email.split("@")[0] : "Learner");
+      const u = map.get(row.user_id);
+      const display = u?.name || (u?.email ? u.email.split("@")[0] : "Learner");
 
       return {
         rank: index + 1,
-        name: displayName,
+        name: display,
         xp: row.xp,
-        isYou: userId ? row.user_id === userId : false,
+        isYou: userId === row.user_id,
       };
     });
 
-    // Build "you" block if logged in user has XP
     let you = null;
     if (userId) {
-      const idx = sorted.findIndex((row) => row.user_id === userId);
-      if (idx !== -1) {
-        const row = sorted[idx];
-        const u = userById.get(row.user_id);
-        const displayName =
-          u?.name || (u?.email ? u.email.split("@")[0] : "You");
+      const pos = sorted.findIndex((r) => r.user_id === userId);
+      if (pos !== -1) {
+        const u = map.get(userId);
+        const display =
+          u?.name || (u?.email ? u.email.split("@")[0] : "Learner");
 
         you = {
-          rank: idx + 1,
-          name: displayName,
-          xp: row.xp,
+          rank: pos + 1,
+          name: display,
+          xp: sorted[pos].xp,
         };
       }
     }
 
-    return res.json({
-      ok: true,
-      period,
-      top,
-      you,
-    });
+    return res.json({ ok: true, period, top, you });
   } catch (err) {
-    console.error("/api/leaderboard/:period error:", err);
-    return res
-      .status(500)
-      .json({ ok: false, message: "Failed to load leaderboard" });
+    console.error("Leaderboard error:", err);
+    return res.status(500).json({ ok: false, message: "Leaderboard error" });
   }
 });
 
-/**
- * GET /api/leaderboard/me
- * Quick lookup of current user's weekly rank.
- *
- * Response:
- * { ok: true, rank: number | null, xp: number }
- */
+/* -------- Quick Rank Endpoint -------- */
 router.get("/me", authRequired, async (req, res) => {
   const userId = req.user?.id;
-
-  if (!userId) {
-    return res.status(401).json({ ok: false, message: "Unauthorized" });
-  }
+  if (!userId) return res.status(401).json({ ok: false });
 
   const since = getSinceForPeriod("weekly");
 
   try {
-    const xpByUser = await prisma.xpEvent.groupBy({
+    const grouped = await prisma.xpEvent.groupBy({
       by: ["user_id"],
       where: {
         event_type: "QUIZ_COMPLETED",
@@ -157,29 +108,22 @@ router.get("/me", authRequired, async (req, res) => {
       _sum: { xp_delta: true },
     });
 
-    const sorted = xpByUser
-      .map((row) => ({
-        user_id: row.user_id,
-        xp: Number(row._sum.xp_delta) || 0,
-      }))
+    const sorted = grouped
+      .map((g) => ({ user_id: g.user_id, xp: Number(g._sum.xp_delta) }))
       .sort((a, b) => b.xp - a.xp);
 
-    const idx = sorted.findIndex((row) => row.user_id === userId);
+    const pos = sorted.findIndex((g) => g.user_id === userId);
 
-    if (idx === -1) {
-      return res.json({ ok: true, rank: null, xp: 0 });
-    }
+    if (pos === -1) return res.json({ ok: true, rank: null, xp: 0 });
 
     return res.json({
       ok: true,
-      rank: idx + 1,
-      xp: sorted[idx].xp,
+      rank: pos + 1,
+      xp: sorted[pos].xp,
     });
   } catch (err) {
-    console.error("/api/leaderboard/me error:", err);
-    return res
-      .status(500)
-      .json({ ok: false, message: "Failed to load leaderboard rank" });
+    console.error("Leaderboard /me error:", err);
+    return res.status(500).json({ ok: false });
   }
 });
 
