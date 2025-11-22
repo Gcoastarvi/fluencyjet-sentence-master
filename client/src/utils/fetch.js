@@ -1,38 +1,71 @@
-export async function apiFetch(path, options = {}) {
-  const token = localStorage.getItem("fj_token");
+// client/src/utils/fetch.js
+import { toast } from "react-hot-toast";
 
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-
+/**
+ * Redirect the user to login when their session is invalid/expired.
+ */
+function redirectToLogin() {
   try {
-    const res = await fetch(`${API_BASE}${path}`, {
+    // Clear any auth-related data
+    localStorage.removeItem("token");
+    localStorage.removeItem("userName");
+  } catch (err) {
+    console.warn("Failed to clear localStorage on logout:", err);
+  }
+
+  // Go to login page
+  window.location.href = "/login";
+}
+
+/**
+ * customFetch
+ * -----------
+ * A thin wrapper around fetch that:
+ * - Automatically attaches the JWT token from localStorage as Authorization: Bearer <token>
+ * - Sends cookies (for refresh token / hybrid auth) via credentials: "include"
+ * - Shows a toast + redirects to /login on 401 (expired/invalid token)
+ * - Shows a generic "Network error" toast on fetch failures (unless options.silent = true)
+ *
+ * Usage:
+ *   const res = await customFetch(`${API_BASE}/api/dashboard/summary`);
+ */
+export async function customFetch(url, options = {}) {
+  try {
+    const token = localStorage.getItem("token");
+
+    const headers = {
+      ...(options.headers || {}),
+      "Content-Type": "application/json",
+    };
+
+    // Attach token if available
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, {
       ...options,
       headers,
+      credentials: "include", // keep cookie-based refresh flow alive
     });
 
-    // Parse JSON
-    const data = await res.json();
-
-    // Global 401 handling
+    // ---- GLOBAL 401 HANDLER ----
     if (res.status === 401) {
-      localStorage.removeItem("fj_token");
-
-      if (window?.showToast) {
-        window.showToast("Session expired. Please log in again.");
-      } else {
-        alert("Session expired. Please log in again.");
+      if (!options?.silent) {
+        toast.error("Session expired — please log in again");
       }
-
-      window.location.href = "/login";
+      redirectToLogin();
       return null;
     }
 
+    // Normal JSON response
+    const data = await res.json();
     return data;
-  } catch (error) {
-    console.error("API Fetch Error:", error);
-    return { ok: false, error: "Fetch failed" };
+  } catch (err) {
+    console.error("❌ customFetch error:", err);
+    if (!options?.silent) {
+      toast.error("Network error");
+    }
+    return { ok: false, message: "Network error" };
   }
 }
