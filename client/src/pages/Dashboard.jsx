@@ -1,6 +1,6 @@
 // client/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
-import { apiFetch } from "../utils/fetch";
+import { apiFetchWithAuth } from "../utils/fetch";
 import { getDisplayName } from "../utils/displayName";
 
 const LEVELS = [
@@ -40,7 +40,7 @@ export default function Dashboard() {
         setLoading(true);
         setError("");
 
-        const data = await apiFetch("/api/dashboard/summary", {
+        const data = await apiFetchWithAuth("/api/dashboard/summary", {
           method: "GET",
         });
 
