@@ -1,7 +1,6 @@
 // client/src/pages/Leaderboard.jsx
 import { useEffect, useState, useRef } from "react";
-import { API_BASE } from "@/lib/api";
-import { customFetch } from "../utils/fetch";
+import { apiFetchWithAuth } from "../utils/fetch";
 
 // Format XP nicely => 1.2K, 2.4M
 function kFormat(n) {
@@ -48,28 +47,29 @@ export default function Leaderboard() {
       setLoading(true);
       setError("");
 
-      const url = `${API_BASE}/api/leaderboard/${period}`;
-      const res = await customFetch(url, { silent: false });
+      try {
+        const res = await apiFetchWithAuth(`/api/leaderboard/${period}`, {
+          method: "GET",
+        });
 
-      if (!res) {
-        // 401 handled globally by customFetch (toast + redirect)
+        // If 401, apiFetchWithAuth will already handle logout + redirect
+        if (!res) {
+          setLoading(false);
+          return;
+        }
+
+        setData({
+          top: res.top || [],
+          you: res.you || null,
+          period: res.period || period,
+        });
+        setLastUpdated(new Date());
+      } catch (err) {
+        console.error("Failed to load leaderboard", err);
+        setError(err.message || "Failed to load leaderboard.");
+      } finally {
         setLoading(false);
-        return;
       }
-
-      if (!res.ok) {
-        setError(res.message || "Failed to load leaderboard.");
-        setLoading(false);
-        return;
-      }
-
-      setData({
-        top: res.top || [],
-        you: res.you || null,
-        period: res.period || period,
-      });
-      setLastUpdated(new Date());
-      setLoading(false);
     }
 
     load();
