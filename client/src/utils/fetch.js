@@ -1,51 +1,38 @@
-// client/src/utils/fetch.js
-import { toast } from "react-hot-toast";
+export async function apiFetch(path, options = {}) {
+  const token = localStorage.getItem("fj_token");
 
-// Global redirect helper
-function redirectToLogin() {
-  // Clear old token
-  localStorage.removeItem("token");
-  localStorage.removeItem("userName");
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 
-  // Go to login
-  window.location.href = "/login";
-}
-
-export async function customFetch(url, options = {}) {
   try {
-    const token = localStorage.getItem("token");
-
-    const headers = {
-      ...(options.headers || {}),
-      "Content-Type": "application/json",
-    };
-
-    // Attach token if available
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-
-    const res = await fetch(url, {
+    const res = await fetch(`${API_BASE}${path}`, {
       ...options,
       headers,
-      credentials: "include",
     });
 
-    // ---- GLOBAL 401 HANDLER ----
+    // Parse JSON
+    const data = await res.json();
+
+    // Global 401 handling
     if (res.status === 401) {
-      if (!options?.silent) {
-        toast.error("Session expired — please log in again");
+      localStorage.removeItem("fj_token");
+
+      if (window?.showToast) {
+        window.showToast("Session expired. Please log in again.");
+      } else {
+        alert("Session expired. Please log in again.");
       }
-      redirectToLogin();
+
+      window.location.href = "/login";
       return null;
     }
 
-    // Normal JSON response
-    const data = await res.json();
     return data;
-  } catch (err) {
-    console.error("❌ customFetch error:", err);
-    if (!options?.silent) toast.error("Network error");
-    return { ok: false, message: "Network error" };
+  } catch (error) {
+    console.error("API Fetch Error:", error);
+    return { ok: false, error: "Fetch failed" };
   }
 }

@@ -8,3 +8,18 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <App />
   </React.StrictMode>,
 );
+// Create global toast function
+window.showToast = function (msg) {
+  let toast = document.getElementById("fj-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "fj-toast";
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2500);
+};

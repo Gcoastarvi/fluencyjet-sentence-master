@@ -592,3 +592,23 @@ body {
 .fj-link:hover {
   text-decoration: underline;
 }
+
+/* --- Simple Toast --- */
+#fj-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 20px;
+  background: #333;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-size: 15px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  z-index: 9999;
+}
+
+#fj-toast.show {
+  opacity: 1;
+}
