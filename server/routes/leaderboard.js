@@ -20,6 +20,11 @@ function getSinceForPeriod(period) {
   }
   return null; // "all"
 }
+// NEW: Support query version /api/leaderboard?period=weekly
+router.get("/", authRequired, async (req, res) => {
+  const period = req.query.period || "weekly";
+  return res.redirect(`/api/leaderboard/${period}`);
+});
 
 /* -------- GET /api/leaderboard/:period -------- */
 router.get("/:period", authRequired, async (req, res) => {
