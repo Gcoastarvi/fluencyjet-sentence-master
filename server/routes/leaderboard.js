@@ -8,21 +8,32 @@ const router = express.Router();
 /* Utility: Get time window */
 function getSinceForPeriod(period) {
   const now = new Date();
+
+  if (period === "daily") {
+    const t = new Date(now);
+    t.setDate(t.getDate() - 1);
+    return t;
+  }
+
   if (period === "weekly") {
     const t = new Date(now);
     t.setDate(t.getDate() - 7);
     return t;
   }
+
   if (period === "monthly") {
     const t = new Date(now);
     t.setMonth(t.getMonth() - 1);
     return t;
   }
-  return null; // "all"
+
+  // "all" → no time filter
+  return null;
 }
+
 // NEW: Support query version /api/leaderboard?period=weekly
 router.get("/", authRequired, async (req, res) => {
-  const period = req.query.period || "weekly";
+  const period = (req.query.period || "weekly").toLowerCase();
   return res.redirect(`/api/leaderboard/${period}`);
 });
 
@@ -30,7 +41,9 @@ router.get("/", authRequired, async (req, res) => {
 router.get("/:period", authRequired, async (req, res) => {
   const userId = req.user?.id;
   const raw = (req.params.period || "").toLowerCase();
-  const period = ["weekly", "monthly", "all"].includes(raw) ? raw : "weekly";
+  const period = ["daily", "weekly", "monthly", "all"].includes(raw)
+    ? raw
+    : "weekly";
 
   const since = getSinceForPeriod(period);
 
@@ -40,6 +53,7 @@ router.get("/:period", authRequired, async (req, res) => {
       ...(since ? { created_at: { gte: since } } : {}),
     };
 
+    // Sum XP per user in the chosen window
     const grouped = await prisma.xpEvent.groupBy({
       by: ["user_id"],
       where,
@@ -59,44 +73,48 @@ router.get("/:period", authRequired, async (req, res) => {
         })
       : [];
 
-    const map = new Map(users.map((u) => [u.id, u]));
+    const userMap = new Map(users.map((u) => [u.id, u]));
 
-    const top = sorted.slice(0, 50).map((row, index) => {
-      const u = map.get(row.user_id);
-      const display = u?.name || (u?.email ? u.email.split("@")[0] : "Learner");
-
+    // Leaders list for grid + top performers
+    const leaders = sorted.slice(0, 50).map((row, index) => {
+      const u = userMap.get(row.user_id);
       return {
+        user_id: row.user_id,
         rank: index + 1,
-        name: display,
+        email: u?.email || null,
+        name: u?.name || null,
         xp: row.xp,
-        isYou: userId === row.user_id,
       };
     });
 
+    // "You" box
     let you = null;
     if (userId) {
       const pos = sorted.findIndex((r) => r.user_id === userId);
       if (pos !== -1) {
-        const u = map.get(userId);
-        const display =
-          u?.name || (u?.email ? u.email.split("@")[0] : "Learner");
-
+        const u = userMap.get(userId);
         you = {
+          user_id: userId,
           rank: pos + 1,
-          name: display,
+          email: u?.email || null,
+          name: u?.name || null,
           xp: sorted[pos].xp,
+          // placeholders so UI renders nicely
+          level: null,
+          streak: 0,
+          badgeName: "Bronze",
         };
       }
     }
 
-    return res.json({ ok: true, period, top, you });
+    return res.json({ ok: true, period, leaders, you });
   } catch (err) {
     console.error("Leaderboard error:", err);
     return res.status(500).json({ ok: false, message: "Leaderboard error" });
   }
 });
 
-/* -------- Quick Rank Endpoint -------- */
+/* -------- Quick Rank Endpoint (weekly) -------- */
 router.get("/me", authRequired, async (req, res) => {
   const userId = req.user?.id;
   if (!userId) return res.status(401).json({ ok: false });
