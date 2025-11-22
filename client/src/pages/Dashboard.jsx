@@ -105,6 +105,32 @@ export default function Dashboard() {
         <div className="fj-dashboard-loading">Loading your progress…</div>
       ) : (
         <>
+          {/* Profile Box */}
+          <section className="fj-dashboard-section">
+            <div className="fj-card fj-profile-card">
+              <div className="fj-profile-main">
+                <div className="fj-profile-avatar">
+                  {String(getDisplayName?.() || "L")
+                    .charAt(0)
+                    .toUpperCase()}
+                </div>
+                <div className="fj-profile-text">
+                  <p className="fj-profile-label">Welcome back</p>
+                  <p className="fj-profile-name">
+                    {getDisplayName?.() || "Learner"}
+                  </p>
+                  <p className="fj-profile-sub">
+                    Level {summary.level ?? 1} ·{" "}
+                    {summary.totalXP?.toLocaleString?.("en-IN") ??
+                      summary.totalXP ??
+                      0}{" "}
+                    XP earned
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* XP Overview */}
           <section className="fj-dashboard-section">
             <h2 className="fj-section-title">XP Overview</h2>

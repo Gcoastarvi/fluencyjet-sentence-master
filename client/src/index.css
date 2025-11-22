@@ -569,6 +569,58 @@ body {
   margin-top: 2px;
 }
 
+/* --- Dashboard Profile Box --- */
+
+.fj-profile-card {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+}
+
+.fj-profile-main {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.fj-profile-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  background: radial-gradient(circle at 0 0, #4f46e5, #6366f1, #22c55e);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+}
+
+.fj-profile-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.fj-profile-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.fj-profile-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.fj-profile-sub {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
 @media (max-width: 640px) {
   .fj-dashboard-header {
     flex-direction: column;
