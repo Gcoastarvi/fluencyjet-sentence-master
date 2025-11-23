@@ -1,152 +1,191 @@
 // server/routes/leaderboard.js
 import express from "express";
-import prisma from "../db/client.js";
+import { PrismaClient } from "@prisma/client";
 import authRequired from "../middleware/authMiddleware.js";
 
+const prisma = new PrismaClient();
 const router = express.Router();
 
-/* Utility: Get time window */
-function getSinceForPeriod(period) {
-  const now = new Date();
+// Map period → which XP field to use in UserProgress
+function getXpField(periodRaw) {
+  const period = (periodRaw || "").toString().toLowerCase();
 
-  if (period === "daily") {
-    const t = new Date(now);
-    t.setDate(t.getDate() - 1);
-    return t;
+  switch (period) {
+    case "today":
+      // For now, we approximate "today" with this week's XP.
+      // If needed later, we can switch to XpEvent date-based aggregation.
+      return { period: "today", field: "week_xp" };
+    case "weekly":
+      return { period: "weekly", field: "week_xp" };
+    case "monthly":
+      return { period: "monthly", field: "month_xp" };
+    case "all":
+      return { period: "all", field: "lifetime_xp" };
+    default:
+      return { period: "today", field: "week_xp" };
   }
-
-  if (period === "weekly") {
-    const t = new Date(now);
-    t.setDate(t.getDate() - 7);
-    return t;
-  }
-
-  if (period === "monthly") {
-    const t = new Date(now);
-    t.setMonth(t.getMonth() - 1);
-    return t;
-  }
-
-  // "all" → no time filter
-  return null;
 }
 
-// NEW: Support query version /api/leaderboard?period=weekly
-router.get("/", authRequired, async (req, res) => {
-  const period = (req.query.period || "weekly").toLowerCase();
-  return res.redirect(`/api/leaderboard/${period}`);
-});
+// Helper → build a friendly display name
+function getDisplayNameFromProgress(progress) {
+  if (!progress) return "Learner";
 
-/* -------- GET /api/leaderboard/:period -------- */
-router.get("/:period", authRequired, async (req, res) => {
-  const userId = req.user?.id;
-  const raw = (req.params.period || "").toLowerCase();
-  const period = ["daily", "weekly", "monthly", "all"].includes(raw)
-    ? raw
-    : "weekly";
+  const p = progress;
+  const u = progress.user || {};
 
-  const since = getSinceForPeriod(period);
+  return (
+    p.display_name ||
+    u.display_name ||
+    u.name ||
+    (u.email ? u.email.split("@")[0] : null) ||
+    "Learner"
+  );
+}
 
-  try {
-    const where = {
-      event_type: "QUIZ_COMPLETED",
-      ...(since ? { created_at: { gte: since } } : {}),
+// Get "you" info: XP + rank + badge
+async function getUserRankAndXp(userId, xpField) {
+  const progress = await prisma.userProgress.findUnique({
+    where: { user_id: userId },
+    include: { user: true },
+  });
+
+  if (!progress) {
+    return {
+      xp: 0,
+      rank: null,
+      level: 1,
+      badge: null,
+      name: null,
     };
+  }
 
-    // Sum XP per user in the chosen window
-    const grouped = await prisma.xpEvent.groupBy({
-      by: ["user_id"],
-      where,
-      _sum: { xp_delta: true },
+  const xp = progress[xpField] || 0;
+
+  if (xp <= 0) {
+    return {
+      xp: 0,
+      rank: null,
+      level: progress.lifetime_level || 1,
+      badge: progress.current_badge || null,
+      name: getDisplayNameFromProgress(progress),
+    };
+  }
+
+  // Count how many users have strictly more XP than you
+  const betterCount = await prisma.userProgress.count({
+    where: {
+      [xpField]: { gt: xp },
+    },
+  });
+
+  return {
+    xp,
+    rank: betterCount + 1,
+    level: progress.lifetime_level || 1,
+    badge: progress.current_badge || null,
+    name: getDisplayNameFromProgress(progress),
+  };
+}
+
+// All leaderboard APIs require auth
+router.use(authRequired);
+
+/**
+ * GET /api/leaderboard?period=today|weekly|monthly|all
+ *
+ * Returns:
+ * {
+ *   ok: true,
+ *   period: "today",
+ *   totalLearners: number,
+ *   rows: [
+ *     {
+ *       rank,
+ *       userId,
+ *       name,
+ *       xp,
+ *       level,
+ *       badge,
+ *       avatarUrl
+ *     },
+ *     ...
+ *   ],
+ *   you: {
+ *     id,
+ *     name,
+ *     xp,
+ *     rank,
+ *     level,
+ *     badge
+ *   },
+ *   top: [ same shape as rows, top 5 ]
+ * }
+ */
+router.get("/", async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        message: "Missing user in request",
+      });
+    }
+
+    const { period: normalizedPeriod, field: xpField } = getXpField(
+      req.query.period,
+    );
+
+    const limit = Number.parseInt(req.query.limit, 10) || 100;
+
+    // Get top learners for this period
+    const progressRows = await prisma.userProgress.findMany({
+      include: { user: true },
+      orderBy: {
+        [xpField]: "desc",
+      },
+      take: limit,
     });
 
-    const sorted = grouped
-      .map((g) => ({ user_id: g.user_id, xp: Number(g._sum.xp_delta) }))
-      .sort((a, b) => b.xp - a.xp);
-
-    const ids = sorted.map((s) => s.user_id);
-
-    const users = ids.length
-      ? await prisma.user.findMany({
-          where: { id: { in: ids } },
-          select: { id: true, email: true, name: true },
-        })
-      : [];
-
-    const userMap = new Map(users.map((u) => [u.id, u]));
-
-    // Leaders list for grid + top performers
-    const leaders = sorted.slice(0, 50).map((row, index) => {
-      const u = userMap.get(row.user_id);
+    const rows = progressRows.map((p, idx) => {
+      const xp = p[xpField] || 0;
       return {
-        user_id: row.user_id,
-        rank: index + 1,
-        email: u?.email || null,
-        name: u?.name || null,
-        xp: row.xp,
+        rank: idx + 1,
+        userId: p.user_id,
+        name: getDisplayNameFromProgress(p),
+        xp,
+        level: p.lifetime_level || 1,
+        badge: p.current_badge || null,
+        avatarUrl: p.avatar_url || null,
       };
     });
 
-    // "You" box
-    let you = null;
-    if (userId) {
-      const pos = sorted.findIndex((r) => r.user_id === userId);
-      if (pos !== -1) {
-        const u = userMap.get(userId);
-        you = {
-          user_id: userId,
-          rank: pos + 1,
-          email: u?.email || null,
-          name: u?.name || null,
-          xp: sorted[pos].xp,
-          // placeholders so UI renders nicely
-          level: null,
-          streak: 0,
-          badgeName: "Bronze",
-        };
-      }
-    }
+    const totalLearners = await prisma.userProgress.count();
 
-    return res.json({ ok: true, period, leaders, you });
-  } catch (err) {
-    console.error("Leaderboard error:", err);
-    return res.status(500).json({ ok: false, message: "Leaderboard error" });
-  }
-});
+    const you = await getUserRankAndXp(userId, xpField);
 
-/* -------- Quick Rank Endpoint (weekly) -------- */
-router.get("/me", authRequired, async (req, res) => {
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ ok: false });
-
-  const since = getSinceForPeriod("weekly");
-
-  try {
-    const grouped = await prisma.xpEvent.groupBy({
-      by: ["user_id"],
-      where: {
-        event_type: "QUIZ_COMPLETED",
-        created_at: { gte: since },
-      },
-      _sum: { xp_delta: true },
-    });
-
-    const sorted = grouped
-      .map((g) => ({ user_id: g.user_id, xp: Number(g._sum.xp_delta) }))
-      .sort((a, b) => b.xp - a.xp);
-
-    const pos = sorted.findIndex((g) => g.user_id === userId);
-
-    if (pos === -1) return res.json({ ok: true, rank: null, xp: 0 });
+    const top = rows.slice(0, 5);
 
     return res.json({
       ok: true,
-      rank: pos + 1,
-      xp: sorted[pos].xp,
+      period: normalizedPeriod,
+      totalLearners,
+      rows,
+      you: {
+        id: userId,
+        name: you.name,
+        xp: you.xp,
+        rank: you.rank,
+        level: you.level,
+        badge: you.badge,
+      },
+      top,
     });
   } catch (err) {
-    console.error("Leaderboard /me error:", err);
-    return res.status(500).json({ ok: false });
+    console.error("❌ /api/leaderboard error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to load leaderboard",
+    });
   }
 });
 

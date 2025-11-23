@@ -1,383 +1,247 @@
 // client/src/pages/Leaderboard.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import { API_BASE } from "@/lib/api";
-import { getDisplayName } from "../utils/displayName";
+import { apiFetch } from "../utils/fetch";
 
-// Format numbers: 1.2K, 2.4M
-function kFormat(n) {
-  if (!n) return "0";
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return String(n);
+const PERIODS = [
+  { key: "today", label: "Today" },
+  { key: "weekly", label: "This Week" },
+  { key: "monthly", label: "This Month" },
+  { key: "all", label: "All Time" },
+];
+
+// Format XP like 1.2K, 2.3M, etc.
+function formatXP(xp) {
+  if (!xp || xp <= 0) return "0";
+  if (xp >= 1_000_000) {
+    return (xp / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  }
+  if (xp >= 1_000) {
+    return (xp / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  }
+  return xp.toString();
 }
 
-function periodTextLabel(p) {
-  if (p === "daily") return "today";
-  if (p === "weekly") return "this week";
-  if (p === "monthly") return "this month";
-  return "overall";
-}
-
-export default function LeaderboardPage() {
-  const [period, setPeriod] = useState("weekly");
-  const [filter, setFilter] = useState("all");
-  const [leaders, setLeaders] = useState([]);
-  const [you, setYou] = useState(null);
+export default function Leaderboard() {
+  const [period, setPeriod] = useState("today");
+  const [data, setData] = useState(null); // full API response
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [highlightIndex, setHighlightIndex] = useState(0);
 
-  // -------------------------------------
-  // 🔵 Fetch leaderboard
-  // -------------------------------------
+  // Derived values
+  const rows = useMemo(() => (data?.rows ? data.rows : []), [data]);
+  const you = useMemo(() => data?.you || null, [data]);
+  const top = useMemo(() => data?.top || [], [data]);
+
+  // Load leaderboard whenever period changes
   useEffect(() => {
-    const controller = new AbortController();
-    async function load() {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("You are not logged in. Please log in again.");
-        return;
-      }
+    let cancelled = false;
+
+    async function loadLeaderboard() {
+      setLoading(true);
+      setError("");
 
       try {
-        setLoading(true);
-        setError("");
+        const res = await apiFetch(`/api/leaderboard?period=${period}`);
 
-        // FIXED: correct backend endpoint
-        const res = await fetch(`${API_BASE}/leaderboard/${period}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          setError("Session expired, please log in again.");
+        // apiFetch will redirect on 401 and return undefined
+        if (!res) {
+          if (!cancelled) setLoading(false);
           return;
         }
 
         if (!res.ok) {
-          let msg = "Failed to load leaderboard";
-          try {
-            const j = await res.json();
-            if (j.message) msg = j.message;
-          } catch {}
-          throw new Error(msg);
+          throw new Error(res.message || "Failed to load leaderboard");
         }
 
-        const data = await res.json();
-
-        setLeaders(Array.isArray(data.leaders) ? data.leaders : []);
-        setYou(data.you || null);
+        if (!cancelled) {
+          setData(res);
+        }
       } catch (err) {
-        if (err.name === "AbortError") return;
-        setError(err.message);
+        console.error("Leaderboard fetch error:", err);
+        if (!cancelled) {
+          setError(err.message || "Failed to load leaderboard");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
-    load();
-    return () => controller.abort();
+    loadLeaderboard();
+
+    return () => {
+      cancelled = true;
+    };
   }, [period]);
 
-  // -------------------------------------
-  // 🔵 Auto-scroll highlight top performers
-  // -------------------------------------
-  useEffect(() => {
-    if (!leaders.length) return;
-    const id = setInterval(() => {
-      setHighlightIndex((i) => (i + 1) % Math.min(leaders.length, 5));
-    }, 4000);
-    return () => clearInterval(id);
-  }, [leaders]);
-
-  // -------------------------------------
-  // 🔵 Filters
-  // -------------------------------------
-  const filteredLeaders = useMemo(() => {
-    if (!leaders.length) return [];
-    let rows = leaders;
-
-    if (filter === "sameLevel" && you) {
-      const myLevel = you.level ?? you.levelName;
-      rows = rows.filter((r) => (r.level ?? r.levelName) === myLevel);
-    }
-
-    if (filter === "tamil") {
-      rows = rows.filter((r) => {
-        const region = (r.region || r.language || "").toLowerCase();
-        return region.includes("tamil");
-      });
-    }
-
-    return rows;
-  }, [leaders, filter, you]);
-
-  const topSlice = leaders.slice(0, 5);
-  const currentHighlight =
-    topSlice[highlightIndex % Math.max(1, topSlice.length)];
-
-  const maxXp = leaders.length
-    ? (leaders[0].total_xp ?? leaders[0].period_xp ?? 1)
-    : 1;
-
-  const pLabel = periodTextLabel(period);
-
-  // ======================================================================
-  // RENDER
-  // ======================================================================
   return (
-    <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-      {/* ------------------------------------------------------ */}
-      {/* Header */}
-      {/* ------------------------------------------------------ */}
-      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+    <div className="fj-page">
+      <header className="fj-header">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">
-            FluencyJet Leaderboard
-          </h1>
-          <p className="text-slate-500 mt-1">
-            See how you stack up against other learners {pLabel}.
+          <h1 className="fj-page-title">Leaderboard</h1>
+          <p className="fj-page-subtitle">
+            See how you compare with other FluencyJet learners.
           </p>
         </div>
 
-        {/* Period Tabs */}
-        <div className="inline-flex bg-slate-100 p-1 rounded-full text-sm">
-          {[
-            { id: "daily", label: "Today" },
-            { id: "weekly", label: "This Week" },
-            { id: "monthly", label: "This Month" },
-          ].map((t) => (
+        {/* Period Filter Pills */}
+        <div className="fj-pill-group">
+          {PERIODS.map((p) => (
             <button
-              key={t.id}
-              onClick={() => setPeriod(t.id)}
-              className={`px-4 py-1 rounded-full font-medium transition ${
-                period === t.id
-                  ? "bg-white shadow text-indigo-600"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
+              key={p.key}
+              type="button"
+              className={
+                "fj-pill" + (period === p.key ? " fj-pill-active" : "")
+              }
+              onClick={() => setPeriod(p.key)}
             >
-              {t.label}
+              {p.label}
             </button>
           ))}
         </div>
       </header>
 
-      {/* ------------------------------------------------------ */}
-      {/* Filter bar */}
-      {/* ------------------------------------------------------ */}
-      <div className="flex flex-wrap gap-2 text-sm">
-        <span className="text-slate-500 mr-1">Filters:</span>
+      {/* Error state */}
+      {error && <div className="fj-error-banner">{error}</div>}
 
-        {[
-          { id: "all", label: "All learners" },
-          { id: "sameLevel", label: "Same level as you" },
-          { id: "tamil", label: "Tamil region only" },
-        ].map((f) => (
-          <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
-            className={`px-3 py-1 rounded-full border transition ${
-              filter === f.id
-                ? "bg-indigo-50 border-indigo-300 text-indigo-700"
-                : "bg-white border-slate-200 text-slate-600 hover:border-indigo-200"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ------------------------------------------------------ */}
-      {/* Error banner */}
-      {/* ------------------------------------------------------ */}
-      {error && (
-        <div className="border border-rose-200 bg-rose-50 text-rose-700 px-4 py-3 rounded-lg">
-          {error}
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="fj-card fj-card-loading">
+          <p>Loading leaderboard…</p>
         </div>
       )}
 
-      {/* ------------------------------------------------------ */}
-      {/* Profile Box + Highlight */}
-      {/* ------------------------------------------------------ */}
-      <section className="grid md:grid-cols-3 gap-4">
-        {/* YOUR BOX */}
-        <div className="md:col-span-2">
-          {you ? (
-            <div className="rounded-2xl border border-slate-100 bg-gradient-to-r from-indigo-50 to-sky-50 px-6 py-5 shadow-sm">
-              <div className="flex justify-between">
-                <div>
-                  <div className="uppercase text-xs text-slate-500">
-                    Your position
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <div className="text-3xl font-black text-indigo-600">
-                      #{you.rank ?? "–"}
-                    </div>
-                    <div className="text-slate-500 text-sm">
-                      {getDisplayName(you) || you.email}
-                    </div>
-                  </div>
+      {/* Main layout */}
+      {!loading && (
+        <div className="fj-grid fj-grid-2col fj-grid-gap">
+          {/* LEFT: Premium grid */}
+          <section className="fj-card fj-leaderboard-card">
+            <div className="fj-card-header">
+              <h2 className="fj-section-title">Top Learners</h2>
+              {data?.totalLearners != null && (
+                <span className="fj-chip">{data.totalLearners} learners</span>
+              )}
+            </div>
 
-                  <div className="mt-2 text-slate-600 flex gap-3 text-sm">
-                    <span className="inline-flex items-center gap-1">
-                      <span className="h-2 w-2 bg-emerald-400 rounded-full" />
-                      {kFormat(you.total_xp ?? you.period_xp ?? 0)} XP {pLabel}
+            {rows.length === 0 ? (
+              <p className="fj-empty-state">
+                No XP data yet. Complete your first quiz to appear on the
+                leaderboard!
+              </p>
+            ) : (
+              <div className="fj-table-wrapper">
+                <table className="fj-table fj-table-leaderboard">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Learner</th>
+                      <th>Level</th>
+                      <th>Badge</th>
+                      <th className="fj-text-right">XP</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => {
+                      const isYou = you && row.userId === you.id;
+                      return (
+                        <tr
+                          key={row.userId}
+                          className={isYou ? "fj-row-you" : ""}
+                        >
+                          <td>{row.rank}</td>
+                          <td>
+                            <div className="fj-user-cell">
+                              <div className="fj-avatar">
+                                {row.avatarUrl ? (
+                                  <img src={row.avatarUrl} alt={row.name} />
+                                ) : (
+                                  <span>
+                                    {row.name
+                                      .split(" ")
+                                      .map((part) => part[0])
+                                      .join("")
+                                      .toUpperCase()
+                                      .slice(0, 2)}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="fj-user-meta">
+                                <div className="fj-user-name">
+                                  {row.name}
+                                  {isYou && (
+                                    <span className="fj-badge-you">You</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>Lv. {row.level ?? 1}</td>
+                          <td>{row.badge || "—"}</td>
+                          <td className="fj-text-right">{formatXP(row.xp)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          {/* RIGHT: Profile box + Top performers strip */}
+          <section className="fj-column-stack">
+            {/* Profile Box */}
+            <div className="fj-card fj-profile-card">
+              <h2 className="fj-section-title">Your Position</h2>
+              {!you || you.xp === 0 || you.rank == null ? (
+                <p className="fj-empty-state">
+                  You&apos;re not ranked yet for this period.
+                  <br />
+                  Complete a quiz to join the leaderboard!
+                </p>
+              ) : (
+                <div className="fj-profile-grid">
+                  <div className="fj-profile-main">
+                    <div className="fj-profile-rank">#{you.rank}</div>
+                    <div className="fj-profile-meta">
+                      <div className="fj-profile-name">{you.name || "You"}</div>
+                      <div className="fj-profile-sub">
+                        Level {you.level ?? 1} • {formatXP(you.xp)} XP
+                      </div>
+                    </div>
+                  </div>
+                  <div className="fj-profile-badge">
+                    <span className="fj-badge-label">Badge</span>
+                    <span className="fj-badge-pill">
+                      {you.badge || "No badge yet"}
                     </span>
-
-                    {you.level && (
-                      <span className="px-2 py-0.5 text-xs bg-slate-900 text-white rounded-full">
-                        Level {you.level}
-                      </span>
-                    )}
                   </div>
                 </div>
-
-                <div className="flex flex-col items-end gap-2">
-                  <div className="px-3 py-1 bg-white/80 rounded-full text-[11px] shadow flex items-center">
-                    🔥 {kFormat(you.streak ?? 0)} days
-                  </div>
-
-                  <div className="px-3 py-1 bg-indigo-600 text-white rounded-full text-[11px] shadow">
-                    🏅 {you.badgeName || "Loading…"}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-slate-500">
-              Log in and complete a quiz to appear on the leaderboard.
-            </div>
-          )}
-        </div>
 
-        {/* TOP PERFORMERS auto-rotating */}
-        <div className="rounded-2xl border border-slate-100 bg-white px-5 py-5 shadow-sm">
-          <div className="flex justify-between mb-2">
-            <h2 className="text-sm font-semibold text-slate-800">
-              Top performers {pLabel}
-            </h2>
-            <span className="text-[11px] uppercase text-slate-400">
-              Auto-rotating
-            </span>
-          </div>
-
-          {currentHighlight ? (
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-gradient-to-tr from-amber-400 to-orange-500 rounded-full flex justify-center items-center text-xl text-white shadow">
-                {currentHighlight.rank <= 3 ? "🏆" : "⭐"}
-              </div>
-              <div>
-                <div className="text-sm font-semibold text-slate-900">
-                  {getDisplayName(currentHighlight) ||
-                    currentHighlight.username ||
-                    currentHighlight.email}
-                </div>
-                <div className="text-xs text-slate-500">
-                  #{currentHighlight.rank} •{" "}
-                  {kFormat(
-                    currentHighlight.total_xp ??
-                      currentHighlight.period_xp ??
-                      0,
-                  )}{" "}
-                  XP
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-slate-500">No XP earned yet.</p>
-          )}
-        </div>
-      </section>
-
-      {/* ------------------------------------------------------ */}
-      {/* Full Leaderboard Grid */}
-      {/* ------------------------------------------------------ */}
-      <section className="rounded-2xl border border-slate-100 bg-white px-6 py-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900 mb-1">
-          Leaderboard grid
-        </h2>
-
-        <p className="text-slate-500 text-sm mb-3">
-          Showing {filteredLeaders.length ? filteredLeaders.length : "no"}{" "}
-          learners ({pLabel} ·{" "}
-          {filter === "all"
-            ? "all learners"
-            : filter === "sameLevel"
-              ? "same level"
-              : "Tamil region"}
-          )
-        </p>
-
-        {loading && <p className="text-slate-500">Loading leaderboard…</p>}
-
-        {!loading && filteredLeaders.length === 0 && (
-          <p className="text-slate-500">
-            No entries found. Try switching filters or period.
-          </p>
-        )}
-
-        {!loading && filteredLeaders.length > 0 && (
-          <ul className="space-y-3 mt-4">
-            {filteredLeaders.map((r, i) => {
-              const rank = r.rank ?? i + 1;
-              const isYou = you && r.user_id === you.user_id;
-              const xp = r.total_xp ?? r.period_xp ?? 0;
-
-              const barWidth = Math.max(8, Math.round((xp / maxXp) * 100));
-
-              let medal = null;
-              if (rank === 1) medal = "🥇";
-              else if (rank === 2) medal = "🥈";
-              else if (rank === 3) medal = "🥉";
-
-              return (
-                <li
-                  key={r.user_id}
-                  className={`rounded-xl border px-4 py-3 shadow-sm transition ${
-                    isYou
-                      ? "bg-indigo-50 border-indigo-200"
-                      : "bg-slate-50 border-slate-100 hover:bg-white"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white rounded-full shadow flex items-center justify-center text-lg">
-                      {medal || `#${rank}`}
+            {/* Top performers strip (for future smooth auto-scroll styling) */}
+            <div className="fj-card fj-top-strip-card">
+              <h2 className="fj-section-title">Top Performers</h2>
+              {top.length === 0 ? (
+                <p className="fj-empty-state">
+                  Top performers will appear here once learners earn XP.
+                </p>
+              ) : (
+                <div className="fj-top-strip">
+                  {top.map((row) => (
+                    <div key={row.userId} className="fj-top-chip">
+                      <span className="fj-top-rank">#{row.rank}</span>
+                      <span className="fj-top-name">{row.name}</span>
+                      <span className="fj-top-xp">{formatXP(row.xp)} XP</span>
                     </div>
-
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-semibold">
-                            {getDisplayName(r) || r.username || r.email}
-                          </p>
-                          <p className="text-xs text-slate-500">{r.email}</p>
-                        </div>
-
-                        <div className="text-right">
-                          <p className="text-xs uppercase text-slate-400">XP</p>
-                          <p className="font-bold">{kFormat(xp)}</p>
-                        </div>
-                      </div>
-
-                      <div className="h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
-                        <div
-                          className="h-1.5 bg-gradient-to-r from-indigo-400 to-emerald-400 transition-all duration-700"
-                          style={{ width: `${barWidth}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-    </main>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
   );
 }
