@@ -9,12 +9,22 @@ export default function Leaderboard() {
   const [you, setYou] = useState(null);
   const [top, setTop] = useState([]);
 
+  // Hero carousel state
+  const [heroIndex, setHeroIndex] = useState(0);
+
   // Map UI buttons → backend query values
   const PERIOD_MAP = {
     today: "today",
     weekly: "weekly",
     monthly: "monthly",
     all: "all",
+  };
+
+  const PERIOD_LABEL = {
+    today: "today",
+    weekly: "this week",
+    monthly: "this month",
+    all: "all time",
   };
 
   async function loadLeaderboard() {
@@ -24,65 +34,85 @@ export default function Leaderboard() {
     try {
       const p = PERIOD_MAP[period] ?? "weekly";
 
-      const res = await apiFetchWithAuth(`/api/leaderboard?period=${p}`, {
+      const data = await apiFetchWithAuth(`/api/leaderboard?period=${p}`, {
         method: "GET",
       });
 
-      if (!res || !res.ok) {
-        setError(res?.message || "Failed to load leaderboard");
+      if (!data || !data.ok) {
+        setError(data?.message || "Failed to load leaderboard");
         setLoading(false);
         return;
       }
 
-      setRows(res.rows || []);
-      setYou(res.you || null);
-      setTop(res.top || []);
+      setRows(data.rows || []);
+      setYou(data.you || null);
+      setTop(data.top || []);
+      setHeroIndex(0); // reset hero to first slide when data changes
       setError("");
     } catch (e) {
       console.error("Leaderboard fetch error:", e);
-      setError("Failed to load leaderboard");
+      setError(e?.message || "Failed to load leaderboard");
     } finally {
       setLoading(false);
     }
   }
 
+  // Load whenever period changes
   useEffect(() => {
     loadLeaderboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
+
+  // Auto-rotate hero carousel
+  useEffect(() => {
+    if (!top || top.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setHeroIndex((prev) => (prev + 1) % top.length);
+    }, 4500); // 4.5s per slide
+
+    return () => clearInterval(interval);
+  }, [top]);
+
+  const currentHero = top[heroIndex] || null;
+  const nicePeriodLabel = PERIOD_LABEL[period] || "this period";
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       {/* Header */}
-      <h1 className="text-3xl font-extrabold text-gray-900">
-        FluencyJet Leaderboard
-      </h1>
-      <p className="text-gray-600 mt-1">
-        See how you stack up against other learners this {period}.
-      </p>
+      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-gray-900">
+            FluencyJet Leaderboard
+          </h1>
+          <p className="text-gray-600 mt-1">
+            See how you stack up against other learners {nicePeriodLabel}.
+          </p>
+        </div>
 
-      {/* Period Switcher */}
-      <div className="flex gap-3 mt-6">
-        {["today", "weekly", "monthly", "all"].map((p) => (
-          <button
-            key={p}
-            onClick={() => setPeriod(p)}
-            className={`px-4 py-2 rounded-full text-sm font-medium border transition-all 
-              ${
+        {/* Period Switcher */}
+        <div className="inline-flex bg-gray-100 p-1 rounded-full">
+          {["today", "weekly", "monthly", "all"].map((p) => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 period === p
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-md"
-                  : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-gray-700 hover:bg-white"
               }`}
-          >
-            {p === "all"
-              ? "All Time"
-              : p === "weekly"
-                ? "This Week"
-                : p === "today"
-                  ? "Today"
-                  : "This Month"}
-          </button>
-        ))}
-      </div>
+            >
+              {p === "all"
+                ? "All Time"
+                : p === "weekly"
+                  ? "This Week"
+                  : p === "today"
+                    ? "Today"
+                    : "This Month"}
+            </button>
+          ))}
+        </div>
+      </header>
 
       {/* Error Banner */}
       {error && (
@@ -98,14 +128,106 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {/* Content */}
+      {/* CONTENT */}
       {!loading && !error && (
         <>
-          {/* Top Learners */}
+          {/* 🔥 Animated Top Performers Hero */}
+          <section className="mt-10">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-500 text-white shadow-lg">
+              <div className="px-6 py-7 md:px-10 md:py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                <div className="max-w-xl">
+                  <p className="text-xs uppercase tracking-[0.18em] opacity-80 mb-1">
+                    Top performers · {nicePeriodLabel}
+                  </p>
+                  <h2 className="text-2xl md:text-3xl font-extrabold mb-2">
+                    {currentHero
+                      ? `${currentHero.name} is leading the board!`
+                      : "Top performers will appear here soon."}
+                  </h2>
+                  <p className="text-sm md:text-base text-indigo-100">
+                    {currentHero
+                      ? `Rank #${currentHero.rank} · ${currentHero.xp} XP ${
+                          period === "weekly"
+                            ? "earned this week."
+                            : period === "today"
+                              ? "earned today."
+                              : period === "monthly"
+                                ? "earned this month."
+                                : "earned in total."
+                        }`
+                      : "Once learners start earning XP, we’ll spotlight the strongest performers here."}
+                  </p>
+                </div>
+
+                {/* Hero Stat Card */}
+                <div className="w-full md:w-64">
+                  <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4">
+                    {currentHero ? (
+                      <>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
+                            #{currentHero.rank}
+                          </div>
+                          <div>
+                            <div className="text-sm uppercase tracking-wide opacity-80">
+                              Spotlight
+                            </div>
+                            <div className="text-lg font-semibold">
+                              {currentHero.name}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="opacity-80">XP this period</span>
+                            <span className="font-semibold">
+                              {currentHero.xp} XP
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="opacity-80">Level</span>
+                            <span className="font-semibold">
+                              {currentHero.level ?? 1}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-sm text-indigo-50">
+                        No top performer yet for {nicePeriodLabel}. Be the first
+                        to climb the leaderboard!
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Carousel dots */}
+                  {top.length > 1 && (
+                    <div className="flex items-center justify-center gap-1.5 mt-3">
+                      {top.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setHeroIndex(idx)}
+                          className={`h-1.5 rounded-full transition-all ${
+                            heroIndex === idx
+                              ? "w-5 bg-white"
+                              : "w-2 bg-white/50 hover:bg-white/70"
+                          }`}
+                          aria-label={`Show top performer ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Top Learners list */}
           <section className="mt-10 bg-white p-6 rounded-2xl shadow-sm border">
             <h2 className="text-xl font-bold text-gray-900">Top Learners</h2>
             <p className="text-gray-500 mt-1">
-              The most active learners this {period}.
+              The most active learners {nicePeriodLabel}.
             </p>
 
             {rows.length === 0 ? (
@@ -158,17 +280,24 @@ export default function Leaderboard() {
                   <span className="font-medium">{you.name}</span>
                 </div>
                 <span className="text-indigo-700 font-semibold">
-                  {you.xp} XP {period === "weekly" ? "this week" : ""}
+                  {you.xp} XP{" "}
+                  {period === "weekly"
+                    ? "this week"
+                    : period === "today"
+                      ? "today"
+                      : period === "monthly"
+                        ? "this month"
+                        : "total"}
                 </span>
               </div>
             )}
           </section>
 
-          {/* Top Performers */}
+          {/* Compact Top Performers grid (supports hero) */}
           <section className="mt-10 mb-12 bg-white p-6 rounded-2xl shadow-sm border">
             <h2 className="text-xl font-bold text-gray-900">Top Performers</h2>
             <p className="text-gray-500 mt-1">
-              Spotlight on the strongest performers this {period}.
+              Spotlight on the strongest performers {nicePeriodLabel}.
             </p>
 
             {top.length === 0 ? (
@@ -180,7 +309,11 @@ export default function Leaderboard() {
                 {top.map((t) => (
                   <div
                     key={t.userId}
-                    className="bg-indigo-50 p-4 rounded-xl shadow-sm border border-indigo-100"
+                    className={`p-4 rounded-xl shadow-sm border ${
+                      currentHero && currentHero.userId === t.userId
+                        ? "bg-indigo-50 border-indigo-200"
+                        : "bg-gray-50 border-gray-100"
+                    }`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-indigo-700">
