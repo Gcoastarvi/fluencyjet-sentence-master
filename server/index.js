@@ -23,6 +23,7 @@ import healthRoutes from "./routes/health.js";
 import testRoutes from "./routes/test.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import lessonRoutes from "./routes/lessons.js";
+import adminRoutes from "./routes/admin.js";
 import quizRoutes from "./routes/quizzes.js"; // ⬅️ NEW
 // later: import adminRoutes from "./routes/admin.js";
 
@@ -144,6 +145,7 @@ app.get("/api/_echo", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/xp", xpRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/lessons", lessonRoutes);
