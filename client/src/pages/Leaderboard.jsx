@@ -74,7 +74,8 @@ export default function Leaderboard() {
     return () => clearInterval(interval);
   }, [top]);
 
-  const currentHero = top[heroIndex] || null;
+  const heroSlides = top.length ? top : [null]; // at least one slide
+  const activeHero = heroSlides[heroIndex] || null;
   const nicePeriodLabel = PERIOD_LABEL[period] || "this period";
 
   return (
@@ -131,95 +132,116 @@ export default function Leaderboard() {
       {/* CONTENT */}
       {!loading && !error && (
         <>
-          {/* 🔥 Animated Top Performers Hero */}
+          {/* 🔥 Glide-style Animated Top Performers Hero */}
           <section className="mt-10">
-            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-500 text-white shadow-lg">
-              <div className="px-6 py-7 md:px-10 md:py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                <div className="max-w-xl">
-                  <p className="text-xs uppercase tracking-[0.18em] opacity-80 mb-1">
-                    Top performers · {nicePeriodLabel}
-                  </p>
-                  <h2 className="text-2xl md:text-3xl font-extrabold mb-2">
-                    {currentHero
-                      ? `${currentHero.name} is leading the board!`
-                      : "Top performers will appear here soon."}
-                  </h2>
-                  <p className="text-sm md:text-base text-indigo-100">
-                    {currentHero
-                      ? `Rank #${currentHero.rank} · ${currentHero.xp} XP ${
-                          period === "weekly"
-                            ? "earned this week."
-                            : period === "today"
-                              ? "earned today."
-                              : period === "monthly"
-                                ? "earned this month."
-                                : "earned in total."
-                        }`
-                      : "Once learners start earning XP, we’ll spotlight the strongest performers here."}
-                  </p>
-                </div>
-
-                {/* Hero Stat Card */}
-                <div className="w-full md:w-64">
-                  <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4">
-                    {currentHero ? (
-                      <>
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
-                            #{currentHero.rank}
-                          </div>
-                          <div>
-                            <div className="text-sm uppercase tracking-wide opacity-80">
-                              Spotlight
-                            </div>
-                            <div className="text-lg font-semibold">
-                              {currentHero.name}
-                            </div>
-                          </div>
+            <div className="relative overflow-hidden rounded-3xl shadow-lg">
+              {/* Slider track */}
+              <div
+                className="flex transition-transform duration-500 ease-out"
+                style={{
+                  width: `${heroSlides.length * 100}%`,
+                  transform: `translateX(-${heroIndex * (100 / heroSlides.length)}%)`,
+                }}
+              >
+                {heroSlides.map((hero, idx) => {
+                  const slideHero = hero; // may be null for placeholder
+                  return (
+                    <div
+                      key={slideHero ? slideHero.userId : `placeholder-${idx}`}
+                      className="w-full shrink-0 bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-500 text-white"
+                    >
+                      <div className="px-6 py-7 md:px-10 md:py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                        <div className="max-w-xl">
+                          <p className="text-xs uppercase tracking-[0.18em] opacity-80 mb-1">
+                            Top performers · {nicePeriodLabel}
+                          </p>
+                          <h2 className="text-2xl md:text-3xl font-extrabold mb-2">
+                            {slideHero
+                              ? `${slideHero.name} is leading the board!`
+                              : "Top performers will appear here soon."}
+                          </h2>
+                          <p className="text-sm md:text-base text-indigo-100">
+                            {slideHero
+                              ? `Rank #${slideHero.rank} · ${slideHero.xp} XP ${
+                                  period === "weekly"
+                                    ? "earned this week."
+                                    : period === "today"
+                                      ? "earned today."
+                                      : period === "monthly"
+                                        ? "earned this month."
+                                        : "earned in total."
+                                }`
+                              : "Once learners start earning XP, we’ll spotlight the strongest performers here."}
+                          </p>
                         </div>
 
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="opacity-80">XP this period</span>
-                            <span className="font-semibold">
-                              {currentHero.xp} XP
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="opacity-80">Level</span>
-                            <span className="font-semibold">
-                              {currentHero.level ?? 1}
-                            </span>
+                        {/* Hero Stat Card */}
+                        <div className="w-full md:w-64">
+                          <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl px-5 py-4">
+                            {slideHero ? (
+                              <>
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
+                                    #{slideHero.rank}
+                                  </div>
+                                  <div>
+                                    <div className="text-sm uppercase tracking-wide opacity-80">
+                                      Spotlight
+                                    </div>
+                                    <div className="text-lg font-semibold">
+                                      {slideHero.name}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="opacity-80">
+                                      XP this period
+                                    </span>
+                                    <span className="font-semibold">
+                                      {slideHero.xp} XP
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="opacity-80">Level</span>
+                                    <span className="font-semibold">
+                                      {slideHero.level ?? 1}
+                                    </span>
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-sm text-indigo-50">
+                                No top performer yet for {nicePeriodLabel}. Be
+                                the first to climb the leaderboard!
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </>
-                    ) : (
-                      <div className="text-sm text-indigo-50">
-                        No top performer yet for {nicePeriodLabel}. Be the first
-                        to climb the leaderboard!
                       </div>
-                    )}
-                  </div>
-
-                  {/* Carousel dots */}
-                  {top.length > 1 && (
-                    <div className="flex items-center justify-center gap-1.5 mt-3">
-                      {top.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setHeroIndex(idx)}
-                          className={`h-1.5 rounded-full transition-all ${
-                            heroIndex === idx
-                              ? "w-5 bg-white"
-                              : "w-2 bg-white/50 hover:bg-white/70"
-                          }`}
-                          aria-label={`Show top performer ${idx + 1}`}
-                        />
-                      ))}
                     </div>
-                  )}
-                </div>
+                  );
+                })}
               </div>
+
+              {/* Carousel dots (controls) */}
+              {heroSlides.length > 1 && (
+                <div className="absolute bottom-4 inset-x-0 flex items-center justify-center gap-1.5">
+                  {heroSlides.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setHeroIndex(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        heroIndex === idx
+                          ? "w-5 bg-white"
+                          : "w-2 bg-white/50 hover:bg-white/70"
+                      }`}
+                      aria-label={`Show top performer ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </section>
 
@@ -310,7 +332,7 @@ export default function Leaderboard() {
                   <div
                     key={t.userId}
                     className={`p-4 rounded-xl shadow-sm border ${
-                      currentHero && currentHero.userId === t.userId
+                      activeHero && activeHero.userId === t.userId
                         ? "bg-indigo-50 border-indigo-200"
                         : "bg-gray-50 border-gray-100"
                     }`}
