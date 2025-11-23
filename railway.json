@@ -15,7 +15,7 @@
     }
   },
   "deploy": {
-    "startCommand": "node dist/index.js"
+    "startCommand": "node server/index.js"
   },
   "nixpacks": {
     "env": {
