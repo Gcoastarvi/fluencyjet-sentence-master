@@ -12,6 +12,7 @@ import TypingQuiz from "@/pages/TypingQuiz";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
 // Lessons
 import Lessons from "@/pages/Lessons";
@@ -165,9 +166,9 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <ProtectedAdminRoute>
                 <Admin />
-              </ProtectedRoute>
+              </ProtectedAdminRoute>
             }
           />
 

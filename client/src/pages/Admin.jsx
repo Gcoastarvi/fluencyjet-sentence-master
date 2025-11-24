@@ -1,124 +1,77 @@
-import { useEffect, useState } from "react";
-import { apiFetchWithAuth } from "../utils/fetch";
-import { useNavigate } from "react-router-dom";
+// client/src/pages/Admin.jsx
+import React, { useEffect, useState } from "react";
+import { apiFetchWithAuth } from "@/utils/fetch";
 
 export default function Admin() {
-  const navigate = useNavigate();
-  const [tab, setTab] = useState("users");
-  const [users, setUsers] = useState([]);
-  const [rows, setRows] = useState([]);
+  const [overview, setOverview] = useState(null);
 
   useEffect(() => {
-    loadUsers();
+    async function load() {
+      try {
+        const data = await apiFetchWithAuth("/api/admin/overview");
+        if (data.ok) setOverview(data.data);
+      } catch (err) {
+        console.error("Admin overview error", err);
+      }
+    }
+    load();
   }, []);
 
-  async function loadUsers() {
-    try {
-      const res = await apiFetchWithAuth("/api/admin/users");
-      if (res.ok) setUsers(res.users || []);
-      else navigate("/login");
-    } catch {
-      navigate("/login");
-    }
-  }
-
-  async function loadLeaderboardDebug() {
-    try {
-      const res = await apiFetchWithAuth(
-        "/api/admin/leaderboard-debug?period=weekly",
-      );
-      if (res.ok) setRows(res.rows || []);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
-
-      {/* Tabs */}
-      <div className="flex gap-3 mb-6">
-        <button
-          className={`px-4 py-2 rounded-lg ${tab === "users" ? "bg-indigo-600 text-white" : "bg-gray-200"}`}
-          onClick={() => setTab("users")}
-        >
-          Users
-        </button>
-        <button
-          className={`px-4 py-2 rounded-lg ${tab === "leaderboard" ? "bg-indigo-600 text-white" : "bg-gray-200"}`}
-          onClick={() => {
-            setTab("leaderboard");
-            loadLeaderboardDebug();
-          }}
-        >
-          Leaderboard Debug
-        </button>
-      </div>
-
-      {/* USERS TAB */}
-      {tab === "users" && (
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">All Users</h2>
-
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2">ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>XP</th>
-                <th>Level</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-b">
-                  <td className="py-2">{u.id}</td>
-                  <td>{u.name}</td>
-                  <td>{u.email}</td>
-                  <td>{u.role}</td>
-                  <td>{u.xp}</td>
-                  <td>{u.level}</td>
-                  <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="min-h-screen flex bg-gray-100">
+      {/* Left Sidebar */}
+      <aside className="w-64 bg-white shadow-md border-r">
+        <div className="p-6 text-2xl font-bold text-purple-600">
+          Admin Panel
         </div>
-      )}
 
-      {/* LEADERBOARD DEBUG TAB */}
-      {tab === "leaderboard" && (
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">
-            Leaderboard Debug (Full Rows)
-          </h2>
+        <nav className="mt-4 space-y-2">
+          <a className="block px-6 py-3 text-gray-700 font-medium bg-purple-50 rounded-md">
+            Dashboard
+          </a>
 
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2">User</th>
-                <th>Email</th>
-                <th>Rank</th>
-                <th>XP</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, idx) => (
-                <tr key={idx} className="border-b">
-                  <td className="py-2">{r.user?.name}</td>
-                  <td>{r.user?.email}</td>
-                  <td>{r.rank}</td>
-                  <td>{r.xp}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+          <a className="block px-6 py-3 text-gray-600 hover:bg-gray-200 rounded-md cursor-pointer">
+            Users (coming soon)
+          </a>
+
+          <a className="block px-6 py-3 text-gray-600 hover:bg-gray-200 rounded-md cursor-pointer">
+            Quizzes (coming soon)
+          </a>
+
+          <a className="block px-6 py-3 text-gray-600 hover:bg-gray-200 rounded-md cursor-pointer">
+            XP Logs (coming soon)
+          </a>
+        </nav>
+      </aside>
+
+      {/* Main content */}
+      <main className="flex-1 p-10">
+        <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+        <p className="text-gray-500 mb-8">
+          Overview of user activity and system stats.
+        </p>
+
+        {!overview ? (
+          <div className="text-gray-500">Loading…</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-xl shadow">
+              <div className="text-gray-500">Total Users</div>
+              <div className="text-3xl font-bold">{overview.totalUsers}</div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow">
+              <div className="text-gray-500">Total Quizzes</div>
+              <div className="text-3xl font-bold">{overview.totalQuizzes}</div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow">
+              <div className="text-gray-500">Total XP Awarded</div>
+              <div className="text-3xl font-bold">{overview.totalXP}</div>
+            </div>
+          </div>
+        )}
+      </main>
     </div>
   );
 }

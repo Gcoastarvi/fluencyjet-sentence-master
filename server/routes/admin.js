@@ -1,49 +1,31 @@
+// server/routes/admin.js
 import express from "express";
 import prisma from "../db/client.js";
-import { requireAdmin } from "../middleware/admin.js";
+import authRequired from "../middleware/authRequired.js";
+import requireAdmin from "../middleware/admin.js";
 
 const router = express.Router();
 
-// GET all users (READ ONLY)
-router.get("/users", requireAdmin, async (req, res) => {
+// Admin overview
+router.get("/overview", authRequired, requireAdmin, async (req, res) => {
   try {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-        xp: true,
-        level: true,
-        lastLogin: true,
-      },
+    const totalUsers = await prisma.user.count();
+    const totalQuizzes = await prisma.quiz.count();
+    const totalXP = await prisma.xpEvent.aggregate({
+      _sum: { amount: true },
     });
 
-    return res.json({ ok: true, users });
-  } catch (err) {
-    return res.status(500).json({ ok: false, message: err.message });
-  }
-});
-
-// GET leaderboard debug (full rows)
-router.get("/leaderboard-debug", requireAdmin, async (req, res) => {
-  const period = req.query.period || "weekly";
-
-  try {
-    // Reuse leaderboard logic
-    const rows = await prisma.leaderboard.findMany({
-      where: { period },
-      orderBy: { xp: "desc" },
-      include: {
-        user: { select: { id: true, name: true, email: true } },
+    return res.json({
+      ok: true,
+      data: {
+        totalUsers,
+        totalQuizzes,
+        totalXP: totalXP._sum.amount || 0,
       },
     });
-
-    return res.json({ ok: true, period, rows });
   } catch (err) {
-    return res.status(500).json({ ok: false, message: err.message });
+    console.error("Admin /overview error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
 
