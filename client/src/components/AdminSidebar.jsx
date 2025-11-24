@@ -1,3 +1,4 @@
+// client/src/components/AdminSidebar.jsx
 import { NavLink } from "react-router-dom";
 
 export default function AdminSidebar() {
