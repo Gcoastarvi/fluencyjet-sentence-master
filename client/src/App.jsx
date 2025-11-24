@@ -7,6 +7,8 @@ import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
 import Paywall from "@/pages/Paywall";
 import Admin from "@/pages/Admin";
+import AdminXP from "./pages/AdminXP";
+import AdminUserDetail from "./pages/AdminUserDetail";
 import Leaderboard from "@/pages/Leaderboard";
 import TypingQuiz from "@/pages/TypingQuiz";
 import Login from "@/pages/Login";
@@ -168,6 +170,24 @@ export default function App() {
             element={
               <ProtectedAdminRoute>
                 <Admin />
+              </ProtectedAdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/xp"
+            element={
+              <ProtectedAdminRoute>
+                <AdminXP />
+              </ProtectedAdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/user/:id"
+            element={
+              <ProtectedAdminRoute>
+                <AdminUserDetail />
               </ProtectedAdminRoute>
             }
           />

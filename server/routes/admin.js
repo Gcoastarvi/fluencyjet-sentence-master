@@ -1,3 +1,4 @@
+// server/routes/admin.js
 import express from "express";
 import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
@@ -59,7 +60,7 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
 });
 
 /* ───────────────────────────────
-   ADMIN: PROMOTE USER TO ADMIN
+   ADMIN: PROMOTE USER
 ──────────────────────────────── */
 router.post("/promote", authRequired, requireAdmin, async (req, res) => {
   try {
@@ -69,9 +70,7 @@ router.post("/promote", authRequired, requireAdmin, async (req, res) => {
       return res.status(400).json({ ok: false, message: "userId required" });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       return res.status(404).json({ ok: false, message: "User not found" });
@@ -104,17 +103,14 @@ router.post("/demote", authRequired, requireAdmin, async (req, res) => {
       return res.status(400).json({ ok: false, message: "userId required" });
     }
 
-    // Prevent self-demotion
+    // prevent self-demotion
     if (userId === req.user.id) {
-      return res.status(400).json({
-        ok: false,
-        message: "You cannot demote yourself",
-      });
+      return res
+        .status(400)
+        .json({ ok: false, message: "You cannot demote yourself" });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+    const user = await prisma.user.findUnique({ where: { id: userId } });
 
     if (!user) {
       return res.status(404).json({ ok: false, message: "User not found" });
@@ -135,8 +131,9 @@ router.post("/demote", authRequired, requireAdmin, async (req, res) => {
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
+
 /* ───────────────────────────────
-   ADMIN: DELETE USER (PERMANENT)
+   ADMIN: DELETE USER
 ──────────────────────────────── */
 router.post("/delete", authRequired, requireAdmin, async (req, res) => {
   try {
@@ -146,29 +143,90 @@ router.post("/delete", authRequired, requireAdmin, async (req, res) => {
       return res.status(400).json({ ok: false, message: "userId required" });
     }
 
-    // Prevent deleting your own account
+    // prevent deleting your own account
     if (userId === req.user.id) {
-      return res.status(400).json({
-        ok: false,
-        message: "You cannot delete your own account.",
-      });
+      return res
+        .status(400)
+        .json({ ok: false, message: "You cannot delete your own account." });
     }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    await prisma.user.delete({ where: { id: userId } });
+
+    return res.json({ ok: true, message: "User deleted successfully" });
+  } catch (err) {
+    console.error("Admin delete error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
+/* ───────────────────────────────
+   ADMIN: XP LOGS (ALL USERS)
+──────────────────────────────── */
+router.get("/xp", authRequired, requireAdmin, async (req, res) => {
+  try {
+    const logs = await prisma.xpEvent.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return res.json({ ok: true, logs });
+  } catch (err) {
+    console.error("Admin /xp error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
+/* ───────────────────────────────
+   ADMIN: USER DETAIL + XP HISTORY
+   GET /api/admin/user/:id
+──────────────────────────────── */
+router.get("/user/:id", authRequired, requireAdmin, async (req, res) => {
+  try {
+    const userId = req.params.id;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        lastActiveAt: true,
+        isAdmin: true,
+        xpTotal: true,
+        xpWeekly: true,
+        xpMonthly: true,
+        streak: true,
+      },
     });
 
     if (!user) {
       return res.status(404).json({ ok: false, message: "User not found" });
     }
 
-    await prisma.user.delete({
-      where: { id: userId },
+    const xpEvents = await prisma.xpEvent.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 100, // last 100 events
     });
 
-    return res.json({ ok: true, message: "User deleted successfully" });
+    return res.json({ ok: true, user, xpEvents });
   } catch (err) {
-    console.error("Admin delete error:", err);
+    console.error("Admin /user/:id error:", err);
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
