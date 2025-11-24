@@ -58,4 +58,82 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
+/* ───────────────────────────────
+   ADMIN: PROMOTE USER TO ADMIN
+──────────────────────────────── */
+router.post("/promote", authRequired, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ ok: false, message: "userId required" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    if (user.isAdmin) {
+      return res.json({ ok: true, message: "User already admin" });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isAdmin: true },
+    });
+
+    return res.json({ ok: true, message: "User promoted" });
+  } catch (err) {
+    console.error("Admin promote error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
+/* ───────────────────────────────
+   ADMIN: DEMOTE USER
+──────────────────────────────── */
+router.post("/demote", authRequired, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ ok: false, message: "userId required" });
+    }
+
+    // Prevent self-demotion
+    if (userId === req.user.id) {
+      return res.status(400).json({
+        ok: false,
+        message: "You cannot demote yourself",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    if (!user.isAdmin) {
+      return res.json({ ok: true, message: "Already not admin" });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { isAdmin: false },
+    });
+
+    return res.json({ ok: true, message: "User demoted" });
+  } catch (err) {
+    console.error("Admin demote error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
 export default router;
