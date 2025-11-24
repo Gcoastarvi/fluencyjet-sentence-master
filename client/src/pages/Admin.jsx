@@ -13,6 +13,10 @@ export default function Admin() {
   const [activeFilter, setActiveFilter] = useState("all"); // all | active
   const [xpSort, setXpSort] = useState("none"); // none | high | low
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10); // 10 | 25 | 50
+
   /* ───────────────────────────────
      PROMOTE
   ───────────────────────────────── */
@@ -118,6 +122,11 @@ export default function Admin() {
       });
   }, []);
 
+  // Whenever filters or sort or pageSize change → reset to page 1
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, activeFilter, xpSort, pageSize, users]);
+
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -140,14 +149,14 @@ export default function Admin() {
     });
   }
 
-  // Role filter: admins / users / all
+  // Role filter
   if (roleFilter === "admins") {
     filteredUsers = filteredUsers.filter((u) => u.isAdmin);
   } else if (roleFilter === "users") {
     filteredUsers = filteredUsers.filter((u) => !u.isAdmin);
   }
 
-  // Active filter: only users with lastActiveAt
+  // Active filter
   if (activeFilter === "active") {
     filteredUsers = filteredUsers.filter((u) => u.lastActiveAt);
   }
@@ -157,11 +166,18 @@ export default function Admin() {
     filteredUsers = [...filteredUsers].sort((a, b) => {
       const xpA = a.xpTotal ?? 0;
       const xpB = b.xpTotal ?? 0;
-      if (xpSort === "high") return xpB - xpA; // high to low
-      if (xpSort === "low") return xpA - xpB; // low to high
+      if (xpSort === "high") return xpB - xpA;
+      if (xpSort === "low") return xpA - xpB;
       return 0;
     });
   }
+
+  // Pagination
+  const totalUsers = filteredUsers.length;
+  const totalPages = Math.max(1, Math.ceil(totalUsers / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + pageSize);
 
   /* ───────────────────────────────
      UI
@@ -226,7 +242,7 @@ export default function Admin() {
             </select>
           </div>
 
-          <div>
+          <div className="flex gap-3 items-center">
             <select
               className="px-3 py-2 border rounded-md text-sm"
               value={xpSort}
@@ -235,6 +251,16 @@ export default function Admin() {
               <option value="none">XP: No sort</option>
               <option value="high">XP: High → Low</option>
               <option value="low">XP: Low → High</option>
+            </select>
+
+            <select
+              className="px-3 py-2 border rounded-md text-sm"
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+            >
+              <option value={10}>10 / page</option>
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
             </select>
           </div>
         </div>
@@ -254,7 +280,7 @@ export default function Admin() {
             </thead>
 
             <tbody>
-              {filteredUsers.map((u) => (
+              {paginatedUsers.map((u) => (
                 <tr key={u.id} className="border-t">
                   <td className="p-3">{u.name}</td>
                   <td className="p-3">{u.email}</td>
@@ -291,7 +317,7 @@ export default function Admin() {
                 </tr>
               ))}
 
-              {filteredUsers.length === 0 && (
+              {paginatedUsers.length === 0 && (
                 <tr>
                   <td className="p-4 text-center text-gray-500" colSpan={6}>
                     No users match your filters.
@@ -300,6 +326,49 @@ export default function Admin() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-3 text-sm text-gray-700">
+          <div>
+            Showing{" "}
+            <span className="font-semibold">
+              {totalUsers === 0 ? 0 : startIndex + 1}–
+              {Math.min(startIndex + pageSize, totalUsers)}
+            </span>{" "}
+            of <span className="font-semibold">{totalUsers}</span> users
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 rounded border ${
+                currentPage === 1
+                  ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                  : "text-gray-700 border-gray-300 hover:bg-gray-100"
+              }`}
+            >
+              Prev
+            </button>
+
+            <span>
+              Page <span className="font-semibold">{currentPage}</span> of{" "}
+              <span className="font-semibold">{totalPages}</span>
+            </span>
+
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1 rounded border ${
+                currentPage === totalPages || totalUsers === 0
+                  ? "text-gray-400 border-gray-200 cursor-not-allowed"
+                  : "text-gray-700 border-gray-300 hover:bg-gray-100"
+              }`}
+            >
+              Next
+            </button>
+          </div>
         </div>
       </main>
     </div>
