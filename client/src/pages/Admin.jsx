@@ -7,6 +7,12 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Filters & sorting
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all"); // all | admins | users
+  const [activeFilter, setActiveFilter] = useState("all"); // all | active
+  const [xpSort, setXpSort] = useState("none"); // none | high | low
+
   /* ───────────────────────────────
      PROMOTE
   ───────────────────────────────── */
@@ -64,9 +70,10 @@ export default function Admin() {
       console.error("Demote error:", err);
     }
   }
+
   /* ───────────────────────────────
      DELETE USER (Permanent)
-  ──────────────────────────────── */
+  ───────────────────────────────── */
   async function deleteUser(userId) {
     if (!window.confirm("Are you absolutely sure? This cannot be undone."))
       return;
@@ -119,6 +126,44 @@ export default function Admin() {
     );
 
   /* ───────────────────────────────
+     FILTER + SORT (client-side)
+  ───────────────────────────────── */
+  let filteredUsers = users;
+
+  // Search by name or email
+  if (search.trim()) {
+    const term = search.toLowerCase();
+    filteredUsers = filteredUsers.filter((u) => {
+      const name = (u.name || "").toLowerCase();
+      const email = (u.email || "").toLowerCase();
+      return name.includes(term) || email.includes(term);
+    });
+  }
+
+  // Role filter: admins / users / all
+  if (roleFilter === "admins") {
+    filteredUsers = filteredUsers.filter((u) => u.isAdmin);
+  } else if (roleFilter === "users") {
+    filteredUsers = filteredUsers.filter((u) => !u.isAdmin);
+  }
+
+  // Active filter: only users with lastActiveAt
+  if (activeFilter === "active") {
+    filteredUsers = filteredUsers.filter((u) => u.lastActiveAt);
+  }
+
+  // XP sort
+  if (xpSort !== "none") {
+    filteredUsers = [...filteredUsers].sort((a, b) => {
+      const xpA = a.xpTotal ?? 0;
+      const xpB = b.xpTotal ?? 0;
+      if (xpSort === "high") return xpB - xpA; // high to low
+      if (xpSort === "low") return xpA - xpB; // low to high
+      return 0;
+    });
+  }
+
+  /* ───────────────────────────────
      UI
   ───────────────────────────────── */
   return (
@@ -128,7 +173,7 @@ export default function Admin() {
       <main className="flex-1 p-10">
         <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
 
-        {/* Stats */}
+        {/* Stats (from full users, not filtered) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="p-4 bg-white shadow rounded-lg">
             <h3 className="text-sm text-gray-500">Total Users</h3>
@@ -150,6 +195,50 @@ export default function Admin() {
           </div>
         </div>
 
+        {/* Filters */}
+        <div className="bg-white shadow-md rounded-lg p-4 mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex-1 flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              className="w-full sm:w-64 px-3 py-2 border rounded-md text-sm"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+
+            <select
+              className="px-3 py-2 border rounded-md text-sm"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
+              <option value="all">All Roles</option>
+              <option value="admins">Admins only</option>
+              <option value="users">Users only</option>
+            </select>
+
+            <select
+              className="px-3 py-2 border rounded-md text-sm"
+              value={activeFilter}
+              onChange={(e) => setActiveFilter(e.target.value)}
+            >
+              <option value="all">All Activity</option>
+              <option value="active">Active (has activity)</option>
+            </select>
+          </div>
+
+          <div>
+            <select
+              className="px-3 py-2 border rounded-md text-sm"
+              value={xpSort}
+              onChange={(e) => setXpSort(e.target.value)}
+            >
+              <option value="none">XP: No sort</option>
+              <option value="high">XP: High → Low</option>
+              <option value="low">XP: Low → High</option>
+            </select>
+          </div>
+        </div>
+
         {/* Table */}
         <div className="bg-white shadow-md rounded-lg overflow-auto">
           <table className="min-w-full text-sm">
@@ -160,12 +249,12 @@ export default function Admin() {
                 <th className="p-3 font-medium">XP</th>
                 <th className="p-3 font-medium">Streak</th>
                 <th className="p-3 font-medium">Joined</th>
-                <th className="p-3 font-medium">Admin</th>
+                <th className="p-3 font-medium">Actions</th>
               </tr>
             </thead>
 
             <tbody>
-              {users.map((u) => (
+              {filteredUsers.map((u) => (
                 <tr key={u.id} className="border-t">
                   <td className="p-3">{u.name}</td>
                   <td className="p-3">{u.email}</td>
@@ -175,7 +264,7 @@ export default function Admin() {
                     {new Date(u.createdAt).toLocaleDateString()}
                   </td>
 
-                  <td className="p-3 flex gap-2">
+                  <td className="p-3 flex flex-wrap gap-2">
                     {u.isAdmin ? (
                       <button
                         onClick={() => demoteUser(u.id)}
@@ -201,6 +290,14 @@ export default function Admin() {
                   </td>
                 </tr>
               ))}
+
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td className="p-4 text-center text-gray-500" colSpan={6}>
+                    No users match your filters.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
