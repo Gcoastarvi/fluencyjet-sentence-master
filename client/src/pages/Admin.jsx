@@ -64,6 +64,33 @@ export default function Admin() {
       console.error("Demote error:", err);
     }
   }
+  /* ───────────────────────────────
+     DELETE USER (Permanent)
+  ──────────────────────────────── */
+  async function deleteUser(userId) {
+    if (!window.confirm("Are you absolutely sure? This cannot be undone."))
+      return;
+
+    try {
+      const res = await fetch("/api/admin/delete", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        alert("User deleted!");
+        setUsers((prev) => prev.filter((u) => u.id !== userId));
+      } else {
+        alert(data.message || "Failed to delete user");
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+    }
+  }
 
   /* ───────────────────────────────
      LOAD USERS
@@ -148,11 +175,11 @@ export default function Admin() {
                     {new Date(u.createdAt).toLocaleDateString()}
                   </td>
 
-                  <td className="p-3">
+                  <td className="p-3 flex gap-2">
                     {u.isAdmin ? (
                       <button
                         onClick={() => demoteUser(u.id)}
-                        className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                        className="px-3 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700"
                       >
                         Demote
                       </button>
@@ -164,6 +191,13 @@ export default function Admin() {
                         Promote
                       </button>
                     )}
+
+                    <button
+                      onClick={() => deleteUser(u.id)}
+                      className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

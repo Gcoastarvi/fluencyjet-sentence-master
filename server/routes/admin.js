@@ -135,5 +135,42 @@ router.post("/demote", authRequired, requireAdmin, async (req, res) => {
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
+/* ───────────────────────────────
+   ADMIN: DELETE USER (PERMANENT)
+──────────────────────────────── */
+router.post("/delete", authRequired, requireAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ ok: false, message: "userId required" });
+    }
+
+    // Prevent deleting your own account
+    if (userId === req.user.id) {
+      return res.status(400).json({
+        ok: false,
+        message: "You cannot delete your own account.",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return res.json({ ok: true, message: "User deleted successfully" });
+  } catch (err) {
+    console.error("Admin delete error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
 
 export default router;
