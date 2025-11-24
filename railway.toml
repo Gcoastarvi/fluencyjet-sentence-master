@@ -1,36 +1,27 @@
-# =======================================
-# 🚀 FluencyJet Frontend-Only Deployment (Final)
-# Project: laudable-spirit
-# Framework: Vite + React
-# =======================================
+# ============================================================
+# 🚀 FluencyJet Full-Stack Deployment (Node + React + Railway)
+# ============================================================
 
 [build]
 builder = "NIXPACKS"
 
 [phases.setup]
-nixPkgs = ["nodejs_22", "npm_9_x", "openssl"]
+nixPkgs = ["nodejs_22", "npm_9_x"]
 
 [phases.install]
 cmds = [
-  "npm ci"
+  "npm install",
+  "npm --prefix client install"
 ]
 
 [phases.build]
 cmds = [
-  "npm run build"
+  "npm --prefix client run build"
 ]
 
 [start]
-# ✅ Bind to all interfaces, not localhost
-cmd = "npx serve -s dist --listen 0.0.0.0:8080"
-
-# ✅ Tell Railway which port to expose
-[[ports]]
-internal_port = 8080
-external_port = 8080
-protocol = "http"
+cmd = "bash start-railway.sh"
 
 [variables]
 NODE_ENV = "production"
 PORT = "8080"
-VITE_API_BASE_URL = "https://fluencyjet-sentence-master-production.up.railway.app"
