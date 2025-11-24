@@ -1,6 +1,6 @@
 // client/src/pages/Leaderboard.jsx
 import React, { useEffect, useState, useMemo } from "react";
-import { apiFetchWithAuth } from "../utils/fetch";
+import { apiFetchWithAuth } from "@/utils/fetch";
 import { getDisplayName } from "../utils/displayName";
 
 // Format numbers: 1.2K, 2.4M
