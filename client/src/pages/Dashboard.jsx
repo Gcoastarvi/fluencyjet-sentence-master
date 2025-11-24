@@ -1,7 +1,7 @@
 // client/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "@/utils/fetch";
-import { getDisplayName } from "../utils/displayName";
+import { getDisplayName } from "@/utils/displayName";
 
 const LEVELS = [
   { level: 1, xp: 0 },
