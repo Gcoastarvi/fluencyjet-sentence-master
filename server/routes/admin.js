@@ -1,7 +1,7 @@
 // server/routes/admin.js
 import express from "express";
 import prisma from "../db/client.js";
-import authRequired from "../middleware/authRequired.js";
+import authRequired from "../middleware/authMiddleware.js";
 import requireAdmin from "../middleware/admin.js";
 
 const router = express.Router();
