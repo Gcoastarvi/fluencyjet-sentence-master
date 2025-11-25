@@ -16,6 +16,8 @@ import {
   Pie,
   Cell,
   Legend,
+  BarChart,
+  Bar,
 } from "recharts";
 
 export default function AdminUserDetail() {
@@ -251,6 +253,43 @@ export default function AdminUserDetail() {
   }
 
   const categoryData = getCategoryData();
+  /* ───────────────────────────
+      WEEKLY XP SUMMARY (This vs Last Week)
+     ─────────────────────────── */
+  function getWeeklySummary() {
+    const now = new Date();
+
+    // Determine start of current week (Monday)
+    const currentWeekStart = new Date(now);
+    currentWeekStart.setDate(now.getDate() - now.getDay() + 1);
+
+    // Determine start of last week
+    const lastWeekStart = new Date(currentWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+    const lastWeekEnd = new Date(currentWeekStart);
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+
+    let thisWeekXP = 0;
+    let lastWeekXP = 0;
+
+    xpEvents.forEach((e) => {
+      const d = new Date(e.createdAt);
+
+      if (d >= currentWeekStart) {
+        thisWeekXP += e.amount;
+      } else if (d >= lastWeekStart && d <= lastWeekEnd) {
+        lastWeekXP += e.amount;
+      }
+    });
+
+    return [
+      { name: "Last Week", xp: lastWeekXP },
+      { name: "This Week", xp: thisWeekXP },
+    ];
+  }
+
+  const weeklySummary = getWeeklySummary();
 
   /* ───────────────────────────────
      LOADING STATE
@@ -459,6 +498,24 @@ export default function AdminUserDetail() {
               </PieChart>
             </ResponsiveContainer>
           )}
+        </div>
+        {/* XP This Week vs Last Week */}
+        <h2 className="text-xl font-semibold mb-3">
+          XP: This Week vs Last Week
+        </h2>
+        <div
+          className="bg-white p-4 rounded-lg shadow mb-10"
+          style={{ height: 260 }}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={weeklySummary}>
+              <CartesianGrid strokeDasharray="4 4" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="xp" fill="#6366f1" barSize={60} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* 🔥 XP 12-MONTH HEATMAP */}
