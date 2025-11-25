@@ -26,6 +26,8 @@ export default function AdminUserDetail() {
   const [xp30, setXp30] = useState([]);
   const [xpAll, setXpAll] = useState([]);
 
+  const [heatmap, setHeatmap] = useState([]); // 🔥 HEATMAP DATA
+
   /* ───────────────────────────────
      LOAD USER
   ───────────────────────────────── */
@@ -45,6 +47,7 @@ export default function AdminUserDetail() {
         setUser(data.user);
         setXpEvents(data.xpEvents || []);
         generateCharts(data.xpEvents || []);
+        buildHeatmap(data.xpEvents || []);
       }
     } catch (err) {
       console.error("Admin user detail error:", err);
@@ -112,20 +115,19 @@ export default function AdminUserDetail() {
   }
 
   /* ───────────────────────────────
-     CHART DATA GENERATION
+     XP CHART GENERATION
   ───────────────────────────────── */
   function generateCharts(events) {
     const now = new Date();
     const shortDate = (d) =>
       d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
-    // Reusable function for 7-day / 30-day charts
     function groupXP(days) {
       const map = {};
-
       for (let i = 0; i < days; i++) {
         const d = new Date();
         d.setDate(now.getDate() - i);
+
         const key = d.toISOString().slice(0, 10);
         map[key] = { date: shortDate(d), xp: 0 };
       }
@@ -138,7 +140,7 @@ export default function AdminUserDetail() {
       return Object.values(map).reverse();
     }
 
-    /* 🔥 ALL-TIME XP CHART */
+    // All-time XP
     const allMap = {};
     events.forEach((e) => {
       const key = e.createdAt.slice(0, 10);
@@ -153,9 +155,58 @@ export default function AdminUserDetail() {
       (a, b) => new Date(a.date) - new Date(b.date),
     );
 
-    setXpAll(xpAllData);
     setXp7(groupXP(7));
     setXp30(groupXP(30));
+    setXpAll(xpAllData);
+  }
+
+  /* ───────────────────────────────
+     12-MONTH XP HEATMAP GENERATION
+  ───────────────────────────────── */
+  function buildHeatmap(events) {
+    const today = new Date();
+    const heat = [];
+
+    // Create 365 days filled with XP values
+    const map = {};
+    events.forEach((e) => {
+      const key = e.createdAt.slice(0, 10);
+      if (!map[key]) map[key] = 0;
+      map[key] += e.amount;
+    });
+
+    // Build 52 weeks × 7 rows
+    for (let week = 0; week < 52; week++) {
+      const row = [];
+
+      for (let dow = 0; dow < 7; dow++) {
+        const d = new Date();
+        d.setDate(today.getDate() - (week * 7 + dow));
+        const key = d.toISOString().slice(0, 10);
+
+        const value = map[key] || 0;
+
+        row.push({
+          date: key,
+          xp: value,
+        });
+      }
+
+      heat.push(row.reverse());
+    }
+
+    setHeatmap(heat.reverse()); // oldest → newest
+  }
+
+  /* ───────────────────────────────
+     UTILITY: HEATMAP COLOR
+  ───────────────────────────────── */
+  function heatColor(xp) {
+    if (xp === 0) return "bg-gray-200";
+    if (xp < 20) return "bg-green-200";
+    if (xp < 50) return "bg-green-300";
+    if (xp < 100) return "bg-green-400";
+    return "bg-green-600";
   }
 
   /* ───────────────────────────────
@@ -176,7 +227,7 @@ export default function AdminUserDetail() {
     );
 
   /* ───────────────────────────────
-     PAGE RENDER
+     RENDER
   ───────────────────────────────── */
   return (
     <div className="min-h-screen flex bg-gray-100">
@@ -320,10 +371,30 @@ export default function AdminUserDetail() {
                 dataKey="xp"
                 stroke="#10b981"
                 strokeWidth={2}
-                dot={{ r: 3 }}
               />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* 🔥 XP 12-MONTH HEATMAP */}
+        <h2 className="text-xl font-semibold mb-3">
+          XP Heatmap (Past 12 Months)
+        </h2>
+
+        <div className="bg-white p-4 rounded-lg shadow mb-10 overflow-x-auto">
+          <div className="flex gap-1">
+            {heatmap.map((week, wi) => (
+              <div key={wi} className="flex flex-col gap-1">
+                {week.map((day, di) => (
+                  <div
+                    key={di}
+                    className={`w-4 h-4 rounded-sm ${heatColor(day.xp)} relative group`}
+                    title={`${day.date} — ${day.xp} XP`}
+                  ></div>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* XP Events */}
