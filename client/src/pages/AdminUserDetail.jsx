@@ -520,14 +520,10 @@ export default function AdminUserDetail() {
 
     let fatigueScore = 0;
 
-    // XP drop contributes heavily
     if (drop > 0) fatigueScore += drop * 2;
-
-    // Activity drop
     if (activeDaysPrev7 > activeDaysLast7)
       fatigueScore += (activeDaysPrev7 - activeDaysLast7) * 8;
 
-    // classify
     if (fatigueScore >= 80)
       return {
         level: "high",
@@ -555,6 +551,9 @@ export default function AdminUserDetail() {
       color: "bg-green-600",
     };
   }
+
+  const fatigue = getFatigueStatus();   // 🔥 add this line
+
   /* ───────────────────────────────
      XP DIFFICULTY INDEX
      Measures how "hard" XP is earned
