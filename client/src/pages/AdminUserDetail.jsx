@@ -552,7 +552,7 @@ export default function AdminUserDetail() {
     };
   }
 
-  const fatigue = getFatigueStatus();   // 🔥 add this line
+  const fatigue = getFatigueStatus(); // 🔥 add this line
 
   /* ───────────────────────────────
      XP DIFFICULTY INDEX
@@ -837,6 +837,62 @@ export default function AdminUserDetail() {
 
     return { score, label: "Rare Comebacks", color: "bg-red-600" };
   }
+  /* ───────────────────────────────
+     WEEKEND WARRIOR INDEX
+     Compares XP on weekends vs weekdays
+  ──────────────────────────────── */
+  function getWeekendWarriorIndex() {
+    if (!xpAll || xpAll.length < 14)
+      return { label: "Not Enough Data", score: 0, color: "bg-gray-400" };
+
+    // xpAll is already sorted day by day
+    let weekendXP = 0;
+    let weekdayXP = 0;
+
+    xpAll.forEach((entry) => {
+      const date = new Date(entry.date);
+      const day = date.getDay(); // 0 = Sunday, 6 = Saturday
+
+      if (day === 0 || day === 6) weekendXP += entry.xp;
+      else weekdayXP += entry.xp;
+    });
+
+    const total = weekendXP + weekdayXP;
+    if (total === 0)
+      return { label: "No Activity", score: 0, color: "bg-gray-400" };
+
+    const weekendRatio = weekendXP / total;
+    const score = Math.round(weekendRatio * 100);
+
+    if (score >= 70)
+      return {
+        label: "Weekend Warrior",
+        score,
+        color: "bg-red-500",
+      };
+
+    if (score >= 55)
+      return {
+        label: "Weekend-Heavy Learner",
+        score,
+        color: "bg-yellow-500",
+      };
+
+    if (score >= 40)
+      return {
+        label: "Balanced Learner",
+        score,
+        color: "bg-blue-500",
+      };
+
+    return {
+      label: "Weekday Learner",
+      score,
+      color: "bg-green-600",
+    };
+  }
+
+  const weekendIndex = getWeekendWarriorIndex();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1050,6 +1106,15 @@ export default function AdminUserDetail() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </div>
+        {/* Weekend Warrior Index */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${weekendIndex.color}`}
+        >
+          <span className="font-semibold">{weekendIndex.label}</span>
+          <span className="ml-2 opacity-80">
+            (Weekend Ratio: {weekendIndex.score}%)
+          </span>
         </div>
 
         {/* XP Last 7 Days */}
