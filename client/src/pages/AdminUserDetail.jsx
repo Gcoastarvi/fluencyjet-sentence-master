@@ -31,12 +31,10 @@ export default function AdminUserDetail() {
   const [xp7, setXp7] = useState([]);
   const [xp30, setXp30] = useState([]);
   const [xpAll, setXpAll] = useState([]);
+  const [forecast, setForecast] = useState([]); // 🔮 next-7-days prediction
+  const [heatmapData, setHeatmapData] = useState([]);
 
-  const [heatmap, setHeatmap] = useState([]); // 🔥 HEATMAP DATA
-
-  /* ───────────────────────────────
-     LOAD USER
-  ───────────────────────────────── */
+  /* LOAD USER */
   async function loadUser() {
     try {
       const res = await fetch(`/api/admin/user/${id}`, {
@@ -66,9 +64,7 @@ export default function AdminUserDetail() {
     loadUser();
   }, [id]);
 
-  /* ───────────────────────────────
-     ADMIN ACTIONS
-  ───────────────────────────────── */
+  /* ADMIN ACTIONS */
   async function promote() {
     if (!window.confirm("Promote this user to admin?")) return;
 
@@ -120,20 +116,18 @@ export default function AdminUserDetail() {
     }
   }
 
-  /* ───────────────────────────────
-     XP CHART GENERATION
-  ───────────────────────────────── */
+  /* XP CHART GENERATION */
   function generateCharts(events) {
     const now = new Date();
     const shortDate = (d) =>
       d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
+    // Helper: group XP into the last N days (for 7-day / 30-day charts)
     function groupXP(days) {
       const map = {};
       for (let i = 0; i < days; i++) {
         const d = new Date();
         d.setDate(now.getDate() - i);
-
         const key = d.toISOString().slice(0, 10);
         map[key] = { date: shortDate(d), xp: 0 };
       }
@@ -146,67 +140,91 @@ export default function AdminUserDetail() {
       return Object.values(map).reverse();
     }
 
-    // All-time XP
+    // All-time series for this user
     const allMap = {};
     events.forEach((e) => {
-      const key = e.createdAt.slice(0, 10);
-      const d = new Date(key);
+      const d = new Date(e.createdAt);
+      const key = d.toISOString().slice(0, 10);
       if (!allMap[key]) {
         allMap[key] = { date: shortDate(d), xp: 0 };
       }
       allMap[key].xp += e.amount;
     });
-
-    const xpAllData = Object.values(allMap).sort(
-      (a, b) => new Date(a.date) - new Date(b.date),
+    const xpAllData = Object.values(allMap).sort((a, b) =>
+      a.date.localeCompare(b.date),
     );
 
+    // Simple 7-day forecast based on last ~30 days
+    function buildForecastFromAllMap(map) {
+      const keys = Object.keys(map).sort(); // YYYY-MM-DD ascending
+      if (!keys.length) return [];
+
+      // Use up to last 30 days for the “model”
+      const recentKeys = keys.slice(-30);
+      let total = 0;
+      recentKeys.forEach((k) => {
+        total += map[k].xp;
+      });
+      const avg = total / recentKeys.length || 0;
+
+      // Tiny trend: compare last 7 vs previous 7 days
+      let trendPerDay = 0;
+      if (keys.length >= 14) {
+        const last7 = keys.slice(-7);
+        const prev7 = keys.slice(-14, -7);
+        const sum = (arr) => arr.reduce((acc, k) => acc + map[k].xp, 0);
+        const avgLast7 = sum(last7) / 7;
+        const avgPrev7 = sum(prev7) / 7;
+        trendPerDay = (avgLast7 - avgPrev7) / 7;
+      }
+
+      const lastDate = new Date(keys[keys.length - 1]);
+      const forecast = [];
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(lastDate);
+        d.setDate(lastDate.getDate() + i);
+        const predicted = Math.max(0, avg + trendPerDay * i);
+        forecast.push({ date: shortDate(d), xp: Math.round(predicted) });
+      }
+      return forecast;
+    }
+
+    const forecastData = buildForecastFromAllMap(allMap);
+
+    // Push data into charts
     setXp7(groupXP(7));
     setXp30(groupXP(30));
     setXpAll(xpAllData);
+    setForecast(forecastData);
   }
 
-  /* ───────────────────────────────
-     12-MONTH XP HEATMAP GENERATION
-  ───────────────────────────────── */
+  /* 12-MONTH HEATMAP */
   function buildHeatmap(events) {
     const today = new Date();
     const heat = [];
-
-    // Create 365 days filled with XP values
     const map = {};
+
     events.forEach((e) => {
       const key = e.createdAt.slice(0, 10);
       if (!map[key]) map[key] = 0;
       map[key] += e.amount;
     });
 
-    // Build 52 weeks × 7 rows
     for (let week = 0; week < 52; week++) {
       const row = [];
-
       for (let dow = 0; dow < 7; dow++) {
         const d = new Date();
         d.setDate(today.getDate() - (week * 7 + dow));
         const key = d.toISOString().slice(0, 10);
-
-        const value = map[key] || 0;
-
-        row.push({
-          date: key,
-          xp: value,
-        });
+        row.push({ date: key, xp: map[key] || 0 });
       }
-
       heat.push(row.reverse());
     }
 
-    setHeatmap(heat.reverse()); // oldest → newest
+    setHeatmap(heat.reverse());
   }
 
-  /* ───────────────────────────────
-     UTILITY: HEATMAP COLOR
-  ───────────────────────────────── */
+  /* HEATMAP COLOR */
   function heatColor(xp) {
     if (xp === 0) return "bg-gray-200";
     if (xp < 20) return "bg-green-200";
@@ -214,37 +232,33 @@ export default function AdminUserDetail() {
     if (xp < 100) return "bg-green-400";
     return "bg-green-600";
   }
+
+  /* CATEGORY COLOR SET */
   const CATEGORY_COLORS = [
-    "#6366f1", // purple
-    "#10b981", // emerald
-    "#f59e0b", // amber
-    "#ef4444", // red
-    "#8b5cf6", // violet
-    "#06b6d4", // cyan
+    "#6366f1",
+    "#10b981",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#06b6d4",
   ];
 
   function getCategoryData() {
     if (!xpEvents || xpEvents.length === 0) return [];
 
     const map = {};
-
     xpEvents.forEach((e) => {
       const key = e.reason || "Other";
       map[key] = (map[key] || 0) + e.amount;
     });
 
-    let arr = Object.entries(map).map(([name, value]) => ({
-      name,
-      value,
-    }));
+    let arr = Object.entries(map).map(([name, value]) => ({ name, value }));
 
-    // Sort by XP descending
     arr.sort((a, b) => b.value - a.value);
 
-    // Keep top 5, merge rest into "Other"
     if (arr.length > 6) {
       const top = arr.slice(0, 5);
-      const restXP = arr.slice(5).reduce((sum, item) => sum + item.value, 0);
+      const restXP = arr.slice(5).reduce((sum, i) => sum + i.value, 0);
       top.push({ name: "Other", value: restXP });
       arr = top;
     }
@@ -253,17 +267,13 @@ export default function AdminUserDetail() {
   }
 
   const categoryData = getCategoryData();
-  /* ───────────────────────────
-      WEEKLY XP SUMMARY (This vs Last Week)
-     ─────────────────────────── */
+
+  /* WEEKLY SUMMARY */
   function getWeeklySummary() {
     const now = new Date();
-
-    // Determine start of current week (Monday)
     const currentWeekStart = new Date(now);
     currentWeekStart.setDate(now.getDate() - now.getDay() + 1);
 
-    // Determine start of last week
     const lastWeekStart = new Date(currentWeekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
 
@@ -275,12 +285,8 @@ export default function AdminUserDetail() {
 
     xpEvents.forEach((e) => {
       const d = new Date(e.createdAt);
-
-      if (d >= currentWeekStart) {
-        thisWeekXP += e.amount;
-      } else if (d >= lastWeekStart && d <= lastWeekEnd) {
-        lastWeekXP += e.amount;
-      }
+      if (d >= currentWeekStart) thisWeekXP += e.amount;
+      else if (d >= lastWeekStart && d <= lastWeekEnd) lastWeekXP += e.amount;
     });
 
     return [
@@ -290,9 +296,8 @@ export default function AdminUserDetail() {
   }
 
   const weeklySummary = getWeeklySummary();
-  /* ───────────────────────────
-      DAILY XP DISTRIBUTION (24h)
-     ─────────────────────────── */
+
+  /* HOURLY DATA */
   function getHourlyDistribution() {
     const hours = Array.from({ length: 24 }, (_, i) => ({
       hour: `${i}:00`,
@@ -300,8 +305,7 @@ export default function AdminUserDetail() {
     }));
 
     xpEvents.forEach((e) => {
-      const d = new Date(e.createdAt);
-      const h = d.getHours();
+      const h = new Date(e.createdAt).getHours();
       hours[h].xp += e.amount;
     });
 
@@ -310,9 +314,40 @@ export default function AdminUserDetail() {
 
   const hourlyData = getHourlyDistribution();
 
-  /* ───────────────────────────────
-     LOADING STATE
-  ───────────────────────────────── */
+  /* CONSISTENCY SCORE */
+  function getConsistencyScore() {
+    if (!xpEvents || xpEvents.length === 0)
+      return { score: 0, label: "No Activity", color: "bg-gray-400" };
+
+    const now = new Date();
+    let xp7 = 0;
+    let xp30 = 0;
+    let activeDays14 = new Set();
+
+    xpEvents.forEach((e) => {
+      const d = new Date(e.createdAt);
+      const diff = (now - d) / (1000 * 60 * 60 * 24);
+
+      if (diff <= 7) xp7 += e.amount;
+      if (diff <= 30) xp30 += e.amount;
+      if (diff <= 14) activeDays14.add(d.toISOString().slice(0, 10));
+    });
+
+    const streak = user?.streak || 0;
+
+    const score = xp7 * 0.4 + xp30 * 0.2 + activeDays14.size * 10 + streak * 5;
+
+    if (score >= 400)
+      return { score, label: "Excellent", color: "bg-green-600" };
+    if (score >= 250) return { score, label: "Strong", color: "bg-yellow-500" };
+    if (score >= 120) return { score, label: "Good", color: "bg-blue-500" };
+
+    return { score, label: "Needs Improvement", color: "bg-red-500" };
+  }
+
+  const consistency = getConsistencyScore();
+
+  /* LOADING */
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -327,9 +362,7 @@ export default function AdminUserDetail() {
       </div>
     );
 
-  /* ───────────────────────────────
-     RENDER
-  ───────────────────────────────── */
+  /* RENDER */
   return (
     <div className="min-h-screen flex bg-gray-100">
       <AdminSidebar />
@@ -408,10 +441,15 @@ export default function AdminUserDetail() {
             <div className="text-2xl font-bold">{user.streak}</div>
           </div>
         </div>
+
         {/* Consistency Score */}
-        <div className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ${consistency.color}`}>
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ${consistency.color}`}
+        >
           <span className="font-semibold">{consistency.label}</span>
-          <span className="ml-2 opacity-80">(Score: {Math.round(consistency.score)})</span>
+          <span className="ml-2 opacity-80">
+            (Score: {Math.round(consistency.score)})
+          </span>
         </div>
 
         {/* XP Last 7 Days */}
@@ -481,6 +519,39 @@ export default function AdminUserDetail() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {/* XP Forecast — Next 7 Days */}
+        <h2 className="text-xl font-semibold mb-3">
+          XP Forecast — Next 7 Days
+          <span className="ml-2 text-xs font-normal text-gray-400">
+            (experimental)
+          </span>
+        </h2>
+        <div
+          className="bg-white p-4 rounded-lg shadow mb-10"
+          style={{ height: 250 }}
+        >
+          {forecast.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              Not enough XP history to generate a forecast yet.
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={forecast}>
+                <CartesianGrid strokeDasharray="4 4" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="xp"
+                  stroke="#f97316"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
 
         {/* XP by Category */}
         <h2 className="text-xl font-semibold mb-3">XP by Category</h2>
@@ -505,10 +576,10 @@ export default function AdminUserDetail() {
                   outerRadius={80}
                   paddingAngle={3}
                 >
-                  {categoryData.map((entry, index) => (
+                  {categoryData.map((entry, idx) => (
                     <Cell
-                      key={`cell-${index}`}
-                      fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
+                      key={`cell-${idx}`}
+                      fill={CATEGORY_COLORS[idx % CATEGORY_COLORS.length]}
                     />
                   ))}
                 </Pie>
@@ -523,7 +594,8 @@ export default function AdminUserDetail() {
             </ResponsiveContainer>
           )}
         </div>
-        {/* XP This Week vs Last Week */}
+
+        {/* This Week vs Last Week */}
         <h2 className="text-xl font-semibold mb-3">
           XP: This Week vs Last Week
         </h2>
@@ -541,8 +613,11 @@ export default function AdminUserDetail() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        {/* XP by Hour (24h Distribution) */}
-        <h2 className="text-xl font-semibold mb-3">XP by Time of Day (24-Hour)</h2>
+
+        {/* XP by Hour */}
+        <h2 className="text-xl font-semibold mb-3">
+          XP by Time of Day (24-Hour)
+        </h2>
         <div
           className="bg-white p-4 rounded-lg shadow mb-10"
           style={{ height: 260 }}
@@ -558,11 +633,10 @@ export default function AdminUserDetail() {
           </ResponsiveContainer>
         </div>
 
-        {/* 🔥 XP 12-MONTH HEATMAP */}
+        {/* Heatmap */}
         <h2 className="text-xl font-semibold mb-3">
           XP Heatmap (Past 12 Months)
         </h2>
-
         <div className="bg-white p-4 rounded-lg shadow mb-10 overflow-x-auto">
           <div className="flex gap-1">
             {heatmap.map((week, wi) => (
@@ -570,66 +644,16 @@ export default function AdminUserDetail() {
                 {week.map((day, di) => (
                   <div
                     key={di}
-                    className={`w-4 h-4 rounded-sm ${heatColor(day.xp)} relative group`}
+                    className={`w-4 h-4 rounded-sm ${heatColor(day.xp)}`}
                     title={`${day.date} — ${day.xp} XP`}
-                  ></div>
+                  />
                 ))}
               </div>
             ))}
           </div>
         </div>
-        /* ───────────────────────────
-            CONSISTENCY SCORE (AI-STYLE)
-           ─────────────────────────── */
 
-        function getConsistencyScore() {
-          if (!xpEvents || xpEvents.length === 0) {
-            return { score: 0, label: "No Activity", color: "bg-gray-400" };
-          }
-
-          const now = new Date();
-
-          // Last 7 days XP
-          let xp7 = 0;
-          // Last 30 days XP
-          let xp30 = 0;
-          // Count active days over last 14 days
-          let activeDays14 = new Set();
-
-          xpEvents.forEach((e) => {
-            const d = new Date(e.createdAt);
-            const diffDays = (now - d) / (1000 * 60 * 60 * 24);
-
-            // Last 7 days
-            if (diffDays <= 7) xp7 += e.amount;
-            // Last 30 days
-            if (diffDays <= 30) xp30 += e.amount;
-            // Unique active days in 14 days
-            if (diffDays <= 14) {
-              const key = d.toISOString().slice(0, 10);
-              activeDays14.add(key);
-            }
-          });
-
-          const streak = user?.streak || 0;
-
-          // AI-inspired scoring formula
-          const score =
-            xp7 * 0.4 +
-            xp30 * 0.2 +
-            activeDays14.size * 10 +
-            streak * 5;
-
-          // Map score → labels
-          if (score >= 400) return { score, label: "Excellent", color: "bg-green-600" };
-          if (score >= 250) return { score, label: "Strong", color: "bg-yellow-500" };
-          if (score >= 120) return { score, label: "Good", color: "bg-blue-500" };
-          return { score, label: "Needs Improvement", color: "bg-red-500" };
-        }
-
-        const consistency = getConsistencyScore();
-
-        {/* XP Events */}
+        {/* Recent XP Events */}
         <h2 className="text-lg font-semibold mb-3">Recent XP Events</h2>
         <div className="bg-white shadow rounded-lg overflow-auto">
           <table className="min-w-full text-sm">
