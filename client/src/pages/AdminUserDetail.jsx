@@ -494,6 +494,67 @@ export default function AdminUserDetail() {
   }
 
   const momentum = getMomentumScore();
+  /* ───────────────────────────────
+     LEARNING FATIGUE DETECTION
+     Detect burnout: falling XP, reduced activity
+  ──────────────────────────────── */
+  function getFatigueStatus() {
+    if (!xpAll || xpAll.length < 14)
+      return { level: "none", msg: "Not enough data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+    const last7 = values.slice(-7);
+    const prev7 = values.slice(-14, -7);
+
+    const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+    const lastAvg = avg(last7);
+    const prevAvg = avg(prev7);
+
+    // detect drop
+    const drop = prevAvg - lastAvg;
+
+    // count active days
+    const activeDaysLast7 = last7.filter((v) => v > 0).length;
+    const activeDaysPrev7 = prev7.filter((v) => v > 0).length;
+
+    let fatigueScore = 0;
+
+    // XP drop contributes heavily
+    if (drop > 0) fatigueScore += drop * 2;
+
+    // Activity drop
+    if (activeDaysPrev7 > activeDaysLast7)
+      fatigueScore += (activeDaysPrev7 - activeDaysLast7) * 8;
+
+    // classify
+    if (fatigueScore >= 80)
+      return {
+        level: "high",
+        msg: "⚠️ Severe learning fatigue detected — XP & activity dropping sharply.",
+        color: "bg-red-600",
+      };
+
+    if (fatigueScore >= 45)
+      return {
+        level: "medium",
+        msg: "⚠️ Moderate fatigue — XP trend slipping.",
+        color: "bg-yellow-500",
+      };
+
+    if (fatigueScore >= 15)
+      return {
+        level: "low",
+        msg: "Mild fatigue — Slight downward trend.",
+        color: "bg-blue-500",
+      };
+
+    return {
+      level: "none",
+      msg: "💚 No signs of learning fatigue.",
+      color: "bg-green-600",
+    };
+  }
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -637,6 +698,15 @@ export default function AdminUserDetail() {
         >
           <span className="font-semibold">{momentum.label}</span>
           <span className="ml-2 opacity-80">(Momentum: {momentum.score}%)</span>
+        </div>
+        {/* Fatigue Detection */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${fatigue.color}`}
+        >
+          <span className="font-semibold">
+            {fatigue.level === "none" ? "No Fatigue" : "Learning Fatigue"}
+          </span>
+          <span className="ml-2 opacity-80">{fatigue.msg}</span>
         </div>
 
         {/* XP Last 7 Days */}
