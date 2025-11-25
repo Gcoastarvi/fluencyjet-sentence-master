@@ -12,6 +12,10 @@ import {
   Tooltip,
   CartesianGrid,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts";
 
 export default function AdminUserDetail() {
@@ -208,6 +212,45 @@ export default function AdminUserDetail() {
     if (xp < 100) return "bg-green-400";
     return "bg-green-600";
   }
+  const CATEGORY_COLORS = [
+    "#6366f1", // purple
+    "#10b981", // emerald
+    "#f59e0b", // amber
+    "#ef4444", // red
+    "#8b5cf6", // violet
+    "#06b6d4", // cyan
+  ];
+
+  function getCategoryData() {
+    if (!xpEvents || xpEvents.length === 0) return [];
+
+    const map = {};
+
+    xpEvents.forEach((e) => {
+      const key = e.reason || "Other";
+      map[key] = (map[key] || 0) + e.amount;
+    });
+
+    let arr = Object.entries(map).map(([name, value]) => ({
+      name,
+      value,
+    }));
+
+    // Sort by XP descending
+    arr.sort((a, b) => b.value - a.value);
+
+    // Keep top 5, merge rest into "Other"
+    if (arr.length > 6) {
+      const top = arr.slice(0, 5);
+      const restXP = arr.slice(5).reduce((sum, item) => sum + item.value, 0);
+      top.push({ name: "Other", value: restXP });
+      arr = top;
+    }
+
+    return arr;
+  }
+
+  const categoryData = getCategoryData();
 
   /* ───────────────────────────────
      LOADING STATE
@@ -374,6 +417,48 @@ export default function AdminUserDetail() {
               />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+
+        {/* XP by Category */}
+        <h2 className="text-xl font-semibold mb-3">XP by Category</h2>
+        <div
+          className="bg-white p-4 rounded-lg shadow mb-10"
+          style={{ height: 260 }}
+        >
+          {categoryData.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              No XP categories to display yet.
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="40%"
+                  cy="50%"
+                  innerRadius={45}
+                  outerRadius={80}
+                  paddingAngle={3}
+                >
+                  {categoryData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend
+                  layout="vertical"
+                  align="right"
+                  verticalAlign="middle"
+                  wrapperStyle={{ fontSize: 12 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* 🔥 XP 12-MONTH HEATMAP */}
