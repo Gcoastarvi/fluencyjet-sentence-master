@@ -610,6 +610,117 @@ export default function AdminUserDetail() {
   }
 
   const difficulty = getDifficultyIndex();
+  const behavior = getLearningBehavior();
+
+  /* ───────────────────────────────
+     LEARNING BEHAVIOR CLASSIFIER
+     Determines study type: Bursts vs Consistent vs Streaker
+  ──────────────────────────────── */
+  function getLearningBehavior() {
+    if (!xpAll || xpAll.length < 10)
+      return { label: "Not Enough Data", desc: "", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    const activeDays = values.filter((v) => v > 0).length;
+    const totalDays = values.length;
+    const activityRate = activeDays / totalDays; // % of days with any XP
+
+    const bursts = [];
+    for (let i = 1; i < values.length; i++) {
+      bursts.push(Math.abs(values[i] - values[i - 1]));
+    }
+    const avgBurst = bursts.reduce((a, b) => a + b, 0) / bursts.length;
+
+    const streak = user?.streak || 0;
+
+    // Classification logic
+    if (streak >= 10 && activityRate >= 0.7) {
+      return {
+        label: "Streak Learner",
+        desc: "Learns daily with strong streak discipline.",
+        color: "bg-green-600",
+      };
+    }
+
+    if (avgBurst > 50) {
+      return {
+        label: "Burst Learner",
+        desc: "Learns in intense bursts followed by cooldown days.",
+        color: "bg-yellow-500",
+      };
+    }
+
+    if (activityRate >= 0.6) {
+      return {
+        label: "Consistent Learner",
+        desc: "Maintains a steady learning pace.",
+        color: "bg-blue-500",
+      };
+    }
+
+    return {
+      label: "Casual Learner",
+      desc: "Low activity days with occasional XP bursts.",
+      color: "bg-gray-500",
+    };
+  }
+  /* ───────────────────────────────
+     XP PERSISTENCE INDEX
+     Measures how long the user stays active
+  ──────────────────────────────── */
+  function getPersistenceIndex() {
+    if (!xpAll || xpAll.length === 0)
+      return { score: 0, label: "No Activity", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    // Count how many times user returns after a zero-XP day
+    let restarts = 0;
+    for (let i = 1; i < values.length; i++) {
+      if (values[i - 1] === 0 && values[i] > 0) restarts++;
+    }
+
+    // Active-day ratio
+    const activeDays = values.filter((v) => v > 0).length;
+    const totalDays = values.length;
+    const activeRate = activeDays / totalDays;
+
+    // Persistence Formula:
+    // Higher: more active streaks + fewer long breaks
+    let score = activeRate * 70 + restarts * 3;
+
+    score = Math.max(0, Math.min(100, score)); // clamp
+
+    if (score >= 80)
+      return {
+        score,
+        label: "Highly Persistent",
+        color: "bg-green-600",
+      };
+
+    if (score >= 55)
+      return {
+        score,
+        label: "Persistent",
+        color: "bg-blue-500",
+      };
+
+    if (score >= 30)
+      return {
+        score,
+        label: "Low Persistence",
+        color: "bg-yellow-500",
+      };
+
+    return {
+      score,
+      label: "Very Low Persistence",
+      color: "bg-red-600",
+    };
+  }
+
+  const persistence = getPersistenceIndex();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -770,6 +881,22 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{difficulty.label}</span>
           <span className="ml-2 opacity-80">
             (Difficulty: {difficulty.score.toFixed(0)}%)
+          </span>
+        </div>
+        {/* Learning Behavior */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${behavior.color}`}
+        >
+          <span className="font-semibold">{behavior.label}</span>
+          <span className="ml-2 opacity-80">{behavior.desc}</span>
+        </div>
+        {/* Persistence Index */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${persistence.color}`}
+        >
+          <span className="font-semibold">{persistence.label}</span>
+          <span className="ml-2 opacity-80">
+            (Persistence: {persistence.score.toFixed(0)}%)
           </span>
         </div>
 
