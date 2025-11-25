@@ -555,6 +555,61 @@ export default function AdminUserDetail() {
       color: "bg-green-600",
     };
   }
+  /* ───────────────────────────────
+     XP DIFFICULTY INDEX
+     Measures how "hard" XP is earned
+  ──────────────────────────────── */
+  function getDifficultyIndex() {
+    if (!xpAll || xpAll.length < 10)
+      return { score: 0, label: "Insufficient Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    // Variation = see how inconsistent XP is day-to-day
+    const diffs = [];
+    for (let i = 1; i < values.length; i++) {
+      diffs.push(Math.abs(values[i] - values[i - 1]));
+    }
+
+    const avgDiff = diffs.reduce((a, b) => a + b, 0) / (diffs.length || 1);
+
+    // Compare to average XP
+    const avgXP = values.reduce((a, b) => a + b, 0) / values.length;
+
+    let difficulty = avgDiff - avgXP * 0.3;
+
+    // Normalize to 0–100
+    difficulty = Math.max(0, Math.min(100, difficulty));
+
+    if (difficulty >= 70)
+      return {
+        score: difficulty,
+        label: "High Difficulty",
+        color: "bg-red-600",
+      };
+
+    if (difficulty >= 45)
+      return {
+        score: difficulty,
+        label: "Moderate Difficulty",
+        color: "bg-yellow-500",
+      };
+
+    if (difficulty >= 20)
+      return {
+        score: difficulty,
+        label: "Mild Difficulty",
+        color: "bg-blue-500",
+      };
+
+    return {
+      score: difficulty,
+      label: "Low Difficulty",
+      color: "bg-green-600",
+    };
+  }
+
+  const difficulty = getDifficultyIndex();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -707,6 +762,15 @@ export default function AdminUserDetail() {
             {fatigue.level === "none" ? "No Fatigue" : "Learning Fatigue"}
           </span>
           <span className="ml-2 opacity-80">{fatigue.msg}</span>
+        </div>
+        {/* Difficulty Index */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${difficulty.color}`}
+        >
+          <span className="font-semibold">{difficulty.label}</span>
+          <span className="ml-2 opacity-80">
+            (Difficulty: {difficulty.score.toFixed(0)}%)
+          </span>
         </div>
 
         {/* XP Last 7 Days */}
