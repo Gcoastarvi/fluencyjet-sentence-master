@@ -33,6 +33,7 @@ export default function AdminUserDetail() {
   const [xpAll, setXpAll] = useState([]);
   const [forecast, setForecast] = useState([]); // 🔮 next-7-days prediction
   const [heatmapData, setHeatmapData] = useState([]);
+  const [anomalies, setAnomalies] = useState([]); // 🚨 unusual XP activity
 
   /* LOAD USER */
   async function loadUser() {
@@ -191,12 +192,62 @@ export default function AdminUserDetail() {
 
     const forecastData = buildForecastFromAllMap(allMap);
 
-    // Push data into charts
     setXp7(groupXP(7));
     setXp30(groupXP(30));
     setXpAll(xpAllData);
     setForecast(forecastData);
-  }
+
+    /* ─────────────────────────────
+       ANOMALY DETECTION ENGINE
+       Detects unusual spikes/drops
+    ────────────────────────────── */
+    function detectAnomalies(map) {
+      const keys = Object.keys(map).sort();
+      if (keys.length < 10) return []; // Not enough data
+
+      // Use last 14 days for anomaly detection
+      const recent = keys.slice(-14);
+      const last14 = recent.map(k => map[k].xp);
+
+      const avg = last14.reduce((a, b) => a + b, 0) / last14.length;
+      const stddev =
+        Math.sqrt(last14.map(x => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) / last14.length);
+
+      const thresholdHigh = avg + stddev * 2; // spike
+      const thresholdLow = avg - stddev * 2;  // drop
+
+      const alerts = [];
+
+      keys.slice(-7).forEach(k => {
+        const xp = map[k].xp;
+        const date = map[k].date;
+
+        if (xp > thresholdHigh) {
+          alerts.push({
+            type: "high",
+            date,
+            xp,
+            normal: Math.round(avg),
+            msg: `XP spike: ${xp} (normal: ${Math.round(avg)})`
+          });
+        }
+
+        if (xp < thresholdLow) {
+          alerts.push({
+            type: "low",
+            date,
+            xp,
+            normal: Math.round(avg),
+            msg: `XP unusually low: ${xp} (normal: ${Math.round(avg)})`
+          });
+        }
+      });
+
+      return alerts;
+    }
+
+    setAnomalies(detectAnomalies(allMap));
+
 
   /* 12-MONTH HEATMAP */
   function buildHeatmap(events) {
@@ -421,6 +472,27 @@ export default function AdminUserDetail() {
             </button>
           </div>
         </div>
+        {/* ───────────────────────────────
+            ANOMALY WARNINGS
+        ──────────────────────────────── */}
+        {anomalies.length > 0 && (
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded mb-8">
+            <h2 className="text-lg font-semibold mb-2">Unusual XP Activity</h2>
+            {anomalies.map((a, i) => (
+              <div key={i} className="text-sm text-gray-700 mb-1">
+                {a.type === "high" ? "🔥" : "⚠️"} <strong>{a.date}:</strong> {a.msg}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {anomalies.length === 0 && (
+          <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded mb-8">
+            <p className="text-sm text-gray-700">
+              ✅ No unusual XP patterns detected this week.
+            </p>
+          </div>
+        )}
 
         {/* XP Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
