@@ -425,6 +425,40 @@ export default function AdminUserDetail() {
   }
 
   const consistency = getConsistencyScore();
+  /* ───────────────────────────────
+     XP STABILITY INDEX (AI Metric)
+  ──────────────────────────────── */
+  function getStabilityIndex() {
+    if (!xpAll || xpAll.length < 2)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((x) => x.xp);
+    const avg = values.reduce((a, b) => a + b, 0) / (values.length || 1);
+
+    // Variance
+    const variance =
+      values.map((v) => Math.pow(v - avg, 2)).reduce((a, b) => a + b, 0) /
+      values.length;
+
+    const stddev = Math.sqrt(variance);
+
+    // Stability = 1 - (stddev / (avg + 1)) → normalized 0 to 1
+    let stability = 1 - stddev / (avg + 1);
+    stability = Math.max(0, Math.min(1, stability)); // clamp 0–1
+
+    const score = Math.round(stability * 100);
+
+    if (score >= 85)
+      return { score, label: "Highly Stable", color: "bg-green-600" };
+    if (score >= 60)
+      return { score, label: "Moderately Stable", color: "bg-blue-500" };
+    if (score >= 40)
+      return { score, label: "Inconsistent", color: "bg-yellow-500" };
+
+    return { score, label: "Very Unstable", color: "bg-red-600" };
+  }
+
+  const stability = getStabilityIndex();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -551,6 +585,15 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{consistency.label}</span>
           <span className="ml-2 opacity-80">
             (Score: {Math.round(consistency.score)})
+          </span>
+        </div>
+        {/* Stability Index */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${stability.color}`}
+        >
+          <span className="font-semibold">{stability.label}</span>
+          <span className="ml-2 opacity-80">
+            (Stability: {stability.score}%)
           </span>
         </div>
 
