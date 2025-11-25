@@ -32,10 +32,10 @@ export default function AdminUserDetail() {
   const [xp30, setXp30] = useState([]);
   const [xpAll, setXpAll] = useState([]);
   const [forecast, setForecast] = useState([]); // 🔮 next-7-days prediction
-  const [heatmapData, setHeatmapData] = useState([]);
+  const [heatmap, setHeatmap] = useState([]); // 12-month calendar grid
   const [anomalies, setAnomalies] = useState([]); // 🚨 unusual XP activity
 
-  /* LOAD USER */
+  /* LOAD USER + XP EVENTS */
   async function loadUser() {
     try {
       const res = await fetch(`/api/admin/user/${id}`, {
@@ -49,10 +49,11 @@ export default function AdminUserDetail() {
 
       const data = await res.json();
       if (data.ok) {
+        const events = data.xpEvents || [];
         setUser(data.user);
-        setXpEvents(data.xpEvents || []);
-        generateCharts(data.xpEvents || []);
-        buildHeatmap(data.xpEvents || []);
+        setXpEvents(events);
+        generateCharts(events);
+        buildHeatmap(events);
       }
     } catch (err) {
       console.error("Admin user detail error:", err);
@@ -63,9 +64,12 @@ export default function AdminUserDetail() {
 
   useEffect(() => {
     loadUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  /* ADMIN ACTIONS */
+  /* ───────────────────────────────
+     ADMIN ACTIONS
+  ──────────────────────────────── */
   async function promote() {
     if (!window.confirm("Promote this user to admin?")) return;
 
@@ -117,11 +121,16 @@ export default function AdminUserDetail() {
     }
   }
 
-  /* XP CHART GENERATION */
-  function generateCharts(events) {
+  /* ───────────────────────────────
+     XP CHART + ANALYTICS ENGINE
+  ──────────────────────────────── */
+  function generateCharts(events = []) {
     const now = new Date();
     const shortDate = (d) =>
-      d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      d.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
 
     // Helper: group XP into the last N days (for 7-day / 30-day charts)
     function groupXP(days) {
@@ -141,19 +150,20 @@ export default function AdminUserDetail() {
       return Object.values(map).reverse();
     }
 
-    // All-time series for this user
+    // All-time XP per day for this user
     const allMap = {};
     events.forEach((e) => {
       const d = new Date(e.createdAt);
-      const key = d.toISOString().slice(0, 10);
+      const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
       if (!allMap[key]) {
         allMap[key] = { date: shortDate(d), xp: 0 };
       }
       allMap[key].xp += e.amount;
     });
-    const xpAllData = Object.values(allMap).sort((a, b) =>
-      a.date.localeCompare(b.date),
-    );
+
+    const xpAllData = Object.keys(allMap)
+      .sort()
+      .map((key) => allMap[key]);
 
     // Simple 7-day forecast based on last ~30 days
     function buildForecastFromAllMap(map) {
@@ -180,25 +190,20 @@ export default function AdminUserDetail() {
       }
 
       const lastDate = new Date(keys[keys.length - 1]);
-      const forecast = [];
+      const forecastArr = [];
       for (let i = 1; i <= 7; i++) {
         const d = new Date(lastDate);
         d.setDate(lastDate.getDate() + i);
         const predicted = Math.max(0, avg + trendPerDay * i);
-        forecast.push({ date: shortDate(d), xp: Math.round(predicted) });
+        forecastArr.push({ date: shortDate(d), xp: Math.round(predicted) });
       }
-      return forecast;
+      return forecastArr;
     }
 
     const forecastData = buildForecastFromAllMap(allMap);
 
-    setXp7(groupXP(7));
-    setXp30(groupXP(30));
-    setXpAll(xpAllData);
-    setForecast(forecastData);
-
     /* ─────────────────────────────
-       ANOMALY DETECTION ENGINE
+       ANOMALY DETECTION
        Detects unusual spikes/drops
     ────────────────────────────── */
     function detectAnomalies(map) {
@@ -207,18 +212,21 @@ export default function AdminUserDetail() {
 
       // Use last 14 days for anomaly detection
       const recent = keys.slice(-14);
-      const last14 = recent.map(k => map[k].xp);
+      const last14 = recent.map((k) => map[k].xp);
 
-      const avg = last14.reduce((a, b) => a + b, 0) / last14.length;
-      const stddev =
-        Math.sqrt(last14.map(x => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) / last14.length);
+      const avg = last14.reduce((a, b) => a + b, 0) / (last14.length || 1);
+      const stddev = Math.sqrt(
+        last14.map((x) => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) /
+          (last14.length || 1),
+      );
 
       const thresholdHigh = avg + stddev * 2; // spike
-      const thresholdLow = avg - stddev * 2;  // drop
+      const thresholdLow = avg - stddev * 2; // drop
 
       const alerts = [];
 
-      keys.slice(-7).forEach(k => {
+      // Only flag last 7 days
+      keys.slice(-7).forEach((k) => {
         const xp = map[k].xp;
         const date = map[k].date;
 
@@ -228,7 +236,7 @@ export default function AdminUserDetail() {
             date,
             xp,
             normal: Math.round(avg),
-            msg: `XP spike: ${xp} (normal: ${Math.round(avg)})`
+            msg: `XP spike: ${xp} (normal: ${Math.round(avg)})`,
           });
         }
 
@@ -238,7 +246,7 @@ export default function AdminUserDetail() {
             date,
             xp,
             normal: Math.round(avg),
-            msg: `XP unusually low: ${xp} (normal: ${Math.round(avg)})`
+            msg: `XP unusually low: ${xp} (normal: ${Math.round(avg)})`,
           });
         }
       });
@@ -246,21 +254,32 @@ export default function AdminUserDetail() {
       return alerts;
     }
 
-    setAnomalies(detectAnomalies(allMap));
+    const anomalyData = detectAnomalies(allMap);
 
+    // Push everything into state
+    setXp7(groupXP(7));
+    setXp30(groupXP(30));
+    setXpAll(xpAllData);
+    setForecast(forecastData);
+    setAnomalies(anomalyData);
+  }
 
-  /* 12-MONTH HEATMAP */
-  function buildHeatmap(events) {
+  /* ───────────────────────────────
+     12-MONTH HEATMAP (GitHub-style)
+  ──────────────────────────────── */
+  function buildHeatmap(events = []) {
     const today = new Date();
-    const heat = [];
     const map = {};
 
     events.forEach((e) => {
-      const key = e.createdAt.slice(0, 10);
+      const key = e.createdAt.slice(0, 10); // YYYY-MM-DD
       if (!map[key]) map[key] = 0;
       map[key] += e.amount;
     });
 
+    const weeks = [];
+
+    // 52 weeks * 7 days = 364 days ≈ 12 months
     for (let week = 0; week < 52; week++) {
       const row = [];
       for (let dow = 0; dow < 7; dow++) {
@@ -269,13 +288,13 @@ export default function AdminUserDetail() {
         const key = d.toISOString().slice(0, 10);
         row.push({ date: key, xp: map[key] || 0 });
       }
-      heat.push(row.reverse());
+      // Oldest at top, newest at bottom
+      weeks.push(row.reverse());
     }
 
-    setHeatmap(heat.reverse());
+    setHeatmap(weeks.reverse());
   }
 
-  /* HEATMAP COLOR */
   function heatColor(xp) {
     if (xp === 0) return "bg-gray-200";
     if (xp < 20) return "bg-green-200";
@@ -303,10 +322,15 @@ export default function AdminUserDetail() {
       map[key] = (map[key] || 0) + e.amount;
     });
 
-    let arr = Object.entries(map).map(([name, value]) => ({ name, value }));
+    let arr = Object.entries(map).map(([name, value]) => ({
+      name,
+      value,
+    }));
 
+    // Sort desc by XP
     arr.sort((a, b) => b.value - a.value);
 
+    // Keep top 5 + "Other"
     if (arr.length > 6) {
       const top = arr.slice(0, 5);
       const restXP = arr.slice(5).reduce((sum, i) => sum + i.value, 0);
@@ -319,11 +343,14 @@ export default function AdminUserDetail() {
 
   const categoryData = getCategoryData();
 
-  /* WEEKLY SUMMARY */
+  /* WEEKLY SUMMARY (This week vs Last week) */
   function getWeeklySummary() {
     const now = new Date();
+
+    // assuming Monday as start of week
     const currentWeekStart = new Date(now);
-    currentWeekStart.setDate(now.getDate() - now.getDay() + 1);
+    currentWeekStart.setHours(0, 0, 0, 0);
+    currentWeekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
 
     const lastWeekStart = new Date(currentWeekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
@@ -348,7 +375,7 @@ export default function AdminUserDetail() {
 
   const weeklySummary = getWeeklySummary();
 
-  /* HOURLY DATA */
+  /* HOURLY DISTRIBUTION (24-hour) */
   function getHourlyDistribution() {
     const hours = Array.from({ length: 24 }, (_, i) => ({
       hour: `${i}:00`,
@@ -365,28 +392,29 @@ export default function AdminUserDetail() {
 
   const hourlyData = getHourlyDistribution();
 
-  /* CONSISTENCY SCORE */
+  /* CONSISTENCY SCORE (AI-style badge) */
   function getConsistencyScore() {
     if (!xpEvents || xpEvents.length === 0)
       return { score: 0, label: "No Activity", color: "bg-gray-400" };
 
     const now = new Date();
-    let xp7 = 0;
-    let xp30 = 0;
-    let activeDays14 = new Set();
+    let xp7Total = 0;
+    let xp30Total = 0;
+    const activeDays14 = new Set();
 
     xpEvents.forEach((e) => {
       const d = new Date(e.createdAt);
       const diff = (now - d) / (1000 * 60 * 60 * 24);
 
-      if (diff <= 7) xp7 += e.amount;
-      if (diff <= 30) xp30 += e.amount;
+      if (diff <= 7) xp7Total += e.amount;
+      if (diff <= 30) xp30Total += e.amount;
       if (diff <= 14) activeDays14.add(d.toISOString().slice(0, 10));
     });
 
     const streak = user?.streak || 0;
 
-    const score = xp7 * 0.4 + xp30 * 0.2 + activeDays14.size * 10 + streak * 5;
+    const score =
+      xp7Total * 0.4 + xp30Total * 0.2 + activeDays14.size * 10 + streak * 5;
 
     if (score >= 400)
       return { score, label: "Excellent", color: "bg-green-600" };
@@ -398,7 +426,9 @@ export default function AdminUserDetail() {
 
   const consistency = getConsistencyScore();
 
-  /* LOADING */
+  /* ───────────────────────────────
+     LOADING / 404 STATES
+  ──────────────────────────────── */
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -413,7 +443,9 @@ export default function AdminUserDetail() {
       </div>
     );
 
-  /* RENDER */
+  /* ───────────────────────────────
+     RENDER
+  ──────────────────────────────── */
   return (
     <div className="min-h-screen flex bg-gray-100">
       <AdminSidebar />
@@ -472,21 +504,19 @@ export default function AdminUserDetail() {
             </button>
           </div>
         </div>
-        {/* ───────────────────────────────
-            ANOMALY WARNINGS
-        ──────────────────────────────── */}
-        {anomalies.length > 0 && (
+
+        {/* Anomaly Warnings */}
+        {anomalies.length > 0 ? (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded mb-8">
             <h2 className="text-lg font-semibold mb-2">Unusual XP Activity</h2>
             {anomalies.map((a, i) => (
               <div key={i} className="text-sm text-gray-700 mb-1">
-                {a.type === "high" ? "🔥" : "⚠️"} <strong>{a.date}:</strong> {a.msg}
+                {a.type === "high" ? "🔥" : "⚠️"} <strong>{a.date}:</strong>{" "}
+                {a.msg}
               </div>
             ))}
           </div>
-        )}
-
-        {anomalies.length === 0 && (
+        ) : (
           <div className="bg-green-50 border-l-4 border-green-500 p-3 rounded mb-8">
             <p className="text-sm text-gray-700">
               ✅ No unusual XP patterns detected this week.
@@ -514,7 +544,7 @@ export default function AdminUserDetail() {
           </div>
         </div>
 
-        {/* Consistency Score */}
+        {/* Consistency Score Badge */}
         <div
           className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ${consistency.color}`}
         >
@@ -591,6 +621,7 @@ export default function AdminUserDetail() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+
         {/* XP Forecast — Next 7 Days */}
         <h2 className="text-xl font-semibold mb-3">
           XP Forecast — Next 7 Days
@@ -686,7 +717,7 @@ export default function AdminUserDetail() {
           </ResponsiveContainer>
         </div>
 
-        {/* XP by Hour */}
+        {/* XP by Time of Day */}
         <h2 className="text-xl font-semibold mb-3">
           XP by Time of Day (24-Hour)
         </h2>
@@ -705,7 +736,7 @@ export default function AdminUserDetail() {
           </ResponsiveContainer>
         </div>
 
-        {/* Heatmap */}
+        {/* Heatmap (Past 12 Months) */}
         <h2 className="text-xl font-semibold mb-3">
           XP Heatmap (Past 12 Months)
         </h2>
@@ -751,7 +782,7 @@ export default function AdminUserDetail() {
 
               {xpEvents.length === 0 && (
                 <tr>
-                  <td colSpan="3" className="p-4 text-center text-gray-500">
+                  <td colSpan={3} className="p-4 text-center text-gray-500">
                     No XP history yet
                   </td>
                 </tr>
