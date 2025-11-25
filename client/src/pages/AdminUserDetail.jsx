@@ -721,6 +721,63 @@ export default function AdminUserDetail() {
   }
 
   const persistence = getPersistenceIndex();
+  /* ───────────────────────────────
+     XP MOMENTUM VARIABILITY SCORE
+     How stable is momentum day-to-day?
+  ──────────────────────────────── */
+  function getMomentumVariability() {
+    if (!xpAll || xpAll.length < 10)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    // Day-to-day momentum = difference between today & yesterday
+    const diffs = [];
+    for (let i = 1; i < values.length; i++) {
+      diffs.push(values[i] - values[i - 1]);
+    }
+
+    // Variability = standard deviation of momentum
+    const avgDiff = diffs.reduce((a, b) => a + b, 0) / (diffs.length || 1);
+
+    const variance =
+      diffs.map((d) => Math.pow(d - avgDiff, 2)).reduce((a, b) => a + b, 0) /
+      diffs.length;
+
+    const stddev = Math.sqrt(variance);
+
+    // Convert to a normalized 0–100 score (lower variability = better)
+    let score = 100 - Math.min(100, stddev * 3);
+
+    if (score >= 80)
+      return {
+        score,
+        label: "Highly Stable Momentum",
+        color: "bg-green-600",
+      };
+
+    if (score >= 60)
+      return {
+        score,
+        label: "Stable Momentum",
+        color: "bg-blue-500",
+      };
+
+    if (score >= 40)
+      return {
+        score,
+        label: "Unstable Momentum",
+        color: "bg-yellow-500",
+      };
+
+    return {
+      score,
+      label: "Highly Volatile Momentum",
+      color: "bg-red-600",
+    };
+  }
+
+  const momentumVar = getMomentumVariability();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -897,6 +954,15 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{persistence.label}</span>
           <span className="ml-2 opacity-80">
             (Persistence: {persistence.score.toFixed(0)}%)
+          </span>
+        </div>
+        {/* Momentum Variability */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${momentumVar.color}`}
+        >
+          <span className="font-semibold">{momentumVar.label}</span>
+          <span className="ml-2 opacity-80">
+            (Variability: {momentumVar.score.toFixed(0)}%)
           </span>
         </div>
 
