@@ -795,6 +795,49 @@ export default function AdminUserDetail() {
   }
 
   const sparkline = getSparklineData();
+  /* ───────────────────────────────
+     XP RETURN RATE (Comeback Score)
+     Measures how quickly a user comes
+     back from breaks (0 XP days)
+  ───────────────────────────────── */
+  function getReturnRate() {
+    if (!xpAll || xpAll.length < 7)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    // Find distances between active days
+    let gaps = [];
+    let gapCount = 0;
+
+    for (let i = 0; i < values.length; i++) {
+      if (values[i] === 0) {
+        gapCount++;
+      } else {
+        if (gapCount > 0) {
+          gaps.push(gapCount);
+          gapCount = 0;
+        }
+      }
+    }
+
+    if (gaps.length === 0)
+      return { score: 100, label: "Daily Active", color: "bg-green-600" };
+
+    const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+
+    // Convert gap to score: shorter gap = better
+    let score = 100 - Math.min(100, avgGap * 15); // Each off-day reduces score
+
+    if (score >= 75)
+      return { score, label: "Fast Comeback", color: "bg-green-600" };
+    if (score >= 55)
+      return { score, label: "Good Comeback", color: "bg-blue-500" };
+    if (score >= 35)
+      return { score, label: "Slow Comeback", color: "bg-yellow-500" };
+
+    return { score, label: "Rare Comebacks", color: "bg-red-600" };
+  }
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -982,6 +1025,16 @@ export default function AdminUserDetail() {
             (Variability: {momentumVar.score.toFixed(0)}%)
           </span>
         </div>
+        {/* Return Rate */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${getReturnRate().color}`}
+        >
+          <span className="font-semibold">{getReturnRate().label}</span>
+          <span className="ml-2 opacity-80">
+            (Return Rate: {getReturnRate().score.toFixed(0)}%)
+          </span>
+        </div>
+
         {/* XP Volatility Sparkline */}
         <div className="inline-block bg-white px-4 py-3 rounded-lg shadow mb-10 ml-4">
           <div className="text-xs text-gray-500 mb-2">Volatility Trend</div>
