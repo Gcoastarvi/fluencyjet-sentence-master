@@ -24,7 +24,11 @@ export default function AdminUserDetail() {
 
   const [xp7, setXp7] = useState([]);
   const [xp30, setXp30] = useState([]);
+  const [xpAll, setXpAll] = useState([]);
 
+  /* ───────────────────────────────
+     LOAD USER
+  ───────────────────────────────── */
   async function loadUser() {
     try {
       const res = await fetch(`/api/admin/user/${id}`, {
@@ -54,9 +58,8 @@ export default function AdminUserDetail() {
   }, [id]);
 
   /* ───────────────────────────────
-     PROMOTE / DEMOTE / DELETE
+     ADMIN ACTIONS
   ───────────────────────────────── */
-
   async function promote() {
     if (!window.confirm("Promote this user to admin?")) return;
 
@@ -111,18 +114,18 @@ export default function AdminUserDetail() {
   /* ───────────────────────────────
      CHART DATA GENERATION
   ───────────────────────────────── */
-
   function generateCharts(events) {
     const now = new Date();
     const shortDate = (d) =>
       d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
+    // Reusable function for 7-day / 30-day charts
     function groupXP(days) {
       const map = {};
+
       for (let i = 0; i < days; i++) {
         const d = new Date();
         d.setDate(now.getDate() - i);
-
         const key = d.toISOString().slice(0, 10);
         map[key] = { date: shortDate(d), xp: 0 };
       }
@@ -135,14 +138,29 @@ export default function AdminUserDetail() {
       return Object.values(map).reverse();
     }
 
+    /* 🔥 ALL-TIME XP CHART */
+    const allMap = {};
+    events.forEach((e) => {
+      const key = e.createdAt.slice(0, 10);
+      const d = new Date(key);
+      if (!allMap[key]) {
+        allMap[key] = { date: shortDate(d), xp: 0 };
+      }
+      allMap[key].xp += e.amount;
+    });
+
+    const xpAllData = Object.values(allMap).sort(
+      (a, b) => new Date(a.date) - new Date(b.date),
+    );
+
+    setXpAll(xpAllData);
     setXp7(groupXP(7));
     setXp30(groupXP(30));
   }
 
   /* ───────────────────────────────
-     RENDER
+     LOADING STATE
   ───────────────────────────────── */
-
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -157,6 +175,9 @@ export default function AdminUserDetail() {
       </div>
     );
 
+  /* ───────────────────────────────
+     PAGE RENDER
+  ───────────────────────────────── */
   return (
     <div className="min-h-screen flex bg-gray-100">
       <AdminSidebar />
@@ -282,7 +303,30 @@ export default function AdminUserDetail() {
           </ResponsiveContainer>
         </div>
 
-        {/* XP Event Table */}
+        {/* XP All-Time */}
+        <h2 className="text-xl font-semibold mb-3">XP — All Time</h2>
+        <div
+          className="bg-white p-4 rounded-lg shadow mb-10"
+          style={{ height: 250 }}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={xpAll}>
+              <CartesianGrid strokeDasharray="4 4" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="xp"
+                stroke="#10b981"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* XP Events */}
         <h2 className="text-lg font-semibold mb-3">Recent XP Events</h2>
         <div className="bg-white shadow rounded-lg overflow-auto">
           <table className="min-w-full text-sm">
