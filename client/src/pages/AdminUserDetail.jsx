@@ -778,6 +778,23 @@ export default function AdminUserDetail() {
   }
 
   const momentumVar = getMomentumVariability();
+  /* ───────────────────────────────
+     XP VOLATILITY SPARKLINE DATA
+     Tiny trend-line for rhythmic XP visualization
+  ──────────────────────────────── */
+  function getSparklineData() {
+    if (!xpAll || xpAll.length < 3) return [];
+
+    // take last 20 days for sparkline (small clean trend)
+    const recent = xpAll.slice(-20);
+
+    return recent.map((d, i) => ({
+      index: i,
+      xp: d.xp,
+    }));
+  }
+
+  const sparkline = getSparklineData();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -964,6 +981,23 @@ export default function AdminUserDetail() {
           <span className="ml-2 opacity-80">
             (Variability: {momentumVar.score.toFixed(0)}%)
           </span>
+        </div>
+        {/* XP Volatility Sparkline */}
+        <div className="inline-block bg-white px-4 py-3 rounded-lg shadow mb-10 ml-4">
+          <div className="text-xs text-gray-500 mb-2">Volatility Trend</div>
+          <div style={{ width: 150, height: 50 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sparkline}>
+                <Line
+                  type="monotone"
+                  dataKey="xp"
+                  stroke="#3b82f6"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* XP Last 7 Days */}
