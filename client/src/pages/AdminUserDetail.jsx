@@ -408,6 +408,11 @@ export default function AdminUserDetail() {
             <div className="text-2xl font-bold">{user.streak}</div>
           </div>
         </div>
+        {/* Consistency Score */}
+        <div className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ${consistency.color}`}>
+          <span className="font-semibold">{consistency.label}</span>
+          <span className="ml-2 opacity-80">(Score: {Math.round(consistency.score)})</span>
+        </div>
 
         {/* XP Last 7 Days */}
         <h2 className="text-xl font-semibold mb-3">XP Last 7 Days</h2>
@@ -573,6 +578,56 @@ export default function AdminUserDetail() {
             ))}
           </div>
         </div>
+        /* ───────────────────────────
+            CONSISTENCY SCORE (AI-STYLE)
+           ─────────────────────────── */
+
+        function getConsistencyScore() {
+          if (!xpEvents || xpEvents.length === 0) {
+            return { score: 0, label: "No Activity", color: "bg-gray-400" };
+          }
+
+          const now = new Date();
+
+          // Last 7 days XP
+          let xp7 = 0;
+          // Last 30 days XP
+          let xp30 = 0;
+          // Count active days over last 14 days
+          let activeDays14 = new Set();
+
+          xpEvents.forEach((e) => {
+            const d = new Date(e.createdAt);
+            const diffDays = (now - d) / (1000 * 60 * 60 * 24);
+
+            // Last 7 days
+            if (diffDays <= 7) xp7 += e.amount;
+            // Last 30 days
+            if (diffDays <= 30) xp30 += e.amount;
+            // Unique active days in 14 days
+            if (diffDays <= 14) {
+              const key = d.toISOString().slice(0, 10);
+              activeDays14.add(key);
+            }
+          });
+
+          const streak = user?.streak || 0;
+
+          // AI-inspired scoring formula
+          const score =
+            xp7 * 0.4 +
+            xp30 * 0.2 +
+            activeDays14.size * 10 +
+            streak * 5;
+
+          // Map score → labels
+          if (score >= 400) return { score, label: "Excellent", color: "bg-green-600" };
+          if (score >= 250) return { score, label: "Strong", color: "bg-yellow-500" };
+          if (score >= 120) return { score, label: "Good", color: "bg-blue-500" };
+          return { score, label: "Needs Improvement", color: "bg-red-500" };
+        }
+
+        const consistency = getConsistencyScore();
 
         {/* XP Events */}
         <h2 className="text-lg font-semibold mb-3">Recent XP Events</h2>
