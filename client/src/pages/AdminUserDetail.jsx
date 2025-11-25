@@ -3,124 +3,280 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
 
+// Recharts
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
+
 export default function AdminUserDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [user, setUser] = useState(null);
   const [xpEvents, setXpEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(`/api/admin/user/${id}`, {
-          credentials: "include",
-        });
+  // Chart data
+  const [xp7, setXp7] = useState([]);
+  const [xp30, setXp30] = useState([]);
 
-        if (res.status === 403) {
-          navigate("/login");
-          return;
-        }
+  async function loadUser() {
+    try {
+      const res = await fetch(`/api/admin/user/${id}`, {
+        credentials: "include",
+      });
 
-        const data = await res.json();
-        if (data.ok) {
-          setUser(data.user);
-          setXpEvents(data.xpEvents || []);
-        }
-      } catch (err) {
-        console.error("Admin user detail error:", err);
-      } finally {
-        setLoading(false);
+      if (res.status === 403) {
+        navigate("/login");
+        return;
       }
+
+      const data = await res.json();
+      if (data.ok) {
+        setUser(data.user);
+        setXpEvents(data.xpEvents || []);
+
+        generateCharts(data.xpEvents || []);
+      }
+    } catch (err) {
+      console.error("Admin user detail error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadUser();
+  }, [id]);
+
+  /* ───────────────────────────────
+     PROMOTE / DEMOTE / DELETE
+  ───────────────────────────────── */
+
+  async function promote() {
+    if (!window.confirm("Promote this user to admin?")) return;
+
+    const res = await fetch("/api/admin/promote", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: id }),
+    });
+
+    const data = await res.json();
+    if (data.ok) {
+      alert("Promoted to admin!");
+      loadUser();
+    }
+  }
+
+  async function demote() {
+    if (!window.confirm("Remove admin rights from this user?")) return;
+
+    const res = await fetch("/api/admin/demote", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: id }),
+    });
+
+    const data = await res.json();
+    if (data.ok) {
+      alert("Demoted!");
+      loadUser();
+    }
+  }
+
+  async function deleteUser() {
+    if (!window.confirm("Delete this user permanently?")) return;
+
+    const res = await fetch("/api/admin/delete", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: id }),
+    });
+
+    const data = await res.json();
+    if (data.ok) {
+      alert("User deleted");
+      navigate("/admin/users");
+    }
+  }
+
+  /* ───────────────────────────────
+     CHART DATA GENERATION
+  ───────────────────────────────── */
+
+  function generateCharts(events) {
+    const now = new Date();
+
+    // Utility to format dates (e.g., "Jan 4")
+    const shortDate = (d) =>
+      d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+    function groupXP(days) {
+      const map = {};
+
+      for (let i = 0; i < days; i++) {
+        const d = new Date();
+        d.setDate(now.getDate() - i);
+
+        const key = d.toISOString().slice(0, 10);
+        map[key] = { date: shortDate(d), xp: 0 };
+      }
+
+      events.forEach((e) => {
+        const key = e.createdAt.slice(0, 10);
+        if (map[key]) {
+          map[key].xp += e.amount;
+        }
+      });
+
+      return Object.values(map).reverse();
     }
 
-    load();
-  }, [id, navigate]);
+    setXp7(groupXP(7));
+    setXp30(groupXP(30));
+  }
 
-  if (loading) {
+  /* ───────────────────────────────
+     RENDER
+  ───────────────────────────────── */
+
+  if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
         Loading user details...
       </div>
     );
-  }
 
-  if (!user) {
+  if (!user)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="mb-4">User not found.</p>
-          <button
-            onClick={() => navigate("/admin")}
-            className="px-4 py-2 bg-purple-600 text-white rounded-md"
-          >
-            Back to Admin
-          </button>
-        </div>
+        <p>User not found.</p>
       </div>
     );
-  }
 
   return (
     <div className="min-h-screen flex bg-gray-100">
       <AdminSidebar />
 
       <main className="flex-1 p-10">
-        {/* Header / Breadcrumb */}
-        <div className="flex items-center justify-between mb-6">
+        {/* Breadcrumb */}
+        <div className="text-sm text-gray-500 mb-4">
+          <Link to="/admin" className="hover:underline">
+            Admin
+          </Link>{" "}
+          /{" "}
+          <Link to="/admin/users" className="hover:underline">
+            Users
+          </Link>{" "}
+          / <span className="font-medium">{user.name}</span>
+        </div>
+
+        {/* Header */}
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <div className="text-sm text-gray-500 mb-1">
-              <Link to="/admin" className="hover:underline">
+            <h1 className="text-3xl font-bold">{user.name}</h1>
+            <p className="text-gray-600">{user.email}</p>
+            {user.isAdmin && (
+              <div className="mt-2 px-3 py-1 bg-purple-100 text-purple-600 rounded text-xs inline-block">
                 Admin
-              </Link>{" "}
-              / <span className="font-medium">User Detail</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              {user.name || "Unnamed User"}
-            </h1>
-            <p className="text-gray-600 text-sm">{user.email}</p>
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-2">
-            {user.isAdmin && (
-              <span className="px-3 py-1 text-xs rounded-full bg-purple-100 text-purple-700 font-semibold">
-                Admin
-              </span>
+          {/* ACTION BUTTONS */}
+          <div className="flex flex-col gap-2">
+            {!user.isAdmin && (
+              <button
+                onClick={promote}
+                className="px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+              >
+                Promote to Admin
+              </button>
             )}
+
+            {user.isAdmin && (
+              <button
+                onClick={demote}
+                className="px-4 py-2 bg-orange-600 text-white text-sm rounded hover:bg-orange-700"
+              >
+                Demote Admin
+              </button>
+            )}
+
+            <button
+              onClick={deleteUser}
+              className="px-4 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+            >
+              Delete User
+            </button>
           </div>
         </div>
 
         {/* XP Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-xs text-gray-500">Total XP</div>
-            <div className="text-2xl font-semibold">{user.xpTotal ?? 0}</div>
+            <div className="text-2xl font-bold">{user.xpTotal}</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-xs text-gray-500">Weekly XP</div>
-            <div className="text-2xl font-semibold">{user.xpWeekly ?? 0}</div>
+            <div className="text-2xl font-bold">{user.xpWeekly}</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-xs text-gray-500">Monthly XP</div>
-            <div className="text-2xl font-semibold">{user.xpMonthly ?? 0}</div>
+            <div className="text-2xl font-bold">{user.xpMonthly}</div>
           </div>
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-xs text-gray-500">Streak</div>
-            <div className="text-2xl font-semibold">{user.streak ?? 0}</div>
+            <div className="text-2xl font-bold">{user.streak}</div>
           </div>
         </div>
 
-        {/* Meta info */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+        {/* XP Last 7 Days */}
+        <h2 className="text-xl font-semibold mb-3">XP Last 7 Days</h2>
+
+        <div className="bg-white p-4 rounded-lg shadow mb-10" style={{ height: 250 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={xp7}>
+              <CartesianGrid strokeDasharray="4 4" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="xp"
+                stroke="#7e3af2"       // FluentJet Purple 💜
+                strokeWidth={3}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+
+        {/* JOIN + LAST ACTIVE */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-xs text-gray-500">Joined</div>
-            <div className="text-sm font-medium">
+            <div className="text-sm">
               {new Date(user.createdAt).toLocaleString()}
             </div>
           </div>
+
           <div className="bg-white p-4 rounded-lg shadow">
             <div className="text-xs text-gray-500">Last Active</div>
-            <div className="text-sm font-medium">
+            <div className="text-sm">
               {user.lastActiveAt
                 ? new Date(user.lastActiveAt).toLocaleString()
                 : "No activity yet"}
@@ -128,26 +284,68 @@ export default function AdminUserDetail() {
           </div>
         </div>
 
-        {/* XP Events Table */}
+        {/* XP GRAPHS */}
+        <h2 className="text-xl font-semibold mb-3">XP Last 7 Days</h2>
+        <div
+          className="bg-white p-4 rounded-lg shadow mb-10"
+          style={{ height: 250 }}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={xp7}>
+              <CartesianGrid strokeDasharray="4 4" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="xp"
+                stroke="#7e3af2"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        <h2 className="text-xl font-semibold mb-3">XP Last 30 Days</h2>
+        <div
+          className="bg-white p-4 rounded-lg shadow mb-10"
+          style={{ height: 250 }}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={xp30}>
+              <CartesianGrid strokeDasharray="4 4" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line
+                type="monotone"
+                dataKey="xp"
+                stroke="#7e3af2"
+                strokeWidth={2}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* XP Event Table */}
         <h2 className="text-lg font-semibold mb-3">Recent XP Events</h2>
 
         <div className="bg-white shadow rounded-lg overflow-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-100 text-left">
+            <thead className="bg-gray-100">
               <tr>
-                <th className="p-3 font-medium">XP</th>
-                <th className="p-3 font-medium">Reason</th>
-                <th className="p-3 font-medium">Date</th>
+                <th className="p-3">XP</th>
+                <th className="p-3">Reason</th>
+                <th className="p-3">Date</th>
               </tr>
             </thead>
-
             <tbody>
               {xpEvents.map((e) => (
                 <tr key={e.id} className="border-t">
                   <td className="p-3 font-semibold text-blue-700">
                     +{e.amount}
                   </td>
-                  <td className="p-3">{e.reason || "N/A"}</td>
+                  <td className="p-3">{e.reason}</td>
                   <td className="p-3">
                     {new Date(e.createdAt).toLocaleString()}
                   </td>
@@ -156,8 +354,8 @@ export default function AdminUserDetail() {
 
               {xpEvents.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="p-4 text-center text-gray-500">
-                    No XP history for this user yet.
+                  <td className="p-4 text-center text-gray-500" colSpan={3}>
+                    No XP history yet
                   </td>
                 </tr>
               )}
