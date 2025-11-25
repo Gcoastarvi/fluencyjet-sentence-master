@@ -290,6 +290,25 @@ export default function AdminUserDetail() {
   }
 
   const weeklySummary = getWeeklySummary();
+  /* ───────────────────────────
+      DAILY XP DISTRIBUTION (24h)
+     ─────────────────────────── */
+  function getHourlyDistribution() {
+    const hours = Array.from({ length: 24 }, (_, i) => ({
+      hour: `${i}:00`,
+      xp: 0,
+    }));
+
+    xpEvents.forEach((e) => {
+      const d = new Date(e.createdAt);
+      const h = d.getHours();
+      hours[h].xp += e.amount;
+    });
+
+    return hours;
+  }
+
+  const hourlyData = getHourlyDistribution();
 
   /* ───────────────────────────────
      LOADING STATE
@@ -514,6 +533,22 @@ export default function AdminUserDetail() {
               <YAxis />
               <Tooltip />
               <Bar dataKey="xp" fill="#6366f1" barSize={60} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        {/* XP by Hour (24h Distribution) */}
+        <h2 className="text-xl font-semibold mb-3">XP by Time of Day (24-Hour)</h2>
+        <div
+          className="bg-white p-4 rounded-lg shadow mb-10"
+          style={{ height: 260 }}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={hourlyData}>
+              <CartesianGrid strokeDasharray="4 4" />
+              <XAxis dataKey="hour" interval={2} />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="xp" fill="#f59e0b" barSize={20} />
             </BarChart>
           </ResponsiveContainer>
         </div>
