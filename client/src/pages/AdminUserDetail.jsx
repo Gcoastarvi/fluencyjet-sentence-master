@@ -459,6 +459,41 @@ export default function AdminUserDetail() {
   }
 
   const stability = getStabilityIndex();
+  /* ───────────────────────────────
+     XP MOMENTUM SCORE (Acceleration)
+  ──────────────────────────────── */
+  function getMomentumScore() {
+    if (!xpAll || xpAll.length < 14)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    // XP values sorted by date
+    const values = xpAll.map((x) => x.xp);
+    if (values.length < 14)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const last7 = values.slice(-7);
+    const prev7 = values.slice(-14, -7);
+
+    const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+    const avgLast = avg(last7);
+    const avgPrev = avg(prev7);
+
+    const momentum = avgLast - avgPrev; // raw delta
+
+    // Normalize into a 0 – 100 scale
+    let score = Math.min(100, Math.max(0, momentum * 2 + 50));
+
+    if (score >= 75)
+      return { score, label: "Accelerating Fast", color: "bg-green-600" };
+    if (score >= 55)
+      return { score, label: "Increasing", color: "bg-blue-500" };
+    if (score >= 40)
+      return { score, label: "Flat / Stable", color: "bg-gray-500" };
+    return { score, label: "Declining", color: "bg-red-600" };
+  }
+
+  const momentum = getMomentumScore();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -595,6 +630,13 @@ export default function AdminUserDetail() {
           <span className="ml-2 opacity-80">
             (Stability: {stability.score}%)
           </span>
+        </div>
+        {/* Momentum Score */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${momentum.color}`}
+        >
+          <span className="font-semibold">{momentum.label}</span>
+          <span className="ml-2 opacity-80">(Momentum: {momentum.score}%)</span>
         </div>
 
         {/* XP Last 7 Days */}
