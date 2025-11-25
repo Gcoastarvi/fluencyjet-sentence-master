@@ -22,7 +22,6 @@ export default function AdminUserDetail() {
   const [xpEvents, setXpEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Chart data
   const [xp7, setXp7] = useState([]);
   const [xp30, setXp30] = useState([]);
 
@@ -41,7 +40,6 @@ export default function AdminUserDetail() {
       if (data.ok) {
         setUser(data.user);
         setXpEvents(data.xpEvents || []);
-
         generateCharts(data.xpEvents || []);
       }
     } catch (err) {
@@ -116,14 +114,11 @@ export default function AdminUserDetail() {
 
   function generateCharts(events) {
     const now = new Date();
-
-    // Utility to format dates (e.g., "Jan 4")
     const shortDate = (d) =>
       d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
     function groupXP(days) {
       const map = {};
-
       for (let i = 0; i < days; i++) {
         const d = new Date();
         d.setDate(now.getDate() - i);
@@ -134,9 +129,7 @@ export default function AdminUserDetail() {
 
       events.forEach((e) => {
         const key = e.createdAt.slice(0, 10);
-        if (map[key]) {
-          map[key].xp += e.amount;
-        }
+        if (map[key]) map[key].xp += e.amount;
       });
 
       return Object.values(map).reverse();
@@ -186,6 +179,7 @@ export default function AdminUserDetail() {
           <div>
             <h1 className="text-3xl font-bold">{user.name}</h1>
             <p className="text-gray-600">{user.email}</p>
+
             {user.isAdmin && (
               <div className="mt-2 px-3 py-1 bg-purple-100 text-purple-600 rounded text-xs inline-block">
                 Admin
@@ -193,7 +187,7 @@ export default function AdminUserDetail() {
             )}
           </div>
 
-          {/* ACTION BUTTONS */}
+          {/* Action Buttons */}
           <div className="flex flex-col gap-2">
             {!user.isAdmin && (
               <button
@@ -244,48 +238,6 @@ export default function AdminUserDetail() {
 
         {/* XP Last 7 Days */}
         <h2 className="text-xl font-semibold mb-3">XP Last 7 Days</h2>
-
-        <div className="bg-white p-4 rounded-lg shadow mb-10" style={{ height: 250 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={xp7}>
-              <CartesianGrid strokeDasharray="4 4" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="xp"
-                stroke="#7e3af2"       // FluentJet Purple 💜
-                strokeWidth={3}
-                dot={{ r: 4 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-
-        {/* JOIN + LAST ACTIVE */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-xs text-gray-500">Joined</div>
-            <div className="text-sm">
-              {new Date(user.createdAt).toLocaleString()}
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="text-xs text-gray-500">Last Active</div>
-            <div className="text-sm">
-              {user.lastActiveAt
-                ? new Date(user.lastActiveAt).toLocaleString()
-                : "No activity yet"}
-            </div>
-          </div>
-        </div>
-
-        {/* XP GRAPHS */}
-        <h2 className="text-xl font-semibold mb-3">XP Last 7 Days</h2>
         <div
           className="bg-white p-4 rounded-lg shadow mb-10"
           style={{ height: 250 }}
@@ -300,12 +252,15 @@ export default function AdminUserDetail() {
                 type="monotone"
                 dataKey="xp"
                 stroke="#7e3af2"
-                strokeWidth={2}
+                strokeWidth={3}
+                dot={{ r: 4 }}
+                activeDot={{ r: 6 }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
+        {/* XP Last 30 Days */}
         <h2 className="text-xl font-semibold mb-3">XP Last 30 Days</h2>
         <div
           className="bg-white p-4 rounded-lg shadow mb-10"
@@ -329,7 +284,6 @@ export default function AdminUserDetail() {
 
         {/* XP Event Table */}
         <h2 className="text-lg font-semibold mb-3">Recent XP Events</h2>
-
         <div className="bg-white shadow rounded-lg overflow-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-gray-100">
@@ -354,7 +308,7 @@ export default function AdminUserDetail() {
 
               {xpEvents.length === 0 && (
                 <tr>
-                  <td className="p-4 text-center text-gray-500" colSpan={3}>
+                  <td colSpan="3" className="p-4 text-center text-gray-500">
                     No XP history yet
                   </td>
                 </tr>
