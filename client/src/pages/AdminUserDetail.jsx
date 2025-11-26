@@ -1444,7 +1444,6 @@ export default function AdminUserDetail() {
           </Link>{" "}
           / <span className="font-medium">{user.name}</span>
         </div>
-
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
@@ -1486,7 +1485,6 @@ export default function AdminUserDetail() {
             </button>
           </div>
         </div>
-
         {/* Anomaly Warnings */}
         {anomalies.length > 0 ? (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded mb-8">
@@ -1505,7 +1503,6 @@ export default function AdminUserDetail() {
             </p>
           </div>
         )}
-
         {/* XP Summary */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg shadow">
@@ -1525,7 +1522,6 @@ export default function AdminUserDetail() {
             <div className="text-2xl font-bold">{user.streak}</div>
           </div>
         </div>
-
         {/* Consistency Score Badge */}
         <div
           className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ${consistency.color}`}
@@ -1603,7 +1599,6 @@ export default function AdminUserDetail() {
             (Return Rate: {getReturnRate().score.toFixed(0)}%)
           </span>
         </div>
-
         {/* XP Volatility Sparkline */}
         <div className="inline-block bg-white px-4 py-3 rounded-lg shadow mb-10 ml-4">
           <div className="text-xs text-gray-500 mb-2">Volatility Trend</div>
@@ -1700,7 +1695,6 @@ export default function AdminUserDetail() {
             (Rhythm: {rhythm.score.toFixed(0)}%)
           </span>
         </div>
-
         {/* XP Last 7 Days */}
         <h2 className="text-xl font-semibold mb-3">XP Last 7 Days</h2>
         <div
@@ -1724,7 +1718,6 @@ export default function AdminUserDetail() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-
         {/* XP Last 30 Days */}
         <h2 className="text-xl font-semibold mb-3">XP Last 30 Days</h2>
         <div
@@ -1746,7 +1739,6 @@ export default function AdminUserDetail() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-
         {/* XP All-Time */}
         <h2 className="text-xl font-semibold mb-3">XP — All Time</h2>
         <div
@@ -1772,96 +1764,100 @@ export default function AdminUserDetail() {
         <h2 className="text-xl font-semibold mb-3">XP Consistency Bands</h2>
         <div className="bg-white p-4 rounded-lg shadow mb-10">
           <div className="flex gap-2">
-            <div className="flex-1 h-4 bg-green-500 rounded" title="High Consistency"></div>
-            <div className="flex-1 h-4 bg-blue-500 rounded" title="Moderate Consistency"></div>
-            <div className="flex-1 h-4 bg-yellow-500 rounded" title="Low Consistency"></div>
-            <div className="flex-1 h-4 bg-red-600 rounded" title="Very Low Consistency"></div>
+            <div
+              className="flex-1 h-4 bg-green-500 rounded"
+              title="High Consistency"
+            ></div>
+            <div
+              className="flex-1 h-4 bg-blue-500 rounded"
+              title="Moderate Consistency"
+            ></div>
+            <div
+              className="flex-1 h-4 bg-yellow-500 rounded"
+              title="Low Consistency"
+            ></div>
+            <div
+              className="flex-1 h-4 bg-red-600 rounded"
+              title="Very Low Consistency"
+            ></div>
           </div>
           <p className="mt-2 text-xs text-gray-500">
             Visual classification of user's XP stability bands.
           </p>
         </div>
-      {/* ADMIN XP ADJUSTMENT PANEL */}
-      <h2 className="text-xl font-semibold mb-3">Admin XP Adjustment</h2>
-      <div className="bg-white p-4 rounded-lg shadow mb-10">
-        <div className="flex gap-4">
-          <input
-            type="number"
-            placeholder="XP amount"
-            id="admin-xp-amount"
-            className="border p-2 rounded w-40"
-          />
-          <input
-            type="text"
-            placeholder="Reason"
-            id="admin-xp-reason"
-            className="border p-2 rounded flex-1"
-          />
+        {/* ADMIN XP ADJUSTMENT PANEL */}
+        <h2 className="text-xl font-semibold mb-3">Admin XP Adjustment</h2>
+        <div className="bg-white p-4 rounded-lg shadow mb-10">
+          <div className="flex gap-4">
+            <input
+              type="number"
+              placeholder="XP amount"
+              id="admin-xp-amount"
+              className="border p-2 rounded w-40"
+            />
+            <input
+              type="text"
+              placeholder="Reason"
+              id="admin-xp-reason"
+              className="border p-2 rounded flex-1"
+            />
+          </div>
+
+          <div className="flex gap-3 mt-4">
+            <button
+              className="px-4 py-2 bg-green-600 text-white rounded"
+              onClick={async () => {
+                const amount = document.getElementById("admin-xp-amount").value;
+                const reason = document.getElementById("admin-xp-reason").value;
+
+                const res = await fetch("/api/admin/xp-adjust", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    userId: id,
+                    amount: parseInt(amount),
+                    reason,
+                  }),
+                });
+
+                const data = await res.json();
+                if (data.ok) {
+                  alert("XP added!");
+                  loadUser();
+                }
+              }}
+            >
+              Add XP
+            </button>
+
+            <button
+              className="px-4 py-2 bg-red-600 text-white rounded"
+              onClick={async () => {
+                const amount = document.getElementById("admin-xp-amount").value;
+                const reason = document.getElementById("admin-xp-reason").value;
+
+                const res = await fetch("/api/admin/xp-adjust", {
+                  method: "POST",
+                  credentials: "include",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    userId: id,
+                    amount: parseInt(amount) * -1,
+                    reason,
+                  }),
+                });
+
+                const data = await res.json();
+                if (data.ok) {
+                  alert("XP removed!");
+                  loadUser();
+                }
+              }}
+            ></button>
+          </div>
         </div>
-
-        <div className="flex gap-3 mt-4">
-          <button
-            className="px-4 py-2 bg-green-600 text-white rounded"
-            onClick={async () => {
-              const amount = document.getElementById("admin-xp-amount").value;
-              const reason = document.getElementById("admin-xp-reason").value;
-
-              const res = await fetch("/api/admin/xp-adjust", {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  userId: id,
-                  amount: parseInt(amount),
-                  reason,
-                }),
-              });
-
-              const data = await res.json();
-              if (data.ok) {
-                alert("XP added!");
-                loadUser();
-              }
-            }}
-          >
-            Add XP
-          </button>
-
-          <button
-            className="px-4 py-2 bg-red-600 text-white rounded"
-            onClick={async () => {
-              const amount = document.getElementById("admin-xp-amount").value;
-              const reason = document.getElementById("admin-xp-reason").value;
-
-              const res = await fetch("/api/admin/xp-adjust", {
-                method: "POST",
-                credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  userId: id,
-                  amount: parseInt(amount) * -1,
-                  reason,
-                }),
-              });
-
-              const data = await res.json();
-              if (data.ok) {
-                alert("XP removed!");
-                loadUser();
-              }
-            }}
-          >
-            Remove XP
-          </button>
-        </div>
-      </div>
-</div>   // END OF XP Consistency Bands block  ← last line of Patch 20
-              </div>
-
-        1784   ← INSERT UPGRADE #21 PATCH HERE
-
-        1785   {/* Consistency Trendline (Past 30 Days) */}  ← must remain after new patch
-
+        {/* END OF XP Consistency Bands block */}
         {/* Consistency Trendline (Past 30 Days) */}
         <h2 className="text-xl font-semibold mb-3">
           Consistency Trend (30 Days)
@@ -1893,7 +1889,6 @@ export default function AdminUserDetail() {
             </ResponsiveContainer>
           )}
         </div>
-
         {/* XP Forecast — Next 7 Days */}
         <h2 className="text-xl font-semibold mb-3">
           XP Forecast — Next 7 Days
@@ -1927,7 +1922,6 @@ export default function AdminUserDetail() {
             </ResponsiveContainer>
           )}
         </div>
-
         {/* XP by Category */}
         <h2 className="text-xl font-semibold mb-3">XP by Category</h2>
         <div
@@ -1969,7 +1963,6 @@ export default function AdminUserDetail() {
             </ResponsiveContainer>
           )}
         </div>
-
         {/* This Week vs Last Week */}
         <h2 className="text-xl font-semibold mb-3">
           XP: This Week vs Last Week
@@ -1988,7 +1981,6 @@ export default function AdminUserDetail() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
         {/* XP by Time of Day */}
         <h2 className="text-xl font-semibold mb-3">
           XP by Time of Day (24-Hour)
@@ -2007,7 +1999,6 @@ export default function AdminUserDetail() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
         {/* Heatmap (Past 12 Months) */}
         <h2 className="text-xl font-semibold mb-3">
           XP Heatmap (Past 12 Months)
@@ -2027,7 +2018,6 @@ export default function AdminUserDetail() {
             ))}
           </div>
         </div>
-
         {/* Recent XP Events */}
         <h2 className="text-lg font-semibold mb-3">Recent XP Events</h2>
         <div className="bg-white shadow rounded-lg overflow-auto">
