@@ -1325,6 +1325,91 @@ export default function AdminUserDetail() {
   }
 
   const resilience = getResilienceScore();
+  /* ───────────────────────────────
+     XP RHYTHM INDEX
+     Measures how regular the learning schedule is
+  ──────────────────────────────── */
+  function getRhythmIndex() {
+    if (!xpAll || xpAll.length < 10)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    // collect indices of active days
+    const activeIndices = [];
+    values.forEach((xp, idx) => {
+      if (xp > 0) activeIndices.push(idx);
+    });
+
+    if (activeIndices.length <= 1) {
+      // either no activity or a single active burst
+      return { score: 0, label: "No Rhythm Yet", color: "bg-red-600" };
+    }
+
+    // gaps in days between active sessions
+    const gaps = [];
+    for (let i = 1; i < activeIndices.length; i++) {
+      gaps.push(activeIndices[i] - activeIndices[i - 1]); // number of days between active days
+    }
+
+    // if user is literally active every day, perfect rhythm
+    if (gaps.every((g) => g === 1)) {
+      return {
+        score: 100,
+        label: "Perfect Daily Rhythm",
+        color: "bg-green-700",
+      };
+    }
+
+    const avgGap =
+      gaps.reduce((sum, g) => sum + g, 0) / (gaps.length || 1);
+
+    const avg =
+      gaps.reduce((sum, g) => sum + g, 0) / (gaps.length || 1);
+
+    const variance =
+      gaps
+        .map((g) => Math.pow(g - avg, 2))
+        .reduce((a, b) => a + b, 0) / gaps.length;
+
+    const stddev = Math.sqrt(variance);
+
+    // irregularity: big penalty for high stddev and gaps much > 1
+    let irregularity = stddev * 25 + Math.max(0, avgGap - 1) * 20;
+
+    // convert to 0–100 score (higher = better rhythm)
+    let score = 100 - Math.min(100, irregularity);
+    score = Math.max(0, Math.min(100, score));
+
+    if (score >= 80)
+      return {
+        score,
+        label: "Highly Rhythmic Learner",
+        color: "bg-green-600",
+      };
+
+    if (score >= 60)
+      return {
+        score,
+        label: "Stable Rhythm",
+        color: "bg-blue-500",
+      };
+
+    if (score >= 40)
+      return {
+        score,
+        label: "Irregular Rhythm",
+        color: "bg-yellow-500",
+      };
+
+    return {
+      score,
+      label: "Chaotic Rhythm",
+      color: "bg-red-600",
+    };
+  }
+
+  const rhythm = getRhythmIndex();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1607,6 +1692,15 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{resilience.label}</span>
           <span className="ml-2 opacity-80">
             (Resilience: {resilience.score.toFixed(0)}%)
+          </span>
+        </div>
+        {/* Rhythm Index */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${rhythm.color}`}
+        >
+          <span className="font-semibold">{rhythm.label}</span>
+          <span className="ml-2 opacity-80">
+            (Rhythm: {rhythm.score.toFixed(0)}%)
           </span>
         </div>
 
