@@ -893,6 +893,44 @@ export default function AdminUserDetail() {
   }
 
   const weekendIndex = getWeekendWarriorIndex();
+  /* ───────────────────────────────
+     XP ENGAGEMENT DENSITY SCORE
+     How densely the user earns XP
+  ──────────────────────────────── */
+  function getEngagementDensity() {
+    if (!xpAll || xpAll.length < 10)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const last30 = xpAll.slice(-30);
+    const values = last30.map((d) => d.xp);
+
+    const totalXP = values.reduce((a, b) => a + b, 0);
+    const activeDays = values.filter((v) => v > 0).length;
+
+    if (activeDays === 0)
+      return { score: 0, label: "No Active Days", color: "bg-gray-400" };
+
+    const density = totalXP / activeDays; // XP per active day
+
+    // Normalize to 0–100
+    let score = Math.min(100, Math.max(0, density * 1.2));
+
+    if (score >= 80)
+      return { score, label: "Elite Density", color: "bg-green-600" };
+
+    if (score >= 60)
+      return { score, label: "Strong Density", color: "bg-blue-500" };
+
+    if (score >= 40)
+      return { score, label: "Moderate Density", color: "bg-yellow-500" };
+
+    if (score >= 20)
+      return { score, label: "Low Density", color: "bg-orange-500" };
+
+    return { score, label: "Very Low Density", color: "bg-red-600" };
+  }
+
+  const density = getEngagementDensity();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1114,6 +1152,15 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{weekendIndex.label}</span>
           <span className="ml-2 opacity-80">
             (Weekend Ratio: {weekendIndex.score}%)
+          </span>
+        </div>
+        {/* Engagement Density Score */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${density.color}`}
+        >
+          <span className="font-semibold">{density.label}</span>
+          <span className="ml-2 opacity-80">
+            (Density: {density.score.toFixed(0)}%)
           </span>
         </div>
 
