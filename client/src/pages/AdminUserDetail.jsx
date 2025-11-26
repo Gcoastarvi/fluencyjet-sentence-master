@@ -1048,9 +1048,9 @@ export default function AdminUserDetail() {
 
     // Habit Strength Formula (0–100)
     let score =
-      activityRate * 40 +         // consistency of activity
+      activityRate * 40 + // consistency of activity
       Math.min(streak, 30) * 1.5 + // streak contribution (max 45)
-      restarts * 3;               // bounce-back strength
+      restarts * 3; // bounce-back strength
 
     score = Math.max(0, Math.min(100, score));
 
@@ -1090,6 +1090,66 @@ export default function AdminUserDetail() {
   }
 
   const habit = getHabitStrength();
+  /* ───────────────────────────────
+     XP MOTIVATION INDEX (AI Metric)
+     Measures how motivated the user is
+  ──────────────────────────────── */
+  function getMotivationIndex() {
+    if (!xpAll || xpAll.length < 10)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    // Recent activity measures
+    const last7 = values.slice(-7);
+    const prev7 = values.slice(-14, -7);
+
+    const sum = (arr) => arr.reduce((a, b) => a + b, 0);
+    const avg = (arr) => (arr.length ? sum(arr) / arr.length : 0);
+
+    const avgLast = avg(last7);
+    const avgPrev = avg(prev7);
+
+    // XP acceleration
+    const momentum = avgLast - avgPrev;
+
+    // Activity frequency
+    const activeDays = last7.filter((v) => v > 0).length;
+
+    // Comeback ability
+    let restarts = 0;
+    for (let i = 1; i < values.length; i++) {
+      if (values[i - 1] === 0 && values[i] > 0) restarts++;
+    }
+
+    // Streak
+    const streak = user?.streak || 0;
+
+    // SCORE FORMULA (0–100)
+    let score =
+      avgLast * 0.4 + // recent intensity
+      momentum * 1.5 + // acceleration
+      activeDays * 5 + // frequency
+      restarts * 2 + // comeback
+      streak * 1.2; // long-term drive
+
+    score = Math.max(0, Math.min(100, score)); // clamp 0–100
+
+    if (score >= 80)
+      return { score, label: "Highly Motivated", color: "bg-green-600" };
+
+    if (score >= 60) return { score, label: "Motivated", color: "bg-blue-500" };
+
+    if (score >= 40)
+      return { score, label: "Neutral Motivation", color: "bg-gray-500" };
+
+    if (score >= 20)
+      return { score, label: "Low Motivation", color: "bg-yellow-500" };
+
+    return { score, label: "Very Low Motivation", color: "bg-red-600" };
+  }
+
+  const motivation = getMotivationIndex();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1336,6 +1396,15 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{habit.label}</span>
           <span className="ml-2 opacity-80">
             (Habit Strength: {habit.score.toFixed(0)}%)
+          </span>
+        </div>
+        {/* Motivation Index */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${motivation.color}`}
+        >
+          <span className="font-semibold">{motivation.label}</span>
+          <span className="ml-2 opacity-80">
+            (Motivation: {motivation.score.toFixed(0)}%)
           </span>
         </div>
 
