@@ -931,6 +931,68 @@ export default function AdminUserDetail() {
   }
 
   const density = getEngagementDensity();
+  /* ───────────────────────────────
+     XP LEARNING PATTERN CLUSTERS
+     (Light K-means Style Classification)
+  ──────────────────────────────── */
+  function getPatternCluster() {
+    if (!xpAll || xpAll.length < 10)
+      return { label: "Not Enough Data", desc: "", color: "bg-gray-400" };
+
+    const values = xpAll.map((v) => v.xp);
+
+    const avg = values.reduce((a, b) => a + b, 0) / (values.length || 1);
+
+    const variance =
+      values.map((v) => Math.pow(v - avg, 2)).reduce((a, b) => a + b, 0) /
+      values.length;
+
+    const stddev = Math.sqrt(variance);
+
+    const maxXP = Math.max(...values);
+    const minXP = Math.min(...values);
+
+    /* LIGHT CLUSTERING LOGIC */
+    if (avg > 80 && stddev < 20) {
+      return {
+        label: "Power Learner",
+        desc: "High, steady XP — elite performance.",
+        color: "bg-green-700",
+      };
+    }
+
+    if (stddev > 60 && maxXP > avg * 2) {
+      return {
+        label: "Burst Learner",
+        desc: "Large spikes followed by cooldowns.",
+        color: "bg-yellow-600",
+      };
+    }
+
+    if (avg < 20 && stddev < 10) {
+      return {
+        label: "Streak Performer",
+        desc: "Consistent learner with small but steady XP.",
+        color: "bg-blue-600",
+      };
+    }
+
+    if (variance < 40) {
+      return {
+        label: "Balanced Learner",
+        desc: "Stable XP trend with predictable growth.",
+        color: "bg-purple-600",
+      };
+    }
+
+    return {
+      label: "Chaotic Learner",
+      desc: "Highly unpredictable XP pattern.",
+      color: "bg-red-600",
+    };
+  }
+
+  const patternCluster = getPatternCluster();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1162,6 +1224,13 @@ export default function AdminUserDetail() {
           <span className="ml-2 opacity-80">
             (Density: {density.score.toFixed(0)}%)
           </span>
+        </div>
+        {/* Learning Pattern Cluster */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${patternCluster.color}`}
+        >
+          <span className="font-semibold">{patternCluster.label}</span>
+          <span className="ml-2 opacity-80">{patternCluster.desc}</span>
         </div>
 
         {/* XP Last 7 Days */}
