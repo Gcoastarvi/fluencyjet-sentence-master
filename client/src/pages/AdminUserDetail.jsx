@@ -1202,6 +1202,65 @@ export default function AdminUserDetail() {
   }
 
   const motivationStability = getMotivationStability();
+  /* ───────────────────────────────
+     XP LEARNING EFFICIENCY RATIO
+     Measures XP earned per active day
+  ──────────────────────────────── */
+  function getLearningEfficiency() {
+    if (!xpAll || xpAll.length < 7)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    const totalXP = values.reduce((a, b) => a + b, 0);
+    const activeDays = values.filter((v) => v > 0).length;
+    const totalDays = values.length;
+
+    if (activeDays === 0)
+      return { score: 0, label: "No Active Days", color: "bg-gray-400" };
+
+    // Efficiency = XP per active day
+    const efficiency = totalXP / activeDays;
+
+    // Normalize to 0–100 score
+    let score = Math.min(100, Math.max(0, efficiency * 1.1));
+
+    if (score >= 80)
+      return {
+        score,
+        label: "High Efficiency",
+        color: "bg-green-600",
+      };
+
+    if (score >= 55)
+      return {
+        score,
+        label: "Efficient",
+        color: "bg-blue-500",
+      };
+
+    if (score >= 35)
+      return {
+        score,
+        label: "Moderate Efficiency",
+        color: "bg-yellow-500",
+      };
+
+    if (score >= 15)
+      return {
+        score,
+        label: "Low Efficiency",
+        color: "bg-orange-500",
+      };
+
+    return {
+      score,
+      label: "Very Low Efficiency",
+      color: "bg-red-600",
+    };
+  }
+
+  const efficiency = getLearningEfficiency();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1466,6 +1525,15 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{motivationStability.label}</span>
           <span className="ml-2 opacity-80">
             (Stability: {motivationStability.score}%)
+          </span>
+        </div>
+        {/* Learning Efficiency Ratio */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${efficiency.color}`}
+        >
+          <span className="font-semibold">{efficiency.label}</span>
+          <span className="ml-2 opacity-80">
+            (Efficiency: {efficiency.score.toFixed(0)}%)
           </span>
         </div>
 
