@@ -1150,6 +1150,58 @@ export default function AdminUserDetail() {
   }
 
   const motivation = getMotivationIndex();
+  /* ───────────────────────────────
+     XP MOTIVATION STABILITY RATIO
+     Measures how stable motivation
+     stays across 14 days
+  ──────────────────────────────── */
+  function getMotivationStability() {
+    if (!xpAll || xpAll.length < 14)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    const last14 = values.slice(-14);
+    const avg = last14.reduce((a, b) => a + b, 0) / (last14.length || 1);
+
+    // Stability: how often the day stays near average
+    let stableDays = 0;
+    last14.forEach((v) => {
+      if (Math.abs(v - avg) <= avg * 0.35) stableDays++;
+    });
+
+    // Score = % of stable days
+    let score = Math.round((stableDays / 14) * 100);
+
+    if (score >= 80)
+      return {
+        score,
+        label: "Highly Stable Motivation",
+        color: "bg-green-600",
+      };
+
+    if (score >= 60)
+      return {
+        score,
+        label: "Stable Motivation",
+        color: "bg-blue-500",
+      };
+
+    if (score >= 40)
+      return {
+        score,
+        label: "Moderately Unstable",
+        color: "bg-yellow-500",
+      };
+
+    return {
+      score,
+      label: "Highly Unstable Motivation",
+      color: "bg-red-600",
+    };
+  }
+
+  const motivationStability = getMotivationStability();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1405,6 +1457,15 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{motivation.label}</span>
           <span className="ml-2 opacity-80">
             (Motivation: {motivation.score.toFixed(0)}%)
+          </span>
+        </div>
+        {/* Motivation Stability Ratio */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${motivationStability.color}`}
+        >
+          <span className="font-semibold">{motivationStability.label}</span>
+          <span className="ml-2 opacity-80">
+            (Stability: {motivationStability.score}%)
           </span>
         </div>
 
