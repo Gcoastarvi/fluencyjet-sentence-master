@@ -1361,16 +1361,13 @@ export default function AdminUserDetail() {
       };
     }
 
-    const avgGap =
-      gaps.reduce((sum, g) => sum + g, 0) / (gaps.length || 1);
+    const avgGap = gaps.reduce((sum, g) => sum + g, 0) / (gaps.length || 1);
 
-    const avg =
-      gaps.reduce((sum, g) => sum + g, 0) / (gaps.length || 1);
+    const avg = gaps.reduce((sum, g) => sum + g, 0) / (gaps.length || 1);
 
     const variance =
-      gaps
-        .map((g) => Math.pow(g - avg, 2))
-        .reduce((a, b) => a + b, 0) / gaps.length;
+      gaps.map((g) => Math.pow(g - avg, 2)).reduce((a, b) => a + b, 0) /
+      gaps.length;
 
     const stddev = Math.sqrt(variance);
 
@@ -1771,6 +1768,100 @@ export default function AdminUserDetail() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {/* XP Consistency Bands (AI Classification) */}
+        <h2 className="text-xl font-semibold mb-3">XP Consistency Bands</h2>
+        <div className="bg-white p-4 rounded-lg shadow mb-10">
+          <div className="flex gap-2">
+            <div className="flex-1 h-4 bg-green-500 rounded" title="High Consistency"></div>
+            <div className="flex-1 h-4 bg-blue-500 rounded" title="Moderate Consistency"></div>
+            <div className="flex-1 h-4 bg-yellow-500 rounded" title="Low Consistency"></div>
+            <div className="flex-1 h-4 bg-red-600 rounded" title="Very Low Consistency"></div>
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            Visual classification of user's XP stability bands.
+          </p>
+        </div>
+      {/* ADMIN XP ADJUSTMENT PANEL */}
+      <h2 className="text-xl font-semibold mb-3">Admin XP Adjustment</h2>
+      <div className="bg-white p-4 rounded-lg shadow mb-10">
+        <div className="flex gap-4">
+          <input
+            type="number"
+            placeholder="XP amount"
+            id="admin-xp-amount"
+            className="border p-2 rounded w-40"
+          />
+          <input
+            type="text"
+            placeholder="Reason"
+            id="admin-xp-reason"
+            className="border p-2 rounded flex-1"
+          />
+        </div>
+
+        <div className="flex gap-3 mt-4">
+          <button
+            className="px-4 py-2 bg-green-600 text-white rounded"
+            onClick={async () => {
+              const amount = document.getElementById("admin-xp-amount").value;
+              const reason = document.getElementById("admin-xp-reason").value;
+
+              const res = await fetch("/api/admin/xp-adjust", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: id,
+                  amount: parseInt(amount),
+                  reason,
+                }),
+              });
+
+              const data = await res.json();
+              if (data.ok) {
+                alert("XP added!");
+                loadUser();
+              }
+            }}
+          >
+            Add XP
+          </button>
+
+          <button
+            className="px-4 py-2 bg-red-600 text-white rounded"
+            onClick={async () => {
+              const amount = document.getElementById("admin-xp-amount").value;
+              const reason = document.getElementById("admin-xp-reason").value;
+
+              const res = await fetch("/api/admin/xp-adjust", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: id,
+                  amount: parseInt(amount) * -1,
+                  reason,
+                }),
+              });
+
+              const data = await res.json();
+              if (data.ok) {
+                alert("XP removed!");
+                loadUser();
+              }
+            }}
+          >
+            Remove XP
+          </button>
+        </div>
+      </div>
+</div>   // END OF XP Consistency Bands block  ← last line of Patch 20
+              </div>
+
+        1784   ← INSERT UPGRADE #21 PATCH HERE
+
+        1785   {/* Consistency Trendline (Past 30 Days) */}  ← must remain after new patch
+
         {/* Consistency Trendline (Past 30 Days) */}
         <h2 className="text-xl font-semibold mb-3">
           Consistency Trend (30 Days)

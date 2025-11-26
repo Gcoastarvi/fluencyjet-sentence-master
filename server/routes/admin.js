@@ -230,5 +230,42 @@ router.get("/user/:id", authRequired, requireAdmin, async (req, res) => {
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
+// POST /api/admin/xp-adjust
+router.post("/xp-adjust", authMiddleware, adminRequired, async (req, res) => {
+  try {
+    const { userId, amount, reason } = req.body;
+
+    if (!userId || !amount || !reason) {
+      return res.json({ ok: false, error: "Missing fields" });
+    }
+
+    const xp = parseInt(amount);
+    if (isNaN(xp)) {
+      return res.json({ ok: false, error: "Invalid XP" });
+    }
+
+    // Create XP event
+    await prisma.xPEvent.create({
+      data: {
+        userId,
+        amount: xp,
+        reason: `[ADMIN]: ${reason}`,
+      },
+    });
+
+    // Update totals
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        xpTotal: { increment: xp },
+      },
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("XP adjust error:", err);
+    return res.json({ ok: false, error: "Server error" });
+  }
+});
 
 export default router;
