@@ -1025,6 +1025,71 @@ export default function AdminUserDetail() {
   }
 
   const consistencyTrend = getConsistencyTrend();
+  /* ───────────────────────────────
+     XP HABIT STRENGTH SCORE
+     Determines how strong the user's learning habit is
+  ──────────────────────────────── */
+  function getHabitStrength() {
+    if (!xpAll || xpAll.length < 14)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+    const activeDays = values.filter((v) => v > 0).length;
+    const totalDays = values.length;
+
+    const activityRate = activeDays / totalDays; // % of active days
+    const streak = user?.streak || 0;
+
+    // micro-restarter score (ability to bounce back)
+    let restarts = 0;
+    for (let i = 1; i < values.length; i++) {
+      if (values[i - 1] === 0 && values[i] > 0) restarts++;
+    }
+
+    // Habit Strength Formula (0–100)
+    let score =
+      activityRate * 40 +         // consistency of activity
+      Math.min(streak, 30) * 1.5 + // streak contribution (max 45)
+      restarts * 3;               // bounce-back strength
+
+    score = Math.max(0, Math.min(100, score));
+
+    if (score >= 80)
+      return {
+        score,
+        label: "Unbreakable Habit",
+        color: "bg-green-700",
+      };
+
+    if (score >= 60)
+      return {
+        score,
+        label: "Strong Habit",
+        color: "bg-green-500",
+      };
+
+    if (score >= 40)
+      return {
+        score,
+        label: "Growing Habit",
+        color: "bg-yellow-500",
+      };
+
+    if (score >= 20)
+      return {
+        score,
+        label: "Weak Habit",
+        color: "bg-orange-500",
+      };
+
+    return {
+      score,
+      label: "No Habit Yet",
+      color: "bg-red-600",
+    };
+  }
+
+  const habit = getHabitStrength();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1263,6 +1328,15 @@ export default function AdminUserDetail() {
         >
           <span className="font-semibold">{patternCluster.label}</span>
           <span className="ml-2 opacity-80">{patternCluster.desc}</span>
+        </div>
+        {/* Habit Strength Score */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${habit.color}`}
+        >
+          <span className="font-semibold">{habit.label}</span>
+          <span className="ml-2 opacity-80">
+            (Habit Strength: {habit.score.toFixed(0)}%)
+          </span>
         </div>
 
         {/* XP Last 7 Days */}
