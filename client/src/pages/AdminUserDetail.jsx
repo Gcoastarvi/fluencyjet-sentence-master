@@ -1261,6 +1261,70 @@ export default function AdminUserDetail() {
   }
 
   const efficiency = getLearningEfficiency();
+  /* ───────────────────────────────
+     XP RESILIENCE SCORE
+     Measures how strongly the user 
+     bounces back after low-XP drops
+  ──────────────────────────────── */
+  function getResilienceScore() {
+    if (!xpAll || xpAll.length < 10)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    // Detect drops (0 XP or very low XP days)
+    const drops = [];
+    for (let i = 1; i < values.length; i++) {
+      if (values[i - 1] <= 5 && values[i] > values[i - 1]) {
+        // recovered after a drop
+        drops.push(values[i] - values[i - 1]);
+      }
+    }
+
+    if (drops.length === 0)
+      return { score: 70, label: "Steady Performer", color: "bg-blue-500" };
+
+    const avgBounce = drops.reduce((a, b) => a + b, 0) / drops.length;
+
+    // Normalize to 0–100
+    let score = Math.min(100, Math.max(0, avgBounce * 1.5));
+
+    if (score >= 80)
+      return {
+        score,
+        label: "Exceptional Resilience",
+        color: "bg-green-600",
+      };
+
+    if (score >= 60)
+      return {
+        score,
+        label: "Strong Resilience",
+        color: "bg-blue-500",
+      };
+
+    if (score >= 40)
+      return {
+        score,
+        label: "Moderate Resilience",
+        color: "bg-yellow-500",
+      };
+
+    if (score >= 20)
+      return {
+        score,
+        label: "Weak Resilience",
+        color: "bg-orange-500",
+      };
+
+    return {
+      score,
+      label: "Very Low Resilience",
+      color: "bg-red-600",
+    };
+  }
+
+  const resilience = getResilienceScore();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1534,6 +1598,15 @@ export default function AdminUserDetail() {
           <span className="font-semibold">{efficiency.label}</span>
           <span className="ml-2 opacity-80">
             (Efficiency: {efficiency.score.toFixed(0)}%)
+          </span>
+        </div>
+        {/* Resilience Score */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${resilience.color}`}
+        >
+          <span className="font-semibold">{resilience.label}</span>
+          <span className="ml-2 opacity-80">
+            (Resilience: {resilience.score.toFixed(0)}%)
           </span>
         </div>
 
