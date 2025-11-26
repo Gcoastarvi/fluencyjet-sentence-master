@@ -1,6 +1,6 @@
 {
   "build": {
-    "builder": "NIXPACKS"
+    "provider": "nixpacks"
   },
   "deploy": {
     "startCommand": "bash start-railway.sh"
