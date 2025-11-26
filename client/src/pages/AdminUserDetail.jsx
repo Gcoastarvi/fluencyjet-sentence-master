@@ -993,6 +993,38 @@ export default function AdminUserDetail() {
   }
 
   const patternCluster = getPatternCluster();
+  /* ───────────────────────────────
+     XP CONSISTENCY TRENDLINE (30-Day)
+     Visualizes daily rhythm stability
+  ──────────────────────────────── */
+  function getConsistencyTrend() {
+    if (!xpAll || xpAll.length < 5) return [];
+
+    // We will calculate 1 consistency score per day
+    // based on: XP value + active streak streakiness + momentum
+    const trend = xpAll.slice(-30).map((d, i, arr) => {
+      const xp = d.xp;
+
+      const prev = arr[i - 1]?.xp || xp;
+      const delta = xp - prev;
+
+      let score =
+        xp * 0.4 + // XP weight
+        Math.max(0, 40 - Math.abs(delta)) + // stability factor
+        (xp > 0 ? 20 : 0); // reward active days
+
+      score = Math.min(100, Math.max(0, score));
+
+      return {
+        date: d.date,
+        score,
+      };
+    });
+
+    return trend;
+  }
+
+  const consistencyTrend = getConsistencyTrend();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1299,6 +1331,37 @@ export default function AdminUserDetail() {
               />
             </LineChart>
           </ResponsiveContainer>
+        </div>
+        {/* Consistency Trendline (Past 30 Days) */}
+        <h2 className="text-xl font-semibold mb-3">
+          Consistency Trend (30 Days)
+        </h2>
+        <div
+          className="bg-white p-4 rounded-lg shadow mb-10"
+          style={{ height: 250 }}
+        >
+          {consistencyTrend.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              Not enough XP activity to compute consistency trend.
+            </p>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={consistencyTrend}>
+                <CartesianGrid strokeDasharray="4 4" />
+                <XAxis dataKey="date" />
+                <YAxis domain={[0, 100]} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#6366f1"
+                  strokeWidth={3}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* XP Forecast — Next 7 Days */}
