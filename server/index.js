@@ -24,6 +24,7 @@ import testRoutes from "./routes/test.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import lessonRoutes from "./routes/lessons.js";
 import adminRoutes from "./routes/admin.js";
+import adminLessonsRoutes from "./routes/adminLessons.js";
 import quizRoutes from "./routes/quizzes.js"; // ⬅️ NEW
 // later: import adminRoutes from "./routes/admin.js";
 
@@ -149,8 +150,8 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/xp", xpRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/lessons", lessonRoutes);
-app.use("/api/quizzes", quizRoutes); // ⬅️ NEW
-// app.use("/api/admin", adminRoutes);
+app.use("/api/quizzes", quizRoutes);
+app.use("/api/admin/lessons", adminLessonsRoutes);
 
 if (isDev) {
   app.get("/api/debug/jwt", (req, res) => {
