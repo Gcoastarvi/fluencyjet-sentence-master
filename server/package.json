@@ -2,11 +2,9 @@
   "name": "fluencyjet-sentence-master-server",
   "private": true,
   "type": "module",
-  "prisma": {
-    "schema": "server/prisma/schema.prisma"
-  },
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "prisma:generate": "prisma generate --schema=server/prisma/schema.prisma"
   }
 }
