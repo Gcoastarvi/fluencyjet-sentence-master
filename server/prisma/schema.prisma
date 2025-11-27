@@ -24,6 +24,7 @@ model User {
   has_access   Boolean           @default(false)
   tier_level   String            @default("free")
   created_at   DateTime          @default(now())
+  isAdmin      Boolean           @default(false)
 
   // Relations
   progress     UserProgress?
