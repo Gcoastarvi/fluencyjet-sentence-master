@@ -1,75 +1,33 @@
-// server/routes/adminLessons.js
 import express from "express";
+import { PrismaClient } from "@prisma/client";
 import { requireAdmin } from "../middleware/admin.js";
-import { query } from "../db.js";
 
+const prisma = new PrismaClient();
 const router = express.Router();
 
-function mapLesson(row) {
+// Utility: map DB row to API-friendly object (optional but nice)
+function mapLesson(lesson) {
   return {
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
-    description: row.description,
-    level: row.level,
-    isPublished: row.is_published,
-    xpReward: row.xp_reward,
-    orderIndex: row.order_index,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
+    id: lesson.id,
+    slug: lesson.slug,
+    title: lesson.title,
+    difficulty: lesson.difficulty,
+    isLocked: lesson.is_locked,
+    createdAt: lesson.created_at,
   };
-}
-
-function slugify(input) {
-  return input
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 /**
  * GET /api/admin/lessons
- * Optional query params:
- *  - level=beginner|intermediate|advanced
- *  - search=string (search in title)
+ * List all lessons
  */
 router.get("/", requireAdmin, async (req, res) => {
   try {
-    const { level, search } = req.query;
+    const lessons = await prisma.lesson.findMany({
+      orderBy: { id: "asc" },
+    });
 
-    const conditions = [];
-    const params = [];
-    let idx = 1;
-
-    if (level) {
-      conditions.push(`level = $${idx++}`);
-      params.push(level);
-    }
-
-    if (search) {
-      conditions.push(`title ILIKE $${idx++}`);
-      params.push(`%${search}%`);
-    }
-
-    let sql = `
-      SELECT *
-      FROM lessons
-    `;
-
-    if (conditions.length > 0) {
-      sql += " WHERE " + conditions.join(" AND ");
-    }
-
-    sql += `
-      ORDER BY order_index ASC, id ASC
-    `;
-
-    const result = await query(sql, params);
-    const lessons = result.rows.map(mapLesson);
-
-    res.json({ lessons });
+    res.json({ lessons: lessons.map(mapLesson) });
   } catch (err) {
     console.error("Error in GET /api/admin/lessons", err);
     res.status(500).json({ error: "Failed to fetch lessons" });
@@ -78,6 +36,7 @@ router.get("/", requireAdmin, async (req, res) => {
 
 /**
  * GET /api/admin/lessons/:id
+ * Get single lesson
  */
 router.get("/:id", requireAdmin, async (req, res) => {
   try {
@@ -86,13 +45,15 @@ router.get("/:id", requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "Invalid lesson ID" });
     }
 
-    const result = await query("SELECT * FROM lessons WHERE id = $1", [id]);
+    const lesson = await prisma.lesson.findUnique({
+      where: { id },
+    });
 
-    if (result.rows.length === 0) {
+    if (!lesson) {
       return res.status(404).json({ error: "Lesson not found" });
     }
 
-    res.json({ lesson: mapLesson(result.rows[0]) });
+    res.json({ lesson: mapLesson(lesson) });
   } catch (err) {
     console.error("Error in GET /api/admin/lessons/:id", err);
     res.status(500).json({ error: "Failed to fetch lesson" });
@@ -101,57 +62,45 @@ router.get("/:id", requireAdmin, async (req, res) => {
 
 /**
  * POST /api/admin/lessons
- * Body: { title, description, level, isPublished, xpReward, orderIndex, slug? }
+ * Body: { slug, title, difficulty, isLocked }
  */
 router.post("/", requireAdmin, async (req, res) => {
   try {
-    let {
-      title,
-      description = "",
-      level = "beginner",
-      isPublished = false,
-      xpReward = 100,
-      orderIndex = 0,
-      slug,
-    } = req.body;
+    let { slug, title, difficulty = "beginner", isLocked = false } = req.body;
 
+    if (!slug || typeof slug !== "string") {
+      return res.status(400).json({ error: "Slug is required" });
+    }
     if (!title || typeof title !== "string") {
       return res.status(400).json({ error: "Title is required" });
     }
 
-    if (!slug) {
-      slug = slugify(title);
-    } else {
-      slug = slugify(slug);
-    }
-
-    const allowedLevels = ["beginner", "intermediate", "advanced"];
-    if (!allowedLevels.includes(level)) {
+    // Optional: basic difficulty validation
+    const allowed = ["beginner", "intermediate", "advanced"];
+    if (!allowed.includes(difficulty)) {
       return res
         .status(400)
         .json({
-          error: "Invalid level. Use beginner | intermediate | advanced",
+          error: "Invalid difficulty. Use beginner | intermediate | advanced",
         });
     }
 
-    const result = await query(
-      `
-      INSERT INTO lessons (slug, title, description, level, is_published, xp_reward, order_index)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `,
-      [slug, title, description, level, isPublished, xpReward, orderIndex],
-    );
+    const created = await prisma.lesson.create({
+      data: {
+        slug,
+        title,
+        difficulty,
+        is_locked: Boolean(isLocked),
+      },
+    });
 
-    res.status(201).json({ lesson: mapLesson(result.rows[0]) });
+    res.status(201).json({ lesson: mapLesson(created) });
   } catch (err) {
     console.error("Error in POST /api/admin/lessons", err);
 
-    if (err.code === "23505") {
-      // unique violation (slug)
-      return res
-        .status(400)
-        .json({ error: "Slug already exists. Use a different title/slug." });
+    // Unique slug error (if you set it unique in Prisma)
+    if (err.code === "P2002") {
+      return res.status(400).json({ error: "Slug already exists" });
     }
 
     res.status(500).json({ error: "Failed to create lesson" });
@@ -160,7 +109,7 @@ router.post("/", requireAdmin, async (req, res) => {
 
 /**
  * PUT /api/admin/lessons/:id
- * Body: { title?, description?, level?, isPublished?, xpReward?, orderIndex?, slug? }
+ * Body: { slug?, title?, difficulty?, isLocked? }
  */
 router.put("/:id", requireAdmin, async (req, res) => {
   try {
@@ -169,78 +118,30 @@ router.put("/:id", requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "Invalid lesson ID" });
     }
 
-    const {
-      title,
-      description,
-      level,
-      isPublished,
-      xpReward,
-      orderIndex,
-      slug,
-    } = req.body;
+    const { slug, title, difficulty, isLocked } = req.body;
 
-    // Fetch existing
-    const existingRes = await query("SELECT * FROM lessons WHERE id = $1", [
-      id,
-    ]);
-    if (existingRes.rows.length === 0) {
-      return res.status(404).json({ error: "Lesson not found" });
-    }
-    const existing = existingRes.rows[0];
+    const data = {};
+    if (slug !== undefined) data.slug = slug;
+    if (title !== undefined) data.title = title;
+    if (difficulty !== undefined) data.difficulty = difficulty;
+    if (isLocked !== undefined) data.is_locked = Boolean(isLocked);
 
-    const newTitle = title ?? existing.title;
-    const newDescription = description ?? existing.description;
-    const newLevel = level ?? existing.level;
-    const newIsPublished =
-      typeof isPublished === "boolean" ? isPublished : existing.is_published;
-    const newXpReward =
-      typeof xpReward === "number" ? xpReward : existing.xp_reward;
-    const newOrderIndex =
-      typeof orderIndex === "number" ? orderIndex : existing.order_index;
-    let newSlug = slug ? slugify(slug) : existing.slug;
-
-    const allowedLevels = ["beginner", "intermediate", "advanced"];
-    if (!allowedLevels.includes(newLevel)) {
-      return res
-        .status(400)
-        .json({
-          error: "Invalid level. Use beginner | intermediate | advanced",
-        });
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: "No fields provided to update" });
     }
 
-    const updateRes = await query(
-      `
-      UPDATE lessons
-      SET slug = $1,
-          title = $2,
-          description = $3,
-          level = $4,
-          is_published = $5,
-          xp_reward = $6,
-          order_index = $7
-      WHERE id = $8
-      RETURNING *
-    `,
-      [
-        newSlug,
-        newTitle,
-        newDescription,
-        newLevel,
-        newIsPublished,
-        newXpReward,
-        newOrderIndex,
-        id,
-      ],
-    );
+    const updated = await prisma.lesson.update({
+      where: { id },
+      data,
+    });
 
-    res.json({ lesson: mapLesson(updateRes.rows[0]) });
+    res.json({ lesson: mapLesson(updated) });
   } catch (err) {
     console.error("Error in PUT /api/admin/lessons/:id", err);
 
-    if (err.code === "23505") {
-      return res
-        .status(400)
-        .json({ error: "Slug already exists. Use a different slug." });
+    if (err.code === "P2025") {
+      // Record not found
+      return res.status(404).json({ error: "Lesson not found" });
     }
 
     res.status(500).json({ error: "Failed to update lesson" });
@@ -257,18 +158,18 @@ router.delete("/:id", requireAdmin, async (req, res) => {
       return res.status(400).json({ error: "Invalid lesson ID" });
     }
 
-    const result = await query(
-      "DELETE FROM lessons WHERE id = $1 RETURNING id",
-      [id],
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Lesson not found" });
-    }
+    await prisma.lesson.delete({
+      where: { id },
+    });
 
     res.json({ success: true });
   } catch (err) {
     console.error("Error in DELETE /api/admin/lessons/:id", err);
+
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Lesson not found" });
+    }
+
     res.status(500).json({ error: "Failed to delete lesson" });
   }
 });
