@@ -1421,6 +1421,58 @@ export default function AdminUserDetail() {
   }
 
   const rhythm = getRhythmIndex();
+  /* ───────────────────────────────
+     XP RELIABILITY SCORE (Upgrade #24)
+     Measures how reliably the user maintains
+     stable XP + minimal gaps + consistent trend
+  ──────────────────────────────── */
+  function getReliabilityScore() {
+    if (!xpAll || xpAll.length < 14)
+      return { score: 0, label: "Not Enough Data", color: "bg-gray-400" };
+
+    const values = xpAll.map((d) => d.xp);
+
+    // ACTIVE DAYS (regularity)
+    const activeDays = values.filter((v) => v > 0).length;
+    const totalDays = values.length;
+    const activityRate = activeDays / totalDays; // 0–1
+
+    // XP VARIANCE (stability)
+    const avg = values.reduce((a, b) => a + b, 0) / totalDays;
+    const variance =
+      values.map((v) => Math.pow(v - avg, 2)).reduce((a, b) => a + b, 0) /
+      totalDays;
+    const stddev = Math.sqrt(variance);
+
+    // GAP PENALTY (breaks)
+    let gaps = 0;
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] === 0) gaps++;
+    }
+
+    // Combine into reliability score
+    let score =
+      activityRate * 50 + // consistency
+      Math.max(0, 40 - stddev) + // stability (low variance = better)
+      Math.max(0, 10 - gaps * 1.5); // fewer gaps = higher reliability
+
+    score = Math.max(0, Math.min(100, score));
+
+    if (score >= 80)
+      return { score, label: "Highly Reliable", color: "bg-green-600" };
+
+    if (score >= 60) return { score, label: "Reliable", color: "bg-blue-500" };
+
+    if (score >= 40)
+      return { score, label: "Somewhat Reliable", color: "bg-yellow-500" };
+
+    if (score >= 20)
+      return { score, label: "Unreliable", color: "bg-orange-500" };
+
+    return { score, label: "Very Unreliable", color: "bg-red-600" };
+  }
+
+  const reliability = getReliabilityScore();
 
   /* ───────────────────────────────
      LOADING / 404 STATES
@@ -1709,6 +1761,16 @@ export default function AdminUserDetail() {
             (Rhythm: {rhythm.score.toFixed(0)}%)
           </span>
         </div>
+        {/* Reliability Score */}
+        <div
+          className={`inline-block px-4 py-2 rounded-lg text-white text-sm mb-10 ml-4 ${reliability.color}`}
+        >
+          <span className="font-semibold">{reliability.label}</span>
+          <span className="ml-2 opacity-80">
+            (Reliability: {reliability.score.toFixed(0)}%)
+          </span>
+        </div>
+
         {/* XP Last 7 Days */}
         <h2 className="text-xl font-semibold mb-3">XP Last 7 Days</h2>
         <div
