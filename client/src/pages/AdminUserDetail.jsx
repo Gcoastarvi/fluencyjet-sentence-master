@@ -49,7 +49,7 @@ export default function AdminUserDetail() {
 
       const data = await res.json();
       if (data.ok) {
-        const events = data.xpEvents || [];
+        const events = normalizeEventsToLocal(data.xpEvents || []);
         setUser(data.user);
         setXpEvents(events);
         generateCharts(events);
@@ -119,6 +119,20 @@ export default function AdminUserDetail() {
       alert("User deleted");
       navigate("/admin/users");
     }
+  }
+  /* ───────────────────────────────
+     TIME-ZONE NORMALIZER
+  ──────────────────────────────── */
+  function normalizeEventsToLocal(events = []) {
+    return events.map((e) => {
+      const localDate = new Date(e.createdAt);
+      return {
+        ...e,
+        localDate,
+        localDay: localDate.toISOString().slice(0, 10),
+        localHour: localDate.getHours(),
+      };
+    });
   }
 
   /* ───────────────────────────────
@@ -1858,6 +1872,70 @@ export default function AdminUserDetail() {
           </div>
         </div>
         {/* END OF XP Consistency Bands block */}
+        {/* ───────────────────────────────
+            XP Spike & Drop Analyzer (AI Insight)
+            UPGRADE #23
+        ──────────────────────────────── */}
+        <h2 className="text-xl font-semibold mb-3">XP Spike & Drop Analyzer</h2>
+        <div className="bg-white p-4 rounded-lg shadow mb-10">
+          {xpAll.length < 2 ? (
+            <p className="text-sm text-gray-500">
+              Not enough XP data to analyze spikes or drops.
+            </p>
+          ) : (
+            (() => {
+              const values = xpAll.map((d) => d.xp);
+
+              // Compute differences between consecutive days
+              const diffs = [];
+              for (let i = 1; i < values.length; i++) {
+                diffs.push({
+                  delta: values[i] - values[i - 1],
+                  day: xpAll[i].date,
+                });
+              }
+
+              const maxSpike = diffs.reduce(
+                (a, b) => (b.delta > a.delta ? b : a),
+                diffs[0],
+              );
+              const maxDrop = diffs.reduce(
+                (a, b) => (b.delta < a.delta ? b : a),
+                diffs[0],
+              );
+
+              const avgDelta =
+                diffs.reduce((sum, d) => sum + d.delta, 0) /
+                (diffs.length || 1);
+
+              return (
+                <div className="text-sm">
+                  <p className="mb-1">
+                    🔺 <strong>Largest XP Spike:</strong> {maxSpike.delta} XP on{" "}
+                    <strong>{maxSpike.day}</strong>
+                  </p>
+                  <p className="mb-1">
+                    🔻 <strong>Largest XP Drop:</strong> {maxDrop.delta} XP on{" "}
+                    <strong>{maxDrop.day}</strong>
+                  </p>
+                  <p className="mb-1">
+                    📊 <strong>Average Change Per Day:</strong>{" "}
+                    {avgDelta.toFixed(1)} XP/day
+                  </p>
+
+                  <div className="p-3 mt-3 rounded bg-indigo-50 text-indigo-700">
+                    {avgDelta > 5
+                      ? "Momentum rising — user is accelerating."
+                      : avgDelta < -5
+                        ? "Momentum falling — user is slowing down."
+                        : "Stable trajectory — consistent day-to-day XP."}
+                  </div>
+                </div>
+              );
+            })()
+          )}
+        </div>
+
         {/* Consistency Trendline (Past 30 Days) */}
         <h2 className="text-xl font-semibold mb-3">
           Consistency Trend (30 Days)
@@ -1999,6 +2077,52 @@ export default function AdminUserDetail() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+        {/* Local-Time Activity Insights */}
+        <h2 className="text-xl font-semibold mb-3">
+          Local-Time Activity Insights
+        </h2>
+        <div className="bg-white p-4 rounded-lg shadow mb-10">
+          {xpEvents.length === 0 ? (
+            <p className="text-sm text-gray-500">No XP history available.</p>
+          ) : (
+            (() => {
+              const hours = Array.from({ length: 24 }, (_, i) => ({
+                hour: i,
+                xp: 0,
+              }));
+
+              xpEvents.forEach((e) => {
+                hours[e.localHour].xp += e.amount;
+              });
+
+              const max = hours.reduce((a, b) => (b.xp > a.xp ? b : a));
+              const min = hours.reduce((a, b) => (b.xp < a.xp ? b : a));
+
+              return (
+                <div>
+                  <p className="text-sm mb-1">
+                    🕒 <strong>Most Active Hour:</strong> {max.hour}:00 (
+                    {max.xp} XP)
+                  </p>
+                  <p className="text-sm mb-1">
+                    🌙 <strong>Least Active Hour:</strong> {min.hour}:00 (
+                    {min.xp} XP)
+                  </p>
+
+                  <div className="mt-3 p-3 bg-indigo-50 rounded text-sm text-indigo-700">
+                    📘 <strong>Recommendation:</strong>{" "}
+                    {max.hour >= 5 && max.hour <= 11
+                      ? "Morning is the user's peak focus window."
+                      : max.hour >= 12 && max.hour <= 17
+                        ? "Afternoon provides strong performance consistency."
+                        : "Evening/Night is the user's best productivity zone."}
+                  </div>
+                </div>
+              );
+            })()
+          )}
+        </div>
+
         {/* Heatmap (Past 12 Months) */}
         <h2 className="text-xl font-semibold mb-3">
           XP Heatmap (Past 12 Months)
