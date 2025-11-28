@@ -14,7 +14,7 @@
     "deploy:migrate": "prisma migrate deploy --schema=server/prisma/schema.prisma",
     "start": "NODE_ENV=production node server/index.js",
     "check": "tsc",
-    "seed": "node server/prisma/seed.js"
+    "seed": "node server/prisma/seed.js",
     "serve:dist": "npx serve client/dist --listen 8080",
     "preview": "npm run build && npm run serve:dist",
     "patch:enum": "node server/scripts/patch-eventtype-enum.js"
