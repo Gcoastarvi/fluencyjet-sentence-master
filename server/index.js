@@ -11,9 +11,6 @@ import morgan from "morgan";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 
-// shared prisma client
-import prisma from "./db/client.js";
-
 // ROUTES
 import authRoutes from "./routes/auth.js";
 import progressRoutes from "./routes/progress.js";
