@@ -2,8 +2,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import prisma from "../db/client.js";
-import authMiddleware from "../middleware/authMiddleware.js";
+import db from "../db/client.js"; // << SQL client
 
 const router = express.Router();
 
@@ -21,26 +20,15 @@ function sanitizeUsername(u = "") {
 
 function publicUser(u) {
   if (!u) return null;
-  const {
-    id,
-    email,
-    username,
-    avatar_url,
-    has_access,
-    tier_level,
-    role,
-    created_at,
-  } = u;
-
   return {
-    id,
-    email,
-    username,
-    avatar_url,
-    has_access,
-    tier_level,
-    role,
-    created_at,
+    id: u.id,
+    email: u.email,
+    username: u.username,
+    avatar_url: u.avatar_url,
+    has_access: Boolean(u.has_access),
+    tier_level: u.tier_level,
+    role: u.role,
+    created_at: u.created_at,
   };
 }
 
@@ -48,7 +36,9 @@ function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
 
-/* SIGNUP */
+/* ------------------------------------------
+   SIGNUP
+--------------------------------------------- */
 router.post("/signup", async (req, res) => {
   try {
     const { username, email, password, avatar_url } = req.body || {};
@@ -60,12 +50,12 @@ router.post("/signup", async (req, res) => {
     }
 
     const emailNorm = String(email).trim().toLowerCase();
-    const usernameNorm =
-      sanitizeUsername(username || emailNorm.split("@")[0]) || null;
+    const usernameNorm = sanitizeUsername(username || emailNorm.split("@")[0]);
 
-    const existing = await prisma.user.findUnique({
-      where: { email: emailNorm },
-    });
+    // check existing
+    const existing = await db.get("SELECT * FROM users WHERE email = ?", [
+      emailNorm,
+    ]);
 
     if (existing) {
       return res
@@ -73,23 +63,23 @@ router.post("/signup", async (req, res) => {
         .json({ ok: false, message: "User already exists" });
     }
 
+    // hash password
     const hashed = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        email: emailNorm,
-        username: usernameNorm,
-        password: hashed,
-        avatar_url: avatar_url || DEFAULT_AVATAR,
-        has_access: false,
-        tier_level: "free",
-      },
-    });
+    const result = await db.run(
+      `INSERT INTO users (email, username, password, avatar_url, has_access, tier_level, role)
+       VALUES (?, ?, ?, ?, 0, 'free', 'user')`,
+      [emailNorm, usernameNorm, hashed, avatar_url || DEFAULT_AVATAR],
+    );
+
+    const user = await db.get("SELECT * FROM users WHERE id = ?", [
+      result.lastID,
+    ]);
 
     const token = signToken({ id: user.id, email: user.email });
     const expiresAt = Date.now() + 3600000;
 
-    res.status(201).json({
+    res.json({
       ok: true,
       message: "Signup successful!",
       token,
@@ -104,10 +94,13 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-/* LOGIN */
+/* ------------------------------------------
+   LOGIN
+--------------------------------------------- */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
+
     if (!email || !password) {
       return res
         .status(400)
@@ -116,9 +109,9 @@ router.post("/login", async (req, res) => {
 
     const emailNorm = String(email).trim().toLowerCase();
 
-    const user = await prisma.user.findUnique({
-      where: { email: emailNorm },
-    });
+    const user = await db.get("SELECT * FROM users WHERE email = ?", [
+      emailNorm,
+    ]);
 
     if (!user) {
       return res
@@ -148,55 +141,6 @@ router.post("/login", async (req, res) => {
     res
       .status(500)
       .json({ ok: false, message: "Login failed", error: err.message });
-  }
-});
-
-/* PROFILE */
-router.get("/me", authMiddleware, async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        avatar_url: true,
-        has_access: true,
-        tier_level: true,
-        role: true,
-        created_at: true,
-      },
-    });
-
-    res.json({ ok: true, user });
-  } catch (err) {
-    console.error("Me error:", err);
-    res.status(500).json({ ok: false, message: "Failed to fetch profile" });
-  }
-});
-
-/* REFRESH TOKEN */
-router.post("/refresh", authMiddleware, async (req, res) => {
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-    });
-
-    if (!user)
-      return res.status(404).json({ ok: false, message: "User not found" });
-
-    const token = signToken({ id: user.id, email: user.email });
-    const expiresAt = Date.now() + 3600000;
-
-    res.json({
-      ok: true,
-      message: "Token refreshed successfully",
-      token,
-      expiresAt,
-    });
-  } catch (err) {
-    console.error("Token refresh error:", err);
-    res.status(500).json({ ok: false, message: "Failed to refresh token" });
   }
 });
 
