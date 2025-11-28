@@ -10,8 +10,8 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx server/index.js",
     "build": "npm --prefix client install --omit=dev && npm --prefix client run build",
-    "postinstall": "prisma generate",
-    "deploy:migrate": "npx prisma migrate deploy",
+    "postinstall": "prisma generate --schema=server/prisma/schema.prisma",
+    "deploy:migrate": "prisma migrate deploy --schema=server/prisma/schema.prisma",
     "start": "NODE_ENV=production node server/index.js",
     "check": "tsc",
     "serve:dist": "npx serve client/dist --listen 8080",
@@ -24,7 +24,6 @@
     "@prisma/client": "^6.18.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
-    "canvas-confetti": "^1.9.4",
     "connect-pg-simple": "^10.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -40,7 +39,6 @@
     "passport-local": "^1.0.0",
     "pg": "^8.16.3",
     "prisma": "^6.18.0",
-    "recharts": "^3.5.0",
     "serve": "^14.2.5",
     "tsx": "^4.20.5",
     "ws": "^8.18.0",
@@ -51,9 +49,7 @@
     "drizzle-kit": "^0.31.4",
     "typescript": "5.6.3"
   },
-  "prismaConfig": {
-    "schema": "prisma/schema.prisma"
-  },
   "prisma": {
     "seed": "node server/prisma/seed.js"
   }
+}
