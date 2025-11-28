@@ -5,6 +5,14 @@ import authRequired from "../middleware/authMiddleware.js";
 import requireAdmin from "../middleware/admin.js";
 
 const router = express.Router();
+// ADMIN HEALTH CHECK
+router.get("/health", (req, res) => {
+  res.json({
+    ok: true,
+    message: "Admin API is running",
+    timestamp: new Date().toISOString(),
+  });
+});
 
 /* ───────────────────────────────
    ADMIN OVERVIEW
