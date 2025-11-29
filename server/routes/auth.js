@@ -2,17 +2,16 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import prisma from "../prisma/client.js";
+import { PrismaClient } from "@prisma/client";
 
+const prisma = new PrismaClient();
 const router = express.Router();
 
 // Generate JWT
 function generateToken(user) {
-  return jwt.sign(
-    { id: user.id, email: user.email },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 }
 
 // ----------------------
@@ -38,7 +37,7 @@ router.post("/signup", async (req, res) => {
       data: {
         name,
         email,
-        hashedPassword,   // 👈 FIXED FIELD
+        hashedPassword, // 👈 FIXED FIELD
       },
     });
 
