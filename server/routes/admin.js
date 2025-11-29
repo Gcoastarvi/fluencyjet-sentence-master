@@ -303,7 +303,6 @@ router.get(
   authRequired,
   requireAdmin,
   async (_req, res) => {
-    // Static list to avoid deep Express introspection
     const routes = [
       "GET    /api/admin/health",
       "GET    /api/admin/overview",
@@ -332,7 +331,6 @@ router.get(
    GET /api/admin/diagnostics/env
 ──────────────────────────────── */
 router.get("/diagnostics/env", authRequired, requireAdmin, (req, res) => {
-  // Do NOT send secrets; only booleans / high-level info
   return res.json({
     ok: true,
     data: {
@@ -354,7 +352,6 @@ router.get("/diagnostics/env", authRequired, requireAdmin, (req, res) => {
 router.get("/diagnostics/db", authRequired, requireAdmin, async (_req, res) => {
   const startedAt = Date.now();
   try {
-    // Cheap DB check – just count users
     const userCount = await prisma.user.count();
     const durationMs = Date.now() - startedAt;
 
@@ -592,7 +589,6 @@ router.get(
   requireAdmin,
   async (_req, res) => {
     try {
-      const now = Date.now();
       const dayMs = 24 * 60 * 60 * 1000;
 
       const users = await prisma.user.findMany({
@@ -617,7 +613,6 @@ router.get(
       }
 
       const totalUsers = users.length;
-
       const pct = (num) =>
         totalUsers === 0 ? 0 : Math.round((num / totalUsers) * 100);
 
