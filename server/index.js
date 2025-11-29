@@ -182,10 +182,12 @@ app.all("/api/*", (_req, res) =>
 // -------------------------------------------------------------------------
 // FRONTEND (PROD)
 // -------------------------------------------------------------------------
-app.use(express.static(path.join(__dirname, "..", "client", "dist")));
-
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(__dirname, "..", "client", "dist", "index.html"));
+app.get("/", (req, res) => {
+  res.json({
+    ok: true,
+    service: "backend",
+    message: "FluencyJet backend running",
+  });
 });
 
 // -------------------------------------------------------------------------
