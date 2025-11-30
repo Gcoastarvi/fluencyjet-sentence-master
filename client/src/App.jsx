@@ -15,7 +15,7 @@ import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
-import AdminQuizzes from "./pages/AdminQuizzes";
+import AdminQuizzes from "./pages/AdminQuizzes.jsx";
 import AdminAnalytics from "./pages/AdminAnalytics.jsx";
 
 // Lessons
