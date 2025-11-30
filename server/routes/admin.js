@@ -636,5 +636,92 @@ router.get(
     }
   },
 );
+// ---------------------------------------------
+// Admin Analytics Summary
+// ---------------------------------------------
+router.get("/analytics/summary", async (req, res) => {
+  try {
+    // Basic counts
+    const userCount = await prisma.user.count();
+    const lessonCount = await prisma.lesson.count();
+
+    // Quiz count (safe even if you temporarily don't use it)
+    let quizCount = 0;
+    try {
+      // This works once the Quiz model + migration exist
+      quizCount = await prisma.quiz.count();
+    } catch (err) {
+      console.warn("Quiz model not available yet, quizCount = 0");
+      quizCount = 0;
+    }
+
+    // XP aggregation
+    const totalXpAgg = await prisma.userProgress.aggregate({
+      _sum: { xp: true },
+    });
+
+    const xpEventCount = await prisma.xpEvent.count();
+
+    // Recent events
+    const recentEvents = await prisma.xpEvent.findMany({
+      orderBy: { created_at: "desc" },
+      take: 10,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Top users (by xp)
+    const topUsers = await prisma.userProgress.findMany({
+      orderBy: { xp: "desc" },
+      take: 5,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      ok: true,
+      metrics: {
+        userCount,
+        lessonCount,
+        quizCount,
+        totalXp: totalXpAgg._sum.xp ?? 0,
+        xpEventCount,
+      },
+      topUsers: topUsers.map((row) => ({
+        id: row.user.id,
+        name: row.user.name || "(no name)",
+        email: row.user.email,
+        xp: row.xp,
+      })),
+      recentEvents: recentEvents.map((ev) => ({
+        id: ev.id,
+        xp: ev.xp_delta,
+        type: ev.event_type,
+        userEmail: ev.user?.email ?? null,
+        created_at: ev.created_at,
+      })),
+    });
+  } catch (err) {
+    console.error("Admin analytics error", err);
+    res.status(500).json({
+      ok: false,
+      message: "Failed to load analytics summary",
+    });
+  }
+});
 
 export default router;

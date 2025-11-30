@@ -1,5 +1,5 @@
 // ------------------------------------------------------
-// FluencyJet Prisma Schema
+// FluencyJet Prisma Schema (Phase-4 Stable)
 // ------------------------------------------------------
 
 generator client {
@@ -26,6 +26,12 @@ model User {
   created_at   DateTime          @default(now())
   isAdmin      Boolean           @default(false)
 
+  // 🔥 Needed for Admin.jsx filters
+  lastActiveAt DateTime?         
+
+  // 🔥 Needed for Admin.jsx XP sorting
+  xpTotal      Int               @default(0)
+
   // Relations
   progress     UserProgress?
   weekly       UserWeeklyTotals?
@@ -51,7 +57,7 @@ model XpEvent {
 // ------------------------------------------------------
 model UserWeeklyTotals {
   id         Int       @id @default(autoincrement())
-  user_id    Int       @unique      // ✅ one record per user
+  user_id    Int       @unique
   week_key   DateTime
   month_key  DateTime?
   week_xp    Int       @default(0)
@@ -66,7 +72,7 @@ model UserWeeklyTotals {
 // ------------------------------------------------------
 model UserProgress {
   id         Int       @id @default(autoincrement())
-  user_id    Int       @unique      // ✅ one record per user
+  user_id    Int       @unique
   xp         Int       @default(0)
   streak     Int       @default(0)
   badges     String[]  @default([])
@@ -88,12 +94,37 @@ model UserBadge {
 }
 
 // ------------------------------------------------------
-// 📝 TYPING QUIZ (Bilingual Sentences)
+// 📘 LESSONS (Phase-4)
 // ------------------------------------------------------
-model TypingQuiz {
-  id          Int       @id @default(autoincrement())
-  ta          String
-  en          String
-  lesson      String?   @db.VarChar(100)
-  created_at  DateTime  @default(now())
+model Lesson {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  description String?
+  difficulty  String   @default("beginner")
+  isLocked    Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // 👇 NEW: one-to-many relation to quizzes
+  quizzes     Quiz[]
+}
+
+// ------------------------------------------------------
+// 📝 TYPING QUIZ
+// ------------------------------------------------------
+model Quiz {
+  id         Int      @id @default(autoincrement())
+  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId   Int
+
+  // Basic question fields
+  question   String
+  type       String   @default("typing") // e.g. typing / mcq later
+  prompt     String?                     // optional instructions
+  data       Json?                       // extra config (options, etc.)
+  xpReward   Int      @default(50)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 }
