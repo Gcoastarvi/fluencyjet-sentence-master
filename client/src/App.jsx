@@ -239,14 +239,6 @@ export default function App() {
               </ProtectedAdminRoute>
             }
           />
-          <Route
-            path="/admin/analytics"
-            element={
-              <ProtectedRoute>
-                <AdminAnalytics />
-              </ProtectedRoute>
-            }
-          />
         </Routes>
       </div>
     </BrowserRouter>
