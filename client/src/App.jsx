@@ -15,6 +15,7 @@ import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+import AdminQuizzes from "./pages/AdminQuizzes";
 
 // Lessons
 import Lessons from "@/pages/Lessons";
@@ -217,6 +218,16 @@ export default function App() {
               <ProtectedRoute>
                 <LessonQuiz />
               </ProtectedRoute>
+            }
+          />
+
+          {/* ADMIN → QUIZ MANAGEMENT */}
+          <Route
+            path="/admin/lessons/:lessonId/quizzes"
+            element={
+              <ProtectedAdminRoute>
+                <AdminQuizzes />
+              </ProtectedAdminRoute>
             }
           />
         </Routes>
