@@ -135,7 +135,7 @@ console.log(
 // -------------------------------------------------------------------------
 // API ROUTES
 // -------------------------------------------------------------------------
-app.use("/api", healthRoutes);
+app.use("/api/health", healthRoutes);
 
 app.get("/api/_echo", (req, res) => {
   res.json({ ok: true, method: req.method, hasBody: !!req.body });
