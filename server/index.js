@@ -12,6 +12,7 @@ import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 
 // ROUTES
+import prisma from "./db/client.js";
 import authRoutes from "./routes/auth.js";
 import progressRoutes from "./routes/progress.js";
 import leaderboardRoutes from "./routes/leaderboard.js";
@@ -22,8 +23,8 @@ import dashboardRoutes from "./routes/dashboard.js";
 import lessonRoutes from "./routes/lessons.js";
 import adminRoutes from "./routes/admin.js";
 import adminLessonsRoutes from "./routes/adminLessons.js";
-import quizRoutes from "./routes/quizzes.js"; // ⬅️ NEW
-// later: import adminRoutes from "./routes/admin.js";
+import quizRoutes from "./routes/quizzes.js";
+import adminQuizzesRoutes from "./routes/adminQuizzes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -124,7 +125,7 @@ app.use(
 // -------------------------------------------------------------------------
 // STARTUP LOG
 // -------------------------------------------------------------------------
-const routesDir = path.resolve("./server/routes");
+const routesDir = path.join(__dirname, "routes");
 console.log("📂 Checking routes directory:", routesDir);
 console.log(
   "📄 Routes found:",
@@ -149,6 +150,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/quizzes", quizRoutes);
 app.use("/api/admin/lessons", adminLessonsRoutes);
+app.use("/api/admin/quizzes", adminQuizzesRoutes);
 
 if (isDev) {
   app.get("/api/debug/jwt", (req, res) => {
