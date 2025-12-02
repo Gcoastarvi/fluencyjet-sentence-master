@@ -1,23 +1,25 @@
-import { Router } from "express";
-import prisma from "../db/client.js";
+// server/routes/health.js
+import express from "express";
+import { PrismaClient } from "@prisma/client";
 
-const router = Router();
+const router = express.Router();
+const prisma = new PrismaClient();
 
-// Basic health check
-router.get("/", (req, res) => {
+// GET /api/health
+router.get("/", (_req, res) => {
   res.json({ ok: true, message: "API is healthy" });
 });
 
-// Database health check
-router.get("/db", async (req, res) => {
+// GET /api/health/db
+router.get("/db", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return res.json({ ok: true, message: "Database connection OK" });
-  } catch (err) {
-    return res.status(500).json({
+    res.json({ ok: true, message: "DB is healthy" });
+  } catch (e) {
+    res.status(500).json({
       ok: false,
       message: "DB health check failed",
-      error: err.message,
+      error: String(e),
     });
   }
 });
