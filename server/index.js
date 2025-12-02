@@ -152,6 +152,14 @@ app.use("/api/quizzes", quizRoutes);
 app.use("/api/admin/lessons", adminLessonsRoutes);
 app.use("/api/admin/quizzes", adminQuizzesRoutes);
 
+// ❌ 404 for API must be LAST
+app.all("/api/*", (req, res) => {
+  return res.status(404).json({
+    ok: false,
+    message: "API route not found",
+  });
+});
+
 if (isDev) {
   app.get("/api/debug/jwt", (req, res) => {
     try {
