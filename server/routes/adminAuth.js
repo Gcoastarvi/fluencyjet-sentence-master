@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import prisma from "../prisma/client.js"; // ✅ FIXED PATH
+import prisma from "../db/prisma.js";
 
 const router = express.Router();
 
