@@ -28,11 +28,6 @@ PORT = "8080"
 # Root Railway config (optional)
 [backend]
 root = "server"
-build = "npm install"
-start = "NODE_ENV=production node index.js"
-healthcheck = "/api/health"
 
 [frontend]
 root = "client"
-build = "npm install && npm run build"
-start = "npx serve -s dist -l tcp://0.0.0.0:$PORT"

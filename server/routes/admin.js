@@ -723,5 +723,256 @@ router.get("/analytics/summary", async (req, res) => {
     });
   }
 });
+// 🔍 Admin Analytics Dashboard
+router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
+  try {
+    // --- Date helpers ---
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 6); // last 7 days including today
+
+    const formatDateKey = (d) => d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+
+    // --- SUMMARY TILE QUERIES ---
+    const [totalUsers, totalLessons, totalQuizzes] = await Promise.all([
+      prisma.user.count(),
+      prisma.lesson.count(),
+      prisma.quiz.count(),
+    ]);
+
+    const [newUsersToday, todayXpAgg, activeUsersTodayRows] = await Promise.all([
+      prisma.user.count({
+        where: {
+          createdAt: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+      }),
+      prisma.xpEvent.aggregate({
+        _sum: {
+          amount: true,
+        },
+        where: {
+          createdAt: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+      }),
+      prisma.xpEvent.groupBy({
+        by: ["userId"],
+        where: {
+          createdAt: {
+            gte: today,
+            lt: tomorrow,
+          },
+        },
+        _sum: {
+          amount: true,
+        },
+      }),
+    ]);
+
+    const todayXp = todayXpAgg._sum.amount || 0;
+    const activeUsersToday = activeUsersTodayRows.length;
+
+    // --- DAILY SIGNUPS (LAST 7 DAYS) ---
+    const signupsRaw = await prisma.user.findMany({
+      where: {
+        createdAt: {
+          gte: sevenDaysAgo,
+        },
+      },
+      select: {
+        createdAt: true,
+      },
+    });
+
+    const dailySignupsMap = {};
+    for (const u of signupsRaw) {
+      const key = formatDateKey(u.createdAt);
+      dailySignupsMap[key] = (dailySignupsMap[key] || 0) + 1;
+    }
+
+    const dailySignups = Object.entries(dailySignupsMap)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // --- DAILY XP (LAST 7 DAYS) ---
+    const xpEventsLast7 = await prisma.xpEvent.findMany({
+      where: {
+        createdAt: {
+          gte: sevenDaysAgo,
+        },
+      },
+      select: {
+        createdAt: true,
+        amount: true,
+      },
+    });
+
+    const dailyXpMap = {};
+    for (const e of xpEventsLast7) {
+      const key = formatDateKey(e.createdAt);
+      dailyXpMap[key] = (dailyXpMap[key] || 0) + (e.amount || 0);
+    }
+
+    const dailyXp = Object.entries(dailyXpMap)
+      .map(([date, xp]) => ({ date, xp }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // --- TOTAL XP LEADERBOARD (TOP 10) ---
+    const leaderboardRaw = await prisma.xpEvent.groupBy({
+      by: ["userId"],
+      _sum: {
+        amount: true,
+      },
+      orderBy: {
+        _sum: {
+          amount: "desc",
+        },
+      },
+      take: 10,
+    });
+
+    const leaderboardUserIds = leaderboardRaw.map((row) => row.userId);
+    const leaderboardUsers = leaderboardUserIds.length
+      ? await prisma.user.findMany({
+          where: {
+            id: {
+              in: leaderboardUserIds,
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        })
+      : [];
+
+    const leaderboardUserById = Object.fromEntries(
+      leaderboardUsers.map((u) => [u.id, u])
+    );
+
+    const totalXpLeaderboard = leaderboardRaw.map((row) => ({
+      userId: row.userId,
+      name: leaderboardUserById[row.userId]?.name || null,
+      email: leaderboardUserById[row.userId]?.email || null,
+      totalXp: row._sum.amount || 0,
+    }));
+
+    // --- LESSON ENGAGEMENT (AGGREGATED XP PER LESSON) ---
+    // Assumes XPEvent has optional lessonId and amount fields.
+    // This gives admin a heatmap-style dataset (we’ll visualize on frontend).
+    const lessonEngagementRaw = await prisma.xpEvent.groupBy({
+      by: ["lessonId"],
+      where: {
+        lessonId: {
+          not: null,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+      orderBy: {
+        _sum: {
+          amount: "desc",
+        },
+      },
+      take: 20, // top 20 lessons by XP
+    });
+
+    const engagedLessonIds = lessonEngagementRaw
+      .map((row) => row.lessonId)
+      .filter(Boolean);
+
+    const engagedLessons = engagedLessonIds.length
+      ? await prisma.lesson.findMany({
+          where: {
+            id: {
+              in: engagedLessonIds,
+            },
+          },
+          select: {
+            id: true,
+            title: true,
+          },
+        })
+      : [];
+
+    const lessonById = Object.fromEntries(
+      engagedLessons.map((l) => [l.id, l])
+    );
+
+    const lessonEngagement = lessonEngagementRaw.map((row) => ({
+      lessonId: row.lessonId,
+      lessonTitle: lessonById[row.lessonId]?.title || null,
+      totalXp: row._sum.amount || 0,
+    }));
+
+    // --- XP DISTRIBUTION (BUCKETS) ---
+    const totalXpPerUser = await prisma.xpEvent.groupBy({
+      by: ["userId"],
+      _sum: {
+        amount: true,
+      },
+    });
+
+    const xpBuckets = [
+      { id: "0-999", min: 0, max: 999 },
+      { id: "1k-4.9k", min: 1000, max: 4999 },
+      { id: "5k-9.9k", min: 5000, max: 9999 },
+      { id: "10k-49k", min: 10000, max: 49999 },
+      { id: "50k+", min: 50000, max: Infinity },
+    ];
+
+    const bucketCounts = {};
+    for (const row of totalXpPerUser) {
+      const xp = row._sum.amount || 0;
+      const bucket = xpBuckets.find((b) => xp >= b.min && xp <= b.max);
+      if (!bucket) continue;
+      bucketCounts[bucket.id] = (bucketCounts[bucket.id] || 0) + 1;
+    }
+
+    const xpDistribution = xpBuckets.map((b) => ({
+      bucket: b.id,
+      users: bucketCounts[b.id] || 0,
+    }));
+
+    // --- QUIZ PERFORMANCE PLACEHOLDER ---
+    // We’ll wire real quiz performance stats when we enhance XP logging / quiz attempts.
+    const quizPerformance = [];
+
+    // --- FINAL RESPONSE (STABLE JSON SHAPE) ---
+    return res.json({
+      summary: {
+        totalUsers,
+        totalLessons,
+        totalQuizzes,
+        todayXp,
+        newUsersToday,
+        activeUsersToday,
+      },
+      dailySignups,          // [{ date: "2025-11-24", count: 5 }, ...]
+      dailyXp,               // [{ date: "2025-11-24", xp: 1200 }, ...]
+      totalXpLeaderboard,    // [{ userId, name, email, totalXp }, ...]
+      xpDistribution,        // [{ bucket: "0-999", users: 10 }, ...]
+      lessonEngagement,      // [{ lessonId, lessonTitle, totalXp }, ...]
+      quizPerformance,       // [] for now, will fill later
+    });
+  } catch (err) {
+    console.error("Error in /api/admin/analytics:", err);
+    return res
+      .status(500)
+      .json({ error: "Failed to load admin analytics" });
+  }
+});
 
 export default router;
