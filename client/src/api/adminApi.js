@@ -1,110 +1,57 @@
-import axios from "axios";
-import { API_BASE_URL } from "../config";
+import apiClient from "./apiClient";
 
-function adminAuthHeader() {
-  const t = localStorage.getItem("adminToken");
-  return t ? { Authorization: `Bearer ${t}` } : {};
+// =========================
+// AUTH
+// =========================
+export function adminLogin(email, password) {
+  return apiClient.post("/admin/auth/login", { email, password });
 }
 
-export const adminApi = axios.create({
-  baseURL: `${API_BASE_URL}/api/admin`,
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" },
-});
-
-// ---- Admin Login ----
-export function adminLogin(data) {
-  return adminApi.post("/auth/login", data);
-}
-
-// ---- Dashboard ----
+// =========================
+// DASHBOARD
+// =========================
 export function getAdminDashboard() {
-  return adminApi.get("/dashboard", { headers: adminAuthHeader() });
+  return apiClient.get("/admin/dashboard");
 }
 
-// ---- Lessons ----
-export function getAllLessons() {
-  return adminApi.get("/lessons", { headers: adminAuthHeader() });
+// =========================
+// LESSONS
+// =========================
+export function getLessons() {
+  return apiClient.get("/admin/lessons");
 }
 
 export function createLesson(data) {
-  return adminApi.post("/lessons", data, {
-    headers: adminAuthHeader(),
-  });
+  return apiClient.post("/admin/lessons", data);
 }
 
-// ---- Quizzes ----
-export function getAllQuizzes() {
-  return adminApi.get("/quizzes", { headers: adminAuthHeader() });
+export function updateLesson(id, data) {
+  return apiClient.put(`/admin/lessons/${id}`, data);
+}
+
+export function deleteLesson(id) {
+  return apiClient.delete(`/admin/lessons/${id}`);
+}
+
+// =========================
+// QUIZZES
+// =========================
+export function getQuizzes() {
+  return apiClient.get("/admin/quizzes");
+}
+
+export function getQuiz(id) {
+  return apiClient.get(`/admin/quizzes/${id}`);
 }
 
 export function createQuiz(data) {
-  return adminApi.post("/quizzes", data, {
-    headers: adminAuthHeader(),
-  });
+  return apiClient.post(`/admin/quizzes`, data);
 }
-import apiClient from "./apiClient";
 
-// AUTH
-export const adminLogin = (email, password) =>
-  apiClient.post("/admin/auth/login", { email, password });
-
-// DASHBOARD
-export const getAdminDashboard = () => apiClient.get("/admin/dashboard");
-
-// LESSONS
-export const getLessons = () => apiClient.get("/admin/lessons");
-
-export const createLesson = (data) => apiClient.post("/admin/lessons", data);
-
-export const updateLesson = (id, data) =>
-  apiClient.put(`/admin/lessons/${id}`, data);
-
-export const deleteLesson = (id) => apiClient.delete(`/admin/lessons/${id}`);
-
-// QUIZZES (for later)
-export const getQuizzes = () => apiClient.get("/admin/quizzes");
-
-export const createQuiz = (data) => apiClient.post("/admin/quizzes", data);
-import apiClient from "./apiClient";
-
-// ---------- AUTH ----------
-export const adminLogin = (email, password) =>
-  apiClient.post("/admin/auth/login", { email, password });
-
-// ---------- DASHBOARD ----------
-export const getAdminDashboard = () => apiClient.get("/admin/dashboard");
-
-// ---------- LESSONS ----------
-export const getLessons = () => apiClient.get("/admin/lessons");
-
-export const createLesson = (data) => apiClient.post("/admin/lessons", data);
-
-export const updateLesson = (id, data) =>
-  apiClient.put(`/admin/lessons/${id}`, data);
-
-export const deleteLesson = (id) => apiClient.delete(`/admin/lessons/${id}`);
-
-// ---------- QUIZZES ----------
-export const getQuizzes = () => apiClient.get("/admin/quizzes");
-
-export const getQuiz = (id) => apiClient.get(`/admin/quizzes/${id}`);
-
-export const createQuiz = (data) => apiClient.post("/admin/quizzes", data);
-
-export const updateQuiz = (id, data) =>
-  apiClient.put(`/admin/quizzes/${id}`, data);
-
-export const deleteQuiz = (id) => apiClient.delete(`/admin/quizzes/${id}`);
-
-export function getAllQuizzes(lessonId) {
-  return adminApi.get(`/quizzes?lessonId=${lessonId}`);
+export function updateQuiz(id, data) {
+  return apiClient.put(`/admin/quizzes/${id}`, data);
 }
 
 export function deleteQuiz(id) {
-  return adminApi.delete(`/quizzes/${id}`);
-}
-
-export function createQuiz(data) {
-  return adminApi.post(`/quizzes`, data);
+  return apiClient.delete(`/admin/quizzes/${id}`);
 }
