@@ -3,252 +3,162 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getQuizById, updateQuiz, deleteQuiz } from "../api/adminApi";
 import ProtectedAdminRoute from "../components/ProtectedAdminRoute";
 
-export default function AdminQuizEdit() {
+function AdminQuizEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const [quiz, setQuiz] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // LOCAL STATE FOR FORM
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [difficulty, setDifficulty] = useState("beginner");
-  const [questions, setQuestions] = useState([]);
+  const [quiz, setQuiz] = useState({
+    question: "",
+    optionA: "",
+    optionB: "",
+    optionC: "",
+    optionD: "",
+    answer: "",
+    explanation: "",
+  });
 
-  // -------------------------------------
-  // FETCH QUIZ DATA
-  // -------------------------------------
   useEffect(() => {
-    async function fetchQuiz() {
+    async function loadQuiz() {
       try {
-        const response = await getQuizById(id);
-        if (response.ok) {
-          const q = response.quiz;
-
-          setQuiz(q);
-          setTitle(q.title || "");
-          setDescription(q.description || "");
-          setDifficulty(q.difficulty || "beginner");
-          setQuestions(q.questions || []);
+        const res = await getQuizById(id);
+        if (res.ok) {
+          setQuiz(res.quiz);
         }
       } catch (err) {
-        console.error("Error fetching quiz:", err);
+        console.error(err);
+        alert("Failed to load quiz");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
-    fetchQuiz();
+
+    loadQuiz();
   }, [id]);
 
-  // -------------------------------------
-  // ADD NEW QUESTION
-  // -------------------------------------
-  const addQuestion = () => {
-    setQuestions([
-      ...questions,
-      {
-        text: "",
-        options: ["", "", "", ""],
-        correctIndex: 0,
-      },
-    ]);
-  };
+  function handleChange(e) {
+    setQuiz({ ...quiz, [e.target.name]: e.target.value });
+  }
 
-  // -------------------------------------
-  // UPDATE QUESTION TEXT
-  // -------------------------------------
-  const updateQuestionText = (index, value) => {
-    const updated = [...questions];
-    updated[index].text = value;
-    setQuestions(updated);
-  };
-
-  // -------------------------------------
-  // UPDATE OPTION TEXT
-  // -------------------------------------
-  const updateOptionText = (qIndex, optIndex, value) => {
-    const updated = [...questions];
-    updated[qIndex].options[optIndex] = value;
-    setQuestions(updated);
-  };
-
-  // -------------------------------------
-  // UPDATE CORRECT OPTION
-  // -------------------------------------
-  const updateCorrectOption = (qIndex, value) => {
-    const updated = [...questions];
-    updated[qIndex].correctIndex = Number(value);
-    setQuestions(updated);
-  };
-
-  // -------------------------------------
-  // DELETE QUESTION
-  // -------------------------------------
-  const removeQuestion = (index) => {
-    const updated = [...questions];
-    updated.splice(index, 1);
-    setQuestions(updated);
-  };
-
-  // -------------------------------------
-  // SAVE CHANGES
-  // -------------------------------------
-  const handleSave = async () => {
+  async function handleSave() {
     setSaving(true);
     try {
-      const payload = {
-        title,
-        description,
-        difficulty,
-        questions,
-      };
-
-      const res = await updateQuiz(id, payload);
+      const res = await updateQuiz(id, quiz);
       if (res.ok) {
         alert("Quiz updated successfully!");
         navigate("/admin/quizzes");
+      } else {
+        alert(res.message || "Failed to update quiz");
       }
     } catch (err) {
-      console.error("Save error:", err);
-      alert("Error saving quiz");
+      console.error(err);
+      alert("Something went wrong.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-  };
+  }
 
-  // -------------------------------------
-  // DELETE QUIZ
-  // -------------------------------------
-  const handleDelete = async () => {
-    const confirmDelete = window.confirm(
-      "Are you sure? This cannot be undone.",
-    );
-    if (!confirmDelete) return;
+  async function handleDelete() {
+    if (!window.confirm("Are you sure you want to delete this quiz?")) return;
 
     try {
-      await deleteQuiz(id);
-      alert("Quiz deleted.");
-      navigate("/admin/quizzes");
+      const res = await deleteQuiz(id);
+      if (res.ok) {
+        alert("Quiz deleted!");
+        navigate("/admin/quizzes");
+      } else {
+        alert("Error deleting quiz");
+      }
     } catch (err) {
       console.error(err);
+      alert("Something went wrong.");
     }
-  };
+  }
 
-  if (loading) return <div className="p-6">Loading quiz...</div>;
+  if (loading) return <p>Loading quiz…</p>;
 
   return (
     <ProtectedAdminRoute>
-      <div className="p-6 max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Edit Quiz</h1>
+      <div className="admin-container">
+        <h1>Edit Quiz</h1>
 
-        {/* QUIZ GENERAL FIELDS */}
-        <div className="space-y-4 mb-8">
-          <div>
-            <label className="font-semibold">Title</label>
-            <input
-              className="w-full p-2 border rounded"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Quiz title"
-            />
-          </div>
+        <div className="form-block">
+          <label>Question</label>
+          <textarea
+            name="question"
+            value={quiz.question}
+            onChange={handleChange}
+          ></textarea>
 
-          <div>
-            <label className="font-semibold">Description</label>
-            <textarea
-              className="w-full p-2 border rounded"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Short quiz description"
-            />
-          </div>
+          <label>Option A</label>
+          <input
+            type="text"
+            name="optionA"
+            value={quiz.optionA}
+            onChange={handleChange}
+          />
 
-          <div>
-            <label className="font-semibold">Difficulty</label>
-            <select
-              className="p-2 border rounded"
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
-            >
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </select>
-          </div>
+          <label>Option B</label>
+          <input
+            type="text"
+            name="optionB"
+            value={quiz.optionB}
+            onChange={handleChange}
+          />
+
+          <label>Option C</label>
+          <input
+            type="text"
+            name="optionC"
+            value={quiz.optionC}
+            onChange={handleChange}
+          />
+
+          <label>Option D</label>
+          <input
+            type="text"
+            name="optionD"
+            value={quiz.optionD}
+            onChange={handleChange}
+          />
+
+          <label>Correct Answer (A/B/C/D)</label>
+          <input
+            type="text"
+            name="answer"
+            value={quiz.answer}
+            onChange={handleChange}
+          />
+
+          <label>Explanation</label>
+          <textarea
+            name="explanation"
+            value={quiz.explanation}
+            onChange={handleChange}
+          ></textarea>
         </div>
 
-        {/* QUESTIONS */}
-        <h2 className="text-xl font-bold mb-2">Questions</h2>
-
-        {questions.map((q, i) => (
-          <div key={i} className="border p-4 mb-4 rounded bg-gray-50">
-            <div className="flex justify-between">
-              <p className="font-semibold">Question {i + 1}</p>
-              <button
-                className="text-red-600 text-sm"
-                onClick={() => removeQuestion(i)}
-              >
-                Remove
-              </button>
-            </div>
-
-            <input
-              className="w-full p-2 border rounded mt-2"
-              placeholder="Question text"
-              value={q.text}
-              onChange={(e) => updateQuestionText(i, e.target.value)}
-            />
-
-            {/* OPTIONS */}
-            <div className="mt-3 space-y-2">
-              {q.options.map((opt, j) => (
-                <div key={j} className="flex items-center gap-3">
-                  <input
-                    className="flex-1 p-2 border rounded"
-                    placeholder={`Option ${j + 1}`}
-                    value={opt}
-                    onChange={(e) => updateOptionText(i, j, e.target.value)}
-                  />
-
-                  <input
-                    type="radio"
-                    checked={q.correctIndex === j}
-                    onChange={() => updateCorrectOption(i, j)}
-                  />
-                  <span className="text-sm">Correct</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* ADD QUESTION BUTTON */}
-        <button
-          className="mt-2 mb-6 px-4 py-2 bg-blue-600 text-white rounded"
-          onClick={addQuestion}
-        >
-          + Add Question
-        </button>
-
-        {/* SAVE + DELETE */}
-        <div className="flex gap-4">
-          <button
-            className="px-4 py-2 bg-green-600 text-white rounded"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Save Changes"}
+        <div className="admin-actions">
+          <button onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : "Save Changes"}
           </button>
 
           <button
-            className="px-4 py-2 bg-red-600 text-white rounded"
             onClick={handleDelete}
+            style={{ background: "red", color: "white" }}
           >
             Delete Quiz
+          </button>
+
+          <button onClick={() => navigate("/admin/quizzes")}>
+            Back to Quizzes
           </button>
         </div>
       </div>
     </ProtectedAdminRoute>
   );
 }
+
+export default AdminQuizEdit;
