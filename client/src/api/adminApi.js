@@ -61,23 +61,28 @@ export function updateQuiz(id, data) {
 export function deleteQuiz(id) {
   return apiClient.delete(`/admin/quizzes/${id}`);
 }
-// USERS
+
+/* =========================
+   USERS
+========================= */
+
+// list all users
 export const getAllUsers = () => apiClient.get("/admin/users");
+
+// single user
 export const getUserById = (id) => apiClient.get(`/admin/users/${id}`);
+
+// reset XP
 export const resetUserXP = (id) =>
   apiClient.patch(`/admin/users/${id}/reset-xp`);
+
+// reset streak
 export const resetUserStreak = (id) =>
   apiClient.patch(`/admin/users/${id}/reset-streak`);
+
+// ban / unban
 export const toggleBanUser = (id) =>
   apiClient.patch(`/admin/users/${id}/toggle-ban`);
-// =================== USERS ===================
 
-// GET all users
-export function getAllUsers() {
-  return apiClient.get("/admin/users");
-}
-
-// DELETE user
-export function deleteUser(id) {
-  return apiClient.delete(`/admin/users/${id}`);
-}
+// hard delete user (if you want it)
+export const deleteUser = (id) => apiClient.delete(`/admin/users/${id}`);
