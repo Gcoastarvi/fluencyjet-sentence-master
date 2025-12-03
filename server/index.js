@@ -146,12 +146,10 @@ app.get("/api/_echo", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/progress", progressRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
-app.use("/api/admin", adminRoutes);
 app.use("/api/xp", xpRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/quizzes", quizRoutes);
-app.use("/api/admin", adminAuthRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/lessons", adminLessonsRoutes);
