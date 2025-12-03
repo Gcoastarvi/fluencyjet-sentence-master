@@ -61,3 +61,9 @@ export function updateQuiz(id, data) {
 export function deleteQuiz(id) {
   return apiClient.delete(`/admin/quizzes/${id}`);
 }
+// USERS
+export const getAllUsers = () => apiClient.get("/admin/users");
+export const getUserById = (id) => apiClient.get(`/admin/users/${id}`);
+export const resetUserXP = (id) => apiClient.patch(`/admin/users/${id}/reset-xp`);
+export const resetUserStreak = (id) => apiClient.patch(`/admin/users/${id}/reset-streak`);
+export const toggleBanUser = (id) => apiClient.patch(`/admin/users/${id}/toggle-ban`);
