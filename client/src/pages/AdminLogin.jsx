@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api/apiClient";
+import { adminLogin } from "../api/adminApi"; // 🔥 updated import
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -15,17 +15,17 @@ export default function AdminLogin() {
     setError("");
 
     try {
-      const res = await API.post("/admin/login", { email, password });
+      const res = await adminLogin(email, password); // 🔥 updated login
 
-      if (!res.data.ok) {
+      if (!res.ok) {
         setError("Invalid admin credentials");
         setLoading(false);
         return;
       }
 
-      localStorage.setItem("adminToken", res.data.token);
+      localStorage.setItem("adminToken", res.token);
 
-      navigate("/admin/analytics");
+      navigate("/admin/dashboard"); // 🔥 correct redirect
     } catch (err) {
       setError("Login failed");
       console.error(err);
