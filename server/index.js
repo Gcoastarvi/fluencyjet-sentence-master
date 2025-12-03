@@ -24,6 +24,7 @@ import lessonRoutes from "./routes/lessons.js";
 import adminRoutes from "./routes/admin.js";
 import quizRoutes from "./routes/quizzes.js";
 import adminAuthRoutes from "./routes/adminAuth.js";
+import adminUsersRoutes from "./routes/adminUsers.js";
 import adminDashboardRoutes from "./routes/adminDashboard.js";
 import adminLessonsRoutes from "./routes/adminLessons.js";
 import adminQuizzesRoutes from "./routes/adminQuizzes.js";
@@ -154,6 +155,7 @@ app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/lessons", adminLessonsRoutes);
 app.use("/api/admin/quizzes", adminQuizzesRoutes);
+app.use("/api/admin/users", adminUsersRoutes);
 
 // ❌ 404 for API must be LAST
 app.all("/api/*", (req, res) => {

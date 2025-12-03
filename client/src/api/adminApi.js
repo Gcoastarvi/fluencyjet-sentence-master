@@ -64,6 +64,20 @@ export function deleteQuiz(id) {
 // USERS
 export const getAllUsers = () => apiClient.get("/admin/users");
 export const getUserById = (id) => apiClient.get(`/admin/users/${id}`);
-export const resetUserXP = (id) => apiClient.patch(`/admin/users/${id}/reset-xp`);
-export const resetUserStreak = (id) => apiClient.patch(`/admin/users/${id}/reset-streak`);
-export const toggleBanUser = (id) => apiClient.patch(`/admin/users/${id}/toggle-ban`);
+export const resetUserXP = (id) =>
+  apiClient.patch(`/admin/users/${id}/reset-xp`);
+export const resetUserStreak = (id) =>
+  apiClient.patch(`/admin/users/${id}/reset-streak`);
+export const toggleBanUser = (id) =>
+  apiClient.patch(`/admin/users/${id}/toggle-ban`);
+// =================== USERS ===================
+
+// GET all users
+export function getAllUsers() {
+  return apiClient.get("/admin/users");
+}
+
+// DELETE user
+export function deleteUser(id) {
+  return apiClient.delete(`/admin/users/${id}`);
+}
