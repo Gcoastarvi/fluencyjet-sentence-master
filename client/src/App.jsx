@@ -17,6 +17,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import AdminQuizzes from "./pages/AdminQuizzes.jsx";
 import AdminAnalytics from "./pages/AdminAnalytics.jsx";
+import AdminLogin from "./pages/AdminLogin";
 
 // Lessons
 import Lessons from "@/pages/Lessons";
@@ -201,6 +202,15 @@ export default function App() {
               </ProtectedAdminRoute>
             }
           />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
           {/* LESSONS */}
           <Route
