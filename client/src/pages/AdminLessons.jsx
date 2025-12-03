@@ -1,272 +1,244 @@
-import React, { useEffect, useState } from "react";
-import api from "../api";
+import { useEffect, useState } from "react";
+import {
+  getLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
+} from "../api/adminApi";
+import { useNavigate } from "react-router-dom";
 
 export default function AdminLessons() {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingLesson, setEditingLesson] = useState(null);
 
-  // Form state
-  const [form, setForm] = useState({
-    id: null,
+  const [formData, setFormData] = useState({
+    slug: "",
     title: "",
     description: "",
-    content: "",
-    difficulty: "easy",
-    order: 1,
-    is_locked: false,
+    difficulty: "beginner",
+    isLocked: false,
   });
 
-  const [isEditing, setIsEditing] = useState(false);
+  const navigate = useNavigate();
 
-  // Load lessons
-  async function loadLessons() {
+  const loadLessons = async () => {
     try {
-      setLoading(true);
-      const res = await api.get("/admin/lessons/all");
-      if (res.data.ok) setLessons(res.data.lessons);
+      const res = await getLessons();
+      if (res.data.ok) {
+        setLessons(res.data.lessons);
+      }
     } catch (err) {
-      console.error("Load lessons error:", err);
-      alert("Failed to load lessons");
+      console.error("Failed loading lessons:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }
+  };
 
   useEffect(() => {
     loadLessons();
   }, []);
 
-  // Reset form
-  function resetForm() {
-    setForm({
-      id: null,
-      title: "",
-      description: "",
-      content: "",
-      difficulty: "easy",
-      order: 1,
-      is_locked: false,
-    });
-    setIsEditing(false);
-  }
-
-  // Submit form
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      if (isEditing) {
-        // UPDATE
-        const res = await api.put(`/admin/lessons/${form.id}`, form);
-        if (res.data.ok) {
-          alert("Lesson updated");
-          resetForm();
-          loadLessons();
-        }
+      if (editingLesson) {
+        await updateLesson(editingLesson.id, formData);
       } else {
-        // CREATE
-        const res = await api.post("/admin/lessons", form);
-        if (res.data.ok) {
-          alert("Lesson created");
-          resetForm();
-          loadLessons();
-        }
+        await createLesson(formData);
       }
+
+      setShowForm(false);
+      setEditingLesson(null);
+      setFormData({
+        slug: "",
+        title: "",
+        description: "",
+        difficulty: "beginner",
+        isLocked: false,
+      });
+
+      loadLessons();
     } catch (err) {
-      console.error("Save lesson error:", err);
-      alert("Failed to save lesson");
+      console.error("Lesson save failed:", err);
     }
-  }
+  };
 
-  // Edit a lesson
-  function startEdit(lesson) {
-    setIsEditing(true);
-    setForm({
-      id: lesson.id,
+  const handleEdit = (lesson) => {
+    setEditingLesson(lesson);
+    setFormData({
+      slug: lesson.slug,
       title: lesson.title,
-      description: lesson.description,
-      content: lesson.content,
+      description: lesson.description || "",
       difficulty: lesson.difficulty,
-      order: lesson.order,
-      is_locked: lesson.is_locked,
+      isLocked: lesson.isLocked,
     });
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+    setShowForm(true);
+  };
 
-  // Delete
-  async function deleteLesson(id) {
+  const handleDelete = async (id) => {
     if (!window.confirm("Delete this lesson?")) return;
 
     try {
-      const res = await api.delete(`/admin/lessons/${id}`);
-      if (res.data.ok) {
-        alert("Deleted successfully");
-        loadLessons();
-      }
+      await deleteLesson(id);
+      loadLessons();
     } catch (err) {
-      console.error("Delete lesson error:", err);
-      alert("Delete failed");
+      console.error("Delete failed:", err);
     }
-  }
+  };
 
-  // Reorder
-  async function updateOrder() {
-    const orderedIds = lessons.map((l) => l.id);
-    try {
-      const res = await api.patch("/admin/lessons/reorder", { orderedIds });
-      if (res.data.ok) alert("Reordered successfully");
-    } catch (err) {
-      console.error("Reorder error:", err);
-      alert("Reorder failed");
-    }
-  }
+  if (loading) return <p className="p-4">Loading lessons...</p>;
 
-  // Move lesson
-  function moveLesson(index, direction) {
-    const newList = [...lessons];
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= newList.length) return;
-
-    const temp = newList[index];
-    newList[index] = newList[newIndex];
-    newList[newIndex] = temp;
-
-    // Re-assign order numbers
-    newList.forEach((l, i) => (l.order = i + 1));
-    setLessons(newList);
-  }
-
-  /* UI */
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-4 text-purple-700">
-        Admin Lesson Manager
-      </h1>
-
-      {/* FORM */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow p-4 rounded border mb-6"
-      >
-        <h2 className="text-xl font-bold mb-3">
-          {isEditing ? "Edit Lesson" : "Create Lesson"}
-        </h2>
-
-        <input
-          className="border p-2 w-full mb-2"
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
-        />
-
-        <textarea
-          className="border p-2 w-full mb-2"
-          placeholder="Description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-
-        <textarea
-          className="border p-2 w-full mb-2"
-          placeholder="Content"
-          value={form.content}
-          onChange={(e) => setForm({ ...form, content: e.target.value })}
-        />
-
-        <select
-          className="border p-2 w-full mb-2"
-          value={form.difficulty}
-          onChange={(e) => setForm({ ...form, difficulty: e.target.value })}
-        >
-          <option>easy</option>
-          <option>medium</option>
-          <option>hard</option>
-        </select>
-
-        <label className="flex items-center gap-2 mb-3">
-          <input
-            type="checkbox"
-            checked={form.is_locked}
-            onChange={(e) => setForm({ ...form, is_locked: e.target.checked })}
-          />
-          Locked?
-        </label>
-
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Admin Lessons</h1>
         <button
-          className="bg-purple-600 text-white px-4 py-2 rounded"
-          type="submit"
+          onClick={() => {
+            setEditingLesson(null);
+            setShowForm(true);
+          }}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
         >
-          {isEditing ? "Update Lesson" : "Create Lesson"}
+          + Create Lesson
         </button>
+      </div>
 
-        {isEditing && (
-          <button
-            type="button"
-            className="ml-3 bg-gray-400 text-white px-4 py-2 rounded"
-            onClick={resetForm}
-          >
-            Cancel Edit
-          </button>
-        )}
-      </form>
+      {/* FORM PANEL */}
+      {showForm && (
+        <div className="bg-white shadow p-4 rounded-lg mb-6">
+          <h2 className="text-xl font-semibold mb-4">
+            {editingLesson ? "Edit Lesson" : "Create New Lesson"}
+          </h2>
 
-      {/* LESSON LIST */}
-      <h2 className="text-xl font-bold mb-3">Existing Lessons</h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              type="text"
+              placeholder="Slug"
+              className="border p-2 w-full"
+              value={formData.slug}
+              onChange={(e) =>
+                setFormData({ ...formData, slug: e.target.value })
+              }
+              required
+            />
 
-      {loading ? (
-        <p>Loading...</p>
-      ) : lessons.length === 0 ? (
-        <p>No lessons yet.</p>
-      ) : (
-        <div className="space-y-3">
-          {lessons.map((lesson, index) => (
-            <div
-              key={lesson.id}
-              className="border p-3 rounded shadow-sm bg-white"
+            <input
+              type="text"
+              placeholder="Title"
+              className="border p-2 w-full"
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              required
+            />
+
+            <textarea
+              placeholder="Description"
+              className="border p-2 w-full"
+              rows="3"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+            />
+
+            <select
+              className="border p-2 w-full"
+              value={formData.difficulty}
+              onChange={(e) =>
+                setFormData({ ...formData, difficulty: e.target.value })
+              }
             >
-              <div className="flex justify-between mb-2">
-                <strong>
-                  {lesson.order}. {lesson.title}
-                </strong>
-                <div>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.isLocked}
+                onChange={(e) =>
+                  setFormData({ ...formData, isLocked: e.target.checked })
+                }
+              />
+              Is Locked?
+            </label>
+
+            <button
+              type="submit"
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              Save Lesson
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="ml-4 px-4 py-2 text-gray-600"
+            >
+              Cancel
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* LESSON TABLE */}
+      <div className="bg-white shadow p-4 rounded-lg">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-100 text-left">
+              <th className="p-2 border">ID</th>
+              <th className="p-2 border">Slug</th>
+              <th className="p-2 border">Title</th>
+              <th className="p-2 border">Difficulty</th>
+              <th className="p-2 border">Locked?</th>
+              <th className="p-2 border">Quizzes</th>
+              <th className="p-2 border">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {lessons.map((l) => (
+              <tr key={l.id} className="border-t">
+                <td className="p-2 border">{l.id}</td>
+                <td className="p-2 border">{l.slug}</td>
+                <td className="p-2 border">{l.title}</td>
+                <td className="p-2 border">{l.difficulty}</td>
+                <td className="p-2 border">{l.isLocked ? "Yes" : "No"}</td>
+                <td className="p-2 border">{l._count?.quizzes || 0}</td>
+
+                <td className="p-2 border">
                   <button
-                    className="mr-2 text-blue-600"
-                    onClick={() => startEdit(lesson)}
+                    onClick={() => handleEdit(l)}
+                    className="text-blue-600 mr-3"
                   >
                     Edit
                   </button>
+
                   <button
-                    className="mr-2 text-red-600"
-                    onClick={() => deleteLesson(lesson.id)}
+                    onClick={() => handleDelete(l.id)}
+                    className="text-red-600"
                   >
                     Delete
                   </button>
-                  <button
-                    onClick={() => moveLesson(index, -1)}
-                    className="mr-1 px-2 py-1 bg-gray-200 rounded"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => moveLesson(index, +1)}
-                    className="px-2 py-1 bg-gray-200 rounded"
-                  >
-                    ↓
-                  </button>
-                </div>
-              </div>
-              <p className="text-sm opacity-70">{lesson.description}</p>
-            </div>
-          ))}
 
-          <button
-            onClick={updateOrder}
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded"
-          >
-            Save Reorder
-          </button>
-        </div>
-      )}
+                  <button
+                    onClick={() => navigate(`/admin/quizzes/${l.id}`)}
+                    className="ml-3 text-purple-600"
+                  >
+                    Manage Quizzes →
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
