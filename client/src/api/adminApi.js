@@ -32,6 +32,21 @@ export function updateLesson(id, data) {
 export function deleteLesson(id) {
   return apiClient.delete(`/admin/lessons/${id}`);
 }
+// ----------------------
+// QUIZ ENDPOINTS
+// ----------------------
+
+// Get all quizzes for a lesson
+export const getAllQuizzes = (lessonId) =>
+  apiClient.get(`/admin/quizzes/all?lessonId=${lessonId}`);
+
+// Create a new quiz
+export const createQuiz = (data) =>
+  apiClient.post("/admin/quizzes/create", data);
+
+// Delete quiz by id
+export const deleteQuiz = (id) =>
+  apiClient.delete(`/admin/quizzes/delete/${id}`);
 
 // =========================
 // QUIZZES
