@@ -22,10 +22,11 @@ import testRoutes from "./routes/test.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import lessonRoutes from "./routes/lessons.js";
 import adminRoutes from "./routes/admin.js";
-import adminLessonsRoutes from "./routes/adminLessons.js";
 import quizRoutes from "./routes/quizzes.js";
-import adminQuizzesRoutes from "./routes/adminQuizzes.js";
 import adminAuthRoutes from "./routes/adminAuth.js";
+import adminDashboardRoutes from "./routes/adminDashboard.js";
+import adminLessonsRoutes from "./routes/adminLessons.js";
+import adminQuizzesRoutes from "./routes/adminQuizzes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -150,10 +151,11 @@ app.use("/api/xp", xpRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/quizzes", quizRoutes);
-app.use("/api/admin/lessons", adminLessonsRoutes);
-app.use("/api/admin/quizzes", adminQuizzesRoutes);
 app.use("/api/admin", adminAuthRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
+app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/admin/lessons", adminLessonsRoutes);
+app.use("/api/admin/quizzes", adminQuizzesRoutes);
 
 // ❌ 404 for API must be LAST
 app.all("/api/*", (req, res) => {
