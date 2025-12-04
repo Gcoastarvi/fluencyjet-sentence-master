@@ -745,39 +745,41 @@ router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
       prisma.quiz.count(),
     ]);
 
-    const [newUsersToday, todayXpAgg, activeUsersTodayRows] = await Promise.all([
-      prisma.user.count({
-        where: {
-          createdAt: {
-            gte: today,
-            lt: tomorrow,
+    const [newUsersToday, todayXpAgg, activeUsersTodayRows] = await Promise.all(
+      [
+        prisma.user.count({
+          where: {
+            createdAt: {
+              gte: today,
+              lt: tomorrow,
+            },
           },
-        },
-      }),
-      prisma.xpEvent.aggregate({
-        _sum: {
-          amount: true,
-        },
-        where: {
-          createdAt: {
-            gte: today,
-            lt: tomorrow,
+        }),
+        prisma.xpEvent.aggregate({
+          _sum: {
+            amount: true,
           },
-        },
-      }),
-      prisma.xpEvent.groupBy({
-        by: ["userId"],
-        where: {
-          createdAt: {
-            gte: today,
-            lt: tomorrow,
+          where: {
+            createdAt: {
+              gte: today,
+              lt: tomorrow,
+            },
           },
-        },
-        _sum: {
-          amount: true,
-        },
-      }),
-    ]);
+        }),
+        prisma.xpEvent.groupBy({
+          by: ["userId"],
+          where: {
+            createdAt: {
+              gte: today,
+              lt: tomorrow,
+            },
+          },
+          _sum: {
+            amount: true,
+          },
+        }),
+      ],
+    );
 
     const todayXp = todayXpAgg._sum.amount || 0;
     const activeUsersToday = activeUsersTodayRows.length;
@@ -858,7 +860,7 @@ router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
       : [];
 
     const leaderboardUserById = Object.fromEntries(
-      leaderboardUsers.map((u) => [u.id, u])
+      leaderboardUsers.map((u) => [u.id, u]),
     );
 
     const totalXpLeaderboard = leaderboardRaw.map((row) => ({
@@ -907,9 +909,7 @@ router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
         })
       : [];
 
-    const lessonById = Object.fromEntries(
-      engagedLessons.map((l) => [l.id, l])
-    );
+    const lessonById = Object.fromEntries(engagedLessons.map((l) => [l.id, l]));
 
     const lessonEngagement = lessonEngagementRaw.map((row) => ({
       lessonId: row.lessonId,
@@ -960,18 +960,173 @@ router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
         newUsersToday,
         activeUsersToday,
       },
-      dailySignups,          // [{ date: "2025-11-24", count: 5 }, ...]
-      dailyXp,               // [{ date: "2025-11-24", xp: 1200 }, ...]
-      totalXpLeaderboard,    // [{ userId, name, email, totalXp }, ...]
-      xpDistribution,        // [{ bucket: "0-999", users: 10 }, ...]
-      lessonEngagement,      // [{ lessonId, lessonTitle, totalXp }, ...]
-      quizPerformance,       // [] for now, will fill later
+      dailySignups, // [{ date: "2025-11-24", count: 5 }, ...]
+      dailyXp, // [{ date: "2025-11-24", xp: 1200 }, ...]
+      totalXpLeaderboard, // [{ userId, name, email, totalXp }, ...]
+      xpDistribution, // [{ bucket: "0-999", users: 10 }, ...]
+      lessonEngagement, // [{ lessonId, lessonTitle, totalXp }, ...]
+      quizPerformance, // [] for now, will fill later
     });
   } catch (err) {
     console.error("Error in /api/admin/analytics:", err);
-    return res
-      .status(500)
-      .json({ error: "Failed to load admin analytics" });
+    return res.status(500).json({ error: "Failed to load admin analytics" });
+  }
+});
+// ─────────────────────────────────────────────
+// Admin Analytics: /api/admin/analytics
+// ─────────────────────────────────────────────
+
+router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Start of today (for "today XP", "active users today", "new users today")
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+
+    // Last 30 days window (for charts)
+    const rangeDays = 30;
+    const fromDate = new Date(
+      startOfToday.getFullYear(),
+      startOfToday.getMonth(),
+      startOfToday.getDate(),
+    );
+    fromDate.setDate(fromDate.getDate() - (rangeDays - 1));
+
+    // 1) Basic counts
+    const [totalUsers, newUsersToday, totalLessons, totalQuizzes] =
+      await Promise.all([
+        prisma.user.count(),
+        prisma.user.count({
+          where: { createdAt: { gte: startOfToday } },
+        }),
+        prisma.lesson.count(),
+        prisma.quiz.count(),
+      ]);
+
+    // 2) Data for charts (last 30 days)
+    // NOTE: Replace `xpEvent` with your actual XP event client name.
+    // If your Prisma model is `model XPEvent`, the client will likely be `prisma.xPEvent`.
+    const [usersRange, xpEventsRange, xpEventsToday, topUsers] =
+      await Promise.all([
+        prisma.user.findMany({
+          where: { createdAt: { gte: fromDate } },
+          select: { id: true, createdAt: true },
+        }),
+        prisma.xpEvent.findMany({
+          where: { createdAt: { gte: fromDate } },
+          select: { amount: true, createdAt: true },
+        }),
+        prisma.xpEvent.findMany({
+          where: { createdAt: { gte: startOfToday } },
+          select: { userId: true, amount: true },
+        }),
+        prisma.user.findMany({
+          orderBy: { xp: "desc" },
+          take: 20,
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            xp: true,
+            createdAt: true,
+          },
+        }),
+      ]);
+
+    // 3) Today: active users + today XP
+    const activeUserIdsToday = new Set();
+    let todayXp = 0;
+
+    xpEventsToday.forEach((e) => {
+      if (e.userId) activeUserIdsToday.add(e.userId);
+      if (typeof e.amount === "number") todayXp += e.amount;
+    });
+
+    const activeUsersToday = activeUserIdsToday.size;
+
+    // 4) Chart: daily signups (last 30 days)
+    const dailySignupsMap = {};
+    usersRange.forEach((u) => {
+      const key = u.createdAt.toISOString().slice(0, 10); // YYYY-MM-DD
+      dailySignupsMap[key] = (dailySignupsMap[key] || 0) + 1;
+    });
+
+    // 5) Chart: daily XP (last 30 days)
+    const dailyXpMap = {};
+    xpEventsRange.forEach((e) => {
+      const key = e.createdAt.toISOString().slice(0, 10);
+      const amount = typeof e.amount === "number" ? e.amount : 0;
+      dailyXpMap[key] = (dailyXpMap[key] || 0) + amount;
+    });
+
+    const toSortedArray = (map, valueKey) =>
+      Object.keys(map)
+        .sort()
+        .map((date) => ({
+          date,
+          [valueKey]: map[date],
+        }));
+
+    const dailySignups = toSortedArray(dailySignupsMap, "count");
+    const dailyXp = toSortedArray(dailyXpMap, "xp");
+
+    // 6) XP distribution across all users
+    const usersForDistribution = await prisma.user.findMany({
+      select: { xp: true },
+    });
+
+    const bucketDefs = [
+      { label: "0–999", min: 0, max: 999 },
+      { label: "1k–4.9k", min: 1000, max: 4999 },
+      { label: "5k–9.9k", min: 5000, max: 9999 },
+      { label: "10k–24.9k", min: 10000, max: 24999 },
+      { label: "25k–49.9k", min: 25000, max: 49999 },
+      { label: "50k+", min: 50000, max: Infinity },
+    ];
+
+    const xpDistribution = bucketDefs.map((b) => ({
+      label: b.label,
+      count: 0,
+    }));
+
+    usersForDistribution.forEach((user) => {
+      const value = typeof user.xp === "number" ? user.xp : 0;
+      const index = bucketDefs.findIndex(
+        (b) => value >= b.min && value <= b.max,
+      );
+      if (index !== -1) {
+        xpDistribution[index].count += 1;
+      }
+    });
+
+    // 7) Response
+    res.json({
+      summary: {
+        totalUsers,
+        todayXp,
+        activeUsersToday,
+        newUsersToday,
+        totalLessons,
+        totalQuizzes,
+      },
+      charts: {
+        dailySignups,
+        dailyXp,
+        xpDistribution,
+        topUsersByXp: topUsers,
+      },
+      meta: {
+        rangeDays,
+        generatedAt: now.toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error("Admin analytics error:", err);
+    res.status(500).json({ error: "Failed to load admin analytics" });
   }
 });
 
