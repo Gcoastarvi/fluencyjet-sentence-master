@@ -25,11 +25,27 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    // After verifying email/password & checking isAdmin
     const token = jwt.sign(
-      { role: "admin", email },
-      process.env.ADMIN_JWT_SECRET,
+      {
+        id: user.id, // REQUIRED
+        email: user.email, // REQUIRED
+        role: "admin", // REQUIRED (your requireAdmin uses this)
+        isAdmin: true, // helpful for frontend & fallback
+      },
+      process.env.JWT_SECRET,
       { expiresIn: "7d" },
     );
+
+    return res.json({
+      ok: true,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        isAdmin: true,
+      },
+    });
 
     return res.json({
       ok: true,
