@@ -38,7 +38,7 @@ export default function AdminUserDetail() {
   /* LOAD USER + XP EVENTS */
   async function loadUser() {
     try {
-      const res = await fetch(`/api/admin/user/${id}`, {
+      const res = await fetch(`/api/admin/users/${id}`, {
         credentials: "include",
       });
 
