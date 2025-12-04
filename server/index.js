@@ -156,8 +156,12 @@ app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/lessons", adminLessonsRoutes);
 app.use("/api/admin/quizzes", adminQuizzesRoutes);
 app.use("/api/admin/users", adminUsersRoutes);
+app.use("/api/admin", adminRoutes);
 
-// ❌ 404 for API must be LAST
+// ✅ Add analytics + full admin router BEFORE 404
+app.use("/api/admin", adminRoutes);
+
+// ❌ 404 must stay LAST (do not move this!)
 app.all("/api/*", (req, res) => {
   return res.status(404).json({
     ok: false,
