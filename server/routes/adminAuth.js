@@ -42,7 +42,7 @@ router.post("/login", async (req, res) => {
           });
         }
 
-        // Simple env-based admin check
+        // Admin email + password from ENV
         if (
           email !== process.env.ADMIN_EMAIL ||
           password !== process.env.ADMIN_PASSWORD
@@ -53,7 +53,7 @@ router.post("/login", async (req, res) => {
           });
         }
 
-        // Issue admin token that our middlewares understand
+        // Create admin JWT
         const token = jwt.sign(
           {
             email,
