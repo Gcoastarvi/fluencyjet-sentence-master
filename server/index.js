@@ -151,15 +151,14 @@ app.use("/api/xp", xpRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/lessons", lessonRoutes);
 app.use("/api/quizzes", quizRoutes);
+
+// ADMIN ROUTES
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/lessons", adminLessonsRoutes);
 app.use("/api/admin/quizzes", adminQuizzesRoutes);
 app.use("/api/admin/users", adminUsersRoutes);
-app.use("/api/admin", adminRoutes);
-
-// ✅ Add analytics + full admin router BEFORE 404
-app.use("/api/admin", adminRoutes);
+app.use("/api/admin", adminRoutes); // overview, analytics, diagnostics, etc.
 
 // ❌ 404 must stay LAST (do not move this!)
 app.all("/api/*", (req, res) => {

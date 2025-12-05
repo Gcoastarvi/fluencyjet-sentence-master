@@ -1,13 +1,34 @@
+// server/routes/adminUsers.js
 import express from "express";
 import prisma from "../db/client.js";
-import { adminOnly } from "../middleware/adminOnly.js";
+import authRequired from "../middleware/authMiddleware.js";
+import requireAdmin from "../middleware/admin.js";
 
 const router = express.Router();
 
-/* ---------------------------------------------
-   GET ALL USERS
---------------------------------------------- */
-router.get("/", adminOnly, async (req, res) => {
+/**
+ * Map a User row into a safe admin-facing payload
+ */
+function mapUser(user) {
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    username: user.username,
+    has_access: user.has_access,
+    tier_level: user.tier_level,
+    isAdmin: user.isAdmin,
+    created_at: user.created_at,
+    lastActiveAt: user.lastActiveAt,
+    xpTotal: user.xpTotal,
+  };
+}
+
+/**
+ * GET /api/admin/users
+ * List all users (latest first)
+ */
+router.get("/", authRequired, requireAdmin, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
       orderBy: { created_at: "desc" },
@@ -15,117 +36,124 @@ router.get("/", adminOnly, async (req, res) => {
         id: true,
         email: true,
         name: true,
-        xp: true,
-        streak: true,
-        last_active: true,
-        isBanned: true,
+        username: true,
+        has_access: true,
+        tier_level: true,
+        isAdmin: true,
         created_at: true,
+        lastActiveAt: true,
+        xpTotal: true,
       },
     });
 
-    res.json({ ok: true, users });
-  } catch (error) {
-    console.error("Admin GET users error:", error);
-    res.status(500).json({ ok: false, message: "Failed to fetch users" });
+    return res.json({
+      ok: true,
+      users: users.map(mapUser),
+    });
+  } catch (err) {
+    console.error("GET /api/admin/users error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, message: "Failed to fetch users" });
   }
 });
 
-/* ---------------------------------------------
-   GET USER BY ID
---------------------------------------------- */
-router.get("/:id", adminOnly, async (req, res) => {
-  const { id } = req.params;
-
+/**
+ * GET /api/admin/users/:id
+ * Fetch a single user by id
+ */
+router.get("/:id", authRequired, requireAdmin, async (req, res) => {
   try {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ ok: false, message: "Invalid user id" });
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: Number(id) },
+      where: { id },
       select: {
         id: true,
         email: true,
         name: true,
-        xp: true,
-        streak: true,
-        last_active: true,
-        isBanned: true,
+        username: true,
+        has_access: true,
+        tier_level: true,
+        isAdmin: true,
+        created_at: true,
+        lastActiveAt: true,
+        xpTotal: true,
       },
     });
 
-    if (!user)
+    if (!user) {
       return res.status(404).json({ ok: false, message: "User not found" });
+    }
 
-    res.json({ ok: true, user });
-  } catch (error) {
-    console.error("Admin GET user error:", error);
-    res.status(500).json({ ok: false, message: "Failed to fetch user" });
+    return res.json({ ok: true, user: mapUser(user) });
+  } catch (err) {
+    console.error("GET /api/admin/users/:id error:", err);
+    return res.status(500).json({ ok: false, message: "Failed to fetch user" });
   }
 });
 
-/* ---------------------------------------------
-   RESET USER XP
---------------------------------------------- */
-router.patch("/:id/reset-xp", adminOnly, async (req, res) => {
-  const { id } = req.params;
-
+/**
+ * PATCH /api/admin/users/:id/access
+ * Update has_access and/or tier_level for a user
+ */
+router.patch("/:id/access", authRequired, requireAdmin, async (req, res) => {
   try {
-    await prisma.user.update({
-      where: { id: Number(id) },
-      data: { xp: 0 },
-    });
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ ok: false, message: "Invalid user id" });
+    }
 
-    res.json({ ok: true, message: "XP reset successfully" });
-  } catch (error) {
-    console.error("Reset XP error:", error);
-    res.status(500).json({ ok: false, message: "Failed to reset XP" });
-  }
-});
+    const { has_access, tier_level } = req.body;
 
-/* ---------------------------------------------
-   RESET USER STREAK
---------------------------------------------- */
-router.patch("/:id/reset-streak", adminOnly, async (req, res) => {
-  const { id } = req.params;
+    const data = {};
+    if (typeof has_access === "boolean") data.has_access = has_access;
+    if (typeof tier_level === "string" && tier_level.trim()) {
+      data.tier_level = tier_level.trim();
+    }
 
-  try {
-    await prisma.user.update({
-      where: { id: Number(id) },
-      data: { streak: 0 },
-    });
-
-    res.json({ ok: true, message: "Streak reset successfully" });
-  } catch (error) {
-    console.error("Reset streak error:", error);
-    res.status(500).json({ ok: false, message: "Failed to reset streak" });
-  }
-});
-
-/* ---------------------------------------------
-   BAN / UNBAN USER
---------------------------------------------- */
-router.patch("/:id/toggle-ban", adminOnly, async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: Number(id) },
-      select: { isBanned: true },
-    });
-
-    if (!user)
-      return res.status(404).json({ ok: false, message: "User not found" });
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({
+        ok: false,
+        message: "No valid fields provided to update",
+      });
+    }
 
     const updated = await prisma.user.update({
-      where: { id: Number(id) },
-      data: { isBanned: !user.isBanned },
+      where: { id },
+      data,
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        username: true,
+        has_access: true,
+        tier_level: true,
+        isAdmin: true,
+        created_at: true,
+        lastActiveAt: true,
+        xpTotal: true,
+      },
     });
 
-    res.json({
+    return res.json({
       ok: true,
-      message: updated.isBanned ? "User banned" : "User unbanned",
-      isBanned: updated.isBanned,
+      message: "User access updated",
+      user: mapUser(updated),
     });
-  } catch (error) {
-    console.error("Ban toggle error:", error);
-    res.status(500).json({ ok: false, message: "Failed to toggle ban" });
+  } catch (err) {
+    console.error("PATCH /api/admin/users/:id/access error:", err);
+
+    if (err.code === "P2025") {
+      return res.status(404).json({ ok: false, message: "User not found" });
+    }
+
+    return res
+      .status(500)
+      .json({ ok: false, message: "Failed to update user access" });
   }
 });
 
