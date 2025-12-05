@@ -152,113 +152,158 @@ router.get("/diagnostics/db", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
-// ------------------------------------------------------------------------
-// Admin Analytics (schema-correct version)
-// GET /api/admin/analytics
-// ------------------------------------------------------------------------
+// ─────────────────────────────────────────────
+// Admin Analytics: /api/admin/analytics
+// ─────────────────────────────────────────────
+
 router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
 
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
+    // Start of today (for "today XP", "active users today", "new users today")
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
 
+    // Last 30 days window (for charts)
     const rangeDays = 30;
-    const fromDate = new Date(today);
-    fromDate.setDate(today.getDate() - (rangeDays - 1));
+    const fromDate = new Date(
+      startOfToday.getFullYear(),
+      startOfToday.getMonth(),
+      startOfToday.getDate(),
+    );
+    fromDate.setDate(fromDate.getDate() - (rangeDays - 1));
 
-    // -------------------------------------------------------
-    // 1) BASIC COUNTS
-    // -------------------------------------------------------
-    const [totalUsers, newUsersToday, totalLessons, totalQuizzes] =
-      await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({
-          where: { created_at: { gte: today, lt: tomorrow } },
-        }),
-        prisma.lesson.count(),
-        prisma.quiz.count(),
-      ]);
+    // 1) BASIC COUNTS + AGGREGATES
+    const [
+      totalUsers,
+      newUsersToday,
+      totalLessons,
+      totalQuizzes,
+      totalXpAgg,
+      totalXpEvents,
+      usersRange,
+      xpEventsRange,
+      xpEventsToday,
+      topProgressRows,
+    ] = await Promise.all([
+      // total users
+      prisma.user.count(),
 
-    // -------------------------------------------------------
-    // 2) XP EVENTS (schema: xp_delta, user_id, created_at)
-    // -------------------------------------------------------
-    const [xpEventsRange, xpEventsToday] = await Promise.all([
+      // new users created today
+      prisma.user.count({
+        where: { created_at: { gte: startOfToday } },
+      }),
+
+      // lessons + quizzes
+      prisma.lesson.count(),
+      prisma.quiz.count(),
+
+      // sum of XP from UserProgress (xp field)
+      prisma.userProgress.aggregate({
+        _sum: { xp: true },
+      }),
+
+      // number of XP events logged
+      prisma.xpEvent.count(),
+
+      // users created in last 30 days (for signup chart)
+      prisma.user.findMany({
+        where: { created_at: { gte: fromDate } },
+        select: { id: true, created_at: true },
+      }),
+
+      // XP events in last 30 days (for XP chart)
       prisma.xpEvent.findMany({
         where: { created_at: { gte: fromDate } },
-        select: { xp_delta: true, created_at: true },
+        select: { user_id: true, xp_delta: true, created_at: true },
       }),
+
+      // XP events today (for today XP + active users)
       prisma.xpEvent.findMany({
-        where: { created_at: { gte: today } },
-        select: { xp_delta: true, user_id: true },
+        where: { created_at: { gte: startOfToday } },
+        select: { user_id: true, xp_delta: true },
+      }),
+
+      // Top users by current XP (UserProgress.xp)
+      prisma.userProgress.findMany({
+        orderBy: { xp: "desc" },
+        take: 20,
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              created_at: true,
+            },
+          },
+        },
       }),
     ]);
 
-    // Today’s XP totals
+    // 2) TODAY: ACTIVE USERS + TODAY XP
+    const activeUserIdsToday = new Set();
     let todayXp = 0;
-    const activeUserSet = new Set();
 
     xpEventsToday.forEach((e) => {
-      if (e.user_id) activeUserSet.add(e.user_id);
+      if (e.user_id) activeUserIdsToday.add(e.user_id);
       if (typeof e.xp_delta === "number") todayXp += e.xp_delta;
     });
 
-    const activeUsersToday = activeUserSet.size;
+    const activeUsersToday = activeUserIdsToday.size;
 
-    // -------------------------------------------------------
-    // 3) CHARTS — Daily signups & daily XP for last 30 days
-    // -------------------------------------------------------
-    const usersRange = await prisma.user.findMany({
-      where: { created_at: { gte: fromDate } },
-      select: { created_at: true },
-    });
-
-    const dailySignups = {};
+    // 3) CHART: DAILY SIGNUPS (last 30 days)
+    const dailySignupsMap = {};
     usersRange.forEach((u) => {
-      const key = u.created_at.toISOString().slice(0, 10);
-      dailySignups[key] = (dailySignups[key] || 0) + 1;
+      const key = u.created_at.toISOString().slice(0, 10); // "YYYY-MM-DD"
+      dailySignupsMap[key] = (dailySignupsMap[key] || 0) + 1;
     });
 
-    const dailyXp = {};
+    const dailySignups = Object.keys(dailySignupsMap)
+      .sort()
+      .map((d) => ({ date: d, count: dailySignupsMap[d] }));
+
+    // 4) CHART: DAILY XP (last 30 days)
+    const dailyXpMap = {};
     xpEventsRange.forEach((e) => {
       const key = e.created_at.toISOString().slice(0, 10);
-      dailyXp[key] = (dailyXp[key] || 0) + e.xp_delta;
+      dailyXpMap[key] = (dailyXpMap[key] || 0) + (e.xp_delta || 0);
     });
 
-    // -------------------------------------------------------
-    // 4) TOP USERS BY XP (UserProgress.total_xp)
-    // -------------------------------------------------------
-    const topUsers = await prisma.userProgress.findMany({
-      orderBy: { total_xp: "desc" },
-      take: 20,
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, created_at: true },
-        },
-      },
-    });
+    const dailyXp = Object.keys(dailyXpMap)
+      .sort()
+      .map((d) => ({ date: d, xp: dailyXpMap[d] }));
 
-    // -------------------------------------------------------
+    // 5) LEADERBOARD STYLE TOP USERS
+    const topUsers = topProgressRows.map((row) => ({
+      id: row.user.id,
+      name: row.user.name,
+      email: row.user.email,
+      joined_at: row.user.created_at,
+      xp: row.xp,
+    }));
+
     // FINAL RESPONSE
-    // -------------------------------------------------------
     return res.json({
       ok: true,
-      data: {
-        summary: {
-          totalUsers,
-          newUsersToday,
-          activeUsersToday,
-          todayXp,
-          totalLessons,
-          totalQuizzes,
-        },
-        charts: {
-          dailySignups,
-          dailyXp,
-        },
-        topUsers,
+      summary: {
+        totalUsers,
+        newUsersToday,
+        totalLessons,
+        totalQuizzes,
+        totalXp: totalXpAgg._sum.xp || 0,
+        totalXpEvents,
+        activeUsersToday,
+        todayXp,
       },
+      charts: {
+        dailySignups,
+        dailyXp,
+      },
+      topUsers,
     });
   } catch (err) {
     console.error("ADMIN ANALYTICS ERROR:", err);
