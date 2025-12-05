@@ -152,52 +152,63 @@ router.get("/diagnostics/db", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
-/* ─────────────────────────────────────────────
-   FINAL OFFICIAL ADMIN ANALYTICS ROUTE
-────────────────────────────────────────────── */
+// ------------------------------------------------------------------------
+// Admin Analytics (schema-correct version)
+// GET /api/admin/analytics
+// ------------------------------------------------------------------------
 router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
   try {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+
     const rangeDays = 30;
     const fromDate = new Date(today);
     fromDate.setDate(today.getDate() - (rangeDays - 1));
 
-    const [totalUsers, totalLessons, totalQuizzes, newUsersToday] =
+    // -------------------------------------------------------
+    // 1) BASIC COUNTS
+    // -------------------------------------------------------
+    const [totalUsers, newUsersToday, totalLessons, totalQuizzes] =
       await Promise.all([
         prisma.user.count(),
+        prisma.user.count({
+          where: { created_at: { gte: today, lt: tomorrow } },
+        }),
         prisma.lesson.count(),
         prisma.quiz.count(),
-        prisma.user.count({
-          where: { created_at: { gte: today } },
-        }),
       ]);
 
-    /* ────────────────────────────────
-       XP EVENT METRICS
-    ───────────────────────────────── */
-    const xpEvents = await prisma.xpEvent.findMany({
-      where: { created_at: { gte: fromDate } },
-      orderBy: { created_at: "asc" },
-      select: {
-        xp_delta: true,
-        created_at: true,
-        user_id: true,
-      },
+    // -------------------------------------------------------
+    // 2) XP EVENTS (schema: xp_delta, user_id, created_at)
+    // -------------------------------------------------------
+    const [xpEventsRange, xpEventsToday] = await Promise.all([
+      prisma.xpEvent.findMany({
+        where: { created_at: { gte: fromDate } },
+        select: { xp_delta: true, created_at: true },
+      }),
+      prisma.xpEvent.findMany({
+        where: { created_at: { gte: today } },
+        select: { xp_delta: true, user_id: true },
+      }),
+    ]);
+
+    // Today’s XP totals
+    let todayXp = 0;
+    const activeUserSet = new Set();
+
+    xpEventsToday.forEach((e) => {
+      if (e.user_id) activeUserSet.add(e.user_id);
+      if (typeof e.xp_delta === "number") todayXp += e.xp_delta;
     });
 
-    /* Daily XP map */
-    const dailyXp = {};
-    const activeUserIds = new Set();
+    const activeUsersToday = activeUserSet.size;
 
-    xpEvents.forEach((e) => {
-      const key = e.created_at.toISOString().slice(0, 10);
-      dailyXp[key] = (dailyXp[key] || 0) + e.xp_delta;
-      activeUserIds.add(e.user_id);
-    });
-
-    /* Daily signups */
+    // -------------------------------------------------------
+    // 3) CHARTS — Daily signups & daily XP for last 30 days
+    // -------------------------------------------------------
     const usersRange = await prisma.user.findMany({
       where: { created_at: { gte: fromDate } },
       select: { created_at: true },
@@ -209,66 +220,52 @@ router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
       dailySignups[key] = (dailySignups[key] || 0) + 1;
     });
 
-    /* XP distribution */
-    const buckets = {
-      "0–500": 0,
-      "501–2000": 0,
-      "2001–5000": 0,
-      "5001–10000": 0,
-      "10000+": 0,
-    };
-
-    const allUserProgress = await prisma.userProgress.findMany({
-      select: { user_id: true, total_xp: true },
+    const dailyXp = {};
+    xpEventsRange.forEach((e) => {
+      const key = e.created_at.toISOString().slice(0, 10);
+      dailyXp[key] = (dailyXp[key] || 0) + e.xp_delta;
     });
 
-    allUserProgress.forEach((u) => {
-      const xp = u.total_xp;
-      if (xp <= 500) buckets["0–500"]++;
-      else if (xp <= 2000) buckets["501–2000"]++;
-      else if (xp <= 5000) buckets["2001–5000"]++;
-      else if (xp <= 10000) buckets["5001–10000"]++;
-      else buckets["10000+"]++;
+    // -------------------------------------------------------
+    // 4) TOP USERS BY XP (UserProgress.total_xp)
+    // -------------------------------------------------------
+    const topUsers = await prisma.userProgress.findMany({
+      orderBy: { total_xp: "desc" },
+      take: 20,
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, created_at: true },
+        },
+      },
     });
 
-    /* Lesson engagement */
-    const lessonViews = await prisma.lessonProgress.groupBy({
-      by: ["lesson_id"],
-      _count: { lesson_id: true },
-    });
-
-    const lessonEngagement = lessonViews.map((l) => ({
-      lessonId: l.lesson_id,
-      views: l._count.lesson_id,
-    }));
-
-    res.json({
+    // -------------------------------------------------------
+    // FINAL RESPONSE
+    // -------------------------------------------------------
+    return res.json({
       ok: true,
-      summary: {
-        totals: {
+      data: {
+        summary: {
           totalUsers,
+          newUsersToday,
+          activeUsersToday,
+          todayXp,
           totalLessons,
           totalQuizzes,
-          newUsersToday,
         },
         charts: {
           dailySignups,
           dailyXp,
         },
-        xpDistribution: buckets,
-        lessonEngagement,
-        activeUsersLast30Days: activeUserIds.size,
-        meta: {
-          rangeDays,
-          generatedAt: new Date().toISOString(),
-        },
+        topUsers,
       },
     });
   } catch (err) {
-    console.error("Admin analytics error:", err);
-    res
-      .status(500)
-      .json({ ok: false, message: "Failed to load admin analytics" });
+    console.error("ADMIN ANALYTICS ERROR:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to load admin analytics",
+    });
   }
 });
 
