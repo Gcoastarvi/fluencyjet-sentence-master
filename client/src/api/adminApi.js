@@ -85,4 +85,5 @@ export const toggleBanUser = (id) =>
   apiClient.patch(`/admin/users/${id}/toggle-ban`);
 
 // hard delete user (if you want it)
-export const deleteUser = (id) => apiClient.delete(`/admin/users/${id}`);
+export const deleteUser = (id) =>
+  apiClient.delete(`/admin/users/${id}`);

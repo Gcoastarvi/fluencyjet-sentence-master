@@ -6,28 +6,35 @@ import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
 import Paywall from "@/pages/Paywall";
-import Admin from "@/pages/Admin";
+
+// Admin pages
+import AdminDashboard from "./pages/AdminDashboard";
 import AdminXP from "./pages/AdminXP";
+import AdminUsers from "./pages/AdminUsers";
 import AdminUserDetail from "./pages/AdminUserDetail";
+import AdminQuizzes from "./pages/AdminQuizzes";
+import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminLogin from "./pages/AdminLogin";
+
+// Other core features
 import Leaderboard from "@/pages/Leaderboard";
 import TypingQuiz from "@/pages/TypingQuiz";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
-import AdminQuizzes from "./pages/AdminQuizzes.jsx";
-import AdminAnalytics from "./pages/AdminAnalytics.jsx";
-import AdminLogin from "./pages/AdminLogin";
 
 // Lessons
 import Lessons from "@/pages/Lessons";
 import LessonDetail from "@/pages/LessonDetail";
 import LessonQuiz from "@/pages/LessonQuiz";
 
-// Practice (New)
+// Practice
 import Practice from "@/pages/Practice";
 
-// Utility
+// Guards
+import ProtectedRoute from "@/components/ProtectedRoute";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
+
+// Utils
 import { testHealth } from "@/api/testConnection";
 import { logoutAndRedirect } from "@/utils/authRedirect";
 import { getDisplayName } from "@/utils/displayName";
@@ -36,6 +43,7 @@ export default function App() {
   const [userName, setUserName] = useState(null);
 
   useEffect(() => {
+    // Ping backend health once on load
     testHealth();
 
     try {
@@ -80,7 +88,7 @@ export default function App() {
             <Link to="/paywall" className="hover:underline">
               Paywall
             </Link>
-            <Link to="/admin" className="hover:underline">
+            <Link to="/admin/dashboard" className="hover:underline">
               Admin
             </Link>
 
@@ -117,12 +125,13 @@ export default function App() {
 
         {/* ROUTES */}
         <Routes>
-          {/* PUBLIC */}
+          {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
 
-          {/* PROTECTED CORE */}
+          {/* User-protected core */}
           <Route
             path="/dashboard"
             element={
@@ -168,51 +177,7 @@ export default function App() {
             }
           />
 
-          <Route
-            path="/admin"
-            element={
-              <ProtectedAdminRoute>
-                <Admin />
-              </ProtectedAdminRoute>
-            }
-          />
-
-          <Route
-            path="/admin/xp"
-            element={
-              <ProtectedAdminRoute>
-                <AdminXP />
-              </ProtectedAdminRoute>
-            }
-          />
-
-          <Route
-            path="/admin/user/:id"
-            element={
-              <ProtectedAdminRoute>
-                <AdminUserDetail />
-              </ProtectedAdminRoute>
-            }
-          />
-          <Route
-            path="/admin/analytics"
-            element={
-              <ProtectedAdminRoute>
-                <AdminAnalytics />
-              </ProtectedAdminRoute>
-            }
-          />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedAdminRoute>
-                <AdminDashboard />
-              </ProtectedAdminRoute>
-            }
-          />
-          <Route path="/admin/login" element={<AdminLogin />} />
-
-          {/* LESSONS */}
+          {/* Lessons */}
           <Route
             path="/lessons"
             element={
@@ -240,9 +205,63 @@ export default function App() {
             }
           />
 
-          {/* ADMIN → QUIZ MANAGEMENT */}
+          {/* Admin – dashboard summary */}
           <Route
-            path="/admin/lessons/:lessonId/quizzes"
+            path="/admin"
+            element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            }
+          />
+
+          {/* Admin – XP / analytics */}
+          <Route
+            path="/admin/xp"
+            element={
+              <ProtectedAdminRoute>
+                <AdminXP />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/analytics"
+            element={
+              <ProtectedAdminRoute>
+                <AdminAnalytics />
+              </ProtectedAdminRoute>
+            }
+          />
+
+          {/* Admin – users */}
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedAdminRoute>
+                <AdminUsers />
+              </ProtectedAdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users/:id"
+            element={
+              <ProtectedAdminRoute>
+                <AdminUserDetail />
+              </ProtectedAdminRoute>
+            }
+          />
+
+          {/* Admin – quizzes */}
+          <Route
+            path="/admin/quizzes"
             element={
               <ProtectedAdminRoute>
                 <AdminQuizzes />
