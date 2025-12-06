@@ -1,275 +1,234 @@
 // client/src/App.jsx
-import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
-// Core pages
-import Home from "@/pages/Home";
-import Dashboard from "@/pages/Dashboard";
-import Paywall from "@/pages/Paywall";
+// ---------- Layouts ----------
+import Navbar from "./components/Navbar";
 
-// Admin pages
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminXP from "./pages/AdminXP";
-import AdminUsers from "./pages/AdminUsers";
-import AdminUserDetail from "./pages/AdminUserDetail";
-import AdminQuizzes from "./pages/AdminQuizzes";
-import AdminAnalytics from "./pages/AdminAnalytics";
-import AdminLogin from "./pages/AdminLogin";
-
-// Other core features
-import Leaderboard from "@/pages/Leaderboard";
-import TypingQuiz from "@/pages/TypingQuiz";
-import Login from "@/pages/Login";
-import Signup from "@/pages/Signup";
-
-// Lessons
-import Lessons from "@/pages/Lessons";
-import LessonDetail from "@/pages/LessonDetail";
-import LessonQuiz from "@/pages/LessonQuiz";
-
-// Practice
-import Practice from "@/pages/Practice";
-
-// Guards
-import ProtectedRoute from "@/components/ProtectedRoute";
+// ---------- Route Guards ----------
+import ProtectedRoute from "./components/ProtectedRoute";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 
-// Utils
-import { testHealth } from "@/api/testConnection";
-import { logoutAndRedirect } from "@/utils/authRedirect";
-import { getDisplayName } from "@/utils/displayName";
+// ---------- Student Pages ----------
+import Home from "./pages/student/Home";
+import Dashboard from "./pages/student/Dashboard";
+import Lessons from "./pages/student/Lessons";
+import LessonDetail from "./pages/student/LessonDetail";
+import LessonQuiz from "./pages/student/LessonQuiz";
+import TypingQuiz from "./pages/student/TypingQuiz";
+import Leaderboard from "./pages/student/Leaderboard";
+import Practice from "./pages/student/Practice";
+import Login from "./pages/student/Login";
+import Signup from "./pages/student/Signup";
+import Paywall from "./pages/student/Paywall";
+
+// ---------- Admin Pages ----------
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminUserDetail from "./pages/admin/AdminUserDetail";
+import AdminLessons from "./pages/admin/AdminLessons";
+import AdminLessonCreate from "./pages/admin/AdminLessonCreate";
+import AdminLessonEdit from "./pages/admin/AdminLessonEdit";
+import AdminQuizzes from "./pages/admin/AdminQuizzes";
+import AdminQuizForm from "./pages/admin/AdminQuizForm";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminXP from "./pages/admin/AdminXP";
 
 export default function App() {
-  const [userName, setUserName] = useState(null);
-
-  useEffect(() => {
-    // Ping backend health once on load
-    testHealth();
-
-    try {
-      const stored = localStorage.getItem("userName");
-      const token = localStorage.getItem("token");
-
-      if (token && stored) setUserName(stored);
-      else if (token && !stored) setUserName("Learner");
-    } catch {
-      setUserName(null);
-    }
-  }, []);
-
-  const isLoggedIn = !!localStorage.getItem("token");
-  const name = getDisplayName({ name: userName });
-
   return (
-    <BrowserRouter>
-      <div className="max-w-4xl mx-auto p-4">
-        {/* HEADER */}
-        <header className="flex flex-wrap justify-between items-center mb-4 gap-3">
-          <Link to="/" className="font-bold text-xl text-indigo-700">
-            FluencyJet Sentence Master
-          </Link>
+    <Router>
+      {/* Navbar appears on ALL pages except Admin Login */}
+      <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="*" element={<Navbar />} />
+      </Routes>
 
-          <nav className="flex flex-wrap gap-3 text-sm md:text-base items-center">
-            <Link to="/dashboard" className="hover:underline">
-              Dashboard
-            </Link>
-            <Link to="/lessons" className="hover:underline">
-              Lessons
-            </Link>
-            <Link to="/leaderboard" className="hover:underline">
-              Leaderboard
-            </Link>
-            <Link to="/typing-quiz" className="hover:underline">
-              Typing Quiz
-            </Link>
-            <Link to="/practice" className="hover:underline">
-              Practice
-            </Link>
-            <Link to="/paywall" className="hover:underline">
-              Paywall
-            </Link>
-            <Link to="/admin/dashboard" className="hover:underline">
-              Admin
-            </Link>
+      <Routes>
+        {/* ---------- PUBLIC ROUTES ---------- */}
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
-            {!isLoggedIn ? (
-              <>
-                <Link
-                  to="/login"
-                  className="text-indigo-600 font-semibold hover:underline"
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/signup"
-                  className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700"
-                >
-                  Sign Up
-                </Link>
-              </>
-            ) : (
-              <>
-                <span className="text-gray-600 text-sm">
-                  Welcome, <b>{name}</b>
-                </span>
-                <button
-                  onClick={logoutAndRedirect}
-                  className="text-sm bg-red-500 text-white px-3 py-1 rounded-full hover:opacity-90"
-                >
-                  Logout
-                </button>
-              </>
-            )}
-          </nav>
-        </header>
+        {/* ---------- STUDENT PROTECTED ROUTES ---------- */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* ROUTES */}
-        <Routes>
-          {/* Public */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/lessons"
+          element={
+            <ProtectedRoute>
+              <Lessons />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* User-protected core */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/lessons/:id"
+          element={
+            <ProtectedRoute>
+              <LessonDetail />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/leaderboard"
-            element={
-              <ProtectedRoute>
-                <Leaderboard />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/lessons/:id/quiz"
+          element={
+            <ProtectedRoute>
+              <LessonQuiz />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/typing-quiz"
-            element={
-              <ProtectedRoute>
-                <TypingQuiz />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/typing-quiz"
+          element={
+            <ProtectedRoute>
+              <TypingQuiz />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/practice"
-            element={
-              <ProtectedRoute>
-                <Practice />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/leaderboard"
+          element={
+            <ProtectedRoute>
+              <Leaderboard />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/paywall"
-            element={
-              <ProtectedRoute>
-                <Paywall />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/practice"
+          element={
+            <ProtectedRoute>
+              <Practice />
+            </ProtectedRoute>
+          }
+        />
 
-          {/* Lessons */}
-          <Route
-            path="/lessons"
-            element={
-              <ProtectedRoute>
-                <Lessons />
-              </ProtectedRoute>
-            }
-          />
+        <Route
+          path="/paywall"
+          element={
+            <ProtectedRoute>
+              <Paywall />
+            </ProtectedRoute>
+          }
+        />
 
-          <Route
-            path="/lessons/:id"
-            element={
-              <ProtectedRoute>
-                <LessonDetail />
-              </ProtectedRoute>
-            }
-          />
+        {/* ---------- ADMIN AUTH ROUTE ---------- */}
+        <Route path="/admin/login" element={<AdminLogin />} />
 
-          <Route
-            path="/lessons/:id/start"
-            element={
-              <ProtectedRoute>
-                <LessonQuiz />
-              </ProtectedRoute>
-            }
-          />
+        {/* ---------- ADMIN PROTECTED ROUTES ---------- */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboard />
+            </ProtectedAdminRoute>
+          }
+        />
 
-          {/* Admin – dashboard summary */}
-          <Route
-            path="/admin"
-            element={
-              <ProtectedAdminRoute>
-                <AdminDashboard />
-              </ProtectedAdminRoute>
-            }
-          />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <ProtectedAdminRoute>
-                <AdminDashboard />
-              </ProtectedAdminRoute>
-            }
-          />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedAdminRoute>
+              <AdminDashboard />
+            </ProtectedAdminRoute>
+          }
+        />
 
-          {/* Admin – XP / analytics */}
-          <Route
-            path="/admin/xp"
-            element={
-              <ProtectedAdminRoute>
-                <AdminXP />
-              </ProtectedAdminRoute>
-            }
-          />
-          <Route
-            path="/admin/analytics"
-            element={
-              <ProtectedAdminRoute>
-                <AdminAnalytics />
-              </ProtectedAdminRoute>
-            }
-          />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedAdminRoute>
+              <AdminUsers />
+            </ProtectedAdminRoute>
+          }
+        />
 
-          {/* Admin – users */}
-          <Route
-            path="/admin/users"
-            element={
-              <ProtectedAdminRoute>
-                <AdminUsers />
-              </ProtectedAdminRoute>
-            }
-          />
-          <Route
-            path="/admin/users/:id"
-            element={
-              <ProtectedAdminRoute>
-                <AdminUserDetail />
-              </ProtectedAdminRoute>
-            }
-          />
+        <Route
+          path="/admin/users/:id"
+          element={
+            <ProtectedAdminRoute>
+              <AdminUserDetail />
+            </ProtectedAdminRoute>
+          }
+        />
 
-          {/* Admin – quizzes */}
-          <Route
-            path="/admin/quizzes"
-            element={
-              <ProtectedAdminRoute>
-                <AdminQuizzes />
-              </ProtectedAdminRoute>
-            }
-          />
-        </Routes>
-      </div>
-    </BrowserRouter>
+        <Route
+          path="/admin/lessons"
+          element={
+            <ProtectedAdminRoute>
+              <AdminLessons />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/lessons/create"
+          element={
+            <ProtectedAdminRoute>
+              <AdminLessonCreate />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/lessons/:id"
+          element={
+            <ProtectedAdminRoute>
+              <AdminLessonEdit />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/quizzes"
+          element={
+            <ProtectedAdminRoute>
+              <AdminQuizzes />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/quizzes/create"
+          element={
+            <ProtectedAdminRoute>
+              <AdminQuizForm />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedAdminRoute>
+              <AdminAnalytics />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        <Route
+          path="/admin/xp"
+          element={
+            <ProtectedAdminRoute>
+              <AdminXP />
+            </ProtectedAdminRoute>
+          }
+        />
+
+        {/* ---------- FALLBACK ---------- */}
+        <Route path="*" element={<Home />} />
+      </Routes>
+    </Router>
   );
 }

@@ -1,6 +1,6 @@
 // client/src/pages/Leaderboard.jsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { apiFetchWithAuth } from "../utils/fetch";
+import { apiFetchWithAuth } from "../../utils/fetch";
 
 // Small helper – compact XP formatting like "1.2K"
 function kFormat(xp) {

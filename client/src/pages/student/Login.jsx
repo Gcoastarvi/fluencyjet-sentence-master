@@ -1,7 +1,8 @@
-// client/src/pages/Login.jsx
+// client/src/pages/student/Login.jsx
+
 import { useEffect, useState } from "react";
-import { loginUser } from "../api";
-import { autoRedirectIfLoggedIn } from "../utils/authRedirect";
+import { loginUser } from "../../api";               // <-- FIXED PATH
+import { autoRedirectIfLoggedIn } from "../../utils/authRedirect"; // <-- FIXED PATH
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,7 +10,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
-  // ✅ Auto redirect if token already valid
+  // Auto redirect if already logged in
   useEffect(() => {
     autoRedirectIfLoggedIn();
   }, []);
@@ -21,25 +22,30 @@ export default function Login() {
 
     try {
       const res = await loginUser({ email, password });
+
       if (res.data?.token) {
+        // Store auth token
         localStorage.setItem("token", res.data.token);
+
         if (res.data?.expiresAt) {
           localStorage.setItem("tokenExpiry", res.data.expiresAt);
         }
 
-        localStorage.setItem("userName", res.data?.name || "Learner"); // ✅ add this
+        // Save username (fallback to "Learner")
+        localStorage.setItem("userName", res.data?.name || "Learner");
+
         setMsg("Login successful! Redirecting...");
-        setTimeout(() => (window.location.href = "/dashboard"), 1000);
+        setTimeout(() => (window.location.href = "/dashboard"), 800);
       } else {
-        setMsg(res.data?.message || "Login successful!");
+        setMsg(res.data?.message || "Logged in!");
       }
     } catch (err) {
       console.error("Login failed:", err);
-      const apiMsg =
+      const errorText =
         err.response?.data?.message ||
         err.message ||
-        "Network error. Please try again.";
-      setMsg(apiMsg);
+        "Something went wrong. Try again!";
+      setMsg(errorText);
     } finally {
       setLoading(false);
     }
@@ -48,7 +54,7 @@ export default function Login() {
   return (
     <div className="flex flex-col items-center mt-16">
       <h2 className="text-3xl font-bold text-indigo-700 mb-4">
-        Join FluencyJet
+        Login to FluencyJet
       </h2>
 
       <form

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getLessons, getQuiz, createQuiz, updateQuiz } from "../api/adminApi";
+import { getLessons, getQuiz, createQuiz, updateQuiz } from "../../api/adminApi";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function AdminQuizForm() {

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import API from "../api/apiClient";
+import API from "../../api/apiClient";
 
 const AdminLessonCreate = () => {
   const [title, setTitle] = useState("");
@@ -7,53 +7,57 @@ const AdminLessonCreate = () => {
 
   const token = localStorage.getItem("adminToken");
 
-  const createLesson = async (e) => {
+  const handleCreateLesson = async (e) => {
     e.preventDefault();
 
     try {
       const res = await API.post(
         "/api/admin/lessons",
         { title, description },
-        { headers: { Authorization: `Bearer ${token}` } },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
       );
 
-      if (res.data.ok) {
-        alert("Lesson created!");
-        window.location.href = "/admin/lessons";
-      }
+      alert("Lesson created successfully!");
+      setTitle("");
+      setDescription("");
     } catch (err) {
-      console.error("Lesson create failed:", err);
+      console.error("Error creating lesson:", err);
+      alert("Failed to create lesson.");
     }
   };
 
   return (
-    <div className="p-6 max-w-xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-purple-700">
-        Add New Lesson
-      </h1>
+    <div className="p-6">
+      <h2 className="text-xl font-semibold mb-4">Create New Lesson</h2>
 
-      <form onSubmit={createLesson} className="space-y-4">
+      <form onSubmit={handleCreateLesson} className="space-y-4">
         <input
           type="text"
           placeholder="Lesson Title"
-          className="w-full border p-2 rounded"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          className="border p-2 w-full rounded"
+          required
         />
 
         <textarea
           placeholder="Lesson Description"
-          className="w-full border p-2 rounded"
-          rows="4"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          className="border p-2 w-full rounded"
+          rows="4"
+          required
         />
 
         <button
           type="submit"
-          className="bg-purple-600 text-white px-6 py-2 rounded"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
         >
-          Create
+          Create Lesson
         </button>
       </form>
     </div>

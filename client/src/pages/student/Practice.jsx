@@ -1,10 +1,10 @@
 // client/src/pages/Practice.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import QuizCard from "../components/quiz/QuizCard";
-import ProgressBar from "../components/quiz/ProgressBar";
-import ResultScreen from "../components/quiz/ResultScreen";
-import ConfettiBlast from "../components/quiz/ConfettiBlast";
+import QuizCard from "../../components/quiz/QuizCard";
+import ProgressBar from "../../components/quiz/ProgressBar";
+import ResultScreen from "../../components/quiz/ResultScreen";
+import ConfettiBlast from "../../components/quiz/ConfettiBlast";
 
 const XP_PER_CORRECT = 150;
 

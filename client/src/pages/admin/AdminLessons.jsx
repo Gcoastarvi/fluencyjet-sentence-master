@@ -4,7 +4,7 @@ import {
   createLesson,
   updateLesson,
   deleteLesson,
-} from "../api/adminApi";
+} from "../../api/adminApi";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminLessons() {
