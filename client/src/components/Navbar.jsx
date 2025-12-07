@@ -6,9 +6,11 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <Link to="/" className="logo">
-        FluencyJet Sentence Master
-      </Link>
+      <div className="nav-left">
+        <Link to="/" className="logo">
+          FluencyJet Sentence Master
+        </Link>
+      </div>
 
       <div className="nav-links">
         <Link to="/dashboard">Dashboard</Link>
@@ -18,19 +20,16 @@ export default function Navbar() {
         <Link to="/practice">Practice</Link>
         <Link to="/paywall">Paywall</Link>
 
-        {/* Show Admin link only if user is admin */}
-        {user?.isAdmin && <Link to="/admin">Admin</Link>}
+        {user?.isAdmin && (
+          <Link to="/admin">Admin</Link>
+        )}
+      </div>
 
-        {/* Authentication area */}
+      <div className="nav-right">
         {user ? (
-          <>
-            <span>Welcome, {user.name}</span>
-            <button onClick={logout} className="logout-btn">
-              Logout
-            </button>
-          </>
+          <button onClick={logout} className="logout-btn">Logout</button>
         ) : (
-          <Link to="/login">Login</Link>
+          <Link to="/login" className="login-btn">Login</Link>
         )}
       </div>
     </nav>
