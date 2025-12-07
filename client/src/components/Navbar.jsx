@@ -1,110 +1,121 @@
-import React, { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+
+// IMPORTANT: change this to match your real token key, see note below.
+const AUTH_TOKEN_KEY = "token"; // or "accessToken" / "authToken" etc.
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    setIsOpen(false);
+  // Hide navbar on admin login page
+  if (location.pathname.startsWith("/admin/login")) {
+    return null;
+  }
+
+  // helper: check login status from localStorage
+  const checkLoggedIn = () => {
+    try {
+      const token = localStorage.getItem(AUTH_TOKEN_KEY);
+      setLoggedIn(!!token);
+    } catch {
+      setLoggedIn(false);
+    }
   };
 
-  const closeMenu = () => setIsOpen(false);
+  // On first load
+  useEffect(() => {
+    checkLoggedIn();
+  }, []);
 
-  const navLinkClass = ({ isActive }) =>
-    isActive ? "nav-link nav-link-active" : "nav-link";
+  // When route changes: close mobile menu + recheck login
+  useEffect(() => {
+    setIsOpen(false);
+    checkLoggedIn();
+  }, [location.pathname]);
+
+  // Also respond if localStorage is changed from another tab
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === AUTH_TOKEN_KEY) {
+        setLoggedIn(!!e.newValue);
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  const handleLogout = () => {
+    try {
+      // remove the token (and add more keys if you use them)
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+    } catch {
+      // ignore
+    }
+    setLoggedIn(false);
+    window.location.href = "/login";
+  };
 
   return (
-    <header className="navbar">
-      <div className="navbar-inner">
-        {/* Logo */}
-        <Link to="/dashboard" className="logo" onClick={closeMenu}>
-          <span className="logo-primary">FluencyJet</span>{" "}
-          <span className="logo-secondary">Sentence Master</span>
+    <header className="fj-nav-wrapper">
+      <nav className="fj-navbar">
+        {/* Brand */}
+        <Link to="/" className="fj-navbar-logo">
+          <span className="fj-brand-main">FluencyJet</span>{" "}
+          <span className="fj-brand-sub">Sentence Master</span>
         </Link>
 
-        {/* Hamburger (mobile) */}
+        {/* Mobile hamburger */}
         <button
-          className="nav-toggle"
-          type="button"
-          onClick={() => setIsOpen((open) => !open)}
+          className="fj-navbar-toggle"
+          onClick={() => setIsOpen((o) => !o)}
           aria-label="Toggle navigation"
         >
-          <span />
           <span />
           <span />
         </button>
 
         {/* Links */}
-        <nav className={`nav-items ${isOpen ? "nav-open" : ""}`}>
-          <div className="nav-links">
-            <NavLink
-              to="/dashboard"
-              className={navLinkClass}
-              onClick={closeMenu}
-            >
-              Dashboard
-            </NavLink>
-            <NavLink to="/lessons" className={navLinkClass} onClick={closeMenu}>
-              Lessons
-            </NavLink>
-            <NavLink
-              to="/leaderboard"
-              className={navLinkClass}
-              onClick={closeMenu}
-            >
-              Leaderboard
-            </NavLink>
-            <NavLink
-              to="/typing-quiz"
-              className={navLinkClass}
-              onClick={closeMenu}
-            >
-              Typing Quiz
-            </NavLink>
-            <NavLink
-              to="/practice"
-              className={navLinkClass}
-              onClick={closeMenu}
-            >
-              Practice
-            </NavLink>
-            <NavLink to="/paywall" className={navLinkClass} onClick={closeMenu}>
-              Paywall
-            </NavLink>
-            <NavLink to="/admin" className={navLinkClass} onClick={closeMenu}>
-              Admin
-            </NavLink>
-          </div>
+        <div className={`fj-navbar-links ${isOpen ? "fj-open" : ""}`}>
+          <Link to="/dashboard" className="fj-nav-link">
+            Dashboard
+          </Link>
+          <Link to="/lessons" className="fj-nav-link">
+            Lessons
+          </Link>
+          <Link to="/leaderboard" className="fj-nav-link">
+            Leaderboard
+          </Link>
+          <Link to="/typing-quiz" className="fj-nav-link">
+            Typing Quiz
+          </Link>
+          <Link to="/practice" className="fj-nav-link">
+            Practice
+          </Link>
+          <Link to="/paywall" className="fj-nav-link">
+            Paywall
+          </Link>
+          <Link to="/admin" className="fj-nav-link">
+            Admin
+          </Link>
 
-          <div className="nav-actions">
-            {user ? (
-              <>
-                <span className="nav-user-label">
-                  {user.name || user.email || "Learner"}
-                </span>
-                <button
-                  type="button"
-                  className="btn btn-small"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </button>
-              </>
-            ) : (
-              <Link
-                to="/login"
-                className="btn btn-primary btn-small"
-                onClick={closeMenu}
-              >
-                Login
-              </Link>
-            )}
-          </div>
-        </nav>
-      </div>
+          {/* Right side: Login / Logout */}
+          {!loggedIn ? (
+            <Link to="/login" className="fj-nav-cta">
+              Login
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="fj-nav-cta fj-nav-logout"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
+          )}
+        </div>
+      </nav>
     </header>
   );
 }

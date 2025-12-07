@@ -664,6 +664,7 @@ body {
 #fj-toast.show {
   opacity: 1;
 }
+
 /* NAVBAR FIX */
 .navbar {
   width: 100%;
@@ -708,4 +709,236 @@ body {
   cursor: pointer;
   text-decoration: none;
   font-size: 15px;
+}
+
+/* NAVBAR BASE */
+.navbar-container {
+  width: 100%;
+  background: white;
+  border-bottom: 1px solid #eee;
+}
+
+.navbar-inner {
+  max-width: 1280px;
+  margin: auto;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* LOGO */
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #7b2ff7;
+}
+
+/* DESKTOP MENU */
+.desktop-menu {
+  display: flex;
+  gap: 22px;
+  list-style: none;
+  align-items: center;
+}
+
+.desktop-menu a {
+  font-size: 16px;
+  color: #333;
+}
+
+.login-btn,
+.logout-btn {
+  background: #7b2ff7;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+}
+
+/* HAMBURGER BUTTON */
+.hamburger {
+  display: none;
+  font-size: 28px;
+  background: none;
+  border: none;
+}
+
+/* MOBILE MENU */
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #fafafa;
+  border-top: 1px solid #eee;
+}
+
+.mobile-menu a,
+.mobile-menu button {
+  font-size: 18px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .desktop-menu {
+    display: none;
+  }
+
+  .hamburger {
+    display: block;
+  }
+
+  .mobile-menu {
+    display: flex;
+  }
+}
+
+/* ───────────── NAVBAR (FluencyJet) ───────────── */
+
+.fj-nav-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f1f5;
+}
+
+.fj-navbar {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.9rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+.fj-navbar-logo {
+  text-decoration: none;
+}
+
+.fj-brand-main {
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: #7c3aed;
+  /* violet-600 */
+}
+
+.fj-brand-sub {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #4b5563;
+  /* gray-600 */
+}
+
+.fj-navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+}
+
+.fj-nav-link {
+  text-decoration: none;
+  font-size: 0.98rem;
+  font-weight: 500;
+  color: #111827;
+  /* gray-900 */
+}
+
+.fj-nav-link:hover {
+  color: #4f46e5;
+  /* indigo-600 */
+}
+
+.fj-nav-cta {
+  padding: 0.4rem 1.1rem;
+  border-radius: 999px;
+  border: none;
+  outline: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  background: #7c3aed;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.25);
+}
+
+.fj-nav-cta:hover {
+  background: #6d28d9;
+}
+
+.fj-nav-logout {
+  background: #f97316;
+  /* orange-500 */
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.25);
+}
+
+.fj-nav-logout:hover {
+  background: #ea580c;
+}
+
+/* Hamburger button – hidden on desktop */
+.fj-navbar-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.fj-navbar-toggle span {
+  height: 2px;
+  width: 16px;
+  background: #111827;
+  border-radius: 999px;
+}
+
+/* ── Mobile layout ───────────────────────────── */
+
+@media (max-width: 768px) {
+  .fj-navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .fj-navbar-toggle {
+    display: inline-flex;
+  }
+
+  .fj-navbar-links {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    padding: 0.75rem 1rem 1rem;
+    background: #ffffff;
+    border-bottom: 1px solid #f3f4f6;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+    display: none;
+    /* hidden by default */
+  }
+
+  .fj-navbar-links.fj-open {
+    display: flex;
+  }
+
+  .fj-nav-link {
+    width: 100%;
+  }
+
+  .fj-nav-cta {
+    align-self: stretch;
+    text-align: center;
+  }
 }
