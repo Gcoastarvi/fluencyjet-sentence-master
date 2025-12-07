@@ -1,52 +1,51 @@
+import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useLocation,
+  Outlet,
 } from "react-router-dom";
+
+import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
 
-// Components
-import Navbar from "./components/Navbar";
+// Student pages
+import Home from "./pages/student/Home.jsx";
+import Dashboard from "./pages/student/Dashboard.jsx";
+import Lessons from "./pages/student/Lessons.jsx";
+import LessonDetail from "./pages/student/LessonDetail.jsx";
+import LessonQuiz from "./pages/student/LessonQuiz.jsx";
+import Leaderboard from "./pages/student/Leaderboard.jsx";
+import Login from "./pages/student/Login.jsx";
+import Signup from "./pages/student/Signup.jsx";
+import Practice from "./pages/student/Practice.jsx";
+import TypingQuiz from "./pages/student/TypingQuiz.jsx";
+import Paywall from "./pages/student/Paywall.jsx";
 
-// Student Pages
-import Dashboard from "./pages/student/Dashboard";
-import Lessons from "./pages/student/Lessons";
-import LessonDetail from "./pages/student/LessonDetail";
-import LessonQuiz from "./pages/student/LessonQuiz";
-import Leaderboard from "./pages/student/Leaderboard";
-import TypingQuiz from "./pages/student/TypingQuiz";
-import Practice from "./pages/student/Practice";
-import Paywall from "./pages/student/Paywall";
-import Login from "./pages/student/Login";
-import Signup from "./pages/student/Signup";
+// Admin pages
+import Admin from "./pages/admin/Admin.jsx";
+import AdminLogin from "./pages/admin/AdminLogin.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import AdminLessons from "./pages/admin/AdminLessons.jsx";
+import AdminLessonCreate from "./pages/admin/AdminLessonCreate.jsx";
+import AdminLessonEdit from "./pages/admin/AdminLessonEdit.jsx";
+import AdminQuizzes from "./pages/admin/AdminQuizzes.jsx";
+import AdminUsers from "./pages/admin/AdminUsers.jsx";
+import AdminUserDetail from "./pages/admin/AdminUserDetail.jsx";
+import AdminXP from "./pages/admin/AdminXP.jsx";
+import AdminAnalytics from "./pages/admin/AdminAnalytics.jsx";
 
-// Admin Pages
-import AdminLogin from "./pages/admin/AdminLogin";
-import Admin from "./pages/admin/Admin";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminLessons from "./pages/admin/AdminLessons";
-import AdminLessonCreate from "./pages/admin/AdminLessonCreate";
-import AdminLessonEdit from "./pages/admin/AdminLessonEdit";
-import AdminQuizzes from "./pages/admin/AdminQuizzes";
-import AdminQuizForm from "./pages/admin/AdminQuizForm";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminUserDetail from "./pages/admin/AdminUserDetail";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
-import AdminXP from "./pages/admin/AdminXP";
+// Route guards
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 
-// Route Protection
-import ProtectedRoute from "./components/ProtectedRoute";
-import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
-
-function LayoutWrapper({ children }) {
-  const location = useLocation();
-  const hideNavbar = location.pathname.startsWith("/admin/login");
-
+function MainLayout() {
   return (
     <>
-      {!hideNavbar && <Navbar />}
-      {children}
+      <Navbar />
+      <main className="app-main">
+        <Outlet />
+      </main>
     </>
   );
 }
@@ -55,16 +54,19 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <LayoutWrapper>
-          <Routes>
-            {/* Public Routes */}
+        <Routes>
+          {/* Admin login (no Navbar) */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* All other pages share Navbar */}
+          <Route element={<MainLayout />}>
+            {/* Public */}
+            <Route index element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/paywall" element={<Paywall />} />
 
-            {/* Admin Login */}
-            <Route path="/admin/login" element={<AdminLogin />} />
-
-            {/* Student Protected Routes */}
+            {/* Student-protected */}
             <Route
               path="/dashboard"
               element={
@@ -73,7 +75,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/lessons"
               element={
@@ -82,25 +83,22 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
-              path="/lessons/:id"
+              path="/lessons/:lessonId"
               element={
                 <ProtectedRoute>
                   <LessonDetail />
                 </ProtectedRoute>
               }
             />
-
             <Route
-              path="/lessons/:id/quiz"
+              path="/quiz/:lessonId"
               element={
                 <ProtectedRoute>
                   <LessonQuiz />
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/leaderboard"
               element={
@@ -109,7 +107,14 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
+            <Route
+              path="/practice"
+              element={
+                <ProtectedRoute>
+                  <Practice />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/typing-quiz"
               element={
@@ -119,25 +124,7 @@ export default function App() {
               }
             />
 
-            <Route
-              path="/practice"
-              element={
-                <ProtectedRoute>
-                  <Practice />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/paywall"
-              element={
-                <ProtectedRoute>
-                  <Paywall />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Admin Protected Routes */}
+            {/* Admin-protected */}
             <Route
               path="/admin"
               element={
@@ -146,7 +133,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/dashboard"
               element={
@@ -155,7 +141,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/lessons"
               element={
@@ -164,25 +149,22 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
-              path="/admin/lessons/create"
+              path="/admin/lessons/new"
               element={
                 <ProtectedAdminRoute>
                   <AdminLessonCreate />
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
-              path="/admin/lessons/edit/:id"
+              path="/admin/lessons/:lessonId"
               element={
                 <ProtectedAdminRoute>
                   <AdminLessonEdit />
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/quizzes"
               element={
@@ -191,16 +173,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
-            <Route
-              path="/admin/quizzes/create"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminQuizForm />
-                </ProtectedAdminRoute>
-              }
-            />
-
             <Route
               path="/admin/users"
               element={
@@ -209,16 +181,22 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
-              path="/admin/users/:id"
+              path="/admin/users/:userId"
               element={
                 <ProtectedAdminRoute>
                   <AdminUserDetail />
                 </ProtectedAdminRoute>
               }
             />
-
+            <Route
+              path="/admin/xp"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminXP />
+                </ProtectedAdminRoute>
+              }
+            />
             <Route
               path="/admin/analytics"
               element={
@@ -228,16 +206,10 @@ export default function App() {
               }
             />
 
-            <Route
-              path="/admin/xp"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminXP />
-                </ProtectedAdminRoute>
-              }
-            />
-          </Routes>
-        </LayoutWrapper>
+            {/* Fallback */}
+            <Route path="*" element={<Home />} />
+          </Route>
+        </Routes>
       </Router>
     </AuthProvider>
   );

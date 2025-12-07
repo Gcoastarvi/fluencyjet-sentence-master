@@ -1,105 +1,105 @@
-// client/src/pages/student/Login.jsx
-
-import { useEffect, useState } from "react";
-import { loginUser } from "../../api";               // <-- FIXED PATH
-import { autoRedirectIfLoggedIn } from "../../utils/authRedirect"; // <-- FIXED PATH
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import apiClient from "../../api/apiClient";
+import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
 
-  // Auto redirect if already logged in
-  useEffect(() => {
-    autoRedirectIfLoggedIn();
-  }, []);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
 
-  async function handleLogin(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMsg("");
+    setError("");
     setLoading(true);
 
     try {
-      const res = await loginUser({ email, password });
+      const res = await apiClient.post("/auth/login", form);
+      const { token, user } = res.data;
 
-      if (res.data?.token) {
-        // Store auth token
-        localStorage.setItem("token", res.data.token);
+      login(
+        {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          isAdmin: user.isAdmin,
+        },
+        token,
+      );
 
-        if (res.data?.expiresAt) {
-          localStorage.setItem("tokenExpiry", res.data.expiresAt);
-        }
-
-        // Save username (fallback to "Learner")
-        localStorage.setItem("userName", res.data?.name || "Learner");
-
-        setMsg("Login successful! Redirecting...");
-        setTimeout(() => (window.location.href = "/dashboard"), 800);
-      } else {
-        setMsg(res.data?.message || "Logged in!");
-      }
+      navigate("/dashboard");
     } catch (err) {
-      console.error("Login failed:", err);
-      const errorText =
-        err.response?.data?.message ||
-        err.message ||
-        "Something went wrong. Try again!";
-      setMsg(errorText);
+      console.error("Login failed", err);
+      const msg =
+        err?.response?.data?.message ||
+        "Login failed. Please check your email and password.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="flex flex-col items-center mt-16">
-      <h2 className="text-3xl font-bold text-indigo-700 mb-4">
-        Login to FluencyJet
-      </h2>
-
-      <form
-        onSubmit={handleLogin}
-        className="w-full max-w-sm space-y-4 bg-white p-6 rounded-xl shadow-md"
-      >
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full border p-2 rounded"
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 disabled:opacity-70"
-        >
-          {loading ? "Please wait..." : "Login"}
-        </button>
-      </form>
-
-      {msg && (
-        <p
-          className={`mt-4 text-sm ${
-            msg.toLowerCase().includes("error") ||
-            msg.toLowerCase().includes("failed")
-              ? "text-red-600"
-              : "text-green-600"
-          }`}
-        >
-          {msg}
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1>Login to FluencyJet</h1>
+        <p className="auth-subtitle">
+          Welcome back! Enter your details to continue your fluency journey.
         </p>
-      )}
+
+        {error && <div className="auth-error">{error}</div>}
+
+        <form onSubmit={handleSubmit} className="auth-form">
+          <label className="auth-label">
+            Email
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              className="auth-input"
+              placeholder="you@example.com"
+              required
+            />
+          </label>
+
+          <label className="auth-label">
+            Password
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="auth-input"
+              placeholder="••••••••"
+              required
+            />
+          </label>
+
+          <button
+            type="submit"
+            className="btn btn-primary auth-submit"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="auth-footer">
+          Don&apos;t have an account?{" "}
+          <Link to="/signup" className="auth-link">
+            Create one now
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

@@ -1,24 +1,44 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
-  // Load user from localStorage on refresh
+  // Hydrate from localStorage on first load
   useEffect(() => {
-    const saved = localStorage.getItem("fj_user");
-    if (saved) setUser(JSON.parse(saved));
+    try {
+      const raw = localStorage.getItem("fj_user");
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        setUser(parsed);
+      }
+    } catch (err) {
+      console.error("Failed to read user from localStorage", err);
+    }
   }, []);
 
-  const login = (userData) => {
+  const login = (userData, token) => {
     setUser(userData);
-    localStorage.setItem("fj_user", JSON.stringify(userData));
+    try {
+      localStorage.setItem("fj_user", JSON.stringify(userData));
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+    } catch (err) {
+      console.error("Failed to persist auth state", err);
+    }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("fj_user");
+    try {
+      localStorage.removeItem("fj_user");
+      localStorage.removeItem("token");
+    } catch (err) {
+      console.error("Failed to clear auth state", err);
+    }
   };
 
   return (
@@ -29,5 +49,9 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used inside <AuthProvider>");
+  }
+  return ctx;
 }

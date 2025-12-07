@@ -1,66 +1,82 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { adminLogin } from "../../api/adminApi"; // 🔥 updated import
+import apiClient from "../../api/apiClient";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
+    setLoading(true);
 
     try {
-      const res = await adminLogin(email, password); // 🔥 updated login
+      const res = await apiClient.post("/admin/auth/login", form);
+      const { token } = res.data;
 
-      if (!res.ok) {
-        setError("Invalid admin credentials");
-        setLoading(false);
-        return;
-      }
-
-      localStorage.setItem("adminToken", res.token);
-
-      navigate("/admin/dashboard"); // 🔥 correct redirect
+      localStorage.setItem("adminToken", token);
+      navigate("/admin/dashboard");
     } catch (err) {
-      setError("Login failed");
-      console.error(err);
+      console.error("Admin login failed", err);
+      const msg =
+        err?.response?.data?.message || "Invalid admin credentials.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="admin-login">
-      <h2>Admin Login</h2>
+    <div className="auth-page">
+      <div className="auth-card">
+        <h1>Admin Login</h1>
 
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Admin Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+        {error && <div className="auth-error">{error}</div>}
 
-        <input
-          type="password"
-          placeholder="Admin Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <form onSubmit={handleSubmit} className="auth-form">
+          <label className="auth-label">
+            Email
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              className="auth-input"
+              placeholder="admin@example.com"
+              required
+            />
+          </label>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+          <label className="auth-label">
+            Password
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="auth-input"
+              placeholder="••••••••"
+              required
+            />
+          </label>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+          <button
+            type="submit"
+            className="btn btn-primary auth-submit"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
