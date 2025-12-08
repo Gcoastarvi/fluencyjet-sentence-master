@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import API from "../../api/apiClient";
+import { adminApi } from "../../api/apiClient";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
 
 const AdminUsers = () => {
@@ -9,7 +9,7 @@ const AdminUsers = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("fj_admin_token");
 
       const res = await API.get("/api/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
@@ -36,7 +36,7 @@ const AdminUsers = () => {
     try {
       setUpdateLoading(userId);
 
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("fj_admin_token");
 
       const res = await API.patch(
         `/api/admin/users/${userId}/access`,
@@ -65,7 +65,7 @@ const AdminUsers = () => {
     try {
       setUpdateLoading(userId);
 
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("fj_admin_token");
 
       const res = await API.patch(
         `/api/admin/users/${userId}/access`,

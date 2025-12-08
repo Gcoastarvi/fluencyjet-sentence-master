@@ -1,121 +1,63 @@
-import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-// IMPORTANT: change this to match your real token key, see note below.
-const AUTH_TOKEN_KEY = "token"; // or "accessToken" / "authToken" etc.
+export default function Navbar({ openAuthModal }) {
+  const { isAuthenticated, logout, loading } = useAuth();
+  const navigate = useNavigate();
 
-export default function Navbar() {
-  const location = useLocation();
-  const [isOpen, setIsOpen] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  function handleLoginClick() {
+    // Preferred path: open popup login
+    if (typeof openAuthModal === "function") {
+      openAuthModal();
+      return;
+    }
 
-  // Hide navbar on admin login page
-  if (location.pathname.startsWith("/admin/login")) {
-    return null;
+    // Fallback: go to /login route (which now just instructs user to use popup)
+    navigate("/login");
   }
 
-  // helper: check login status from localStorage
-  const checkLoggedIn = () => {
-    try {
-      const token = localStorage.getItem(AUTH_TOKEN_KEY);
-      setLoggedIn(!!token);
-    } catch {
-      setLoggedIn(false);
-    }
-  };
-
-  // On first load
-  useEffect(() => {
-    checkLoggedIn();
-  }, []);
-
-  // When route changes: close mobile menu + recheck login
-  useEffect(() => {
-    setIsOpen(false);
-    checkLoggedIn();
-  }, [location.pathname]);
-
-  // Also respond if localStorage is changed from another tab
-  useEffect(() => {
-    const handleStorage = (e) => {
-      if (e.key === AUTH_TOKEN_KEY) {
-        setLoggedIn(!!e.newValue);
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
-
-  const handleLogout = () => {
-    try {
-      // remove the token (and add more keys if you use them)
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-    } catch {
-      // ignore
-    }
-    setLoggedIn(false);
-    window.location.href = "/login";
-  };
+  function handleLogoutClick() {
+    logout();
+    alert("Logged out successfully!");
+    navigate("/", { replace: true });
+  }
 
   return (
-    <header className="fj-nav-wrapper">
-      <nav className="fj-navbar">
-        {/* Brand */}
-        <Link to="/" className="fj-navbar-logo">
-          <span className="fj-brand-main">FluencyJet</span>{" "}
-          <span className="fj-brand-sub">Sentence Master</span>
-        </Link>
+    <nav className="flex items-center justify-between px-6 py-4 shadow-sm bg-white">
+      <Link to="/" className="text-2xl font-bold text-purple-700">
+        FluencyJet <span className="font-normal">Sentence Master</span>
+      </Link>
 
-        {/* Mobile hamburger */}
-        <button
-          className="fj-navbar-toggle"
-          onClick={() => setIsOpen((o) => !o)}
-          aria-label="Toggle navigation"
-        >
-          <span />
-          <span />
-        </button>
+      <div className="flex gap-6 text-lg items-center">
+        <Link to="/dashboard">Dashboard</Link>
+        <Link to="/lessons">Lessons</Link>
+        <Link to="/leaderboard">Leaderboard</Link>
+        <Link to="/typing-quiz">Typing Quiz</Link>
+        <Link to="/practice">Practice</Link>
+        <Link to="/paywall">Paywall</Link>
+        <Link to="/admin">Admin</Link>
 
-        {/* Links */}
-        <div className={`fj-navbar-links ${isOpen ? "fj-open" : ""}`}>
-          <Link to="/dashboard" className="fj-nav-link">
-            Dashboard
-          </Link>
-          <Link to="/lessons" className="fj-nav-link">
-            Lessons
-          </Link>
-          <Link to="/leaderboard" className="fj-nav-link">
-            Leaderboard
-          </Link>
-          <Link to="/typing-quiz" className="fj-nav-link">
-            Typing Quiz
-          </Link>
-          <Link to="/practice" className="fj-nav-link">
-            Practice
-          </Link>
-          <Link to="/paywall" className="fj-nav-link">
-            Paywall
-          </Link>
-          <Link to="/admin" className="fj-nav-link">
-            Admin
-          </Link>
-
-          {/* Right side: Login / Logout */}
-          {!loggedIn ? (
-            <Link to="/login" className="fj-nav-cta">
-              Login
-            </Link>
-          ) : (
-            <button
-              type="button"
-              className="fj-nav-cta fj-nav-logout"
-              onClick={handleLogout}
-            >
-              Logout
-            </button>
-          )}
-        </div>
-      </nav>
-    </header>
+        {/* While loading auth, temporarily hide button to avoid flicker */}
+        {!loading && (
+          <>
+            {!isAuthenticated ? (
+              <button
+                onClick={handleLoginClick}
+                className="px-4 py-2 bg-purple-600 text-white rounded-full shadow"
+              >
+                Login
+              </button>
+            ) : (
+              <button
+                onClick={handleLogoutClick}
+                className="px-4 py-2 bg-gray-800 text-white rounded-full shadow"
+              >
+                Logout
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </nav>
   );
 }

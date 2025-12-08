@@ -1,35 +1,26 @@
-import axios from "axios";
+const API_BASE = "/api"; // your backend prefix
 
-// ✅ Base Axios instance
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  headers: {
+export async function apiClient(endpoint, { body, method = "GET" } = {}) {
+  const token = localStorage.getItem("fj_token");
+
+  const headers = {
     "Content-Type": "application/json",
-  },
-});
+  };
 
-// ✅ Automatically attach token if available
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error),
-);
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
 
-// ✅ Handle unauthorized errors globally
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login"; // force re-login
-    }
-    return Promise.reject(error);
-  },
-);
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  });
 
-export default apiClient;
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(error.message || "Request failed");
+  }
+
+  return res.json();
+}

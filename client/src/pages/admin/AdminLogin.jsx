@@ -1,77 +1,93 @@
+// client/src/pages/admin/AdminLogin.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import apiClient from "../../api/apiClient";
+import { loginAsAdmin } from "../../api/adminApi";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      const res = await apiClient.post("/admin/auth/login", form);
-      const { token } = res.data;
+      const res = await loginAsAdmin(email, password);
+      const token = res?.token;
 
-      localStorage.setItem("adminToken", token);
+      if (!token) {
+        setError("Login failed: No token received from server.");
+        setLoading(false);
+        return;
+      }
+
+      // Store admin token safely
+      localStorage.setItem("fj_admin_token", token);
+
+      // Redirect to dashboard
       navigate("/admin/dashboard");
     } catch (err) {
-      console.error("Admin login failed", err);
+      console.error("Admin login error:", err);
+
       const msg =
-        err?.response?.data?.message || "Invalid admin credentials.";
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Invalid admin credentials";
+
       setError(msg);
-    } finally {
-      setLoading(false);
     }
-  };
+
+    setLoading(false);
+  }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1>Admin Login</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-md bg-white shadow-md rounded-xl p-8">
+        <h1 className="text-2xl font-bold text-center mb-6 text-purple-700">
+          Admin Login
+        </h1>
 
-        {error && <div className="auth-error">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <label className="auth-label">
-            Email
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
             <input
               type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              className="auth-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
               placeholder="admin@example.com"
+              autoComplete="username"
               required
             />
-          </label>
+          </div>
 
-          <label className="auth-label">
-            Password
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
             <input
               type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              className="auth-input"
-              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              autoComplete="current-password"
               required
             />
-          </label>
+          </div>
 
+          {/* Error message */}
+          {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
+          {/* Submit */}
           <button
             type="submit"
-            className="btn btn-primary auth-submit"
             disabled={loading}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 rounded-md transition disabled:opacity-50"
           >
             {loading ? "Logging in..." : "Login"}
           </button>

@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from "react";
-import API from "../../api/apiClient";
+import {
+  getLesson,
+  updateLesson,
+  deleteLesson,
+} from "../../api/adminApi";
 import { useParams, useNavigate } from "react-router-dom";
 
 const AdminLessonEdit = () => {
@@ -10,7 +14,7 @@ const AdminLessonEdit = () => {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("adminToken");
+  const token = localStorage.getItem("fj_admin_token");
 
   useEffect(() => {
     const fetchLesson = async () => {

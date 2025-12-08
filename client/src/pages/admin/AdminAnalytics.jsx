@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api } from "../../api";
+import { adminApi } from "../../api/apiClient";
 
 export default function AdminAnalytics() {
   const [loading, setLoading] = useState(true);

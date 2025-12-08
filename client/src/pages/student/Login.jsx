@@ -1,105 +1,39 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import apiClient from "../../api/apiClient";
+import { useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const res = await apiClient.post("/auth/login", form);
-      const { token, user } = res.data;
-
-      login(
-        {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          isAdmin: user.isAdmin,
-        },
-        token,
-      );
-
-      navigate("/dashboard");
-    } catch (err) {
-      console.error("Login failed", err);
-      const msg =
-        err?.response?.data?.message ||
-        "Login failed. Please check your email and password.";
-      setError(msg);
-    } finally {
-      setLoading(false);
+  // If already logged in, go straight to dashboard (or original target)
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirectTo = location.state?.from?.pathname || "/dashboard";
+      navigate(redirectTo, { replace: true });
     }
-  };
+  }, [isAuthenticated, location, navigate]);
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h1>Login to FluencyJet</h1>
-        <p className="auth-subtitle">
-          Welcome back! Enter your details to continue your fluency journey.
-        </p>
+    <div className="p-6 max-w-xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Login</h1>
+      <p className="mb-4 text-lg">
+        We&apos;ve moved to a single, easy login method.
+      </p>
+      <p className="mb-6">
+        Please use the <strong>Login</strong> button at the top-right corner of
+        this page to sign in. It will open the FluencyJet login popup and, once
+        you&apos;re logged in, you can access your{" "}
+        <strong>Dashboard, Lessons, Leaderboard</strong>, and all other pages.
+      </p>
 
-        {error && <div className="auth-error">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <label className="auth-label">
-            Email
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              className="auth-input"
-              placeholder="you@example.com"
-              required
-            />
-          </label>
-
-          <label className="auth-label">
-            Password
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              className="auth-input"
-              placeholder="••••••••"
-              required
-            />
-          </label>
-
-          <button
-            type="submit"
-            className="btn btn-primary auth-submit"
-            disabled={loading}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-
-        <p className="auth-footer">
-          Don&apos;t have an account?{" "}
-          <Link to="/signup" className="auth-link">
-            Create one now
-          </Link>
-        </p>
-      </div>
+      <button
+        onClick={() => navigate("/")}
+        className="px-4 py-2 bg-purple-600 text-white rounded shadow"
+      >
+        Go to Home
+      </button>
     </div>
   );
 }

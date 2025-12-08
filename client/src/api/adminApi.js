@@ -1,89 +1,194 @@
-import apiClient from "./apiClient";
+// client/src/api/adminApi.js
+import axios from "axios";
 
-/* =========================
-   AUTH
-========================= */
-export function adminLogin(email, password) {
-  return apiClient.post("/admin/auth/login", { email, password });
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://fluencyjet-sentence-master-production-de09.up.railway.app";
+
+export const ADMIN_TOKEN_KEY = "fj_admin_token";
+
+/**
+ * Build headers for admin-protected endpoints
+ */
+function getAdminHeaders() {
+  const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
 }
 
-/* =========================
-   DASHBOARD
-========================= */
-export function getAdminDashboard() {
-  return apiClient.get("/admin/dashboard");
+function normalizeError(error, fallbackMessage) {
+  if (error.response?.data?.message) return error.response.data.message;
+  if (error.message) return error.message;
+  return fallbackMessage;
 }
 
-/* =========================
-   LESSONS
-========================= */
-export function getLessons() {
-  return apiClient.get("/admin/lessons");
+/* ─────────────────────────────────────────────
+   ADMIN AUTH
+   POST /api/admin/login
+────────────────────────────────────────────── */
+
+export async function loginAsAdmin(password) {
+  try {
+    const res = await axios.post(
+      `${API_BASE_URL}/api/admin/login`,
+      { password },
+      {
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+
+    // Expecting { token, admin: {...} }
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Admin login failed");
+    console.error("[adminApi] loginAsAdmin error:", error);
+    throw new Error(message);
+  }
 }
 
-export function createLesson(data) {
-  return apiClient.post("/admin/lessons", data);
+/* ─────────────────────────────────────────────
+   ADMIN DASHBOARD
+   GET /api/admin/dashboard
+────────────────────────────────────────────── */
+
+export async function getAdminDashboard() {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/admin/dashboard`, {
+      headers: getAdminHeaders(),
+    });
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Failed to load admin dashboard");
+    console.error("[adminApi] getAdminDashboard error:", error);
+    throw new Error(message);
+  }
 }
 
-export function updateLesson(id, data) {
-  return apiClient.put(`/admin/lessons/${id}`, data);
+/* ─────────────────────────────────────────────
+   LESSONS CRUD
+   GET    /api/admin/lessons
+   POST   /api/admin/lessons
+   PUT    /api/admin/lessons/:id
+   DELETE /api/admin/lessons/:id
+────────────────────────────────────────────── */
+
+export async function getLessons() {
+  try {
+    const res = await axios.get(`${API_BASE_URL}/api/admin/lessons`, {
+      headers: getAdminHeaders(),
+    });
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Failed to load lessons");
+    console.error("[adminApi] getLessons error:", error);
+    throw new Error(message);
+  }
 }
 
-export function deleteLesson(id) {
-  return apiClient.delete(`/admin/lessons/${id}`);
+export async function createLesson(payload) {
+  try {
+    const res = await axios.post(`${API_BASE_URL}/api/admin/lessons`, payload, {
+      headers: getAdminHeaders(),
+    });
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Failed to create lesson");
+    console.error("[adminApi] createLesson error:", error);
+    throw new Error(message);
+  }
 }
 
-/* =========================
+export async function updateLesson(id, payload) {
+  try {
+    const res = await axios.put(
+      `${API_BASE_URL}/api/admin/lessons/${id}`,
+      payload,
+      {
+        headers: getAdminHeaders(),
+      },
+    );
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Failed to update lesson");
+    console.error("[adminApi] updateLesson error:", error);
+    throw new Error(message);
+  }
+}
+
+export async function deleteLesson(id) {
+  try {
+    const res = await axios.delete(`${API_BASE_URL}/api/admin/lessons/${id}`, {
+      headers: getAdminHeaders(),
+    });
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Failed to delete lesson");
+    console.error("[adminApi] deleteLesson error:", error);
+    throw new Error(message);
+  }
+}
+
+/* ─────────────────────────────────────────────
    QUIZZES
-========================= */
+   (Lesson-scoped quizzes)
+   GET    /api/admin/quizzes/:lessonId
+   POST   /api/admin/quizzes/:lessonId
+   DELETE /api/admin/quizzes/:lessonId/:questionId
+────────────────────────────────────────────── */
 
-// Admin — get all quizzes
-export function getQuizzes() {
-  return apiClient.get("/admin/quizzes");
+export async function getQuizzes(lessonId) {
+  try {
+    const res = await axios.get(
+      `${API_BASE_URL}/api/admin/quizzes/${lessonId}`,
+      {
+        headers: getAdminHeaders(),
+      },
+    );
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Failed to load quizzes");
+    console.error("[adminApi] getQuizzes error:", error);
+    throw new Error(message);
+  }
 }
 
-// Admin — get quiz by ID
-export function getQuiz(id) {
-  return apiClient.get(`/admin/quizzes/${id}`);
+export async function createQuiz(lessonId, payload) {
+  try {
+    const res = await axios.post(
+      `${API_BASE_URL}/api/admin/quizzes/${lessonId}`,
+      payload,
+      {
+        headers: getAdminHeaders(),
+      },
+    );
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Failed to create quiz");
+    console.error("[adminApi] createQuiz error:", error);
+    throw new Error(message);
+  }
 }
 
-// Admin — create new quiz
-export function createQuiz(data) {
-  return apiClient.post("/admin/quizzes", data);
+export async function deleteQuiz(lessonId, questionId) {
+  try {
+    const res = await axios.delete(
+      `${API_BASE_URL}/api/admin/quizzes/${lessonId}/${questionId}`,
+      {
+        headers: getAdminHeaders(),
+      },
+    );
+    return res.data;
+  } catch (error) {
+    const message = normalizeError(error, "Failed to delete quiz");
+    console.error("[adminApi] deleteQuiz error:", error);
+    throw new Error(message);
+  }
 }
-
-// Admin — update quiz
-export function updateQuiz(id, data) {
-  return apiClient.put(`/admin/quizzes/${id}`, data);
-}
-
-// Admin — delete quiz
-export function deleteQuiz(id) {
-  return apiClient.delete(`/admin/quizzes/${id}`);
-}
-
-/* =========================
-   USERS
-========================= */
-
-// list all users
-export const getAllUsers = () => apiClient.get("/admin/users");
-
-// single user
-export const getUserById = (id) => apiClient.get(`/admin/users/${id}`);
-
-// reset XP
-export const resetUserXP = (id) =>
-  apiClient.patch(`/admin/users/${id}/reset-xp`);
-
-// reset streak
-export const resetUserStreak = (id) =>
-  apiClient.patch(`/admin/users/${id}/reset-streak`);
-
-// ban / unban
-export const toggleBanUser = (id) =>
-  apiClient.patch(`/admin/users/${id}/toggle-ban`);
-
-// hard delete user (if you want it)
-export const deleteUser = (id) =>
-  apiClient.delete(`/admin/users/${id}`);

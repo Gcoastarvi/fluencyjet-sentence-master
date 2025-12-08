@@ -1,19 +1,29 @@
-// client/src/components/ProtectedRoute.jsx
-import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-/**
- * ✅ ProtectedRoute Component
- * Ensures only authenticated users can access secure routes.
- * Redirects to /login if no valid token is found.
- */
 export default function ProtectedRoute({ children }) {
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const { token, loading } = useAuth();
+  const location = useLocation();
 
-  if (!token) {
-    return <Navigate to="/login" replace />;
+  // Still hydrating auth state
+  if (loading) {
+    return <div className="p-6 text-center">Loading...</div>;
   }
 
-  return <>{children}</>;
+  // Source of truth: context token, with localStorage as a safety net
+  const storedToken = token || localStorage.getItem("fj_token");
+
+  if (!storedToken) {
+    // Not authenticated → go to login route
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location }} // so we can redirect back after login
+      />
+    );
+  }
+
+  // Authenticated → allow access
+  return children;
 }

@@ -1,7 +1,8 @@
-// client/src/pages/AdminXP.jsx
+// client/src/pages/admin/AdminXP.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
+import { adminApi } from "../../api/apiClient";
 
 export default function AdminXP() {
   const [logs, setLogs] = useState([]);

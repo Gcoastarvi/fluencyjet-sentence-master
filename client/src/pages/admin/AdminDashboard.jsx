@@ -1,57 +1,127 @@
+// client/src/pages/admin/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
-import API from "../../api/apiClient";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
+import { adminApi } from "../../api/apiClient";
 
-const AdminDashboard = () => {
-  const [data, setData] = useState(null);
+function AdminDashboardInner() {
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem("adminToken");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchDashboard() {
       try {
-        const res = await API.get("/api/admin/analytics", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.data.ok) setData(res.data);
+        setLoading(true);
+        setError("");
+
+        // Uses fj_admin_token via adminApi / axios instance
+        const res = await getAdminDashboard();
+
+        // Axios returns { data: {...} }
+        setStats(res.data);
       } catch (err) {
-        console.error("Failed to load analytics:", err);
+        console.error("Failed to load admin dashboard:", err);
+        setError("Failed to load admin dashboard data.");
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    fetchData();
+    fetchDashboard();
   }, []);
 
-  if (loading) return <div className="p-6">Loading dashboard...</div>;
+  if (loading) {
+    return (
+      <div style={{ padding: "2rem" }}>
+        <h2>Admin Dashboard</h2>
+        <p>Loading dashboard data...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: "2rem" }}>
+        <h2>Admin Dashboard</h2>
+        <p style={{ color: "red" }}>{error}</p>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div style={{ padding: "2rem" }}>
+        <h2>Admin Dashboard</h2>
+        <p>No data available.</p>
+      </div>
+    );
+  }
+
+  const {
+    totalUsers,
+    activeUsers,
+    totalQuizzes,
+    totalLessons,
+    totalXP,
+    avgXPPerUser,
+    dailyActiveUsers,
+  } = stats;
 
   return (
-    <ProtectedAdminRoute>
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-purple-700 mb-4">
-          Admin Dashboard
-        </h1>
+    <div style={{ padding: "2rem" }}>
+      <h2>Admin Dashboard</h2>
 
-        <div className="space-y-4">
-          <div className="p-4 bg-white shadow rounded">
-            <h2 className="text-lg font-semibold">Total Users</h2>
-            <p className="text-2xl">{data?.totalUsers}</p>
-          </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "1rem",
+          marginTop: "1.5rem",
+        }}
+      >
+        <div className="admin-card">
+          <h3>Total Users</h3>
+          <p>{totalUsers ?? "-"}</p>
+        </div>
 
-          <div className="p-4 bg-white shadow rounded">
-            <h2 className="text-lg font-semibold">Total Lessons</h2>
-            <p className="text-2xl">{data?.totalLessons}</p>
-          </div>
+        <div className="admin-card">
+          <h3>Active Users</h3>
+          <p>{activeUsers ?? "-"}</p>
+        </div>
 
-          <div className="p-4 bg-white shadow rounded">
-            <h2 className="text-lg font-semibold">Total Quizzes</h2>
-            <p className="text-2xl">{data?.totalQuizzes}</p>
-          </div>
+        <div className="admin-card">
+          <h3>Total Lessons</h3>
+          <p>{totalLessons ?? "-"}</p>
+        </div>
+
+        <div className="admin-card">
+          <h3>Total Quizzes</h3>
+          <p>{totalQuizzes ?? "-"}</p>
+        </div>
+
+        <div className="admin-card">
+          <h3>Total XP Earned</h3>
+          <p>{totalXP ?? "-"}</p>
+        </div>
+
+        <div className="admin-card">
+          <h3>Average XP per User</h3>
+          <p>{avgXPPerUser ?? "-"}</p>
+        </div>
+
+        <div className="admin-card">
+          <h3>Daily Active Users</h3>
+          <p>{dailyActiveUsers ?? "-"}</p>
         </div>
       </div>
+    </div>
+  );
+}
+
+export default function AdminDashboard() {
+  return (
+    <ProtectedAdminRoute>
+      <AdminDashboardInner />
     </ProtectedAdminRoute>
   );
-};
-
-export default AdminDashboard;
+}
