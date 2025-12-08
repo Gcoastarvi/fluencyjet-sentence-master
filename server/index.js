@@ -112,7 +112,7 @@ app.use("/api/admin", adminRoutes);
 app.all("/api/*", (req, res) => {
   return res.status(404).json({
     ok: false,
-    message: "API route not found",
+    message: "API route not found",// redeploy trigger
   });
 });
 
