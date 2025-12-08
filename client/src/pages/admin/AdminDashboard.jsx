@@ -1,7 +1,7 @@
 // client/src/pages/admin/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
-import { adminApi } from "../../api/apiClient";
+import { getAdminDashboard } from "../../api/adminApi";
 
 function AdminDashboardInner() {
   const [stats, setStats] = useState(null);
@@ -14,14 +14,17 @@ function AdminDashboardInner() {
         setLoading(true);
         setError("");
 
-        // Uses fj_admin_token via adminApi / axios instance
-        const res = await getAdminDashboard();
+        // adminApi.getAdminDashboard already returns the JSON payload
+        const data = await getAdminDashboard();
 
-        // Axios returns { data: {...} }
-        setStats(res.data);
+        if (!data?.ok) {
+          throw new Error(data?.message || "Dashboard response not ok");
+        }
+
+        setStats(data);
       } catch (err) {
         console.error("Failed to load admin dashboard:", err);
-        setError("Failed to load admin dashboard data.");
+        setError(err?.message || "Failed to load admin dashboard data.");
       } finally {
         setLoading(false);
       }
@@ -85,8 +88,13 @@ function AdminDashboardInner() {
         </div>
 
         <div className="admin-card">
-          <h3>Active Users</h3>
+          <h3>Active Users (7 days)</h3>
           <p>{activeUsers ?? "-"}</p>
+        </div>
+
+        <div className="admin-card">
+          <h3>Daily Active Users (today)</h3>
+          <p>{dailyActiveUsers ?? "-"}</p>
         </div>
 
         <div className="admin-card">
@@ -107,11 +115,6 @@ function AdminDashboardInner() {
         <div className="admin-card">
           <h3>Average XP per User</h3>
           <p>{avgXPPerUser ?? "-"}</p>
-        </div>
-
-        <div className="admin-card">
-          <h3>Daily Active Users</h3>
-          <p>{dailyActiveUsers ?? "-"}</p>
         </div>
       </div>
     </div>
