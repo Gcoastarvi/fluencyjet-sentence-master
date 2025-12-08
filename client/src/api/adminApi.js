@@ -33,19 +33,20 @@ function normalizeError(error, fallbackMessage) {
 /* ─────────────────────────────────────────────
    ADMIN AUTH
    POST /api/admin/login
+   Body: { email, password }
 ────────────────────────────────────────────── */
 
-export async function loginAsAdmin(password) {
+export async function loginAsAdmin(email, password) {
   try {
     const res = await axios.post(
       `${API_BASE_URL}/api/admin/login`,
-      { password },
+      { email, password },
       {
         headers: { "Content-Type": "application/json" },
       },
     );
 
-    // Expecting { token, admin: {...} }
+    // Expecting { ok, token, user: {...} }
     return res.data;
   } catch (error) {
     const message = normalizeError(error, "Admin login failed");
@@ -76,7 +77,7 @@ export async function getAdminDashboard() {
    LESSONS CRUD
    GET    /api/admin/lessons
    POST   /api/admin/lessons
-   PUT    /api/admin/lessons/:id
+   PUT   /api/admin/lessons/:id
    DELETE /api/admin/lessons/:id
 ────────────────────────────────────────────── */
 

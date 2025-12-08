@@ -29,16 +29,12 @@ export default function AdminLogin() {
       // Store admin token safely
       localStorage.setItem("fj_admin_token", token);
 
-      // Redirect to dashboard
-      navigate("/admin/dashboard");
+      // Redirect to main admin dashboard route
+      navigate("/admin", { replace: true });
     } catch (err) {
       console.error("Admin login error:", err);
 
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Invalid admin credentials";
-
+      const msg = err?.message || "Invalid admin credentials";
       setError(msg);
     }
 
