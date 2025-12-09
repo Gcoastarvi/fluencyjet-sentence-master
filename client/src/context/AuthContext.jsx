@@ -1,27 +1,25 @@
 // client/src/context/AuthContext.jsx
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode";
 
 // -------------------------
 // CONTEXT + HOOK
 // -------------------------
-const AuthContext = createContext();
+export const AuthContext = createContext(null);
 
 export function useAuth() {
   return useContext(AuthContext);
 }
 
 // -------------------------
-// PROVIDER
+// PROVIDER (named + default export)
 // -------------------------
-export default function AuthProvider({ children }) {
+export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // -------------------------
-  // Decode and restore user
-  // -------------------------
+  // Decode and store user from token
   function decodeAndSetUser(token) {
     try {
       const decoded = jwtDecode(token);
@@ -32,18 +30,14 @@ export default function AuthProvider({ children }) {
     }
   }
 
-  // -------------------------
-  // Hydrate token on load
-  // -------------------------
+  // Hydrate from localStorage on first load
   useEffect(() => {
     const token = localStorage.getItem("fj_token");
     if (token) decodeAndSetUser(token);
     setLoading(false);
   }, []);
 
-  // -------------------------
-  // LOGIN FUNCTION
-  // -------------------------
+  // Login function
   async function login(email, password) {
     try {
       const API_BASE =
@@ -81,28 +75,22 @@ export default function AuthProvider({ children }) {
     }
   }
 
-  // -------------------------
-  // LOGOUT FUNCTION
-  // -------------------------
+  // Logout function
   function logout() {
     localStorage.removeItem("fj_token");
     setUser(null);
   }
 
-  // -------------------------
-  // EXPORT VALUES
-  // -------------------------
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        loading,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    loading,
+    login,
+    logout,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
+
+// Also export as default so existing imports still work
+export default AuthProvider;
