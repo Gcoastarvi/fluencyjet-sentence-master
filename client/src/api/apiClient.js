@@ -1,4 +1,8 @@
-const API_BASE = "/api"; // your backend prefix
+// client/src/api/apiClient.js
+
+const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://fluencyjet-sentence-master-production-de09.up.railway.app/api";
 
 export async function apiClient(endpoint, { body, method = "GET" } = {}) {
   const token = localStorage.getItem("fj_token");
@@ -17,10 +21,19 @@ export async function apiClient(endpoint, { body, method = "GET" } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({}));
-    throw new Error(error.message || "Request failed");
+  const text = await res.text(); // <-- read raw first
+
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    console.error("NON-JSON response:", text);
+    throw new Error("Server returned HTML instead of JSON (wrong API URL)");
   }
 
-  return res.json();
+  if (!res.ok) {
+    throw new Error(json.message || "Request failed");
+  }
+
+  return json;
 }
