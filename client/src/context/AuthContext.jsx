@@ -1,7 +1,7 @@
 // client/src/context/AuthContext.jsx
 
 import { createContext, useContext, useState, useEffect } from "react";
-import jwtDecode from "jwt-decode";
+import { jwtDecode } from "jwt-decode";
 
 // -------------------------
 // CONTEXT + HOOK
