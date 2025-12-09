@@ -231,6 +231,35 @@ export async function resetStudentProgress(studentId) {
     throw new Error("Failed to reset student progress.");
   }
 }
+// ─────────────────────────────────────────────
+// LEGACY "get*" HELPERS FOR EXISTING ADMIN PAGES
+// (keep all existing workflows working)
+// ─────────────────────────────────────────────
+
+export async function getAdminDashboard() {
+  // GET /api/admin/dashboard
+  const res = await api.get("/admin/dashboard", withCreds);
+  return res.data;
+}
+
+export async function getLessons() {
+  // GET /api/admin/lessons
+  const res = await api.get("/admin/lessons", withCreds);
+  return res.data;
+}
+
+export async function getQuizzes() {
+  // GET /api/admin/quizzes
+  const res = await api.get("/admin/quizzes", withCreds);
+  return res.data;
+}
+
+export async function getStudents() {
+  // GET /api/admin/students
+  const res = await api.get("/admin/students", withCreds);
+  return res.data;
+}
+
 export async function adminLogin(email, password) {
   const res = await api.post("/auth/admin/login", { email, password });
   return res.data;
