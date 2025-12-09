@@ -1,38 +1,28 @@
 // client/src/api/adminApi.js
-// Centralized Admin API client – keeps existing endpoints & workflows intact
+// Centralized Admin API client – clean & stable version
 
 import axios from "axios";
 
 /**
  * BACKEND BASE URL
- * - We always talk directly to the backend service, NOT the frontend URL.
- * - If VITE_BACKEND_URL is set, we use that.
- * - Otherwise we fall back to the production backend Railway URL.
- *
- * Examples:
- *   VITE_BACKEND_URL = "http://localhost:8080"
- *   VITE_BACKEND_URL = "https://fluencyjet-sentence-master-production.up.railway.app"
+ * Priority:
+ * 1. VITE_BACKEND_URL (local dev)
+ * 2. Production backend on Railway
  */
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL ||
   "https://fluencyjet-sentence-master-production.up.railway.app";
 
-/**
- * All admin routes in the backend are under /api/admin/...
- */
+/** All admin endpoints live under /api/admin */
 const ADMIN_API_BASE = `${API_BASE_URL}/api/admin`;
 
-/**
- * Small helper to include cookies (admin auth token) on every request.
- */
+/** Always send cookies (admin auth) */
 const withCreds = {
   withCredentials: true,
 };
 
 /* ───────────────────────────────
-   ADMIN AUTH
-   - Admin login / logout
-   - Get current admin profile
+   ADMIN AUTH (LOGIN / LOGOUT / PROFILE)
    ─────────────────────────────── */
 
 export async function loginAdmin(email, password) {
@@ -42,16 +32,14 @@ export async function loginAdmin(email, password) {
       { email, password },
       withCreds,
     );
-
-    // Backend returns { admin, token? } – we just forward the data
-    return res.data;
+    return res.data; // { admin, token? }
   } catch (err) {
     console.error("Admin login failed:", err?.response || err);
-    const message =
+    const msg =
       err?.response?.data?.message ||
       err?.response?.data?.error ||
-      "Admin login failed. Please check your credentials.";
-    throw new Error(message);
+      "Admin login failed.";
+    throw new Error(msg);
   }
 }
 
@@ -61,11 +49,11 @@ export async function logoutAdmin() {
     return res.data;
   } catch (err) {
     console.error("Admin logout failed:", err?.response || err);
-    const message =
+    const msg =
       err?.response?.data?.message ||
       err?.response?.data?.error ||
       "Admin logout failed.";
-    throw new Error(message);
+    throw new Error(msg);
   }
 }
 
@@ -75,22 +63,21 @@ export async function getAdminProfile() {
     return res.data;
   } catch (err) {
     console.error("Fetch admin profile failed:", err?.response || err);
-    const status = err?.response?.status;
 
-    if (status === 401 || status === 403) {
+    if (err?.response?.status === 401 || err?.response?.status === 403) {
       throw new Error("Not authorized. Please log in as admin.");
     }
 
-    const message =
+    const msg =
       err?.response?.data?.message ||
       err?.response?.data?.error ||
       "Failed to fetch admin profile.";
-    throw new Error(message);
+    throw new Error(msg);
   }
 }
 
 /* ───────────────────────────────
-   ADMIN DASHBOARD / ANALYTICS
+   DASHBOARD ANALYTICS
    ─────────────────────────────── */
 
 export async function fetchDashboardStats() {
@@ -98,17 +85,13 @@ export async function fetchDashboardStats() {
     const res = await axios.get(`${ADMIN_API_BASE}/dashboard`, withCreds);
     return res.data;
   } catch (err) {
-    console.error("Fetch dashboard stats failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to load dashboard stats.";
-    throw new Error(message);
+    console.error("Dashboard stats failed:", err?.response || err);
+    throw new Error("Failed to load dashboard stats.");
   }
 }
 
 /* ───────────────────────────────
-   LESSON MANAGEMENT
+   LESSONS
    ─────────────────────────────── */
 
 export async function fetchLessons() {
@@ -117,11 +100,7 @@ export async function fetchLessons() {
     return res.data;
   } catch (err) {
     console.error("Fetch lessons failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to fetch lessons.";
-    throw new Error(message);
+    throw new Error("Failed to fetch lessons.");
   }
 }
 
@@ -135,11 +114,7 @@ export async function createLesson(payload) {
     return res.data;
   } catch (err) {
     console.error("Create lesson failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to create lesson.";
-    throw new Error(message);
+    throw new Error("Failed to create lesson.");
   }
 }
 
@@ -153,11 +128,7 @@ export async function updateLesson(id, payload) {
     return res.data;
   } catch (err) {
     console.error("Update lesson failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to update lesson.";
-    throw new Error(message);
+    throw new Error("Failed to update lesson.");
   }
 }
 
@@ -170,17 +141,12 @@ export async function deleteLesson(id) {
     return res.data;
   } catch (err) {
     console.error("Delete lesson failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to delete lesson.";
-    throw new Error(message);
+    throw new Error("Failed to delete lesson.");
   }
 }
 
 /* ───────────────────────────────
    QUIZZES / XP / LEADERBOARD ANALYTICS
-   (keep same endpoints as before)
    ─────────────────────────────── */
 
 export async function fetchQuizAnalytics(params = {}) {
@@ -191,12 +157,8 @@ export async function fetchQuizAnalytics(params = {}) {
     });
     return res.data;
   } catch (err) {
-    console.error("Fetch quiz analytics failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to fetch quiz analytics.";
-    throw new Error(message);
+    console.error("Quiz analytics failed:", err?.response || err);
+    throw new Error("Failed to fetch quiz analytics.");
   }
 }
 
@@ -208,12 +170,8 @@ export async function fetchXpEvents(params = {}) {
     });
     return res.data;
   } catch (err) {
-    console.error("Fetch XP events failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to fetch XP events.";
-    throw new Error(message);
+    console.error("XP events failed:", err?.response || err);
+    throw new Error("Failed to fetch XP events.");
   }
 }
 
@@ -225,12 +183,8 @@ export async function fetchLeaderboardSnapshot(params = {}) {
     });
     return res.data;
   } catch (err) {
-    console.error("Fetch leaderboard snapshot failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to fetch leaderboard snapshot.";
-    throw new Error(message);
+    console.error("Leaderboard snapshot failed:", err?.response || err);
+    throw new Error("Failed to fetch leaderboard snapshot.");
   }
 }
 
@@ -247,11 +201,7 @@ export async function fetchStudents(params = {}) {
     return res.data;
   } catch (err) {
     console.error("Fetch students failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to fetch students.";
-    throw new Error(message);
+    throw new Error("Failed to fetch students.");
   }
 }
 
@@ -264,11 +214,7 @@ export async function fetchStudentDetail(studentId) {
     return res.data;
   } catch (err) {
     console.error("Fetch student detail failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to fetch student detail.";
-    throw new Error(message);
+    throw new Error("Failed to fetch student detail.");
   }
 }
 
@@ -281,12 +227,8 @@ export async function resetStudentProgress(studentId) {
     );
     return res.data;
   } catch (err) {
-    console.error("Reset student progress failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to reset student progress.";
-    throw new Error(message);
+    console.error("Reset progress failed:", err?.response || err);
+    throw new Error("Failed to reset student progress.");
   }
 }
 
@@ -299,10 +241,6 @@ export async function deleteStudent(studentId) {
     return res.data;
   } catch (err) {
     console.error("Delete student failed:", err?.response || err);
-    const message =
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      "Failed to delete student.";
-    throw new Error(message);
+    throw new Error("Failed to delete student.");
   }
 }
