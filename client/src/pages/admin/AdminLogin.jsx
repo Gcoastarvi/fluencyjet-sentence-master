@@ -1,7 +1,7 @@
 // client/src/pages/admin/AdminLogin.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { loginAsAdmin } from "../../api/adminApi";
+import { adminLogin } from "../../api/adminApi"; // ✅ updated import
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -17,23 +17,22 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      const res = await loginAsAdmin(email, password);
-      const token = res?.token;
+      // 🔥 Call updated admin login function
+      const res = await adminLogin(email, password);
 
-      if (!token) {
+      if (!res?.token) {
         setError("Login failed: No token received from server.");
         setLoading(false);
         return;
       }
 
-      // Store admin token safely
-      localStorage.setItem("fj_admin_token", token);
+      // 🔥 Save admin token
+      localStorage.setItem("fj_admin_token", res.token);
 
-      // Redirect to main admin dashboard route
+      // 🔥 Redirect to admin dashboard (root admin route)
       navigate("/admin", { replace: true });
     } catch (err) {
       console.error("Admin login error:", err);
-
       const msg = err?.message || "Invalid admin credentials";
       setError(msg);
     }
@@ -76,10 +75,10 @@ export default function AdminLogin() {
             />
           </div>
 
-          {/* Error message */}
+          {/* Error */}
           {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
-          {/* Submit */}
+          {/* Login button */}
           <button
             type="submit"
             disabled={loading}
