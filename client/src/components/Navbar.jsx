@@ -1,18 +1,11 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function Navbar({ openAuthModal }) {
+export default function Navbar() {
   const { isAuthenticated, logout, loading } = useAuth();
   const navigate = useNavigate();
 
   function handleLoginClick() {
-    // Preferred path: open popup login
-    if (typeof openAuthModal === "function") {
-      openAuthModal();
-      return;
-    }
-
-    // Fallback: go to /login route (which now just instructs user to use popup)
     navigate("/login");
   }
 
@@ -37,7 +30,6 @@ export default function Navbar({ openAuthModal }) {
         <Link to="/paywall">Paywall</Link>
         <Link to="/admin">Admin</Link>
 
-        {/* While loading auth, temporarily hide button to avoid flicker */}
         {!loading && (
           <>
             {!isAuthenticated ? (

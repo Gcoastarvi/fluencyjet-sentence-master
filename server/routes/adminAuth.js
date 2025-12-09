@@ -3,6 +3,12 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "fluencyjet@gmail.com";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "AQK#952pmbgt";
+
+// Use the SAME secret as student auth so middleware can verify it
+const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -14,34 +20,32 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Admin ENV check
-    if (
-      email !== process.env.ADMIN_EMAIL ||
-      password !== process.env.ADMIN_PASSWORD
-    ) {
+    // Simple env-based admin auth (no DB)
+    if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
       return res.status(401).json({
         ok: false,
         message: "Invalid admin credentials",
       });
     }
 
+    // Create admin token
     const token = jwt.sign(
       {
+        id: "admin",
         email,
         role: "admin",
         isAdmin: true,
       },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" },
+      JWT_SECRET,
+      { expiresIn: "30d" },
     );
 
     return res.json({
       ok: true,
       token,
-      user: {
+      admin: {
         email,
         role: "admin",
-        isAdmin: true,
       },
     });
   } catch (err) {
