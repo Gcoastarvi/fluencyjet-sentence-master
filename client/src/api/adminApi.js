@@ -231,6 +231,10 @@ export async function resetStudentProgress(studentId) {
     throw new Error("Failed to reset student progress.");
   }
 }
+export async function adminLogin(email, password) {
+  const res = await api.post("/auth/admin/login", { email, password });
+  return res.data;
+}
 
 export async function deleteStudent(studentId) {
   try {
