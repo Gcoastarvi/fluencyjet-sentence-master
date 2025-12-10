@@ -120,19 +120,18 @@ app.all("/api/*", (req, res) => {
 // 🚀 FRONTEND STATIC SERVING (THE MISSING PART)
 // ============================================================
 
-// Absolute path to client build
 const clientDist = path.join(__dirname, "../client/dist");
 
-// Serve static files
+// Serve static files from the build folder
 app.use(express.static(clientDist));
 
-// Handle all non-API routes → return React index.html
+// For ALL non-API routes → return index.html (React router support)
 app.get("*", (req, res) => {
   const indexFile = path.join(clientDist, "index.html");
   if (fs.existsSync(indexFile)) {
     return res.sendFile(indexFile);
   }
-  res.status(500).send("Frontend build missing");
+  return res.status(500).send("Frontend build missing");
 });
 
 // ============================================================
