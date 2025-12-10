@@ -1,48 +1,44 @@
-// client/src/pages/student/Login.jsx
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loginUser } from "../../api/apiClient";
 
 export default function Login() {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
   async function handleSubmit(e) {
-    e.preventDefault();
+    e.preventDefault(); // STOP PAGE REFRESH
     setError("");
 
     try {
-      const response = await loginUser(email, password);
+      const data = await loginUser(email, password);
 
-      if (!response?.token) {
-        setError(response.message || "Invalid credentials");
-        return;
+      if (data?.token) {
+        localStorage.setItem("token", data.token);
+        navigate("/dashboard");
+      } else {
+        setError("Invalid email or password.");
       }
-
-      // Save token
-      localStorage.setItem("token", response.token);
-
-      navigate("/dashboard");
     } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "Something went wrong. Please try again.");
+      console.error("Login Error:", err);
+      setError("Something went wrong. Please try again.");
     }
   }
 
   return (
-    <div className="container">
-      <h2 className="title">Student Login</h2>
+    <div className="login-container">
+      <h2>Student Login</h2>
 
-      <form onSubmit={handleSubmit} className="form">
+      <form onSubmit={handleSubmit}>
         <label>Email</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
+          required
         />
 
         <label>Password</label>
@@ -50,13 +46,12 @@ export default function Login() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
-        {error && <p className="error">{error}</p>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <button type="submit" className="btn">
-          Login
-        </button>
+        <button type="submit">Login</button>
       </form>
     </div>
   );
