@@ -1,94 +1,63 @@
 // client/src/pages/student/Login.jsx
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import { loginUser } from "../../api/apiClient";
 
 export default function Login() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
-  const { setToken, setUser } = useAuth();
-
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    setLoading(true);
 
     try {
-      const result = await loginUser({ email, password });
+      const response = await loginUser(email, password);
 
-      // Our apiClient NEVER throws; it returns { ok, message, token, user }
-      if (!result.ok) {
-        setError(result.message || "Invalid email or password.");
-        setLoading(false);
+      if (!response?.token) {
+        setError(response.message || "Invalid credentials");
         return;
       }
 
-      if (result.token) {
-        // Persist token and user in context
-        setToken(result.token);
-      }
-      if (result.user) {
-        setUser(result.user);
-      }
+      // Save token
+      localStorage.setItem("token", response.token);
 
-      // Redirect student to Dashboard (adjust route if needed)
       navigate("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
-      setError("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+      setError(err.message || "Something went wrong. Please try again.");
     }
-  };
+  }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-slate-50">
-      <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-8">
-        <h1 className="text-2xl font-bold text-center mb-6 text-purple-700">
-          Student Login
-        </h1>
+    <div className="container">
+      <h2 className="title">Student Login</h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50"
-              placeholder="you@example.com"
-            />
-          </div>
+      <form onSubmit={handleSubmit} className="form">
+        <label>Email</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+        />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50"
-              placeholder="••••••••"
-            />
-          </div>
+        <label>Password</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-          {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+        {error && <p className="error">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-60"
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
-      </div>
+        <button type="submit" className="btn">
+          Login
+        </button>
+      </form>
     </div>
   );
 }
