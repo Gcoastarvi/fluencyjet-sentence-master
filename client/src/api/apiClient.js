@@ -1,15 +1,14 @@
 // client/src/api/apiClient.js
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
-// Example: https://fluencyjet-sentence-master-production.up.railway.app/api
-
-const AUTH = `${BASE_URL}/auth`; // → /api/auth
+// ✅ Always talk to the same host that served the frontend
+//    e.g. https://fluencyjet-sentence-master-production-de09.up.railway.app
+const BASE_URL = "/api";
 
 // ---------------------------
 // STUDENT SIGNUP
 // ---------------------------
 export async function signupUser(data) {
-  const res = await fetch(`${AUTH}/signup`, {
+  const res = await fetch(`${BASE_URL}/auth/signup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -26,6 +25,7 @@ export async function signupUser(data) {
     throw new Error(body.message || "Signup failed");
   }
 
+  // body = { ok: true, token, user: {…} }
   return body;
 }
 
@@ -33,7 +33,7 @@ export async function signupUser(data) {
 // STUDENT LOGIN
 // ---------------------------
 export async function loginUser(email, password) {
-  const res = await fetch(`${AUTH}/login`, {
+  const res = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -47,8 +47,10 @@ export async function loginUser(email, password) {
   }
 
   if (!res.ok) {
+    // backend sends { ok:false, message:"Invalid email or password" }
     throw new Error(body.message || "Invalid email or password");
   }
 
+  // body = { ok: true, token, user: {…} }
   return body;
 }

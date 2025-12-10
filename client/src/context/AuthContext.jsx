@@ -1,72 +1,46 @@
 // client/src/context/AuthContext.jsx
+import { createContext, useContext, useEffect, useState } from "react";
+import { loginUser } from "../api/apiClient";
 
-import { createContext, useContext, useState, useEffect } from "react";
-import { jwtDecode } from "jwt-decode";
+const AuthContext = createContext(null);
 
-// -------------------------
-// CONTEXT + HOOK
-// -------------------------
-export const AuthContext = createContext(null);
-
-export function useAuth() {
-  return useContext(AuthContext);
+function decodeUserFromToken(token) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] || ""));
+    return payload; // { id, iat, exp, ... }
+  } catch (err) {
+    console.error("Failed to decode JWT payload", err);
+    return null;
+  }
 }
 
-// -------------------------
-// PROVIDER (named + default export)
-// -------------------------
 export function AuthProvider({ children }) {
+  const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Decode and store user from token
-  function decodeAndSetUser(token) {
-    try {
-      const decoded = jwtDecode(token);
-      setUser(decoded);
-    } catch (err) {
-      console.error("Token decode failed:", err);
-      setUser(null);
-    }
-  }
-
-  // Hydrate from localStorage on first load
+  // 🔁 Load token on app start
   useEffect(() => {
-    const token = localStorage.getItem("fj_token");
-    if (token) decodeAndSetUser(token);
+    const stored = localStorage.getItem("fj_token");
+    if (stored) {
+      setToken(stored);
+      setUser(decodeUserFromToken(stored));
+    }
     setLoading(false);
   }, []);
 
-  // Login function
+  // 🔐 Unified login used by ALL student login flows
   async function login(email, password) {
     try {
-      const API_BASE =
-        import.meta.env.VITE_API_BASE_URL ||
-        "https://fluencyjet-sentence-master-production-de09.up.railway.app/api";
-
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const raw = await res.text();
-      let data;
-
-      try {
-        data = JSON.parse(raw);
-      } catch (e) {
-        console.error("NON-JSON LOGIN RESPONSE:", raw);
-        return false;
-      }
-
-      if (!res.ok || !data.token) {
-        console.error("Login failed:", data);
+      const data = await loginUser(email, password); // calls /api/auth/login
+      if (!data?.token) {
+        console.error("Login success but no token in response:", data);
         return false;
       }
 
       localStorage.setItem("fj_token", data.token);
-      decodeAndSetUser(data.token);
+      setToken(data.token);
+      setUser(decodeUserFromToken(data.token));
 
       return true;
     } catch (err) {
@@ -75,22 +49,32 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Logout function
   function logout() {
     localStorage.removeItem("fj_token");
+    setToken(null);
     setUser(null);
   }
 
-  const value = {
-    user,
-    isAuthenticated: !!user,
-    loading,
-    login,
-    logout,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        token,
+        user,
+        loading,
+        login,
+        logout,
+        isAuthenticated: !!token,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
-// Also export as default so existing imports still work
-export default AuthProvider;
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used inside <AuthProvider>");
+  }
+  return ctx;
+}
