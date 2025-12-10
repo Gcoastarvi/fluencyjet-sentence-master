@@ -1,13 +1,9 @@
 // server/routes/auth.js
 
-router.get("/test", (req, res) => {
-  return res.json({ ok: true, route: "auth router active" });
-});
-
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import prisma from "../prisma/client.js";
+import prisma from "../db/client.js";
 
 const router = express.Router();
 
