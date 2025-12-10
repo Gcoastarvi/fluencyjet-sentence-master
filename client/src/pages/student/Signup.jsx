@@ -3,11 +3,12 @@ import { signupUser } from "../../api/apiClient";
 import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
-  const navigate = useNavigate();
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
   const [error, setError] = useState("");
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,13 +16,16 @@ export default function Signup() {
 
     try {
       const res = await signupUser({ name, email, password });
-      if (res.ok) {
-        navigate("/login");
-      } else {
+
+      if (!res.ok) {
         setError(res.message || "Signup failed");
+        return;
       }
+
+      alert("Signup successful! You can now log in.");
+      navigate("/login");
     } catch (err) {
-      console.error("Signup error:", err);
+      console.error(err);
       setError("Something went wrong");
     }
   };
@@ -33,9 +37,10 @@ export default function Signup() {
       <form onSubmit={handleSubmit}>
         <input
           type="text"
-          placeholder="Full name"
+          placeholder="Your Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
         />
 
         <input
@@ -43,13 +48,15 @@ export default function Signup() {
           placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
 
         <input
           type="password"
-          placeholder="Create password"
+          placeholder="Choose a password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
         {error && <p style={{ color: "red" }}>{error}</p>}
