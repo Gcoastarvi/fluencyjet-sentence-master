@@ -1,4 +1,5 @@
 // server/routes/auth.js
+
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -6,48 +7,52 @@ import prisma from "../db/client.js";
 
 const router = express.Router();
 
-function createToken(user) {
+function makeToken(user) {
   return jwt.sign(
-    { id: user.id, email: user.email, role: "student" },
-    process.env.JWT_SECRET || "supersecret",
-    { expiresIn: "7d" },
+    { userId: user.id, email: user.email },
+    process.env.JWT_SECRET || "dev-secret",
+    { expiresIn: "30d" },
   );
 }
 
-// ---------- SIGNUP ----------
+// --------- SIGNUP ----------
 router.post("/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body || {};
 
+    console.log("SIGNUP hit with body:", {
+      name,
+      email,
+      hasPassword: !!password,
+    });
+
     if (!name || !email || !password) {
-      return res.status(400).json({
-        ok: false,
-        message: "Name, email, and password are required.",
-      });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Name, email and password are required" });
     }
 
-    const existing = await prisma.student.findUnique({
+    const existing = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existing) {
-      return res.status(409).json({
-        ok: false,
-        message: "Email already in use.",
-      });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Email already registered" });
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 10);
 
-    const user = await prisma.student.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
-        passwordHash,
+        password: hashed, // column in your Prisma model
       },
     });
 
-    const token = createToken(user);
+    const token = makeToken(user);
 
     return res.status(201).json({
       ok: true,
@@ -60,48 +65,50 @@ router.post("/signup", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Signup error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Internal server error during signup.",
-    });
+    console.error("SIGNUP ERROR:", err);
+    return res
+      .status(500)
+      .json({ ok: false, message: "Signup failed, please try again" });
   }
 });
 
-// ---------- LOGIN ----------
+// --------- LOGIN ----------
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body || {};
 
+    console.log("LOGIN hit with body:", {
+      email,
+      hasPassword: !!password,
+    });
+
     if (!email || !password) {
-      return res.status(400).json({
-        ok: false,
-        message: "Email and password are required.",
-      });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Email and password are required" });
     }
 
-    const user = await prisma.student.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email },
     });
 
     if (!user) {
-      return res.status(401).json({
-        ok: false,
-        message: "Invalid email or password.",
-      });
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid email or password" });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      return res.status(401).json({
-        ok: false,
-        message: "Invalid email or password.",
-      });
+    const isValid = await bcrypt.compare(password, user.password);
+
+    if (!isValid) {
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid email or password" });
     }
 
-    const token = createToken(user);
+    const token = makeToken(user);
 
-    return res.status(200).json({
+    return res.json({
       ok: true,
       message: "Login successful",
       token,
@@ -112,11 +119,10 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Internal server error during login.",
-    });
+    console.error("LOGIN ERROR:", err);
+    return res
+      .status(500)
+      .json({ ok: false, message: "Login failed, please try again" });
   }
 });
 
