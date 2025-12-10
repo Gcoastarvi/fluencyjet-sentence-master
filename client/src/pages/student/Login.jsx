@@ -1,60 +1,94 @@
+// client/src/pages/student/Login.jsx
 import { useState } from "react";
-import { loginUser } from "../../api/apiClient";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { loginUser } from "../../api/apiClient";
 
 export default function Login() {
-  const navigate = useNavigate();
-  const { setToken, setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const navigate = useNavigate();
+  const { setToken, setUser } = useAuth();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const res = await loginUser({ email, password });
+      const result = await loginUser({ email, password });
 
-      if (!res.ok) {
-        setError(res.message || "Invalid credentials");
+      // Our apiClient NEVER throws; it returns { ok, message, token, user }
+      if (!result.ok) {
+        setError(result.message || "Invalid email or password.");
+        setLoading(false);
         return;
       }
 
-      setToken(res.token);
-      setUser(res.user);
+      if (result.token) {
+        // Persist token and user in context
+        setToken(result.token);
+      }
+      if (result.user) {
+        setUser(result.user);
+      }
 
+      // Redirect student to Dashboard (adjust route if needed)
       navigate("/dashboard");
     } catch (err) {
       console.error("Login error:", err);
-      setError("Something went wrong");
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="login-container">
-      <h2>Student Login</h2>
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+      <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-8">
+        <h1 className="text-2xl font-bold text-center mb-6 text-purple-700">
+          Student Login
+        </h1>
 
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50"
+              placeholder="you@example.com"
+            />
+          </div>
 
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+          <div>
+            <label className="block text-sm font-medium mb-1">Password</label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-slate-50"
+              placeholder="••••••••"
+            />
+          </div>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && <p className="text-sm text-red-600 text-center">{error}</p>}
 
-        <button type="submit">Login</button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 rounded-lg transition disabled:opacity-60"
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
