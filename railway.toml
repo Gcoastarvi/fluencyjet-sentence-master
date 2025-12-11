@@ -25,7 +25,7 @@ cmd = "bash start-railway.sh"
 [variables]
 NODE_ENV = "production"
 PORT = "8080"
-# Root Railway config (optional)
+
 [backend]
 root = "server"
 
