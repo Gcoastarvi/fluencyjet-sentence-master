@@ -1,5 +1,13 @@
+# Force Railway to treat /server as the real backend root
+root = "server"
+
 [build]
 builder = "NIXPACKS"
+buildCommand = "npm install"
 
-[start]
-cmd = "cd server && node index.js"
+[deploy]
+startCommand = "node index.js"
+
+[env]
+NODE_ENV = "production"
+PORT = "8080"
