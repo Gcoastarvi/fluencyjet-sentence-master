@@ -1,0 +1,62 @@
+// index.js – FluencyJet backend API
+
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import compression from "compression";
+import cookieParser from "cookie-parser";
+import morgan from "morgan";
+
+import authRouter from "./routes/auth.js";
+
+const app = express();
+
+// ── Basic middleware ─────────────────────────────
+app.use(compression());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
+
+// CORS: allow your frontend origin(s)
+const allowedOrigins = (process.env.FRONTEND_ORIGINS || "")
+  .split(",")
+  .map(o => o.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+    credentials: true,
+  })
+);
+
+// Request logging (good for debugging on Railway)
+app.use(morgan("dev"));
+
+// ── Health check for Railway ─────────────────────
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true, message: "API is healthy" });
+});
+
+// ── Auth routes (/api/auth/...) ──────────────────
+app.use("/api/auth", authRouter);
+
+// ── 404 handler for unknown API routes ───────────
+app.use("/api", (req, res) => {
+  res.status(404).json({ ok: false, message: "API route not found" });
+});
+
+// ── Global error handler (last resort) ───────────
+app.use((err, req, res, next) => {
+  console.error("UNHANDLED ERROR:", err);
+  res
+    .status(500)
+    .json({ ok: false, message: "Internal server error.", error: err.message });
+});
+
+// ── Start server ─────────────────────────────────
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`🚀 FluencyJet API running on port ${PORT}`);
+  console.log("   Allowed origins:", allowedOrigins.length ? allowedOrigins : "ALL");
+});

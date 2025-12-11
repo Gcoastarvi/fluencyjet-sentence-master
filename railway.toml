@@ -1,33 +1,5 @@
-# ============================================================
-# 🚀 FluencyJet Full-Stack Deployment (Node + React + Railway)
-# ============================================================
-
 [build]
 builder = "NIXPACKS"
 
-[phases.setup]
-nixPkgs = ["nodejs_22", "npm_9_x"]
-
-[phases.install]
-cmds = [
-  "npm install",
-  "npm --prefix client install"
-]
-
-[phases.build]
-cmds = [
-  "npm --prefix client run build"
-]
-
 [start]
-cmd = "bash start-railway.sh"
-
-[variables]
-NODE_ENV = "production"
-PORT = "8080"
-# Root Railway config (optional)
-[backend]
-root = "server"
-
-[frontend]
-root = "client"
+cmd = "cd server && node index.js"
