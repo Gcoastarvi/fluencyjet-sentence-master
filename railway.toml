@@ -1,13 +1,37 @@
-# Force Railway to treat /server as the real backend root
-root = "server"
+# =====================================================
+# 🚀 FluencyJet Full-Stack Deployment (Railway)
+# Backend = /server
+# Frontend = /client (Vite build)
+# =====================================================
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install"
 
-[deploy]
-startCommand = "node index.js"
+[phases.setup]
+nixPkgs = ["nodejs_22", "npm_9_x"]
 
-[env]
+[phases.install]
+cmds = [
+  "npm install",
+  "npm --prefix client install"
+]
+
+[phases.build]
+cmds = [
+  "npm --prefix client run build"
+]
+
+[start]
+cmd = "bash start-railway.sh"
+
+[variables]
 NODE_ENV = "production"
 PORT = "8080"
+
+# Tell Railway where backend is located
+[backend]
+root = "server"
+
+# Tell Railway where frontend is located
+[frontend]
+root = "client"
