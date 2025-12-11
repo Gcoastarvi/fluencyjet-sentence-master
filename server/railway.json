@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "buildCommand": "npm install"
+  },
+  "deploy": {
+    "startCommand": "NODE_ENV=production node index.js",
+    "healthcheckPath": "/api/health",
+    "restartPolicyType": "always"
+  }
+}
