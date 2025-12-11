@@ -1,8 +1,6 @@
-# =====================================================
-# 🚀 FluencyJet Full-Stack Deployment (Railway)
-# Backend = /server
-# Frontend = /client (Vite build)
-# =====================================================
+# ============================================================
+# 🚀 FluencyJet Full-Stack Deployment (Node + React + Railway)
+# ============================================================
 
 [build]
 builder = "NIXPACKS"
@@ -27,11 +25,9 @@ cmd = "bash start-railway.sh"
 [variables]
 NODE_ENV = "production"
 PORT = "8080"
-
-# Tell Railway where backend is located
+# Root Railway config (optional)
 [backend]
 root = "server"
 
-# Tell Railway where frontend is located
 [frontend]
 root = "client"
