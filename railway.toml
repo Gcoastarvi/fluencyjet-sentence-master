@@ -1,6 +1,6 @@
-# ============================================================
-# 🚀 FluencyJet Full-Stack Deployment (Node + React + Railway)
-# ============================================================
+# ============================================
+# FluencyJet — Combined Backend + Frontend Build
+# ============================================
 
 [build]
 builder = "NIXPACKS"
@@ -20,7 +20,7 @@ cmds = [
 ]
 
 [start]
-cmd = "bash start-railway.sh"
+cmd = "cd server && node index.js"
 
 [variables]
 NODE_ENV = "production"
