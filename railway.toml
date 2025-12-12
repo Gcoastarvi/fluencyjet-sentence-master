@@ -1,12 +1,8 @@
-# ============================
-# FluencyJet Full Stack Deploy
-# ============================
-
 [build]
 builder = "NIXPACKS"
 
 [phases.setup]
-nixPkgs = ["nodejs_22", "npm_9_x"]
+nixPkgs = ["nodejs_22"]
 
 [phases.install]
 cmds = [
