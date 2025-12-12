@@ -1,6 +1,6 @@
-# ============================================
-# FluencyJet — Combined Backend + Frontend Build
-# ============================================
+# ============================
+# FluencyJet Full Stack Deploy
+# ============================
 
 [build]
 builder = "NIXPACKS"
@@ -20,14 +20,8 @@ cmds = [
 ]
 
 [start]
-cmd = "cd server && node index.js"
+cmd = "node server/index.js"
 
 [variables]
 NODE_ENV = "production"
 PORT = "8080"
-
-[backend]
-root = "server"
-
-[frontend]
-root = "client"
