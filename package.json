@@ -9,5 +9,15 @@
     "build": "cd client && npm run build",
     "start": "NODE_ENV=production node server/index.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@replit/vite-plugin-cartographer": "^0.4.4",
+    "@replit/vite-plugin-dev-banner": "^0.1.1",
+    "@replit/vite-plugin-runtime-error-modal": "^0.0.4",
+    "@tailwindcss/typography": "^0.5.19",
+    "@vitejs/plugin-react": "^5.1.2",
+    "drizzle-kit": "^0.31.8",
+    "tailwindcss": "^4.1.18",
+    "tailwindcss-animate": "^1.0.7",
+    "vite": "^7.2.7"
+  }
 }
