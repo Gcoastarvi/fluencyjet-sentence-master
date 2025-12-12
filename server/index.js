@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import cookieParser from "cookie-parser";
+import fs from "fs";
 
 // ROUTES
 import healthRouter from "./routes/health.js";
@@ -23,7 +24,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // ─────────────────────────────
-// API Routes
+// API Routes (MUST come before frontend)
 // ─────────────────────────────
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
@@ -32,13 +33,24 @@ app.use("/api/auth", authRouter);
 // Frontend (Vite build)
 // ─────────────────────────────
 const clientDistPath = path.join(__dirname, "..", "client", "dist");
+const indexHtmlPath = path.join(clientDistPath, "index.html");
 
-app.use(express.static(clientDistPath));
+// Serve static assets IF build exists
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
 
-// IMPORTANT: SPA fallback
-app.get("*", (req, res) => {
-  res.sendFile(path.join(clientDistPath, "index.html"));
-});
+  // SPA fallback (React Router)
+  app.get("*", (req, res) => {
+    res.sendFile(indexHtmlPath);
+  });
+} else {
+  // Safety log (prevents crash loops)
+  console.error("❌ Frontend build not found at:", clientDistPath);
+
+  app.get("*", (_req, res) => {
+    res.status(503).send("Frontend build missing");
+  });
+}
 
 // ─────────────────────────────
 // Start server
