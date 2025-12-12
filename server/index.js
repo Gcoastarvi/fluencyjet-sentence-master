@@ -1,80 +1,48 @@
 import express from "express";
-import cors from "cors";
-import cookieParser from "cookie-parser";
 import path from "path";
 import { fileURLToPath } from "url";
+import cookieParser from "cookie-parser";
 
-import authRoutes from "./routes/auth.js";
+// ROUTES
+import healthRouter from "./routes/health.js";
+import authRouter from "./routes/auth.js";
 
-const app = express();
-
-// Resolve __dirname for ES modules
+// ─────────────────────────────
+// Setup
+// ─────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ----------------------------------
-// HEALTH CHECK
-// ----------------------------------
-app.get("/api/health", (req, res) => {
-  return res.json({ ok: true, message: "API is healthy" });
-});
+const app = express();
+const PORT = process.env.PORT || 8080;
 
-// ----------------------------------
-// CORS
-// ----------------------------------
-const FRONTEND_ORIGINS = [
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "https://fluencyjet-sentence-master-production.up.railway.app",
-  "https://fluencyjet-sentence-master-production-de09.up.railway.app",
-  ...(process.env.FRONTEND_ORIGINS || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean),
-];
-
-app.use(
-  cors({
-    origin(origin, cb) {
-      if (!origin) return cb(null, true);
-      if (FRONTEND_ORIGINS.includes(origin)) return cb(null, true);
-
-      console.warn("CORS blocked:", origin);
-      return cb(new Error("CORS not allowed"));
-    },
-    credentials: true,
-  }),
-);
-
-// ----------------------------------
-// CORE MIDDLEWARE
-// ----------------------------------
+// ─────────────────────────────
+// Middleware
+// ─────────────────────────────
 app.use(express.json());
 app.use(cookieParser());
 
-// ----------------------------------
-// API ROUTES
-// ----------------------------------
-app.use("/api/auth", authRoutes);
+// ─────────────────────────────
+// API Routes
+// ─────────────────────────────
+app.use("/api/health", healthRouter);
+app.use("/api/auth", authRouter);
 
-// ----------------------------------
-// STATIC FRONTEND (Vite build)
-// ----------------------------------
-const clientDistPath = path.join(__dirname, "../client/dist");
+// ─────────────────────────────
+// Frontend (Vite build)
+// ─────────────────────────────
+const clientDistPath = path.join(__dirname, "..", "client", "dist");
 
 app.use(express.static(clientDistPath));
 
+// IMPORTANT: SPA fallback
 app.get("*", (req, res) => {
   res.sendFile(path.join(clientDistPath, "index.html"));
 });
 
-// ----------------------------------
-// START SERVER
-// ----------------------------------
-const PORT = process.env.PORT || 8080;
-
-app.listen(PORT, () => {
+// ─────────────────────────────
+// Start server
+// ─────────────────────────────
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
-
-export default app;
