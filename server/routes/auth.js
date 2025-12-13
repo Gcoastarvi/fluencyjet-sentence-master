@@ -125,5 +125,30 @@ router.post("/login", async (req, res) => {
       .json({ ok: false, message: "Login failed, please try again" });
   }
 });
+// --------- ME (verify token + return user) ----------
+router.get("/me", async (req, res) => {
+  try {
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+
+    if (!token) {
+      return res.status(401).json({ ok: false, message: "No token" });
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "dev-secret");
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, name: true, email: true },
+    });
+
+    if (!user) {
+      return res.status(401).json({ ok: false, message: "User not found" });
+    }
+
+    return res.json({ ok: true, user });
+  } catch (err) {
+    return res.status(401).json({ ok: false, message: "Invalid token" });
+  }
+});
 
 export default router;
