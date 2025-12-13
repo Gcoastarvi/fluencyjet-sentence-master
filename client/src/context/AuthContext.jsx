@@ -84,13 +84,11 @@ export function AuthProvider({ children }) {
         login,
         logout,
         isAuthenticated: !!token,
-
-        // 🔥 XP cap UI
         xpCapReached,
         setXpCapReached,
       }}
     >
-      >{children}
+      {children}
     </AuthContext.Provider>
   );
 }

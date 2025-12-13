@@ -61,6 +61,7 @@ export default function TypingQuiz() {
       showToast("+150 XP", "success");
 
       try {
+        setLoading(true);
         await awardXP({
           xpEarned: 150,
           type: "QUESTION_CORRECT",
@@ -73,14 +74,11 @@ export default function TypingQuiz() {
           showToast("Daily XP limit reached", "error");
           return;
         }
-        throw err;
-      }
-
-      } catch (err) {
         console.error("XP award failed (question):", err);
       } finally {
         setLoading(false);
       }
+
     } else {
       setFeedback(`❌ Correct answer: "${q.english}"`);
       showToast("Incorrect", "error");
@@ -111,20 +109,17 @@ export default function TypingQuiz() {
         correct: score,
         mode: "typing",
       });
-      } catch (err) {
-        if (err?.code === "XP_CAP_REACHED") {
-          setXpCapReached(true);
-          showToast("Daily XP limit reached", "error");
-          return;
-        }
-        throw err;
-      }
     } catch (err) {
+      if (err?.code === "XP_CAP_REACHED") {
+        setXpCapReached(true);
+        showToast("Daily XP limit reached", "error");
+        return;
+      }
       console.error("XP award failed (quiz complete):", err);
     } finally {
       setLoading(false);
     }
-  }
+
 
   // ====== RESET QUIZ ======
   function restartQuiz() {
