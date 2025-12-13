@@ -3,10 +3,11 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function PlanGate({ required = "PRO", children }) {
-  const { user } = useAuth();
+  const { plan, loading } = useAuth();
 
-  // Assume FREE if not set
-  const plan = user?.plan || "FREE";
+  if (loading) {
+    return <div className="p-6 text-center">Loading...</div>;
+  }
 
   const allowed = plan === "LIFETIME" || plan === required;
 

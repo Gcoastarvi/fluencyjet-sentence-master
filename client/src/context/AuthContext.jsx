@@ -8,6 +8,7 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [plan, setPlan] = useState("FREE");
 
   // 🔁 Load token on app start (SERVER-VERIFIED)
   useEffect(() => {
@@ -32,6 +33,10 @@ export function AuthProvider({ children }) {
       } finally {
         setLoading(false);
       }
+    }
+    const storedPlan = localStorage.getItem("fj_plan");
+    if (storedPlan) {
+      setPlan(storedPlan);
     }
 
     initAuth();
@@ -72,6 +77,8 @@ export function AuthProvider({ children }) {
       value={{
         token,
         user,
+        plan,
+        setPlan, // 👈 add this
         loading,
         login,
         logout,
