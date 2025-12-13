@@ -1,5 +1,4 @@
 // client/src/pages/student/Signup.jsx
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signupUser } from "../../api/apiClient";
@@ -10,24 +9,34 @@ export default function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      const res = await signupUser({ name, email, password });
+      const payload = {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      };
+
+      const res = await signupUser(payload);
 
       if (!res?.ok) {
-        setError(res.message || "Signup failed");
+        setError(res?.message || "Signup failed");
+        setLoading(false);
         return;
       }
 
       navigate("/login");
     } catch (err) {
       console.error("Signup error:", err);
-      setError(err.message || "Something went wrong. Please try again.");
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
     }
   }
 
@@ -41,6 +50,7 @@ export default function Signup() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your name"
+          required
         />
 
         <label>Email</label>
@@ -49,6 +59,7 @@ export default function Signup() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
+          required
         />
 
         <label>Password</label>
@@ -56,12 +67,13 @@ export default function Signup() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
 
         {error && <p className="error">{error}</p>}
 
-        <button type="submit" className="btn">
-          Sign Up
+        <button type="submit" className="btn" disabled={loading}>
+          {loading ? "Creating…" : "Sign Up"}
         </button>
       </form>
     </div>
