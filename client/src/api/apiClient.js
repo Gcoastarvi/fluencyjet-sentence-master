@@ -59,3 +59,11 @@ export function loginUser({ email, password }) {
     body: { email, password },
   });
 }
+export function me(token) {
+  return request("/auth/me", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
