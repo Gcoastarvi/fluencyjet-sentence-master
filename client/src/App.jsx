@@ -38,6 +38,7 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics.jsx";
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
+import PlanGate from "./components/PlanGate.jsx";
 
 function MainLayout() {
   return (
@@ -79,7 +80,9 @@ export default function App() {
               path="/lessons"
               element={
                 <ProtectedRoute>
-                  <Lessons />
+                  <PlanGate required="PRO">
+                    <Lessons />
+                  </PlanGate>
                 </ProtectedRoute>
               }
             />
