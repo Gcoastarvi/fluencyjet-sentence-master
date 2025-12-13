@@ -40,6 +40,11 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
   }
 
   if (!res.ok || (data && data.ok === false)) {
+    if (data?.code === "XP_CAP_REACHED") {
+      const err = new Error("XP cap reached");
+      err.code = "XP_CAP_REACHED";
+      throw err;
+    }
     throw new Error((data && data.message) || "Request failed");
   }
 

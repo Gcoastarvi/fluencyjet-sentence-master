@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState("FREE");
+  const [xpCapReached, setXpCapReached] = useState(false);
 
   // 🔁 Load token on app start (SERVER-VERIFIED)
   useEffect(() => {
@@ -78,14 +79,18 @@ export function AuthProvider({ children }) {
         token,
         user,
         plan,
-        setPlan, // 👈 add this
+        setPlan,
         loading,
         login,
         logout,
         isAuthenticated: !!token,
+
+        // 🔥 XP cap UI
+        xpCapReached,
+        setXpCapReached,
       }}
     >
-      {children}
+      >{children}
     </AuthContext.Provider>
   );
 }

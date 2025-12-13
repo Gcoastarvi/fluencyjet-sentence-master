@@ -1,7 +1,8 @@
 // client/src/pages/TypingQuiz.jsx
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { awardXP } from "@/lib/xpTracker"; // XP system (your existing file)
+import { awardXP } from "@/lib/xpTracker";
+import { useAuth } from "@/context/AuthContext";
 
 // 🧠 Sample Tamil→English sentences
 const QUESTIONS = [
@@ -37,7 +38,8 @@ export default function TypingQuiz() {
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [toast, setToast] = useState(null); // 🔥 New: toast feedback
+  const [toast, setToast] = useState(null);
+  const { setXpCapReached } = useAuth();
 
   const q = QUESTIONS[current];
 
@@ -59,13 +61,21 @@ export default function TypingQuiz() {
       showToast("+150 XP", "success");
 
       try {
-        setLoading(true);
         await awardXP({
           xpEarned: 150,
           type: "QUESTION_CORRECT",
           questionId: q.id,
           mode: "typing",
         });
+      } catch (err) {
+        if (err?.code === "XP_CAP_REACHED") {
+          setXpCapReached(true);
+          showToast("Daily XP limit reached", "error");
+          return;
+        }
+        throw err;
+      }
+
       } catch (err) {
         console.error("XP award failed (question):", err);
       } finally {
@@ -101,6 +111,14 @@ export default function TypingQuiz() {
         correct: score,
         mode: "typing",
       });
+      } catch (err) {
+        if (err?.code === "XP_CAP_REACHED") {
+          setXpCapReached(true);
+          showToast("Daily XP limit reached", "error");
+          return;
+        }
+        throw err;
+      }
     } catch (err) {
       console.error("XP award failed (quiz complete):", err);
     } finally {
