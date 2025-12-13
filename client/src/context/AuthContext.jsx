@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
   // 🔐 Unified login used by ALL student login flows
   async function login(email, password) {
     try {
-      const data = await loginUser(email, password); // calls /api/auth/login
+      const data = await loginUser({ email, password });
       if (!data?.token) {
         console.error("Login success but no token in response:", data);
         return false;
