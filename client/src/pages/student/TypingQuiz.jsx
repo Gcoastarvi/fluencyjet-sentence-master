@@ -78,7 +78,6 @@ export default function TypingQuiz() {
       } finally {
         setLoading(false);
       }
-
     } else {
       setFeedback(`❌ Correct answer: "${q.english}"`);
       showToast("Incorrect", "error");
@@ -119,7 +118,7 @@ export default function TypingQuiz() {
     } finally {
       setLoading(false);
     }
-
+  } // ✅ THIS WAS MISSING
 
   // ====== RESET QUIZ ======
   function restartQuiz() {
