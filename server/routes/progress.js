@@ -220,6 +220,26 @@ router.post("/save", authRequired, async (req, res) => {
 
     const { ev, prog } = await prisma.$transaction(async (tx) => {
       await ensureProgress(tx, userId);
+      // ───────────────────────────────
+      // XP CAP (FREE PLAN – HARD LIMIT)
+      // ───────────────────────────────
+
+      // TEMP: hard cap (can be plan-based later)
+      const MAX_TOTAL_XP_FREE = 5000;
+
+      // get current progress
+      const currentProgress = await tx.userProgress.findUnique({
+        where: { user_id: userId },
+      });
+
+      if (currentProgress && currentProgress.total_xp >= MAX_TOTAL_XP_FREE) {
+        // Do NOT award XP beyond cap
+        return {
+          ev: null,
+          prog: currentProgress,
+          capped: true,
+        };
+      }
 
       const ev = await tx.xpEvent.create({
         data: {
@@ -263,6 +283,15 @@ router.post("/save", authRequired, async (req, res) => {
 
       return { ev, prog };
     });
+
+    if (ev === null) {
+      return res.json({
+        ok: true,
+        capped: true,
+        message: "XP cap reached. Upgrade to PRO to earn more XP.",
+        progress: prog,
+      });
+    }
 
     res.json({
       ok: true,
