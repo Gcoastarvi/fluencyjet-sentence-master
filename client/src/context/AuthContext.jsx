@@ -1,50 +1,62 @@
 // client/src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
-import { loginUser } from "../api/apiClient";
+import { loginUser, me } from "../api/apiClient";
 
 const AuthContext = createContext(null);
-
-function decodeUserFromToken(token) {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1] || ""));
-    return payload; // { id, iat, exp, ... }
-  } catch (err) {
-    console.error("Failed to decode JWT payload", err);
-    return null;
-  }
-}
 
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔁 Load token on app start
+  // 🔁 Load token on app start (SERVER-VERIFIED)
   useEffect(() => {
-    const stored = localStorage.getItem("fj_token");
-    if (stored) {
-      setToken(stored);
-      setUser(decodeUserFromToken(stored));
+    async function initAuth() {
+      const storedToken = localStorage.getItem("fj_token");
+
+      if (!storedToken) {
+        setLoading(false);
+        return;
+      }
+
+      setToken(storedToken);
+
+      try {
+        const data = await me(storedToken); // 🔐 server verification
+        setUser(data.user);
+      } catch (err) {
+        console.error("Auth hydration failed, clearing token:", err);
+        localStorage.removeItem("fj_token");
+        setToken(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
     }
-    setLoading(false);
+
+    initAuth();
   }, []);
 
-  // 🔐 Unified login used by ALL student login flows
+  // 🔐 Login (used by Login.jsx)
   async function login(email, password) {
     try {
       const data = await loginUser({ email, password });
+
       if (!data?.token) {
-        console.error("Login success but no token in response:", data);
+        console.error("Login succeeded but token missing:", data);
         return false;
       }
 
       localStorage.setItem("fj_token", data.token);
       setToken(data.token);
-      setUser(decodeUserFromToken(data.token));
+
+      // immediately hydrate user from server
+      const meData = await me(data.token);
+      setUser(meData.user);
 
       return true;
     } catch (err) {
-      console.error("Login request failed:", err);
+      console.error("Login failed:", err);
       return false;
     }
   }
