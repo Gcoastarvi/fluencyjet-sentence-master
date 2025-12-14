@@ -4,7 +4,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js";
-import { authRequired } from "../middleware/authMiddleware.js";
+import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
