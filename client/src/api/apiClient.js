@@ -72,3 +72,9 @@ export function me(token) {
     },
   });
 }
+export async function updateUserPlan(userId, plan) {
+  return apiFetch(`/admin/users/${userId}/plan`, {
+    method: "PATCH",
+    body: JSON.stringify({ plan }),
+  });
+}

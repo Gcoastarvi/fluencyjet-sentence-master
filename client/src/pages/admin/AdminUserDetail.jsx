@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
+import { updateUserPlan } from "../../api/apiClient";
 
 // Recharts
 import {
@@ -27,6 +28,8 @@ export default function AdminUserDetail() {
   const [user, setUser] = useState(null);
   const [xpEvents, setXpEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  // 🔐 Admin plan control
+  const [updatingPlan, setUpdatingPlan] = useState(false);
 
   const [xp7, setXp7] = useState([]);
   const [xp30, setXp30] = useState([]);
@@ -120,6 +123,27 @@ export default function AdminUserDetail() {
       navigate("/admin/users");
     }
   }
+  async function changePlan(newPlan) {
+    if (!window.confirm(`Change user plan to ${newPlan}?`)) return;
+
+    try {
+      setUpdatingPlan(true);
+
+      const res = await updateUserPlan(id, newPlan);
+      if (res.ok) {
+        alert(`Plan updated to ${newPlan}`);
+        loadUser(); // refresh user data
+      } else {
+        alert("Failed to update plan");
+      }
+    } catch (err) {
+      console.error("Plan update error:", err);
+      alert("Error updating plan");
+    } finally {
+      setUpdatingPlan(false);
+    }
+  }
+
   /* ───────────────────────────────
      TIME-ZONE NORMALIZER
   ──────────────────────────────── */
@@ -1551,6 +1575,30 @@ export default function AdminUserDetail() {
             </button>
           </div>
         </div>
+        {/* Plan Control */}
+        <div className="mt-4 border-t pt-3">
+          <p className="text-xs text-gray-500 mb-2">Subscription Plan</p>
+
+          <div className="flex gap-2">
+            {["FREE", "PRO", "LIFETIME"].map((plan) => (
+              <button
+                key={plan}
+                disabled={updatingPlan || user.plan === plan}
+                onClick={() => changePlan(plan)}
+                className={`px-3 py-1 text-xs rounded border
+                  ${
+                    user.plan === plan
+                      ? "bg-green-600 text-white"
+                      : "bg-white hover:bg-gray-100"
+                  }
+                `}
+              >
+                {plan}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Anomaly Warnings */}
         {anomalies.length > 0 ? (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded mb-8">

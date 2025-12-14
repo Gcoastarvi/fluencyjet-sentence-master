@@ -68,6 +68,96 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
     res.status(500).json({ ok: false, message: "Failed to fetch users" });
   }
 });
+/* ─────────────────────────────────────────────
+   ADMIN USER DETAIL + PLAN TOGGLE
+────────────────────────────────────────────── */
+
+// Get a single user + recent XP events
+router.get("/users/:id", authRequired, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        created_at: true,
+        isAdmin: true,
+        has_access: true,
+        tier_level: true,
+      },
+    });
+
+    if (!user) return res.status(404).json({ ok: false, message: "Not found" });
+
+    // Pull recent XP events for this user (adjust if your schema differs)
+    const xpEvents = await prisma.xpEvent.findMany({
+      where: { user_id: id },
+      orderBy: { created_at: "desc" },
+      take: 200,
+      select: {
+        id: true,
+        xp_delta: true,
+        event_type: true,
+        created_at: true,
+      },
+    });
+
+    // Shape the response to match your AdminUserDetail expectations
+    return res.json({
+      ok: true,
+      user: {
+        ...user,
+        // Optional aggregates (safe defaults if you don’t compute them yet)
+        xpTotal: 0,
+        xpWeekly: 0,
+        xpMonthly: 0,
+        streak: user.streak || 0,
+      },
+      xpEvents: xpEvents.map((e) => ({
+        id: e.id,
+        amount: e.xp_delta,
+        reason: e.event_type,
+        createdAt: e.created_at,
+      })),
+    });
+  } catch (err) {
+    console.error("Admin user detail error:", err);
+    return res.status(500).json({ ok: false, message: "Failed to load user" });
+  }
+});
+
+// Update user plan (tier_level)
+router.patch("/users/:id/plan", authRequired, requireAdmin, async (req, res) => {
+  const { plan } = req.body;
+
+  if (!["FREE", "PRO", "LIFETIME"].includes(plan)) {
+    return res.status(400).json({ ok: false, message: "INVALID_PLAN" });
+  }
+
+  try {
+    const updated = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { tier_level: plan },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        tier_level: true,
+        isAdmin: true,
+        has_access: true,
+        created_at: true,
+      },
+    });
+
+    return res.json({ ok: true, user: updated });
+  } catch (err) {
+    console.error("Plan update failed:", err);
+    return res.status(500).json({ ok: false, message: "PLAN_UPDATE_FAILED" });
+  }
+});
 
 /* ─────────────────────────────────────────────
    ADMIN PROMOTE / DEMOTE
