@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { awardXP } from "@/lib/xpTracker";
 import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 // 🧠 Sample Tamil→English sentences
 const QUESTIONS = [
@@ -42,6 +44,9 @@ export default function TypingQuiz() {
   const { setXpCapReached } = useAuth();
 
   const q = QUESTIONS[current];
+
+  const { xpCapReached, setXpCapReached } = useAuth();
+  const navigate = useNavigate();
 
   function showToast(msg, type = "info") {
     setToast({ msg, type });
@@ -118,6 +123,10 @@ export default function TypingQuiz() {
     } finally {
       setLoading(false);
     }
+    if (err?.code === "XP_CAP_REACHED") {
+      setXpCapReached(true);
+      return;
+    }
   } // ✅ THIS WAS MISSING
 
   // ====== RESET QUIZ ======
@@ -153,6 +162,23 @@ export default function TypingQuiz() {
       <h2 className="text-2xl font-bold text-indigo-700">
         ✍️ Typing Translation Quiz
       </h2>
+      {xpCapReached && (
+        <div className="mb-4 p-4 rounded-lg border border-yellow-400 bg-yellow-50 text-yellow-900">
+          <h3 className="font-semibold text-lg mb-1">
+            Daily XP Limit Reached ⚠️
+          </h3>
+          <p className="text-sm mb-3">
+            You’ve reached today’s free XP limit (500 XP).
+            Upgrade to PRO for unlimited daily XP.
+          </p>
+          <button
+            onClick={() => navigate("/paywall")}
+            className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+          >
+            Upgrade to PRO
+          </button>
+        </div>
+      )}
 
       {!finished ? (
         <>

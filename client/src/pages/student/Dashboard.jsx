@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "@/utils/fetch";
 import { getDisplayName } from "@/utils/displayName";
+import { useAuth } from "@/context/AuthContext";
 
 const LEVELS = [
   { level: 1, xp: 0 },
@@ -15,6 +16,7 @@ const LEVELS = [
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { xpCapReached } = useAuth();
 
   const [summary, setSummary] = useState({
     todayXP: 0,
@@ -98,6 +100,15 @@ export default function Dashboard() {
           </p>
         </div>
       </header>
+      {xpCapReached && (
+        <div className="mb-4 p-4 rounded-lg bg-yellow-100 border border-yellow-400 text-yellow-900">
+          You’ve hit today’s FREE XP limit.
+          <a href="/paywall" className="underline font-semibold ml-1">
+            Upgrade to PRO
+          </a>{" "}
+          for unlimited XP.
+        </div>
+      )}
 
       {error && <div className="fj-dashboard-error">{error}</div>}
 
