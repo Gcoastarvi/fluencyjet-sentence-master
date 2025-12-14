@@ -26,13 +26,10 @@ export default function Paywall() {
     );
   }
 
-  // MOCK upgrade handler
-  function handleMockUpgrade() {
-    if (!window.confirm("Upgrade to PRO (mock)?")) return;
-
-    setPlan("PRO");
-    alert("🎉 Upgraded to PRO (mock)");
-    navigate("/dashboard");
+  function goToCheckout() {
+    navigate("/checkout", {
+      state: { selectedPlan: "PRO", priceLabel: "₹499 (launch offer)" },
+    });
   }
 
   return (
@@ -53,10 +50,10 @@ export default function Paywall() {
       </ul>
 
       <button
-        onClick={handleMockUpgrade}
+        onClick={goToCheckout}
         className="w-full py-3 bg-purple-600 text-white rounded-lg text-lg font-semibold hover:bg-purple-700 mb-3"
       >
-        Upgrade to PRO (Mock)
+        Continue to Checkout
       </button>
 
       <button

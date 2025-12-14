@@ -21,6 +21,7 @@ import Signup from "./pages/student/Signup.jsx";
 import Practice from "./pages/student/Practice.jsx";
 import TypingQuiz from "./pages/student/TypingQuiz.jsx";
 import Paywall from "./pages/student/Paywall.jsx";
+import Checkout from "./pages/student/Checkout.jsx";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/paywall" element={<Paywall />} />
+            <Route path="/checkout" element={<Checkout />} />
 
             {/* Student-protected */}
             <Route

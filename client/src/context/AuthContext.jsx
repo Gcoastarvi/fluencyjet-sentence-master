@@ -26,6 +26,12 @@ export function AuthProvider({ children }) {
       try {
         const data = await me(storedToken); // 🔐 server verification
         setUser(data.user);
+        // Sync plan from server user if available
+        if (data.user?.plan || data.user?.tier_level) {
+          const serverPlan = data.user.plan || data.user.tier_level;
+          setPlan(serverPlan);
+          localStorage.setItem("fj_plan", serverPlan);
+        }
       } catch (err) {
         console.error("Auth hydration failed, clearing token:", err);
         localStorage.removeItem("fj_token");
@@ -59,6 +65,12 @@ export function AuthProvider({ children }) {
       // immediately hydrate user from server
       const meData = await me(data.token);
       setUser(meData.user);
+      // Sync plan from server user if available
+      if (meData.user?.plan || meData.user?.tier_level) {
+        const serverPlan = meData.user.plan || meData.user.tier_level;
+        setPlan(serverPlan);
+        localStorage.setItem("fj_plan", serverPlan);
+      }
 
       return true;
     } catch (err) {
@@ -69,8 +81,11 @@ export function AuthProvider({ children }) {
 
   function logout() {
     localStorage.removeItem("fj_token");
+    localStorage.removeItem("fj_plan");
     setToken(null);
     setUser(null);
+    setPlan("FREE");
+    setXpCapReached(false);
   }
 
   return (
