@@ -16,7 +16,7 @@ const LEVELS = [
 export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { xpCapReached } = useAuth();
+  const { xpCapReached, plan } = useAuth();
 
   const [summary, setSummary] = useState({
     todayXP: 0,
@@ -100,6 +100,18 @@ export default function Dashboard() {
           </p>
         </div>
       </header>
+      {plan === "FREE" && (
+        <div className="bg-yellow-50 border border-yellow-300 p-3 rounded mb-4 text-sm">
+          ⚠️ You’re on the FREE plan. Daily XP is limited.
+          <button
+            className="ml-2 text-purple-600 underline"
+            onClick={() => navigate("/paywall")}
+          >
+            Upgrade
+          </button>
+        </div>
+      )}
+
       {xpCapReached && (
         <div className="mb-4 p-4 rounded-lg bg-yellow-100 border border-yellow-400 text-yellow-900">
           You’ve hit today’s FREE XP limit.
