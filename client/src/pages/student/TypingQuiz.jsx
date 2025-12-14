@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { awardXP } from "@/lib/xpTracker";
 import { useAuth } from "@/context/AuthContext";
-import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 // 🧠 Sample Tamil→English sentences
@@ -41,7 +40,6 @@ export default function TypingQuiz() {
   const [loading, setLoading] = useState(false);
 
   const [toast, setToast] = useState(null);
-  const { setXpCapReached } = useAuth();
 
   const q = QUESTIONS[current];
 
@@ -123,10 +121,6 @@ export default function TypingQuiz() {
     } finally {
       setLoading(false);
     }
-    if (err?.code === "XP_CAP_REACHED") {
-      setXpCapReached(true);
-      return;
-    }
   } // ✅ THIS WAS MISSING
 
   // ====== RESET QUIZ ======
@@ -168,8 +162,8 @@ export default function TypingQuiz() {
             Daily XP Limit Reached ⚠️
           </h3>
           <p className="text-sm mb-3">
-            You’ve reached today’s free XP limit (500 XP).
-            Upgrade to PRO for unlimited daily XP.
+            You’ve reached today’s free XP limit (500 XP). Upgrade to PRO for
+            unlimited daily XP.
           </p>
           <button
             onClick={() => navigate("/paywall")}
