@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
  *  - Authorization: Bearer <token>
  *  - cookies.token (fallback)
  */
-export default function authRequired(req, res, next) {
+export function authRequired(req, res, next) {
   try {
     let token = null;
 
@@ -42,3 +42,4 @@ export default function authRequired(req, res, next) {
     });
   }
 }
+export default authRequired;

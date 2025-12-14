@@ -49,7 +49,9 @@ router.post("/signup", async (req, res) => {
       data: {
         name,
         email,
-        password: hashed, // column in your Prisma model
+        password: hashed,
+        plan: "FREE",
+        tier_level: "free",
       },
     });
 
@@ -159,7 +161,7 @@ router.patch("/users/plan", authRequired, async (req, res) => {
   }
 
   const updated = await prisma.user.update({
-    where: { id: req.user.id },
+    where: { id: req.user.userId },
     data: { plan },
   });
 

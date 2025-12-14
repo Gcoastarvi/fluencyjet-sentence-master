@@ -72,15 +72,18 @@ export function me(token) {
     },
   });
 }
-export async function updateUserPlan(userId, plan) {
-  return apiFetch(`/admin/users/${userId}/plan`, {
+export async function updateUserPlan(userId, plan, token) {
+  return request(`/admin/users/${userId}/plan`, {
     method: "PATCH",
-    body: JSON.stringify({ plan }),
+    body: { plan },
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }
-export async function updateMyPlan(plan) {
-  return apiFetch("/users/plan", {
+
+export async function updateMyPlan(plan, token) {
+  return request("/auth/users/plan", {
     method: "PATCH",
-    body: JSON.stringify({ plan }),
+    body: { plan },
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }
