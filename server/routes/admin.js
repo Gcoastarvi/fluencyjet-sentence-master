@@ -130,34 +130,43 @@ router.get("/users/:id", authRequired, requireAdmin, async (req, res) => {
 });
 
 // Update user plan (tier_level)
-router.patch("/users/:id/plan", authRequired, requireAdmin, async (req, res) => {
-  const { plan } = req.body;
-
-  if (!["FREE", "PRO", "LIFETIME"].includes(plan)) {
-    return res.status(400).json({ ok: false, message: "INVALID_PLAN" });
-  }
-
-  try {
-    const updated = await prisma.user.update({
-      where: { id: req.params.id },
-      data: { tier_level: plan },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        tier_level: true,
-        isAdmin: true,
-        has_access: true,
-        created_at: true,
-      },
+router.patch(
+  "/users/:id/plan",
+  authRequired,
+  requireAdmin,
+  async (req, res) => {
+    const { plan } = req.body;
+    await prisma.user.update({
+      where: { id },
+      data: { plan },
     });
 
-    return res.json({ ok: true, user: updated });
-  } catch (err) {
-    console.error("Plan update failed:", err);
-    return res.status(500).json({ ok: false, message: "PLAN_UPDATE_FAILED" });
-  }
-});
+    if (!["FREE", "PRO", "LIFETIME"].includes(plan)) {
+      return res.status(400).json({ ok: false, message: "INVALID_PLAN" });
+    }
+
+    try {
+      const updated = await prisma.user.update({
+        where: { id: req.params.id },
+        data: { tier_level: plan },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          tier_level: true,
+          isAdmin: true,
+          has_access: true,
+          created_at: true,
+        },
+      });
+
+      return res.json({ ok: true, user: updated });
+    } catch (err) {
+      console.error("Plan update failed:", err);
+      return res.status(500).json({ ok: false, message: "PLAN_UPDATE_FAILED" });
+    }
+  },
+);
 
 /* ─────────────────────────────────────────────
    ADMIN PROMOTE / DEMOTE

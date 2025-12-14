@@ -78,3 +78,9 @@ export async function updateUserPlan(userId, plan) {
     body: JSON.stringify({ plan }),
   });
 }
+export async function updateMyPlan(plan) {
+  return apiFetch("/users/plan", {
+    method: "PATCH",
+    body: JSON.stringify({ plan }),
+  });
+}

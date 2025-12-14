@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { updateMyPlan } from "../../api/apiClient";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -28,11 +29,18 @@ export default function Checkout() {
   }
 
   function simulateSuccess() {
-    // MOCK success: upgrade client-side (we’ll replace later with real payment webhook)
-    setPlan(selectedPlan);
-    localStorage.setItem("fj_plan", selectedPlan);
-    alert(`✅ Payment Success (mock) — Upgraded to ${selectedPlan}`);
-    navigate("/dashboard");
+    async function simulateSuccess() {
+      try {
+        await updateMyPlan(selectedPlan);
+        setPlan(selectedPlan);
+        localStorage.setItem("fj_plan", selectedPlan);
+        alert(`✅ Upgraded to ${selectedPlan}`);
+        navigate("/dashboard");
+      } catch (err) {
+        alert("Upgrade failed");
+        console.error(err);
+      }
+    }
   }
 
   return (
