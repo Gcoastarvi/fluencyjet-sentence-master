@@ -1,19 +1,31 @@
+// server/middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
 
-export default function authRequired(req, res, next) {
-  const auth = req.headers.authorization || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-
-  if (!token) {
-    return res.status(401).json({ ok: false, message: "No token" });
-  }
-
+export function authMiddleware(req, res, next) {
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || "dev-secret");
+    const header = req.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
 
-    req.user = payload;
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "dev-secret");
+    req.user = payload; // { userId, email, ... }
     next();
   } catch (err) {
-    return res.status(401).json({ ok: false, message: "Invalid token" });
+    req.user = null;
+    next();
   }
 }
+
+export function authRequired(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ ok: false, message: "Unauthorized" });
+  }
+  next();
+}
+
+// Optional default export so older imports still work
+export default authRequired;
