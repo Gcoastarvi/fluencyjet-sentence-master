@@ -89,3 +89,10 @@ export async function updateMyPlan(plan, token) {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
 }
+// 💳 Create Razorpay order (PRO plan)
+export async function createOrder({ plan, amount }) {
+  return request("/billing/create-order", {
+    method: "POST",
+    body: { plan, amount },
+  });
+}
