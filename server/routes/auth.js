@@ -8,7 +8,7 @@ import prisma from "../db/client.js";
 const router = express.Router();
 
 /* ───────────────────────────────
-   HELPERS
+   Helpers
 ─────────────────────────────── */
 
 function normalizeEmail(email) {
@@ -31,17 +31,15 @@ router.post("/signup", async (req, res) => {
     let { name, email, password } = req.body;
 
     email = normalizeEmail(email);
-
     if (!email || !password) {
       return res.status(400).json({ ok: false, message: "Missing fields" });
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
-
     if (existing) {
       return res
         .status(409)
-        .json({ ok: false, message: "User already exists" });
+        .json({ ok: false, message: "Email already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -57,15 +55,15 @@ router.post("/signup", async (req, res) => {
 
     const token = signToken(user);
 
-    return res.status(201).json({
+    res.status(201).json({
       ok: true,
       token,
       email: user.email,
       plan: user.plan,
     });
   } catch (err) {
-    console.error("SIGNUP ERROR:", err);
-    return res.status(500).json({ ok: false, message: "Signup failed" });
+    console.error("Signup error:", err);
+    res.status(500).json({ ok: false, message: "Signup failed" });
   }
 });
 
@@ -79,7 +77,6 @@ router.post("/login", async (req, res) => {
     let { email, password } = req.body;
 
     email = normalizeEmail(email);
-
     if (!email || !password) {
       return res
         .status(400)
@@ -88,15 +85,15 @@ router.post("/login", async (req, res) => {
 
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
+    if (!user || !user.password) {
       return res
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password);
 
-    if (!passwordMatch) {
+    if (!isMatch) {
       return res
         .status(401)
         .json({ ok: false, message: "Invalid credentials" });
@@ -104,15 +101,15 @@ router.post("/login", async (req, res) => {
 
     const token = signToken(user);
 
-    return res.json({
+    res.json({
       ok: true,
       token,
       email: user.email,
       plan: user.plan,
     });
   } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    return res.status(500).json({ ok: false, message: "Login failed" });
+    console.error("Login error:", err);
+    res.status(500).json({ ok: false, message: "Login failed" });
   }
 });
 
