@@ -1,70 +1,67 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { loginUser, signupUser, me } from "../api/apiClient";
+import { loginUser, me } from "../api/apiClient";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(
-    () => localStorage.getItem("token") || null,
-  );
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔐 Fetch user ONLY when token exists
+  const navigate = useNavigate();
+
+  // Restore session
   useEffect(() => {
-    async function loadUser() {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await me(token);
-
-        if (res?.ok && res.user) {
-          setUser(res.user);
-        } else {
-          logout();
-        }
-      } catch (err) {
-        console.error("Auth check failed", err);
-        logout();
-      } finally {
-        setLoading(false);
-      }
+    const savedToken = localStorage.getItem("token");
+    if (!savedToken) {
+      setLoading(false);
+      return;
     }
 
-    loadUser();
-  }, [token]);
+    me(savedToken)
+      .then((res) => {
+        if (res.ok) {
+          setUser(res);
+          setToken(savedToken);
+        } else {
+          localStorage.removeItem("token");
+        }
+      })
+      .catch(() => {
+        localStorage.removeItem("token");
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   async function login(email, password) {
-    const res = await loginUser({ email, password });
+    try {
+      const res = await loginUser({ email, password });
 
-    if (res.ok && res.token) {
-      localStorage.setItem("token", res.token);
-      setToken(res.token); // 🔑 triggers useEffect AFTER token exists
-      return { ok: true };
-    }
+      if (!res.ok || !res.token) {
+        return { ok: false };
+      }
 
-    return { ok: false, message: res.message };
-  }
-
-  async function signup(name, email, password) {
-    const res = await signupUser({ name, email, password });
-
-    if (res.ok && res.token) {
       localStorage.setItem("token", res.token);
       setToken(res.token);
-      return { ok: true };
-    }
+      setUser({
+        email: res.email,
+        plan: res.plan,
+      });
 
-    return { ok: false, message: res.message };
+      navigate("/dashboard"); // 🔑 REQUIRED
+      return { ok: true };
+    } catch (err) {
+      console.error("AuthContext login error:", err);
+      return { ok: false };
+    }
   }
 
   function logout() {
     localStorage.removeItem("token");
-    setToken(null);
     setUser(null);
+    setToken(null);
+    navigate("/login");
   }
 
   return (
@@ -72,14 +69,13 @@ export function AuthProvider({ children }) {
       value={{
         user,
         token,
-        loading,
         login,
-        signup,
         logout,
+        loading,
         isAuthenticated: !!user,
       }}
     >
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
