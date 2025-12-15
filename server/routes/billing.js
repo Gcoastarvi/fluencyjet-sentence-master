@@ -4,7 +4,7 @@ import express from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import prisma from "../db/client.js";
-import { authRequired } from "../middleware/authMiddleware.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -40,7 +40,7 @@ function getRazorpayClient() {
  * POST /api/billing/create-order
  * body: { plan?: "PRO" }
  */
-router.post("/create-order", authRequired, async (req, res) => {
+router.post("/create-order", authMiddleware, async (req, res) => {
   try {
     const { plan } = req.body || {};
     const cfg = getPlanConfig(plan);
@@ -80,7 +80,7 @@ router.post("/create-order", authRequired, async (req, res) => {
  * POST /api/billing/verify-payment
  * body: { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan?: "PRO" }
  */
-router.post("/verify-payment", authRequired, async (req, res) => {
+router.post("/verify-payment", authMiddleware, async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } =
       req.body || {};
