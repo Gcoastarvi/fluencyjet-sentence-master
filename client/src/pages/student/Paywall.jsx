@@ -1,6 +1,7 @@
 // client/src/pages/student/Paywall.jsx
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { createOrder } from "../../api/apiClient";
 
 export default function Paywall() {
   const navigate = useNavigate();
@@ -25,11 +26,49 @@ export default function Paywall() {
       </div>
     );
   }
+  async function startPayment() {
+    try {
+      // 1️⃣ Ask backend to create Razorpay order
+      const order = await createOrder({
+        plan: "PRO",
+        amount: 49900, // ₹499 in paise
+      });
 
-  function goToCheckout() {
-    navigate("/checkout", {
-      state: { selectedPlan: "PRO", priceLabel: "₹499 (launch offer)" },
-    });
+      if (!order?.id) {
+        alert("Failed to create payment order");
+        return;
+      }
+
+      // 2️⃣ Configure Razorpay checkout
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "FluencyJet Sentence Master",
+        description: "PRO Plan Upgrade",
+        order_id: order.id,
+
+        handler: function (response) {
+          alert("Payment successful 🎉");
+          window.location.href = "/dashboard";
+        },
+
+        prefill: {
+          email: "",
+        },
+
+        theme: {
+          color: "#7C3AED",
+        },
+      };
+
+      // 3️⃣ Open Razorpay popup
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error("Payment error", err);
+      alert("Payment failed. Try again.");
+    }
   }
 
   return (
@@ -50,7 +89,7 @@ export default function Paywall() {
       </ul>
 
       <button
-        onClick={goToCheckout}
+        onClick={startPayment}
         className="w-full py-3 bg-purple-600 text-white rounded-lg text-lg font-semibold hover:bg-purple-700 mb-3"
       >
         Continue to Checkout
