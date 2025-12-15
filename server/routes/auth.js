@@ -1,62 +1,58 @@
 // server/routes/auth.js
+
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js";
-import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+/* ───────────────────────────────
+   HELPERS
+─────────────────────────────── */
+
 function normalizeEmail(email) {
-  return String(email || "")
-    .trim()
-    .toLowerCase();
+  return email?.trim().toLowerCase();
 }
 
 function signToken(user) {
-  return jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      plan: user.plan || "FREE",
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "30d" },
-  );
+  return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
+    expiresIn: "7d",
+  });
 }
 
-// POST /api/auth/signup
+/* ───────────────────────────────
+   SIGNUP
+   POST /api/auth/signup
+─────────────────────────────── */
+
 router.post("/signup", async (req, res) => {
   try {
-    const name = String(req.body?.name || "").trim();
-    const email = normalizeEmail(req.body?.email);
-    const password = String(req.body?.password || "");
+    let { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
+    email = normalizeEmail(email);
+
+    if (!email || !password) {
       return res.status(400).json({ ok: false, message: "Missing fields" });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ ok: false, message: "Password too short" });
     }
 
     const existing = await prisma.user.findUnique({ where: { email } });
+
     if (existing) {
       return res
         .status(409)
-        .json({ ok: false, message: "Email already exists" });
+        .json({ ok: false, message: "User already exists" });
     }
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password: hashed, // IMPORTANT: must match your Prisma field name
+        password: hashedPassword,
         plan: "FREE",
       },
-      select: { id: true, name: true, email: true, plan: true },
     });
 
     const token = signToken(user);
@@ -65,36 +61,45 @@ router.post("/signup", async (req, res) => {
       ok: true,
       token,
       email: user.email,
-      plan: user.plan || "FREE",
+      plan: user.plan,
     });
   } catch (err) {
-    console.error("❌ signup error:", err);
-    return res.status(500).json({ ok: false, message: "Server error" });
+    console.error("SIGNUP ERROR:", err);
+    return res.status(500).json({ ok: false, message: "Signup failed" });
   }
 });
 
-// POST /api/auth/login
+/* ───────────────────────────────
+   LOGIN
+   POST /api/auth/login
+─────────────────────────────── */
+
 router.post("/login", async (req, res) => {
   try {
-    const email = normalizeEmail(req.body?.email);
-    const password = String(req.body?.password || "");
+    let { email, password } = req.body;
+
+    email = normalizeEmail(email);
 
     if (!email || !password) {
-      return res.status(400).json({ ok: false, message: "Missing fields" });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Missing credentials" });
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !user.password) {
+
+    if (!user) {
       return res
         .status(401)
-        .json({ ok: false, message: "Invalid email or password" });
+        .json({ ok: false, message: "Invalid credentials" });
     }
 
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) {
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
       return res
         .status(401)
-        .json({ ok: false, message: "Invalid email or password" });
+        .json({ ok: false, message: "Invalid credentials" });
     }
 
     const token = signToken(user);
@@ -103,33 +108,11 @@ router.post("/login", async (req, res) => {
       ok: true,
       token,
       email: user.email,
-      plan: user.plan || "FREE",
+      plan: user.plan,
     });
   } catch (err) {
-    console.error("❌ login error:", err);
-    return res.status(500).json({ ok: false, message: "Server error" });
-  }
-});
-
-// GET /api/auth/me  (requires token)
-router.get("/me", authRequired, async (req, res) => {
-  try {
-    const id = req.user?.id;
-    if (!id)
-      return res.status(401).json({ ok: false, message: "No user in token" });
-
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: { id: true, name: true, email: true, plan: true },
-    });
-
-    if (!user)
-      return res.status(404).json({ ok: false, message: "User not found" });
-
-    return res.json({ ok: true, user });
-  } catch (err) {
-    console.error("❌ me error:", err);
-    return res.status(500).json({ ok: false, message: "Server error" });
+    console.error("LOGIN ERROR:", err);
+    return res.status(500).json({ ok: false, message: "Login failed" });
   }
 });
 
