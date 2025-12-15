@@ -1,5 +1,4 @@
 // server/routes/auth.js
-
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -8,175 +7,130 @@ import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-/* ---------------- JWT HELPER ---------------- */
-function makeToken(user) {
+function normalizeEmail(email) {
+  return String(email || "")
+    .trim()
+    .toLowerCase();
+}
+
+function signToken(user) {
   return jwt.sign(
     {
-      userId: user.id,
+      id: user.id,
       email: user.email,
+      name: user.name,
+      plan: user.plan || "FREE",
     },
     process.env.JWT_SECRET,
     { expiresIn: "30d" },
   );
 }
 
-/* ---------------- SIGNUP ---------------- */
+// POST /api/auth/signup
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password } = req.body || {};
+    const name = String(req.body?.name || "").trim();
+    const email = normalizeEmail(req.body?.email);
+    const password = String(req.body?.password || "");
 
-    const emailNorm = String(email || "")
-      .trim()
-      .toLowerCase();
-    const passwordNorm = String(password || "");
-
-    if (!name || !emailNorm || !passwordNorm) {
-      return res.status(400).json({
-        ok: false,
-        message: "Name, email and password are required",
-      });
+    if (!name || !email || !password) {
+      return res.status(400).json({ ok: false, message: "Missing fields" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ ok: false, message: "Password too short" });
     }
 
-    const existing = await prisma.user.findUnique({
-      where: { email: emailNorm },
-    });
-
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
-      return res.status(400).json({
-        ok: false,
-        message: "Email already registered",
-      });
+      return res
+        .status(409)
+        .json({ ok: false, message: "Email already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(passwordNorm, 10);
+    const hashed = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
         name,
-        email: emailNorm,
-        password: hashedPassword,
+        email,
+        password: hashed, // IMPORTANT: must match your Prisma field name
         plan: "FREE",
       },
+      select: { id: true, name: true, email: true, plan: true },
     });
 
-    const token = makeToken(user);
+    const token = signToken(user);
 
     return res.status(201).json({
       ok: true,
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        plan: user.plan,
-      },
+      email: user.email,
+      plan: user.plan || "FREE",
     });
   } catch (err) {
-    console.error("SIGNUP ERROR:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Signup failed",
-    });
+    console.error("❌ signup error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
 
-/* ---------------- LOGIN ---------------- */
+// POST /api/auth/login
 router.post("/login", async (req, res) => {
   try {
-    let { email, password } = req.body || {};
+    const email = normalizeEmail(req.body?.email);
+    const password = String(req.body?.password || "");
 
-    const emailNorm = String(email || "")
-      .trim()
-      .toLowerCase();
-    const passwordNorm = String(password || "");
-
-    if (!emailNorm || !passwordNorm) {
-      return res.status(400).json({
-        ok: false,
-        message: "Email and password are required",
-      });
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, message: "Missing fields" });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: emailNorm },
-    });
-
-    if (!user) {
-      return res.status(401).json({
-        ok: false,
-        message: "Invalid email or password",
-      });
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.password) {
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid email or password" });
     }
 
-    const isValid = await bcrypt.compare(passwordNorm, user.password);
-
-    if (!isValid) {
-      return res.status(401).json({
-        ok: false,
-        message: "Invalid email or password",
-      });
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid email or password" });
     }
 
-    const token = makeToken(user);
+    const token = signToken(user);
 
     return res.json({
       ok: true,
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        plan: user.plan,
-      },
+      email: user.email,
+      plan: user.plan || "FREE",
     });
   } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Login failed",
-    });
+    console.error("❌ login error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
 
-/* ---------------- AUTH CHECK ---------------- */
+// GET /api/auth/me  (requires token)
 router.get("/me", authRequired, async (req, res) => {
   try {
+    const id = req.user?.id;
+    if (!id)
+      return res.status(401).json({ ok: false, message: "No user in token" });
+
     const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        plan: true,
-      },
+      where: { id },
+      select: { id: true, name: true, email: true, plan: true },
     });
+
+    if (!user)
+      return res.status(404).json({ ok: false, message: "User not found" });
 
     return res.json({ ok: true, user });
-  } catch {
-    return res.status(401).json({
-      ok: false,
-      message: "Invalid token",
-    });
+  } catch (err) {
+    console.error("❌ me error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
   }
-});
-
-/* ---------------- UPDATE PLAN (Razorpay Step-3) ---------------- */
-router.patch("/users/plan", authRequired, async (req, res) => {
-  const { plan } = req.body;
-
-  if (!["FREE", "PRO", "LIFETIME"].includes(plan)) {
-    return res.status(400).json({
-      ok: false,
-      message: "Invalid plan",
-    });
-  }
-
-  const updated = await prisma.user.update({
-    where: { id: req.user.userId },
-    data: { plan },
-  });
-
-  return res.json({ ok: true, plan: updated.plan });
 });
 
 export default router;
