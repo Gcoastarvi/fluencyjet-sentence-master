@@ -66,14 +66,13 @@ export function loginUser({ email, password }) {
     body: { email, password },
   });
 }
-export function me(token) {
+
+export function me() {
   return request("/auth/me", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
 }
+
 export async function updateUserPlan(userId, plan, token) {
   return request(`/admin/users/${userId}/plan`, {
     method: "PATCH",
