@@ -1,106 +1,82 @@
-// client/src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
-import { loginUser, me } from "../api/apiClient";
+import { loginUser, signupUser, me } from "../api/apiClient";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
+  const [token, setToken] = useState(
+    () => localStorage.getItem("token") || null,
+  );
   const [loading, setLoading] = useState(true);
-  const [plan, setPlan] = useState("FREE");
-  const [xpCapReached, setXpCapReached] = useState(false);
 
-  // 🔁 Load token on app start (SERVER-VERIFIED)
+  // 🔐 Fetch user ONLY when token exists
   useEffect(() => {
-    async function initAuth() {
-      const storedToken = localStorage.getItem("fj_token");
-
-      if (!storedToken) {
+    async function loadUser() {
+      if (!token) {
         setLoading(false);
         return;
       }
 
-      setToken(storedToken);
-
       try {
-        const data = await me(storedToken); // 🔐 server verification
-        setUser(data.user);
-        // Sync plan from server user if available
-        if (data.user?.plan || data.user?.tier_level) {
-          const serverPlan = data.user.plan || data.user.tier_level;
-          setPlan(serverPlan);
-          localStorage.setItem("fj_plan", serverPlan);
+        const res = await me(token);
+
+        if (res?.ok && res.user) {
+          setUser(res.user);
+        } else {
+          logout();
         }
       } catch (err) {
-        console.error("Auth hydration failed, clearing token:", err);
-        localStorage.removeItem("fj_token");
-        setToken(null);
-        setUser(null);
+        console.error("Auth check failed", err);
+        logout();
       } finally {
         setLoading(false);
       }
     }
-    const storedPlan = localStorage.getItem("fj_plan");
-    if (storedPlan) {
-      setPlan(storedPlan);
-    }
 
-    initAuth();
-  }, []);
+    loadUser();
+  }, [token]);
 
-  // 🔐 Login (used by Login.jsx)
   async function login(email, password) {
-    try {
-      const data = await loginUser({ email, password });
+    const res = await loginUser({ email, password });
 
-      if (!data?.token) {
-        console.error("Login succeeded but token missing:", data);
-        return false;
-      }
-
-      localStorage.setItem("fj_token", data.token);
-      setToken(data.token);
-
-      // immediately hydrate user from server
-      const meData = await me(data.token);
-      setUser(meData.user);
-      // Sync plan from server user if available
-      if (meData.user?.plan || meData.user?.tier_level) {
-        const serverPlan = meData.user.plan || meData.user.tier_level;
-        setPlan(serverPlan);
-        localStorage.setItem("fj_plan", serverPlan);
-      }
-
-      return true;
-    } catch (err) {
-      console.error("Login failed:", err);
-      return false;
+    if (res.ok && res.token) {
+      localStorage.setItem("token", res.token);
+      setToken(res.token); // 🔑 triggers useEffect AFTER token exists
+      return { ok: true };
     }
+
+    return { ok: false, message: res.message };
+  }
+
+  async function signup(name, email, password) {
+    const res = await signupUser({ name, email, password });
+
+    if (res.ok && res.token) {
+      localStorage.setItem("token", res.token);
+      setToken(res.token);
+      return { ok: true };
+    }
+
+    return { ok: false, message: res.message };
   }
 
   function logout() {
-    localStorage.removeItem("fj_token");
-    localStorage.removeItem("fj_plan");
+    localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-    setPlan("FREE");
-    setXpCapReached(false);
   }
 
   return (
     <AuthContext.Provider
       value={{
-        token,
         user,
-        plan,
-        setPlan,
+        token,
         loading,
         login,
+        signup,
         logout,
-        isAuthenticated: !!token,
-        xpCapReached,
-        setXpCapReached,
+        isAuthenticated: !!user,
       }}
     >
       {children}
@@ -109,9 +85,5 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used inside <AuthProvider>");
-  }
-  return ctx;
+  return useContext(AuthContext);
 }
