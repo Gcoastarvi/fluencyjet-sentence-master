@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { signupUser, loginUser } from "@/api/apiClient";
 
 export default function SignupModal({ visible, close, onAuth }) {
   const [mode, setMode] = useState("login"); // login | signup
@@ -6,41 +7,32 @@ export default function SignupModal({ visible, close, onAuth }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const API_BASE = import.meta.env.VITE_API_URL || "";
+  const [error, setError] = useState("");
 
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
-      const url =
-        mode === "signup"
-          ? `${API_BASE}/api/auth/signup`
-          : `${API_BASE}/api/auth/login`;
+      let data;
 
-      const body =
-        mode === "signup" ? { name, email, password } : { email, password };
-
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data?.message || "Authentication failed");
-        return;
+      if (mode === "signup") {
+        data = await signupUser({ name, email, password });
+      } else {
+        data = await loginUser({ email, password });
       }
 
+      // apiClient already throws on non-200
       if (data?.token) {
         localStorage.setItem("fj_token", data.token);
-        onAuth?.(data.user);
+        onAuth?.(data);
         close();
-        alert("Logged in successfully!");
+      } else {
+        setError("Authentication failed");
       }
+    } catch (err) {
+      setError(err?.message || "Authentication failed");
     } finally {
       setLoading(false);
     }
@@ -57,6 +49,7 @@ export default function SignupModal({ visible, close, onAuth }) {
 
         <div className="flex justify-center gap-3 mb-4">
           <button
+            type="button"
             className={`px-3 py-1 rounded ${
               mode === "signup"
                 ? "bg-purple-600 text-white"
@@ -68,6 +61,7 @@ export default function SignupModal({ visible, close, onAuth }) {
           </button>
 
           <button
+            type="button"
             className={`px-3 py-1 rounded ${
               mode === "login"
                 ? "bg-purple-600 text-white"
@@ -86,6 +80,7 @@ export default function SignupModal({ visible, close, onAuth }) {
               placeholder="Your Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
             />
           )}
 
@@ -107,15 +102,24 @@ export default function SignupModal({ visible, close, onAuth }) {
             required
           />
 
+          {error && (
+            <p className="text-red-600 text-sm text-center">{error}</p>
+          )}
+
           <button
             disabled={loading}
-            className="w-full bg-purple-600 text-white py-2 rounded-full"
+            className="w-full bg-purple-600 text-white py-2 rounded-full disabled:opacity-60"
           >
-            {loading ? "Please wait…" : mode === "signup" ? "Create Account" : "Login"}
+            {loading
+              ? "Please wait…"
+              : mode === "signup"
+              ? "Create Account"
+              : "Login"}
           </button>
         </form>
 
         <button
+          type="button"
           onClick={close}
           className="mt-3 text-sm text-gray-500 text-center w-full"
         >
