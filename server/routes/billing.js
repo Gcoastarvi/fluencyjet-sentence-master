@@ -1,61 +1,55 @@
-// server/routes/billing.js
 import express from "express";
 import Razorpay from "razorpay";
-import crypto from "crypto";
-import { authMiddleware, authRequired } from "../middleware/authMiddleware.js";
+import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-const keyId = process.env.RAZORPAY_KEY_ID;
-const keySecret = process.env.RAZORPAY_KEY_SECRET;
-
-if (!keyId || !keySecret) {
-  console.warn(
-    "⚠️ Missing Razorpay env vars: RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET",
-  );
-}
-
+/**
+ * Razorpay instance
+ * Keys come from Railway environment variables
+ */
 const razorpay = new Razorpay({
-  key_id: keyId,
-  key_secret: keySecret,
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 /**
  * POST /api/billing/create-order
- * body: { amount: number, currency?: "INR", plan?: "PRO" }
- * amount must be in paise (e.g., 19900 for ₹199)
+ * Step 1: Create Razorpay order
  */
-router.post("/create-order", authMiddleware, authRequired, async (req, res) => {
+router.post("/create-order", authRequired, async (req, res) => {
   try {
-    const { amount, currency = "INR", plan = "PRO" } = req.body || {};
+    const user = req.user;
 
-    const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt <= 0) {
-      return res.status(400).json({ ok: false, message: "Invalid amount" });
+    // Safety check
+    if (!user) {
+      return res.status(401).json({ ok: false, message: "Unauthorized" });
     }
 
-    const receipt = `fj_${req.user.id}_${Date.now()}`;
+    // 🔒 Amount in paise (₹999 = 99900)
+    const amount = 99900;
 
     const order = await razorpay.orders.create({
-      amount: Math.round(amt),
-      currency,
-      receipt,
+      amount,
+      currency: "INR",
+      receipt: `fj_${user.id}_${Date.now()}`,
       notes: {
-        userId: String(req.user.id),
-        plan,
+        userId: user.id.toString(),
+        email: user.email,
+        product: "FluencyJet PRO",
       },
     });
 
-    return res.json({
+    return res.status(200).json({
       ok: true,
-      keyId, // safe to send keyId to frontend
       order,
+      key: process.env.RAZORPAY_KEY_ID, // frontend needs this
     });
   } catch (err) {
-    console.error("CREATE ORDER ERROR:", err);
+    console.error("RAZORPAY ORDER ERROR:", err);
     return res
       .status(500)
-      .json({ ok: false, message: "Order creation failed" });
+      .json({ ok: false, message: "Failed to create order" });
   }
 });
 
