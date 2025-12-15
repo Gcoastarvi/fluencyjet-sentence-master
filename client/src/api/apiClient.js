@@ -10,14 +10,16 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
   const url = `${API_BASE}${path}`;
   console.log("[apiClient] Request:", method, url, body);
 
+  const token = localStorage.getItem("fj_token");
+
   const res = await fetch(url, {
     method,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
-    credentials: "include",
   });
 
   const text = await res.text();
