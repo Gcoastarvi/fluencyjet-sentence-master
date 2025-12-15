@@ -2,6 +2,53 @@ import express from "express";
 import Razorpay from "razorpay";
 import authRequired from "../middleware/authMiddleware.js";
 
+// 🔐 Verify Razorpay payment & upgrade plan
+router.post("/verify-payment", authRequired, async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({
+        ok: false,
+        message: "Missing Razorpay payment details",
+      });
+    }
+
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+      .digest("hex");
+
+    if (generatedSignature !== razorpay_signature) {
+      return res.status(400).json({
+        ok: false,
+        message: "Payment verification failed",
+      });
+    }
+
+    // ✅ Payment verified → upgrade user
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        plan: "PRO",
+        has_access: true,
+      },
+    });
+
+    return res.json({
+      ok: true,
+      message: "Payment verified, PRO unlocked",
+    });
+  } catch (err) {
+    console.error("VERIFY PAYMENT ERROR:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Payment verification failed",
+    });
+  }
+});
+
 const router = express.Router();
 
 /**

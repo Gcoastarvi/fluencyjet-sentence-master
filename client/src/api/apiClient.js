@@ -96,3 +96,10 @@ export async function createOrder({ plan, amount }) {
     body: { plan, amount },
   });
 }
+// 🔐 Verify Razorpay payment
+export async function verifyPayment(payload) {
+  return request("/billing/verify-payment", {
+    method: "POST",
+    body: payload,
+  });
+}

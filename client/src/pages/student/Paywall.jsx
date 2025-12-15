@@ -48,9 +48,34 @@ export default function Paywall() {
         description: "PRO Plan Upgrade",
         order_id: order.id,
 
-        handler: function (response) {
-          alert("Payment successful 🎉");
-          window.location.href = "/dashboard";
+        handler: async function (response) {
+          try {
+            const verifyRes = await fetch(
+              `${import.meta.env.VITE_API_BASE}/billing/verify-payment`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              },
+            );
+
+            const data = await verifyRes.json();
+
+            if (data.ok) {
+              alert("Payment verified 🎉 Welcome to PRO!");
+              window.location.href = "/dashboard";
+            } else {
+              alert("Payment verification failed");
+            }
+          } catch (err) {
+            console.error("Verification error", err);
+            alert("Payment verification error");
+          }
         },
 
         prefill: {
