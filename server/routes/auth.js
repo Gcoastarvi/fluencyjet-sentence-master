@@ -18,7 +18,8 @@ function makeToken(user) {
 /* ---------------- SIGNUP ---------------- */
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password } = req.body || {};
+    let { name, email, password } = req.body || {};
+    email = email.trim().toLowerCase();
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -74,7 +75,8 @@ router.post("/signup", async (req, res) => {
 /* ---------------- LOGIN ---------------- */
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body || {};
+    let { email, password } = req.body || {};
+    email = email.trim().toLowerCase();
 
     if (!email || !password) {
       return res.status(400).json({
