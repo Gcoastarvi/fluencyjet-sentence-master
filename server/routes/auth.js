@@ -4,6 +4,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js";
+import { authRequired } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -29,8 +30,8 @@ function signToken(user) {
 router.post("/signup", async (req, res) => {
   try {
     let { name, email, password } = req.body;
-
     email = normalizeEmail(email);
+
     if (!email || !password) {
       return res.status(400).json({ ok: false, message: "Missing fields" });
     }
@@ -75,8 +76,8 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     let { email, password } = req.body;
-
     email = normalizeEmail(email);
+
     if (!email || !password) {
       return res
         .status(400)
@@ -84,7 +85,6 @@ router.post("/login", async (req, res) => {
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
-
     if (!user || !user.password) {
       return res
         .status(401)
@@ -92,7 +92,6 @@ router.post("/login", async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res
         .status(401)
@@ -112,23 +111,22 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ ok: false, message: "Login failed" });
   }
 });
-import express from "express";
-import jwt from "jsonwebtoken";
-import { authRequired } from "../middleware/authMiddleware.js";
 
-const router = express.Router();
+/* ───────────────────────────────
+   SESSION CHECK
+   GET /api/auth/me
+─────────────────────────────── */
 
 router.get("/me", authRequired, async (req, res) => {
   try {
-    const user = req.user; // set by authMiddleware
-
-    return res.json({
+    const user = req.user;
+    res.json({
       ok: true,
       email: user.email,
       plan: user.plan || "FREE",
     });
   } catch (err) {
-    return res.status(401).json({ ok: false });
+    res.status(401).json({ ok: false });
   }
 });
 
