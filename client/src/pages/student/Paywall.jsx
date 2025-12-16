@@ -3,9 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { createOrder } from "../../api/apiClient";
 
+// Load Razorpay checkout script safely
+function loadRazorpay() {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function Paywall() {
   const navigate = useNavigate();
-  const { plan, setPlan } = useAuth();
+  const { plan, setPlan, token } = useAuth(); // token must exist in AuthContext (most likely it does)
 
   // Already upgraded → bounce user
   if (plan === "PRO" || plan === "LIFETIME") {
@@ -26,51 +39,69 @@ export default function Paywall() {
       </div>
     );
   }
+
   async function startPayment() {
     try {
-      // 1️⃣ Ask backend to create Razorpay order
-      const order = await createOrder({
-        plan: "PRO",
-        amount: 49900, // ₹499 in paise
-      });
+      // 0) Must be logged in (JWT)
+      if (!token) {
+        alert("Please login again to continue.");
+        navigate("/login");
+        return;
+      }
 
-      if (!order?.id) {
+      // 1) Load Razorpay script
+      const loaded = await loadRazorpay();
+      if (!loaded) {
+        alert("Razorpay failed to load. Disable adblock and try again.");
+        return;
+      }
+
+      // 2) Create Razorpay order from backend (JWT protected)
+      const order = await createOrder({ plan: "PRO" });
+
+      // Your backend returns { ok, orderId, amount, currency, plan, keyId }
+      if (!order?.ok || !order?.orderId) {
         alert("Failed to create payment order");
         return;
       }
 
-      // 2️⃣ Configure Razorpay checkout
+      // 3) Configure Razorpay checkout
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: order.keyId, // always from backend (safer than env)
         amount: order.amount,
         currency: order.currency,
         name: "FluencyJet Sentence Master",
         description: "PRO Plan Upgrade",
-        order_id: order.id,
+        order_id: order.orderId,
 
         handler: async function (response) {
           try {
             const verifyRes = await fetch(
-              `${import.meta.env.VITE_API_BASE}/billing/verify-payment`,
+              `${import.meta.env.VITE_API_BASE_URL}/api/billing/verify-payment`,
               {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
                   razorpay_signature: response.razorpay_signature,
+                  plan: "PRO",
                 }),
               },
             );
 
             const data = await verifyRes.json();
 
-            if (data.ok) {
+            if (data?.ok) {
+              // Update local plan immediately (UX)
+              setPlan?.("PRO");
               alert("Payment verified 🎉 Welcome to PRO!");
-              window.location.href = "/dashboard";
+              navigate("/dashboard");
             } else {
-              alert("Payment verification failed");
+              alert(data?.message || "Payment verification failed");
             }
           } catch (err) {
             console.error("Verification error", err);
@@ -78,16 +109,10 @@ export default function Paywall() {
           }
         },
 
-        prefill: {
-          email: "",
-        },
-
-        theme: {
-          color: "#7C3AED",
-        },
+        theme: { color: "#7C3AED" },
       };
 
-      // 3️⃣ Open Razorpay popup
+      // 4) Open Razorpay popup
       const rzp = new window.Razorpay(options);
       rzp.open();
     } catch (err) {
