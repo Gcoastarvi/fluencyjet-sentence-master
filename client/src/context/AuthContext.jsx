@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { loginUser, me } from "../api/apiClient";
-import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(null);
 
@@ -9,9 +8,6 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const navigate = useNavigate();
-
-  // Restore session
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     if (!savedToken) {
@@ -28,9 +24,7 @@ export function AuthProvider({ children }) {
           localStorage.removeItem("token");
         }
       })
-      .catch(() => {
-        localStorage.removeItem("token");
-      })
+      .catch(() => localStorage.removeItem("token"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -44,15 +38,11 @@ export function AuthProvider({ children }) {
 
       localStorage.setItem("token", res.token);
       setToken(res.token);
-      setUser({
-        email: res.email,
-        plan: res.plan,
-      });
+      setUser({ email: res.email, plan: res.plan });
 
-      navigate("/dashboard"); // 🔑 REQUIRED
       return { ok: true };
     } catch (err) {
-      console.error("AuthContext login error:", err);
+      console.error("Login failed", err);
       return { ok: false };
     }
   }
@@ -61,7 +51,6 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("token");
     setUser(null);
     setToken(null);
-    navigate("/login");
   }
 
   return (
