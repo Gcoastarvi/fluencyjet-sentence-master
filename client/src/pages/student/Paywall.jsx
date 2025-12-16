@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "@/api/apiClient";
+import { request } from "@/api/apiClient";
 
 /**
  * PAYWALL LOGIC (FINAL – CLEAN)
@@ -30,7 +30,7 @@ export default function Paywall() {
         }
 
         // 2️⃣ Ask backend who this user is
-        const res = await api.get("/auth/me");
+        const res = await api.request("/auth/me");
         /* Expected backend response
            {
              ok: true,
