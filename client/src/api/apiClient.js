@@ -1,8 +1,6 @@
 // client/src/api/apiClient.js
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://fluencyjet-sentence-master-production.up.railway.app/api";
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL}/api`;
 
 console.log("[apiClient] Using API_BASE =", API_BASE);
 
@@ -10,7 +8,7 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
   const url = `${API_BASE}${path}`;
   console.log("[apiClient] Request:", method, url, body);
 
-  const token = localStorage.getItem("fj_token");
+  const token = localStorage.getItem("token");
 
   const res = await fetch(url, {
     method,
