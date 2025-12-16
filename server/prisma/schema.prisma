@@ -15,42 +15,43 @@ datasource db {
 // 👤 USER MODEL
 // ------------------------------------------------------
 model User {
-  id           Int               @id @default(autoincrement())
-  name         String?           @db.VarChar(100)
-  email        String            @unique @db.VarChar(191)
-  username     String?           @unique @db.VarChar(50)
-  password     String
-  avatar_url   String?
-  has_access   Boolean           @default(false)
-  tier_level   String            @default("free")
-  plan         String            @default("FREE")
-  created_at   DateTime          @default(now())
-  isAdmin      Boolean           @default(false)
+  id         Int      @id @default(autoincrement())
+  name       String?  @db.VarChar(100)
+  email      String   @unique @db.VarChar(191)
+  username   String?  @unique @db.VarChar(50)
+  password   String
+  avatar_url String?
+  has_access Boolean  @default(false)
+  tier_level String   @default("free")
+  plan       String   @default("FREE")
+  created_at DateTime @default(now())
+  isAdmin    Boolean  @default(false)
 
   // 🔥 Needed for Admin.jsx filters
-  lastActiveAt DateTime?         
+  lastActiveAt DateTime?
 
   // 🔥 Needed for Admin.jsx XP sorting
-  xpTotal      Int               @default(0)
+  xpTotal Int @default(0)
 
   // Relations
-  progress     UserProgress?
-  weekly       UserWeeklyTotals?
-  xp_events    XpEvent[]
-  user_badges  UserBadge[]
+  progress    UserProgress?
+  weekly      UserWeeklyTotals?
+  xp_events   XpEvent[]
+  user_badges UserBadge[]
+  payments    Payment[]
 }
 
 // ------------------------------------------------------
 // 🎯 XP EVENT LOGS
 // ------------------------------------------------------
 model XpEvent {
-  id          Int       @id @default(autoincrement())
-  user_id     Int
-  xp_delta    Int
-  type        String?   @db.VarChar(50)
-  created_at  DateTime  @default(now())
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  xp_delta   Int
+  type       String?  @db.VarChar(50)
+  created_at DateTime @default(now())
 
-  user        User      @relation(fields: [user_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
 }
 
 // ------------------------------------------------------
@@ -65,33 +66,33 @@ model UserWeeklyTotals {
   month_xp   Int       @default(0)
   updated_at DateTime  @default(now())
 
-  user       User      @relation(fields: [user_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
 }
 
 // ------------------------------------------------------
 // 🧠 USER PROGRESS
 // ------------------------------------------------------
 model UserProgress {
-  id         Int       @id @default(autoincrement())
-  user_id    Int       @unique
-  xp         Int       @default(0)
-  streak     Int       @default(0)
-  badges     String[]  @default([])
-  updated_at DateTime  @default(now())
+  id         Int      @id @default(autoincrement())
+  user_id    Int      @unique
+  xp         Int      @default(0)
+  streak     Int      @default(0)
+  badges     String[] @default([])
+  updated_at DateTime @default(now())
 
-  user       User      @relation(fields: [user_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
 }
 
 // ------------------------------------------------------
 // 🏅 USER BADGES
 // ------------------------------------------------------
 model UserBadge {
-  id         Int       @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   user_id    Int
   badge_name String
-  earned_at  DateTime  @default(now())
+  earned_at  DateTime @default(now())
 
-  user       User      @relation(fields: [user_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
 }
 
 // ------------------------------------------------------
@@ -108,24 +109,43 @@ model Lesson {
   updated_at  DateTime @updatedAt
 
   // 👇 NEW: one-to-many relation to quizzes
-  quizzes     Quiz[]
+  quizzes Quiz[]
 }
 
 // ------------------------------------------------------
 // 📝 TYPING QUIZ
 // ------------------------------------------------------
 model Quiz {
-  id         Int      @id @default(autoincrement())
-  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  lessonId   Int
+  id       Int    @id @default(autoincrement())
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId Int
 
   // Basic question fields
-  question   String
-  type       String   @default("typing") // e.g. typing / mcq later
-  prompt     String?                     // optional instructions
-  data       Json?                       // extra config (options, etc.)
-  xpReward   Int      @default(50)
+  question String
+  type     String  @default("typing") // e.g. typing / mcq later
+  prompt   String? // optional instructions
+  data     Json? // extra config (options, etc.)
+  xpReward Int     @default(50)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  orderId   String  @unique
+  paymentId String? @unique
+  signature String?
+
+  amount   Int
+  currency String
+  status   String
+  plan     String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
