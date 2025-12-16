@@ -112,5 +112,24 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ ok: false, message: "Login failed" });
   }
 });
+import express from "express";
+import jwt from "jsonwebtoken";
+import { authRequired } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+router.get("/me", authRequired, async (req, res) => {
+  try {
+    const user = req.user; // set by authMiddleware
+
+    return res.json({
+      ok: true,
+      email: user.email,
+      plan: user.plan || "FREE",
+    });
+  } catch (err) {
+    return res.status(401).json({ ok: false });
+  }
+});
 
 export default router;
