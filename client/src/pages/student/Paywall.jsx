@@ -18,7 +18,8 @@ function loadRazorpay() {
 
 export default function Paywall() {
   const navigate = useNavigate();
-  const { plan, setPlan, token } = useAuth(); // token must exist in AuthContext (most likely it does)
+  const { plan, setPlan } = useAuth();
+  const token = localStorage.getItem("fj_token");
 
   // Already upgraded → bounce user
   if (plan === "PRO" || plan === "LIFETIME") {
@@ -39,6 +40,7 @@ export default function Paywall() {
       </div>
     );
   }
+  console.log("createOrder fn =", createOrder);
 
   async function startPayment() {
     try {
