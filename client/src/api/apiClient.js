@@ -91,3 +91,16 @@ export const updateMyPlan = (plan) => createOrder(plan);
  */
 export const updateUserPlan = (userId, plan) =>
   api.post(`/admin/users/${userId}/plan`, { plan });
+// --- Compatibility layer (so older/newer imports both work) ---
+export const api = {
+  get: (url) => request("GET", url),
+  post: (url, body) => request("POST", url, body),
+  put: (url, body) => request("PUT", url, body),
+  delete: (url) => request("DELETE", url),
+};
+
+// Many files expect "getMe" naming
+export const getMe = me;
+
+// Many files expect default export called "api"
+export default api;
