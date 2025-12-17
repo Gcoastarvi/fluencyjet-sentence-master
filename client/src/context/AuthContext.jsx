@@ -10,30 +10,7 @@ export function AuthProvider({ children }) {
     const raw = localStorage.getItem("user");
     return raw ? JSON.parse(raw) : null;
   });
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    let cancelled = false;
-
-    async function restoreSession() {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-
-        const res = await api.get("/auth/me");
-
-        if (!cancelled) {
-          if (res?.ok) setUser(res.user);
-          else setUser(null);
-        }
-      } catch (e) {
-        if (!cancelled) setUser(null);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
+  const [loading, setLoading] = useState(true);  
 
     restoreSession();
     return () => {
