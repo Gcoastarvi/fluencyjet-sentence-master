@@ -1,4 +1,3 @@
-// client/src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { loginUser, getMe } from "@/api/apiClient";
 
@@ -10,13 +9,7 @@ export function AuthProvider({ children }) {
     const raw = localStorage.getItem("user");
     return raw ? JSON.parse(raw) : null;
   });
-  const [loading, setLoading] = useState(true);  
-
-    restoreSession();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [loading, setLoading] = useState(true);
 
   function persist(nextToken, nextUser) {
     if (nextToken) localStorage.setItem("token", nextToken);
@@ -32,13 +25,17 @@ export function AuthProvider({ children }) {
     persist("", null);
   }
 
-  // ✅ Keep OLD signature support: login(email, password) returns backend response
   async function login(email, password) {
-    const res = await loginUser(email, password); // expects { ok:true, token, user?/email/plan... }
-    if (!res?.ok || !res?.token)
-      throw new Error(res?.message || "Login failed");
+    const res = await loginUser(email, password);
 
-    const nextUser = res.user || { email: res.email, plan: res.plan || "FREE" };
+    if (!res?.ok || !res?.token) {
+      throw new Error(res?.message || "Login failed");
+    }
+
+    const nextUser = res.user || {
+      email: res.email,
+      plan: res.plan || "FREE",
+    };
 
     setToken(res.token);
     setUser(nextUser);
@@ -47,36 +44,49 @@ export function AuthProvider({ children }) {
     return res;
   }
 
-  // ✅ Restore session on refresh
+  // ✅ RESTORE SESSION (THIS WAS BROKEN EARLIER)
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+
+    async function restoreSession() {
       try {
-        const stored = localStorage.getItem("token");
-        if (!stored) {
-          setLoading(false);
+        const storedToken = localStorage.getItem("token");
+        if (!storedToken) {
+          if (!cancelled) setLoading(false);
           return;
         }
 
-        // validate token + get latest plan
-        const me = await getMe(); // must succeed if token valid
-        if (me?.ok && me?.user) {
-          setToken(stored);
+        const me = await getMe();
+        if (!cancelled && me?.ok && me?.user) {
+          setToken(storedToken);
           setUser(me.user);
-          persist(stored, me.user);
+          persist(storedToken, me.user);
         } else {
           logout();
         }
-      } catch (e) {
+      } catch {
         logout();
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }
+
+    restoreSession();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value = useMemo(
-    () => ({ token, user, loading, login, logout, setUser, setToken }),
+    () => ({
+      token,
+      user,
+      loading,
+      login,
+      logout,
+      setUser,
+      setToken,
+    }),
     [token, user, loading],
   );
 
