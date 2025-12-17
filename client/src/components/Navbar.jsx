@@ -5,6 +5,19 @@ export default function Navbar() {
   const { user, logout, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  // ✅ LOADING GUARD — THIS IS THE KEY
+  if (loading) {
+    return (
+      <nav className="flex items-center px-6 py-4 shadow-sm bg-white">
+        <span className="text-purple-700 font-bold text-xl">
+          FluencyJet Sentence Master
+        </span>
+      </nav>
+    );
+  }
+
+  const isAdmin = user?.role === "ADMIN";
+
   function handleLoginClick() {
     navigate("/login");
   }
@@ -13,8 +26,6 @@ export default function Navbar() {
     logout();
     navigate("/", { replace: true });
   }
-
-  const isAdmin = user?.role === "ADMIN";
 
   return (
     <nav className="flex items-center justify-between px-6 py-4 shadow-sm bg-white">
@@ -25,7 +36,7 @@ export default function Navbar() {
 
       {/* Navigation */}
       <div className="flex gap-6 text-lg items-center">
-        {!loading && !isAuthenticated && (
+        {!isAuthenticated && (
           <>
             <Link to="/practice" className="hover:text-purple-600">
               Free Quiz
@@ -39,14 +50,14 @@ export default function Navbar() {
           </>
         )}
 
-        {!loading && isAuthenticated && (
+        {isAuthenticated && (
           <>
             <Link to="/dashboard">Dashboard</Link>
             <Link to="/lessons">Lessons</Link>
             <Link to="/practice">Practice</Link>
             <Link to="/leaderboard">Leaderboard</Link>
 
-            {/* Upgrade CTA */}
+            {/* Upgrade CTA (launch-safe even if paywall is removed) */}
             <Link
               to="/paywall"
               className="px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold"
@@ -54,7 +65,6 @@ export default function Navbar() {
               Upgrade
             </Link>
 
-            {/* Admin only */}
             {isAdmin && <Link to="/admin">Admin</Link>}
 
             <button
