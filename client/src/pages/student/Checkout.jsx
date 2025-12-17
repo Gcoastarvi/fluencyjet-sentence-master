@@ -28,18 +28,16 @@ export default function Checkout() {
     );
   }
 
-  function simulateSuccess() {
-    async function simulateSuccess() {
-      try {
-        await updateMyPlan(selectedPlan);
-        setPlan(selectedPlan);
-        localStorage.setItem("fj_plan", selectedPlan);
-        alert(`✅ Upgraded to ${selectedPlan}`);
-        navigate("/dashboard");
-      } catch (err) {
-        alert("Upgrade failed");
-        console.error(err);
-      }
+  async function simulateSuccess() {
+    try {
+      await updateMyPlan(selectedPlan);
+      setPlan(selectedPlan);
+      localStorage.setItem("fj_plan", selectedPlan);
+      alert(`✅ Upgraded to ${selectedPlan}`);
+      navigate("/dashboard");
+    } catch (err) {
+      alert("Upgrade failed");
+      console.error(err);
     }
   }
 
