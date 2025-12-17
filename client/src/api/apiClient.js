@@ -50,6 +50,16 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
 
   return data;
 }
+// ✅ Default client so components can do: import api from "@/api/apiClient"
+const api = {
+  get: (path, opts = {}) => request(path, { ...opts, method: "GET" }),
+  post: (path, body, opts = {}) =>
+    request(path, { ...opts, method: "POST", body }),
+  patch: (path, body, opts = {}) =>
+    request(path, { ...opts, method: "PATCH", body }),
+};
+
+export default api;
 
 export function signupUser({ name, email, password }) {
   return request("/auth/signup", {
