@@ -68,6 +68,7 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/paywall" element={<Paywall />} />
 
             {/* Student-protected */}
             <Route
@@ -125,14 +126,6 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <TypingQuiz />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/paywall"
-              element={
-                <ProtectedRoute>
-                  <Paywall />
                 </ProtectedRoute>
               }
             />
