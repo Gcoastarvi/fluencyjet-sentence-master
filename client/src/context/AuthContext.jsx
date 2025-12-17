@@ -1,47 +1,80 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import api from "@/api/apiClient";
+// client/src/context/AuthContext.jsx
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { loginUser, getMe } from "@/api/apiClient";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(() => localStorage.getItem("token") || "");
+  const [user, setUser] = useState(() => {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
+  function persist(nextToken, nextUser) {
+    if (nextToken) localStorage.setItem("token", nextToken);
+    else localStorage.removeItem("token");
 
-    getMe()
-      .then((res) => {
-        if (res?.ok === false) {
-          setUser(null);
-        } else {
-          setUser(res.user || res);
+    if (nextUser) localStorage.setItem("user", JSON.stringify(nextUser));
+    else localStorage.removeItem("user");
+  }
+
+  function logout() {
+    setToken("");
+    setUser(null);
+    persist("", null);
+  }
+
+  // ✅ Keep OLD signature support: login(email, password) returns backend response
+  async function login(email, password) {
+    const res = await loginUser(email, password); // expects { ok:true, token, user?/email/plan... }
+    if (!res?.ok || !res?.token)
+      throw new Error(res?.message || "Login failed");
+
+    const nextUser = res.user || { email: res.email, plan: res.plan || "FREE" };
+
+    setToken(res.token);
+    setUser(nextUser);
+    persist(res.token, nextUser);
+
+    return res;
+  }
+
+  // ✅ Restore session on refresh
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = localStorage.getItem("token");
+        if (!stored) {
+          setLoading(false);
+          return;
         }
-      })
-      .catch(() => {
-        // IMPORTANT: do NOT redirect here
-        setUser(null);
-      })
-      .finally(() => {
+
+        // validate token + get latest plan
+        const me = await getMe(); // must succeed if token valid
+        if (me?.ok && me?.user) {
+          setToken(stored);
+          setUser(me.user);
+          persist(stored, me.user);
+        } else {
+          logout();
+        }
+      } catch (e) {
+        logout();
+      } finally {
         setLoading(false);
-      });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const logout = () => {
-    localStorage.removeItem("fj_token");
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({ token, user, loading, login, logout, setUser, setToken }),
+    [token, user, loading],
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
