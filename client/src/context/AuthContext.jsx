@@ -1,87 +1,60 @@
-// client/src/context/AuthContext.jsx
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { loginUser, me as meApi } from "../api/apiClient"; // ✅ correct path
+import { createContext, useContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "@/api/apiClient";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // { email, plan }
-  const [token, setToken] = useState(null); // jwt string
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // Boot session from localStorage
-  useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    if (!savedToken) {
+  async function loadSession() {
+    const token = localStorage.getItem("fj_token");
+    if (!token) {
       setLoading(false);
       return;
     }
 
-    // ✅ me() reads token from localStorage (apiClient adds Authorization header)
-    meApi()
-      .then((res) => {
-        // res should look like: { ok:true, email, plan }
-        if (res?.ok) {
-          setToken(savedToken);
-          setUser({ email: res.email, plan: res.plan || "FREE" });
-        } else {
-          localStorage.removeItem("token");
-          setToken(null);
-          setUser(null);
-        }
-      })
-      .catch(() => {
-        localStorage.removeItem("token");
-        setToken(null);
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  async function login(email, password) {
     try {
-      const res = await loginUser({ email, password });
-      if (!res?.ok || !res?.token) return { ok: false };
-
-      localStorage.setItem("token", res.token);
-      setToken(res.token);
-      setUser({ email: res.email, plan: res.plan || "FREE" });
-
-      return { ok: true };
+      const res = await api.get("/auth/me");
+      setUser(res.user);
     } catch (err) {
-      console.error("Login failed", err);
-      return { ok: false };
+      localStorage.removeItem("fj_token");
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
   }
 
-  function logout() {
-    localStorage.removeItem("token");
-    setUser(null);
-    setToken(null);
+  useEffect(() => {
+    loadSession();
+  }, []);
+
+  function login(token, user) {
+    localStorage.setItem("fj_token", token);
+    setUser(user);
   }
 
-  // ✅ Needed for Paywall.jsx (you currently do const { plan, setPlan } = useAuth())
-  const plan = user?.plan || "FREE";
-  const setPlan = (nextPlan) =>
-    setUser((u) =>
-      u ? { ...u, plan: nextPlan } : { email: "", plan: nextPlan },
-    );
+  function logout() {
+    localStorage.removeItem("fj_token");
+    setUser(null);
+    navigate("/login", { replace: true });
+  }
 
-  const value = useMemo(
-    () => ({
-      user,
-      token,
-      loading,
-      login,
-      logout,
-      isAuthenticated: !!user,
-      plan,
-      setPlan,
-    }),
-    [user, token, loading, plan],
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        loading,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

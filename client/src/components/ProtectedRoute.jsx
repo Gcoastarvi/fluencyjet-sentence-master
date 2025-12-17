@@ -1,21 +1,15 @@
 // client/src/components/ProtectedRoute.jsx
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
-  const location = useLocation();
+  const { isAuthenticated, loading } = useAuth();
 
-  // Still verifying auth with server
-  if (loading) {
-    return <div className="p-6 text-center">Loading...</div>;
+  if (loading) return null; // or spinner
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
   }
 
-  // Not authenticated → redirect to login
-  if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
-  }
-
-  // Authenticated
   return children;
 }
