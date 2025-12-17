@@ -1,6 +1,8 @@
 // client/src/api/apiClient.js
 
-// Normalizes base URL so we ALWAYS end up with ".../api"
+// -----------------------------
+// Base URL normalization
+// -----------------------------
 function normalizeApiBase(raw) {
   const fallback = "http://localhost:5000";
   const base = (raw || fallback).replace(/\/$/, "");
@@ -8,15 +10,16 @@ function normalizeApiBase(raw) {
 }
 
 const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+console.log("[apiClient] Using API_BASE =", API_BASE);
 
-// Debug (helps you verify instantly)
-console.log("[apiclient] Using API_BASE =", API_BASE);
-
+// -----------------------------
+// Core request helper
+// -----------------------------
 function getToken() {
   return localStorage.getItem("token");
 }
 
-async function request(path, { method = "GET", body, headers = {} } = {}) {
+async function request(method, path, body) {
   const token = getToken();
 
   const res = await fetch(`${API_BASE}${path}`, {
@@ -24,44 +27,36 @@ async function request(path, { method = "GET", body, headers = {} } = {}) {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const contentType = res.headers.get("content-type") || "";
-  const isJson = contentType.includes("application/json");
-  const data = isJson
-    ? await res.json().catch(() => null)
-    : await res.text().catch(() => null);
+  const isJson = res.headers.get("content-type")?.includes("application/json");
+
+  const data = isJson ? await res.json() : null;
 
   if (!res.ok) {
-    const message =
-      (data && data.message) ||
-      (typeof data === "string" ? data : null) ||
-      `Request failed (${res.status})`;
-    throw new Error(message);
+    throw new Error(data?.message || "API request failed");
   }
 
   return data;
 }
 
-/** ✅ Default export (so `import api from ...` works) */
+// -----------------------------
+// Default API object
+// -----------------------------
 const api = {
-  get: (path) => request(path),
-  post: (path, body) => request(path, { method: "POST", body }),
-  put: (path, body) => request(path, { method: "PUT", body }),
-  del: (path) => request(path, { method: "DELETE" }),
+  get: (path) => request("GET", path),
+  post: (path, body) => request("POST", path, body),
+  put: (path, body) => request("PUT", path, body),
+  del: (path) => request("DELETE", path),
 };
 
 export default api;
 
-/** ✅ Named export (so `import { api } from ...` also works) */
-export { api };
-
-/** ---------------------------
- *  AUTH HELPERS (used by Login / Signup / AuthContext)
- * -------------------------- */
+// -----------------------------
+// AUTH
+// -----------------------------
 export const loginUser = (email, password) =>
   api.post("/auth/login", { email, password });
 
@@ -70,37 +65,20 @@ export const signupUser = (email, password) =>
 
 export const getMe = () => api.get("/auth/me");
 
-/** ---------------------------
- *  BILLING (matches your server/routes/billing.js)
- * -------------------------- */
+// -----------------------------
+// BILLING (Razorpay)
+// -----------------------------
 export const createOrder = (plan) =>
   api.post("/billing/create-order", { plan });
 
 export const verifyPayment = (payload) =>
   api.post("/billing/verify-payment", payload);
 
-/**
- * Backward-compat exports (to stop build failures in older pages)
- * Keep these until we refactor pages cleanly.
- */
+// -----------------------------
+// Compatibility exports
+// (to avoid touching many files now)
+// -----------------------------
 export const updateMyPlan = (plan) => createOrder(plan);
 
-/**
- * Admin page expects this name. Your backend route may differ,
- * but exporting it prevents build from failing.
- */
 export const updateUserPlan = (userId, plan) =>
   api.post(`/admin/users/${userId}/plan`, { plan });
-// --- Compatibility layer (so older/newer imports both work) ---
-export const api = {
-  get: (url) => request("GET", url),
-  post: (url, body) => request("POST", url, body),
-  put: (url, body) => request("PUT", url, body),
-  delete: (url) => request("DELETE", url),
-};
-
-// Many files expect "getMe" naming
-export const getMe = me;
-
-// Many files expect default export called "api"
-export default api;
