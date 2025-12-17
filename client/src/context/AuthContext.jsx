@@ -8,25 +8,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function restoreSession() {
-      const token = localStorage.getItem("fj_token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await api.get("/auth/me");
-        setUser(res.user);
-      } catch {
-        localStorage.removeItem("fj_token");
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
     }
 
-    restoreSession();
+    getMe()
+      .then((res) => {
+        if (res?.ok === false) {
+          setUser(null);
+        } else {
+          setUser(res.user || res);
+        }
+      })
+      .catch(() => {
+        // IMPORTANT: do NOT redirect here
+        setUser(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const logout = () => {
