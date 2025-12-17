@@ -67,8 +67,6 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/paywall" element={<Paywall />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/paywall" element={<Paywall />} />
 
             {/* Student-protected */}
             <Route
@@ -79,16 +77,16 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/lessons"
               element={
                 <ProtectedRoute>
-                  <PlanGate required="PRO">
-                    <Lessons />
-                  </PlanGate>
+                  <Lessons /> {/* Launch mode: no PlanGate */}
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/lessons/:lessonId"
               element={
@@ -97,6 +95,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/quiz/:lessonId"
               element={
@@ -105,6 +104,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/leaderboard"
               element={
@@ -113,6 +113,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/practice"
               element={
@@ -121,6 +122,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/typing-quiz"
               element={
@@ -129,7 +131,8 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            {/* Admin-protected */}
+
+            {/* Admin-protected (unchanged) */}
             <Route
               path="/admin"
               element={
@@ -138,6 +141,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/dashboard"
               element={
@@ -146,6 +150,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/lessons"
               element={
@@ -154,6 +159,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/lessons/new"
               element={
@@ -162,6 +168,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/lessons/:lessonId"
               element={
@@ -170,6 +177,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/quizzes"
               element={
@@ -178,6 +186,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/users"
               element={
@@ -186,6 +195,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/users/:userId"
               element={
@@ -194,6 +204,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/xp"
               element={
@@ -202,6 +213,7 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+
             <Route
               path="/admin/analytics"
               element={
