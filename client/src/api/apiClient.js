@@ -4,109 +4,38 @@ const API_BASE = `${import.meta.env.VITE_API_BASE_URL}/api`;
 
 console.log("[apiClient] Using API_BASE =", API_BASE);
 
-async function request(path, { method = "GET", body, headers = {} } = {}) {
-  const url = `${API_BASE}${path}`;
-  console.log("[apiClient] Request:", method, url, body);
-
+async function request(path, options = {}) {
   const token = localStorage.getItem("fj_token");
 
-  const res = await fetch(url, {
-    method,
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
+      ...(options.headers || {}),
     },
-    body: body ? JSON.stringify(body) : undefined,
   });
 
   const text = await res.text();
-  const contentType = res.headers.get("content-type") || "";
-
-  console.log("[apiClient] Raw response:", {
-    status: res.status,
-    contentType,
-    text,
-  });
-
   let data = null;
-  if (text) {
-    try {
-      data = JSON.parse(text);
-    } catch (err) {
-      console.error("[apiClient] JSON parse error:", err);
-      throw new Error("Server returned invalid response");
-    }
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    throw new Error("Invalid JSON from server");
   }
 
-  if (!res.ok || (data && data.ok === false)) {
-    if (data?.code === "XP_CAP_REACHED") {
-      const err = new Error("XP cap reached");
-      err.code = "XP_CAP_REACHED";
-      throw err;
-    }
-    throw new Error((data && data.message) || "Request failed");
+  if (!res.ok) {
+    throw new Error(data?.message || "Request failed");
   }
 
   return data;
 }
-// ✅ Default client so components can do: import api from "@/api/apiClient"
+
 const api = {
-  get: (path, opts = {}) => request(path, { ...opts, method: "GET" }),
-  post: (path, body, opts = {}) =>
-    request(path, { ...opts, method: "POST", body }),
-  patch: (path, body, opts = {}) =>
-    request(path, { ...opts, method: "PATCH", body }),
+  get: (path) => request(path),
+  post: (path, body) =>
+    request(path, { method: "POST", body: JSON.stringify(body) }),
 };
 
 export default api;
-
-export function signupUser({ name, email, password }) {
-  return request("/auth/signup", {
-    method: "POST",
-    body: { name, email, password },
-  });
-}
-
-export function loginUser({ email, password }) {
-  return request("/auth/login", {
-    method: "POST",
-    body: { email, password },
-  });
-}
-
-export function me() {
-  return request("/auth/me", {
-    method: "GET",
-  });
-}
-
-export async function updateUserPlan(userId, plan, token) {
-  return request(`/admin/users/${userId}/plan`, {
-    method: "PATCH",
-    body: { plan },
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-}
-
-export async function updateMyPlan(plan, token) {
-  return request("/auth/users/plan", {
-    method: "PATCH",
-    body: { plan },
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-}
-// 💳 Create Razorpay order (PRO plan)
-export async function createOrder({ plan, amount }) {
-  return request("/billing/create-order", {
-    method: "POST",
-    body: { plan, amount },
-  });
-}
-// 🔐 Verify Razorpay payment
-export async function verifyPayment(payload) {
-  return request("/billing/verify-payment", {
-    method: "POST",
-    body: payload,
-  });
-}

@@ -128,7 +128,14 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
+            <Route
+              path="/paywall"
+              element={
+                <ProtectedRoute>
+                  <Paywall />
+                </ProtectedRoute>
+              }
+            />
             {/* Admin-protected */}
             <Route
               path="/admin"
