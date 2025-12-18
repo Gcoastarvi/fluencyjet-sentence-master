@@ -6,6 +6,7 @@ import cors from "cors";
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import billingRouter from "./routes/billing.js";
+import diagnosticRoutes from "./routes/diagnostic.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -30,6 +31,7 @@ app.use(
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/billing", billingRouter);
+app.use("/api/diagnostic", diagnosticRoutes);
 
 // --------------------
 app.listen(PORT, "0.0.0.0", () => {
