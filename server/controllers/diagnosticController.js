@@ -1,4 +1,6 @@
-import { prisma } from "../prisma/client.js";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 /**
  * GET /api/diagnostic/questions
