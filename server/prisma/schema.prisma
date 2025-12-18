@@ -1,5 +1,5 @@
 // ------------------------------------------------------
-// FluencyJet Prisma Schema (Phase-4 Stable)
+// FluencyJet Prisma Schema (Launch-Safe PLG Extension)
 // ------------------------------------------------------
 
 generator client {
@@ -12,7 +12,7 @@ datasource db {
 }
 
 // ------------------------------------------------------
-// 👤 USER MODEL
+// 👤 USER MODEL (UNCHANGED)
 // ------------------------------------------------------
 model User {
   id         Int      @id @default(autoincrement())
@@ -27,18 +27,17 @@ model User {
   created_at DateTime @default(now())
   isAdmin    Boolean  @default(false)
 
-  // 🔥 Needed for Admin.jsx filters
   lastActiveAt DateTime?
-
-  // 🔥 Needed for Admin.jsx XP sorting
   xpTotal Int @default(0)
 
-  // Relations
   progress    UserProgress?
   weekly      UserWeeklyTotals?
   xp_events   XpEvent[]
   user_badges UserBadge[]
   payments    Payment[]
+
+  // 🔥 PLG extension
+  profile UserProfile?
 }
 
 // ------------------------------------------------------
@@ -55,7 +54,7 @@ model XpEvent {
 }
 
 // ------------------------------------------------------
-// 📈 WEEKLY TOTALS (for leaderboard)
+// 📈 WEEKLY TOTALS
 // ------------------------------------------------------
 model UserWeeklyTotals {
   id         Int       @id @default(autoincrement())
@@ -96,7 +95,7 @@ model UserBadge {
 }
 
 // ------------------------------------------------------
-// 📘 LESSONS (Phase-4)
+// 📘 LESSONS
 // ------------------------------------------------------
 model Lesson {
   id          Int      @id @default(autoincrement())
@@ -108,29 +107,30 @@ model Lesson {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  // 👇 NEW: one-to-many relation to quizzes
   quizzes Quiz[]
 }
 
 // ------------------------------------------------------
-// 📝 TYPING QUIZ
+// 📝 QUIZ
 // ------------------------------------------------------
 model Quiz {
   id       Int    @id @default(autoincrement())
   lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   lessonId Int
 
-  // Basic question fields
   question String
-  type     String  @default("typing") // e.g. typing / mcq later
-  prompt   String? // optional instructions
-  data     Json? // extra config (options, etc.)
+  type     String  @default("typing")
+  prompt   String?
+  data     Json?
   xpReward Int     @default(50)
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 }
 
+// ------------------------------------------------------
+// 💳 PAYMENTS
+// ------------------------------------------------------
 model Payment {
   id String @id @default(cuid())
 
@@ -148,4 +148,146 @@ model Payment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ======================================================
+// 🚀 PLG FUNNEL — NEW MODELS (SAFE ADDITION)
+// ======================================================
+
+// ---------- Diagnostic Quiz ----------
+model DiagnosticQuestion {
+  id         String      @id @default(uuid())
+  isActive   Boolean     @default(true)
+  type       QuizType
+  promptEn  String?
+  promptTa  String?
+  payload   Json
+  tag       WeaknessTag
+  difficulty Int         @default(1)
+  createdAt DateTime    @default(now())
+}
+
+model DiagnosticAttempt {
+  id           String      @id @default(uuid())
+  anonId       String
+  userId       Int?
+  score        Int
+  level        UserLevel
+  weaknessTags String[]
+  answers      Json
+  createdAt    DateTime    @default(now())
+}
+
+// ---------- User Profile ----------
+model UserProfile {
+  userId        Int        @id
+  level         UserLevel
+  weaknessTags  String[]
+  webinarStatus WebinarStatus @default(NOT_SHOWN)
+  planStatus    PlanStatus    @default(FREE)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ---------- Practice Path ----------
+model PracticeDay {
+  id        String     @id @default(uuid())
+  level     UserLevel
+  dayNumber Int
+  titleEn  String
+  titleTa  String
+  isActive Boolean    @default(true)
+
+  exercises PracticeExercise[]
+}
+
+model PracticeExercise {
+  id            String        @id @default(uuid())
+  practiceDayId String
+  type          ExerciseType
+  promptTa      String
+  hintTa        String?
+  structureEn   String?
+  expected      Json
+  xp            Int           @default(50)
+  orderIndex    Int
+
+  practiceDay PracticeDay @relation(fields: [practiceDayId], references: [id])
+}
+
+model UserDayProgress {
+  id          String     @id @default(uuid())
+  userId      Int
+  level       UserLevel
+  dayNumber   Int
+  completed   Boolean    @default(false)
+  xpEarned    Int        @default(0)
+  completedAt DateTime?
+}
+
+// ---------- Automation ----------
+model AutomationEvent {
+  id        String           @id @default(uuid())
+  userId    Int
+  eventType AutomationType
+  status    AutomationStatus @default(PENDING)
+  payload   Json?
+  createdAt DateTime         @default(now())
+  sentAt    DateTime?
+}
+
+// ------------------------------------------------------
+// 🔐 ENUMS
+// ------------------------------------------------------
+enum QuizType {
+  FILL_BLANK
+  ORDERING
+  TA_TRANSLATION
+  ERROR_SPOTTING
+}
+
+enum WeaknessTag {
+  grammar
+  word_order
+  translation
+  sentence_flow
+  confidence
+}
+
+enum UserLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum WebinarStatus {
+  NOT_SHOWN
+  SHOWN
+  REGISTERED
+  ATTENDED
+}
+
+enum PlanStatus {
+  FREE
+  PAID
+}
+
+enum ExerciseType {
+  MAKE_SENTENCE
+  FILL_BLANK
+  DRAG_DROP
+  TRANSLATE
+}
+
+enum AutomationType {
+  DAY3_WEBINAR
+  DAY5_UPGRADE
+}
+
+enum AutomationStatus {
+  PENDING
+  SENT
+  DONE
 }
