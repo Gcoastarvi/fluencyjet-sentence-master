@@ -1,3 +1,4 @@
+// server/prisma/seed/practiceSeed.js
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -5,11 +6,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Seeding practice days & exercises...");
 
-  // Clean existing data (safe now that tables exist)
-  await prisma.practiceExercise.deleteMany();
-  await prisma.practiceDay.deleteMany();
+  /* -------------------------
+     BEGINNER — DAY 1
+  -------------------------- */
 
-  // --- BEGINNER DAY 1 ---
   const day1Beginner = await prisma.practiceDay.create({
     data: {
       level: "BEGINNER",
@@ -25,22 +25,27 @@ async function main() {
       {
         practiceDayId: day1Beginner.id,
         type: "FILL_BLANK",
-        promptEn: "I ___ a student.",
         promptTa: "நான் ___ மாணவன்.",
-        expected: "am",
-        xpReward: 20,
+        structureEn: "I ___ a student.",
+        expected: { answer: "am" },
+        xp: 20,
+        orderIndex: 0,
       },
       {
         practiceDayId: day1Beginner.id,
         type: "TRANSLATION",
         promptTa: "நான் தினமும் ஆங்கிலம் பயிற்சி செய்கிறேன்",
-        expected: "I practice English every day",
-        xpReward: 30,
+        expected: { answer: "I practice English every day" },
+        xp: 30,
+        orderIndex: 1,
       },
     ],
   });
 
-  // --- INTERMEDIATE DAY 1 ---
+  /* -------------------------
+     INTERMEDIATE — DAY 1
+  -------------------------- */
+
   const day1Intermediate = await prisma.practiceDay.create({
     data: {
       level: "INTERMEDIATE",
@@ -55,10 +60,11 @@ async function main() {
     data: [
       {
         practiceDayId: day1Intermediate.id,
-        type: "REORDER",
-        promptEn: "to / English / want / speak / I",
-        answer: "I want to speak English",
-        xpReward: 30,
+        type: "TRANSLATION",
+        promptTa: "அவன் அவளை நேற்று சந்தித்தான்",
+        expected: { answer: "He met her yesterday" },
+        xp: 30,
+        orderIndex: 0,
       },
     ],
   });
