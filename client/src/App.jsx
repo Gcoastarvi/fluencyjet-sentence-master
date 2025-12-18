@@ -67,6 +67,8 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/paywall" element={<Paywall />} />
+            <Route path="/diagnostic" element={<DiagnosticStart />} />
+            <Route path="/diagnostic/result" element={<DiagnosticResult />} />
 
             {/* Student-protected */}
             <Route
