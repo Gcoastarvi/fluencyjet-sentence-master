@@ -6,7 +6,7 @@ import {
 
 const router = express.Router();
 
-router.get("/questions", getDiagnosticQuestions);
+router.get("/quiz", getDiagnosticQuestions);
 router.post("/submit", submitDiagnostic);
 
 export default router;
