@@ -1,40 +1,46 @@
 // server/controllers/diagnosticController.js
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "../db/client.js";
 
 /**
  * GET /api/diagnostic/quiz
- * Returns the active diagnostic quiz + questions
+ * Public endpoint – no auth
+ * Returns diagnostic questions stored in Quiz table (type = "DIAGNOSTIC")
  */
 export async function getDiagnosticQuiz(req, res) {
   try {
-    const quiz = await prisma.quiz.findFirst({
-      where: { type: "DIAGNOSTIC", isActive: true },
-    });
-
-    if (!quiz) {
-      return res
-        .status(404)
-        .json({ ok: false, message: "No active diagnostic quiz found" });
-    }
-
-    const questions = await prisma.diagnosticQuestion.findMany({
-      where: { quizId: quiz.id },
-      // no orderBy unless your schema has a field for it
+    const rows = await prisma.quiz.findMany({
+      where: { type: "DIAGNOSTIC" }, // ✅ no isActive (it doesn't exist)
+      orderBy: { id: "asc" },
       select: {
         id: true,
-        questionText: true,
-        level: true,
-        skillTag: true,
+        type: true,
+        question: true,
+        prompt: true,
+        data: true,
+        xpReward: true,
       },
     });
 
-    return res.json({
-      ok: true,
-      quiz: { id: quiz.id, title: quiz.title },
-      questions,
-    });
+    if (!rows.length) {
+      return res.status(404).json({
+        ok: false,
+        message:
+          "No diagnostic questions seeded (Quiz.type='DIAGNOSTIC' is empty)",
+      });
+    }
+
+    const questions = rows.map((q) => ({
+      questionId: q.id,
+      type: q.type,
+      question: q.question,
+      prompt: q.prompt,
+      // optional fields if you store them inside `data`
+      options: q.data?.options || null,
+      tag: q.data?.tag || null,
+      difficulty: q.data?.difficulty || null,
+    }));
+
+    return res.json({ ok: true, questions });
   } catch (err) {
     console.error("❌ getDiagnosticQuiz error:", err);
     return res.status(500).json({
@@ -47,54 +53,53 @@ export async function getDiagnosticQuiz(req, res) {
 
 /**
  * POST /api/diagnostic/submit
- * Body: { quizId, answers: [{ questionId, answer }] }
+ * body: { answers: [{ questionId, answer }], anonId? }
+ * Public endpoint – no auth
  */
 export async function submitDiagnostic(req, res) {
   try {
-    const { quizId, answers } = req.body;
-
-    if (!quizId || !Array.isArray(answers) || answers.length === 0) {
+    const { answers } = req.body || {};
+    if (!Array.isArray(answers) || answers.length === 0) {
       return res.status(400).json({ ok: false, message: "Invalid payload" });
     }
 
-    const questionIds = answers.map((a) => a.questionId);
+    const ids = answers.map((a) => a.questionId).filter(Boolean);
 
-    const questions = await prisma.diagnosticQuestion.findMany({
-      where: { id: { in: questionIds }, quizId },
-      select: { id: true, correctAnswer: true, skillTag: true },
+    const rows = await prisma.quiz.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, data: true },
     });
 
-    // map for quick lookup
-    const qMap = new Map(questions.map((q) => [q.id, q]));
+    // Build lookup
+    const byId = new Map(rows.map((r) => [r.id, r]));
 
     let score = 0;
-    const weaknessCount = {}; // { grammar: 2, tense: 1, ... }
+    const weaknesses = new Set();
 
     for (const a of answers) {
-      const q = qMap.get(a.questionId);
-      if (!q) continue;
+      const row = byId.get(a.questionId);
+      if (!row) continue;
 
-      const userAns = String(a.answer ?? "").trim();
-      const correct = String(q.correctAnswer ?? "").trim();
+      const correct =
+        row.data?.correctAnswer ??
+        row.data?.answer ??
+        row.data?.correct ??
+        null;
 
-      if (userAns.toLowerCase() === correct.toLowerCase()) {
-        score += 1;
-      } else {
-        const tag = q.skillTag || "unknown";
-        weaknessCount[tag] = (weaknessCount[tag] || 0) + 1;
-      }
+      if (a.answer === correct) score++;
+      else weaknesses.add(row.data?.tag || "sentence_flow");
     }
 
-    // 6 questions launch default (tweak anytime)
     let level = "BEGINNER";
-    if (score >= 4) level = "INTERMEDIATE";
-    if (score >= 5) level = "ADVANCED";
+    if (score >= 5) level = "INTERMEDIATE";
+    if (score >= 8) level = "ADVANCED";
 
-    const weaknesses = Object.entries(weaknessCount)
-      .sort((a, b) => b[1] - a[1])
-      .map(([tag]) => tag);
-
-    return res.json({ ok: true, score, level, weaknesses });
+    return res.json({
+      ok: true,
+      score,
+      level,
+      weaknesses: Array.from(weaknesses),
+    });
   } catch (err) {
     console.error("❌ submitDiagnostic error:", err);
     return res.status(500).json({

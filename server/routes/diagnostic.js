@@ -1,3 +1,4 @@
+// server/routes/diagnostic.js
 import express from "express";
 import {
   getDiagnosticQuiz,
@@ -7,7 +8,9 @@ import {
 const router = express.Router();
 
 router.get("/quiz", getDiagnosticQuiz);
-router.get("/questions", getDiagnosticQuiz); // alias
+// Optional alias (so both URLs work)
+router.get("/questions", getDiagnosticQuiz);
+
 router.post("/submit", submitDiagnostic);
 
 export default router;
