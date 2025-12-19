@@ -3,128 +3,144 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+async function pickAnyLessonId() {
+  // Try to find a “diagnostic-like” lesson first (if those fields exist),
+  // otherwise fall back to the first lesson in DB.
+  let lesson = null;
+
+  try {
+    lesson = await prisma.lesson.findFirst({
+      where: { title: { contains: "Diagnostic", mode: "insensitive" } },
+      select: { id: true },
+    });
+  } catch (e) {
+    // title field might not exist in your Lesson model — ignore
+  }
+
+  if (!lesson) {
+    try {
+      lesson = await prisma.lesson.findFirst({ select: { id: true } });
+    } catch (e) {
+      // If lesson model/table is not present, this will throw
+      lesson = null;
+    }
+  }
+
+  if (!lesson?.id) {
+    throw new Error(
+      "No Lesson found in DB. Seed/create at least one Lesson first (Quiz.lessonId is required).",
+    );
+  }
+
+  return lesson.id;
+}
+
 async function main() {
-  console.log("🌱 Seeding diagnostic lesson + questions...");
+  console.log("🌱 Seeding DIAGNOSTIC quizzes into Quiz table...");
 
-  // 1) Create/Upsert the Lesson (this is where slug belongs)
-  const lesson = await prisma.lesson.upsert({
-    where: { slug: "english-diagnostic" },
-    update: {
-      title: "English Diagnostic Quiz",
-      description: "Find your English level in 5 minutes",
-      difficulty: "beginner",
-      isLocked: false,
-    },
-    create: {
-      slug: "english-diagnostic",
-      title: "English Diagnostic Quiz",
-      description: "Find your English level in 5 minutes",
-      difficulty: "beginner",
-      isLocked: false,
-    },
-  });
+  const lessonId = await pickAnyLessonId();
+  console.log("✅ Using lessonId =", lessonId);
 
-  // 2) Make seeding idempotent: wipe old diagnostic questions for this lesson
-  await prisma.quiz.deleteMany({
-    where: { lessonId: lesson.id, type: "diagnostic" },
-  });
+  // Clean old DIAGNOSTIC rows to avoid duplicates
+  await prisma.quiz.deleteMany({ where: { type: "DIAGNOSTIC" } });
 
-  // 3) Insert 6 questions (Quiz rows = question rows in your schema)
-  const questions = [
+  const rows = [
     {
-      question: "Arrange the words to make a correct sentence: (I / to / go / school)",
-      prompt: "Sentence ordering",
+      lessonId,
+      type: "DIAGNOSTIC",
+      question: "Choose the correct word: I ___ a student.",
+      prompt: null,
       data: {
-        kind: "order",
-        correct: "I go to school",
-        tokens: ["I", "to", "go", "school"],
-        weaknessTags: ["word_order", "sentence_structure"],
-        levelHint: "BEGINNER",
+        kind: "MCQ",
+        options: ["am", "is", "are"],
+        correctAnswer: "am",
+        tag: "grammar",
       },
       xpReward: 0,
     },
     {
-      question: "Fill in the blank: She ___ to office every day.",
-      prompt: "Fill in the blank",
+      lessonId,
+      type: "DIAGNOSTIC",
+      question: "Choose the correct word: She ___ to school every day.",
+      prompt: null,
       data: {
-        kind: "fill_blank",
-        answer: "goes",
-        weaknessTags: ["grammar", "subject_verb_agreement"],
-        levelHint: "BEGINNER",
+        kind: "MCQ",
+        options: ["go", "goes", "going"],
+        correctAnswer: "goes",
+        tag: "grammar",
       },
       xpReward: 0,
     },
     {
-      question: "Choose the correct sentence: (Tamil mistake pattern)",
-      prompt: "Common mistake correction",
+      lessonId,
+      type: "DIAGNOSTIC",
+      question: "Pick the best sentence:",
+      prompt: null,
       data: {
-        kind: "mcq",
-        options: ["He is having two brothers", "He has two brothers"],
-        answer: "He has two brothers",
-        weaknessTags: ["grammar", "tamil_influence"],
-        levelHint: "BEGINNER",
-      },
-      xpReward: 0,
-    },
-    {
-      question: "Reorder to form a natural sentence: (Can / you / help / me / please)",
-      prompt: "Sentence ordering",
-      data: {
-        kind: "order",
-        correct: "Can you please help me",
-        tokens: ["Can", "you", "help", "me", "please"],
-        weaknessTags: ["fluency", "word_order"],
-        levelHint: "INTERMEDIATE",
-      },
-      xpReward: 0,
-    },
-    {
-      question: "Fill in the blank: If I ___ earlier, I would have caught the bus.",
-      prompt: "Grammar (conditional)",
-      data: {
-        kind: "fill_blank",
-        answer: "had left",
-        weaknessTags: ["grammar", "tense"],
-        levelHint: "INTERMEDIATE",
-      },
-      xpReward: 0,
-    },
-    {
-      question: "Pick the most natural sentence:",
-      prompt: "Fluency choice",
-      data: {
-        kind: "mcq",
+        kind: "MCQ",
         options: [
-          "I am knowing the answer",
-          "I know the answer",
-          "I knew the answer now",
+          "He don’t like coffee.",
+          "He doesn’t like coffee.",
+          "He not like coffee.",
         ],
-        answer: "I know the answer",
-        weaknessTags: ["grammar", "tamil_influence"],
-        levelHint: "INTERMEDIATE",
+        correctAnswer: "He doesn’t like coffee.",
+        tag: "grammar",
+      },
+      xpReward: 0,
+    },
+    {
+      lessonId,
+      type: "DIAGNOSTIC",
+      question: "Choose the correct preposition: I am good ___ English.",
+      prompt: null,
+      data: {
+        kind: "MCQ",
+        options: ["in", "at", "on"],
+        correctAnswer: "at",
+        tag: "prepositions",
+      },
+      xpReward: 0,
+    },
+    {
+      lessonId,
+      type: "DIAGNOSTIC",
+      question: "Choose the correct tense: Yesterday, I ___ a movie.",
+      prompt: null,
+      data: {
+        kind: "MCQ",
+        options: ["watch", "watched", "watching"],
+        correctAnswer: "watched",
+        tag: "tenses",
+      },
+      xpReward: 0,
+    },
+    {
+      lessonId,
+      type: "DIAGNOSTIC",
+      question: "Pick the correct question form:",
+      prompt: null,
+      data: {
+        kind: "MCQ",
+        options: [
+          "Where you are going?",
+          "Where are you going?",
+          "Where going you?",
+        ],
+        correctAnswer: "Where are you going?",
+        tag: "sentence_flow",
       },
       xpReward: 0,
     },
   ];
 
-  await prisma.quiz.createMany({
-    data: questions.map((q) => ({
-      lessonId: lesson.id,
-      question: q.question,
-      type: "diagnostic",
-      prompt: q.prompt,
-      data: q.data,
-      xpReward: q.xpReward ?? 0,
-    })),
-  });
-
-  console.log("✅ Diagnostic lesson + questions seeded");
+  const result = await prisma.quiz.createMany({ data: rows });
+  console.log("✅ DIAGNOSTIC quizzes seeded:", result.count);
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Diagnostic seed failed:", e);
-    process.exit(1);
+    console.error("❌ diagnosticSeed failed:", e);
+    process.exitCode = 1;
   })
   .finally(async () => {
     await prisma.$disconnect();
