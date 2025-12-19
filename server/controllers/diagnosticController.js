@@ -72,14 +72,18 @@ export async function submitDiagnostic(req, res) {
       },
     });
 
-    res.json({
+    return res.json({
       ok: true,
       score,
       level,
       weaknesses: Array.from(weaknesses),
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ ok: false, message: "Submission failed" });
+    console.error("❌ submitDiagnostic error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Submission failed",
+      error: err.message,
+    });
   }
 }
