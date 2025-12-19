@@ -22,6 +22,8 @@ import Practice from "./pages/student/Practice.jsx";
 import TypingQuiz from "./pages/student/TypingQuiz.jsx";
 import Paywall from "./pages/student/Paywall.jsx";
 import Checkout from "./pages/student/Checkout.jsx";
+import DiagnosticStart from "./pages/student/DiagnosticStart";
+import DiagnosticResult from "./pages/student/DiagnosticResult";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
