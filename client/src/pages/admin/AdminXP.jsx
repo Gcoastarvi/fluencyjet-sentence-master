@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminSidebar from "@/components/AdminSidebar";
-import { adminApi } from "../../api/apiClient";
+import * as adminApi from "../../api/adminApi";
 
 export default function AdminXP() {
   const [logs, setLogs] = useState([]);

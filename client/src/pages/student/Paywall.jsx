@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { request } from "@/api/apiClient";
+import { request } from "../../api/apiClient";
 
 /**
  * PAYWALL LOGIC (FINAL – CLEAN)

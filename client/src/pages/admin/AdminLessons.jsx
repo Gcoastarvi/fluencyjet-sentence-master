@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { adminApi } from "../../api/apiClient";
+import * as adminApi from "../../api/adminApi";
 import { useNavigate } from "react-router-dom";
 
 export default function AdminLessons() {

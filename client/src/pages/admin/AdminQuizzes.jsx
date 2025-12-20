@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { adminApi } from "../../api/apiClient";
+import * as adminApi from "../../api/adminApi";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
 
 export default function AdminQuizzes() {

@@ -277,3 +277,8 @@ export async function deleteStudent(studentId) {
     throw new Error("Failed to delete student.");
   }
 }
+import { request } from "./apiClient";
+
+export async function getLesson(id) {
+  return request(`/api/admin/lessons/${id}`);
+}

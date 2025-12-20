@@ -1,6 +1,6 @@
 // client/src/pages/admin/AdminLessonCreate.jsx
 import React, { useState } from "react";
-import { adminApi } from "../../api/apiClient";
+import * as adminApi from "../../api/adminApi";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
 
 const AdminLessonCreateInner = () => {
