@@ -1,87 +1,103 @@
 // client/src/api/apiClient.js
 
-// Always end up with ".../api"
+/**
+ * API base resolution:
+ * - If VITE_API_BASE_URL is empty => use same-origin "/api" (works only if backend is on same domain)
+ * - If VITE_API_BASE_URL is set => we normalize it to include "/api"
+ *   Example: https://xxx.up.railway.app  -> https://xxx.up.railway.app/api
+ *   Example: https://xxx.up.railway.app/api -> stays the same
+ */
+
 function normalizeApiBase(raw) {
-  const cleaned = (raw || "").trim().replace(/\/$/, "");
+  // Explicit empty string => same-origin
+  if (raw === "") return "/api";
 
-  // If VITE_API_BASE_URL is blank in Replit, use same-origin.
-  // This avoids CORS completely.
-  const base = cleaned || window.location.origin;
-
+  const fallback = "http://localhost:5000";
+  const base = (raw || fallback).replace(/\/+$/, ""); // trim trailing slashes
   return base.endsWith("/api") ? base : `${base}/api`;
 }
 
-const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+export const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+
+// Optional debug (helps you confirm where FE is pointing)
 console.log("[apiClient] Using API_BASE =", API_BASE);
 
-function getToken() {
-  // support both keys (you’ve used both historically)
-  return localStorage.getItem("fj_token") || localStorage.getItem("token");
+function getAuthToken() {
+  try {
+    return localStorage.getItem("token");
+  } catch {
+    return null;
+  }
 }
 
-async function request(path, { method = "GET", body, headers = {} } = {}) {
-  const token = getToken();
+/**
+ * request() supports BOTH styles:
+ * 1) request("GET", "/diagnostic/quiz")
+ * 2) request("/diagnostic/quiz", { method:"GET" })
+ */
+export async function request(methodOrPath, pathOrOptions, body = undefined, extraOptions = {}) {
+  let method;
+  let path;
+  let options;
 
-  const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-    credentials: "include",
-  });
-
-  const contentType = res.headers.get("content-type") || "";
-  const isJson = contentType.includes("application/json");
-  const data = isJson
-    ? await res.json().catch(() => null)
-    : await res.text().catch(() => null);
-
-  if (!res.ok) {
-    const message =
-      (data && data.message) ||
-      (typeof data === "string" ? data : null) ||
-      `Request failed (${res.status})`;
-    throw new Error(message);
+  // Style #2: request("/path", options)
+  if (typeof methodOrPath === "string" && methodOrPath.startsWith("/")) {
+    method = (pathOrOptions?.method || "GET").toUpperCase();
+    path = methodOrPath;
+    options = pathOrOptions || {};
+  } else {
+    // Style #1: request("GET", "/path", body, options)
+    method = String(methodOrPath || "GET").toUpperCase();
+    path = String(pathOrOptions || "");
+    options = extraOptions || {};
   }
 
-  return data;
+  const url = `${API_BASE}${path}`;
+
+  const token = getAuthToken();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const fetchOptions = {
+    method,
+    headers,
+    // IMPORTANT: do NOT set credentials unless you truly use cookies
+    // credentials: "include",
+    ...options,
+  };
+
+  if (body !== undefined && body !== null && method !== "GET") {
+    fetchOptions.body = typeof body === "string" ? body : JSON.stringify(body);
+  }
+
+  const res = await fetch(url, fetchOptions);
+
+  // Return JSON when possible, otherwise text
+  const contentType = res.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+
+  const payload = isJson ? await res.json().catch(() => null) : await res.text().catch(() => "");
+
+  if (!res.ok) {
+    // Throw something helpful
+    const msg =
+      (payload && payload.message) ||
+      (typeof payload === "string" && payload) ||
+      `Request failed: ${res.status}`;
+    throw new Error(msg);
+  }
+
+  return payload;
 }
 
-// Default client
 const api = {
-  get: (path) => request(path),
-  post: (path, body) => request(path, { method: "POST", body }),
-  patch: (path, body) => request(path, { method: "PATCH", body }),
-  put: (path, body) => request(path, { method: "PUT", body }),
-  del: (path) => request(path, { method: "DELETE" }),
+  get: (path, options) => request("GET", path, undefined, options),
+  post: (path, body, options) => request("POST", path, body, options),
+  put: (path, body, options) => request("PUT", path, body, options),
+  del: (path, options) => request("DELETE", path, undefined, options),
 };
 
 export default api;
-export { api };
-
-// Auth helpers
-export const loginUser = (email, password) =>
-  api.post("/auth/login", { email, password });
-export const signupUser = (name, email, password) =>
-  api.post("/auth/signup", { name, email, password });
-export const getMe = () => api.get("/auth/me");
-
-// Diagnostic helpers (use these from your Diagnostic page)
-export const getDiagnosticQuestions = () => api.get("/diagnostic/questions");
-export const submitDiagnostic = (answers) =>
-  api.post("/diagnostic/submit", { answers });
-
-// Billing
-export const createOrder = (plan, amount) =>
-  api.post("/billing/create-order", { plan, amount });
-export const verifyPayment = (payload) =>
-  api.post("/billing/verify-payment", payload);
-
-// Backward-compat names (so older imports don’t crash)
-export const updateMyPlan = (plan) => createOrder(plan);
-export const updateUserPlan = (userId, plan) =>
-  api.patch(`/admin/users/${userId}/plan`, { plan });
