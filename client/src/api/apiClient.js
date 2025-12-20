@@ -1,138 +1,87 @@
 // client/src/api/apiClient.js
 
-// -----------------------------
-// Detect Replit runtime
-// -----------------------------
-function isReplitHost() {
-  if (typeof window === "undefined") return false;
-  const host = window.location.hostname || "";
-  return (
-    host.endsWith(".replit.dev") ||
-    host.endsWith(".repl.co") ||
-    host.includes("spock.replit.dev")
-  );
-}
-
-// -----------------------------
-// Base URL normalization
-// -----------------------------
+// Always end up with ".../api"
 function normalizeApiBase(raw) {
-  const fallback = "http://localhost:5000";
-  const base = (raw || fallback).replace(/\/$/, "");
+  const cleaned = (raw || "").trim().replace(/\/$/, "");
+
+  // If VITE_API_BASE_URL is blank in Replit, use same-origin.
+  // This avoids CORS completely.
+  const base = cleaned || window.location.origin;
+
   return base.endsWith("/api") ? base : `${base}/api`;
 }
 
-// ✅ Key behavior:
-// - If running on Replit URL → use SAME ORIGIN API to avoid CORS
-// - Else → use VITE_API_BASE_URL (Railway)
-const API_BASE = isReplitHost()
-  ? `${window.location.origin}/api`
-  : normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
-
+const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
 console.log("[apiClient] Using API_BASE =", API_BASE);
 
-// -----------------------------
-// Token helper
-// -----------------------------
 function getToken() {
-  return localStorage.getItem("token");
+  // support both keys (you’ve used both historically)
+  return localStorage.getItem("fj_token") || localStorage.getItem("token");
 }
 
-// -----------------------------
-// Core JSON request helper (method/path/body)
-// -----------------------------
-async function apiRequest(method, path, body) {
+async function request(path, { method = "GET", body, headers = {} } = {}) {
   const token = getToken();
 
-  // Ensure path starts with /
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  const url = `${API_BASE}${cleanPath}`;
-
+  const url = `${API_BASE}${path}`;
   const res = await fetch(url, {
     method,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
+    credentials: "include",
   });
 
-  const isJson = res.headers.get("content-type")?.includes("application/json");
-  const data = isJson ? await res.json().catch(() => null) : null;
+  const contentType = res.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+  const data = isJson
+    ? await res.json().catch(() => null)
+    : await res.text().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(data?.message || `API request failed (${res.status})`);
+    const message =
+      (data && data.message) ||
+      (typeof data === "string" ? data : null) ||
+      `Request failed (${res.status})`;
+    throw new Error(message);
   }
 
   return data;
 }
 
-// -----------------------------
-// Default API object
-// -----------------------------
+// Default client
 const api = {
-  get: (path) => apiRequest("GET", path),
-  post: (path, body) => apiRequest("POST", path, body),
-  put: (path, body) => apiRequest("PUT", path, body),
-  del: (path) => apiRequest("DELETE", path),
+  get: (path) => request(path),
+  post: (path, body) => request(path, { method: "POST", body }),
+  patch: (path, body) => request(path, { method: "PATCH", body }),
+  put: (path, body) => request(path, { method: "PUT", body }),
+  del: (path) => request(path, { method: "DELETE" }),
 };
 
 export default api;
 export { api };
 
-// -----------------------------
-// Generic request() export (legacy imports like Paywall.jsx)
-// Signature: request("/path", { method, headers, body })
-// Automatically prefixes API_BASE if you pass a relative path.
-// -----------------------------
-export async function request(path, options = {}) {
-  const token = getToken();
-
-  const url =
-    path.startsWith("http://") || path.startsWith("https://")
-      ? path
-      : `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;
-
-  const headers = {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(options.headers || {}),
-  };
-
-  const res = await fetch(url, { ...options, headers });
-
-  const isJson = res.headers.get("content-type")?.includes("application/json");
-  const data = isJson ? await res.json().catch(() => ({})) : {};
-
-  if (!res.ok)
-    throw new Error(data?.message || `Request failed (${res.status})`);
-  return data;
-}
-
-// -----------------------------
-// AUTH
-// -----------------------------
+// Auth helpers
 export const loginUser = (email, password) =>
   api.post("/auth/login", { email, password });
-
-export const signupUser = (email, password) =>
-  api.post("/auth/signup", { email, password });
-
+export const signupUser = (name, email, password) =>
+  api.post("/auth/signup", { name, email, password });
 export const getMe = () => api.get("/auth/me");
 
-// -----------------------------
-// BILLING (Razorpay)
-// -----------------------------
-export const createOrder = (plan) =>
-  api.post("/billing/create-order", { plan });
+// Diagnostic helpers (use these from your Diagnostic page)
+export const getDiagnosticQuestions = () => api.get("/diagnostic/questions");
+export const submitDiagnostic = (answers) =>
+  api.post("/diagnostic/submit", { answers });
 
+// Billing
+export const createOrder = (plan, amount) =>
+  api.post("/billing/create-order", { plan, amount });
 export const verifyPayment = (payload) =>
   api.post("/billing/verify-payment", payload);
 
-// -----------------------------
-// Compatibility exports
-// -----------------------------
+// Backward-compat names (so older imports don’t crash)
 export const updateMyPlan = (plan) => createOrder(plan);
-
 export const updateUserPlan = (userId, plan) =>
-  api.post(`/admin/users/${userId}/plan`, { plan });
+  api.patch(`/admin/users/${userId}/plan`, { plan });
