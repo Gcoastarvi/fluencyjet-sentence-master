@@ -1,50 +1,34 @@
 // client/src/api/apiClient.js
 
 // -----------------------------
-// API base resolution
+// Detect Replit runtime
 // -----------------------------
-function normalizeApiBase(raw) {
-  // Allow "/api" (relative) or full URLs
-  const fallback = "/api";
-  const base = (raw && String(raw).trim()) ? String(raw).trim() : fallback;
-
-  // If it’s already a relative "/api" (or "/something"), keep it clean
-  if (base.startsWith("/")) {
-    return base.endsWith("/api") || base === "/api"
-      ? base.replace(/\/$/, "")
-      : `${base.replace(/\/$/, "")}/api`;
-  }
-
-  // Full URL
-  const noTrailing = base.replace(/\/$/, "");
-  return noTrailing.endsWith("/api") ? noTrailing : `${noTrailing}/api`;
-}
-
-function isReplitHost(hostname) {
+function isReplitHost() {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname || "";
   return (
-    hostname.endsWith(".replit.dev") ||
-    hostname.endsWith(".repl.co") ||
-    hostname.includes("replit.dev") ||
-    hostname.includes("repl.co")
+    host.endsWith(".replit.dev") ||
+    host.endsWith(".repl.co") ||
+    host.includes("spock.replit.dev")
   );
 }
 
-function resolveApiBase() {
-  // If we are in the browser, we can decide based on hostname
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-
-    // On Replit, prefer SAME-ORIGIN to avoid CORS
-    if (isReplitHost(host)) {
-      return "/api";
-    }
-  }
-
-  // Otherwise use env (Railway etc.)
-  return normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+// -----------------------------
+// Base URL normalization
+// -----------------------------
+function normalizeApiBase(raw) {
+  const fallback = "http://localhost:5000";
+  const base = (raw || fallback).replace(/\/$/, "");
+  return base.endsWith("/api") ? base : `${base}/api`;
 }
 
-export const API_BASE = resolveApiBase();
+// ✅ Key behavior:
+// - If running on Replit URL → use SAME ORIGIN API to avoid CORS
+// - Else → use VITE_API_BASE_URL (Railway)
+const API_BASE = isReplitHost()
+  ? `${window.location.origin}/api`
+  : normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+
 console.log("[apiClient] Using API_BASE =", API_BASE);
 
 // -----------------------------
@@ -55,15 +39,13 @@ function getToken() {
 }
 
 // -----------------------------
-// Core JSON request helper
+// Core JSON request helper (method/path/body)
 // -----------------------------
 async function apiRequest(method, path, body) {
   const token = getToken();
 
+  // Ensure path starts with /
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-
-  // If API_BASE is relative ("/api"), this becomes "/api/xxx"
-  // If API_BASE is absolute ("https://..../api"), this becomes "https://..../api/xxx"
   const url = `${API_BASE}${cleanPath}`;
 
   const res = await fetch(url, {
@@ -72,7 +54,7 @@ async function apiRequest(method, path, body) {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: body ? JSON.stringify(body) : undefined,
   });
 
   const isJson = res.headers.get("content-type")?.includes("application/json");
@@ -86,7 +68,7 @@ async function apiRequest(method, path, body) {
 }
 
 // -----------------------------
-// Default API object (used everywhere)
+// Default API object
 // -----------------------------
 const api = {
   get: (path) => apiRequest("GET", path),
@@ -99,10 +81,9 @@ export default api;
 export { api };
 
 // -----------------------------
-// Generic request() export (legacy)
+// Generic request() export (legacy imports like Paywall.jsx)
 // Signature: request("/path", { method, headers, body })
-// - If you pass a relative path, it prefixes API_BASE.
-// - If you pass full http(s) URL, it uses it as-is.
+// Automatically prefixes API_BASE if you pass a relative path.
 // -----------------------------
 export async function request(path, options = {}) {
   const token = getToken();
@@ -123,7 +104,8 @@ export async function request(path, options = {}) {
   const isJson = res.headers.get("content-type")?.includes("application/json");
   const data = isJson ? await res.json().catch(() => ({})) : {};
 
-  if (!res.ok) throw new Error(data?.message || `Request failed (${res.status})`);
+  if (!res.ok)
+    throw new Error(data?.message || `Request failed (${res.status})`);
   return data;
 }
 
@@ -148,7 +130,7 @@ export const verifyPayment = (payload) =>
   api.post("/billing/verify-payment", payload);
 
 // -----------------------------
-// Compatibility exports (don’t touch other files now)
+// Compatibility exports
 // -----------------------------
 export const updateMyPlan = (plan) => createOrder(plan);
 
