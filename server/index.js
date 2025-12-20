@@ -1,3 +1,6 @@
+cd ~/workspace
+
+cat > server/index.js <<'EOF'
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -109,3 +112,4 @@ app.listen(PORT, "0.0.0.0", () => {
     );
   }
 });
+EOF
