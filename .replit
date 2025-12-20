@@ -1,6 +1,6 @@
 modules = ["nodejs-22", "web"]
 
-run = "bash start-replit.sh"
+run = "npm run dev --prefix client"
 
 hidden = [
   ".config",
@@ -18,42 +18,29 @@ packages = ["railway", "postgresql_12", "nano"]
 
 [env]
 HOST = "0.0.0.0"
+PORT = "3000"
 
 [[ports]]
 localPort = 3000
 externalPort = 80
 
 [[ports]]
-localPort = 3001
-externalPort = 4200
-
-[[ports]]
-localPort = 3002
-externalPort = 5000
-
-[[ports]]
-localPort = 4173
-externalPort = 3003
-
-[[ports]]
-localPort = 5555
-externalPort = 3000
-
-[[ports]]
-localPort = 5556
-externalPort = 3001
-
-[[ports]]
-localPort = 5557
-externalPort = 3002
-
-[[ports]]
 localPort = 8080
+externalPort = 8080
 
 [workflows]
 
 [[workflows.workflow]]
-name = "Start Application"
+name = "Dev Frontend"
+mode = "sequential"
+author = 47616575
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev --prefix client"
+
+[[workflows.workflow]]
+name = "Production Server"
 mode = "sequential"
 author = 47616575
 

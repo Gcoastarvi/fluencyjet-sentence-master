@@ -1,15 +1,50 @@
 // client/src/api/apiClient.js
 
 // -----------------------------
-// Base URL normalization
+// API base resolution
 // -----------------------------
 function normalizeApiBase(raw) {
-  const fallback = "http://localhost:5000";
-  const base = (raw || fallback).replace(/\/$/, "");
-  return base.endsWith("/api") ? base : `${base}/api`;
+  // Allow "/api" (relative) or full URLs
+  const fallback = "/api";
+  const base = (raw && String(raw).trim()) ? String(raw).trim() : fallback;
+
+  // If it’s already a relative "/api" (or "/something"), keep it clean
+  if (base.startsWith("/")) {
+    return base.endsWith("/api") || base === "/api"
+      ? base.replace(/\/$/, "")
+      : `${base.replace(/\/$/, "")}/api`;
+  }
+
+  // Full URL
+  const noTrailing = base.replace(/\/$/, "");
+  return noTrailing.endsWith("/api") ? noTrailing : `${noTrailing}/api`;
 }
 
-const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+function isReplitHost(hostname) {
+  return (
+    hostname.endsWith(".replit.dev") ||
+    hostname.endsWith(".repl.co") ||
+    hostname.includes("replit.dev") ||
+    hostname.includes("repl.co")
+  );
+}
+
+function resolveApiBase() {
+  // If we are in the browser, we can decide based on hostname
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+
+    // On Replit, prefer SAME-ORIGIN to avoid CORS
+    if (isReplitHost(host)) {
+      return "/api";
+    }
+  }
+
+  // Otherwise use env (Railway etc.)
+  return normalizeApiBase(import.meta.env.VITE_API_BASE_URL);
+}
+
+export const API_BASE = resolveApiBase();
 console.log("[apiClient] Using API_BASE =", API_BASE);
 
 // -----------------------------
@@ -20,18 +55,24 @@ function getToken() {
 }
 
 // -----------------------------
-// Core JSON request helper (method/path/body)
+// Core JSON request helper
 // -----------------------------
 async function apiRequest(method, path, body) {
   const token = getToken();
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+  // If API_BASE is relative ("/api"), this becomes "/api/xxx"
+  // If API_BASE is absolute ("https://..../api"), this becomes "https://..../api/xxx"
+  const url = `${API_BASE}${cleanPath}`;
+
+  const res = await fetch(url, {
     method,
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: body ? JSON.stringify(body) : undefined,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
   });
 
   const isJson = res.headers.get("content-type")?.includes("application/json");
@@ -58,9 +99,10 @@ export default api;
 export { api };
 
 // -----------------------------
-// Generic request() export (for legacy imports like Paywall.jsx)
+// Generic request() export (legacy)
 // Signature: request("/path", { method, headers, body })
-// Automatically prefixes API_BASE if you pass a relative path.
+// - If you pass a relative path, it prefixes API_BASE.
+// - If you pass full http(s) URL, it uses it as-is.
 // -----------------------------
 export async function request(path, options = {}) {
   const token = getToken();
@@ -81,8 +123,7 @@ export async function request(path, options = {}) {
   const isJson = res.headers.get("content-type")?.includes("application/json");
   const data = isJson ? await res.json().catch(() => ({})) : {};
 
-  if (!res.ok)
-    throw new Error(data?.message || `Request failed (${res.status})`);
+  if (!res.ok) throw new Error(data?.message || `Request failed (${res.status})`);
   return data;
 }
 
