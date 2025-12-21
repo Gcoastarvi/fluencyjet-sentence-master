@@ -1,9 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ||
-  "https://fluencyjet-sentence-master-production.up.railway.app/api";
+import { api } from "@/api/apiClient";
 
 export default function DiagnosticStart() {
   const navigate = useNavigate();
@@ -16,48 +13,72 @@ export default function DiagnosticStart() {
   // answersMap: { [questionId]: selectedOption }
   const [answersMap, setAnswersMap] = useState({});
 
+  // --------------------------------------------------
+  // Load diagnostic quiz
+  // --------------------------------------------------
   useEffect(() => {
+    let alive = true;
+
     (async () => {
       try {
         setLoading(true);
         setErr("");
 
-        const res = await fetch(`${API_BASE}/diagnostic/quiz`);
-        const data = await res.json();
-
-        if (!res.ok || !data?.ok) {
-          throw new Error(data?.message || "Failed to load diagnostic quiz");
+        const res = await api.get("/diagnostic/quiz");
+        if (!res.ok) {
+          throw new Error(res.error || "Failed to load diagnostic quiz");
         }
 
-        setQuestions(data.questions || []);
+        // Support both shapes:
+        // 1) { questions: [...] }
+        // 2) [...]
+        const qs = Array.isArray(res.data)
+          ? res.data
+          : res.data?.questions || [];
+
+        if (!alive) return;
+        setQuestions(qs);
       } catch (e) {
+        if (!alive) return;
         setErr(e.message || "Failed to load diagnostic quiz");
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const q = questions[idx];
   const selected = q ? answersMap[q.questionId] : "";
 
   function selectOption(value) {
+    if (!q) return;
     setAnswersMap((prev) => ({ ...prev, [q.questionId]: value }));
   }
 
   function next() {
-    if (idx < questions.length - 1) setIdx((p) => p + 1);
+    if (idx < questions.length - 1) {
+      setIdx((p) => p + 1);
+    }
   }
 
   function back() {
-    if (idx > 0) setIdx((p) => p - 1);
+    if (idx > 0) {
+      setIdx((p) => p - 1);
+    }
   }
 
+  // --------------------------------------------------
+  // Submit diagnostic
+  // --------------------------------------------------
   async function submit() {
     try {
       setErr("");
 
-      // convert map -> array
+      // Convert map -> array
       const answers = Object.entries(answersMap).map(
         ([questionId, answer]) => ({
           questionId: Number(questionId),
@@ -75,33 +96,39 @@ export default function DiagnosticStart() {
         answers,
       };
 
-      const res = await fetch(`${API_BASE}/diagnostic/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.message || "Submission failed");
+      const res = await api.post("/diagnostic/submit", payload);
+      if (!res.ok) {
+        throw new Error(res.error || "Submission failed");
       }
 
-      // store result for result page
-      sessionStorage.setItem("diagnosticResult", JSON.stringify(data));
+      // Persist result for result page
+      sessionStorage.setItem("diagnosticResult", JSON.stringify(res.data));
+
       navigate("/diagnostic/result");
     } catch (e) {
       setErr(e.message || "Submission failed");
     }
   }
 
-  if (loading) return <div style={{ padding: 20 }}>Loading diagnostic…</div>;
-  if (err) return <div style={{ padding: 20, color: "red" }}>{err}</div>;
-  if (!q) return <div style={{ padding: 20 }}>No questions found.</div>;
+  // --------------------------------------------------
+  // Render states
+  // --------------------------------------------------
+  if (loading) {
+    return <div style={{ padding: 20 }}>Loading diagnostic…</div>;
+  }
+
+  if (err) {
+    return <div style={{ padding: 20, color: "red" }}>{err}</div>;
+  }
+
+  if (!q) {
+    return <div style={{ padding: 20 }}>No questions found.</div>;
+  }
 
   return (
     <div style={{ padding: 20, maxWidth: 760, margin: "0 auto" }}>
       <h2>Diagnostic Quiz</h2>
+
       <div style={{ marginTop: 10, opacity: 0.7 }}>
         Question {idx + 1} / {questions.length}
       </div>
