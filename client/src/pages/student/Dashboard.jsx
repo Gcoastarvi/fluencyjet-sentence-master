@@ -18,6 +18,9 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const { xpCapReached, plan } = useAuth();
 
+  const streak = Number(localStorage.getItem("fj_streak")) || 0;
+  const xp = Number(localStorage.getItem("fj_xp")) || 0;
+
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -85,6 +88,11 @@ export default function Dashboard() {
     100,
     Math.round((currentLevelXP / levelSpan) * 100),
   );
+
+  <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow mb-6">
+    <div className="text-orange-600 font-semibold">🔥 {streak}-day streak</div>
+    <div className="text-purple-600 font-semibold">⭐ {xp} XP</div>
+  </div>;
 
   // -----------------------
   // 🧩 Render

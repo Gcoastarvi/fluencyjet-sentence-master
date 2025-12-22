@@ -49,6 +49,10 @@ export default function SentencePractice() {
     Number(localStorage.getItem("fj_streak")) || 0,
   );
 
+  const [totalXP, setTotalXP] = useState(
+    Number(localStorage.getItem("fj_xp")) || 0,
+  );
+
   function getToday() {
     return new Date().toISOString().slice(0, 10);
   }
@@ -133,11 +137,15 @@ export default function SentencePractice() {
       const attemptNumber = attempts + 1;
       const xp = XP_BY_ATTEMPT[attemptNumber] || 0;
 
+      const newTotalXP = totalXP + xp;
+      localStorage.setItem("fj_xp", newTotalXP);
+      setTotalXP(newTotalXP);
+
       setEarnedXP(xp);
       setWrongIndexes([]);
       setStatus("correct");
 
-      updateDailyStreak(); // 🔥 ADD THIS LINE
+      updateDailyStreak();
 
       return;
     }
