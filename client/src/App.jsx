@@ -20,6 +20,7 @@ import Login from "./pages/student/Login.jsx";
 import Signup from "./pages/student/Signup.jsx";
 import Practice from "./pages/student/Practice.jsx";
 import TypingQuiz from "./pages/student/TypingQuiz.jsx";
+import SentencePractice from "./pages/student/SentencePractice.jsx";
 import Paywall from "./pages/student/Paywall.jsx";
 import Checkout from "./pages/student/Checkout.jsx";
 import DiagnosticStart from "./pages/student/DiagnosticStart";
@@ -71,6 +72,7 @@ export default function App() {
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/diagnostic" element={<DiagnosticStart />} />
             <Route path="/diagnostic/result" element={<DiagnosticResult />} />
+            <Route path="/practice/reorder" element={<SentencePractice />} />
 
             {/* Student-protected */}
             <Route
