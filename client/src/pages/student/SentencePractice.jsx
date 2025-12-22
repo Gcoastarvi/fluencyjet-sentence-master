@@ -45,6 +45,40 @@ export default function SentencePractice() {
   const [wrongIndexes, setWrongIndexes] = useState([]);
   const [earnedXP, setEarnedXP] = useState(0);
 
+  const [streak, setStreak] = useState(
+    Number(localStorage.getItem("fj_streak")) || 0,
+  );
+
+  function getToday() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function getYesterday() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function updateDailyStreak() {
+    const today = getToday();
+    const lastDate = localStorage.getItem("fj_last_practice_date");
+
+    let newStreak = 1;
+
+    if (lastDate === today) {
+      // already counted today
+      return;
+    }
+
+    if (lastDate === getYesterday()) {
+      newStreak = streak + 1;
+    }
+
+    localStorage.setItem("fj_streak", newStreak);
+    localStorage.setItem("fj_last_practice_date", today);
+    setStreak(newStreak);
+  }
+
   // Initialize question
   useEffect(() => {
     initQuiz();
@@ -102,6 +136,9 @@ export default function SentencePractice() {
       setEarnedXP(xp);
       setWrongIndexes([]);
       setStatus("correct");
+
+      updateDailyStreak(); // 🔥 ADD THIS LINE
+
       return;
     }
 
@@ -129,6 +166,10 @@ export default function SentencePractice() {
       <h1 className="text-2xl font-bold text-center mb-6">
         Build the sentence
       </h1>
+
+      <div className="flex justify-center items-center gap-2 mb-4 text-orange-600 font-semibold">
+        🔥 {streak}-day streak
+      </div>
 
       {/* Tamil Prompt */}
       <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 text-lg">
