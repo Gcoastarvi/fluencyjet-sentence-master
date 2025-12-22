@@ -89,11 +89,6 @@ export default function Dashboard() {
     Math.round((currentLevelXP / levelSpan) * 100),
   );
 
-  <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow mb-6">
-    <div className="text-orange-600 font-semibold">🔥 {streak}-day streak</div>
-    <div className="text-purple-600 font-semibold">⭐ {xp} XP</div>
-  </div>;
-
   // -----------------------
   // 🧩 Render
   // -----------------------
@@ -108,6 +103,35 @@ export default function Dashboard() {
           </p>
         </div>
       </header>
+      {/* 🔥 Streak + XP */}
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow mb-4">
+        <div className="text-orange-600 font-semibold">
+          🔥 {streak}-day streak
+        </div>
+        <div className="text-purple-600 font-semibold">
+          ⭐ {xp.toLocaleString("en-IN")} XP
+        </div>
+      </div>
+      {/* 📊 XP Progress Bar */}
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="flex justify-between mb-2 text-sm font-medium">
+          <span className="text-gray-700">Level {summary.level}</span>
+          <span className="text-gray-500">{levelPercent}%</span>
+        </div>
+
+        <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-purple-600 transition-all duration-500"
+            style={{ width: `${levelPercent}%` }}
+          />
+        </div>
+
+        <p className="text-xs text-gray-500 mt-2">
+          {currentLevelXP.toLocaleString("en-IN")} XP /
+          {levelSpan.toLocaleString("en-IN")} XP to next level
+        </p>
+      </div>
+
       {plan === "FREE" && (
         <div className="bg-yellow-50 border border-yellow-300 p-3 rounded mb-4 text-sm">
           ⚠️ You’re on the FREE plan. Daily XP is limited.
