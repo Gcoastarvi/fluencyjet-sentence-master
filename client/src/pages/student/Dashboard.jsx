@@ -35,6 +35,8 @@ export default function Dashboard() {
     pendingLessons: [],
     recentActivity: [],
   });
+  const [prevLevel, setPrevLevel] = useState(null);
+  const [showLevelUp, setShowLevelUp] = useState(false);
 
   // -----------------------
   // 🔄 Load Summary on mount
@@ -49,6 +51,8 @@ export default function Dashboard() {
           method: "GET",
         });
 
+        const newLevel = data.level ?? 1;
+
         setSummary({
           todayXP: data.todayXP ?? 0,
           yesterdayXP: data.yesterdayXP ?? 0,
@@ -56,13 +60,21 @@ export default function Dashboard() {
           lastWeekXP: data.lastWeekXP ?? 0,
           monthlyXP: data.monthlyXP ?? 0,
           totalXP: data.totalXP ?? 0,
-          level: data.level ?? 1,
+          level: newLevel,
           xpToNextLevel: data.xpToNextLevel ?? 0,
           streak: data.streak ?? 0,
           nextBadge: data.nextBadge ?? null,
           pendingLessons: data.pendingLessons ?? [],
           recentActivity: data.recentActivity ?? [],
         });
+
+        /* 🎉 Level-up detection */
+        if (prevLevel !== null && newLevel > prevLevel) {
+          setShowLevelUp(true);
+          setTimeout(() => setShowLevelUp(false), 2000);
+        }
+
+        setPrevLevel(newLevel);
       } catch (err) {
         console.error("Dashboard Load Error:", err);
         setError("Failed to load dashboard. Showing default values.");
@@ -112,6 +124,13 @@ export default function Dashboard() {
           ⭐ {xp.toLocaleString("en-IN")} XP
         </div>
       </div>
+      {/* 🎉 Level Up Celebration */}
+      {showLevelUp && (
+        <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center font-semibold animate-pulse">
+          🎉 Level Up! You reached Level {summary.level}
+        </div>
+      )}
+
       {/* 📊 XP Progress Bar */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
         <div className="flex justify-between mb-2 text-sm font-medium">
@@ -121,7 +140,11 @@ export default function Dashboard() {
 
         <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-purple-600 transition-all duration-500"
+            className={`h-full transition-all duration-500 ${
+              showLevelUp
+                ? "bg-pink-500 shadow-lg animate-pulse"
+                : "bg-purple-600"
+            }`}
             style={{ width: `${levelPercent}%` }}
           />
         </div>
