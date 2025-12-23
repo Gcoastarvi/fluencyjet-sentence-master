@@ -145,6 +145,24 @@ export default function Dashboard() {
             You earned <strong>{summary.todayXP} XP</strong> today. Keep the
             streak alive! 🔥
           </p>
+          <div className="mt-4">
+            <button
+              onClick={() => {
+                const last = JSON.parse(
+                  localStorage.getItem("fj_last_session"),
+                );
+
+                if (last?.practiceType === "reorder") {
+                  window.location.href = "/practice/reorder?resume=1";
+                } else {
+                  window.location.href = "/practice/reorder";
+                }
+              }}
+              className="px-6 py-2 rounded-full bg-purple-600 text-white font-semibold hover:bg-purple-700 transition"
+            >
+              ▶ Continue Practising
+            </button>
+          </div>
         </div>
       )}
 

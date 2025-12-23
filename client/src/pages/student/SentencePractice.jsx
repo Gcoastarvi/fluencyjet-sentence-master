@@ -126,6 +126,16 @@ export default function SentencePractice() {
       }
     }
   }
+  // 🔁 Smart Resume on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("resume") === "1") {
+      const last = JSON.parse(localStorage.getItem("fj_last_session"));
+      if (last?.questionIndex != null) {
+        setCurrentIndex(last.questionIndex);
+      }
+    }
+  }, []);
 
   // Initialize question
   useEffect(() => {
@@ -218,7 +228,6 @@ export default function SentencePractice() {
     // CORRECT
     if (incorrect.length === 0) {
       correctSoundRef.current?.play();
-      wrongSoundRef.current?.play();
 
       const attemptNumber = attempts + 1;
       const xp = XP_BY_ATTEMPT[attemptNumber] || 0;
@@ -234,8 +243,17 @@ export default function SentencePractice() {
 
       updateDailyStreak();
 
-      setTimeout(() => setShowXPToast(false), 1200);
+      // 💾 SMART RESUME SAVE (ADD HERE)
+      localStorage.setItem(
+        "fj_last_session",
+        JSON.stringify({
+          practiceType: "reorder",
+          questionIndex: currentIndex + 1,
+          timestamp: Date.now(),
+        }),
+      );
 
+      setTimeout(() => setShowXPToast(false), 1200);
       return;
     }
 
