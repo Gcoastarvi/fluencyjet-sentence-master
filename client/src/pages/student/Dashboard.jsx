@@ -42,6 +42,9 @@ export default function Dashboard() {
 
   const showSessionComplete =
     summary.todayXP > 0 && summary.recentActivity?.length > 0;
+  const lastSession = JSON.parse(localStorage.getItem("fj_last_session"));
+  const resumeQuestionNumber =
+    lastSession?.questionIndex != null ? lastSession.questionIndex + 1 : null;
 
   // -----------------------
   // 🔄 Load Summary on mount
@@ -145,6 +148,15 @@ export default function Dashboard() {
             You earned <strong>{summary.todayXP} XP</strong> today. Keep the
             streak alive! 🔥
           </p>
+          {resumeQuestionNumber && (
+            <div className="mt-2 text-sm text-purple-700 font-medium">
+              🔁 You left off at{" "}
+              <span className="font-semibold">
+                Question {resumeQuestionNumber}
+              </span>
+            </div>
+          )}
+
           <div className="mt-4">
             <button
               onClick={() => {
