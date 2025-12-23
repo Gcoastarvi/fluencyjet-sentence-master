@@ -73,7 +73,7 @@ export default function SentencePractice() {
     d.setDate(d.getDate() - 1);
     return d.toISOString().slice(0, 10);
   }
- 
+
   function updateDailyStreak() {
     const today = getToday();
     const lastDate = localStorage.getItem("fj_last_practice_date");
@@ -119,7 +119,7 @@ export default function SentencePractice() {
       return () => clearTimeout(timer);
     }
   }, [status]);
- 
+
   function initQuiz() {
     const shuffled = [...currentQuestion.correctOrder].sort(
       () => Math.random() - 0.5,
@@ -186,6 +186,7 @@ export default function SentencePractice() {
       }
     });
 
+    // CORRECT
     if (incorrect.length === 0) {
       const attemptNumber = attempts + 1;
       const xp = XP_BY_ATTEMPT[attemptNumber] || 0;
@@ -199,9 +200,11 @@ export default function SentencePractice() {
       setStatus("correct");
 
       updateDailyStreak();
+
       return;
     }
 
+    // WRONG
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
     setStatus("wrong");
