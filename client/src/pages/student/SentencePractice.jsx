@@ -28,16 +28,29 @@ const QUESTIONS = [
     ],
   },
   {
-    tamil: "அவன் தினமும் காலைல exercise பண்ணுறான்",
-    correctOrder: ["He", "does", "exercise", "every", "morning"],
+    tamil: "அவன் job கிடைக்க hard ஆக prepare பண்ணிட்டு இருக்கான்",
+    correctOrder: ["He", "is", "preparing", "hard", "to", "get", "a", "job"],
   },
   {
-    type: "FILL",
-    tamil: "அவள் தினமும் காலைல exercise பண்ணுறா",
-    sentence: "She ____ exercise every morning",
-    answer: "does",
-    options: ["do", "does", "doing"],
-    hint: "Use present tense for she/he/it",
+    tamil: "நான் English improve பண்ண daily practice பண்ணுறேன்",
+    correctOrder: ["I", "practice", "daily", "to", "improve", "my", "English"],
+  },
+  {
+    tamil: "அவர்கள் exam clear பண்ண confidence build பண்ணுறாங்க",
+    correctOrder: [
+      "They",
+      "are",
+      "building",
+      "confidence",
+      "to",
+      "clear",
+      "the",
+      "exam",
+    ],
+  },
+  {
+    tamil: "நீ fluency improve பண்ண slow ஆக start பண்ணலாம்",
+    correctOrder: ["You", "can", "start", "slowly", "to", "improve", "fluency"],
   },
 ];
 
@@ -222,12 +235,33 @@ export default function SentencePractice() {
     setWrongIndexes([]);
     setStatus("idle");
   }
+  if (currentIndex >= QUESTIONS.length) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold mb-4">🎉 Session Complete!</h1>
+        <p className="mb-4">Great job! You finished today’s practice.</p>
+
+        <button
+          className="bg-purple-600 text-white px-6 py-3 rounded-lg"
+          onClick={() => {
+            setCurrentIndex(0);
+            initQuiz();
+          }}
+        >
+          Practice Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-6">
       <h1 className="text-2xl font-bold text-center mb-6">
         Build the sentence
       </h1>
+      <div className="text-center text-sm text-gray-500 mb-3">
+        Question {currentIndex + 1} / {totalQuestions}
+      </div>
 
       <div className="flex justify-center items-center gap-2 mb-4 text-orange-600 font-semibold">
         🔥 {streak}-day streak
