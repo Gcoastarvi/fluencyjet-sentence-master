@@ -82,6 +82,16 @@ export default function SentencePractice() {
     localStorage.setItem("fj_last_practice_date", today);
     setStreak(newStreak);
   }
+  // 🏅 Weekly badge logic
+  if (newStreak % 7 === 0) {
+    const badges = JSON.parse(localStorage.getItem("fj_badges")) || [];
+    const badgeId = `week-${newStreak / 7}`;
+
+    if (!badges.includes(badgeId)) {
+      badges.push(badgeId);
+      localStorage.setItem("fj_badges", JSON.stringify(badges));
+    }
+  }
 
   // Initialize question
   useEffect(() => {

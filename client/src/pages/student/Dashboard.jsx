@@ -21,6 +21,8 @@ export default function Dashboard() {
   const streak = Number(localStorage.getItem("fj_streak")) || 0;
   const xp = Number(localStorage.getItem("fj_xp")) || 0;
 
+  const weeklyBadges = JSON.parse(localStorage.getItem("fj_badges")) || [];
+
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -183,6 +185,30 @@ export default function Dashboard() {
         <div className="fj-dashboard-loading">Loading your progress…</div>
       ) : (
         <>
+          {/* 🏅 Weekly Streak Badges */}
+          <div className="bg-white p-4 rounded-lg shadow mb-6">
+            <h3 className="text-lg font-semibold mb-3">
+              🏅 Weekly Streak Badges
+            </h3>
+
+            {weeklyBadges.length === 0 ? (
+              <p className="text-gray-500 text-sm">
+                Complete a 7-day streak to earn your first badge!
+              </p>
+            ) : (
+              <div className="flex gap-3 flex-wrap">
+                {weeklyBadges.map((badge) => (
+                  <div
+                    key={badge}
+                    className="px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium"
+                  >
+                    ⭐ Week {badge.replace("week-", "")}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Profile Box */}
           <section className="fj-dashboard-section">
             <div className="fj-card fj-profile-card">
