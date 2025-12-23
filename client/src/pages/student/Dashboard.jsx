@@ -40,6 +40,9 @@ export default function Dashboard() {
   const [prevLevel, setPrevLevel] = useState(null);
   const [showLevelUp, setShowLevelUp] = useState(false);
 
+  const showSessionComplete =
+    summary.todayXP > 0 && summary.recentActivity?.length > 0;
+
   // -----------------------
   // 🔄 Load Summary on mount
   // -----------------------
@@ -130,6 +133,18 @@ export default function Dashboard() {
       {showLevelUp && (
         <div className="mb-4 p-4 rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white text-center font-semibold animate-pulse">
           🎉 Level Up! You reached Level {summary.level}
+        </div>
+      )}
+      {/* ✅ Session Completion Card */}
+      {showSessionComplete && (
+        <div className="mb-6 p-5 rounded-xl bg-green-50 border border-green-300 text-center">
+          <h3 className="text-lg font-semibold text-green-700 mb-1">
+            ✅ Session Complete!
+          </h3>
+          <p className="text-sm text-green-600">
+            You earned <strong>{summary.todayXP} XP</strong> today. Keep the
+            streak alive! 🔥
+          </p>
         </div>
       )}
 
