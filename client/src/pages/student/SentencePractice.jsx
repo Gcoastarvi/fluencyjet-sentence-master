@@ -65,6 +65,7 @@ export default function SentencePractice() {
   const [showHint, setShowHint] = useState(false);
   const [wrongIndexes, setWrongIndexes] = useState([]);
   const [earnedXP, setEarnedXP] = useState(0);
+  const [showXPToast, setShowXPToast] = useState(false);
 
   const [selectedOption, setSelectedOption] = useState(null);
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -209,10 +210,13 @@ export default function SentencePractice() {
       setTotalXP(newTotalXP);
 
       setEarnedXP(xp);
+      setShowXPToast(true);
       setWrongIndexes([]);
       setStatus("correct");
 
       updateDailyStreak();
+
+      setTimeout(() => setShowXPToast(false), 1200);
 
       return;
     }
@@ -359,6 +363,11 @@ export default function SentencePractice() {
           >
             Try again
           </button>
+        </div>
+      )}
+      {showXPToast && (
+        <div className="fixed top-24 right-6 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce z-50">
+          +{earnedXP} XP ✨
         </div>
       )}
 
