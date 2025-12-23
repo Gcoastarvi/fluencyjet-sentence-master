@@ -31,6 +31,14 @@ const QUESTIONS = [
     tamil: "அவன் தினமும் காலைல exercise பண்ணுறான்",
     correctOrder: ["He", "does", "exercise", "every", "morning"],
   },
+  {
+    type: "FILL",
+    tamil: "அவள் தினமும் காலைல exercise பண்ணுறா",
+    sentence: "She ____ exercise every morning",
+    answer: "does",
+    options: ["do", "does", "doing"],
+    hint: "Use present tense for she/he/it",
+  },
 ];
 
 export default function SentencePractice() {
@@ -44,6 +52,9 @@ export default function SentencePractice() {
   const [showHint, setShowHint] = useState(false);
   const [wrongIndexes, setWrongIndexes] = useState([]);
   const [earnedXP, setEarnedXP] = useState(0);
+
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [typedAnswer, setTypedAnswer] = useState("");
 
   const [streak, setStreak] = useState(
     Number(localStorage.getItem("fj_streak")) || 0,
@@ -62,7 +73,7 @@ export default function SentencePractice() {
     d.setDate(d.getDate() - 1);
     return d.toISOString().slice(0, 10);
   }
-
+ 
   function updateDailyStreak() {
     const today = getToday();
     const lastDate = localStorage.getItem("fj_last_practice_date");
@@ -70,7 +81,6 @@ export default function SentencePractice() {
     let newStreak = 1;
 
     if (lastDate === today) {
-      // already counted today
       return;
     }
 
@@ -81,15 +91,16 @@ export default function SentencePractice() {
     localStorage.setItem("fj_streak", newStreak);
     localStorage.setItem("fj_last_practice_date", today);
     setStreak(newStreak);
-  }
-  // 🏅 Weekly badge logic
-  if (newStreak % 7 === 0) {
-    const badges = JSON.parse(localStorage.getItem("fj_badges")) || [];
-    const badgeId = `week-${newStreak / 7}`;
 
-    if (!badges.includes(badgeId)) {
-      badges.push(badgeId);
-      localStorage.setItem("fj_badges", JSON.stringify(badges));
+    // 🏅 Weekly badge logic (MOVED INSIDE)
+    if (newStreak % 7 === 0) {
+      const badges = JSON.parse(localStorage.getItem("fj_badges")) || [];
+      const badgeId = `week-${newStreak / 7}`;
+
+      if (!badges.includes(badgeId)) {
+        badges.push(badgeId);
+        localStorage.setItem("fj_badges", JSON.stringify(badges));
+      }
     }
   }
 
@@ -108,7 +119,7 @@ export default function SentencePractice() {
       return () => clearTimeout(timer);
     }
   }, [status]);
-
+ 
   function initQuiz() {
     const shuffled = [...currentQuestion.correctOrder].sort(
       () => Math.random() - 0.5,
@@ -120,6 +131,10 @@ export default function SentencePractice() {
     setShowHint(false);
     setWrongIndexes([]);
     setEarnedXP(0);
+
+    // reset FILL state (MOVED INSIDE)
+    setSelectedOption(null);
+    setTypedAnswer("");
   }
 
   function loadNextQuestion() {
@@ -132,8 +147,37 @@ export default function SentencePractice() {
     setAnswer((prev) => [...prev, word]);
     setTiles((prev) => prev.filter((w) => w !== word));
   }
-
   function checkAnswer() {
+    // 🧩 FILL-IN-THE-BLANK validation
+    if (currentQuestion.type === "FILL") {
+      const userAnswer = selectedOption || typedAnswer;
+
+      if (userAnswer === currentQuestion.answer) {
+        const attemptNumber = attempts + 1;
+        const xp = XP_BY_ATTEMPT[attemptNumber] || 0;
+
+        const newTotalXP = totalXP + xp;
+        localStorage.setItem("fj_xp", newTotalXP);
+        setTotalXP(newTotalXP);
+
+        setEarnedXP(xp);
+        setStatus("correct");
+        updateDailyStreak();
+        return;
+      } else {
+        const nextAttempts = attempts + 1;
+        setAttempts(nextAttempts);
+        setStatus("wrong");
+        setShowHint(true);
+
+        if (nextAttempts >= MAX_ATTEMPTS) {
+          setStatus("reveal");
+        }
+        return;
+      }
+    }
+
+    // ✅ REORDER validation (existing logic)
     const incorrect = [];
 
     answer.forEach((word, index) => {
@@ -142,7 +186,6 @@ export default function SentencePractice() {
       }
     });
 
-    // CORRECT
     if (incorrect.length === 0) {
       const attemptNumber = attempts + 1;
       const xp = XP_BY_ATTEMPT[attemptNumber] || 0;
@@ -156,11 +199,9 @@ export default function SentencePractice() {
       setStatus("correct");
 
       updateDailyStreak();
-
       return;
     }
 
-    // WRONG
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
     setStatus("wrong");
@@ -199,6 +240,34 @@ export default function SentencePractice() {
         <div className="bg-purple-100 text-purple-800 p-3 rounded mb-4">
           💡 Hint: Subject → Verb → Action
         </div>
+      )}
+      {/* 🧩 Fill in the Blank UI */}
+      {currentQuestion.type === "FILL" && (
+        <>
+          <div className="border-2 border-dashed rounded-lg p-4 mb-4 text-lg">
+            {currentQuestion.sentence.split("____")[0]}
+            <span className="inline-block min-w-[70px] mx-2 px-3 py-1 border-b-2 border-purple-600 text-center font-semibold">
+              {selectedOption || "____"}
+            </span>
+            {currentQuestion.sentence.split("____")[1]}
+          </div>
+
+          <div className="flex flex-wrap gap-3 mb-6">
+            {currentQuestion.options.map((opt) => (
+              <button
+                key={opt}
+                onClick={() => setSelectedOption(opt)}
+                className={`px-4 py-2 rounded-full border transition ${
+                  selectedOption === opt
+                    ? "bg-purple-600 text-white"
+                    : "bg-white"
+                }`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Answer Area */}
