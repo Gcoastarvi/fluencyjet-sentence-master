@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useRef } from "react";
 
 const MAX_ATTEMPTS = 3;
 
@@ -55,6 +56,10 @@ const QUESTIONS = [
 ];
 
 export default function SentencePractice() {
+  // 🔊 Sound effects (safe refs)
+  const correctSoundRef = useRef(null);
+  const wrongSoundRef = useRef(null);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentQuestion = QUESTIONS[currentIndex];
 
@@ -122,6 +127,12 @@ export default function SentencePractice() {
   useEffect(() => {
     initQuiz();
   }, [currentIndex]);
+
+  // 🔊 Initialize sound effects once
+  useEffect(() => {
+    correctSoundRef.current = new Audio("/sounds/correct.mp3");
+    wrongSoundRef.current = new Audio("/sounds/wrong.mp3");
+  }, []);
 
   // AUTO NEXT QUESTION
   useEffect(() => {
@@ -202,6 +213,9 @@ export default function SentencePractice() {
 
     // CORRECT
     if (incorrect.length === 0) {
+      correctSoundRef.current?.play();
+      wrongSoundRef.current?.play();
+
       const attemptNumber = attempts + 1;
       const xp = XP_BY_ATTEMPT[attemptNumber] || 0;
 
