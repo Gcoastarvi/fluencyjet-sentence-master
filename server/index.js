@@ -19,6 +19,42 @@ const PORT = process.env.PORT || 8080;
 // --------------------------------------------------
 app.use(express.json());
 app.use(cookieParser());
+const replitAllowlist = [
+  // Replit preview + prod
+  /\.replit\.dev$/,
+  /\.repl\.co$/,
+];
+
+const railwayAllowlist = [
+  "https://fluencyjet-sentence-master-production-de09.up.railway.app",
+];
+
+function isOriginAllowed(origin) {
+  if (!origin) return true; // allow curl / server-to-server
+
+  if (localhostAllowlist.includes(origin)) return true;
+  if (railwayAllowlist.includes(origin)) return true;
+
+  return replitAllowlist.some((regex) => regex.test(origin));
+}
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS blocked: " + origin));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
+
+// IMPORTANT: handle preflight
+app.options("*", cors());
 
 // --------------------------------------------------
 // CORS (dev-safe + Railway-safe + Replit-safe)
