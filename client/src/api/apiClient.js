@@ -108,26 +108,26 @@ export const api = {
   del: (path, options = {}) => request(path, { ...options, method: "DELETE" }),
 };
 
-// Auth helpers (stable names)
-// Auth helpers (stable names)
+// Auth helpers (FINAL – SAFE)
 export async function loginUser(email, password) {
   const res = await api.post("/auth/login", { email, password });
 
-  // Support BOTH possible shapes:
-  // A) wrapper: { ok: true, data: { ok:true, token:"..." } }
-  // B) raw:     { ok:true, token:"..." }
-  const token =
-    (res?.data && typeof res.data === "object" && res.data.token) ||
-    (res && typeof res === "object" && res.token);
+  // res = { ok, status, data }
+  if (!res.ok || !res.data || !res.data.token) {
+    throw new Error(res.data?.message || "Login failed");
+  }
 
-  const ok =
-    (typeof res?.ok === "boolean" && res.ok) ||
-    (res?.data && typeof res.data.ok === "boolean" && res.data.ok === true) ||
-    (res && typeof res.ok === "boolean" && res.ok === true);
+  // Persist token + user
+  setToken(res.data.token);
+  localStorage.setItem(
+    "user",
+    JSON.stringify({
+      email: res.data.email,
+      plan: res.data.plan || "FREE",
+    }),
+  );
 
-  if (ok && token) setToken(token);
-
-  return res;
+  return res.data;
 }
 
 export async function signupUser(payload) {
