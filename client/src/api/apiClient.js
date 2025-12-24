@@ -109,14 +109,23 @@ export const api = {
 };
 
 // Auth helpers (stable names)
+// Auth helpers (stable names)
 export async function loginUser(email, password) {
   const res = await api.post("/auth/login", { email, password });
 
-  if (res.ok && res.data && typeof res.data === "object") {
-    if (res.data.token) {
-      setToken(res.data.token);
-    }
-  }
+  // Support BOTH possible shapes:
+  // A) wrapper: { ok: true, data: { ok:true, token:"..." } }
+  // B) raw:     { ok:true, token:"..." }
+  const token =
+    (res?.data && typeof res.data === "object" && res.data.token) ||
+    (res && typeof res === "object" && res.token);
+
+  const ok =
+    (typeof res?.ok === "boolean" && res.ok) ||
+    (res?.data && typeof res.data.ok === "boolean" && res.data.ok === true) ||
+    (res && typeof res.ok === "boolean" && res.ok === true);
+
+  if (ok && token) setToken(token);
 
   return res;
 }
