@@ -1,34 +1,36 @@
-import express from "express";
-import cookieParser from "cookie-parser";
-import cors from "cors";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-// Routes
-import healthRouter from "./routes/health.js";
-import authRouter from "./routes/auth.js";
-import billingRouter from "./routes/billing.js";
-import diagnosticRoutes from "./routes/diagnostic.js";
-
-import { authMiddleware } from "./middleware/authMiddleware.js";
-
-const app = express();
-const PORT = process.env.PORT || 8080;
-
-// --------------------------------------------------
-// Core middleware
-// --------------------------------------------------
 app.use(express.json());
 app.use(cookieParser());
-// Public routes
-app.use("/api/health", healthRouter);
-app.use("/api/auth", authRouter);
 
-// 🔐 Apply auth middleware AFTER auth routes
+// CORS MUST be before routes
+const corsOptions = {
+  origin: (origin, cb) => {
+    // allow non-browser requests (curl/postman) that may have no Origin
+    if (!origin) return cb(null, true);
+
+    const allow =
+      envOrigins.length > 0
+        ? envOrigins.includes(origin)
+        : origin.startsWith("http://localhost:") ||
+          origin.includes(".replit.dev") ||
+          origin.includes(".repl.co") ||
+          origin.endsWith(".up.railway.app");
+
+    cb(null, allow);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // IMPORTANT for preflight
+
+// Auth middleware must be before routers that use authRequired
 app.use(authMiddleware);
 
-// Protected routes
+// Routes AFTER cors + authMiddleware
+app.use("/api/health", healthRouter);
+app.use("/api/auth", authRouter);
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
 
