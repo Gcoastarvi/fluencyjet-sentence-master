@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRef } from "react";
 
-// 🔊 Sound refs (safe)
-const correctSoundRef = useRef(null);
-const wrongSoundRef = useRef(null);
-
 const MAX_ATTEMPTS = 3;
 
 const XP_BY_ATTEMPT = {
