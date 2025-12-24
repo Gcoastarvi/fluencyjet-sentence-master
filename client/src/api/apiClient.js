@@ -111,10 +111,13 @@ export const api = {
 // Auth helpers (stable names)
 export async function loginUser(email, password) {
   const res = await api.post("/auth/login", { email, password });
-  // If backend returns { token }, persist it.
-  if (res.ok && res.data && typeof res.data === "object" && res.data.token) {
-    setToken(res.data.token);
+
+  if (res.ok && res.data && typeof res.data === "object") {
+    if (res.data.token) {
+      setToken(res.data.token);
+    }
   }
+
   return res;
 }
 

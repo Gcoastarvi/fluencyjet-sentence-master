@@ -16,6 +16,7 @@
     "@replit/vite-plugin-runtime-error-modal": "^0.0.4",
     "@tailwindcss/typography": "^0.5.19",
     "@vitejs/plugin-react": "^5.1.2",
+    "cors": "^2.8.5",
     "drizzle-kit": "^0.31.8",
     "prisma": "^5.22.0",
     "tailwindcss": "^4.1.18",
