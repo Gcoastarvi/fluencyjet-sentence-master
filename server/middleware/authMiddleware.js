@@ -12,7 +12,7 @@ export function authMiddleware(req, res, next) {
     }
 
     const payload = jwt.verify(token, process.env.JWT_SECRET || "dev-secret");
-    req.user = payload; // { userId, email, ... }
+    req.user = payload;
     next();
   } catch (err) {
     req.user = null;
@@ -27,5 +27,4 @@ export function authRequired(req, res, next) {
   next();
 }
 
-// Optional default export so older imports still work
 export default authRequired;
