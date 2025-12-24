@@ -11,6 +11,44 @@ export function AuthProvider({ children }) {
   });
   const [loading, setLoading] = useState(true);
 
+  // ✅ SESSION HYDRATION (restore login on refresh)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      try {
+        const storedToken = localStorage.getItem("token");
+        if (!storedToken) {
+          if (!cancelled) setLoading(false);
+          return;
+        }
+
+        const me = await getMe();
+        if (!cancelled && me?.ok) {
+          const nextUser = {
+            email: me.email,
+            plan: me.plan || "FREE",
+          };
+
+          setUser(nextUser);
+          setToken(storedToken);
+          localStorage.setItem("user", JSON.stringify(nextUser));
+        } else {
+          logout();
+        }
+      } catch {
+        logout();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    restoreSession();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function persist(nextToken, nextUser) {
     if (nextToken) localStorage.setItem("token", nextToken);
     else localStorage.removeItem("token");
