@@ -11,6 +11,8 @@ import authRouter from "./routes/auth.js";
 import billingRouter from "./routes/billing.js";
 import diagnosticRoutes from "./routes/diagnostic.js";
 
+import { authMiddleware } from "./middleware/authMiddleware.js";
+
 const app = express();
 const PORT = process.env.PORT || 8080;
 
@@ -19,6 +21,17 @@ const PORT = process.env.PORT || 8080;
 // --------------------------------------------------
 app.use(express.json());
 app.use(cookieParser());
+// Public routes
+app.use("/api/health", healthRouter);
+app.use("/api/auth", authRouter);
+
+// 🔐 Apply auth middleware AFTER auth routes
+app.use(authMiddleware);
+
+// Protected routes
+app.use("/api/billing", billingRouter);
+app.use("/api/diagnostic", diagnosticRoutes);
+
 const replitAllowlist = [
   // Replit preview + prod
   /\.replit\.dev$/,
