@@ -61,54 +61,23 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await loginUser(email, password);
 
-    const token = res?.data?.token;
-    if (!res?.ok || !token) {
+    if (!res?.ok || !res?.data?.token) {
       throw new Error(res?.data?.message || "Login failed");
     }
 
-    // token already stored by apiClient, but keeping it safe:
-    localStorage.setItem("token", token);
-
-    setUser({
+    const nextUser = {
       email: res.data.email,
       plan: res.data.plan || "FREE",
-    });
+    };
+
+    setToken(res.data.token);
+    setUser(nextUser);
+
+    localStorage.setItem("token", res.data.token);
+    localStorage.setItem("user", JSON.stringify(nextUser));
 
     return res;
   };
-
-  // ✅ RESTORE SESSION (THIS WAS BROKEN EARLIER)
-  useEffect(() => {
-    let cancelled = false;
-
-    async function restoreSession() {
-      try {
-        const storedToken = localStorage.getItem("token");
-        if (!storedToken) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-
-        const me = await getMe();
-        if (!cancelled && me?.ok && me?.user) {
-          setToken(storedToken);
-          setUser(me.user);
-          persist(storedToken, me.user);
-        } else {
-          logout();
-        }
-      } catch {
-        logout();
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    restoreSession();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const value = useMemo(
     () => ({
