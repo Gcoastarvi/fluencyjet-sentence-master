@@ -62,6 +62,7 @@ export default function SentencePractice() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentQuestion = QUESTIONS[currentIndex];
+  const totalQuestions = QUESTIONS.length;
 
   const [tiles, setTiles] = useState([]);
   const [answer, setAnswer] = useState([]);

@@ -15,35 +15,30 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let cancelled = false;
 
-    async function restoreSession() {
-      try {
-        const storedToken = localStorage.getItem("token");
-        if (!storedToken) {
-          if (!cancelled) setLoading(false);
-          return;
-        }
-
-        const me = await getMe();
-        if (!cancelled && me?.ok) {
-          const nextUser = {
-            email: me.email,
-            plan: me.plan || "FREE",
-          };
-
-          setUser(nextUser);
-          setToken(storedToken);
-          localStorage.setItem("user", JSON.stringify(nextUser));
-        } else {
-          logout();
-        }
-      } catch {
-        logout();
-      } finally {
-        if (!cancelled) setLoading(false);
+    async function hydrate() {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setLoading(false);
+        return;
       }
+
+      const res = await getMe();
+      if (cancelled) return;
+
+      if (res?.ok) {
+        setUser({
+          email: res.data.email,
+          plan: res.data.plan || "FREE",
+        });
+      } else {
+        localStorage.removeItem("token");
+        setUser(null);
+      }
+
+      setLoading(false);
     }
 
-    restoreSession();
+    hydrate();
     return () => {
       cancelled = true;
     };
@@ -63,24 +58,24 @@ export function AuthProvider({ children }) {
     persist("", null);
   }
 
-  async function login(email, password) {
+  const login = async (email, password) => {
     const res = await loginUser(email, password);
 
-    if (!res?.ok || !res?.token) {
-      throw new Error(res?.message || "Login failed");
+    const token = res?.data?.token;
+    if (!res?.ok || !token) {
+      throw new Error(res?.data?.message || "Login failed");
     }
 
-    const nextUser = res.user || {
-      email: res.email,
-      plan: res.plan || "FREE",
-    };
+    // token already stored by apiClient, but keeping it safe:
+    localStorage.setItem("token", token);
 
-    setToken(res.token);
-    setUser(nextUser);
-    persist(res.token, nextUser);
+    setUser({
+      email: res.data.email,
+      plan: res.data.plan || "FREE",
+    });
 
     return res;
-  }
+  };
 
   // ✅ RESTORE SESSION (THIS WAS BROKEN EARLIER)
   useEffect(() => {
