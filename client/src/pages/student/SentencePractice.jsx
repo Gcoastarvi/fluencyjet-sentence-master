@@ -184,7 +184,7 @@ export default function SentencePractice() {
     setTiles((prev) => prev.filter((w) => w !== word));
   }
   function checkAnswer() {
-    // 🧩 FILL-IN-THE-BLANK validation
+    // 🧩 FILL-IN-THE-BLANK validation (unchanged)
     if (currentQuestion.type === "FILL") {
       const userAnswer = selectedOption || typedAnswer;
 
@@ -213,7 +213,17 @@ export default function SentencePractice() {
       }
     }
 
-    // ✅ REORDER validation (existing logic)
+    // ⛔ GUARD 1: already solved
+    if (status === "correct") return;
+
+    // ⛔ GUARD 2: incomplete answer
+    if (answer.length !== currentQuestion.correctOrder.length) {
+      setStatus("wrong");
+      setShowHint(true);
+      return;
+    }
+
+    // ✅ REORDER validation
     const incorrect = [];
 
     answer.forEach((word, index) => {
@@ -240,7 +250,6 @@ export default function SentencePractice() {
 
       updateDailyStreak();
 
-      // 💾 SMART RESUME SAVE (ADD HERE)
       localStorage.setItem(
         "fj_last_session",
         JSON.stringify({
@@ -269,11 +278,20 @@ export default function SentencePractice() {
     }
   }
 
-  function retryAttempt() {
+  function handleTryAgain() {
     setAnswer([]);
     setWrongIndexes([]);
     setStatus("idle");
+    setShowHint(false);
+    setAttempts(0);
+
+    // Important: bring the tiles back so options don’t disappear
+    const reshuffled = [...currentQuestion.correctOrder].sort(
+      () => Math.random() - 0.5,
+    );
+    setTiles(reshuffled);
   }
+
   if (currentIndex >= QUESTIONS.length) {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
@@ -393,7 +411,7 @@ export default function SentencePractice() {
             ❌ Not correct. Try again. ({attempts}/{MAX_ATTEMPTS})
           </div>
           <button
-            onClick={retryAttempt}
+            onClick={handleTryAgain}
             className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
           >
             Try again
