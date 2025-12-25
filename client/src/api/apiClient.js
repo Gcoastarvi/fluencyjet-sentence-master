@@ -60,7 +60,6 @@ export async function request(path, options = {}) {
   const res = await fetch(url, {
     ...options,
     headers,
-    credentials: "include", // safe even if unused; remove later if not needed
   });
 
   let data = null;
