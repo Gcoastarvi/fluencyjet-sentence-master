@@ -15,13 +15,17 @@ if (!BASE) {
   throw new Error("VITE_API_BASE_URL is not defined");
 }
 
-function getToken() {
-  try {
-    return localStorage.getItem("token");
-  } catch {
-    return null;
-  }
-}
+const token = localStorage.getItem("token");
+
+const headers = {
+  "Content-Type": "application/json",
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+};
+
+const res = await fetch(url, {
+  ...options,
+  headers,
+});
 
 function setToken(token) {
   try {
