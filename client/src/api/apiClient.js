@@ -1,31 +1,25 @@
 // client/src/api/apiClient.js
-// Minimal, stable API client for the whole app.
-// Exports: api, request, loginUser, signupUser, getMe
+// FINAL SAFE VERSION — NO TOP-LEVEL AWAIT
 
 const RAW_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
-
 if (!RAW_BASE) {
   throw new Error("VITE_API_BASE_URL is not defined");
 }
 
-// Force API namespace
+// Ensure /api suffix
 const BASE = RAW_BASE.endsWith("/api") ? RAW_BASE : `${RAW_BASE}/api`;
 
-if (!BASE) {
-  throw new Error("VITE_API_BASE_URL is not defined");
+/* ───────────────────────────────
+   Token helpers
+─────────────────────────────── */
+
+function getToken() {
+  try {
+    return localStorage.getItem("token");
+  } catch {
+    return null;
+  }
 }
-
-const token = localStorage.getItem("token");
-
-const headers = {
-  "Content-Type": "application/json",
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-};
-
-const res = await fetch(url, {
-  ...options,
-  headers,
-});
 
 function setToken(token) {
   try {
@@ -36,26 +30,27 @@ function setToken(token) {
   }
 }
 
-/**
- * Low-level request helper.
- * - Automatically adds Authorization header if token exists
- * - Parses JSON if possible
- * - Returns { ok, status, data, error }
- */
+/* ───────────────────────────────
+   Core request helper
+─────────────────────────────── */
+
 export async function request(path, options = {}) {
   const url = path.startsWith("http")
     ? path
     : `${BASE}${path.startsWith("/") ? "" : "/"}${path}`;
 
   const headers = new Headers(options.headers || {});
+
+  // Content-Type
   if (
     !headers.has("Content-Type") &&
-    options.body != null &&
+    options.body &&
     !(options.body instanceof FormData)
   ) {
     headers.set("Content-Type", "application/json");
   }
 
+  // Authorization
   const token = getToken();
   if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
@@ -68,60 +63,66 @@ export async function request(path, options = {}) {
 
   let data = null;
   const contentType = res.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    try {
+
+  try {
+    if (contentType.includes("application/json")) {
       data = await res.json();
-    } catch {
-      data = null;
-    }
-  } else {
-    try {
+    } else {
       data = await res.text();
-    } catch {
-      data = null;
     }
+  } catch {
+    data = null;
   }
 
   if (!res.ok) {
-    const error =
-      (data && typeof data === "object" && (data.error || data.message)) ||
-      (typeof data === "string" && data) ||
-      `Request failed (${res.status})`;
-
-    return { ok: false, status: res.status, data, error };
+    return {
+      ok: false,
+      status: res.status,
+      data,
+      error: data?.message || data?.error || `Request failed (${res.status})`,
+    };
   }
 
-  return { ok: true, status: res.status, data, error: null };
+  return { ok: true, status: res.status, data };
 }
+
+/* ───────────────────────────────
+   API shortcuts
+─────────────────────────────── */
 
 export const api = {
   get: (path, options = {}) => request(path, { ...options, method: "GET" }),
+
   post: (path, body, options = {}) =>
     request(path, {
       ...options,
       method: "POST",
       body: body instanceof FormData ? body : JSON.stringify(body ?? {}),
     }),
+
   put: (path, body, options = {}) =>
     request(path, {
       ...options,
       method: "PUT",
       body: body instanceof FormData ? body : JSON.stringify(body ?? {}),
     }),
+
   del: (path, options = {}) => request(path, { ...options, method: "DELETE" }),
 };
 
-// Auth helpers (FINAL – SAFE)
+/* ───────────────────────────────
+   Auth helpers
+─────────────────────────────── */
+
 export async function loginUser(email, password) {
   const res = await api.post("/auth/login", { email, password });
 
-  // res = { ok, status, data }
-  if (!res.ok || !res.data || !res.data.token) {
+  if (!res.ok || !res.data?.token) {
     throw new Error(res.data?.message || "Login failed");
   }
 
-  // Persist token + user
   setToken(res.data.token);
+
   localStorage.setItem(
     "user",
     JSON.stringify({
@@ -134,9 +135,8 @@ export async function loginUser(email, password) {
 }
 
 export async function signupUser(payload) {
-  // payload expected: { name?, email, password, ... }
   const res = await api.post("/auth/signup", payload);
-  if (res.ok && res.data && typeof res.data === "object" && res.data.token) {
+  if (res.ok && res.data?.token) {
     setToken(res.data.token);
   }
   return res;
@@ -145,15 +145,11 @@ export async function signupUser(payload) {
 export async function getMe() {
   return api.get("/auth/me");
 }
-// --- Compatibility exports (temporary, to avoid build breakage) ---
 
+/* Temporary compatibility exports */
 export async function updateMyPlan() {
-  throw new Error(
-    "updateMyPlan is not implemented yet. This is a placeholder export.",
-  );
+  throw new Error("updateMyPlan not implemented");
 }
 export async function updateUserPlan() {
-  throw new Error(
-    "updateUserPlan is not implemented yet. This is a placeholder export.",
-  );
+  throw new Error("updateUserPlan not implemented");
 }
