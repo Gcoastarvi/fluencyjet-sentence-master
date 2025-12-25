@@ -3,46 +3,51 @@ import { loginUser, getMe } from "@/api/apiClient";
 
 const AuthContext = createContext(null);
 
+/**
+ * Normalize API responses because different callers may return:
+ * 1) { ok: true, data: { token, email, plan } }
+ * 2) { ok: true, token, email, plan }
+ * 3) { ok: true, data: { ok, token, email, plan } }  (double-wrapped)
+ */
+function pickPayload(res) {
+  if (!res) return { ok: false, data: null, message: "No response" };
+
+  // If res.data exists, prefer it as payload
+  const p1 = res.data && typeof res.data === "object" ? res.data : null;
+
+  // Sometimes data itself contains { ok, token, ... }
+  const p2 =
+    p1 && typeof p1.data === "object" && p1.data !== null ? p1.data : null;
+
+  const payload = p2 || p1 || res;
+
+  const ok =
+    typeof res.ok === "boolean"
+      ? res.ok
+      : typeof payload.ok === "boolean"
+        ? payload.ok
+        : true;
+
+  const message =
+    payload.message || res.message || (ok ? "" : "Request failed");
+
+  return { ok, data: payload, message };
+}
+
+function safeJsonParse(raw) {
+  try {
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("token") || "");
-  const [user, setUser] = useState(() => {
-    const raw = localStorage.getItem("user");
-    return raw ? JSON.parse(raw) : null;
-  });
+  const [user, setUser] = useState(() =>
+    safeJsonParse(localStorage.getItem("user")),
+  );
   const [loading, setLoading] = useState(true);
-
-  // ✅ SESSION HYDRATION (restore login on refresh)
-  useEffect(() => {
-    let cancelled = false;
-
-    async function hydrate() {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      const res = await getMe();
-      if (cancelled) return;
-
-      if (res?.ok) {
-        setUser({
-          email: res.data.email,
-          plan: res.data.plan || "FREE",
-        });
-      } else {
-        localStorage.removeItem("token");
-        setUser(null);
-      }
-
-      setLoading(false);
-    }
-
-    hydrate();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   function persist(nextToken, nextUser) {
     if (nextToken) localStorage.setItem("token", nextToken);
@@ -58,23 +63,67 @@ export function AuthProvider({ children }) {
     persist("", null);
   }
 
+  // ✅ SESSION HYDRATION (restore login on refresh)
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrate() {
+      const storedToken = localStorage.getItem("token");
+      if (!storedToken) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+
+      // Keep state token aligned with localStorage
+      setToken(storedToken);
+
+      const res = await getMe();
+      const { ok, data } = pickPayload(res);
+
+      if (cancelled) return;
+
+      if (ok && data?.email) {
+        const nextUser = {
+          email: data.email,
+          plan: data.plan || "FREE",
+        };
+        setUser(nextUser);
+        persist(storedToken, nextUser);
+      } else {
+        // invalid/expired token
+        logout();
+      }
+
+      setLoading(false);
+    }
+
+    hydrate();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const login = async (email, password) => {
     const res = await loginUser(email, password);
+    const { ok, data, message } = pickPayload(res);
 
-    if (!res?.ok || !res?.data?.token) {
-      throw new Error(res?.data?.message || "Login failed");
+    // Accept token from multiple shapes
+    const nextToken =
+      data?.token || data?.accessToken || res?.token || res?.accessToken || "";
+
+    if (!ok || !nextToken) {
+      throw new Error(message || "Login failed");
     }
 
     const nextUser = {
-      email: res.data.email,
-      plan: res.data.plan || "FREE",
+      email: data?.email || email,
+      plan: data?.plan || "FREE",
     };
 
-    setToken(res.data.token);
+    setToken(nextToken);
     setUser(nextUser);
-
-    localStorage.setItem("token", res.data.token);
-    localStorage.setItem("user", JSON.stringify(nextUser));
+    persist(nextToken, nextUser);
 
     return res;
   };
@@ -84,7 +133,7 @@ export function AuthProvider({ children }) {
       token,
       user,
       loading,
-      isAuthenticated: !!user, // ✅ ADD THIS
+      isAuthenticated: !!token && !!user,
       login,
       logout,
       setUser,
