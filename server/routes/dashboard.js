@@ -143,9 +143,9 @@ router.get("/summary", authRequired, async (req, res) => {
 
     const recentActivity = recentRaw.map((e) => ({
       id: e.id,
-      xp_delta: Number(e.xp_delta),
-      event_type: e.event_type,
-      created_at: e.created_at,
+      event_type: e.type,
+      xp_delta: Number(e.delta),
+      created_at: e.createdAt,
       meta: e.meta,
     }));
 

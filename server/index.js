@@ -71,6 +71,11 @@ app.use("/api/auth", authRouter);
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
 
+app.use("/api/xp", xpRouter);
+app.use("/api/progress", progressRouter);
+app.use("/api/leaderboard", leaderboardRouter);
+app.use("/api/dashboard", dashboardRouter);
+
 /* --------------------------------------------------
    Optional static frontend (Replit / monolith)
 -------------------------------------------------- */

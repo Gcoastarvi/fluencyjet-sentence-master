@@ -1,4 +1,4 @@
-// client/src/pages/Dashboard.jsx
+// client/src/pages/student/Dashboard.jsx
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "@/utils/fetch";
 import { getDisplayName } from "@/utils/displayName";

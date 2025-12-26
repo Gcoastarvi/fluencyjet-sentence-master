@@ -1,190 +1,108 @@
-// server/routes/leaderboard.js
 import express from "express";
 import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
-
-// Map period → which XP field to use in UserProgress
-function getXpField(periodRaw) {
-  const period = (periodRaw || "").toString().toLowerCase();
-
-  switch (period) {
-    case "today":
-      // For now, we approximate "today" with this week's XP.
-      // If needed later, we can switch to XpEvent date-based aggregation.
-      return { period: "today", field: "week_xp" };
-    case "weekly":
-      return { period: "weekly", field: "week_xp" };
-    case "monthly":
-      return { period: "monthly", field: "month_xp" };
-    case "all":
-      return { period: "all", field: "lifetime_xp" };
-    default:
-      return { period: "today", field: "week_xp" };
-  }
-}
-
-// Helper → build a friendly display name
-function getDisplayNameFromProgress(progress) {
-  if (!progress) return "Learner";
-
-  const p = progress;
-  const u = progress.user || {};
-
-  return (
-    p.display_name ||
-    u.display_name ||
-    u.name ||
-    (u.email ? u.email.split("@")[0] : null) ||
-    "Learner"
-  );
-}
-
-// Get "you" info: XP + rank + badge
-async function getUserRankAndXp(userId, xpField) {
-  const progress = await prisma.userProgress.findUnique({
-    where: { user_id: userId },
-    include: { user: true },
-  });
-
-  if (!progress) {
-    return {
-      xp: 0,
-      rank: null,
-      level: 1,
-      badge: null,
-      name: null,
-    };
-  }
-
-  const xp = progress[xpField] || 0;
-
-  if (xp <= 0) {
-    return {
-      xp: 0,
-      rank: null,
-      level: progress.lifetime_level || 1,
-      badge: progress.current_badge || null,
-      name: getDisplayNameFromProgress(progress),
-    };
-  }
-
-  // Count how many users have strictly more XP than you
-  const betterCount = await prisma.userProgress.count({
-    where: {
-      [xpField]: { gt: xp },
-    },
-  });
-
-  return {
-    xp,
-    rank: betterCount + 1,
-    level: progress.lifetime_level || 1,
-    badge: progress.current_badge || null,
-    name: getDisplayNameFromProgress(progress),
-  };
-}
-
-// All leaderboard APIs require auth
 router.use(authRequired);
 
-/**
- * GET /api/leaderboard?period=today|weekly|monthly|all
- *
- * Returns:
- * {
- *   ok: true,
- *   period: "today",
- *   totalLearners: number,
- *   rows: [
- *     {
- *       rank,
- *       userId,
- *       name,
- *       xp,
- *       level,
- *       badge,
- *       avatarUrl
- *     },
- *     ...
- *   ],
- *   you: {
- *     id,
- *     name,
- *     xp,
- *     rank,
- *     level,
- *     badge
- *   },
- *   top: [ same shape as rows, top 5 ]
- * }
- */
+const INDIA_TZ = "Asia/Kolkata";
+
+function ymdInTZ(date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: INDIA_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const y = parts.find((p) => p.type === "year").value;
+  const m = parts.find((p) => p.type === "month").value;
+  const d = parts.find((p) => p.type === "day").value;
+  return `${y}-${m}-${d}`;
+}
+
+function startOfWeekYMD(ymd) {
+  const [Y, M, D] = ymd.split("-").map(Number);
+  const dt = new Date(Date.UTC(Y, M - 1, D));
+  const day = dt.getUTCDay(); // 0=Sun
+  const diff = (day === 0 ? -6 : 1) - day;
+  dt.setUTCDate(dt.getUTCDate() + diff);
+  return dt.toISOString().slice(0, 10);
+}
+
+async function aggregateXP(start, end) {
+  return prisma.xpEvent.groupBy({
+    by: ["userId"],
+    where: { createdAt: { gte: start, lt: end } },
+    _sum: { delta: true },
+  });
+}
+
 router.get("/", async (req, res) => {
   try {
-    const userId = req.user?.id;
-    if (!userId) {
-      return res.status(401).json({
-        ok: false,
-        message: "Missing user in request",
-      });
+    const userId = req.user.id;
+    const period = (req.query.period || "weekly").toLowerCase();
+
+    const now = new Date();
+    let start, end;
+
+    if (period === "today") {
+      const today = ymdInTZ(now);
+      start = new Date(`${today}T00:00:00.000Z`);
+      end = new Date(start);
+      end.setUTCDate(end.getUTCDate() + 1);
+    } else if (period === "monthly") {
+      start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    } else if (period === "all") {
+      start = new Date(0);
+      end = now;
+    } else {
+      // weekly default
+      const today = ymdInTZ(now);
+      const wk = startOfWeekYMD(today);
+      start = new Date(`${wk}T00:00:00.000Z`);
+      end = new Date(start);
+      end.setUTCDate(end.getUTCDate() + 7);
     }
 
-    const { period: normalizedPeriod, field: xpField } = getXpField(
-      req.query.period,
-    );
+    const xpRows = await aggregateXP(start, end);
 
-    const limit = Number.parseInt(req.query.limit, 10) || 100;
+    const userIds = xpRows.map((r) => r.userId);
 
-    // Get top learners for this period
-    const progressRows = await prisma.userProgress.findMany({
-      include: { user: true },
-      orderBy: {
-        [xpField]: "desc",
-      },
-      take: limit,
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, email: true, name: true, xpTotal: true },
     });
 
-    const rows = progressRows.map((p, idx) => {
-      const xp = p[xpField] || 0;
-      return {
-        rank: idx + 1,
-        userId: p.user_id,
-        name: getDisplayNameFromProgress(p),
-        xp,
-        level: p.lifetime_level || 1,
-        badge: p.current_badge || null,
-        avatarUrl: p.avatar_url || null,
-      };
-    });
+    const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
 
-    const totalLearners = await prisma.userProgress.count();
+    const rows = xpRows
+      .map((r) => ({
+        userId: r.userId,
+        xp: Number(r._sum.delta || 0),
+        name:
+          userMap[r.userId]?.name ||
+          userMap[r.userId]?.email?.split("@")[0] ||
+          "Learner",
+      }))
+      .filter((r) => r.xp > 0)
+      .sort((a, b) => b.xp - a.xp)
+      .map((r, i) => ({ ...r, rank: i + 1 }));
 
-    const you = await getUserRankAndXp(userId, xpField);
-
-    const top = rows.slice(0, 5);
+    const you = rows.find((r) => r.userId === userId) || null;
 
     return res.json({
       ok: true,
-      period: normalizedPeriod,
-      totalLearners,
+      period,
+      totalLearners: rows.length,
       rows,
-      you: {
-        id: userId,
-        name: you.name,
-        xp: you.xp,
-        rank: you.rank,
-        level: you.level,
-        badge: you.badge,
-      },
-      top,
+      top: rows.slice(0, 5),
+      you,
     });
   } catch (err) {
-    console.error("❌ /api/leaderboard error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Failed to load leaderboard",
-    });
+    console.error("Leaderboard error:", err);
+    res.status(500).json({ ok: false, message: "Leaderboard failed" });
   }
 });
 

@@ -1,4 +1,4 @@
-// client/src/pages/Leaderboard.jsx
+// client/src/pages/student/Leaderboard.jsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { apiFetchWithAuth } from "../../utils/fetch";
 
