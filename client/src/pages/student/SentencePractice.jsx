@@ -99,34 +99,11 @@ export default function SentencePractice() {
     const today = getToday();
     const lastDate = localStorage.getItem("fj_last_practice_date");
 
-    let newStreak = 1;
-
     if (lastDate === today) {
       return;
     }
-    async function commitXP({ isCorrect, attemptNo, mode = "reorder" }) {
-      try {
-        const res = await api.post("/xp/commit", {
-          attemptId: `${Date.now()}-${currentIndex}-${attemptNo}`,
-          mode,
-          lessonId: "L1", // static for now
-          questionId: `Q${currentIndex + 1}`,
-          isCorrect,
-          attemptNo,
-          timeTakenSec: null,
-          completedQuiz: false,
-        });
 
-        if (res?.ok && res.data?.ok) {
-          setEarnedXP(res.data.xpAwarded || 0);
-          setStreak(res.data.streak || 0);
-          setShowXPToast(true);
-          setTimeout(() => setShowXPToast(false), 1200);
-        }
-      } catch (err) {
-        console.error("XP commit failed", err);
-      }
-    }
+    let newStreak = 1;
 
     if (lastDate === getYesterday()) {
       newStreak = streak + 1;
@@ -136,7 +113,7 @@ export default function SentencePractice() {
     localStorage.setItem("fj_last_practice_date", today);
     setStreak(newStreak);
 
-    // 🏅 Weekly badge logic (MOVED INSIDE)
+    // 🏅 Weekly badge logic
     if (newStreak % 7 === 0) {
       const badges = JSON.parse(localStorage.getItem("fj_badges")) || [];
       const badgeId = `week-${newStreak / 7}`;
@@ -145,6 +122,30 @@ export default function SentencePractice() {
         badges.push(badgeId);
         localStorage.setItem("fj_badges", JSON.stringify(badges));
       }
+    }
+  }
+
+  async function commitXP({ isCorrect, attemptNo, mode = "reorder" }) {
+    try {
+      const res = await api.post("/xp/commit", {
+        attemptId: `${Date.now()}-${currentIndex}-${attemptNo}`,
+        mode,
+        lessonId: "L1", // static for now
+        questionId: `Q${currentIndex + 1}`,
+        isCorrect,
+        attemptNo,
+        timeTakenSec: null,
+        completedQuiz: false,
+      });
+
+      if (res?.data?.ok) {
+        setEarnedXP(res.data.xpAwarded || 0);
+        setStreak(res.data.streak || 0);
+        setShowXPToast(true);
+        setTimeout(() => setShowXPToast(false), 1200);
+      }
+    } catch (err) {
+      console.error("XP commit failed", err);
     }
   }
   // 🔁 Smart Resume on load
