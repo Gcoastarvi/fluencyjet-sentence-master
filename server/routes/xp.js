@@ -486,9 +486,17 @@ router.post("/commit", async (req, res) => {
     const yesterdayYMD = ymdInTZ(yesterday);
 
     const progress = await prisma.userProgress.upsert({
-      where: { userId },
-      create: { userId, xp: 0, streak: 0, badges: [], lastActiveAt: now },
-      update: { lastActiveAt: now },
+      where: { user_id: userId },
+      create: {
+        user_id: userId,
+        xp: 0,
+        streak: 0,
+        badges: [],
+        lastActiveAt: now,
+      },
+      update: {
+        lastActiveAt: now,
+      },
     });
 
     let newStreak = Number(progress?.streak || 0);
