@@ -11,6 +11,11 @@ import authRouter from "./routes/auth.js";
 import billingRouter from "./routes/billing.js";
 import diagnosticRoutes from "./routes/diagnostic.js";
 
+import xpRouter from "./routes/xp.js";
+import progressRouter from "./routes/progress.js";
+import leaderboardRouter from "./routes/leaderboard.js";
+import dashboardRouter from "./routes/dashboard.js";
+
 // Auth middleware
 import { authMiddleware } from "./middleware/authMiddleware.js";
 
