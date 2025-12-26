@@ -464,7 +464,7 @@ router.post("/commit", async (req, res) => {
       return res.json({
         ok: true,
         idempotent: true,
-        xpAwarded: existing.delta,
+        xpAwarded, // ✅ FIX
         totalXP: Number(user?.xpTotal || progress?.xp || 0),
         streak: Number(progress?.streak || 0),
         todayXP,
