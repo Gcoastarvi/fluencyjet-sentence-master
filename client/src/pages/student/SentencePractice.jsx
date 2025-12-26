@@ -154,7 +154,7 @@ export default function SentencePractice() {
   async function commitXP({ isCorrect, attemptNo, mode }) {
     try {
       const res = await api.post("/xp/commit", {
-        attemptId: `${Date.now()}-${currentIndex}-${attemptNo}`,
+        attemptId: crypto.randomUUID(),
         mode,
         lessonId: "L1", // keep static for now
         questionId: `Q${currentIndex + 1}`,

@@ -656,6 +656,13 @@ router.post("/commit", async (req, res) => {
     // Compute award (server-owned)
     const xpAwarded = computeXpAward({ mode, isCorrect, attemptNo });
 
+    console.log("XP AWARDED (fresh):", {
+      mode,
+      isCorrect,
+      attemptNo,
+      xpAwarded,
+    });
+
     // Update streak only when there is a real practice attempt (correct OR wrong).
     // We update lastActiveAt on every commit, but only increment streak on first activity of a new day.
     const now = new Date();
