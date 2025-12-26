@@ -477,6 +477,13 @@ router.post("/commit", async (req, res) => {
     // Compute award (server-owned)
     const xpAwarded = computeXpAward({ mode, isCorrect, attemptNo });
 
+    console.log("🧠 computeXpAward result", {
+      mode,
+      isCorrect,
+      attemptNo,
+      xpAwarded,
+    });
+
     // Update streak only when there is a real practice attempt (correct OR wrong).
     // We update lastActiveAt on every commit, but only increment streak on first activity of a new day.
     const now = new Date();
@@ -648,18 +655,14 @@ router.post("/commit", async (req, res) => {
         sumXpForUserBetween(userId, monthStart, monthEnd),
       ]);
 
-      return res.json({
-        ok: true,
-        idempotent: true,
-        xpAwarded: existing.delta,
-        totalXP: Number(user?.xpTotal || progress?.xp || 0),
-        streak: Number(progress?.streak || 0),
-        todayXP,
-        weeklyXP,
-        monthlyXP,
-        event: existing,
-      });
-    }
+      // if (existing) {
+      //   return res.json({
+      //     ok: true,
+      //     idempotent: true,
+      //     xpAwarded: existing.delta,
+      //     ...
+      //   });
+      // }
 
     // Compute award (server-owned)
     const xpAwarded = computeXpAward({ mode, isCorrect, attemptNo });
