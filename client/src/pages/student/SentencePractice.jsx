@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRef } from "react";
+import { api } from "@/api/apiClient";
 
 const MAX_ATTEMPTS = 3;
 
@@ -102,6 +103,29 @@ export default function SentencePractice() {
 
     if (lastDate === today) {
       return;
+    }
+    async function commitXP({ isCorrect, attemptNo, mode = "reorder" }) {
+      try {
+        const res = await api.post("/xp/commit", {
+          attemptId: `${Date.now()}-${currentIndex}-${attemptNo}`,
+          mode,
+          lessonId: "L1", // static for now
+          questionId: `Q${currentIndex + 1}`,
+          isCorrect,
+          attemptNo,
+          timeTakenSec: null,
+          completedQuiz: false,
+        });
+
+        if (res?.ok && res.data?.ok) {
+          setEarnedXP(res.data.xpAwarded || 0);
+          setStreak(res.data.streak || 0);
+          setShowXPToast(true);
+          setTimeout(() => setShowXPToast(false), 1200);
+        }
+      } catch (err) {
+        console.error("XP commit failed", err);
+      }
     }
 
     if (lastDate === getYesterday()) {
@@ -237,18 +261,15 @@ export default function SentencePractice() {
       correctSoundRef.current?.play();
 
       const attemptNumber = attempts + 1;
-      const xp = XP_BY_ATTEMPT[attemptNumber] || 0;
 
-      const newTotalXP = totalXP + xp;
-      localStorage.setItem("fj_xp", newTotalXP);
-      setTotalXP(newTotalXP);
-
-      setEarnedXP(xp);
-      setShowXPToast(true);
       setWrongIndexes([]);
       setStatus("correct");
 
-      updateDailyStreak();
+      commitXP({
+        isCorrect: true,
+        attemptNo: attemptNumber,
+        mode: "reorder",
+      });
 
       localStorage.setItem(
         "fj_last_session",
