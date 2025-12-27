@@ -423,7 +423,7 @@ router.post("/commit", async (req, res) => {
       // Recompute totals snapshot so UI stays consistent
       const user = await prisma.user.findUnique({ where: { id: userId } });
       const progress = await prisma.userProgress.findUnique({
-        where: { userId },
+        where: { user_id: userId },
       });
 
       const todayYMD = ymdInTZ(new Date());
@@ -510,21 +510,13 @@ router.post("/commit", async (req, res) => {
 
     // Write event + totals in a transaction
     const result = await prisma.$transaction(async (tx) => {
+      // ✅ Create XP event (match DB schema: snake_case fields; NO meta)
       const evt = await tx.xpEvent.create({
         data: {
           user_id: userId,
           xp_delta: xpAwarded,
           type,
-          meta: {
-            attemptId,
-            mode,
-            lessonId,
-            questionId,
-            attemptNo,
-            timeTakenSec,
-            completedQuiz: !!completedQuiz,
-            isCorrect: !!isCorrect,
-          },
+          // NOTE: no meta field in DB, so we do NOT write meta here.
         },
       });
 
@@ -535,11 +527,11 @@ router.post("/commit", async (req, res) => {
       });
 
       const prog2 = await tx.userProgress.update({
-        where: { userId },
+        where: { user_id: userId },
         data: {
           xp: { increment: xpAwarded },
           streak: newStreak,
-          lastActiveAt: now,
+          updated_at: now,
         },
       });
 
