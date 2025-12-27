@@ -511,25 +511,24 @@ router.post("/commit", async (req, res) => {
     // Write event + totals in a transaction
     const result = await prisma.$transaction(async (tx) => {
       const evt = await tx.xpEvent.create({
-      data: {
-        user_id: userId,        // ✅ schema-aligned
-        xp_delta: xpAwarded,    // ✅ REQUIRED field
-        type,
-        meta: {
-          attemptId,
-          mode,
-          lessonId,
-          questionId,
-          attemptNo,
-          timeTakenSec,
-          completedQuiz: !!completedQuiz,
-          isCorrect: !!isCorrect,
+        data: {
+          user_id: userId,
+          xp_delta: xpAwarded,
+          type,
+          meta: {
+            attemptId,
+            mode,
+            lessonId,
+            questionId,
+            attemptNo,
+            timeTakenSec,
+            completedQuiz: !!completedQuiz,
+            isCorrect: !!isCorrect,
+          },
         },
-      },
-    });
+      });
 
       // Update user totals (authoritative total)
-      // Keep both user.xpTotal and progress.xp in sync for now.
       const user = await tx.user.update({
         where: { id: userId },
         data: { xpTotal: { increment: xpAwarded } },
@@ -580,13 +579,13 @@ router.post("/commit", async (req, res) => {
       monthlyXP,
       event: result.evt,
     });
-} catch (err) {
-  console.error("XP commit failed:", err);
-  return res.status(500).json({
-    ok: false,
-    error: "XP commit failed",
-  });
-    }
+  } catch (err) {
+    console.error("XP commit failed:", err);
+    return res.status(500).json({
+      ok: false,
+      error: "XP commit failed",
+    });
+  }
 });
 
 export default router;
