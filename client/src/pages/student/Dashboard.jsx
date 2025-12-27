@@ -1,6 +1,6 @@
 // client/src/pages/student/Dashboard.jsx
 import React, { useEffect, useState } from "react";
-import { apiFetch } from "@/utils/fetch";
+import { api } from "@/api/apiClient";
 import { getDisplayName } from "@/utils/displayName";
 import { useAuth } from "@/context/AuthContext";
 
@@ -18,8 +18,8 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const { xpCapReached, plan } = useAuth();
 
-  const streak = Number(localStorage.getItem("fj_streak")) || 0;
-  const xp = Number(localStorage.getItem("fj_xp")) || 0;
+  const streakLS = Number(localStorage.getItem("fj_streak")) || 0;
+  const xpLS = Number(localStorage.getItem("fj_xp")) || 0;
 
   const weeklyBadges = JSON.parse(localStorage.getItem("fj_badges")) || [];
 
@@ -55,9 +55,10 @@ export default function Dashboard() {
         setLoading(true);
         setError("");
 
-        const data = await apiFetch("/api/dashboard/summary", {
-          method: "GET",
-        });
+        const res = await api.get("/dashboard/summary");
+        if (!res.ok)
+          throw new Error(res.error || "Failed to load dashboard summary");
+        const data = res.data;
 
         const newLevel = data.level ?? 1;
 
@@ -75,6 +76,9 @@ export default function Dashboard() {
           pendingLessons: data.pendingLessons ?? [],
           recentActivity: data.recentActivity ?? [],
         });
+
+        localStorage.setItem("fj_xp", String(data.totalXP ?? 0));
+        localStorage.setItem("fj_streak", String(data.streak ?? 0));
 
         /* 🎉 Level-up detection */
         if (prevLevel !== null && newLevel > prevLevel) {
@@ -126,10 +130,10 @@ export default function Dashboard() {
       {/* 🔥 Streak + XP */}
       <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow mb-4">
         <div className="text-orange-600 font-semibold">
-          🔥 {streak}-day streak
+          🔥 {summary?.streak ?? streakLS}-day streak
         </div>
         <div className="text-purple-600 font-semibold">
-          ⭐ {xp.toLocaleString("en-IN")} XP
+          ⭐ {(summary?.totalXP ?? xpLS).toLocaleString("en-IN")} XP
         </div>
       </div>
       {/* 🎉 Level Up Celebration */}

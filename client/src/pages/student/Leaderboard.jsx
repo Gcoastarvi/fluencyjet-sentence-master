@@ -1,6 +1,6 @@
 // client/src/pages/student/Leaderboard.jsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { apiFetchWithAuth } from "../../utils/fetch";
+import { api } from "@/api/apiClient";
 
 // Small helper – compact XP formatting like "1.2K"
 function kFormat(xp) {
@@ -30,13 +30,9 @@ function Leaderboard() {
     setLoading(true);
     setError("");
     try {
-      const data = await apiFetchWithAuth(
-        `/api/leaderboard?period=${activePeriod}`,
-      );
-
-      if (!data || data.ok === false) {
-        throw new Error(data?.message || "Failed to load leaderboard");
-      }
+      const res = await api.get(`/leaderboard?period=${activePeriod}`);
+      if (!res.ok) throw new Error(res.error || "Failed to load leaderboard");
+      const data = res.data;
 
       setRows(Array.isArray(data.rows) ? data.rows : []);
       setTop(Array.isArray(data.top) ? data.top : []);
