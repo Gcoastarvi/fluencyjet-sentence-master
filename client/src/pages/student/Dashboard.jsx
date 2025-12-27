@@ -55,10 +55,7 @@ export default function Dashboard() {
         setLoading(true);
         setError("");
 
-        const res = await api.get("/dashboard/summary");
-        if (!res.ok)
-          throw new Error(res.error || "Failed to load dashboard summary");
-        const data = res.data;
+        const data = await api.get("/dashboard/summary");
 
         const newLevel = data.level ?? 1;
 

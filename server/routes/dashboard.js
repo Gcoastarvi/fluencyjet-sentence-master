@@ -59,7 +59,7 @@ router.get("/summary", authRequired, async (req, res) => {
       where: { user_id: userId },
     });
 
-    let totalXP = progress?.total_xp ?? 0;
+    const totalXP = Number(user?.xpTotal ?? progress?.xp ?? 0);
 
     if (!progress) {
       const agg = await prisma.xpEvent.aggregate({
@@ -135,6 +135,7 @@ router.get("/summary", authRequired, async (req, res) => {
     }
 
     /* ---------------- Recent XP Events ---------------- */
+    // Recent activity (last 10 events) — match client expected keys
     const recentRaw = await prisma.xpEvent.findMany({
       where: { user_id: userId },
       orderBy: { created_at: "desc" },
@@ -143,13 +144,12 @@ router.get("/summary", authRequired, async (req, res) => {
 
     const recentActivity = recentRaw.map((e) => ({
       id: e.id,
-      event_type: e.type,
-      xp_delta: Number(e.delta),
-      created_at: e.createdAt,
-      meta: e.meta,
+      event_type: e.type, // client expects event_type
+      xp_delta: Number(e.xp_delta || 0), // client expects xp_delta
+      created_at: e.created_at, // client expects created_at
     }));
 
-    const streak = progress?.consecutive_days ?? 0;
+    const streak = Number(progress?.streak ?? 0);
 
     const response = {
       todayXP,
