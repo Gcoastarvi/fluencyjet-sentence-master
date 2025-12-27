@@ -510,14 +510,21 @@ router.post("/commit", async (req, res) => {
 
     // Write event + totals in a transaction
     const result = await prisma.$transaction(async (tx) => {
+      // ✅ Create XP event (match DB schema: snake_case fields; NO meta)
       const evt = await tx.xpEvent.create({
         data: {
           user_id: userId,
           xp_delta: xpAwarded,
-          type,
+          type,          
         },
       });
+      // keep the rest of your transaction logic EXACTLY as it already is
+      // (user totals update, progress update, etc.)
 
+      return { evt };
+    });
+
+      // Update user totals (authoritative total)
       const user = await tx.user.update({
         where: { id: userId },
         data: { xpTotal: { increment: xpAwarded } },
