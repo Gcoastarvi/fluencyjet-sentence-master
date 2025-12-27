@@ -52,6 +52,27 @@ function monthStartUTC(d = new Date()) {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
 }
 
+const MAX_XPEVENT_TYPE_LEN = 32;
+
+function compactAttemptId(attemptId) {
+  // UUID -> remove dashes -> take first 10 chars
+  return String(attemptId || "")
+    .replace(/-/g, "")
+    .slice(0, 10);
+}
+
+function makeTypeKey({ mode, isCorrect, attemptId }) {
+  const modeCodeMap = { reorder: "R", typing: "T", dragdrop: "D", cloze: "C" };
+  const m = modeCodeMap[String(mode || "").toLowerCase()] || "X";
+  const r = isCorrect ? "C" : "W";
+  const a = compactAttemptId(attemptId);
+  // Example: "PX_RC_a1b2c3d4e5"
+  const raw = `PX_${m}${r}_${a}`;
+  return raw.length > MAX_XPEVENT_TYPE_LEN
+    ? raw.slice(0, MAX_XPEVENT_TYPE_LEN)
+    : raw;
+}
+
 // ─────────────────────────────────────────────
 // Core XP logic (per your request: always 150 for correct)
 // ─────────────────────────────────────────────
@@ -72,9 +93,9 @@ async function sumXpForUserBetween(userId, start, end) {
 
 // Idempotency WITHOUT meta:
 // We store attemptId inside the type string as: `${baseType}|${attemptId}`
-async function findExistingByAttemptId(userId, attemptId, baseType) {
+async function findExistingByAttemptId(userId, attemptId, mode, isCorrect) {
   if (!attemptId) return null;
-  const typeKey = `${baseType}|${attemptId}`;
+  const typeKey = makeTypeKey({ mode, isCorrect: !!isCorrect, attemptId });
   return prisma.xpEvent.findFirst({
     where: { user_id: userId, type: typeKey },
     orderBy: { created_at: "desc" },
@@ -319,13 +340,16 @@ router.post("/commit", authRequired, async (req, res) => {
         .json({ ok: false, error: "attemptId is required" });
     }
 
-    const baseType = isCorrect
-      ? `practice_${mode}_correct`
-      : `practice_${mode}_wrong`;
-    const typeKey = `${baseType}|${attemptId}`;
+    const typeKey = makeTypeKey({ mode, isCorrect: !!isCorrect, attemptId });
 
     // Idempotency: if already credited for this attemptId, return that
-    const existing = await findExistingByAttemptId(userId, attemptId, baseType);
+    const existing = await findExistingByAttemptId(
+      userId,
+      attemptId,
+      mode,
+      isCorrect,
+    );
+
     if (existing) {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       const progress = await prisma.userProgress.findUnique({
@@ -404,6 +428,8 @@ router.post("/commit", authRequired, async (req, res) => {
 
     const result = await prisma.$transaction(async (tx) => {
       await ensureProgress(tx, userId);
+
+      console.log("XP_EVENT typeKey", typeKey, "len=", String(typeKey).length);
 
       // Only create XP event if xpAwarded > 0
       let evt = null;
