@@ -52,35 +52,23 @@ function computeXpAward({ mode, isCorrect, attemptNo }) {
 
 async function sumXpForUserBetween(userId, start, end) {
   const agg = await prisma.xpEvent.aggregate({
-    where: { userId, createdAt: { gte: start, lt: end } },
-    _sum: { delta: true },
+    where: { user_id: userId, created_at: { gte: start, lt: end } },
+    _sum: { xp_delta: true },
   });
-  return Number(agg?._sum?.delta || 0);
+  return Number(agg?._sum?.xp_delta || 0);
 }
 
-/**
- * Idempotency strategy:
- * - Frontend must send attemptId (unique per attempt).
- * - We check if an event already exists with meta.attemptId === attemptId.
- * Notes:
- * Prisma JSON filtering works on Postgres. If your DB is not Postgres,
- * we’ll swap this to a simpler dedupe strategy.
- */
 async function findExistingByAttemptId(userId, attemptId) {
   if (!attemptId) return null;
   try {
     return await prisma.xpEvent.findFirst({
       where: {
-        userId,
-        meta: {
-          path: ["attemptId"],
-          equals: attemptId,
-        },
+        user_id: userId,
+        meta: { path: ["attemptId"], equals: attemptId },
       },
-      orderBy: { createdAt: "desc" },
+      orderBy: { created_at: "desc" },
     });
   } catch {
-    // If JSON path filters are unsupported, skip idempotency here.
     return null;
   }
 }
@@ -504,188 +492,6 @@ router.post("/commit", async (req, res) => {
       update: {
         lastActiveAt: now,
       },
-    });
-
-    let newStreak = Number(progress?.streak || 0);
-
-    // Increment streak only if this is the first activity today (based on lastActiveAt)
-    const lastActiveYMD = progress?.lastActiveAt
-      ? ymdInTZ(progress.lastActiveAt)
-      : null;
-    if (lastActiveYMD !== todayYMD) {
-      if (lastActiveYMD === yesterdayYMD) newStreak = newStreak + 1;
-      else newStreak = 1;
-    }
-
-    // Event type naming (canonical)
-    const type = isCorrect
-      ? `practice_${mode}_correct`
-      : `practice_${mode}_wrong`;
-
-    // Write event + totals in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const evt = await tx.xpEvent.create({
-        data: {
-          userId,
-          delta: xpAwarded,
-          type,
-          meta: {
-            attemptId,
-            mode,
-            lessonId,
-            questionId,
-            attemptNo,
-            timeTakenSec,
-            completedQuiz: !!completedQuiz,
-            isCorrect: !!isCorrect,
-          },
-        },
-      });
-
-      // Update user totals (authoritative total)
-      // Keep both user.xpTotal and progress.xp in sync for now.
-      const user = await tx.user.update({
-        where: { id: userId },
-        data: { xpTotal: { increment: xpAwarded } },
-      });
-
-      const prog2 = await tx.userProgress.update({
-        where: { userId },
-        data: {
-          xp: { increment: xpAwarded },
-          streak: newStreak,
-          lastActiveAt: now,
-        },
-      });
-
-      return { evt, user, prog2 };
-    });
-
-    // Compute period totals for response
-    const todayStart = new Date(`${todayYMD}T00:00:00.000Z`);
-    const tomorrowStart = new Date(todayStart);
-    tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
-
-    const weekKey = startOfWeekYMD(todayYMD);
-    const weekStart = new Date(`${weekKey}T00:00:00.000Z`);
-    const weekEnd = new Date(weekStart);
-    weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
-
-    const monthStart = new Date(
-      Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1),
-    );
-    const monthEnd = new Date(
-      Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1),
-    );
-
-    const [todayXP, weeklyXP, monthlyXP] = await Promise.all([
-      sumXpForUserBetween(userId, todayStart, tomorrowStart),
-      sumXpForUserBetween(userId, weekStart, weekEnd),
-      sumXpForUserBetween(userId, monthStart, monthEnd),
-    ]);
-
-    return res.json({
-      ok: true,
-      xpAwarded,
-      totalXP: Number(result.user?.xpTotal || result.prog2?.xp || 0),
-      streak: Number(result.prog2?.streak || 0),
-      todayXP,
-      weeklyXP,
-      monthlyXP,
-      event: result.evt,
-    });
-  } catch (err) {
-    console.error("XP commit failed:", err);
-    return res.status(500).json({ ok: false, error: "XP commit failed" });
-  }
-});
-router.post("/commit", async (req, res) => {
-  try {
-    const userId = req.user?.id;
-    if (!userId)
-      return res.status(401).json({ ok: false, error: "Unauthorized" });
-
-    const {
-      attemptId,
-      mode = "reorder",
-      lessonId = null,
-      questionId = null,
-      isCorrect = false,
-      attemptNo = 0,
-      timeTakenSec = null,
-      completedQuiz = false,
-    } = req.body || {};
-
-    // Basic validation
-    if (!attemptId) {
-      return res
-        .status(400)
-        .json({ ok: false, error: "attemptId is required" });
-    }
-
-    // Idempotency: if already credited, return the existing outcome
-    const existing = await findExistingByAttemptId(userId, attemptId);
-    if (existing) {
-      // Recompute totals snapshot so UI stays consistent
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      const progress = await prisma.userProgress.findUnique({
-        where: { userId },
-      });
-
-      const todayYMD = ymdInTZ(new Date());
-      const todayStart = new Date(`${todayYMD}T00:00:00.000Z`);
-      const tomorrowStart = new Date(todayStart);
-      tomorrowStart.setUTCDate(tomorrowStart.getUTCDate() + 1);
-
-      const weekKey = startOfWeekYMD(todayYMD);
-      const weekStart = new Date(`${weekKey}T00:00:00.000Z`);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
-
-      const monthStart = new Date(
-        Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1),
-      );
-      const monthEnd = new Date(
-        Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 1),
-      );
-
-      const [todayXP, weeklyXP, monthlyXP] = await Promise.all([
-        sumXpForUserBetween(userId, todayStart, tomorrowStart),
-        sumXpForUserBetween(userId, weekStart, weekEnd),
-        sumXpForUserBetween(userId, monthStart, monthEnd),
-      ]);
-
-      // if (existing) {
-      //   return res.json({
-      //     ok: true,
-      //     idempotent: true,
-      //     xpAwarded: existing.delta,
-      //     ...
-      //   });
-      // }
-
-    // Compute award (server-owned)
-    const xpAwarded = computeXpAward({ mode, isCorrect, attemptNo });
-
-    console.log("XP AWARDED (fresh):", {
-      mode,
-      isCorrect,
-      attemptNo,
-      xpAwarded,
-    });
-
-    // Update streak only when there is a real practice attempt (correct OR wrong).
-    // We update lastActiveAt on every commit, but only increment streak on first activity of a new day.
-    const now = new Date();
-    const todayYMD = ymdInTZ(now);
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayYMD = ymdInTZ(yesterday);
-
-    const progress = await prisma.userProgress.upsert({
-      where: { userId },
-      create: { userId, xp: 0, streak: 0, badges: [], lastActiveAt: now },
-      update: { lastActiveAt: now },
     });
 
     let newStreak = Number(progress?.streak || 0);
