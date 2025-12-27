@@ -509,24 +509,23 @@ router.post("/commit", async (req, res) => {
       : `practice_${mode}_wrong`;
 
     // Write event + totals in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const evt = await tx.xpEvent.create({
-        data: {
-          userId,
-          delta: xpAwarded,
-          type,
-          meta: {
-            attemptId,
-            mode,
-            lessonId,
-            questionId,
-            attemptNo,
-            timeTakenSec,
-            completedQuiz: !!completedQuiz,
-            isCorrect: !!isCorrect,
-          },
+    const evt = await tx.xpEvent.create({
+      data: {
+        user_id: userId,        // ✅ schema-aligned
+        xp_delta: xpAwarded,    // ✅ REQUIRED field
+        type,
+        meta: {
+          attemptId,
+          mode,
+          lessonId,
+          questionId,
+          attemptNo,
+          timeTakenSec,
+          completedQuiz: !!completedQuiz,
+          isCorrect: !!isCorrect,
         },
-      });
+      },
+    });
 
       // Update user totals (authoritative total)
       // Keep both user.xpTotal and progress.xp in sync for now.
