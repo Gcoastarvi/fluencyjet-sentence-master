@@ -452,7 +452,7 @@ router.post("/commit", async (req, res) => {
       return res.json({
         ok: true,
         idempotent: true,
-        xpAwarded, // ✅ FIX
+        xpAwarded: existing.delta,
         totalXP: Number(user?.xpTotal || progress?.xp || 0),
         streak: Number(progress?.streak || 0),
         todayXP,
@@ -487,18 +487,16 @@ router.post("/commit", async (req, res) => {
         xp: 0,
         streak: 0,
         badges: [],
-        lastActiveAt: now,
+        updated_at: now,
       },
-      update: {
-        lastActiveAt: now,
-      },
+      update: { updated_at: now },
     });
 
     let newStreak = Number(progress?.streak || 0);
 
     // Increment streak only if this is the first activity today (based on lastActiveAt)
-    const lastActiveYMD = progress?.lastActiveAt
-      ? ymdInTZ(progress.lastActiveAt)
+    const lastActiveYMD = progress?.updated_at
+      ? ymdInTZ(progress.updated_at)
       : null;
     if (lastActiveYMD !== todayYMD) {
       if (lastActiveYMD === yesterdayYMD) newStreak = newStreak + 1;
