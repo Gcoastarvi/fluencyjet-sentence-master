@@ -4,6 +4,8 @@ import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+const allowed = new Set(["today", "weekly", "monthly", "all"]);
+const period = allowed.has(req.query.period) ? req.query.period : "weekly";
 
 function startOfDay(d = new Date()) {
   const x = new Date(d);
@@ -11,46 +13,59 @@ function startOfDay(d = new Date()) {
   return x;
 }
 
-function startOfWeekMonday(d = new Date()) {
-  const x = startOfDay(d);
-  const day = x.getDay();
-  const diff = (day + 6) % 7;
-  x.setDate(x.getDate() - diff);
-  return x;
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
 }
 
-function startOfMonth(d = new Date()) {
-  return new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
-}
-
-function rangeForPeriod(period) {
+function whereForPeriod(period) {
   const now = new Date();
+
   if (period === "today") {
-    const start = startOfDay(now);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 1);
-    return { start, end };
-  }
-  if (period === "monthly") {
-    const start = startOfMonth(now);
-    const end = new Date(
-      start.getFullYear(),
-      start.getMonth() + 1,
-      1,
-      0,
-      0,
-      0,
-      0,
-    );
-    return { start, end };
+    return { created_at: { gte: startOfDay(now), lt: now } };
   }
   if (period === "weekly") {
-    const start = startOfWeekMonday(now);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    return { start, end };
+    return { created_at: { gte: daysAgo(7), lt: now } };
   }
-  return { start: null, end: null }; // all time
+  if (period === "monthly") {
+    return { created_at: { gte: daysAgo(30), lt: now } };
+  }
+  // "all"
+  return {};
+}
+
+async function aggregateXP(period) {
+  const where = whereForPeriod(period);
+
+  const grouped = await prisma.xpEvent.groupBy({
+    by: ["user_id"],
+    where,
+    _sum: { xp_delta: true },
+    orderBy: { _sum: { xp_delta: "desc" } },
+    take: 50,
+  });
+
+  const userIds = grouped
+    .map((g) => g.user_id)
+    .filter((v) => typeof v === "number");
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, name: true, email: true },
+  });
+
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return grouped.map((g, i) => {
+    const u = userMap.get(g.user_id);
+    return {
+      rank: i + 1,
+      user_id: g.user_id,
+      name: u?.name || u?.email || `User ${g.user_id}`,
+      xp: Number(g._sum.xp_delta || 0),
+    };
+  });
 }
 
 router.get("/", authRequired, async (req, res) => {

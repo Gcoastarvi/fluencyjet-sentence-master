@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { api } from "@/api/apiClient";
 import { getDisplayName } from "@/utils/displayName";
 import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const LEVELS = [
   { level: 1, xp: 0 },
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { xpCapReached, plan } = useAuth();
+  const navigate = useNavigate();
 
   const streakLS = Number(localStorage.getItem("fj_streak")) || 0;
   const xpLS = Number(localStorage.getItem("fj_xp")) || 0;
@@ -118,21 +120,76 @@ export default function Dashboard() {
     100,
     Math.round((currentLevelXP / levelSpan) * 100),
   );
+  
+  const DEV_ONLY = import.meta.env.DEV;
+
+  function getJwt() {
+    try { return localStorage.getItem("token") || ""; } catch { return ""; }
+  }
+
+  async function copyJwtToClipboard() {
+    const token = getJwt();
+    if (!token) return alert("No token found. Please login first.");
+
+    await navigator.clipboard.writeText(token);
+    alert("JWT copied to clipboard ✅");
+  }
+  
+  function humanizeEventType(type) {
+    if (!type) return "XP Event";
+
+    // expected: PX_RC_xxxxx
+    const parts = String(type).split("_");
+    if (parts[0] !== "PX" || !parts[1]) return type;
+
+    const modeRes = parts[1]; // e.g. "RC"
+    const mode = modeRes[0];
+    const res = modeRes[1];
+
+    const modeMap = {
+      R: "Reorder",
+      T: "Typing",
+      D: "Drag & Drop",
+      C: "Cloze",
+    };
+
+    const resMap = {
+      C: "Correct",
+      W: "Wrong",
+    };
+
+    const modeLabel = modeMap[mode] || "Practice";
+    const resLabel = resMap[res] || "";
+
+    return resLabel ? `${modeLabel} • ${resLabel}` : modeLabel;
+  }
 
   // -----------------------
   // 🧩 Render
   // -----------------------
-  return (
-    <div className="fj-dashboard-page">
-      <header className="fj-dashboard-header">
-        <div>
-          <h1 className="fj-dashboard-title">Your Dashboard</h1>
-          <p className="fj-dashboard-subtitle">
-            Welcome back,{" "}
-            <span className="fj-dashboard-name">{getDisplayName()}</span>
-          </p>
-        </div>
-      </header>
+  <header className="fj-dashboard-header">
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <h1 className="fj-dashboard-title">Your Dashboard</h1>
+        <p className="fj-dashboard-subtitle">
+          Welcome back,{" "}
+          <span className="fj-dashboard-name">{getDisplayName()}</span>
+        </p>
+      </div>
+
+      {DEV_ONLY && (
+        <button
+          type="button"
+          onClick={copyJwtToClipboard}
+          className="ml-auto px-3 py-1 text-xs rounded bg-slate-900 text-white"
+          title="Dev-only: copy JWT"
+        >
+          Copy JWT
+        </button>
+      )}
+    </div>
+  </header>
+
       {/* 🔥 Streak + XP */}
       <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow mb-4">
         <div className="text-orange-600 font-semibold">
@@ -429,11 +486,12 @@ export default function Dashboard() {
                     <li key={event.id} className="fj-activity-item">
                       <div>
                         <p className="fj-activity-title">
-                          {event.event_type} —{" "}
-                          <span className="fj-activity-xp">
-                            {event.xp_delta} XP
-                          </span>
+                          {humanizeEventType(event.event_type)} —{" "}
+                          <span className="fj-activity-xp">{event.xp_delta} XP</span>
                         </p>
+
+                        <div className="text-xs text-slate-400">{event.event_type}</div>
+
                         <p className="fj-activity-time">
                           {new Date(event.created_at).toLocaleString()}
                         </p>
