@@ -50,7 +50,7 @@ export default function Dashboard() {
   // 🔄 Load Summary on mount
   // -----------------------
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
 
     async function loadSummary() {
       try {
@@ -59,56 +59,48 @@ export default function Dashboard() {
 
         const summaryRes = await api.get("/dashboard/summary");
         if (!summaryRes.ok) {
-          throw new Error(
-            summaryRes.error || "Failed to load dashboard summary",
-          );
+          throw new Error(summaryRes.error || "Failed to load dashboard summary");
         }
 
-        const data = summaryRes.data || {};
+        const data = summaryRes.data; // <-- this is the JSON returned by server
+        if (!data || data.ok === false) {
+          throw new Error(data?.error || "Failed to load dashboard summary");
+        }
+
         const newLevel = data.level ?? 1;
 
-        if (!mounted) return;
+        if (!cancelled) {
+          setSummary({
+            todayXP: data.todayXP ?? 0,
+            yesterdayXP: data.yesterdayXP ?? 0,
+            weeklyXP: data.weeklyXP ?? 0,
+            lastWeekXP: data.lastWeekXP ?? 0,
+            monthlyXP: data.monthlyXP ?? 0,
+            totalXP: data.totalXP ?? 0,
+            level: newLevel,
+            xpToNextLevel: data.xpToNextLevel ?? 0,
+            streak: data.streak ?? 0,
+            nextBadge: data.nextBadge ?? null,
+            pendingLessons: data.pendingLessons ?? [],
+            recentActivity: data.recentActivity ?? [],
+          });
 
-        setSummary({
-          todayXP: data.todayXP ?? 0,
-          yesterdayXP: data.yesterdayXP ?? 0,
-          weeklyXP: data.weeklyXP ?? 0,
-          lastWeekXP: data.lastWeekXP ?? 0,
-          monthlyXP: data.monthlyXP ?? 0,
-          totalXP: data.totalXP ?? 0,
-          level: newLevel,
-          xpToNextLevel: data.xpToNextLevel ?? 0,
-          streak: data.streak ?? 0,
-          nextBadge: data.nextBadge ?? null,
-          pendingLessons: data.pendingLessons ?? [],
-          recentActivity: data.recentActivity ?? [],
-        });
-
-        // Persist for header widgets
-        localStorage.setItem("fj_xp", String(data.totalXP ?? 0));
-        localStorage.setItem("fj_streak", String(data.streak ?? 0));
-
-        // 🎉 Level-up detection (safe: avoids dependency loop)
-        setPrevLevel((prev) => {
-          if (prev !== null && newLevel > prev) {
-            setShowLevelUp(true);
-            setTimeout(() => setShowLevelUp(false), 2000);
-          }
-          return newLevel;
-        });
+          // sync localStorage fallback
+          localStorage.setItem("fj_xp", String(data.totalXP ?? 0));
+          localStorage.setItem("fj_streak", String(data.streak ?? 0));
+        }
       } catch (err) {
         console.error("Dashboard Load Error:", err);
-        if (mounted)
-          setError("Failed to load dashboard. Showing default values.");
+        if (!cancelled) setError(err.message || "Failed to load dashboard");
       } finally {
-        if (mounted) setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     loadSummary();
 
     return () => {
-      mounted = false;
+      cancelled = true;
     };
   }, []);
 

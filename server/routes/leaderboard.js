@@ -1,108 +1,134 @@
+// server/routes/leaderboard.js
 import express from "express";
 import prisma from "../db/client.js";
-import authRequired from "../middleware/authMiddleware.js";
+import { authRequired } from "../middleware/authRequired.js";
 
 const router = express.Router();
-router.use(authRequired);
 
-const INDIA_TZ = "Asia/Kolkata";
-
-function ymdInTZ(date = new Date()) {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: INDIA_TZ,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-
-  const y = parts.find((p) => p.type === "year").value;
-  const m = parts.find((p) => p.type === "month").value;
-  const d = parts.find((p) => p.type === "day").value;
-  return `${y}-${m}-${d}`;
+function startOfDay(d = new Date()) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
 }
 
-function startOfWeekYMD(ymd) {
-  const [Y, M, D] = ymd.split("-").map(Number);
-  const dt = new Date(Date.UTC(Y, M - 1, D));
-  const day = dt.getUTCDay(); // 0=Sun
-  const diff = (day === 0 ? -6 : 1) - day;
-  dt.setUTCDate(dt.getUTCDate() + diff);
-  return dt.toISOString().slice(0, 10);
+function startOfWeekMonday(d = new Date()) {
+  const x = startOfDay(d);
+  const day = x.getDay();
+  const diff = (day + 6) % 7;
+  x.setDate(x.getDate() - diff);
+  return x;
 }
 
-async function aggregateXP(start, end) {
-  return prisma.xpEvent.groupBy({
-    by: ["user_id"],
-    where: { created_at: { gte: start, lt: end } },
-    _sum: { xp_delta: true },
-  });
+function startOfMonth(d = new Date()) {
+  return new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
 }
 
-router.get("/", async (req, res) => {
+function rangeForPeriod(period) {
+  const now = new Date();
+  if (period === "today") {
+    const start = startOfDay(now);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return { start, end };
+  }
+  if (period === "monthly") {
+    const start = startOfMonth(now);
+    const end = new Date(
+      start.getFullYear(),
+      start.getMonth() + 1,
+      1,
+      0,
+      0,
+      0,
+      0,
+    );
+    return { start, end };
+  }
+  if (period === "weekly") {
+    const start = startOfWeekMonday(now);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 7);
+    return { start, end };
+  }
+  return { start: null, end: null }; // all time
+}
+
+router.get("/", authRequired, async (req, res) => {
   try {
-    const userId = req.user.id;
-    const period = (req.query.period || "weekly").toLowerCase();
+    const period = String(req.query.period || "weekly");
+    const { start, end } = rangeForPeriod(period);
 
-    const now = new Date();
-    let start, end;
-
-    if (period === "today") {
-      const today = ymdInTZ(now);
-      start = new Date(`${today}T00:00:00.000Z`);
-      end = new Date(start);
-      end.setUTCDate(end.getUTCDate() + 1);
-    } else if (period === "monthly") {
-      start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-      end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-    } else if (period === "all") {
-      start = new Date(0);
-      end = now;
-    } else {
-      // weekly default
-      const today = ymdInTZ(now);
-      const wk = startOfWeekYMD(today);
-      start = new Date(`${wk}T00:00:00.000Z`);
-      end = new Date(start);
-      end.setUTCDate(end.getUTCDate() + 7);
+    const where = {};
+    if (start && end) {
+      where.created_at = { gte: start, lt: end };
     }
 
-    const xpRows = await aggregateXP(start, end);
+    const grouped = await prisma.xpEvent.groupBy({
+      by: ["user_id"],
+      where,
+      _sum: { xp_delta: true },
+      orderBy: { _sum: { xp_delta: "desc" } },
+      take: 200,
+    });
 
-    const userIds = xpRows.map((r) => r.userId);
+    const userIds = (grouped || [])
+      .map((r) => r.user_id)
+      .filter((v) => typeof v === "number");
+
+    if (userIds.length === 0) {
+      return res.json({
+        ok: true,
+        period,
+        totalLearners: 0,
+        rows: [],
+        top: [],
+        you: null,
+      });
+    }
 
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, email: true, name: true, xpTotal: true },
+      select: { id: true, name: true, email: true },
     });
 
-    const userMap = Object.fromEntries(users.map((u) => [u.id, u]));
+    const userMap = new Map(users.map((u) => [u.id, u]));
 
-    const rows = xpRows
-      .map((r) => ({
-        userId: r.user_id,
-        xp: Number(r._sum.xp_delta || 0),
-        name:
-          userMap[r.user_id]?.name ||
-          userMap[r.user_id]?.email?.split("@")[0] ||
-          "Learner",
-      }))
-      .filter((r) => r.xp > 0)
-      .sort((a, b) => b.xp - a.xp)
-      .map((r, i) => ({ ...r, rank: i + 1 }));
+    const rows = grouped
+      .map((r, idx) => {
+        const u = userMap.get(r.user_id);
+        const xp = Number(r?._sum?.xp_delta ?? 0);
+        return {
+          rank: idx + 1,
+          user_id: r.user_id,
+          name: u?.name || "Learner",
+          xp,
+        };
+      })
+      .sort((a, b) => b.xp - a.xp);
 
-    const you = rows.find((r) => r.userId === userId) || null;
+    // Re-rank after sort
+    rows.forEach((r, i) => (r.rank = i + 1));
+
+    const top = rows.slice(0, 3);
+
+    const meId = req.user.id;
+    const youRow = rows.find((r) => r.user_id === meId) || null;
 
     return res.json({
       ok: true,
       period,
       totalLearners: rows.length,
       rows,
-      top: rows.slice(0, 5),
-      you,
+      top,
+      you: youRow
+        ? { rank: youRow.rank, xp: youRow.xp, name: youRow.name }
+        : null,
     });
   } catch (err) {
     console.error("Leaderboard error:", err);
-    res.status(500).json({ ok: false, message: "Leaderboard failed" });
+    return res
+      .status(500)
+      .json({ ok: false, message: "Failed to load leaderboard" });
   }
 });
 
