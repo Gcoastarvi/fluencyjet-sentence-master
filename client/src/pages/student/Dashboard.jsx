@@ -47,6 +47,29 @@ export default function Dashboard() {
   const lastSession = JSON.parse(localStorage.getItem("fj_last_session"));
   const resumeQuestionNumber =
     lastSession?.questionIndex != null ? lastSession.questionIndex + 1 : null;
+  
+  function humanizeEventType(type = "") {
+    if (!type.startsWith("PX_")) return type;
+
+    const parts = type.split("_"); // ["PX", "RC", "a1b2..."]
+    const code = parts[1] || "";
+    const suffix = parts[2] || "";
+
+    const modeChar = code[0]; // R/T/D/C
+    const resultChar = code[1]; // C/W
+
+    const mode =
+      modeChar === "R" ? "Reorder" :
+      modeChar === "T" ? "Typing" :
+      modeChar === "D" ? "Drag & Drop" :
+      modeChar === "C" ? "Cloze" :
+      "Practice";
+
+    const result = resultChar === "C" ? "Correct" : "Wrong";
+    const short = suffix ? suffix.slice(0, 6) : "";
+
+    return `${mode} • ${result}${short ? ` • ${short}` : ""}`;
+  }
 
   // -----------------------
   // 🔄 Load Summary on mount
@@ -100,6 +123,19 @@ export default function Dashboard() {
     }
 
     loadSummary();
+
+    const DEV_ONLY = import.meta.env.DEV;
+
+    function copyJwtToClipboard() {
+      const token =
+        localStorage.getItem("fj_token") ||
+        localStorage.getItem("token") ||
+        "";
+      if (!token) return alert("No token found in localStorage");
+
+      navigator.clipboard.writeText(token);
+      alert("JWT copied!");
+    }
 
     return () => {
       cancelled = true;
@@ -167,27 +203,27 @@ export default function Dashboard() {
   // -----------------------
   // 🧩 Render
   // -----------------------
-  <header className="fj-dashboard-header">
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <h1 className="fj-dashboard-title">Your Dashboard</h1>
-        <p className="fj-dashboard-subtitle">
-          Welcome back,{" "}
-          <span className="fj-dashboard-name">{getDisplayName()}</span>
-        </p>
-      </div>
-
-      {DEV_ONLY && (
-        <button
-          type="button"
-          onClick={copyJwtToClipboard}
-          className="ml-auto px-3 py-1 text-xs rounded bg-slate-900 text-white"
-          title="Dev-only: copy JWT"
-        >
-          Copy JWT
-        </button>
-      )}
+  return (
+    <div className="fj-dashboard-page">
+      {/* Header */}
+  <header className="fj-dashboard-header flex items-center gap-3">
+    <div className="min-w-0">
+      <h1 className="fj-dashboard-title">Your Dashboard</h1>
+      <p className="fj-dashboard-subtitle">Welcome back, {userName}</p>
     </div>
+
+    <div className="flex-1" />
+
+    {DEV_ONLY && (
+      <button
+        type="button"
+        onClick={copyJwtToClipboard}
+        className="ml-auto px-3 py-1 text-xs rounded bg-slate-900 text-white"
+        title="Dev-only: copy JWT"
+      >
+        Copy JWT
+      </button>
+    )}
   </header>
 
       {/* 🔥 Streak + XP */}
