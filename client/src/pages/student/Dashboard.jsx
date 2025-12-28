@@ -203,9 +203,7 @@ export default function Dashboard() {
   // -----------------------
   // 🧩 Render
   // -----------------------
-  return (
-    <div className="fj-dashboard-page">
-      {/* Header */}
+  {/* Header */}
   <header className="fj-dashboard-header flex items-center gap-3">
     <div className="min-w-0">
       <h1 className="fj-dashboard-title">Your Dashboard</h1>
