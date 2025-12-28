@@ -59,14 +59,15 @@ router.get("/summary", authRequired, async (req, res) => {
       where: { user_id: userId },
     });
 
-    const totalXP = Number(user?.xpTotal ?? progress?.xp ?? 0);
+    // Works whether your column is total_xp (new) or xp (old)
+    let totalXP = Number(progress?.total_xp ?? progress?.xp ?? 0);
 
     if (!progress) {
       const agg = await prisma.xpEvent.aggregate({
         where: { user_id: userId },
         _sum: { xp_delta: true },
       });
-      totalXP = agg._sum.xp_delta || 0;
+      totalXP = Number(agg._sum.xp_delta || 0);
     }
 
     /* ---------------- Aggregations ---------------- */
@@ -144,9 +145,10 @@ router.get("/summary", authRequired, async (req, res) => {
 
     const recentActivity = recentRaw.map((e) => ({
       id: e.id,
-      event_type: e.type, // client expects event_type
-      xp_delta: Number(e.xp_delta || 0), // client expects xp_delta
-      created_at: e.created_at, // client expects created_at
+      xp_delta: Number(e.xp_delta),
+      event_type: e.event_type,
+      created_at: e.created_at,
+      meta: e.meta,
     }));
 
     const streak = Number(progress?.streak ?? 0);

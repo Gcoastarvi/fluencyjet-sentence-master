@@ -50,14 +50,24 @@ export default function Dashboard() {
   // 🔄 Load Summary on mount
   // -----------------------
   useEffect(() => {
+    let mounted = true;
+
     async function loadSummary() {
       try {
         setLoading(true);
         setError("");
 
-        const data = await api.get("/dashboard/summary");
+        const summaryRes = await api.get("/dashboard/summary");
+        if (!summaryRes.ok) {
+          throw new Error(
+            summaryRes.error || "Failed to load dashboard summary",
+          );
+        }
 
+        const data = summaryRes.data || {};
         const newLevel = data.level ?? 1;
+
+        if (!mounted) return;
 
         setSummary({
           todayXP: data.todayXP ?? 0,
@@ -74,25 +84,32 @@ export default function Dashboard() {
           recentActivity: data.recentActivity ?? [],
         });
 
+        // Persist for header widgets
         localStorage.setItem("fj_xp", String(data.totalXP ?? 0));
         localStorage.setItem("fj_streak", String(data.streak ?? 0));
 
-        /* 🎉 Level-up detection */
-        if (prevLevel !== null && newLevel > prevLevel) {
-          setShowLevelUp(true);
-          setTimeout(() => setShowLevelUp(false), 2000);
-        }
-
-        setPrevLevel(newLevel);
+        // 🎉 Level-up detection (safe: avoids dependency loop)
+        setPrevLevel((prev) => {
+          if (prev !== null && newLevel > prev) {
+            setShowLevelUp(true);
+            setTimeout(() => setShowLevelUp(false), 2000);
+          }
+          return newLevel;
+        });
       } catch (err) {
         console.error("Dashboard Load Error:", err);
-        setError("Failed to load dashboard. Showing default values.");
+        if (mounted)
+          setError("Failed to load dashboard. Showing default values.");
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     }
 
     loadSummary();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // -----------------------

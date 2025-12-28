@@ -32,9 +32,9 @@ function startOfWeekYMD(ymd) {
 
 async function aggregateXP(start, end) {
   return prisma.xpEvent.groupBy({
-    by: ["userId"],
-    where: { createdAt: { gte: start, lt: end } },
-    _sum: { delta: true },
+    by: ["user_id"],
+    where: { created_at: { gte: start, lt: end } },
+    _sum: { xp_delta: true },
   });
 }
 
@@ -79,11 +79,11 @@ router.get("/", async (req, res) => {
 
     const rows = xpRows
       .map((r) => ({
-        userId: r.userId,
-        xp: Number(r._sum.delta || 0),
+        userId: r.user_id,
+        xp: Number(r._sum.xp_delta || 0),
         name:
-          userMap[r.userId]?.name ||
-          userMap[r.userId]?.email?.split("@")[0] ||
+          userMap[r.user_id]?.name ||
+          userMap[r.user_id]?.email?.split("@")[0] ||
           "Learner",
       }))
       .filter((r) => r.xp > 0)
