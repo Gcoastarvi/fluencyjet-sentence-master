@@ -6,9 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
-
-  const DEV_ONLY = import.meta.env.DEV;
+  const { user, logout } = useAuth();  
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -31,6 +29,8 @@ export default function Dashboard() {
     await navigator.clipboard.writeText(token);
     alert("JWT copied to clipboard ✅");
   }
+
+  const DEV_ONLY = import.meta.env.DEV;
 
   async function copyJwtToClipboard() {
     const token = localStorage.getItem("token");
