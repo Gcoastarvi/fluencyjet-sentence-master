@@ -78,6 +78,13 @@ export async function request(path, options = {}) {
     data = null;
   }
 
+  // Fire a global event after XP update so dashboards can refresh instantly
+  if (typeof window !== "undefined" && typeof path === "string") {
+    if (path.includes("/progress/update")) {
+      window.dispatchEvent(new Event("fj:xp_updated"));
+    }
+  }
+
   if (!res.ok) {
     return {
       ok: false,

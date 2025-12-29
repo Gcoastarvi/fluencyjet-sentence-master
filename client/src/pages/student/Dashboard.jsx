@@ -15,29 +15,18 @@ export default function Dashboard() {
 
   const DEV_ONLY = import.meta.env.DEV;
 
-  function getToken() {
+  const copyJwtToClipboard = async () => {
     try {
-      return localStorage.getItem("token") || "";
-    } catch {
-      return "";
-    }
-  }
+      const token = localStorage.getItem("fj_token") || "";
+      if (!token) return alert("No JWT found in localStorage (fj_token).");
 
-  async function copyJwtToClipboard() {
-    const token = getToken();
-    if (!token) {
-      alert("No token found. Log in first.");
-      return;
-    }
-
-    try {
       await navigator.clipboard.writeText(token);
       alert("JWT copied ✅");
-    } catch {
-      // Fallback for browsers/permissions that block clipboard API
-      window.prompt("Copy JWT:", token);
+    } catch (e) {
+      console.error("Copy JWT failed:", e);
+      alert("Copy failed — check HTTPS + permissions.");
     }
-  }
+  };
 
   function humanizeEventType(type = "") {
     // keep your existing humanizeEventType implementation here...
@@ -107,20 +96,31 @@ export default function Dashboard() {
   }
 
   // Reload when route changes (dashboard remounts / SPA nav)
-  useEffect(() => {
-    const onXp = () => {
-      // reload summary when XP changes anywhere in the app
-      (async () => {
-        try {
-          const res = await api.get("/dashboard/summary");
-          if (res.ok) setSummary(res.data);
-        } catch {}
-      })();
-    };
+  async function loadSummary() {
+    setLoading(true);
+    setError("");
 
+    const res = await api.get("/dashboard/summary");
+
+    if (!res.ok) {
+      setError(res.data?.message || "Failed to load summary");
+      setLoading(false);
+      return;
+    }
+
+    // ✅ THIS LINE MATTERS
+    setSummary(res.data);
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    const onXp = () => loadSummary();
     window.addEventListener("fj:xp_updated", onXp);
     return () => window.removeEventListener("fj:xp_updated", onXp);
   }, []);
+
+  window.dispatchEvent(new Event("fj:xp_updated"));
 
   const userName = user?.name || "Learner";
 
