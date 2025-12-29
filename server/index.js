@@ -59,17 +59,27 @@ function isAllowedOrigin(origin) {
   return false;
 }
 
-app.use(
-  cors({
-    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
+const corsOptions = {
+  origin: (origin, cb) => {
+    if (isAllowedOrigin(origin)) return cb(null, origin || true);
+    return cb(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "Cache-Control",
+    "Pragma",
+    "If-None-Match",
+  ],
+  exposedHeaders: ["ETag"],
+};
 
-// IMPORTANT: preflight
-app.options("*", cors());
+app.use(cors(corsOptions));
+
+// IMPORTANT: preflight must use the SAME options (not plain cors())
+app.options("*", cors(corsOptions));
 
 /* --------------------------------------------------
    Auth middleware (AFTER cors, BEFORE routes)
