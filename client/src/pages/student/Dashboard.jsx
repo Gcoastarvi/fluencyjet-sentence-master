@@ -32,8 +32,6 @@ export default function Dashboard() {
     alert("JWT copied to clipboard ✅");
   }
 
-  const DEV_ONLY = import.meta.env.DEV;
-
   async function copyJwtToClipboard() {
     const token = localStorage.getItem("token");
     if (!token) return alert("No JWT found in localStorage.");
