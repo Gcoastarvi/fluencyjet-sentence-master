@@ -1,171 +1,233 @@
 // client/src/pages/student/Dashboard.jsx
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
+import { getDisplayName } from "@/utils/displayName";
+
+const LEVELS = [
+  { level: 1, xp: 0 },
+  { level: 2, xp: 1000 },
+  { level: 3, xp: 5000 },
+  { level: 4, xp: 10000 },
+  { level: 5, xp: 50000 },
+  { level: 6, xp: 100000 },
+];
+
+function fmt(n) {
+  const num = Number(n || 0);
+  return Number.isFinite(num) ? num.toLocaleString("en-IN") : "0";
+}
+
+function computeLevel(totalXP = 0) {
+  let current = 1;
+  for (const item of LEVELS) {
+    if (totalXP >= item.xp) current = item.level;
+  }
+  return current;
+}
+
+function xpToNextLevel(totalXP = 0) {
+  const current = computeLevel(totalXP);
+  const next = LEVELS.find((x) => x.level === current + 1);
+  if (!next) return 0;
+  return Math.max(next.xp - totalXP, 0);
+}
+
+function levelProgressPct(totalXP = 0) {
+  const current = computeLevel(totalXP);
+  const curThreshold = LEVELS.find((x) => x.level === current)?.xp ?? 0;
+  const nextThreshold = LEVELS.find((x) => x.level === current + 1)?.xp ?? null;
+  if (!nextThreshold) return 100;
+  const span = nextThreshold - curThreshold;
+  const into = totalXP - curThreshold;
+  if (span <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((into / span) * 100)));
+}
+
+function humanizeEventType(type = "") {
+  if (!type) return "XP Event";
+  if (!String(type).startsWith("PX_")) return type;
+
+  // expected PX_RC_xxxxx where R=mode, C=correctness
+  const parts = String(type).split("_");
+  const modeRes = parts[1] || ""; // e.g. "RC"
+  const mode = modeRes[0];
+  const res = modeRes[1];
+
+  const modeMap = { R: "Reorder", T: "Typing", D: "Drag & Drop", C: "Cloze" };
+  const resMap = { C: "Correct", W: "Wrong" };
+
+  const m = modeMap[mode] || "Practice";
+  const r = resMap[res] || "";
+  return r ? `${m} • ${r}` : m;
+}
+
+const DEV_ONLY = import.meta.env.DEV;
+
+function getJwt() {
+  try {
+    return (
+      localStorage.getItem("fj_token") || localStorage.getItem("token") || ""
+    );
+  } catch {
+    return "";
+  }
+}
 
 export default function Dashboard() {
+  const auth = useAuth();
+  const xpCapReached = auth?.xpCapReached;
+  const plan = auth?.plan;
+
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [summary, setSummary] = useState(null);
+  const [error, setError] = useState("");
 
-  const DEV_ONLY = import.meta.env.DEV;
+  const [userName, setUserName] = useState(
+    () => getDisplayName?.() || "Learner",
+  );
 
-  const copyJwtToClipboard = async () => {
+  const [summary, setSummary] = useState({
+    todayXP: 0,
+    yesterdayXP: 0,
+    weeklyXP: 0,
+    lastWeekXP: 0,
+    monthlyXP: 0,
+    totalXP: 0,
+    level: 1,
+    xpToNextLevel: 0,
+    streak: 0,
+    nextBadge: null,
+    pendingLessons: [],
+    recentActivity: [],
+  });
+
+  const percent = useMemo(
+    () => levelProgressPct(summary.totalXP),
+    [summary.totalXP],
+  );
+
+  const copyJwtToClipboard = useCallback(async () => {
+    const token = getJwt();
+    if (!token) return alert("No token found. Please login first.");
+
     try {
-      const token = localStorage.getItem("fj_token") || "";
-      if (!token) return alert("No JWT found in localStorage (fj_token).");
-
       await navigator.clipboard.writeText(token);
       alert("JWT copied ✅");
     } catch (e) {
-      console.error("Copy JWT failed:", e);
-      alert("Copy failed — check HTTPS + permissions.");
+      console.error(e);
+      alert("Copy failed (browser blocked clipboard).");
     }
-  };
-
-  function humanizeEventType(type = "") {
-    // keep your existing humanizeEventType implementation here...
-    if (!type.startsWith("PX_")) return type;
-
-    const parts = type.split("_"); // ["PX", "RC", "a1b2..."]
-    const code = parts[1] || "";
-    const suffix = parts[2] || "";
-
-    const modeChar = code[0]; // R/T/D/C
-    const resultChar = code[1]; // C/W
-
-    const mode =
-      modeChar === "R"
-        ? "Reorder"
-        : modeChar === "T"
-          ? "Typing"
-          : modeChar === "D"
-            ? "Drag & Drop"
-            : modeChar === "C"
-              ? "Cloze"
-              : "Practice";
-
-    const result = resultChar === "C" ? "Correct" : "Wrong";
-    const short = suffix ? suffix.slice(0, 6) : "";
-
-    return `${mode} • ${result}${short ? ` • ${short}` : ""}`;
-  }
-
-  const levels = useMemo(
-    () => [
-      { level: 1, xp: 1000 },
-      { level: 2, xp: 5000 },
-      { level: 3, xp: 10000 },
-      { level: 4, xp: 50000 },
-      { level: 5, xp: 100000 },
-    ],
-    [],
-  );
-
-  function computeLevel(totalXP = 0) {
-    let current = 1;
-    for (const item of levels) {
-      if (totalXP >= item.xp) current = item.level;
-    }
-    return current;
-  }
-
-  function xpToNextLevel(totalXP = 0) {
-    const current = computeLevel(totalXP);
-    const next = levels.find((x) => x.level === current + 1);
-    if (!next) return 0;
-    return Math.max(next.xp - totalXP, 0);
-  }
-
-  function levelProgressPct(totalXP = 0) {
-    const current = computeLevel(totalXP);
-    const currThreshold = levels.find((x) => x.level === current)?.xp ?? 0;
-    const nextThreshold =
-      levels.find((x) => x.level === current + 1)?.xp ?? null;
-    if (!nextThreshold) return 100;
-    const span = nextThreshold - currThreshold;
-    const into = totalXP - currThreshold;
-    return span <= 0
-      ? 0
-      : Math.max(0, Math.min(100, Math.round((into / span) * 100)));
-  }
-
-  // Reload when route changes (dashboard remounts / SPA nav)
-  async function loadSummary() {
-    setLoading(true);
-    setError("");
-
-    const res = await api.get("/dashboard/summary");
-
-    if (!res.ok) {
-      setError(res.data?.message || "Failed to load summary");
-      setLoading(false);
-      return;
-    }
-
-    // ✅ THIS LINE MATTERS
-    setSummary(res.data);
-
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    const onXp = () => loadSummary();
-    window.addEventListener("fj:xp_updated", onXp);
-    return () => window.removeEventListener("fj:xp_updated", onXp);
   }, []);
 
-  window.dispatchEvent(new Event("fj:xp_updated"));
+  const loadMe = useCallback(async () => {
+    // NOTE: apiClient may return JSON directly OR {ok, data}. Handle both.
+    const res = await api.get("/auth/me");
+    const data = res?.data ?? res;
 
-  const userName = user?.name || "Learner";
+    if (!data?.ok) {
+      throw new Error(data?.error || "Failed to load user");
+    }
 
-  if (loading) {
-    return (
-      <div className="fj-page">
-        <div className="fj-card">
-          <p>Loading dashboard…</p>
-        </div>
-      </div>
-    );
-  }
+    const name =
+      data?.user?.name ||
+      data?.user?.displayName ||
+      data?.user?.email ||
+      data?.email ||
+      "Learner";
 
-  if (err) {
-    return (
-      <div className="fj-page">
-        <div className="fj-card">
-          <p className="fj-error">{err}</p>
-          <button className="fj-btn" onClick={() => window.location.reload()}>
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+    setUserName(name);
+    return data;
+  }, []);
 
-  if (!summary) {
-    return (
-      <div className="fj-page">
-        <div className="fj-card">
-          <p>No data yet.</p>
-        </div>
-      </div>
-    );
-  }
+  const loadSummary = useCallback(async () => {
+    const res = await api.get("/dashboard/summary");
+    const data = res?.data ?? res;
 
-  const totalXP = summary.totalXP ?? 0;
-  const lvl = summary.level ?? computeLevel(totalXP);
-  const toNext = summary.xpToNextLevel ?? xpToNextLevel(totalXP);
-  const pct = levelProgressPct(totalXP);
+    if (!data?.ok) {
+      throw new Error(data?.error || "Failed to load dashboard summary");
+    }
+
+    const totalXP = Number(data.totalXP || 0);
+    const level = Number(data.level || computeLevel(totalXP));
+
+    const next =
+      data.xpToNextLevel != null
+        ? Number(data.xpToNextLevel)
+        : xpToNextLevel(totalXP);
+
+    setSummary({
+      todayXP: Number(data.todayXP || 0),
+      yesterdayXP: Number(data.yesterdayXP || 0),
+      weeklyXP: Number(data.weeklyXP || 0),
+      lastWeekXP: Number(data.lastWeekXP || 0),
+      monthlyXP: Number(data.monthlyXP || 0),
+      totalXP,
+      level,
+      xpToNextLevel: next,
+      streak: Number(data.streak || 0),
+      nextBadge: data.nextBadge ?? null,
+      pendingLessons: Array.isArray(data.pendingLessons)
+        ? data.pendingLessons
+        : [],
+      recentActivity: Array.isArray(data.recentActivity)
+        ? data.recentActivity
+        : [],
+    });
+
+    // keep fallback in LS
+    try {
+      localStorage.setItem("fj_xp", String(totalXP));
+      localStorage.setItem("fj_streak", String(Number(data.streak || 0)));
+    } catch {}
+  }, []);
+
+  // Main loader (never gets stuck in loading=true)
+  const bootstrap = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      await loadMe();
+      await loadSummary();
+    } catch (e) {
+      console.error("Dashboard bootstrap error:", e);
+      setError(e?.message || "Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }, [loadMe, loadSummary]);
+
+  // Load on mount + when route changes (safety)
+  useEffect(() => {
+    bootstrap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  // Refresh on XP events + tab focus (so XP updates instantly)
+  useEffect(() => {
+    const onXp = () => loadSummary();
+    const onFocus = () => loadSummary();
+    const onVis = () => {
+      if (document.visibilityState === "visible") loadSummary();
+    };
+
+    window.addEventListener("fj:xp_updated", onXp);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      window.removeEventListener("fj:xp_updated", onXp);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [loadSummary]);
 
   return (
-    <div className="fj-page">
-      {/* Header */}
-      <header className="fj-header">
+    <div className="fj-dashboard">
+      <header className="fj-dashboard-header">
         <div>
           <h1 className="fj-title">Your Dashboard</h1>
           <p className="fj-subtitle">
@@ -185,127 +247,152 @@ export default function Dashboard() {
         )}
       </header>
 
-      {/* 🔥 Streak + XP */}
-      <div className="fj-card fj-stats-bar">
-        <div className="fj-stats-left">
-          <span className="fj-streak">🔥 {summary.streak}-day streak</span>
+      {plan === "FREE" && (
+        <div className="bg-yellow-50 border border-yellow-300 p-3 rounded mb-4 text-sm">
+          ⚠️ You’re on the FREE plan. Daily XP is limited.
+          <button
+            className="ml-2 text-purple-600 underline"
+            onClick={() => navigate("/paywall")}
+          >
+            Upgrade
+          </button>
         </div>
-        <div className="fj-stats-right">
-          <span className="fj-xp">⭐ {totalXP.toLocaleString()} XP</span>
-        </div>
-      </div>
+      )}
 
-      {/* 📊 XP Progress Bar */}
-      <section className="fj-dashboard-section">
-        <div className="fj-card">
-          <div className="fj-progress-header">
-            <h2 className="fj-section-title">Level {lvl}</h2>
-            <span className="fj-progress-pct">{pct}%</span>
-          </div>
-          <div className="fj-progress-bar">
-            <div className="fj-progress-fill" style={{ width: `${pct}%` }} />
-          </div>
-          <p className="fj-progress-subtitle">
-            {toNext.toLocaleString()} XP to next level
-          </p>
+      {xpCapReached && (
+        <div className="mb-4 p-4 rounded-lg bg-yellow-100 border border-yellow-400 text-yellow-900">
+          You’ve hit today’s FREE XP limit.
+          <a href="/paywall" className="underline font-semibold ml-1">
+            Upgrade to PRO
+          </a>{" "}
+          for unlimited XP.
         </div>
-      </section>
+      )}
 
-      {/* Pending Lessons + Quick Stats */}
-      <section className="fj-dashboard-section">
-        <div className="fj-grid fj-grid-2">
+      {loading ? (
+        <div className="fj-dashboard-loading">Loading dashboard...</div>
+      ) : error ? (
+        <div className="fj-dashboard-error">
+          {error}
+          <div className="mt-2">
+            <button
+              className="px-3 py-1 text-xs rounded bg-slate-900 text-white"
+              onClick={bootstrap}
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Streak + XP */}
+          <div className="fj-card fj-stats-bar">
+            <div className="fj-stats-left">
+              <span className="fj-streak">🔥 {summary.streak}-day streak</span>
+              <span className="fj-xp">⭐ {fmt(summary.totalXP)} XP</span>
+            </div>
+          </div>
+
+          {/* Level progress */}
           <div className="fj-card">
-            <h2 className="fj-section-title">Pending Lessons</h2>
-            {summary.pendingLessons && summary.pendingLessons.length > 0 ? (
-              <ul className="fj-list">
-                {summary.pendingLessons.map((lesson) => (
-                  <li
-                    key={`${event.event_type}-${event.created_at}`}
-                    className="fj-activity-item"
-                  >
-                    <div>
-                      <p className="fj-list-title">{lesson.title}</p>
-                      {lesson.description && (
-                        <p className="fj-list-subtitle">{lesson.description}</p>
+            <h2 className="fj-section-title">Level {summary.level}</h2>
+            <div className="fj-progress-bar">
+              <div
+                className="fj-progress-fill"
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <p className="fj-progress-caption">
+              {percent}% • {fmt(summary.xpToNextLevel)} XP to next level
+            </p>
+          </div>
+
+          {/* Pending + Snapshot */}
+          <div className="fj-grid fj-grid-2">
+            <div className="fj-card">
+              <h2 className="fj-section-title">Pending Lessons</h2>
+              {summary.pendingLessons?.length ? (
+                <ul className="fj-list">
+                  {summary.pendingLessons.map((l) => (
+                    <li key={l.id || l.title} className="fj-list-item">
+                      <span>{l.title}</span>
+                      {l.xpReward != null && (
+                        <span className="fj-chip">+{l.xpReward} XP</span>
                       )}
-                    </div>
-                    {lesson.xpReward != null && (
-                      <span className="fj-chip">+{lesson.xpReward} XP</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="fj-empty-state">All caught up! 🎉</p>
-            )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="fj-empty-state">All caught up! 🎉</p>
+              )}
+            </div>
+
+            <div className="fj-card">
+              <h2 className="fj-section-title">Daily Snapshot</h2>
+              <div className="fj-snapshot-row">
+                <span className="fj-snapshot-label">Today&apos;s XP</span>
+                <span className="fj-snapshot-value">
+                  {fmt(summary.todayXP)}
+                </span>
+              </div>
+              <div className="fj-snapshot-row">
+                <span className="fj-snapshot-label">Yesterday</span>
+                <span className="fj-snapshot-value">
+                  {fmt(summary.yesterdayXP)}
+                </span>
+              </div>
+              <div className="fj-snapshot-row">
+                <span className="fj-snapshot-label">This Week</span>
+                <span className="fj-snapshot-value">
+                  {fmt(summary.weeklyXP)}
+                </span>
+              </div>
+              <div className="fj-snapshot-row">
+                <span className="fj-snapshot-label">Last Week</span>
+                <span className="fj-snapshot-value">
+                  {fmt(summary.lastWeekXP)}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="fj-card">
-            <h2 className="fj-section-title">Daily Snapshot</h2>
-            <div className="fj-snapshot-row">
-              <span className="fj-snapshot-label">Today&apos;s XP</span>
-              <span className="fj-snapshot-value">{summary.todayXP}</span>
+          {/* Recent Activity */}
+          <section className="fj-dashboard-section">
+            <div className="fj-card">
+              <h2 className="fj-section-title">Recent Activity</h2>
+              {summary.recentActivity?.length ? (
+                <ul className="fj-activity-list">
+                  {summary.recentActivity.map((event) => (
+                    <li
+                      key={`${event.event_type}-${event.created_at}`}
+                      className="fj-activity-item"
+                    >
+                      <div>
+                        <p className="fj-activity-title">
+                          {humanizeEventType(event.event_type)}{" "}
+                          <span className="fj-activity-xp">
+                            {event.xp_delta} XP
+                          </span>
+                        </p>
+                        <div className="text-xs text-slate-400">
+                          {event.event_type}
+                        </div>
+                        <p className="fj-activity-time">
+                          {new Date(event.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="fj-empty-state">
+                  No activity yet. Start practicing!
+                </p>
+              )}
             </div>
-            <div className="fj-snapshot-row">
-              <span className="fj-snapshot-label">Yesterday</span>
-              <span className="fj-snapshot-value">{summary.yesterdayXP}</span>
-            </div>
-            <div className="fj-snapshot-row">
-              <span className="fj-snapshot-label">This Week</span>
-              <span className="fj-snapshot-value">{summary.weeklyXP}</span>
-            </div>
-            <div className="fj-snapshot-row">
-              <span className="fj-snapshot-label">Last Week</span>
-              <span className="fj-snapshot-value">{summary.lastWeekXP}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Recent Activity */}
-      <section className="fj-dashboard-section">
-        <div className="fj-card">
-          <h2 className="fj-section-title">Recent Activity</h2>
-          {summary.recentActivity && summary.recentActivity.length > 0 ? (
-            <ul className="fj-activity-list">
-              {summary.recentActivity.map((event) => (
-                <li
-                  key={`${event.event_type}-${event.created_at}`}
-                  className="fj-activity-item"
-                >
-                  <div>
-                    <p className="fj-activity-title">
-                      {humanizeEventType(event.event_type)}{" "}
-                      <span className="fj-activity-xp">
-                        {event.xp_delta} XP
-                      </span>
-                    </p>
-
-                    <div className="text-xs text-slate-400">
-                      {event.event_type}
-                    </div>
-
-                    <p className="fj-activity-time">
-                      {new Date(event.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="fj-empty-state">No activity yet. Start practicing!</p>
-          )}
-        </div>
-      </section>
-
-      <div className="fj-actions">
-        <Link className="fj-btn fj-btn-primary" to="/practice">
-          Continue Practising
-        </Link>
-        <button className="fj-btn" onClick={() => logout()}>
-          Logout
-        </button>
-      </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }
