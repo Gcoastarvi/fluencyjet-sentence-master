@@ -56,9 +56,13 @@ export async function request(path, options = {}) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  headers.set("Cache-Control", "no-store");
+  headers.set("Pragma", "no-cache");
+
   const res = await fetch(url, {
     ...options,
     headers,
+    cache: "no-store",
   });
 
   let data = null;

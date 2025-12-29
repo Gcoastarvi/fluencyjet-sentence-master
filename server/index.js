@@ -22,6 +22,14 @@ import { authMiddleware } from "./middleware/authMiddleware.js";
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+app.set("etag", false);
+
+// Prevent caching for API responses (fixes 304 issues in browser)
+app.use("/api", (req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
+
 /* --------------------------------------------------
    Core middleware
 -------------------------------------------------- */

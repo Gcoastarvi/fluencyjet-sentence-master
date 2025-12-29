@@ -32,6 +32,21 @@ export default function Dashboard() {
     alert("JWT copied to clipboard ✅");
   }
 
+  const DEV_ONLY = import.meta.env.DEV;
+
+  async function copyJwtToClipboard() {
+    const token = localStorage.getItem("token");
+    if (!token) return alert("No JWT found in localStorage.");
+
+    try {
+      await navigator.clipboard.writeText(token);
+      alert("JWT copied ✅");
+    } catch {
+      // fallback
+      window.prompt("Copy JWT:", token);
+    }
+  }
+
   function humanizeEventType(type = "") {
     // Example: PX_RC_a1b2c3d4e5
     if (!type.startsWith("PX_")) return type;
@@ -223,7 +238,10 @@ export default function Dashboard() {
             {summary.pendingLessons && summary.pendingLessons.length > 0 ? (
               <ul className="fj-list">
                 {summary.pendingLessons.map((lesson) => (
-                  <li key={lesson.id} className="fj-list-item">
+                  <li
+                    key={`${event.event_type}-${event.created_at}`}
+                    className="fj-activity-item"
+                  >
                     <div>
                       <p className="fj-list-title">{lesson.title}</p>
                       {lesson.description && (
