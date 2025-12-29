@@ -1,16 +1,19 @@
 // client/src/pages/student/Dashboard.jsx
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();  
+  const location = useLocation();
+  const { user, logout } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [summary, setSummary] = useState(null);
+
+  const DEV_ONLY = import.meta.env.DEV;
 
   function getToken() {
     try {
@@ -26,27 +29,18 @@ export default function Dashboard() {
       alert("No token found. Log in first.");
       return;
     }
-    await navigator.clipboard.writeText(token);
-    alert("JWT copied to clipboard ✅");
-  }
-
-  const DEV_ONLY = import.meta.env.DEV;
-
-  async function copyJwtToClipboard() {
-    const token = localStorage.getItem("token");
-    if (!token) return alert("No JWT found in localStorage.");
 
     try {
       await navigator.clipboard.writeText(token);
       alert("JWT copied ✅");
     } catch {
-      // fallback
+      // Fallback for browsers/permissions that block clipboard API
       window.prompt("Copy JWT:", token);
     }
   }
 
   function humanizeEventType(type = "") {
-    // Example: PX_RC_a1b2c3d4e5
+    // keep your existing humanizeEventType implementation here...
     if (!type.startsWith("PX_")) return type;
 
     const parts = type.split("_"); // ["PX", "RC", "a1b2..."]
@@ -112,31 +106,20 @@ export default function Dashboard() {
       : Math.max(0, Math.min(100, Math.round((into / span) * 100)));
   }
 
+  // Reload when route changes (dashboard remounts / SPA nav)
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      setLoading(true);
-      setErr("");
-      try {
-        const res = await api.get("/dashboard/summary");
-        if (!alive) return;
-        if (!res.ok) {
-          setErr(res.message || "Failed to load dashboard summary.");
-          setSummary(null);
-        } else {
-          setSummary(res);
-        }
-      } catch (e) {
-        if (!alive) return;
-        setErr(e?.message || "Failed to load dashboard summary.");
-        setSummary(null);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
+    const onXp = () => {
+      // reload summary when XP changes anywhere in the app
+      (async () => {
+        try {
+          const res = await api.get("/dashboard/summary");
+          if (res.ok) setSummary(res.data);
+        } catch {}
+      })();
     };
+
+    window.addEventListener("fj:xp_updated", onXp);
+    return () => window.removeEventListener("fj:xp_updated", onXp);
   }, []);
 
   const userName = user?.name || "Learner";
@@ -182,7 +165,7 @@ export default function Dashboard() {
   return (
     <div className="fj-page">
       {/* Header */}
-      <header className="fj-dashboard-header flex items-start justify-between gap-3">
+      <header className="fj-header">
         <div>
           <h1 className="fj-title">Your Dashboard</h1>
           <p className="fj-subtitle">
