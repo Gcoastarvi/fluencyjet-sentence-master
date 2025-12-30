@@ -200,30 +200,39 @@ export default function Dashboard() {
     }
   }, [loadMe, loadSummary]);
 
-  // Load on mount + when route changes (safety)
+  // Load on mount + refresh instantly when XP changes / user returns to tab
   useEffect(() => {
-    bootstrap();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]);
-
-  // Refresh on XP events + tab focus (so XP updates instantly)
-  useEffect(() => {
-    const onXp = () => loadSummary();
-    const onFocus = () => loadSummary();
-    const onVis = () => {
-      if (document.visibilityState === "visible") loadSummary();
+    const refresh = () => {
+      try {
+        loadSummary?.();
+        loadMe?.();
+      } catch (e) {
+        // avoid breaking dashboard if one refresh fails
+        console.error("Dashboard refresh failed:", e);
+      }
     };
 
+    const onXp = () => refresh();
+    const onFocus = () => refresh();
+    const onVis = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+
+    // 1) initial load
+    refresh();
+
+    // 2) listeners
     window.addEventListener("fj:xp_updated", onXp);
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVis);
 
+    // 3) cleanup
     return () => {
       window.removeEventListener("fj:xp_updated", onXp);
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVis);
     };
-  }, [loadSummary]);
+  }, [loadSummary, loadMe]);
 
   return (
     <div className="fj-dashboard">
