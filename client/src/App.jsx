@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
@@ -73,9 +68,8 @@ export default function App() {
             <Route path="/diagnostic" element={<DiagnosticStart />} />
             <Route path="/diagnostic/result" element={<DiagnosticResult />} />
             <Route path="/practice/:mode" element={<SentencePractice />} />
-
             <Route
-              path="/practice/reorder"
+              path="/practice"
               element={<Navigate to="/practice/reorder" replace />}
             />
 
