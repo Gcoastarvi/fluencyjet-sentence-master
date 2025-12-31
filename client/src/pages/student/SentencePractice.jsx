@@ -155,43 +155,51 @@ export default function SentencePractice() {
   // XP update (must match stable backend)
   // -------------------
   async function commitXP({ isCorrect, attemptNo, mode }) {
-    // attemptId (safe fallback)
-    const attemptId =
-      globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
-        ? globalThis.crypto.randomUUID()
-        : `att_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-
     try {
-      const res = await api.post("/progress/update", {
-        attemptId,
-        practiceType: mode, // "reorder" | "typing" (future: cloze/audio)
+      const res = await api.post("/xp/commit", {
+        attemptId: crypto.randomUUID(),
+        mode,
+        lessonId: "L1", // keep static for now
+        questionId: `Q${currentIndex + 1}`,
         isCorrect,
         attemptNo,
-        lessonId: "L1",
-        questionId: `Q${currentIndex + 1}`,
+        timeTakenSec: null,
         completedQuiz: false,
       });
 
       const data = res?.data ?? res;
 
-      if (!data || data.ok !== true) {
+      if (!data?.ok) {
         setEarnedXP(0);
         return;
       }
 
-      // accept several possible server field names safely
-      const xp =
-        Number(
-          data.xpAwarded ?? data.xpDelta ?? data.xp ?? data.earnedXP ?? 0,
-        ) || 0;
+      // ✅ backend may return xp as xpAwarded OR xpDelta OR xp_delta OR earnedXP
+      const awarded = Number(
+        data.xpAwarded ??
+          data.xpDelta ??
+          data.xp_delta ??
+          data.earnedXP ??
+          data.xp ??
+          0,
+      );
 
-      setEarnedXP(xp);
-      setStreak(Number(data.streak ?? 0) || 0);
+      setEarnedXP(awarded);
+      setStreak(Number(data.streak ?? data.currentStreak ?? 0));
 
       setShowXPToast(true);
       setTimeout(() => setShowXPToast(false), 1200);
+
+      // ✅ tell Dashboard to refresh instantly
+      try {
+        window.dispatchEvent(
+          new CustomEvent("fj:xp_updated", {
+            detail: { xpAwarded: awarded, mode },
+          }),
+        );
+      } catch {}
     } catch (err) {
-      console.error("XP update failed:", err);
+      console.error("XP commit failed", err);
       setEarnedXP(0);
     }
   }
