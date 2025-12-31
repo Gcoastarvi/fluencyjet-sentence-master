@@ -152,55 +152,59 @@ export default function SentencePractice() {
   }, [status]);
 
   // -------------------
-  // XP update (must match stable backend)
+  // XP update (stable backend contract)
   // -------------------
   async function commitXP({ isCorrect, attemptNo, mode }) {
-    // fallback XP mapping (used only if backend doesn't return xp fields)
-    const fallbackXP =
-      mode === "reorder"
-        ? 150
-        : mode === "typing"
-          ? 150
-          : mode === "cloze"
-            ? 80
-            : mode === "audio"
-              ? 100
-              : 150;
-
+    // attemptId (safe fallback)
     const attemptId =
-      typeof crypto !== "undefined" && crypto.randomUUID
-        ? crypto.randomUUID()
-        : `a_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
+        ? globalThis.crypto.randomUUID()
+        : `att_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+    // ✅ REQUIRED by backend
+    const payload = {
+      attemptId,
+      lessonId: "L1", // keep static for now
+      questionId: `Q${currentIndex + 1}`,
+      practiceType: mode, // IMPORTANT: backend expects practiceType (not mode)
+      isCorrect,
+      attemptNo,
+      timeTakenSec: null,
+      completedQuiz: false,
+    };
 
     try {
-      // IMPORTANT: stable backend endpoint
-      const res = await api.post("/progress/update", {
-        attemptId,
-
-        // send multiple aliases so backend can accept whichever it expects
-        mode,
-        quizType: mode,
-        practiceType: mode,
-
-        lessonId: "L1", // static for now
-        questionId: `Q${currentIndex + 1}`,
-
-        isCorrect,
-        correct: isCorrect,
-
-        attemptNo,
-        timeTakenSec: null,
-
-        // optional — if backend supports completion bonus
-        completedQuiz: false,
-      });
-
+      const res = await api.post("/progress/update", payload);
       const data = res?.data ?? res;
 
-      if (!data?.ok) {
+      if (!data || data.ok !== true) {
         setEarnedXP(0);
         return;
       }
+
+      // accept several possible server field names safely
+      const xp =
+        Number(
+          data.xpAwarded ??
+            data.xpDelta ??
+            data.xp_delta ??
+            data.xp ??
+            data.earnedXP ??
+            0,
+        ) || 0;
+
+      setEarnedXP(xp);
+      setStreak(Number(data.streak ?? data.currentStreak ?? 0) || 0);
+
+      setShowXPToast(true);
+      setTimeout(() => setShowXPToast(false), 1200);
+
+      // 🚫 Don't dispatch fj:xp_updated here if apiClient already does it globally.
+    } catch (err) {
+      console.error("XP update failed:", err);
+      setEarnedXP(0);
+    }
+  }
 
       // backend may return xp under different keys (support all)
       let awarded = Number(
