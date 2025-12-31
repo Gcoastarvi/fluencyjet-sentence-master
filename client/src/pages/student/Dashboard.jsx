@@ -144,40 +144,55 @@ export default function Dashboard() {
   }, []);
 
   const loadSummary = useCallback(async () => {
-    const res = await api.get("/dashboard/summary");
-    const data = res?.data ?? res;
+    // IMPORTANT: always control the spinner here
+    setLoading(true);
 
-    if (!data?.ok) {
-      throw new Error(data?.error || "Failed to load dashboard summary");
+    try {
+      const res = await api.get("/dashboard/summary");
+      const data = res?.data ?? res;
+
+      // Your backend returns: { ok: true, todayXP, ... }
+      // So ok MUST be true. If not, don't crash the dashboard.
+      if (!data || data.ok !== true) {
+        console.error("Failed to load dashboard summary:", data);
+        return;
+      }
+
+      const totalXP = Number(data.totalXP || 0);
+      const level = Number(data.level || computeLevel(totalXP));
+
+      const next =
+        data.xpToNextLevel != null
+          ? Number(data.xpToNextLevel)
+          : xpToNextLevel(totalXP);
+
+      // ✅ This is your 2nd setSummary instance (keep this mapping style)
+      setSummary({
+        todayXP: Number(data.todayXP || 0),
+        yesterdayXP: Number(data.yesterdayXP || 0),
+        weeklyXP: Number(data.weeklyXP || 0),
+        lastWeekXP: Number(data.lastWeekXP || 0),
+        monthlyXP: Number(data.monthlyXP || 0),
+        totalXP,
+        level,
+        xpToNextLevel: next,
+        streak: Number(data.streak || 0),
+        nextBadge: data.nextBadge ?? null,
+        pendingLessons: Array.isArray(data.pendingLessons)
+          ? data.pendingLessons
+          : [],
+        recentActivity: Array.isArray(data.recentActivity)
+          ? data.recentActivity
+          : [],
+      });
+    } catch (e) {
+      console.error("loadSummary failed:", e);
+    } finally {
+      // ✅ THIS IS THE KEY: dashboard must never stay stuck loading
+      setLoading(false);
     }
-
-    const totalXP = Number(data.totalXP || 0);
-    const level = Number(data.level || computeLevel(totalXP));
-
-    const next =
-      data.xpToNextLevel != null
-        ? Number(data.xpToNextLevel)
-        : xpToNextLevel(totalXP);
-
-    setSummary({
-      todayXP: Number(data.todayXP || 0),
-      yesterdayXP: Number(data.yesterdayXP || 0),
-      weeklyXP: Number(data.weeklyXP || 0),
-      lastWeekXP: Number(data.lastWeekXP || 0),
-      monthlyXP: Number(data.monthlyXP || 0),
-      totalXP,
-      level,
-      xpToNextLevel: next,
-      streak: Number(data.streak || 0),
-      nextBadge: data.nextBadge ?? null,
-      pendingLessons: Array.isArray(data.pendingLessons)
-        ? data.pendingLessons
-        : [],
-      recentActivity: Array.isArray(data.recentActivity)
-        ? data.recentActivity
-        : [],
-    });
-
+  }, [computeLevel, xpToNextLevel]);
+ 
     // keep fallback in LS
     try {
       localStorage.setItem("fj_xp", String(totalXP));
@@ -186,8 +201,7 @@ export default function Dashboard() {
   }, []);
 
   // Main loader (never gets stuck in loading=true)
-  const bootstrap = useCallback(async () => {
-    setLoading(true);
+  const bootstrap = useCallback(async () => {    
     setError("");
     try {
       await loadMe();
@@ -199,40 +213,49 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, [loadMe, loadSummary]);
+  
+// Load on mount + refresh instantly when XP changes / user returns to tab
+useEffect(() => {
+  let inFlight = false;
 
-  // Load on mount + refresh instantly when XP changes / user returns to tab
-  useEffect(() => {
-    const refresh = () => {
-      try {
-        loadSummary?.();
-        loadMe?.();
-      } catch (e) {
-        // avoid breaking dashboard if one refresh fails
-        console.error("Dashboard refresh failed:", e);
-      }
-    };
+  const refresh = async () => {
+    if (inFlight) return;
+    inFlight = true;
 
-    const onXp = () => refresh();
-    const onFocus = () => refresh();
-    const onVis = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
+    try {
+      // IMPORTANT: call loadSummary directly so it's "read" + runs
+      await Promise.allSettled([
+        loadSummary(),
+        typeof loadMe === "function" ? loadMe() : Promise.resolve(),
+      ]);
+    } catch (e) {
+      console.error("Dashboard refresh failed:", e);
+    } finally {
+      inFlight = false;
+    }
+  };
 
-    // 1) initial load
-    refresh();
+  const onXp = () => refresh();
+  const onFocus = () => refresh();
+  const onVis = () => {
+    if (document.visibilityState === "visible") refresh();
+  };
 
-    // 2) listeners
-    window.addEventListener("fj:xp_updated", onXp);
-    window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", onVis);
+  // 1) initial load
+  refresh();
 
-    // 3) cleanup
-    return () => {
-      window.removeEventListener("fj:xp_updated", onXp);
-      window.removeEventListener("focus", onFocus);
-      document.removeEventListener("visibilitychange", onVis);
-    };
-  }, [loadSummary, loadMe]);
+  // 2) listeners
+  window.addEventListener("fj:xp_updated", onXp);
+  window.addEventListener("focus", onFocus);
+  document.addEventListener("visibilitychange", onVis);
+
+  // 3) cleanup
+  return () => {
+    window.removeEventListener("fj:xp_updated", onXp);
+    window.removeEventListener("focus", onFocus);
+    document.removeEventListener("visibilitychange", onVis);
+  };
+}, [loadSummary, loadMe]);
 
   return (
     <div className="fj-dashboard">
