@@ -10,6 +10,7 @@ const SUPPORTED_PRACTICE_MODES = new Set([
   "audio",
 ]);
 const MAX_ATTEMPTS = 3;
+const LESSON_ID = "L1";
 
 /**
  * ✅ IMPORTANT
@@ -155,42 +156,31 @@ export default function SentencePractice() {
   // XP update (must match stable backend)
   // -------------------
   async function commitXP({ isCorrect, attemptNo, mode }) {
-    // attemptId (safe fallback)
     const attemptId =
       globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
         ? globalThis.crypto.randomUUID()
         : `att_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
+    const payload = {
+      attemptId,
+      lessonId: LESSON_ID, // ✅ required
+      questionId: `Q${currentIndex + 1}`,
+      practiceType: mode, // ✅ expected by stable backend
+      isCorrect,
+      attemptNo,
+      completedQuiz: false,
+    };
+
     try {
-      // ✅ IMPORTANT: must hit the stable backend endpoint
-      const res = await api.post("/progress/update", {
-        attemptId,
-
-        // send BOTH names to be extra-safe (backend variants)
-        practiceType: mode, // expected by stable backend
-        mode, // harmless extra
-
-        // ✅ REQUIRED by your backend (your screenshot proves it)
-        lessonId: "L1",
-
-        questionId: `Q${currentIndex + 1}`,
-        isCorrect,
-        attemptNo,
-
-        // optional fields
-        timeTakenSec: null,
-        completedQuiz: false,
-      });
-
+      const res = await api.post("/progress/update", payload);
       const data = res?.data ?? res;
 
-      if (!data || data.ok !== true) {
-        console.error("progress/update not ok:", data);
+      if (!data?.ok) {
+        console.error("progress/update failed:", data);
         setEarnedXP(0);
         return;
       }
 
-      // accept several possible server field names safely
       const awarded =
         Number(
           data.xpAwarded ??
@@ -207,13 +197,12 @@ export default function SentencePractice() {
       setShowXPToast(true);
       setTimeout(() => setShowXPToast(false), 1200);
 
-      // ✅ force dashboard refresh immediately (safe even if apiClient also dispatches)
-      window.dispatchEvent(new Event("fj:xp_updated"));
+      // ✅ do NOT manually dispatch here if apiClient already dispatches fj:xp_updated
     } catch (err) {
       console.error("XP update failed:", err);
       setEarnedXP(0);
     }
-  }      
+  }
 
   // -------------------
   // helpers
