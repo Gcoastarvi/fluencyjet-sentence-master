@@ -213,36 +213,7 @@ export default function SentencePractice() {
       console.error("XP update failed:", err);
       setEarnedXP(0);
     }
-  }
-
-      // backend may return xp under different keys (support all)
-      let awarded = Number(
-        data.xpAwarded ??
-          data.xpDelta ??
-          data.xp_delta ??
-          data.earnedXP ??
-          data.xp ??
-          data.delta ??
-          0,
-      );
-
-      // if backend didn't return xp, still show correct XP for the user
-      // (backend is still updating totals, dashboard will confirm)
-      if (!awarded && isCorrect) awarded = fallbackXP;
-
-      setEarnedXP(awarded);
-      setStreak(Number(data.streak ?? data.currentStreak ?? 0));
-
-      setShowXPToast(true);
-      setTimeout(() => setShowXPToast(false), 1200);
-
-      // ✅ ensure dashboard refresh (safe even if apiClient also dispatches)
-      window.dispatchEvent(new Event("fj:xp_updated"));
-    } catch (err) {
-      console.error("XP commit failed", err);
-      setEarnedXP(0);
-    }
-  }
+  }      
 
   // -------------------
   // helpers
