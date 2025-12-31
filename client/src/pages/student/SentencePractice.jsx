@@ -165,41 +165,59 @@ export default function SentencePractice() {
       attemptId,
       lessonId: LESSON_ID, // ✅ required
       questionId: `Q${currentIndex + 1}`,
-      practiceType: mode, // ✅ expected by stable backend
-      isCorrect,
-      attemptNo,
+      practiceType: mode, // ✅ required by your stable backend
+      isCorrect: !!isCorrect,
+      attemptNo: Number(attemptNo ?? 1),
       completedQuiz: false,
     };
 
     try {
       const res = await api.post("/progress/update", payload);
-      const data = res?.data ?? res;
 
-      if (!data?.ok) {
-        console.error("progress/update failed:", data);
+      // ✅ unwrap all possible apiClient response shapes:
+      // - res.data (axios-like)
+      // - res (our fetch wrapper)
+      // - res.data.data (nested)
+      const r0 = res?.data ?? res;
+      const data = r0?.data ?? r0;
+
+      const ok = data?.ok === true || r0?.ok === true;
+      if (!ok) {
+        console.error("[XP] /progress/update not ok", {
+          payload,
+          response: data,
+        });
         setEarnedXP(0);
         return;
       }
 
-      const awarded =
+      // ✅ accept many possible XP field names (backend variations)
+      const xp =
         Number(
-          data.xpAwarded ??
-            data.xpDelta ??
-            data.xp_delta ??
-            data.earnedXP ??
-            data.xp ??
+          data?.xpAwarded ??
+            data?.xpDelta ??
+            data?.xp_delta ??
+            data?.earnedXP ??
+            data?.xp ??
+            data?.delta ??
+            r0?.xpAwarded ??
+            r0?.xpDelta ??
+            r0?.xp ??
             0,
         ) || 0;
 
-      setEarnedXP(awarded);
-      setStreak(Number(data.streak ?? data.currentStreak ?? 0) || 0);
+      setEarnedXP(xp);
+      setStreak(
+        Number(data?.streak ?? data?.currentStreak ?? r0?.streak ?? 0) || 0,
+      );
 
       setShowXPToast(true);
       setTimeout(() => setShowXPToast(false), 1200);
 
-      // ✅ do NOT manually dispatch here if apiClient already dispatches fj:xp_updated
+      // ✅ optional: keep, but safe
+      window.dispatchEvent(new Event("fj:xp_updated"));
     } catch (err) {
-      console.error("XP update failed:", err);
+      console.error("[XP] commit failed", err, { payload });
       setEarnedXP(0);
     }
   }
