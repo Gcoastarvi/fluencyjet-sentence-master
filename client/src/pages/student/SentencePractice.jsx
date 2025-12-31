@@ -1,282 +1,235 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
-import { api } from "@/api/apiClient";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { api } from "../../api/apiClient";
 
-const DEFAULT_PRACTICE_MODE = "reorder";
+// ─────────────────────────────────────────────────────────────────────────────
+// Practice Question Bank
+// NOTE: These are currently REORDER-style questions. Typing mode reuses these.
+// ─────────────────────────────────────────────────────────────────────────────
+const QUESTIONS = [
+  {
+    id: "RJ_001",
+    type: "REORDER",
+    tamil: "நான் இன்று பள்ளிக்குச் சென்றேன்.",
+    correctOrder: ["I", "went", "to", "school", "today."],
+    distractors: ["go", "tomorrow", "market", "yesterday"],
+  },
+  {
+    id: "RJ_002",
+    type: "REORDER",
+    tamil: "அவர் நேற்று என்னை பார்த்தார்.",
+    correctOrder: ["He", "saw", "me", "yesterday."],
+    distractors: ["see", "tomorrow", "her", "today"],
+  },
+  {
+    id: "RJ_003",
+    type: "REORDER",
+    tamil: "நாங்கள் காலை உணவு சாப்பிட்டோம்.",
+    correctOrder: ["We", "ate", "breakfast", "in", "the", "morning."],
+    distractors: ["eat", "night", "dinner", "on"],
+  },
+  {
+    id: "RJ_004",
+    type: "REORDER",
+    tamil: "அவர்கள் மிகவும் மகிழ்ச்சியாக இருந்தார்கள்.",
+    correctOrder: ["They", "were", "very", "happy."],
+    distractors: ["are", "sad", "now", "was"],
+  },
+  {
+    id: "RJ_005",
+    type: "REORDER",
+    tamil: "நான் அவருக்கு உதவி செய்தேன்.",
+    correctOrder: ["I", "helped", "him."],
+    distractors: ["help", "her", "tomorrow", "yesterday"],
+  },
+];
+
+// Supported practice modes
 const SUPPORTED_PRACTICE_MODES = new Set([
   "reorder",
   "typing",
   "cloze",
   "audio",
 ]);
-const MAX_ATTEMPTS = 3;
+const DEFAULT_PRACTICE_MODE = "reorder";
 
-/**
- * NOTE:
- * XP is server-authoritative. Client only shows what server returns.
- * attemptNo is still useful as an input to server rules.
- */
-const QUESTIONS = [
-  {
-    type: "REORDER",
-    tamil: "அவள் annual exams ல pass ஆக hard ஆக study பண்ணிட்டு இருக்கா",
-    correctOrder: [
-      "She",
-      "is",
-      "studying",
-      "hard",
-      "to",
-      "pass",
-      "her",
-      "annual",
-      "exams",
-    ],
-  },
-  {
-    type: "REORDER",
-    tamil: "அவன் job கிடைக்க hard ஆக prepare பண்ணிட்டு இருக்கான்",
-    correctOrder: ["He", "is", "preparing", "hard", "to", "get", "a", "job"],
-  },
-  {
-    type: "REORDER",
-    tamil: "நான் English improve பண்ண daily practice பண்ணுறேன்",
-    correctOrder: ["I", "practice", "daily", "to", "improve", "my", "English"],
-  },
-  {
-    type: "REORDER",
-    tamil: "அவர்கள் exam clear பண்ண confidence build பண்ணுறாங்க",
-    correctOrder: [
-      "They",
-      "are",
-      "building",
-      "confidence",
-      "to",
-      "clear",
-      "the",
-      "exam",
-    ],
-  },
-  {
-    type: "REORDER",
-    tamil: "நீ fluency improve பண்ண slow ஆக start பண்ணலாம்",
-    correctOrder: ["You", "can", "start", "slowly", "to", "improve", "fluency"],
-  },
-
-  // If you already have FILL questions in your real app, keep them here (example format):
-  // {
-  //   type: "FILL",
-  //   tamil: "...",
-  //   sentence: "I ____ daily to improve my English",
-  //   options: ["practice", "sleep", "cry"],
-  //   answer: "practice",
-  // },
-];
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Component
+// ─────────────────────────────────────────────────────────────────────────────
 export default function SentencePractice() {
-  const { mode: urlMode } = useParams();
-  const rawMode = (urlMode || DEFAULT_PRACTICE_MODE).toLowerCase();
-  const activeMode = SUPPORTED_PRACTICE_MODES.has(rawMode)
-    ? rawMode
+  const { mode } = useParams();
+  const navigate = useNavigate();
+
+  const activeMode = SUPPORTED_PRACTICE_MODES.has(mode || "")
+    ? mode
     : DEFAULT_PRACTICE_MODE;
-  // -------------------
-  // refs
-  // -------------------
+
+  // Redirect /practice to /practice/reorder (or default mode)
+  useEffect(() => {
+    if (!mode)
+      navigate(`/practice/${DEFAULT_PRACTICE_MODE}`, { replace: true });
+  }, [mode, navigate]);
+
+  // Session / Quiz state
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [tiles, setTiles] = useState([]);
+  const [answer, setAnswer] = useState([]);
+  const [status, setStatus] = useState("idle"); // idle | correct | wrong | reveal
+  const [earnedXP, setEarnedXP] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+
+  // For "FILL" style and Typing
+  const [selectedOption, setSelectedOption] = useState("");
+  const [typedAnswer, setTypedAnswer] = useState("");
+
+  // Audio feedback
   const correctSoundRef = useRef(null);
   const wrongSoundRef = useRef(null);
 
-  // -------------------
-  // state
-  // -------------------
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // XP config
+  const XP_PER_CORRECT = activeMode === "typing" ? 150 : 150;
 
-  const [tiles, setTiles] = useState([]);
-  const [answer, setAnswer] = useState([]);
-
-  const [attempts, setAttempts] = useState(0);
-  const [status, setStatus] = useState("idle"); // idle | wrong | correct | reveal
-  const [showHint, setShowHint] = useState(false);
-  const [wrongIndexes, setWrongIndexes] = useState([]);
-
-  // FILL state
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [typedAnswer, setTypedAnswer] = useState("");
-
-  // server-driven UI
-  const [earnedXP, setEarnedXP] = useState(0);
-  const [showXPToast, setShowXPToast] = useState(false);
-  const [streak, setStreak] = useState(0);
-
-  const totalQuestions = QUESTIONS.length;
-
+  // ───────────────────────────────────────────────────────────────────────────
+  // Derived current question
+  // ───────────────────────────────────────────────────────────────────────────
   const currentQuestion = useMemo(() => {
-    const q = QUESTIONS[currentIndex];
-    if (!q) return null;
-    return {
-      ...q,
-      type: q.type || "REORDER",
-    };
-  }, [currentIndex]);
+    const q = QUESTIONS[currentIndex % QUESTIONS.length];
+    const baseType = q.type || "REORDER";
 
-  // -------------------
-  // effects (ALL INSIDE COMPONENT)
-  // -------------------
+    // Typing mode uses the SAME questions as reorder, but checks typed sentence instead of dragging tiles.
+    const type = activeMode === "typing" ? "TYPING" : baseType;
 
-  // 🔁 Smart Resume on load (optional)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("resume") === "1") {
-      try {
-        const last = JSON.parse(
-          localStorage.getItem("fj_last_session") || "null",
-        );
-        if (last?.questionIndex != null) {
-          setCurrentIndex(last.questionIndex);
-        }
-      } catch {
-        // ignore
-      }
-    }
-  }, []);
+    return { ...q, type };
+  }, [activeMode, currentIndex]);
 
-  // 🔊 Initialize sound effects once
-  useEffect(() => {
-    correctSoundRef.current = new Audio("/sounds/correct.mp3");
-    wrongSoundRef.current = new Audio("/sounds/wrong.mp3");
-  }, []);
+  const correctSentence = useMemo(() => {
+    if (!currentQuestion?.correctOrder) return "";
+    return currentQuestion.correctOrder.join(" ");
+  }, [currentQuestion]);
 
-  // Initialize question when index changes
-  useEffect(() => {
-    initQuiz();
-    // we want to re-init when question OR mode changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, activeMode]);
+  const normalizeText = (s) =>
+    String(s || "")
+      .toLowerCase()
+      // keep letters/numbers/spaces/apostrophes; drop punctuation
+      .replace(/[^a-z0-9\s']/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
 
-  // AUTO NEXT QUESTION after correct/reveal
-  useEffect(() => {
-    if (status === "correct" || status === "reveal") {
-      const timer = setTimeout(() => {
-        loadNextQuestion();
-      }, 1500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [status]);
-
-  // -------------------
-  // backend canonical XP commit (single pipe)
-  // -------------------
-  async function commitXP({ isCorrect, attemptNo, mode }) {
-    try {
-      const res = await api.post("/xp/commit", {
-        attemptId: crypto.randomUUID(),
-        mode,
-        lessonId: "L1", // keep static for now
-        questionId: `Q${currentIndex + 1}`,
-        isCorrect,
-        attemptNo,
-        timeTakenSec: null,
-        completedQuiz: false,
-      });
-
-      // apiClient usually returns { ok, data } style or axios-like.
-      // We handle both safely:
-      const data = res?.data ?? res;
-      if (data?.ok) {
-        setEarnedXP(data.xpAwarded || 0);
-        setStreak(data.streak || 0);
-        setShowXPToast(true);
-        setTimeout(() => setShowXPToast(false), 1200);
-      } else {
-        // if server returns ok:false, still show 0 XP
-        setEarnedXP(0);
-      }
-    } catch (err) {
-      console.error("XP commit failed", err);
-      setEarnedXP(0);
-    }
-  }
-
-  // -------------------
-  // helpers
-  // -------------------
+  // ───────────────────────────────────────────────────────────────────────────
+  // Init question
+  // ───────────────────────────────────────────────────────────────────────────
   function initQuiz() {
-    if (!currentQuestion) return;
-
-    // reset common state
-    setAttempts(0);
     setStatus("idle");
-    setShowHint(false);
-    setWrongIndexes([]);
     setEarnedXP(0);
+    setShowHint(false);
+    setAttempts(0);
 
-    // reset FILL
-    setSelectedOption(null);
+    // reset answer inputs
+    setSelectedOption("");
     setTypedAnswer("");
 
-    // Mode decides the UI state initialization
-    if (activeMode === "reorder" && currentQuestion.type === "REORDER") {
-      const shuffled = [...currentQuestion.correctOrder].sort(
-        () => Math.random() - 0.5,
-      );
+    if (currentQuestion.type === "REORDER") {
+      // shuffle tiles: correct words + distractors
+      const allWords = [
+        ...currentQuestion.correctOrder,
+        ...currentQuestion.distractors,
+      ];
+      const shuffled = [...allWords].sort(() => Math.random() - 0.5);
+
       setTiles(shuffled);
       setAnswer([]);
     } else {
-      // typing/cloze/audio etc: no tiles/answer required
+      // typing / fill: no tiles
       setTiles([]);
       setAnswer([]);
     }
-
-  function loadNextQuestion() {
-    setCurrentIndex((prev) => (prev + 1 < QUESTIONS.length ? prev + 1 : 0));
   }
 
-  function addToAnswer(word) {
-    if (status === "correct" || status === "reveal") return;
+  useEffect(() => {
+    initQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, activeMode]);
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Tile click (reorder)
+  // ───────────────────────────────────────────────────────────────────────────
+  function pickTile(word) {
+    if (status !== "idle") return;
     setAnswer((prev) => [...prev, word]);
-    setTiles((prev) => prev.filter((w) => w !== word));
+    setTiles((prev) =>
+      prev.filter((w, idx) => !(w === word && idx === prev.indexOf(word))),
+    );
   }
 
-    function handleTryAgain() {
-      setAnswer([]);
-      setWrongIndexes([]);
-      setStatus("idle");
-      setShowHint(false);
-      setAttempts(0);
+  function removeLastWord() {
+    if (status !== "idle") return;
+    setAnswer((prev) => {
+      if (prev.length === 0) return prev;
+      const last = prev[prev.length - 1];
+      setTiles((t) => [...t, last]);
+      return prev.slice(0, -1);
+    });
+  }
 
-      // typing: just clear input
-      if (activeMode === "typing") {
-        setTypedAnswer("");
-        return;
-      }
+  // ───────────────────────────────────────────────────────────────────────────
+  // Commit XP to backend
+  // ───────────────────────────────────────────────────────────────────────────
+  async function commitXP(payload) {
+    try {
+      const res = await api.post("/xp/commit", payload);
+      const data = res?.data ?? res;
 
-      // reorder: reshuffle tiles
-      if (currentQuestion?.type === "REORDER") {
-        const reshuffled = [...currentQuestion.correctOrder].sort(
-          () => Math.random() - 0.5,
+      if (data?.ok) {
+        setEarnedXP(Number(data.xpAwarded || XP_PER_CORRECT));
+        // Let dashboard refresh
+        window.dispatchEvent(
+          new CustomEvent("fj:xp_updated", { detail: data }),
         );
-        setTiles(reshuffled);
       }
+    } catch (e) {
+      console.error("commitXP failed:", e);
     }
+  }
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // Try again handler
+  // ───────────────────────────────────────────────────────────────────────────
+  function handleTryAgain() {
+    setStatus("idle");
+    setShowHint(false);
+    setAttempts(0);
+
+    if (currentQuestion.type === "REORDER") {
+      // re-init reorder tiles/answer
+      const allWords = [
+        ...currentQuestion.correctOrder,
+        ...currentQuestion.distractors,
+      ];
+      const reshuffled = [...allWords].sort(() => Math.random() - 0.5);
+      setTiles(reshuffled);
+      setAnswer([]);
+    } else {
+      // typing / fill
+      setTypedAnswer("");
+      setSelectedOption("");
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Check Answer
+  // ───────────────────────────────────────────────────────────────────────────
   function checkAnswer() {
-    if (!currentQuestion) return;
+    if (status !== "idle") return;
 
-    // ⛔ GUARD: already solved
-    if (status === "correct") return;
-    // ⌨️ TYPING mode validation
-    if (activeMode === "typing") {
-      const normalize = (s) =>
-        String(s || "")
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, " ");
+    const MAX_ATTEMPTS = 2;
 
-      const target = (currentQuestion.correctOrder || []).join(" ");
-      const user = typedAnswer;
+    // ✍️ TYPING validation (compare typed sentence with the correct sentence)
+    if (currentQuestion.type === "TYPING") {
+      const user = normalizeText(typedAnswer);
+      const target = normalizeText(correctSentence);
 
-      // empty answer
-      if (!normalize(user)) {
+      if (!user) {
         setStatus("wrong");
         setShowHint(true);
         return;
@@ -284,45 +237,57 @@ export default function SentencePractice() {
 
       const attemptNumber = attempts + 1;
 
-      if (normalize(user) === normalize(target)) {
+      if (user === target) {
         correctSoundRef.current?.play?.();
         setStatus("correct");
-        setWrongIndexes([]);
+
         commitXP({
-          isCorrect: true,
-          attemptNo: attemptNumber,
           mode: "typing",
+          questionId: currentQuestion.id,
+          correct: true,
+          attempt: attemptNumber,
         });
 
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            practiceType: "typing",
-            questionIndex: currentIndex + 1,
-            timestamp: Date.now(),
-          }),
-        );
+        try {
+          localStorage.setItem(
+            "fj_last_session",
+            JSON.stringify({ practiceType: "typing" }),
+          );
+        } catch {}
+
+        // go next
+        setTimeout(() => {
+          setAttempts(0);
+          setStatus("idle");
+          setShowHint(false);
+          setTypedAnswer("");
+          setCurrentIndex((i) => i + 1);
+        }, 700);
 
         return;
       }
 
-      // wrong typing
+      // wrong
       wrongSoundRef.current?.play?.();
-      const nextAttempts = attempts + 1;
-      setAttempts(nextAttempts);
+      setAttempts(attemptNumber);
       setStatus("wrong");
-      setShowHint(true);
 
-      if (nextAttempts >= MAX_ATTEMPTS) {
+      if (attemptNumber >= MAX_ATTEMPTS) {
+        // reveal correct answer after max attempts
         setStatus("reveal");
         setEarnedXP(0);
+        setShowHint(true);
+      } else {
+        setShowHint(true);
       }
+
       return;
     }
 
-    // 🧩 FILL validation
+    // FILL validation (if ever used later)
     if (currentQuestion.type === "FILL") {
       const userAnswer = (selectedOption || typedAnswer || "").trim();
+      const correct = (currentQuestion.correct || "").trim();
 
       if (!userAnswer) {
         setStatus("wrong");
@@ -332,325 +297,253 @@ export default function SentencePractice() {
 
       const attemptNumber = attempts + 1;
 
-      if (userAnswer === currentQuestion.answer) {
+      if (userAnswer.toLowerCase() === correct.toLowerCase()) {
         correctSoundRef.current?.play?.();
         setStatus("correct");
-
         commitXP({
-          isCorrect: true,
-          attemptNo: attemptNumber,
-          mode: "fill",
+          mode: "cloze",
+          questionId: currentQuestion.id,
+          correct: true,
+          attempt: attemptNumber,
         });
-
-        return;
-      }
-
-      // wrong FILL
-      wrongSoundRef.current?.play?.();
-      const nextAttempts = attempts + 1;
-      setAttempts(nextAttempts);
-      setStatus("wrong");
-      setShowHint(true);
-
-      if (nextAttempts >= MAX_ATTEMPTS) {
-        setStatus("reveal");
-        setEarnedXP(0);
+        setTimeout(() => {
+          setAttempts(0);
+          setStatus("idle");
+          setShowHint(false);
+          setSelectedOption("");
+          setTypedAnswer("");
+          setCurrentIndex((i) => i + 1);
+        }, 700);
+      } else {
+        wrongSoundRef.current?.play?.();
+        setAttempts(attemptNumber);
+        setStatus("wrong");
+        if (attemptNumber >= MAX_ATTEMPTS) {
+          setStatus("reveal");
+          setEarnedXP(0);
+          setShowHint(true);
+        } else {
+          setShowHint(true);
+        }
       }
       return;
     }
 
-    // ✅ REORDER validation
-    // ⛔ GUARD: incomplete answer
-    if (answer.length !== currentQuestion.correctOrder.length) {
-      setStatus("wrong");
-      setShowHint(true);
-      return;
-    }
+    // REORDER validation
+    const correct =
+      answer.length === currentQuestion.correctOrder.length &&
+      answer.every((word, i) => word === currentQuestion.correctOrder[i]);
 
-    const incorrect = [];
-    answer.forEach((word, index) => {
-      if (word !== currentQuestion.correctOrder[index]) {
-        incorrect.push(index);
-      }
-    });
+    const attemptNumber = attempts + 1;
 
-    // CORRECT
-    if (incorrect.length === 0) {
+    if (correct) {
       correctSoundRef.current?.play?.();
-
-      const attemptNumber = attempts + 1;
-
-      setWrongIndexes([]);
       setStatus("correct");
 
       commitXP({
-        isCorrect: true,
-        attemptNo: attemptNumber,
         mode: "reorder",
+        questionId: currentQuestion.id,
+        correct: true,
+        attempt: attemptNumber,
       });
 
-      localStorage.setItem(
-        "fj_last_session",
-        JSON.stringify({
-          practiceType: "reorder",
-          questionIndex: currentIndex + 1,
-          timestamp: Date.now(),
-        }),
-      );
+      try {
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({ practiceType: activeMode }),
+        );
+      } catch {}
 
-      return;
-    }
-
-    // WRONG
-    wrongSoundRef.current?.play?.();
-
-    const nextAttempts = attempts + 1;
-    setAttempts(nextAttempts);
-    setStatus("wrong");
-    setShowHint(true);
-    setWrongIndexes(incorrect);
-
-    if (nextAttempts >= MAX_ATTEMPTS) {
-      setStatus("reveal");
-      setEarnedXP(0);
+      setTimeout(() => {
+        setAttempts(0);
+        setStatus("idle");
+        setShowHint(false);
+        setCurrentIndex((i) => i + 1);
+      }, 700);
+    } else {
+      wrongSoundRef.current?.play?.();
+      setAttempts(attemptNumber);
+      setStatus("wrong");
+      if (attemptNumber >= 2) {
+        setStatus("reveal");
+        setEarnedXP(0);
+        setShowHint(true);
+      } else {
+        setShowHint(true);
+      }
     }
   }
-    // -------------------
-    // mode guard (MVP)
-    // -------------------
-    if (activeMode !== "reorder" && activeMode !== "typing") {
-      return (
-        <div className="max-w-3xl mx-auto p-6 text-center">
-          <h1 className="text-2xl font-bold mb-2">Practice mode: {activeMode}</h1>
-          <p className="text-gray-600">
-            This mode is coming next. For now, use <b>/practice/reorder</b> or{" "}
-            <b>/practice/typing</b>.
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Coming soon guard (typing is enabled)
+  // ───────────────────────────────────────────────────────────────────────────
+  // typing is now enabled; keep other modes as "coming next"
+  if (activeMode !== "reorder" && activeMode !== "typing") {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center px-6">
+        <div className="max-w-xl w-full text-center p-6 rounded-2xl border bg-white shadow-sm">
+          <h1 className="text-2xl font-semibold mb-2">
+            Practice mode: {activeMode}
+          </h1>
+          <p className="text-slate-600">
+            This mode is coming next. For now, use{" "}
+            <code>/practice/reorder</code> or <code>/practice/typing</code>.
           </p>
         </div>
-      );
-    }
-
-  // -------------------
-  // conditional return (MUST BE INSIDE)
-  // -------------------
-  if (!currentQuestion) {
-    return (
-      <div className="max-w-3xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-2">No questions found</h1>
-        <p className="text-gray-600">Please reload.</p>
       </div>
     );
   }
 
-  if (currentIndex >= QUESTIONS.length) {
-    return (
-      <div className="max-w-3xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">🎉 Session Complete!</h1>
-        <p className="mb-4">Great job! You finished today’s practice.</p>
-
-        <button
-          className="bg-purple-600 text-white px-6 py-3 rounded-lg"
-          onClick={() => {
-            setCurrentIndex(0);
-            initQuiz();
-          }}
-        >
-          Practice Again
-        </button>
-      </div>
-    );
-  }
-
-  // -------------------
-  // final return
-  // -------------------
+  // ───────────────────────────────────────────────────────────────────────────
+  // Render
+  // ───────────────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-center mb-6">
-        Build the sentence
-      </h1>
+    <div className="max-w-3xl mx-auto px-4 py-8">
+      <audio ref={correctSoundRef} src="/sounds/correct.mp3" preload="auto" />
+      <audio ref={wrongSoundRef} src="/sounds/wrong.mp3" preload="auto" />
 
-      <div className="text-center text-sm text-gray-500 mb-3">
-        Question {currentIndex + 1} / {totalQuestions}
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-2xl font-bold">Sentence Practice</h1>
+        <span className="text-sm text-slate-600">
+          Mode: <strong>{activeMode}</strong>
+        </span>
       </div>
 
-      <div className="flex justify-center items-center gap-2 mb-4 text-orange-600 font-semibold">
-        🔥 {streak}-day streak
-      </div>
-
-      {/* Tamil Prompt */}
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 text-lg">
-        {currentQuestion.tamil}
-      </div>
-
-      {/* Hint */}
-      {showHint && status !== "correct" && (
-        <div className="bg-purple-100 text-purple-800 p-3 rounded mb-4">
-          💡 Hint: Subject → Verb → Action
+      <div className="p-4 rounded-xl border bg-white shadow-sm">
+        <div className="text-slate-700 mb-2">
+          <span className="font-semibold">Tamil:</span> {currentQuestion.tamil}
         </div>
-      )}
 
-      {/* 🧩 Fill in the Blank UI */}
-      {currentQuestion.type === "FILL" && (
-        <>
-          <div className="border-2 border-dashed rounded-lg p-4 mb-4 text-lg">
-            {currentQuestion.sentence.split("____")[0]}
-            <span className="inline-block min-w-[70px] mx-2 px-3 py-1 border-b-2 border-purple-600 text-center font-semibold">
-              {selectedOption || "____"}
-            </span>
-            {currentQuestion.sentence.split("____")[1]}
-          </div>
-
-          <div className="flex flex-wrap gap-3 mb-6">
-            {(currentQuestion.options || []).map((opt) => (
-              <button
-                key={opt}
-                onClick={() => setSelectedOption(opt)}
-                className={`px-4 py-2 rounded-full border transition ${
-                  selectedOption === opt
-                    ? "bg-purple-600 text-white"
-                    : "bg-white"
-                }`}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-
-      {/* REORDER UI */}
-      {/* ⌨️ TYPING UI (uses the same question data) */}
-      {activeMode === "typing" && (
-        <>
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-            <div className="text-sm text-slate-600 mb-2">Type this sentence:</div>
-            <div className="text-lg font-semibold">
-              {(currentQuestion.correctOrder || []).join(" ")}
+        {/* ✍️ Typing UI */}
+        {currentQuestion.type === "TYPING" && (
+          <div className="mb-4">
+            <div className="text-sm text-slate-600 mb-2">
+              Type the correct English sentence:
             </div>
+            <textarea
+              className="w-full border rounded-lg p-3 min-h-[90px]"
+              value={typedAnswer}
+              onChange={(e) => setTypedAnswer(e.target.value)}
+              placeholder="Type here..."
+              disabled={status === "correct"}
+            />
+            <div className="text-xs text-slate-500 mt-2">
+              Tip: Extra spaces and punctuation won’t matter.
+            </div>
+
+            {showHint && status !== "correct" && (
+              <div className="mt-3 text-sm text-slate-700">
+                <span className="font-semibold">Hint:</span> {correctSentence}
+              </div>
+            )}
           </div>
+        )}
 
-          <textarea
-            value={typedAnswer}
-            onChange={(e) => setTypedAnswer(e.target.value)}
-            placeholder="Type the full sentence here..."
-            className="w-full border rounded-lg p-3 mb-4 min-h-[90px]"
-            disabled={status === "correct" || status === "reveal"}
-          />
-        </>
-      )}
+        {/* 🔀 Reorder UI */}
+        {currentQuestion.type === "REORDER" && (
+          <>
+            <div className="mb-3">
+              <span className="text-sm text-slate-600">
+                Tap words to form the sentence:
+              </span>
+            </div>
 
-      {/* REORDER UI */}
-      {activeMode === "reorder" && currentQuestion.type === "REORDER" && (
-        <>
-          {/* Answer Area */}
-          <div className="border-2 border-dashed rounded-lg p-4 min-h-[70px] mb-4 flex flex-wrap gap-2">
-            {answer.map((word, index) => {
-              const isWrong = wrongIndexes.includes(index);
-              return (
-                <span
-                  key={index}
-                  className={`px-4 py-2 rounded-full text-white transition ${
-                    isWrong ? "bg-red-500 animate-shake" : "bg-blue-600"
-                  }`}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {tiles.map((word, idx) => (
+                <button
+                  key={`${word}_${idx}`}
+                  className="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 border text-sm"
+                  onClick={() => pickTile(word)}
+                  disabled={status !== "idle"}
                 >
                   {word}
+                </button>
+              ))}
+            </div>
+
+            <div className="p-3 border rounded-lg bg-slate-50 min-h-[56px]">
+              {answer.length === 0 ? (
+                <span className="text-slate-400 text-sm">
+                  Your sentence appears here…
                 </span>
-              );
-            })}
-          </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {answer.map((word, idx) => (
+                    <span
+                      key={`${word}_${idx}`}
+                      className="px-3 py-1 rounded bg-white border"
+                    >
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Tile Bank */}
-          <div className="border-2 border-dashed rounded-lg p-4 mb-6 flex flex-wrap gap-2">
-            {tiles.map((word, index) => (
+            <div className="mt-3 flex gap-2">
               <button
-                key={`${word}-${index}`}
-                onClick={() => addToAnswer(word)}
-                className="px-4 py-2 rounded-full bg-blue-600 text-white hover:opacity-90"
+                className="px-3 py-2 text-sm rounded bg-slate-900 text-white disabled:opacity-50"
+                onClick={removeLastWord}
+                disabled={status !== "idle" || answer.length === 0}
               >
-                {word}
+                Undo last
               </button>
-            ))}
-          </div>
-        </>
-      )}
+            </div>
+          </>
+        )}
 
-      {/* Check */}
-      {status === "idle" && (
-        <button
-          onClick={checkAnswer}
-          className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
-        >
-          Check Answer
-        </button>
-      )}
+        {/* Actions */}
+        <div className="mt-6 flex items-center gap-3">
+          {status === "idle" && (
+            <button
+              className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+              onClick={checkAnswer}
+            >
+              Check Answer
+            </button>
+          )}
 
-      {/* Wrong */}
-      {status === "wrong" && (
-        <div className="mt-6">
-          <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
-            ❌ Not correct. Try again. ({attempts}/{MAX_ATTEMPTS})
-          </div>
-          <button
-            onClick={handleTryAgain}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
-          >
-            Try again
-          </button>
+          {status === "wrong" && (
+            <>
+              <div className="text-red-600 font-semibold">
+                Wrong — try again.
+              </div>
+              <button
+                className="px-4 py-2 rounded bg-slate-900 text-white"
+                onClick={handleTryAgain}
+              >
+                Try again
+              </button>
+            </>
+          )}
+
+          {status === "correct" && (
+            <div className="text-green-700 font-semibold">
+              ✅ Correct! +{earnedXP || XP_PER_CORRECT} XP
+            </div>
+          )}
         </div>
-      )}
 
-      {showXPToast && (
-        <div className="fixed top-24 right-6 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce z-50">
-          +{earnedXP} XP ✨
-        </div>
-      )}
-
-      {/* Correct */}
-      {status === "correct" && (
-        <div className="bg-green-100 text-green-700 p-4 rounded mt-6 text-center">
-          ✅ Correct! Well done. <br />
-          <span className="font-semibold">+{earnedXP} XP earned</span>
-        </div>
-      )}
-
-      {/* Reveal */}
-      {status === "reveal" && (
-        <div className="bg-yellow-100 p-4 rounded mt-6">
-          📘 <strong>Good attempt! Here is the correct sentence:</strong>
-          <div className="mt-3">
-            {activeMode === "reorder" ? (
-              <div className="flex flex-wrap gap-2">
+        {/* Reveal */}
+        {status === "reveal" && (
+          <div className="bg-yellow-100 p-4 rounded mt-6">
+            📘 <strong>Good attempt! Here is the correct answer:</strong>
+            {currentQuestion.type === "REORDER" ? (
+              <div className="flex flex-wrap gap-2 mt-3">
                 {currentQuestion.correctOrder.map((word, index) => (
                   <span key={index} className="px-3 py-1 bg-green-200 rounded">
                     {word}
                   </span>
                 ))}
               </div>
-            ) : (
-              <div className="px-3 py-2 bg-green-200 rounded inline-block">
-                {(currentQuestion.correctOrder || []).join(" ")}
+            ) : currentQuestion.type === "TYPING" ? (
+              <div className="mt-3 p-3 bg-white rounded border text-slate-800">
+                {correctSentence}
               </div>
-            )}
+            ) : null}
           </div>
-        </div>
-      )}
-
-      {/* Shake animation */}
-      <style>
-        {`
-          @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            50% { transform: translateX(4px); }
-            75% { transform: translateX(-4px); }
-            100% { transform: translateX(0); }
-          }
-          .animate-shake {
-            animation: shake 0.3s ease-in-out;
-          }
-        `}
-      </style>
+        )}
+      </div>
     </div>
   );
 }
