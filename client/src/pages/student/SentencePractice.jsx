@@ -152,7 +152,7 @@ export default function SentencePractice() {
   }, [status]);
 
   // -------------------
-  // XP update (stable backend contract)
+  // XP update (must match stable backend)
   // -------------------
   async function commitXP({ isCorrect, attemptNo, mode }) {
     // attemptId (safe fallback)
@@ -161,45 +161,54 @@ export default function SentencePractice() {
         ? globalThis.crypto.randomUUID()
         : `att_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
-    // ✅ REQUIRED by backend
-    const payload = {
-      attemptId,
-      lessonId: "L1", // keep static for now
-      questionId: `Q${currentIndex + 1}`,
-      practiceType: mode, // IMPORTANT: backend expects practiceType (not mode)
-      isCorrect,
-      attemptNo,
-      timeTakenSec: null,
-      completedQuiz: false,
-    };
-
     try {
-      const res = await api.post("/progress/update", payload);
+      // ✅ IMPORTANT: must hit the stable backend endpoint
+      const res = await api.post("/progress/update", {
+        attemptId,
+
+        // send BOTH names to be extra-safe (backend variants)
+        practiceType: mode, // expected by stable backend
+        mode, // harmless extra
+
+        // ✅ REQUIRED by your backend (your screenshot proves it)
+        lessonId: "L1",
+
+        questionId: `Q${currentIndex + 1}`,
+        isCorrect,
+        attemptNo,
+
+        // optional fields
+        timeTakenSec: null,
+        completedQuiz: false,
+      });
+
       const data = res?.data ?? res;
 
       if (!data || data.ok !== true) {
+        console.error("progress/update not ok:", data);
         setEarnedXP(0);
         return;
       }
 
       // accept several possible server field names safely
-      const xp =
+      const awarded =
         Number(
           data.xpAwarded ??
             data.xpDelta ??
             data.xp_delta ??
-            data.xp ??
             data.earnedXP ??
+            data.xp ??
             0,
         ) || 0;
 
-      setEarnedXP(xp);
+      setEarnedXP(awarded);
       setStreak(Number(data.streak ?? data.currentStreak ?? 0) || 0);
 
       setShowXPToast(true);
       setTimeout(() => setShowXPToast(false), 1200);
 
-      // 🚫 Don't dispatch fj:xp_updated here if apiClient already does it globally.
+      // ✅ force dashboard refresh immediately (safe even if apiClient also dispatches)
+      window.dispatchEvent(new Event("fj:xp_updated"));
     } catch (err) {
       console.error("XP update failed:", err);
       setEarnedXP(0);
