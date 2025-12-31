@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import { api } from "@/api/apiClient";
 
+const DEFAULT_PRACTICE_MODE = "reorder";
+const SUPPORTED_PRACTICE_MODES = new Set([
+  "reorder",
+  "typing",
+  "cloze",
+  "audio",
+]);
 const MAX_ATTEMPTS = 3;
 
 /**
@@ -65,6 +73,11 @@ const QUESTIONS = [
 ];
 
 export default function SentencePractice() {
+  const { mode: urlMode } = useParams();
+  const rawMode = (urlMode || DEFAULT_PRACTICE_MODE).toLowerCase();
+  const activeMode = SUPPORTED_PRACTICE_MODES.has(rawMode)
+    ? rawMode
+    : DEFAULT_PRACTICE_MODE;
   // -------------------
   // refs
   // -------------------
@@ -338,6 +351,19 @@ export default function SentencePractice() {
       setStatus("reveal");
       setEarnedXP(0);
     }
+  }
+  // -------------------
+  // mode guard (MVP)
+  // -------------------
+  if (activeMode !== "reorder") {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold mb-2">Practice mode: {activeMode}</h1>
+        <p className="text-gray-600">
+          This mode is coming next. For now, use <b>/practice/reorder</b>.
+        </p>
+      </div>
+    );
   }
 
   // -------------------
