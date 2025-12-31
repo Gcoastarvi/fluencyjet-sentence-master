@@ -156,7 +156,9 @@ export default function SentencePractice() {
   // -------------------
   async function commitXP({ isCorrect, attemptNo, mode }) {
     try {
-      const res = await api.post("/xp/commit", {
+      // ✅ IMPORTANT: use the stable endpoint used everywhere else
+      // apiClient.js will attach Authorization and will dispatch fj:xp_updated on success
+      const res = await api.post("/progress/update", {
         attemptId: crypto.randomUUID(),
         mode,
         lessonId: "L1", // keep static for now
@@ -174,7 +176,7 @@ export default function SentencePractice() {
         return;
       }
 
-      // ✅ backend may return xp as xpAwarded OR xpDelta OR xp_delta OR earnedXP
+      // backend may return xp as xpAwarded OR xpDelta OR xp_delta OR earnedXP
       const awarded = Number(
         data.xpAwarded ??
           data.xpDelta ??
@@ -190,14 +192,8 @@ export default function SentencePractice() {
       setShowXPToast(true);
       setTimeout(() => setShowXPToast(false), 1200);
 
-      // ✅ tell Dashboard to refresh instantly
-      try {
-        window.dispatchEvent(
-          new CustomEvent("fj:xp_updated", {
-            detail: { xpAwarded: awarded, mode },
-          }),
-        );
-      } catch {}
+      // 🚫 DO NOT dispatch fj:xp_updated here.
+      // apiClient.js already dispatches it after /progress/update succeeds.
     } catch (err) {
       console.error("XP commit failed", err);
       setEarnedXP(0);
