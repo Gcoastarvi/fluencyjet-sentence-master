@@ -185,77 +185,71 @@ export default function Dashboard() {
           ? data.recentActivity
           : [],
       });
+
+      // ✅ keep fallback in LS (best-effort, must be INSIDE loadSummary)
+      try {
+        localStorage.setItem("fj_xp", String(totalXP));
+        localStorage.setItem("fj_streak", String(Number(data.streak || 0)));
+      } catch {}
     } catch (e) {
       console.error("loadSummary failed:", e);
     } finally {
-      // ✅ THIS IS THE KEY: dashboard must never stay stuck loading
+      // ✅ dashboard must never stay stuck loading
       setLoading(false);
     }
   }, [computeLevel, xpToNextLevel]);
- 
-    // keep fallback in LS
-    try {
-      localStorage.setItem("fj_xp", String(totalXP));
-      localStorage.setItem("fj_streak", String(Number(data.streak || 0)));
-    } catch {}
-  }, []);
 
-  // Main loader (never gets stuck in loading=true)
-  const bootstrap = useCallback(async () => {    
+  // Main loader (use for retry button etc.)
+  const bootstrap = useCallback(async () => {
     setError("");
     try {
-      await loadMe();
-      await loadSummary();
+      // loadMe + loadSummary handle their own errors/logs
+      await Promise.allSettled([loadMe(), loadSummary()]);
     } catch (e) {
+      // Promise.allSettled normally won't throw, but keep this as a safety net
       console.error("Dashboard bootstrap error:", e);
       setError(e?.message || "Failed to load dashboard");
-    } finally {
-      setLoading(false);
     }
+    // IMPORTANT: do NOT setLoading(false) here (loadSummary controls loading)
   }, [loadMe, loadSummary]);
-  
-// Load on mount + refresh instantly when XP changes / user returns to tab
-useEffect(() => {
-  let inFlight = false;
 
-  const refresh = async () => {
-    if (inFlight) return;
-    inFlight = true;
+  // Load on mount + refresh instantly when XP changes / user returns to tab
+  useEffect(() => {
+    let inFlight = false;
 
-    try {
-      // IMPORTANT: call loadSummary directly so it's "read" + runs
-      await Promise.allSettled([
-        loadSummary(),
-        typeof loadMe === "function" ? loadMe() : Promise.resolve(),
-      ]);
-    } catch (e) {
-      console.error("Dashboard refresh failed:", e);
-    } finally {
-      inFlight = false;
-    }
-  };
+    const refresh = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        await bootstrap();
+      } catch (e) {
+        console.error("Dashboard refresh failed:", e);
+      } finally {
+        inFlight = false;
+      }
+    };
 
-  const onXp = () => refresh();
-  const onFocus = () => refresh();
-  const onVis = () => {
-    if (document.visibilityState === "visible") refresh();
-  };
+    const onXp = () => refresh();
+    const onFocus = () => refresh();
+    const onVis = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
 
-  // 1) initial load
-  refresh();
+    // 1) initial load
+    refresh();
 
-  // 2) listeners
-  window.addEventListener("fj:xp_updated", onXp);
-  window.addEventListener("focus", onFocus);
-  document.addEventListener("visibilitychange", onVis);
+    // 2) listeners
+    window.addEventListener("fj:xp_updated", onXp);
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVis);
 
-  // 3) cleanup
-  return () => {
-    window.removeEventListener("fj:xp_updated", onXp);
-    window.removeEventListener("focus", onFocus);
-    document.removeEventListener("visibilitychange", onVis);
-  };
-}, [loadSummary, loadMe]);
+    // 3) cleanup
+    return () => {
+      window.removeEventListener("fj:xp_updated", onXp);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [bootstrap]);
 
   return (
     <div className="fj-dashboard">
