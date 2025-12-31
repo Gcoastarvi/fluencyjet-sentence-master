@@ -10,7 +10,7 @@ const SUPPORTED_PRACTICE_MODES = new Set([
   "audio",
 ]);
 const MAX_ATTEMPTS = 3;
-const LESSON_ID = "L1";
+const LESSON_ID = 1; // MUST be numeric for backend validation
 
 /**
  * ✅ IMPORTANT
@@ -153,7 +153,7 @@ export default function SentencePractice() {
   }, [status]);
 
   // -------------------
-  // XP update (must match stable backend)
+  // XP update (stable + backend-friendly)
   // -------------------
   async function commitXP({ isCorrect, attemptNo, mode }) {
     const attemptId =
@@ -161,28 +161,35 @@ export default function SentencePractice() {
         ? globalThis.crypto.randomUUID()
         : `att_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
+    // backend-friendly numeric IDs
+    const numericQuestionId = Number(currentIndex + 1); // 1..N
+
     const payload = {
       attemptId,
-      lessonId: LESSON_ID, // ✅ required
-      questionId: `Q${currentIndex + 1}`,
-      practiceType: mode, // ✅ required by your stable backend
-      isCorrect: !!isCorrect,
-      attemptNo: Number(attemptNo ?? 1),
+
+      // ✅ send BOTH (backend may accept one; numeric is the important one)
+      lessonId: LESSON_ID, // numeric
+      questionId: numericQuestionId, // numeric
+
+      // optional extra keys (harmless; useful for debugging/logging)
+      lessonKey: `L${LESSON_ID}`,
+      questionKey: `Q${numericQuestionId}`,
+
+      // backend variants
+      practiceType: mode,
+      mode,
+
+      isCorrect,
+      attemptNo,
       completedQuiz: false,
+      timeTakenSec: null,
     };
 
     try {
       const res = await api.post("/progress/update", payload);
+      const data = res?.data ?? res;
 
-      // ✅ unwrap all possible apiClient response shapes:
-      // - res.data (axios-like)
-      // - res (our fetch wrapper)
-      // - res.data.data (nested)
-      const r0 = res?.data ?? res;
-      const data = r0?.data ?? r0;
-
-      const ok = data?.ok === true || r0?.ok === true;
-      if (!ok) {
+      if (!data || data.ok !== true) {
         console.error("[XP] /progress/update not ok", {
           payload,
           response: data,
@@ -191,33 +198,27 @@ export default function SentencePractice() {
         return;
       }
 
-      // ✅ accept many possible XP field names (backend variations)
-      const xp =
+      const awarded =
         Number(
-          data?.xpAwarded ??
-            data?.xpDelta ??
-            data?.xp_delta ??
-            data?.earnedXP ??
-            data?.xp ??
-            data?.delta ??
-            r0?.xpAwarded ??
-            r0?.xpDelta ??
-            r0?.xp ??
+          data.xpAwarded ??
+            data.xpDelta ??
+            data.xp_delta ??
+            data.earnedXP ??
+            data.xp ??
             0,
         ) || 0;
 
-      setEarnedXP(xp);
-      setStreak(
-        Number(data?.streak ?? data?.currentStreak ?? r0?.streak ?? 0) || 0,
-      );
+      setEarnedXP(awarded);
+      setStreak(Number(data.streak ?? data.currentStreak ?? 0) || 0);
 
       setShowXPToast(true);
       setTimeout(() => setShowXPToast(false), 1200);
 
-      // ✅ optional: keep, but safe
+      // If your Dashboard listens to this event, keep it.
+      // If apiClient already dispatches it, this is still safe.
       window.dispatchEvent(new Event("fj:xp_updated"));
     } catch (err) {
-      console.error("[XP] commit failed", err, { payload });
+      console.error("[XP] update failed", err);
       setEarnedXP(0);
     }
   }
