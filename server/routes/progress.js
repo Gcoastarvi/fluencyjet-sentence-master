@@ -357,6 +357,16 @@ router.post("/update", authRequired, async (req, res) => {
     const lessonIdRaw =
       body.lessonId ?? body.lessonKey ?? body.lessonID ?? null;
 
+    // normalize lesson id (prefer numeric)
+    const lessonIdNum = Number(body.lessonId ?? body.lessonID ?? null);
+    const lessonId =
+      Number.isFinite(lessonIdNum) && lessonIdNum > 0 ? lessonIdNum : null;
+
+    // stable label for idempotency key
+    const lessonTag = lessonId
+      ? `L${lessonId}`
+      : String(body.lessonKey || "L0");
+
     if (!userId)
       return res.status(401).json({ ok: false, message: "Unauthorized" });
     if (!attemptId)
@@ -379,7 +389,7 @@ router.post("/update", authRequired, async (req, res) => {
       const prog = await ensureProgress(tx, userId);
 
       // 2) idempotency: don't award XP twice for same attemptId
-      const eventKey = `practice:${practiceType}:L${lessonId}:Q${questionId}:A${attemptId}`;
+      const eventKey = `practice:${practiceType}:${lessonTag}:Q${questionId}:A${attemptId}`;
 
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
@@ -403,15 +413,10 @@ router.post("/update", authRequired, async (req, res) => {
         await tx.xpEvent.create({
           data: {
             user_id: userId,
-            attempt_id: attemptId,
-            practice_type: practiceType,
-            question_id: questionId || null,
-            is_correct: isCorrect,
-            attempt_no: attemptNo,
+            type: eventKey,     // store idempotency key here
             xp_delta: xpDelta,
           },
         });
-      }
 
       // 4) update totals + streak + last_activity
       const nextStreak = isNewDay
