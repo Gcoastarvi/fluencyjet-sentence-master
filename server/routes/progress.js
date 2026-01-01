@@ -399,7 +399,8 @@ router.post("/update", authRequired, async (req, res) => {
       const streakBonus = isCorrect && isNewDay ? 200 : 0;
 
       // 3) idempotency key (store in xpEvent.type)
-      const eventKey = `practice:${practiceType}:${lessonTag}:Q${questionId}:A${attemptId}`;
+      const keyBase = String(attemptId).replace(/-/g, "");
+      const eventKey = `xp_${keyBase.slice(0, 16)}`; // 19 chars total (fits even VARCHAR(20))
 
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
