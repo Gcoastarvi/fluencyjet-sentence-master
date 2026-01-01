@@ -76,9 +76,9 @@ async function ensureProgress(tx, userId) {
     p = await tx.userProgress.create({
       data: {
         user_id: userId,
-        total_xp: 0,
-        last_activity: new Date(),
-        consecutive_days: 0,
+        xp: 0,
+        streak: 0,
+        badges: [],
         lessons_completed: 0,
       },
     });
@@ -251,7 +251,7 @@ router.post("/save", authRequired, async (req, res) => {
         where: { user_id: userId },
       });
 
-      if (currentProgress && currentProgress.total_xp >= MAX_TOTAL_XP_FREE) {
+      if (currentProgress && currentProgress.xp >= MAX_TOTAL_XP_FREE) {
         // Do NOT award XP beyond cap
         return {
           ev: null,
@@ -378,31 +378,16 @@ router.post("/update", authRequired, async (req, res) => {
       // 1) ensure user progress row exists
       const prog = await ensureProgress(tx, userId);
 
-      // 2) day/streak calc (uses your existing dayStartUTC helper)
+      // streak logic temporarily disabled (schema has streak, but we don't compute it here yet)
       const now = new Date();
-      const todayUTC = dayStartUTC(now);
-      const yesterdayUTC = dayStartUTC(
-        new Date(Date.now() - 24 * 60 * 60 * 1000),
-      );
+      const newStreak = Number(prog?.streak ?? 0);
 
-      const last = prog.last_activity
-        ? dayStartUTC(new Date(prog.last_activity))
-        : null;
-
-      let newStreak = prog.consecutive_days || 0;
-      if (!last) newStreak = 1;
-      else if (last.getTime() === todayUTC.getTime())
-        newStreak = prog.consecutive_days || 1;
-      else if (last.getTime() === yesterdayUTC.getTime())
-        newStreak = (prog.consecutive_days || 0) + 1;
-      else newStreak = 1;
-
-      const isNewDay = !last || last.getTime() !== todayUTC.getTime();
-      const streakBonus = isCorrect && isNewDay ? 200 : 0;
+      // No streak bonus for now (we’ll re-enable when we add last_activity / daily tracking)
+      const streakBonus = 0;
 
       // 3) idempotency key (store in xpEvent.type)
       const keyBase = String(attemptId).replace(/-/g, "");
-      const eventKey = `xp_${keyBase.slice(0, 16)}`; // 19 chars total (fits even VARCHAR(20))
+      const eventKey = `xp_${keyBase.slice(0, 16)}`; // short key fits column length
 
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
@@ -412,7 +397,6 @@ router.post("/update", authRequired, async (req, res) => {
       const xpDelta = existing ? 0 : baseXP + streakBonus;
 
       if (!existing && xpDelta > 0) {
-        // IMPORTANT: only use columns that exist in your Prisma schema
         await tx.xpEvent.create({
           data: {
             user_id: userId,
@@ -497,8 +481,8 @@ router.post("/update", authRequired, async (req, res) => {
 
       return {
         xpAwarded: xpDelta,
-        streak: updatedProgress.consecutive_days,
-        totalXP: progress.xp,
+        streak: updatedProgress.streak,
+        totalXP: updatedProgress.xp,
         lesson: lessonPayload,
       };
     });
