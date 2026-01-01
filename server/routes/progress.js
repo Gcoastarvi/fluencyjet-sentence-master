@@ -379,8 +379,10 @@ router.post("/update", authRequired, async (req, res) => {
       const prog = await ensureProgress(tx, userId);
 
       // 2) idempotency: don't award XP twice for same attemptId
+      const eventKey = `practice:${practiceType}:L${lessonId}:Q${questionId}:A${attemptId}`;
+
       const existing = await tx.xpEvent.findFirst({
-        where: { user_id: userId, attempt_id: attemptId },
+        where: { user_id: userId, type: eventKey },
         select: { id: true },
       });
 
