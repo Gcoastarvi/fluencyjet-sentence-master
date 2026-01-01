@@ -135,8 +135,8 @@ router.get("/me", authRequired, async (req, res) => {
 
     const progress = await prisma.userProgress.upsert({
       where: { user_id: userId },
-      update: { last_activity: new Date() },
-      create: { user_id: userId, total_xp: 0, last_activity: new Date() },
+      update: {},
+      create: { user_id: userId, xp: 0, streak: 0, badges: [] },
     });
 
     const weeklyTop = await prisma.userWeeklyTotals.findMany({
@@ -291,12 +291,14 @@ router.post("/save", authRequired, async (req, res) => {
         where: { user_id: userId },
         create: {
           user_id: userId,
-          total_xp: amount,
-          last_activity: new Date(),
+          xp: amount,
+          streak: 0,
+          badges: [],
+          updated_at: new Date(),
         },
         update: {
-          total_xp: { increment: amount },
-          last_activity: new Date(),
+          xp: { increment: amount },
+          updated_at: new Date(),
         },
       });
 
@@ -420,13 +422,13 @@ router.post("/update", authRequired, async (req, res) => {
         });
       }
 
-      // 4) update totals + streak + last_activity
+      // 4) update totals (match your Prisma schema: xp, streak, updated_at)
       const updatedProgress = await tx.userProgress.update({
         where: { user_id: userId },
         data: {
-          total_xp: { increment: xpDelta },
-          consecutive_days: newStreak,
-          last_activity: now,
+          xp: { increment: xpDelta },
+          // keep streak unchanged for now (streak logic later after XP is stable)
+          updated_at: new Date(),
         },
       });
 
@@ -496,7 +498,7 @@ router.post("/update", authRequired, async (req, res) => {
       return {
         xpAwarded: xpDelta,
         streak: updatedProgress.consecutive_days,
-        totalXP: updatedProgress.total_xp,
+        totalXP: progress.xp,
         lesson: lessonPayload,
       };
     });
