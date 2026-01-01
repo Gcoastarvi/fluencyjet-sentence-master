@@ -105,6 +105,25 @@ async function ensureLessonProgress(tx, userId, lessonId) {
   }
   return lp;
 }
+function parseLessonId(raw) {
+  // Accept: 1, "1", "L1", "lesson-1"
+  if (raw === undefined || raw === null) return null;
+
+  // number-like
+  const n = Number(raw);
+  if (!Number.isNaN(n) && n > 0) return n;
+
+  // strings like "L1"
+  if (typeof raw === "string") {
+    const m = raw.match(/(\d+)/);
+    if (m) {
+      const n2 = Number(m[1]);
+      if (!Number.isNaN(n2) && n2 > 0) return n2;
+    }
+  }
+
+  return null;
+}
 
 /* ROUTES */
 
@@ -313,12 +332,35 @@ router.post("/save", authRequired, async (req, res) => {
 router.post("/update", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
-    const lessonId = Number(req.body?.lessonId);
+    // ✅ Accept lessonId in multiple shapes: 1, "1", "L1", lessonKey:"L1"
+    const rawLesson =
+      req.body?.lessonId ??
+      req.body?.lesson_id ??
+      req.body?.lessonKey ??
+      req.body?.lesson_key;
+
+    let lessonId = null;
+
+    if (typeof rawLesson === "number" && Number.isFinite(rawLesson)) {
+      lessonId = rawLesson;
+    } else if (typeof rawLesson === "string") {
+      const s = rawLesson.trim();
+
+      // "1"
+      if (/^\d+$/.test(s)) lessonId = Number(s);
+
+      // "L1" / "l1"
+      const m = /^L(\d+)$/i.exec(s);
+      if (!lessonId && m) lessonId = Number(m[1]);
+    }
 
     if (!lessonId || Number.isNaN(lessonId)) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "lessonId is required" });
+      return res.status(400).json({
+        ok: false,
+        message: "lessonId is required",
+        hint: "Send lessonId as a number (e.g., 1) or as 'L1'.",
+        got: rawLesson ?? null,
+      });
     }
 
     const todayUTC = dayStartUTC(new Date());
