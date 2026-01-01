@@ -328,149 +328,189 @@ router.post("/save", authRequired, async (req, res) => {
   }
 });
 
-// POST /api/progress/update  (mark lesson completed + unlock next + streak)
+// POST /api/progress/update
+// IMPORTANT:
+// - This endpoint is called on every question attempt from /practice/*
+// - So it MUST be bulletproof.
+// - Award XP + update streak ALWAYS.
+// - Only do lesson completion/unlock when completedQuiz === true.
 router.post("/update", authRequired, async (req, res) => {
   try {
-    const userId = req.user.id;
-    // ✅ Accept lessonId in multiple shapes: 1, "1", "L1", lessonKey:"L1"
-    const rawLesson =
-      req.body?.lessonId ??
-      req.body?.lesson_id ??
-      req.body?.lessonKey ??
-      req.body?.lesson_key;
+    const userId = req.user?.id;
 
-    let lessonId = null;
+    const body = req.body || {};
+    const attemptId = String(body.attemptId || body.attempt_id || "");
+    const attemptNo = Number(body.attemptNo ?? 1) || 1;
+    const isCorrect = Boolean(body.isCorrect);
 
-    if (typeof rawLesson === "number" && Number.isFinite(rawLesson)) {
-      lessonId = rawLesson;
-    } else if (typeof rawLesson === "string") {
-      const s = rawLesson.trim();
+    // normalize practice type
+    const practiceType = String(body.practiceType || body.mode || "reorder");
 
-      // "1"
-      if (/^\d+$/.test(s)) lessonId = Number(s);
+    // normalize question id (string-safe)
+    const questionIdRaw = body.questionId ?? body.questionKey ?? "";
+    const questionId = String(questionIdRaw);
 
-      // "L1" / "l1"
-      const m = /^L(\d+)$/i.exec(s);
-      if (!lessonId && m) lessonId = Number(m[1]);
-    }
+    // completedQuiz controls whether we do lesson unlock logic
+    const completedQuiz = Boolean(body.completedQuiz);
 
-    if (!lessonId || Number.isNaN(lessonId)) {
-      return res.status(400).json({
-        ok: false,
-        message: "lessonId is required",
-        hint: "Send lessonId as a number (e.g., 1) or as 'L1'.",
-        got: rawLesson ?? null,
-      });
-    }
+    // Lesson id: we keep BOTH in payload, but only required for completedQuiz flow
+    const lessonIdRaw =
+      body.lessonId ?? body.lessonKey ?? body.lessonID ?? null;
 
-    const todayUTC = dayStartUTC(new Date());
-    const yesterdayUTC = dayStartUTC(
-      new Date(Date.now() - 24 * 60 * 60 * 1000),
-    );
+    if (!userId)
+      return res.status(401).json({ ok: false, message: "Unauthorized" });
+    if (!attemptId)
+      return res
+        .status(400)
+        .json({ ok: false, message: "attemptId is required" });
+
+    // XP rules (match your current UI expectation)
+    const XP_BY_TYPE = {
+      reorder: 150,
+      typing: 150,
+      cloze: 80,
+      audio: 80,
+    };
+
+    const baseXP = isCorrect ? (XP_BY_TYPE[practiceType] ?? 100) : 0;
 
     const result = await prisma.$transaction(async (tx) => {
-      const existingProgress = await ensureProgress(tx, userId);
+      // 1) ensure user progress exists
+      const prog = await ensureProgress(tx, userId);
 
-      const lesson = await tx.lesson.findUnique({
-        where: { id: lessonId },
+      // 2) idempotency: don't award XP twice for same attemptId
+      const existing = await tx.xpEvent.findFirst({
+        where: { user_id: userId, attempt_id: attemptId },
+        select: { id: true },
       });
 
-      if (!lesson) throw new Error("Lesson not found");
+      // streak logic (simple + stable)
+      const now = new Date();
+      const last = prog.last_activity ? new Date(prog.last_activity) : null;
 
-      let lp = await ensureLessonProgress(tx, userId, lessonId);
-      const wasCompleted = lp.completed;
+      const todayKey = now.toDateString();
+      const lastKey = last ? last.toDateString() : null;
 
-      lp = await tx.userLessonProgress.update({
-        where: { id: lp.id },
-        data: {
-          completed: true,
-          attempts: (lp.attempts || 0) + 1,
-          last_attempt_at: new Date(),
-        },
-      });
+      const isNewDay = lastKey !== todayKey;
+      const streakBonus = isCorrect && isNewDay ? 200 : 0;
 
-      if (!wasCompleted) {
-        await tx.userProgress.update({
-          where: { user_id: userId },
-          data: { lessons_completed: { increment: 1 } },
+      const xpDelta = existing ? 0 : baseXP + streakBonus;
+
+      // 3) write xpEvent if awarding XP
+      if (!existing && xpDelta > 0) {
+        await tx.xpEvent.create({
+          data: {
+            user_id: userId,
+            attempt_id: attemptId,
+            practice_type: practiceType,
+            question_id: questionId || null,
+            is_correct: isCorrect,
+            attempt_no: attemptNo,
+            xp_delta: xpDelta,
+          },
         });
       }
 
-      // streak logic
-      let newStreak = existingProgress.consecutive_days || 0;
-      const last = existingProgress.last_activity
-        ? dayStartUTC(new Date(existingProgress.last_activity))
-        : null;
-
-      if (!last) newStreak = 1;
-      else if (last.getTime() === todayUTC.getTime())
-        newStreak = existingProgress.consecutive_days || 1;
-      else if (last.getTime() === yesterdayUTC.getTime())
-        newStreak = (existingProgress.consecutive_days || 0) + 1;
-      else newStreak = 1;
+      // 4) update totals + streak + last_activity
+      const nextStreak = isNewDay
+        ? Number(prog.streak || 0) + 1
+        : Number(prog.streak || 0);
 
       const updatedProgress = await tx.userProgress.update({
         where: { user_id: userId },
         data: {
-          consecutive_days: newStreak,
-          last_activity: new Date(),
+          total_xp: { increment: xpDelta },
+          last_activity: now,
+          streak: nextStreak,
         },
       });
 
-      // unlock current lesson
-      await tx.unlockedLesson.upsert({
-        where: {
-          user_id_lesson_id: { user_id: userId, lesson_id: lessonId },
-        },
-        update: {},
-        create: {
-          user_id: userId,
-          lesson_id: lessonId,
-        },
-      });
+      // 5) ONLY on quiz completion do we attempt lesson completion/unlock logic
+      //    AND ONLY if the Prisma model exists (prevents your current crash)
+      let lessonPayload = null;
 
-      // unlock next lesson (by order)
-      const nextLesson = await tx.lesson.findFirst({
-        where: { order: { gt: lesson.order } },
-        orderBy: { order: "asc" },
-      });
+      if (completedQuiz) {
+        // normalize lessonId to number if possible, else null
+        const lessonIdNum = Number(lessonIdRaw);
+        if (!lessonIdRaw || Number.isNaN(lessonIdNum)) {
+          // don’t crash; just skip unlock flow
+          lessonPayload = { skipped: true, reason: "lessonId missing/invalid" };
+        } else if (!tx.userLessonProgress) {
+          // this is YOUR current production problem — so we skip cleanly
+          lessonPayload = {
+            skipped: true,
+            reason: "userLessonProgress model not available",
+          };
+        } else {
+          const lp = await ensureLessonProgress(tx, userId, lessonIdNum);
 
-      if (nextLesson) {
-        await tx.unlockedLesson.upsert({
-          where: {
-            user_id_lesson_id: {
-              user_id: userId,
-              lesson_id: nextLesson.id,
+          const bestScore = Math.max(
+            Number(lp.best_score || 0),
+            Number(body.score || 0),
+          );
+
+          const updatedLP = await tx.userLessonProgress.update({
+            where: { id: lp.id },
+            data: {
+              completed: true,
+              best_score: bestScore,
             },
-          },
-          update: {},
-          create: {
-            user_id: userId,
-            lesson_id: nextLesson.id,
-          },
-        });
+          });
+
+          const lesson = await tx.lesson.findUnique({
+            where: { id: lessonIdNum },
+          });
+
+          if (lesson) {
+            // unlock next lesson
+            const nextLesson = await tx.lesson.findFirst({
+              where: { order: { gt: lesson.order } },
+              orderBy: { order: "asc" },
+            });
+
+            if (nextLesson) {
+              await tx.unlockedLesson.upsert({
+                where: {
+                  user_id_lesson_id: {
+                    user_id: userId,
+                    lesson_id: nextLesson.id,
+                  },
+                },
+                update: {},
+                create: {
+                  user_id: userId,
+                  lesson_id: nextLesson.id,
+                },
+              });
+            }
+
+            const unlocked = await tx.unlockedLesson.findMany({
+              where: { user_id: userId },
+            });
+
+            lessonPayload = {
+              lessonProgress: updatedLP,
+              unlockedLessons: unlocked.map((u) => u.lesson_id),
+              nextLessonId: nextLesson?.id || null,
+            };
+          } else {
+            lessonPayload = { skipped: true, reason: "lesson not found" };
+          }
+        }
       }
 
-      const unlocked = await tx.unlockedLesson.findMany({
-        where: { user_id: userId },
-      });
-
       return {
-        lessonProgress: lp,
-        progress: updatedProgress,
-        unlockedLessons: unlocked.map((u) => u.lesson_id),
-        nextLessonId: nextLesson?.id || null,
+        xpAwarded: xpDelta,
+        streak: updatedProgress.streak,
+        totalXP: updatedProgress.total_xp,
+        lesson: lessonPayload,
       };
     });
 
-    res.json({
-      ok: true,
-      message: "Lesson progress updated + lessons unlocked",
-      ...result,
-    });
+    return res.json({ ok: true, ...result });
   } catch (err) {
     console.error("❌ /progress/update error:", err);
-    res.status(500).json({
+    return res.status(500).json({
       ok: false,
       message: "Failed to update progress",
       error: String(err?.message || err),
