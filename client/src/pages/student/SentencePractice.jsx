@@ -130,6 +130,15 @@ export default function SentencePractice() {
     }
   }, []);
 
+  // ✅ Typing Word Bank (shows shuffled words as a hint, but we don't reveal the full sentence)
+  const typingWordBank = useMemo(() => {
+    if (activeMode !== "typing") return [];
+    const words = Array.isArray(currentQuestion?.correctOrder)
+      ? [...currentQuestion.correctOrder]
+      : [];
+    return words.sort(() => Math.random() - 0.5);
+  }, [activeMode, currentQuestion, currentIndex]);
+
   // 🔊 Initialize sounds once
   useEffect(() => {
     correctSoundRef.current = new Audio("/sounds/correct.mp3");
@@ -263,6 +272,16 @@ export default function SentencePractice() {
     if (status === "correct" || status === "reveal") return;
     setAnswer((prev) => [...prev, word]);
     setTiles((prev) => prev.filter((w) => w !== word));
+  }
+
+  // ✅ Typing helper: tap a word chip to append into typedAnswer
+  function addToTyped(word) {
+    if (status === "correct" || status === "reveal") return;
+
+    setTypedAnswer((prev) => {
+      const t = String(prev || "").trimEnd();
+      return (t ? t + " " : "") + word + " ";
+    });
   }
 
   function handleTryAgain() {
@@ -463,24 +482,79 @@ export default function SentencePractice() {
 
       {/* ⌨️ TYPING UI */}
       {activeMode === "typing" && (
-        <>
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
-            <div className="text-sm text-slate-600 mb-2">
-              Type this sentence:
+        <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-purple-700">
+              Typing Practice
+            </h2>
+
+            <button
+              onClick={() => setTypedAnswer("")}
+              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+              disabled={status === "correct" || status === "reveal"}
+            >
+              Clear
+            </button>
+          </div>
+
+          {/* Tamil prompt (what they should convert to English) */}
+          <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 mb-3">
+            <div className="text-xs font-semibold text-purple-700 mb-1">
+              Tamil prompt
             </div>
-            <div className="text-lg font-semibold">
-              {(currentQuestion.correctOrder || []).join(" ")}
+            <div className="text-sm text-slate-800">
+              {currentQuestion.tamil}
             </div>
           </div>
 
+          {/* Word Bank (tap-to-type) */}
+          <div className="mb-3">
+            <div className="text-xs font-semibold text-slate-600 mb-2">
+              Word Bank (tap words to build your sentence)
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {typingWordBank.map((w, idx) => (
+                <button
+                  key={`${w}_${idx}`}
+                  type="button"
+                  onClick={() => addToTyped(w)}
+                  className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-sm"
+                  disabled={status === "correct" || status === "reveal"}
+                >
+                  {w}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Input */}
           <textarea
             value={typedAnswer}
             onChange={(e) => setTypedAnswer(e.target.value)}
-            placeholder="Type the full sentence here..."
-            className="w-full border rounded-lg p-3 mb-4 min-h-[90px]"
+            placeholder="Type the full English sentence here..."
+            className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+            rows={3}
             disabled={status === "correct" || status === "reveal"}
           />
-        </>
+
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              onClick={checkAnswer}
+              className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
+              disabled={status === "correct" || status === "reveal"}
+            >
+              Submit
+            </button>
+
+            <button
+              onClick={() => setStatus("reveal")}
+              className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+              disabled={status === "correct" || status === "reveal"}
+            >
+              Show Answer
+            </button>
+          </div>
+        </div>
       )}
 
       {/* REORDER UI */}
