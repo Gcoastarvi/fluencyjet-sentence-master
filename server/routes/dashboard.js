@@ -74,11 +74,13 @@ router.get("/summary", authRequired, async (req, res) => {
       // ignore
     }
 
-    // --- XP totals ---
-    let totalXP = Number(user?.xpTotal ?? progress?.xp ?? 0);
-    if (!Number.isFinite(totalXP) || totalXP <= 0) {
-      totalXP = await sumXpForRange({ userId });
-    }
+    // --- XP totals (authoritative: XpEvent) ---
+    const computedTotal = await sumXpForRange({ userId });
+    const storedTotal = Number(user?.xpTotal ?? progress?.xp ?? 0);
+    const totalXP = Math.max(
+      computedTotal,
+      Number.isFinite(storedTotal) ? storedTotal : 0,
+    );
 
     const todayXP = await sumXpForRange({ userId, gte: todayStart });
     const yesterdayXP = await sumXpForRange({

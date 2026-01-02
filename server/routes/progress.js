@@ -406,16 +406,16 @@ router.post("/update", authRequired, async (req, res) => {
         });
       }
 
-      // 4) update totals (match your Prisma schema: xp, streak, updated_at)
+      // 4) Update UserProgress (keep cached totals/streak in sync with XpEvent)
       const updatedProgress = await tx.userProgress.update({
         where: { user_id: userId },
         data: {
-          xp: { increment: xpDelta },
-          // keep streak unchanged for now (streak logic later after XP is stable)
-          updated_at: new Date(),
+          xp: { increment: xpDelta },  // xpDelta is 0 if duplicate/wrong -> safe
+          streak: newStreak,           // currently constant; later we’ll compute properly
+          updated_at: now,
         },
       });
-
+      
       // 5) optional: only on quiz completion -> mark lesson complete + unlock next
       let lessonPayload = null;
 
