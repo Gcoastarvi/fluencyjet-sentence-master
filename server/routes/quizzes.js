@@ -343,7 +343,32 @@ router.post("/import/csv", authRequired, async (req, res) => {
 // POST /api/quizzes/import/txt
 router.post("/import/txt", authRequired, async (req, res) => {
   try {
-    const { text, defaultDifficulty, lessonId, mode } = req.body || {};
+    // ✅ robust body handling (covers json / stringified json / raw text)
+    let body = req.body;
+
+    if (typeof body === "string") {
+      const s = body.trim();
+      if (s.startsWith("{")) {
+        try {
+          body = JSON.parse(s);
+        } catch {
+          // keep as string
+        }
+      }
+    }
+
+    const lessonIdRaw =
+      typeof body === "object" && body ? body.lessonId : undefined;
+    const defaultDifficulty =
+      typeof body === "object" && body ? body.defaultDifficulty : undefined;
+
+    // text can be: body.text (json) OR raw string
+    const text =
+      typeof body === "object" && body
+        ? body.text
+        : typeof body === "string"
+          ? body
+          : null;
 
     if (!text || typeof text !== "string") {
       return res
@@ -351,14 +376,13 @@ router.post("/import/txt", authRequired, async (req, res) => {
         .json({ ok: false, message: "text field (string) is required" });
     }
 
-    const lessonNum = Number(lessonId);
-    if (!lessonNum || Number.isNaN(lessonNum)) {
+    const lessonId = Number(lessonIdRaw ?? 1);
+    if (!lessonId || Number.isNaN(lessonId)) {
       return res
         .status(400)
         .json({ ok: false, message: "lessonId is required" });
     }
 
-    // difficulty -> enum
     const diff = String(defaultDifficulty || "beginner").toLowerCase();
     const level =
       diff === "advanced"
@@ -367,88 +391,89 @@ router.post("/import/txt", authRequired, async (req, res) => {
           ? "INTERMEDIATE"
           : "BEGINNER";
 
-    const practiceMode = String(mode || "typing").toLowerCase(); // typing | reorder
-
-    // ensure practiceDay exists
-    const day =
-      (await prisma.practiceDay.findFirst({
-        where: { dayNumber: lessonNum, level },
-      })) ||
-      (await prisma.practiceDay.create({
-        data: {
-          dayNumber: lessonNum,
-          level,
-          titleEn: `Lesson ${lessonNum}`,
-          titleTa: `பாடம் ${lessonNum}`,
-          isActive: true,
-        },
-      }));
-
-    // next order index
-    const existingCount = await prisma.practiceExercise.count({
-      where: { practiceDayId: day.id },
-    });
-
     const lines = text
       .split(/\r?\n/)
       .map((l) => l.trim())
       .filter(Boolean);
 
     const rows = [];
-    let idx = 0;
-
-    for (const line of lines) {
-      const parts = line.split("|||").map((p) => p.trim());
+    for (let i = 0; i < lines.length; i += 1) {
+      const parts = lines[i].split("|||").map((p) => p.trim());
       if (parts.length < 2) continue;
 
-      const [ta, en] = parts;
-      if (!ta || !en) continue;
-
-      const tokens = en.split(/\s+/).filter(Boolean);
+      const [promptTa, expectedEn] = parts;
+      if (!promptTa || !expectedEn) continue;
 
       rows.push({
-        practiceDayId: day.id,
-        type: "MAKE_SENTENCE",
-        promptTa: ta,
+        orderIndex: i,
+        promptTa,
         hintTa: null,
         structureEn: null,
+        type: "MAKE_SENTENCE",
         expected: {
-          mode: practiceMode, // "typing" | "reorder"
-          correctOrder: tokens, // used for reorder + typing
-          sentence: tokens.join(" "),
+          en: expectedEn,
+          // helpful for reorder later:
+          words: expectedEn.split(/\s+/).filter(Boolean),
         },
-        xp: 50,
-        orderIndex: existingCount + idx,
       });
-
-      idx += 1;
     }
 
     if (!rows.length) {
-      return res.status(400).json({
-        ok: false,
-        message: "No valid lines found in text",
-      });
+      return res
+        .status(400)
+        .json({ ok: false, message: "No valid lines found in text" });
     }
 
-    const result = await prisma.practiceExercise.createMany({
-      data: rows,
-      skipDuplicates: false,
+    const result = await prisma.$transaction(async (tx) => {
+      // find or create PracticeDay (no unique constraint assumed)
+      let day = await tx.practiceDay.findFirst({
+        where: { level, dayNumber: lessonId },
+      });
+
+      if (!day) {
+        day = await tx.practiceDay.create({
+          data: {
+            level,
+            dayNumber: lessonId,
+            titleEn: `Lesson ${lessonId}`,
+            titleTa: `பாடம் ${lessonId}`,
+            isActive: true,
+          },
+        });
+      }
+
+      // idempotent: clear existing exercises for this day
+      await tx.practiceExercise.deleteMany({
+        where: { practiceDayId: day.id },
+      });
+
+      // insert fresh
+      await tx.practiceExercise.createMany({
+        data: rows.map((r) => ({
+          practiceDayId: day.id,
+          type: r.type,
+          promptTa: r.promptTa,
+          hintTa: r.hintTa,
+          structureEn: r.structureEn,
+          expected: r.expected,
+          orderIndex: r.orderIndex,
+          // xp uses schema default if omitted
+        })),
+      });
+
+      return { dayId: day.id, inserted: rows.length };
     });
 
     return res.json({
       ok: true,
-      message: `Imported ${result.count} exercises`,
-      inserted: result.count,
-      practiceDayId: day.id,
-      dayNumber: day.dayNumber,
-      level: day.level,
+      message: `Imported ${result.inserted} exercises`,
+      inserted: result.inserted,
     });
   } catch (err) {
     console.error("❌ POST /api/quizzes/import/txt error:", err);
     return res.status(500).json({
       ok: false,
-      message: "Failed to import TXT quizzes",
+      message: "Failed to import TXT",
       error: String(err?.message || err),
     });
   }
