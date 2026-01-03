@@ -341,167 +341,159 @@ router.post("/import/csv", authRequired, async (req, res) => {
 /*                  POST /api/quizzes/import/txt                              */
 /* -------------------------------------------------------------------------- */
 // POST /api/quizzes/import/txt
-router.post("/import/txt", authRequired, async (req, res) => {
-  try {
-    // ✅ robust body handling (covers json / stringified json / raw text)
-    let body = req.body;
+// POST /api/quizzes/import/txt
+router.post(
+  "/import/txt",
+  authRequired,
+  // allows sending raw text/plain too; won't affect JSON requests
+  express.text({ type: ["text/plain", "text/*"], limit: "2mb" }),
+  async (req, res) => {
+    try {
+      // req.body can be: object (JSON), string (text/plain), or rarely Buffer
+      let incoming = req.body;
 
-    if (typeof body === "string") {
-      const s = body.trim();
-      if (s.startsWith("{")) {
-        try {
-          body = JSON.parse(s);
-        } catch {
-          // keep as string
+      if (Buffer.isBuffer(incoming)) incoming = incoming.toString("utf8");
+
+      // Defaults
+      let text = "";
+      let lessonId = 1;
+      let defaultDifficulty = "beginner";
+      let mode = "typing"; // typing | reorder (we store it in expected)
+
+      // If text/plain, body will be a string = the content itself
+      if (typeof incoming === "string") {
+        const s = incoming.trim();
+
+        // Sometimes a JSON string slips through as text — try parse
+        if (s.startsWith("{") && s.endsWith("}")) {
+          try {
+            incoming = JSON.parse(s);
+          } catch {
+            // keep as raw string
+          }
+        }
+
+        if (typeof incoming === "string") {
+          text = incoming;
         }
       }
-    }
 
-    const lessonIdRaw =
-      typeof body === "object" && body ? body.lessonId : undefined;
-    const defaultDifficulty =
-      typeof body === "object" && body ? body.defaultDifficulty : undefined;
-
-    // text can be: body.text (json) OR raw string
-    const body = req.body;
-
-    let text = "";
-    let lessonId = null;
-    let defaultDifficulty = null;
-    let mode = null;
-
-    // Handles cases where body is:
-    // 1) JSON object (normal)
-    // 2) raw string (because of middleware/content-type mismatch)
-    // 3) Buffer (rare, but happens with raw body parsers)
-    if (typeof body === "string") {
-      // could be either raw text OR JSON-string
-      try {
-        const parsed = JSON.parse(body);
-        text = typeof parsed?.text === "string" ? parsed.text : "";
-        lessonId = parsed?.lessonId ?? null;
-        defaultDifficulty = parsed?.defaultDifficulty ?? null;
-        mode = parsed?.mode ?? null;
-      } catch {
-        // treat as raw text itself
-        text = body;
+      // If JSON, it should be an object
+      if (incoming && typeof incoming === "object") {
+        if (typeof incoming.text === "string") text = incoming.text;
+        if (incoming.lessonId != null)
+          lessonId = Number(incoming.lessonId) || 1;
+        if (typeof incoming.defaultDifficulty === "string")
+          defaultDifficulty = incoming.defaultDifficulty;
+        if (typeof incoming.mode === "string") mode = incoming.mode;
       }
-    } else if (Buffer.isBuffer(body)) {
-      text = body.toString("utf8");
-    } else {
-      text = typeof body?.text === "string" ? body.text : "";
-      lessonId = body?.lessonId ?? null;
-      defaultDifficulty = body?.defaultDifficulty ?? null;
-      mode = body?.mode ?? null;
-    }
 
-    if (!text || typeof text !== "string" || !text.trim()) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "text field (string) is required" });
-    }
+      if (!text || typeof text !== "string" || !text.trim()) {
+        return res
+          .status(400)
+          .json({ ok: false, message: "text field (string) is required" });
+      }
 
-    const lessonId = Number(lessonIdRaw ?? 1);
-    if (!lessonId || Number.isNaN(lessonId)) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "lessonId is required" });
-    }
+      const lessonIdNum = Number(lessonId);
+      if (!lessonIdNum || Number.isNaN(lessonIdNum)) {
+        return res
+          .status(400)
+          .json({ ok: false, message: "lessonId is required" });
+      }
 
-    const diff = String(defaultDifficulty || "beginner").toLowerCase();
-    const level =
-      diff === "advanced"
-        ? "ADVANCED"
-        : diff === "intermediate"
-          ? "INTERMEDIATE"
-          : "BEGINNER";
+      const diff = String(defaultDifficulty || "beginner").toLowerCase();
+      const level =
+        diff === "advanced"
+          ? "ADVANCED"
+          : diff === "intermediate"
+            ? "INTERMEDIATE"
+            : "BEGINNER";
 
-    const lines = text
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean);
+      const lines = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean);
 
-    const rows = [];
-    for (let i = 0; i < lines.length; i += 1) {
-      const parts = lines[i].split("|||").map((p) => p.trim());
-      if (parts.length < 2) continue;
+      const rows = [];
+      for (let i = 0; i < lines.length; i += 1) {
+        const parts = lines[i].split("|||").map((p) => p.trim());
+        if (parts.length < 2) continue;
 
-      const [promptTa, expectedEn] = parts;
-      if (!promptTa || !expectedEn) continue;
+        const [promptTa, expectedEn] = parts;
+        if (!promptTa || !expectedEn) continue;
 
-      rows.push({
-        orderIndex: i,
-        promptTa,
-        hintTa: null,
-        structureEn: null,
-        type: "MAKE_SENTENCE",
-        expected: {
-          en: expectedEn,
-          // helpful for reorder later:
-          words: expectedEn.split(/\s+/).filter(Boolean),
-        },
-      });
-    }
-
-    if (!rows.length) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "No valid lines found in text" });
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
-      // find or create PracticeDay (no unique constraint assumed)
-      let day = await tx.practiceDay.findFirst({
-        where: { level, dayNumber: lessonId },
-      });
-
-      if (!day) {
-        day = await tx.practiceDay.create({
-          data: {
-            level,
-            dayNumber: lessonId,
-            titleEn: `Lesson ${lessonId}`,
-            titleTa: `பாடம் ${lessonId}`,
-            isActive: true,
+        rows.push({
+          orderIndex: i,
+          promptTa,
+          hintTa: null,
+          structureEn: null,
+          type: "MAKE_SENTENCE",
+          expected: {
+            mode,
+            en: expectedEn,
+            words: expectedEn.split(/\s+/).filter(Boolean),
           },
         });
       }
 
-      // idempotent: clear existing exercises for this day
-      await tx.practiceExercise.deleteMany({
-        where: { practiceDayId: day.id },
+      if (!rows.length) {
+        return res
+          .status(400)
+          .json({ ok: false, message: "No valid lines found in text" });
+      }
+
+      const result = await prisma.$transaction(async (tx) => {
+        // find/create PracticeDay (your schema uses PracticeDay + PracticeExercise)
+        let day = await tx.practiceDay.findFirst({
+          where: { level, dayNumber: lessonIdNum },
+        });
+
+        if (!day) {
+          day = await tx.practiceDay.create({
+            data: {
+              level,
+              dayNumber: lessonIdNum,
+              titleEn: `Lesson ${lessonIdNum}`,
+              titleTa: `பாடம் ${lessonIdNum}`,
+              isActive: true,
+            },
+          });
+        }
+
+        // idempotent: overwrite exercises for that day
+        await tx.practiceExercise.deleteMany({
+          where: { practiceDayId: day.id },
+        });
+
+        await tx.practiceExercise.createMany({
+          data: rows.map((r) => ({
+            practiceDayId: day.id,
+            type: r.type,
+            promptTa: r.promptTa,
+            hintTa: r.hintTa,
+            structureEn: r.structureEn,
+            expected: r.expected,
+            orderIndex: r.orderIndex,
+          })),
+        });
+
+        return { dayId: day.id, inserted: rows.length };
       });
 
-      // insert fresh
-      await tx.practiceExercise.createMany({
-        data: rows.map((r) => ({
-          practiceDayId: day.id,
-          type: r.type,
-          promptTa: r.promptTa,
-          hintTa: r.hintTa,
-          structureEn: r.structureEn,
-          expected: r.expected,
-          orderIndex: r.orderIndex,
-          // xp uses schema default if omitted
-        })),
+      return res.json({
+        ok: true,
+        message: `Imported ${result.inserted} exercises`,
+        inserted: result.inserted,
       });
-
-      return { dayId: day.id, inserted: rows.length };
-    });
-
-    return res.json({
-      ok: true,
-      message: `Imported ${result.inserted} exercises`,
-      inserted: result.inserted,
-    });
-  } catch (err) {
-    console.error("❌ POST /api/quizzes/import/txt error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Failed to import TXT",
-      error: String(err?.message || err),
-    });
-  }
-});
+    } catch (err) {
+      console.error("❌ POST /api/quizzes/import/txt error:", err);
+      return res.status(500).json({
+        ok: false,
+        message: "Failed to import TXT",
+        error: String(err?.message || err),
+      });
+    }
+  },
+);
 
 export default router;
