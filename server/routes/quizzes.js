@@ -336,7 +336,23 @@ router.post("/import/csv", authRequired, async (req, res) => {
  */
 router.post("/import/txt", authRequired, async (req, res) => {
   try {
-    const { text, defaultDifficulty, lessonId } = req.body || {};
+    // Accept BOTH:
+    // 1) JSON: { text, lessonId, defaultDifficulty }
+    // 2) raw text/plain body: "ta|||en\n..."
+    const body = req.body;
+
+    const text =
+      typeof body === "string"
+        ? body
+        : typeof body?.text === "string"
+          ? body.text
+          : "";
+
+    const defaultDifficulty =
+      typeof body === "object" && body ? body.defaultDifficulty : undefined;
+
+    const lessonId =
+      typeof body === "object" && body ? body.lessonId : undefined;
 
     if (!text || typeof text !== "string") {
       return res
