@@ -363,14 +363,39 @@ router.post("/import/txt", authRequired, async (req, res) => {
       typeof body === "object" && body ? body.defaultDifficulty : undefined;
 
     // text can be: body.text (json) OR raw string
-    const text =
-      typeof body === "object" && body
-        ? body.text
-        : typeof body === "string"
-          ? body
-          : null;
+    const body = req.body;
 
-    if (!text || typeof text !== "string") {
+    let text = "";
+    let lessonId = null;
+    let defaultDifficulty = null;
+    let mode = null;
+
+    // Handles cases where body is:
+    // 1) JSON object (normal)
+    // 2) raw string (because of middleware/content-type mismatch)
+    // 3) Buffer (rare, but happens with raw body parsers)
+    if (typeof body === "string") {
+      // could be either raw text OR JSON-string
+      try {
+        const parsed = JSON.parse(body);
+        text = typeof parsed?.text === "string" ? parsed.text : "";
+        lessonId = parsed?.lessonId ?? null;
+        defaultDifficulty = parsed?.defaultDifficulty ?? null;
+        mode = parsed?.mode ?? null;
+      } catch {
+        // treat as raw text itself
+        text = body;
+      }
+    } else if (Buffer.isBuffer(body)) {
+      text = body.toString("utf8");
+    } else {
+      text = typeof body?.text === "string" ? body.text : "";
+      lessonId = body?.lessonId ?? null;
+      defaultDifficulty = body?.defaultDifficulty ?? null;
+      mode = body?.mode ?? null;
+    }
+
+    if (!text || typeof text !== "string" || !text.trim()) {
       return res
         .status(400)
         .json({ ok: false, message: "text field (string) is required" });
