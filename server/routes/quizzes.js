@@ -1,9 +1,10 @@
 // server/routes/quizzes.js
 import express from "express";
 import prisma from "../db/client.js";
-import authRequired from "../middleware/authMiddleware.js";
+import authRequired, { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+router.use(authMiddleware);
 
 const VALID_DIFFICULTIES = new Set(["beginner", "intermediate", "advanced"]);
 
