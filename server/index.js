@@ -10,6 +10,7 @@ import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import billingRouter from "./routes/billing.js";
 import diagnosticRoutes from "./routes/diagnostic.js";
+import quizzesRouter from "./routes/quizzes.js";
 
 import xpRouter from "./routes/xp.js";
 import progressRouter from "./routes/progress.js";
@@ -23,6 +24,7 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.set("etag", false);
+app.use("/api/quizzes", quizzesRouter);
 
 // Prevent caching for API responses (fixes 304 issues in browser)
 app.use("/api", (req, res, next) => {
