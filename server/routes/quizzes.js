@@ -95,40 +95,55 @@ router.get("/random", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
-/**
- * Returns ALL questions for a lesson (for admin view / editing)
- */
+// GET /api/quizzes/by-lesson/:lessonId
 router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
   try {
     const lessonId = Number(req.params.lessonId);
     if (!lessonId || Number.isNaN(lessonId)) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "lessonId must be a number" });
+      return res.status(400).json({ ok: false, message: "Invalid lessonId" });
     }
 
-    const questions = await prisma.quizQuestion.findMany({
-      where: { lesson_id: lessonId },
-      orderBy: { id: "asc" },
-      select: {
-        id: true,
-        ta: true,
-        en: true,
-        difficulty: true,
-        lesson_id: true,
-        audio_url: true,
-        created_at: true,
-      },
+    // Map difficulty -> UserLevel enum
+    const diff = String(req.query.difficulty || "beginner").toLowerCase();
+    const level =
+      diff === "advanced"
+        ? "ADVANCED"
+        : diff === "intermediate"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
+
+    const day = await prisma.practiceDay.findFirst({
+      where: { dayNumber: lessonId, level },
+      include: { exercises: { orderBy: { orderIndex: "asc" } } },
     });
 
-    return res.json({
-      ok: true,
-      lessonId,
-      count: questions.length,
-      questions,
+    if (!day) {
+      return res.json({ ok: true, lessonId, level, questions: [] });
+    }
+
+    const questions = (day.exercises || []).map((ex) => {
+      const expected = ex.expected || {};
+      const correctOrder =
+        expected.correctOrder ||
+        expected.tokens ||
+        String(expected.sentence || "").split(/\s+/);
+
+      return {
+        id: ex.id,
+        type: expected.mode === "typing" ? "TYPING" : "REORDER",
+        tamil: ex.promptTa,
+        correctOrder: Array.isArray(correctOrder) ? correctOrder : [],
+        answer:
+          expected.sentence ||
+          (Array.isArray(correctOrder) ? correctOrder.join(" ") : ""),
+        orderIndex: ex.orderIndex,
+        xp: ex.xp,
+      };
     });
+
+    return res.json({ ok: true, lessonId, level, questions });
   } catch (err) {
-    console.error("❌ GET /api/quizzes/by-lesson/:lessonId error:", err);
+    console.error("❌ GET /api/quizzes/by-lesson error:", err);
     return res.status(500).json({
       ok: false,
       message: "Failed to load lesson quizzes",
@@ -325,34 +340,10 @@ router.post("/import/csv", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                  POST /api/quizzes/import/txt                              */
 /* -------------------------------------------------------------------------- */
-/**
- * Simple TXT importer.
- *
- * Body: { text: "ta|||en|||audio_url\\n..." , defaultDifficulty?, lessonId? }
- *
- * Each line format:
- *   ta ||| en
- *   ta ||| en ||| audio_url
- */
+// POST /api/quizzes/import/txt
 router.post("/import/txt", authRequired, async (req, res) => {
   try {
-    // Accept BOTH:
-    // 1) JSON: { text, lessonId, defaultDifficulty }
-    // 2) raw text/plain body: "ta|||en\n..."
-    const body = req.body;
-
-    const text =
-      typeof body === "string"
-        ? body
-        : typeof body?.text === "string"
-          ? body.text
-          : "";
-
-    const defaultDifficulty =
-      typeof body === "object" && body ? body.defaultDifficulty : undefined;
-
-    const lessonId =
-      typeof body === "object" && body ? body.lessonId : undefined;
+    const { text, defaultDifficulty, lessonId, mode } = req.body || {};
 
     if (!text || typeof text !== "string") {
       return res
@@ -360,9 +351,43 @@ router.post("/import/txt", authRequired, async (req, res) => {
         .json({ ok: false, message: "text field (string) is required" });
     }
 
-    const defaultDiff = normalizeDifficulty(defaultDifficulty) || "beginner";
-    const lessonIdNum =
-      typeof lessonId === "number" ? lessonId : Number(lessonId) || null;
+    const lessonNum = Number(lessonId);
+    if (!lessonNum || Number.isNaN(lessonNum)) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "lessonId is required" });
+    }
+
+    // difficulty -> enum
+    const diff = String(defaultDifficulty || "beginner").toLowerCase();
+    const level =
+      diff === "advanced"
+        ? "ADVANCED"
+        : diff === "intermediate"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
+
+    const practiceMode = String(mode || "typing").toLowerCase(); // typing | reorder
+
+    // ensure practiceDay exists
+    const day =
+      (await prisma.practiceDay.findFirst({
+        where: { dayNumber: lessonNum, level },
+      })) ||
+      (await prisma.practiceDay.create({
+        data: {
+          dayNumber: lessonNum,
+          level,
+          titleEn: `Lesson ${lessonNum}`,
+          titleTa: `பாடம் ${lessonNum}`,
+          isActive: true,
+        },
+      }));
+
+    // next order index
+    const existingCount = await prisma.practiceExercise.count({
+      where: { practiceDayId: day.id },
+    });
 
     const lines = text
       .split(/\r?\n/)
@@ -370,21 +395,33 @@ router.post("/import/txt", authRequired, async (req, res) => {
       .filter(Boolean);
 
     const rows = [];
+    let idx = 0;
 
     for (const line of lines) {
       const parts = line.split("|||").map((p) => p.trim());
       if (parts.length < 2) continue;
 
-      const [ta, en, audioUrl] = parts;
+      const [ta, en] = parts;
       if (!ta || !en) continue;
 
+      const tokens = en.split(/\s+/).filter(Boolean);
+
       rows.push({
-        ta,
-        en,
-        difficulty: defaultDiff,
-        lesson_id: lessonIdNum,
-        audio_url: audioUrl || null,
+        practiceDayId: day.id,
+        type: "MAKE_SENTENCE",
+        promptTa: ta,
+        hintTa: null,
+        structureEn: null,
+        expected: {
+          mode: practiceMode, // "typing" | "reorder"
+          correctOrder: tokens, // used for reorder + typing
+          sentence: tokens.join(" "),
+        },
+        xp: 50,
+        orderIndex: existingCount + idx,
       });
+
+      idx += 1;
     }
 
     if (!rows.length) {
@@ -394,15 +431,18 @@ router.post("/import/txt", authRequired, async (req, res) => {
       });
     }
 
-    const result = await prisma.quizQuestion.createMany({
+    const result = await prisma.practiceExercise.createMany({
       data: rows,
       skipDuplicates: false,
     });
 
     return res.json({
       ok: true,
-      message: `Imported ${result.count} questions from TXT`,
+      message: `Imported ${result.count} exercises`,
       inserted: result.count,
+      practiceDayId: day.id,
+      dayNumber: day.dayNumber,
+      level: day.level,
     });
   } catch (err) {
     console.error("❌ POST /api/quizzes/import/txt error:", err);
