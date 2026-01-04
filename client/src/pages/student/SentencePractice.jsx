@@ -12,65 +12,15 @@ const SUPPORTED_PRACTICE_MODES = new Set([
 const MAX_ATTEMPTS = 3;
 const LESSON_ID = 1; // MUST be numeric for backend validation
 
-/**
- * ✅ IMPORTANT
- * - XP must be updated via the existing stable endpoint: /api/progress/update
- * - apiClient.js already dispatches: window.dispatchEvent(new CustomEvent("fj:xp_updated"))
- *   after XP updates. So we DO NOT dispatch anything here.
- */
-const QUESTIONS = [
-  {
-    type: "REORDER",
-    tamil: "அவள் annual exams ல pass ஆக hard ஆக study பண்ணிட்டு இருக்கா",
-    correctOrder: [
-      "She",
-      "is",
-      "studying",
-      "hard",
-      "to",
-      "pass",
-      "her",
-      "annual",
-      "exams",
-    ],
-  },
-  {
-    type: "REORDER",
-    tamil: "அவன் job கிடைக்க hard ஆக prepare பண்ணிட்டு இருக்கான்",
-    correctOrder: ["He", "is", "preparing", "hard", "to", "get", "a", "job"],
-  },
-  {
-    type: "REORDER",
-    tamil: "நான் English improve பண்ண daily practice பண்ணுறேன்",
-    correctOrder: ["I", "practice", "daily", "to", "improve", "my", "English"],
-  },
-  {
-    type: "REORDER",
-    tamil: "அவர்கள் exam clear பண்ண confidence build பண்ணுறாங்க",
-    correctOrder: [
-      "They",
-      "are",
-      "building",
-      "confidence",
-      "to",
-      "clear",
-      "the",
-      "exam",
-    ],
-  },
-  {
-    type: "REORDER",
-    tamil: "நீ fluency improve பண்ண slow ஆக start பண்ணலாம்",
-    correctOrder: ["You", "can", "start", "slowly", "to", "improve", "fluency"],
-  },
-];
-
 export default function SentencePractice() {
   const { mode: urlMode } = useParams();
   const rawMode = (urlMode || DEFAULT_PRACTICE_MODE).toLowerCase();
   const activeMode = SUPPORTED_PRACTICE_MODES.has(rawMode)
     ? rawMode
     : DEFAULT_PRACTICE_MODE;
+
+  const search = new URLSearchParams(window.location.search);
+  const lessonId = Number(search.get("lessonId") || 1);
 
   // -------------------
   // refs
@@ -91,6 +41,11 @@ export default function SentencePractice() {
   const [showHint, setShowHint] = useState(false);
   const [wrongIndexes, setWrongIndexes] = useState([]);
 
+  const [lessonExercises, setLessonExercises] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [sessionTarget] = useState(10); // MVP: 10 questions per session
+
   // typing/cloze shared input state
   const [selectedOption, setSelectedOption] = useState(null);
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -100,14 +55,23 @@ export default function SentencePractice() {
   const [showXPToast, setShowXPToast] = useState(false);
   const [streak, setStreak] = useState(0);
 
-  const totalQuestions = QUESTIONS.length;
+  const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
 
   const currentQuestion = useMemo(() => {
-    if (currentIndex >= QUESTIONS.length) return null;
-    const q = QUESTIONS[currentIndex];
+    const q = lessonExercises[currentIndex];
     if (!q) return null;
-    return { ...q, type: q.type || "REORDER" };
-  }, [currentIndex]);
+
+    // ensure typing has a usable target
+    const target =
+      q.answer?.trim() ||
+      (Array.isArray(q.correctOrder) ? q.correctOrder.join(" ") : "");
+
+    return {
+      ...q,
+      type: "REORDER", // keep your UI logic stable
+      answer: target,
+    };
+  }, [lessonExercises, currentIndex]);
 
   // -------------------
   // effects
@@ -129,6 +93,18 @@ export default function SentencePractice() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    setCurrentIndex(0);
+    setLessonExercises([]);
+    loadLessonBatch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMode, lessonId]);
+
+  useEffect(() => {
+    initQuiz();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, lessonExercises]);
 
   // ✅ Typing Word Bank (shows shuffled words as a hint, but we don't reveal the full sentence)
   const typingWordBank = useMemo(() => {
@@ -235,6 +211,79 @@ export default function SentencePractice() {
   // -------------------
   // helpers
   // -------------------
+  function normalizeExercise(raw) {
+    if (!raw) return null;
+
+    const ex = raw.exercise ?? raw; // supports {exercise:{...}} or direct
+    return {
+      id: ex.id ?? ex.exerciseId ?? null,
+      tamil: ex.tamil ?? ex.promptTamil ?? ex.tamilLine ?? "",
+      correctOrder: Array.isArray(ex.correctOrder) ? ex.correctOrder : [],
+      answer: ex.answer ?? ex.english ?? "",
+    };
+  }
+
+  async function loadLessonBatch() {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const res = await api.get("/quizzes/by-lesson", {
+        params: { lessonId, mode: activeMode },
+      });
+
+      const data = res?.data ?? res;
+
+      // supports: array OR {items:[...]} OR {exercises:[...]}
+      const arr = Array.isArray(data)
+        ? data
+        : Array.isArray(data.items)
+          ? data.items
+          : Array.isArray(data.exercises)
+            ? data.exercises
+            : [];
+
+      const normalized = arr.map(normalizeExercise).filter(Boolean);
+
+      if (!normalized.length) {
+        setLessonExercises([]);
+        setLoadError("No exercises found for this lesson.");
+        return;
+      }
+
+      setLessonExercises(normalized);
+    } catch (e) {
+      console.error("[Practice] loadLessonBatch failed", e);
+      setLoadError("Failed to load lesson exercises.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadRandomOne() {
+    setLoading(true);
+    setLoadError("");
+    try {
+      const res = await api.get("/quizzes/random", {
+        params: { mode: activeMode, lessonId }, // lessonId optional if backend supports
+      });
+      const data = res?.data ?? res;
+      const ex = normalizeExercise(data);
+
+      if (!ex) {
+        setLoadError("No exercise returned.");
+        return;
+      }
+
+      setLessonExercises([ex]); // single-item “batch”
+      setCurrentIndex(0);
+    } catch (e) {
+      console.error("[Practice] loadRandomOne failed", e);
+      setLoadError("Failed to load a random exercise.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function initQuiz() {
     if (!currentQuestion) return;
 
@@ -263,9 +312,14 @@ export default function SentencePractice() {
   } // ✅ IMPORTANT: this closing brace was missing in your backup
 
   function loadNextQuestion() {
-    setCurrentIndex((prev) =>
-      prev + 1 < QUESTIONS.length ? prev + 1 : QUESTIONS.length,
-    );
+    setCurrentIndex((prev) => {
+      const next = prev + 1;
+      if (next >= totalQuestions) {
+        setCompleted(true);
+        return prev; // keep index stable when completed
+      }
+      return next;
+    });
   }
 
   function addToAnswer(word) {
@@ -437,6 +491,29 @@ export default function SentencePractice() {
           }}
         >
           Practice Again
+        </button>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <div className="text-lg font-semibold">Loading practice…</div>
+        <div className="text-sm text-slate-500 mt-2">Fetching exercises</div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <div className="text-lg font-semibold text-red-600">{loadError}</div>
+        <button
+          className="mt-4 bg-purple-600 text-white px-5 py-2 rounded-lg"
+          onClick={() => loadLessonBatch()}
+        >
+          Retry
         </button>
       </div>
     );
