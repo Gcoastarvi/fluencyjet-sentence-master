@@ -1,9 +1,16 @@
 // server/routes/quizzes.js
 import express from "express";
 import prisma from "../db/client.js";
-import authRequired, { authMiddleware } from "../middleware/authMiddleware.js";
+import { authMiddleware, authRequired } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// ✅ Parse JSON bodies (curl payload.json)
+// ✅ Also allow text/plain (raw import)
+router.use(express.json({ limit: "2mb" }));
+router.use(express.text({ type: "text/plain", limit: "2mb" }));
+
+// ✅ attach req.user if Bearer token exists
 router.use(authMiddleware);
 
 const VALID_DIFFICULTIES = new Set(["beginner", "intermediate", "advanced"]);
@@ -340,160 +347,169 @@ router.post("/import/csv", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                  POST /api/quizzes/import/txt                              */
 /* -------------------------------------------------------------------------- */
-// POST /api/quizzes/import/txt
-// POST /api/quizzes/import/txt
-router.post(
-  "/import/txt",
-  authRequired,
-  // allows sending raw text/plain too; won't affect JSON requests
-  express.text({ type: ["text/plain", "text/*"], limit: "2mb" }),
-  async (req, res) => {
-    try {
-      // req.body can be: object (JSON), string (text/plain), or rarely Buffer
-      let incoming = req.body;
+router.post("/import/txt", authRequired, async (req, res) => {
+  try {
+    // req.body can be:
+    // - object (application/json)
+    // - string (text/plain OR if some middleware parsed it as text)
+    let lessonId = null;
+    let defaultDifficulty = "beginner";
+    let mode = "typing";
+    let text = "";
 
-      if (Buffer.isBuffer(incoming)) incoming = incoming.toString("utf8");
+    if (typeof req.body === "string") {
+      const raw = req.body.trim();
 
-      // Defaults
-      let text = "";
-      let lessonId = 1;
-      let defaultDifficulty = "beginner";
-      let mode = "typing"; // typing | reorder (we store it in expected)
-
-      // If text/plain, body will be a string = the content itself
-      if (typeof incoming === "string") {
-        const s = incoming.trim();
-
-        // Sometimes a JSON string slips through as text — try parse
-        if (s.startsWith("{") && s.endsWith("}")) {
-          try {
-            incoming = JSON.parse(s);
-          } catch {
-            // keep as raw string
-          }
+      // If someone accidentally sent JSON but it got parsed as text, recover it
+      if (raw.startsWith("{") && raw.endsWith("}")) {
+        try {
+          const parsed = JSON.parse(raw);
+          lessonId = parsed.lessonId ?? lessonId;
+          defaultDifficulty = parsed.defaultDifficulty ?? defaultDifficulty;
+          mode = parsed.mode ?? mode;
+          text = parsed.text ?? "";
+        } catch {
+          text = raw;
         }
-
-        if (typeof incoming === "string") {
-          text = incoming;
-        }
+      } else {
+        text = raw;
       }
 
-      // If JSON, it should be an object
-      if (incoming && typeof incoming === "object") {
-        if (typeof incoming.text === "string") text = incoming.text;
-        if (incoming.lessonId != null)
-          lessonId = Number(incoming.lessonId) || 1;
-        if (typeof incoming.defaultDifficulty === "string")
-          defaultDifficulty = incoming.defaultDifficulty;
-        if (typeof incoming.mode === "string") mode = incoming.mode;
-      }
+      // allow metadata via querystring for text/plain
+      if (lessonId == null && req.query.lessonId) lessonId = req.query.lessonId;
+      if (req.query.defaultDifficulty)
+        defaultDifficulty = String(req.query.defaultDifficulty);
+      if (req.query.mode) mode = String(req.query.mode);
+    } else {
+      const body = req.body || {};
+      lessonId = body.lessonId;
+      defaultDifficulty = body.defaultDifficulty ?? defaultDifficulty;
+      mode = body.mode ?? mode;
+      text = body.text ?? "";
+    }
 
-      if (!text || typeof text !== "string" || !text.trim()) {
-        return res
-          .status(400)
-          .json({ ok: false, message: "text field (string) is required" });
-      }
+    if (!text || typeof text !== "string" || !text.trim()) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "text field (string) is required" });
+    }
 
-      const lessonIdNum = Number(lessonId);
-      if (!lessonIdNum || Number.isNaN(lessonIdNum)) {
-        return res
-          .status(400)
-          .json({ ok: false, message: "lessonId is required" });
-      }
+    const lessonIdNum = Number(lessonId);
+    if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "lessonId (number) is required" });
+    }
 
-      const diff = String(defaultDifficulty || "beginner").toLowerCase();
-      const level =
-        diff === "advanced"
-          ? "ADVANCED"
-          : diff === "intermediate"
-            ? "INTERMEDIATE"
-            : "BEGINNER";
+    const diff = String(defaultDifficulty || "beginner").toLowerCase();
+    const level =
+      diff === "advanced"
+        ? "ADVANCED"
+        : diff === "intermediate"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
 
-      const lines = text
-        .split(/\r?\n/)
-        .map((l) => l.trim())
-        .filter(Boolean);
+    // We map lessonId => dayNumber (your current schema design)
+    const dayNumber = lessonIdNum;
 
-      const rows = [];
-      for (let i = 0; i < lines.length; i += 1) {
-        const parts = lines[i].split("|||").map((p) => p.trim());
-        if (parts.length < 2) continue;
+    const lines = text
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
 
-        const [promptTa, expectedEn] = parts;
-        if (!promptTa || !expectedEn) continue;
+    // Expect: Tamil|||English
+    const parsedRows = [];
+    for (const line of lines) {
+      const parts = line.split("|||");
+      if (parts.length < 2) continue;
+      const promptTa = parts[0].trim();
+      const expectedEn = parts.slice(1).join("|||").trim();
+      if (!promptTa || !expectedEn) continue;
 
-        rows.push({
-          orderIndex: i,
-          promptTa,
-          hintTa: null,
-          structureEn: null,
-          type: "MAKE_SENTENCE",
-          expected: {
-            mode,
-            en: expectedEn,
-            words: expectedEn.split(/\s+/).filter(Boolean),
+      // Store expected sentence as JSON (PracticeExercise.expected is Json)
+      parsedRows.push({
+        promptTa,
+        expectedEn,
+      });
+    }
+
+    if (!parsedRows.length) {
+      return res.status(400).json({
+        ok: false,
+        message: "No valid rows found. Use: Tamil|||English (one per line).",
+      });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // find-or-create PracticeDay
+      let day = await tx.practiceDay.findFirst({
+        where: { level, dayNumber },
+      });
+
+      if (!day) {
+        day = await tx.practiceDay.create({
+          data: {
+            level,
+            dayNumber,
+            titleEn: `Lesson ${lessonIdNum}`,
+            titleTa: `பாடம் ${lessonIdNum}`,
+            isActive: true,
           },
         });
       }
 
-      if (!rows.length) {
-        return res
-          .status(400)
-          .json({ ok: false, message: "No valid lines found in text" });
-      }
-
-      const result = await prisma.$transaction(async (tx) => {
-        // find/create PracticeDay (your schema uses PracticeDay + PracticeExercise)
-        let day = await tx.practiceDay.findFirst({
-          where: { level, dayNumber: lessonIdNum },
-        });
-
-        if (!day) {
-          day = await tx.practiceDay.create({
-            data: {
-              level,
-              dayNumber: lessonIdNum,
-              titleEn: `Lesson ${lessonIdNum}`,
-              titleTa: `பாடம் ${lessonIdNum}`,
-              isActive: true,
-            },
-          });
-        }
-
-        // idempotent: overwrite exercises for that day
-        await tx.practiceExercise.deleteMany({
-          where: { practiceDayId: day.id },
-        });
-
-        await tx.practiceExercise.createMany({
-          data: rows.map((r) => ({
-            practiceDayId: day.id,
-            type: r.type,
-            promptTa: r.promptTa,
-            hintTa: r.hintTa,
-            structureEn: r.structureEn,
-            expected: r.expected,
-            orderIndex: r.orderIndex,
-          })),
-        });
-
-        return { dayId: day.id, inserted: rows.length };
+      // append at the end
+      const last = await tx.practiceExercise.findFirst({
+        where: { practiceDayId: day.id },
+        orderBy: { orderIndex: "desc" },
+        select: { orderIndex: true },
       });
 
-      return res.json({
-        ok: true,
-        message: `Imported ${result.inserted} exercises`,
-        inserted: result.inserted,
+      let orderIndex = (last?.orderIndex ?? 0) + 1;
+
+      const createData = parsedRows.map((r) => {
+        const words = r.expectedEn
+          .replace(/[.?!]+$/g, "")
+          .trim()
+          .split(/\s+/);
+
+        return {
+          practiceDayId: day.id,
+          type: "MAKE_SENTENCE",
+          promptTa: r.promptTa,
+          hintTa: null,
+          structureEn: null,
+          expected: {
+            answer: r.expectedEn,
+            words,
+            mode: String(mode || "typing").toLowerCase(),
+          },
+          xp: 150,
+          orderIndex: orderIndex++,
+        };
       });
-    } catch (err) {
-      console.error("❌ POST /api/quizzes/import/txt error:", err);
-      return res.status(500).json({
-        ok: false,
-        message: "Failed to import TXT",
-        error: String(err?.message || err),
+
+      const created = await tx.practiceExercise.createMany({
+        data: createData,
       });
-    }
-  },
-);
+
+      return { day, createdCount: created.count };
+    });
+
+    return res.json({
+      ok: true,
+      lessonId: lessonIdNum,
+      level,
+      inserted: result.createdCount,
+    });
+  } catch (err) {
+    console.error("❌ POST /api/quizzes/import/txt error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Import failed",
+      error: String(err?.message || err),
+    });
+  }
+});
 
 export default router;
