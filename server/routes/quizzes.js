@@ -35,60 +35,81 @@ function shuffle(array) {
 /* -------------------------------------------------------------------------- */
 /**
  * Query params:
- *  - lessonId (optional): only from this lesson
+ *  - lessonId (optional): maps to PracticeDay.dayNumber
  *  - difficulty (optional): beginner | intermediate | advanced
  *  - limit (optional): default 10, max 50
- *
- * Returns random questions for gameplay:
- *  [
- *    { id, ta, en, difficulty, lesson_id, audio_url }
- *  ]
  */
 router.get("/random", authRequired, async (req, res) => {
   try {
     const lessonIdRaw = req.query.lessonId;
-    const difficulty = normalizeDifficulty(req.query.difficulty);
+    const diff = String(req.query.difficulty || "beginner").toLowerCase();
     const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 10));
 
-    const where = {};
+    // Map difficulty -> UserLevel enum
+    const level =
+      diff === "advanced"
+        ? "ADVANCED"
+        : diff === "intermediate"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
 
+    const whereDay = { level };
     if (lessonIdRaw) {
       const lessonId = Number(lessonIdRaw);
       if (Number.isNaN(lessonId)) {
-        return res.status(400).json({
-          ok: false,
-          message: "lessonId must be a number",
+        return res
+          .status(400)
+          .json({ ok: false, message: "lessonId must be a number" });
+      }
+      whereDay.dayNumber = lessonId;
+    }
+
+    // Pull a few days, then sample exercises in JS
+    const days = await prisma.practiceDay.findMany({
+      where: whereDay,
+      take: 30,
+      orderBy: { dayNumber: "desc" },
+      include: { exercises: { orderBy: { orderIndex: "asc" } } },
+    });
+
+    const pool = [];
+    for (const day of days) {
+      for (const ex of day.exercises || []) {
+        const expected = ex.expected || {};
+        const mode = String(
+          expected.mode || expected.practiceType || "",
+        ).toLowerCase();
+        const tokens =
+          expected.correctOrder ||
+          expected.tokens ||
+          String(expected.sentence || expected.answer || "")
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+        pool.push({
+          id: ex.id,
+          lessonId: day.dayNumber,
+          level,
+          type: mode === "typing" ? "TYPING" : "REORDER",
+          tamil: ex.promptTa,
+          correctOrder: Array.isArray(tokens) ? tokens : [],
+          answer: String(expected.sentence || expected.answer || "").trim(),
+          orderIndex: ex.orderIndex,
+          xp: ex.xp,
         });
       }
-      where.lesson_id = lessonId;
     }
 
-    if (difficulty) {
-      where.difficulty = difficulty;
+    // shuffle pool
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
     }
 
-    // Fetch up to 200 candidates then shuffle server-side
-    const candidates = await prisma.quizQuestion.findMany({
-      where,
-      take: 200,
-      orderBy: { created_at: "desc" },
-      select: {
-        id: true,
-        ta: true,
-        en: true,
-        difficulty: true,
-        lesson_id: true,
-        audio_url: true,
-      },
-    });
+    const questions = pool.slice(0, limit);
 
-    const questions = shuffle(candidates).slice(0, limit);
-
-    return res.json({
-      ok: true,
-      count: questions.length,
-      questions,
-    });
+    return res.json({ ok: true, count: questions.length, questions });
   } catch (err) {
     console.error("❌ GET /api/quizzes/random error:", err);
     return res.status(500).json({
@@ -130,19 +151,28 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
 
     const questions = (day.exercises || []).map((ex) => {
       const expected = ex.expected || {};
-      const correctOrder =
+
+      const mode = String(
+        expected.mode || expected.practiceType || "",
+      ).toLowerCase();
+
+      // tokens for reorder/typing (used for jumbled UI later)
+      const tokens =
         expected.correctOrder ||
         expected.tokens ||
-        String(expected.sentence || "").split(/\s+/);
+        String(expected.sentence || expected.answer || "")
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean);
+
+      const answer = String(expected.sentence || expected.answer || "").trim();
 
       return {
         id: ex.id,
-        type: expected.mode === "typing" ? "TYPING" : "REORDER",
+        type: mode === "typing" ? "TYPING" : "REORDER",
         tamil: ex.promptTa,
-        correctOrder: Array.isArray(correctOrder) ? correctOrder : [],
-        answer:
-          expected.sentence ||
-          (Array.isArray(correctOrder) ? correctOrder.join(" ") : ""),
+        correctOrder: Array.isArray(tokens) ? tokens : [],
+        answer,
         orderIndex: ex.orderIndex,
         xp: ex.xp,
       };
