@@ -1,6 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-import cors from "cors";
+//import cors from "cors";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -94,33 +94,28 @@ const corsOptions = {
 
 // app.use(cors(corsOptions));
 
-// IMPORTANT: preflight must use the SAME options (not plain cors())
-// app.options("*", cors(corsOptions));
+const ALLOW_HEADERS =
+  "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match";
+const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 
-// --- Hard CORS (fix preflight reliably) ---
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  if (isAllowedOrigin(origin)) {
-    // Reflect the requesting origin (required when credentials/Authorization are used)
-    res.setHeader("Access-Control-Allow-Origin", origin);
+  const allowedOrigin =
+    typeof origin === "string" && origin.length > 0 && isAllowedOrigin(origin)
+      ? origin
+      : null;
+
+  if (allowedOrigin) {
+    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
     res.setHeader("Vary", "Origin");
     res.setHeader("Access-Control-Allow-Credentials", "true");
-
-    res.setHeader(
-      "Access-Control-Allow-Methods",
-      "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-    );
-
-    res.setHeader(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match",
-    );
-
+    res.setHeader("Access-Control-Allow-Methods", ALLOW_METHODS);
+    res.setHeader("Access-Control-Allow-Headers", ALLOW_HEADERS);
     res.setHeader("Access-Control-Expose-Headers", "ETag");
   }
 
-  // Preflight must terminate here
+  // Always end preflight cleanly
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
