@@ -15,8 +15,16 @@ export function authMiddleware(req, res, next) {
     req.user = payload;
     next();
   } catch (err) {
+    console.error("[authMiddleware] jwt.verify failed:", err?.message);
+    console.error(
+      "[authMiddleware] hasAuthHeader:",
+      !!req.headers.authorization,
+    );
+    console.error(
+      "[authMiddleware] secretLen:",
+      (process.env.JWT_SECRET || "dev-secret").length,
+    );
     req.user = null;
-    next();
   }
 }
 

@@ -1,40 +1,34 @@
-// scripts/bulkImportLessons.cjs
+// scripts/bulkImportLessons.js
 const fs = require("fs");
 const path = require("path");
 
 const API_BASE = process.env.API_BASE || "http://localhost:3000";
 const LESSON_DIR = path.join(__dirname, "lessons");
 
-// Use native fetch if available, fallback to node-fetch
-const fetchFn =
-  global.fetch ||
-  ((...args) =>
-    import("node-fetch").then(({ default: f }) => f(...args)));
-
+// expects filenames like lesson-001.txt
 function lessonIdFromFilename(name) {
   const m = name.match(/^lesson-(\d+)\.txt$/);
   if (!m) return null;
   return Number(m[1]); // 001 -> 1
 }
 
-async function postTxt({ lessonId, text, mode = "reorder", difficulty = "beginner" }) {
+async function postTxt({
+  lessonId,
+  text,
+  mode = "reorder",
+  difficulty = "beginner",
+}) {
   const url = `${API_BASE}/api/quizzes/import/txt?lessonId=${lessonId}&mode=${mode}&difficulty=${difficulty}`;
 
-  const headers = { "Content-Type": "text/plain; charset=utf-8" };
-  if (process.env.API_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.API_TOKEN}`;
-  }
-
-  const res = await fetchFn(url, {
+  const res = await fetch(url, {
     method: "POST",
-    headers,
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
     body: text,
   });
 
   const body = await res.text();
-  if (!res.ok) {
+  if (!res.ok)
     throw new Error(`Import failed lesson ${lessonId}: ${res.status}\n${body}`);
-  }
   return body;
 }
 

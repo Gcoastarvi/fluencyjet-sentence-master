@@ -4,6 +4,15 @@ import cors from "cors";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Force-load ROOT .env (workspace/.env)
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
+console.log("JWT_SECRET len =", process.env.JWT_SECRET?.length || 0);
 
 // Routes
 import healthRouter from "./routes/health.js";
@@ -104,8 +113,6 @@ app.use("/api/dashboard", dashboardRouter);
 /* --------------------------------------------------
    Optional static frontend (Replit / monolith)
 -------------------------------------------------- */
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, "../client/dist");
 
 if (fs.existsSync(distPath)) {
