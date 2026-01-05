@@ -128,6 +128,31 @@ app.use((req, res, next) => {
   next();
 });
 
+const ALLOW_HEADERS =
+  "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match";
+const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  // Allow only known origins (your function already handles env var + localhost)
+  if (origin && isAllowedOrigin(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", ALLOW_METHODS);
+    res.setHeader("Access-Control-Allow-Headers", ALLOW_HEADERS);
+    res.setHeader("Access-Control-Expose-Headers", "ETag");
+  }
+
+  // Preflight must end here with 204
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  next();
+});
+
 /* --------------------------------------------------
    Auth middleware (AFTER cors, BEFORE routes)
 -------------------------------------------------- */
