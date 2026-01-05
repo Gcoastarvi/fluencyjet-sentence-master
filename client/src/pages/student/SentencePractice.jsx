@@ -104,7 +104,7 @@ export default function SentencePractice() {
   useEffect(() => {
     initQuiz();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, lessonExercises]);
+  }, [currentIndex, activeMode, lessonExercises]);
 
   // ✅ Typing Word Bank (shows shuffled words as a hint, but we don't reveal the full sentence)
   const typingWordBank = useMemo(() => {
@@ -120,12 +120,6 @@ export default function SentencePractice() {
     correctSoundRef.current = new Audio("/sounds/correct.mp3");
     wrongSoundRef.current = new Audio("/sounds/wrong.mp3");
   }, []);
-
-  // Initialize question when index OR mode changes
-  useEffect(() => {
-    initQuiz();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, activeMode]);
 
   // AUTO NEXT after correct/reveal
   useEffect(() => {
@@ -153,12 +147,12 @@ export default function SentencePractice() {
       attemptId,
 
       // ✅ send BOTH (backend may accept one; numeric is the important one)
-      lessonId: LESSON_ID, // numeric
-      questionId: numericQuestionId, // numeric
+      lessonId, // numeric (dynamic)
+      questionId: numericQuestionId, 
 
       // optional extra keys (harmless; useful for debugging/logging)
-      lessonKey: `L${LESSON_ID}`,
-      questionKey: `Q${numericQuestionId}`,
+      lessonKey: `L${lessonId}`,      // dynamic
+      questionKey: `Q${numericQuestionId}`, 
 
       // backend variants
       practiceType: mode,
@@ -227,21 +221,23 @@ export default function SentencePractice() {
     setLoading(true);
     setLoadError("");
     try {
-      const res = await api.get("/quizzes/by-lesson", {
-        params: { lessonId, mode: activeMode },
+      const res = await api.get(`/quizzes/by-lesson/${lessonId}`, {
+        params: { mode: activeMode },
       });
 
       const data = res?.data ?? res;
 
-      // supports: array OR {items:[...]} OR {exercises:[...]}
+      // supports: array OR {questions:[...]} OR {items:[...]} OR {exercises:[...]}
       const arr = Array.isArray(data)
         ? data
-        : Array.isArray(data.items)
-          ? data.items
-          : Array.isArray(data.exercises)
-            ? data.exercises
-            : [];
-
+        : Array.isArray(data.questions)
+          ? data.questions
+          : Array.isArray(data.items)
+            ? data.items
+            : Array.isArray(data.exercises)
+              ? data.exercises
+              : [];
+     
       const normalized = arr.map(normalizeExercise).filter(Boolean);
 
       if (!normalized.length) {
@@ -312,14 +308,7 @@ export default function SentencePractice() {
   } // ✅ IMPORTANT: this closing brace was missing in your backup
 
   function loadNextQuestion() {
-    setCurrentIndex((prev) => {
-      const next = prev + 1;
-      if (next >= totalQuestions) {
-        setCompleted(true);
-        return prev; // keep index stable when completed
-      }
-      return next;
-    });
+    setCurrentIndex((prev) => prev + 1);
   }
 
   function addToAnswer(word) {
@@ -477,7 +466,7 @@ export default function SentencePractice() {
   // -------------------
   // completion
   // -------------------
-  if (currentIndex >= QUESTIONS.length) {
+  if (totalQuestions > 0 && currentIndex >= totalQuestions) {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
         <h1 className="text-2xl font-bold mb-4">🎉 Session Complete!</h1>
@@ -488,6 +477,7 @@ export default function SentencePractice() {
           onClick={() => {
             setCurrentIndex(0);
             setStatus("idle");
+            loadLessonBatch(); // reload for another run
           }}
         >
           Practice Again
