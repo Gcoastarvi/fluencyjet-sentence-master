@@ -92,10 +92,41 @@ const corsOptions = {
   exposedHeaders: ["ETag"],
 };
 
-app.use(cors(corsOptions));
+// app.use(cors(corsOptions));
 
 // IMPORTANT: preflight must use the SAME options (not plain cors())
-app.options("*", cors(corsOptions));
+// app.options("*", cors(corsOptions));
+
+// --- Hard CORS (fix preflight reliably) ---
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (isAllowedOrigin(origin)) {
+    // Reflect the requesting origin (required when credentials/Authorization are used)
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    );
+
+    res.setHeader(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match",
+    );
+
+    res.setHeader("Access-Control-Expose-Headers", "ETag");
+  }
+
+  // Preflight must terminate here
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
+  next();
+});
 
 /* --------------------------------------------------
    Auth middleware (AFTER cors, BEFORE routes)
