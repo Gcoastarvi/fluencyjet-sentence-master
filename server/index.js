@@ -101,35 +101,6 @@ const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  const allowedOrigin =
-    typeof origin === "string" && origin.length > 0 && isAllowedOrigin(origin)
-      ? origin
-      : null;
-
-  if (allowedOrigin) {
-    res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-    res.setHeader("Vary", "Origin");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", ALLOW_METHODS);
-    res.setHeader("Access-Control-Allow-Headers", ALLOW_HEADERS);
-    res.setHeader("Access-Control-Expose-Headers", "ETag");
-  }
-
-  // Always end preflight cleanly
-  if (req.method === "OPTIONS") {
-    return res.status(204).end();
-  }
-
-  next();
-});
-
-const ALLOW_HEADERS =
-  "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match";
-const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-
   // Allow only known origins (your function already handles env var + localhost)
   if (origin && isAllowedOrigin(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
