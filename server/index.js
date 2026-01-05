@@ -55,24 +55,29 @@ const envOrigins = (process.env.CORS_ORIGINS || "")
   .map((s) => s.trim())
   .filter(Boolean);
 
-const localhostAllowlist = ["http://localhost:3000", "http://localhost:5173"];
-
 function isAllowedOrigin(origin) {
-  if (!origin) return true; // curl / Railway healthcheck
+  // allow server-to-server / curl / healthchecks
+  if (!origin) return true;
 
-  if (envOrigins.length > 0) return envOrigins.includes(origin);
+  // always allow explicit env allowlist
+  if (envOrigins.length > 0 && envOrigins.includes(origin)) return true;
 
-  if (localhostAllowlist.includes(origin)) return true;
-  if (origin.endsWith(".up.railway.app")) return true;
-  if (origin.includes(".replit.dev")) return true;
-  if (origin.includes(".repl.co")) return true;
+  // local dev
+  if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return true;
+
+  // Railway apps (frontend/backend often differ)
+  if (/^https:\/\/.*\.up\.railway\.app$/.test(origin)) return true;
+
+  // Replit previews
+  if (/\.replit\.dev$/.test(origin)) return true;
+  if (/\.repl\.co$/.test(origin)) return true;
 
   return false;
 }
 
 const corsOptions = {
   origin: (origin, cb) => {
-    if (isAllowedOrigin(origin)) return cb(null, origin || true);
+    if (isAllowedOrigin(origin)) return cb(null, true);
     return cb(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
