@@ -118,6 +118,8 @@ app.use((req, res, next) => {
   next();
 });
 
+app.options("*", (req, res) => res.sendStatus(204));
+
 /* --------------------------------------------------
    Auth middleware (AFTER cors, BEFORE routes)
 -------------------------------------------------- */
