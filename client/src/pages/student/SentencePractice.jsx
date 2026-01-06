@@ -148,11 +148,11 @@ export default function SentencePractice() {
 
       // ✅ send BOTH (backend may accept one; numeric is the important one)
       lessonId, // numeric (dynamic)
-      questionId: numericQuestionId, 
+      questionId: numericQuestionId,
 
       // optional extra keys (harmless; useful for debugging/logging)
-      lessonKey: `L${lessonId}`,      // dynamic
-      questionKey: `Q${numericQuestionId}`, 
+      lessonKey: `L${lessonId}`, // dynamic
+      questionKey: `Q${numericQuestionId}`,
 
       // backend variants
       practiceType: mode,
@@ -237,7 +237,7 @@ export default function SentencePractice() {
             : Array.isArray(data.exercises)
               ? data.exercises
               : [];
-     
+
       const normalized = arr.map(normalizeExercise).filter(Boolean);
 
       if (!normalized.length) {
@@ -359,7 +359,9 @@ export default function SentencePractice() {
           .toLowerCase()
           .replace(/\s+/g, " ");
 
-      const target = (currentQuestion.correctOrder || []).join(" ");
+      const target =
+        currentQuestion.answer?.trim() ||
+        (currentQuestion.correctOrder || []).join(" ");
       const user = typedAnswer;
 
       if (!normalize(user)) {
