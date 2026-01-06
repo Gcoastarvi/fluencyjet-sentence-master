@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from "react";
 
 // ✅ If VITE_API_BASE_URL is not set, default to same origin ("")
-const API = import.meta.env.VITE_API_BASE_URL || "";
+const API = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+if (!API) throw new Error("VITE_API_BASE_URL is not defined");
 
 /* ───────────────────── AUTH HELPERS ───────────────────── */
 
