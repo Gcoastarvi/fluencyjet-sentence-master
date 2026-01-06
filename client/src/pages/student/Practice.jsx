@@ -5,6 +5,7 @@ import QuizCard from "../../components/quiz/QuizCard";
 import ProgressBar from "../../components/quiz/ProgressBar";
 import ResultScreen from "../../components/quiz/ResultScreen";
 import ConfettiBlast from "../../components/quiz/ConfettiBlast";
+import { api } from "@/api/apiClient";
 
 const XP_PER_CORRECT = 150;
 
@@ -163,22 +164,15 @@ function Practice() {
       if (!token) return;
 
       if (earnedXP > 0) {
-        await fetch("/api/xp/award", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+        await api.post("/xp/award", {
+          amount: earnedXP,
+          event: "QUIZ_COMPLETED",
+          meta: {
+            lessonId: Number(lessonId),
+            totalQuestions,
+            correctCount: finalCorrectCount,
+            mode: "typing",
           },
-          body: JSON.stringify({
-            amount: earnedXP,
-            event: "QUIZ_COMPLETED",
-            meta: {
-              lessonId: Number(lessonId),
-              totalQuestions,
-              correctCount: finalCorrectCount,
-              mode: "typing",
-            },
-          }),
         });
       }
     } catch (err) {

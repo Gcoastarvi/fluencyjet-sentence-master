@@ -4,6 +4,7 @@
  * Checks token expiry and auto-refreshes using /api/auth/refresh.
  * Emits a window event "sessionRefreshed" when refresh succeeds.
  */
+import { api } from "@/api/apiClient";
 
 export function startTokenWatcher(intervalMs = 60000) {
   console.log("🔍 Token watcher running every", intervalMs / 1000, "sec");
@@ -20,14 +21,7 @@ export function startTokenWatcher(intervalMs = 60000) {
       // 🔄 Refresh 5 min before expiry
       if (expiryTime && expiryTime - now < 5 * 60 * 1000) {
         console.log("♻️ Refreshing token...");
-        const res = await fetch("/api/auth/refresh", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        const data = await res.json();
+        const data = await api.post("/auth/refresh", {});
 
         if (res.ok && data?.token) {
           localStorage.setItem("token", data.token);
