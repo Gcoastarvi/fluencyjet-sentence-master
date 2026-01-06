@@ -33,7 +33,6 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 app.set("etag", false);
-app.use("/api/quizzes", quizzesRouter);
 
 // Prevent caching for API responses (fixes 304 issues in browser)
 app.use("/api", (req, res, next) => {
@@ -131,6 +130,8 @@ app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
+
+app.use("/api/quizzes", quizzesRouter);
 
 app.use("/api/xp", xpRouter);
 app.use("/api/progress", progressRouter);
