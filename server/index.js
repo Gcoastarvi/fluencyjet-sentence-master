@@ -91,8 +91,6 @@ const corsOptions = {
   exposedHeaders: ["ETag"],
 };
 
-// app.use(cors(corsOptions));
-
 const ALLOW_HEADERS =
   "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match";
 const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
