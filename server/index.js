@@ -12,8 +12,6 @@ const __dirname = path.dirname(__filename);
 // Force-load ROOT .env (workspace/.env)
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
-console.log("JWT_SECRET len =", process.env.JWT_SECRET?.length || 0);
-
 // Routes
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
