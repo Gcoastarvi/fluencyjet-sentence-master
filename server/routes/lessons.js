@@ -28,9 +28,22 @@ router.get("/", authRequired, async (req, res) => {
       },
     });
 
-    if (!lessons.length) return res.json({ lessons: [], unlocked: [] });
+    if (!lessons.length) {
+      return res.json({ ok: true, lessons: [], unlocked: [] });
+    }
 
-    const progresses = await prisma.userLessonProgress.findMany({
+    // ✅ pick the correct progress table delegate (depends on your Prisma schema)
+    const progressDelegate = prisma.userLessonProgress || prisma.userProgress;
+
+    if (!progressDelegate) {
+      return res.status(500).json({
+        ok: false,
+        error:
+          "No progress model found (expected userLessonProgress or userProgress)",
+      });
+    }
+
+    const progresses = await progressDelegate.findMany({
       where: { user_id: userId },
       select: { lesson_id: true, completed: true },
     });
@@ -39,9 +52,16 @@ router.get("/", authRequired, async (req, res) => {
       progresses.filter((p) => p.completed).map((p) => p.lesson_id),
     );
 
-    const unlocked = new Set();
+    // attach completed flag so Lessons.jsx can show ✓
+    const lessonsWithStatus = lessons.map((l) => ({
+      ...l,
+      completed: completedSet.has(l.id),
+    }));
 
+    // unlocked logic: first lesson unlocked; next unlocked if prev completed; respect manual lock
+    const unlocked = new Set();
     lessons.forEach((lesson, idx) => {
+      if (lesson.is_locked) return;
       if (idx === 0) unlocked.add(lesson.id);
       else {
         const prevId = lessons[idx - 1].id;
@@ -50,7 +70,8 @@ router.get("/", authRequired, async (req, res) => {
     });
 
     return res.json({
-      lessons,
+      ok: true,
+      lessons: lessonsWithStatus,
       unlocked: Array.from(unlocked),
     });
   } catch (err) {
@@ -82,7 +103,7 @@ router.get("/:id", authRequired, async (req, res) => {
       return res.status(404).json({ ok: false, message: "Lesson not found" });
     }
 
-    const progress = await prisma.userLessonProgress.findFirst({
+    const progress = await prisma.userProgress.findFirst({
       where: { user_id: userId, lesson_id: lessonId },
       select: {
         completed: true,
