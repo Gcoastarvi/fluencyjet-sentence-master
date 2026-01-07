@@ -1,7 +1,7 @@
 // client/src/pages/Lessons.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { apiRequest } from "@/hooks/useApi.js";
+import { api } from "@/api/apiClient";
 
 export default function Lessons() {
   const [loading, setLoading] = useState(true);
@@ -9,27 +9,40 @@ export default function Lessons() {
   const [unlocked, setUnlocked] = useState([]);
   const [error, setError] = useState("");
 
-  async function load() {
-    try {
-      setLoading(true);
-
-      const data = await apiRequest("/api/lessons");
-
-      if (!data?.ok) throw new Error(data.message);
-
-      setLessons(data.lessons || []);
-      setUnlocked(data.unlocked || []);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load lessons");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    load();
+    let alive = true;
+
+    const fetchLessons = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const res = await api.get("/lessons");
+        const data = res?.data ?? res;
+
+        if (!data?.ok) throw new Error(data?.error || "Failed to load lessons");
+
+        if (!alive) return;
+        setLessons(data.lessons || []);
+        setUnlocked(data.unlocked || []);
+      } catch (err) {
+        console.error("❌ Lessons fetch failed:", err);
+        if (!alive) return;
+        setError(err?.message || "Failed to load lessons");
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    };
+
+    fetchLessons();
+
+    return () => {
+      alive = false;
+    };
   }, []);
+
+  if (loading) return <div className="p-4">Loading…</div>;
 
   if (loading)
     return (

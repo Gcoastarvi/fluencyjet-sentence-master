@@ -9,7 +9,6 @@ const router = express.Router();
 /* -----------------------------------------------------------
    USER ENDPOINTS — SAFE, UNTOUCHED, SAME AS YOUR WORKING CODE
 ----------------------------------------------------------- */
-
 /* GET /api/lessons  → list lessons + unlocked logic */
 router.get("/", authRequired, async (req, res) => {
   try {
@@ -32,18 +31,9 @@ router.get("/", authRequired, async (req, res) => {
       return res.json({ ok: true, lessons: [], unlocked: [] });
     }
 
-    // ✅ pick the correct progress table delegate (depends on your Prisma schema)
-    const progressDelegate = prisma.userLessonProgress || prisma.userProgress;
-
-    if (!progressDelegate) {
-      return res.status(500).json({
-        ok: false,
-        error:
-          "No progress model found (expected userLessonProgress or userProgress)",
-      });
-    }
-
-    const progresses = await progressDelegate.findMany({
+    // ✅ Use the progress model you actually have in your project
+    // Your file already uses prisma.userProgress elsewhere.
+    const progresses = await prisma.userProgress.findMany({
       where: { user_id: userId },
       select: { lesson_id: true, completed: true },
     });
@@ -52,7 +42,7 @@ router.get("/", authRequired, async (req, res) => {
       progresses.filter((p) => p.completed).map((p) => p.lesson_id),
     );
 
-    // attach completed flag so Lessons.jsx can show ✓
+    // attach completed flag so Lessons page can show ✓
     const lessonsWithStatus = lessons.map((l) => ({
       ...l,
       completed: completedSet.has(l.id),
