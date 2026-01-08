@@ -95,11 +95,13 @@ function playSound(key) {
 /* ===================================================================== */
 
 export default function LessonQuiz() {
-  const { lessonId } = useParams();
+  const { lessonId: lessonIdParam } = useParams();
+  const id = Number(lessonIdParam);
 
-  // ✅ safe parse
-  const id = Number(lessonId);
-  const isValidId = Number.isFinite(id) && id > 0;
+  // ✅ MUST return early (don’t leave it as comment)
+  if (!Number.isFinite(id)) {
+    return <div style={{ padding: 24 }}>Lesson not found</div>;
+  }
 
   const navigate = useNavigate();
   const api = useApi();

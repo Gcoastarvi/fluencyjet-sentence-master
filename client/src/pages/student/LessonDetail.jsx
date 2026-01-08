@@ -1,43 +1,85 @@
-// client/src/pages/LessonDetail.jsx
+// client/src/pages/student/LessonDetail.jsx
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { api } from "@/api/apiClient";
 
 export default function LessonDetail() {
-  const params = useParams();
-  const rawLessonId = params.lessonId ?? params.id; // fallback safety
-  const lessonId = Number(rawLessonId);
+  const { lessonId } = useParams(); // route is /lessons/:lessonId
+  const id = Number(lessonId);
+  const navigate = useNavigate();
+
+  const [lesson, setLesson] = useState(null);
+  const [userProgress, setUserProgress] = useState(null);
 
   const [loading, setLoading] = useState(true);
-  const [lesson, setLesson] = useState(null);
+  const [locked, setLocked] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
+      setLoading(true);
+      setError("");
+      setLesson(null);
+      setUserProgress(null);
+      setLocked(false);
+
+      // ✅ invalid id handling must be INSIDE effect (not an early return above hooks)
+      if (!Number.isFinite(id)) {
+        setLoading(false);
+        setError("Invalid lesson id");
+        return;
+      }
+
       try {
-        setLoading(true);
-        setError("");
-
-        if (!Number.isFinite(lessonId)) {
-          throw new Error("Invalid lesson id");
-        }
-
-        const res = await api.get(`/lessons/${lessonId}`);
+        const res = await api.get(`/lessons/${id}`);
         const data = res?.data ?? res;
 
         if (!data?.ok) throw new Error(data?.error || "Failed to load lesson");
 
+        if (cancelled) return;
+
         setLesson(data.lesson || null);
+        setUserProgress(data.userProgress || null);
+
+        // backend sends isLocked; we also keep is_locked alias in some places
+        const isLocked = Boolean(
+          data?.lesson?.isLocked ?? data?.lesson?.is_locked,
+        );
+        setLocked(isLocked);
       } catch (e) {
-        setLesson(null);
+        if (cancelled) return;
         setError(e?.message || "Failed to load lesson");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [lessonId]);  
 
-  // Loading state
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // ---------- RENDER ----------
+  if (!Number.isFinite(id)) {
+    return (
+      <div className="max-w-xl mx-auto p-6 mt-10 text-center">
+        <div className="text-xl text-red-600 font-semibold">
+          Lesson not found
+        </div>
+        <div className="mt-4">
+          <Link
+            to="/lessons"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
+          >
+            Go back to Lessons
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="text-center mt-16 text-xl text-indigo-500">
@@ -46,7 +88,22 @@ export default function LessonDetail() {
     );
   }
 
-  // Lesson missing
+  if (error) {
+    return (
+      <div className="max-w-xl mx-auto p-6 mt-10 text-center">
+        <div className="text-xl text-red-600 font-semibold">{error}</div>
+        <div className="mt-4">
+          <Link
+            to="/lessons"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
+          >
+            Go back to Lessons
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (!lesson) {
     return (
       <div className="text-center mt-16 text-xl text-red-500">
@@ -55,7 +112,6 @@ export default function LessonDetail() {
     );
   }
 
-  // Locked state
   if (locked) {
     return (
       <div className="max-w-xl mx-auto p-6 mt-10 text-center bg-red-50 border border-red-200 rounded-xl">
@@ -80,40 +136,36 @@ export default function LessonDetail() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-indigo-700">{lesson.title}</h1>
+      </div>
 
-        {progress?.completed && (
-          <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
-            ✓ Completed
-          </span>
+      {/* Content (backend does NOT provide lesson.content right now) */}
+      <div className="bg-white p-5 shadow rounded-xl">
+        <p className="text-gray-700">{lesson.description}</p>
+
+        {userProgress && (
+          <div className="mt-4 text-sm text-gray-600">
+            <div>XP: {userProgress.xp ?? 0}</div>
+            <div>Streak: {userProgress.streak ?? 0}</div>
+          </div>
         )}
       </div>
 
-      {/* Lesson Content */}
-      <div className="prose max-w-none text-gray-800 bg-white p-5 shadow rounded-xl">
-        <div dangerouslySetInnerHTML={{ __html: lesson.content }} />
-      </div>
-
-      {/* Start Lesson Quiz → NOW GOES TO /practice */}
-      <div className="flex justify-center">
+      {/* Start Practice */}
+      <div className="flex gap-3 justify-center flex-wrap">
         <button
-          onClick={() => navigate(`/practice?lessonId=${lessonId}`)}
+          onClick={() => navigate(`/practice/typing?lessonId=${id}`)}
           className="px-5 py-3 bg-indigo-600 text-white rounded-xl shadow hover:scale-105 transition text-lg font-semibold"
         >
-          Start Lesson Quiz →
+          Start Typing →
+        </button>
+
+        <button
+          onClick={() => navigate(`/practice/reorder?lessonId=${id}`)}
+          className="px-5 py-3 bg-indigo-100 text-indigo-700 rounded-xl shadow hover:scale-105 transition text-lg font-semibold"
+        >
+          Start Reorder →
         </button>
       </div>
-
-      {/* Next Lesson */}
-      {progress?.completed && nextLessonId && (
-        <div className="flex justify-center">
-          <Link
-            to={`/lessons/${nextLessonId}`}
-            className="px-5 py-3 bg-green-600 text-white rounded-xl shadow hover:scale-105 transition"
-          >
-            Continue to Next Lesson →
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
