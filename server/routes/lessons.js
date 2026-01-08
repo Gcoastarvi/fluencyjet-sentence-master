@@ -22,7 +22,7 @@ router.get("/", authRequired, async (req, res) => {
         title: true,
         description: true,
         difficulty: true,
-        is_locked: true,
+        isLocked: true,
       },
     });
 
@@ -58,9 +58,15 @@ router.get("/", authRequired, async (req, res) => {
       }
     });
 
+    // 🔁 Normalize field name for frontend compatibility
+    const lessonsOut = lessonsWithStatus.map((l) => ({
+      ...l,
+      is_locked: l.isLocked, // alias for older UI code
+    }));
+
     return res.json({
       ok: true,
-      lessons: lessonsWithStatus,
+      lessons: lessonsOut,
       unlocked: Array.from(unlocked),
     });
   } catch (err) {
