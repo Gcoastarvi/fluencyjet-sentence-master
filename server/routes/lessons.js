@@ -15,14 +15,13 @@ router.get("/", authRequired, async (req, res) => {
     const userId = req.user.id;
 
     const lessons = await prisma.lesson.findMany({
-      orderBy: [{ order: "asc" }, { id: "asc" }],
+      orderBy: [{ id: "asc" }], // ✅ order column doesn't exist; use id
       select: {
         id: true,
         slug: true,
         title: true,
         description: true,
         difficulty: true,
-        order: true,
         is_locked: true,
       },
     });
@@ -128,8 +127,9 @@ function makeSlug(text) {
 router.get("/admin/all", requireAdmin, async (req, res) => {
   try {
     const lessons = await prisma.lesson.findMany({
-      orderBy: [{ order: "asc" }],
+      orderBy: [{ id: "asc" }],
     });
+
     return res.json({ ok: true, lessons });
   } catch (err) {
     console.error("❌ Admin GET lessons error:", err);
