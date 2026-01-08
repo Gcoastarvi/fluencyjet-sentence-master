@@ -123,11 +123,11 @@ router.get("/random", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
-// GET /api/quizzes/by-lesson/:lessonId
+// GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder&difficulty=beginner|intermediate|advanced
 router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
   try {
     const lessonId = Number(req.params.lessonId);
-    if (!lessonId || Number.isNaN(lessonId)) {
+    if (!Number.isFinite(lessonId) || lessonId <= 0) {
       return res.status(400).json({ ok: false, message: "Invalid lessonId" });
     }
 
@@ -140,6 +140,11 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
           ? "INTERMEDIATE"
           : "BEGINNER";
 
+    // Respect mode filtering (typing / reorder)
+    const requestedMode = String(req.query.mode || "")
+      .toLowerCase()
+      .trim(); // "typing" | "reorder" | ""
+
     const day = await prisma.practiceDay.findFirst({
       where: { dayNumber: lessonId, level },
       include: { exercises: { orderBy: { orderIndex: "asc" } } },
@@ -149,14 +154,15 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       return res.json({ ok: true, lessonId, level, questions: [] });
     }
 
-    const questions = (day.exercises || []).map((ex) => {
+    const questionsAll = (day.exercises || []).map((ex) => {
       const expected = ex.expected || {};
+      const modeRaw = String(expected.mode || expected.practiceType || "")
+        .toLowerCase()
+        .trim();
 
-      const mode = String(
-        expected.mode || expected.practiceType || "",
-      ).toLowerCase();
+      const modeNormalized = modeRaw === "typing" ? "typing" : "reorder";
 
-      // tokens for reorder/typing (used for jumbled UI later)
+      // tokens for reorder/typing
       const tokens =
         expected.correctOrder ||
         expected.tokens ||
@@ -169,7 +175,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
 
       return {
         id: ex.id,
-        type: mode === "typing" ? "TYPING" : "REORDER",
+        type: modeNormalized === "typing" ? "TYPING" : "REORDER",
         tamil: ex.promptTa,
         correctOrder: Array.isArray(tokens) ? tokens : [],
         answer,
@@ -177,6 +183,13 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
         xp: ex.xp,
       };
     });
+
+    const questions =
+      requestedMode === "typing"
+        ? questionsAll.filter((q) => q.type === "TYPING")
+        : requestedMode === "reorder"
+          ? questionsAll.filter((q) => q.type === "REORDER")
+          : questionsAll; // if no mode passed, return all
 
     return res.json({ ok: true, lessonId, level, questions });
   } catch (err) {
