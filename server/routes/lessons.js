@@ -80,6 +80,16 @@ router.get("/:id", authRequired, async (req, res) => {
 
     // normalize field for older UI code
     const lessonOut = { ...lesson, is_locked: lesson.isLocked };
+    
+    const progress = await prisma.userProgress.findFirst({
+      where: { user_id: userId, lesson_id: lessonId },
+      select: {
+        completed: true,
+        attempts: true,
+        best_score: true,
+        last_attempt_at: true,
+      },
+    });
 
     // No per-lesson progress table exists yet, so return null for now
     return res.json({
