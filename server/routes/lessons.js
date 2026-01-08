@@ -30,37 +30,16 @@ router.get("/", authRequired, async (req, res) => {
       return res.json({ ok: true, lessons: [], unlocked: [] });
     }
 
-    // ✅ Use the progress model you actually have in your project
-    // Your file already uses prisma.userProgress elsewhere.
-    const progresses = await prisma.userProgress.findMany({
-      where: { user_id: userId },
-      select: { lesson_id: true, completed: true },
-    });
-
-    const completedSet = new Set(
-      progresses.filter((p) => p.completed).map((p) => p.lesson_id),
-    );
-
-    // attach completed flag so Lessons page can show ✓
-    const lessonsWithStatus = lessons.map((l) => ({
-      ...l,
-      completed: completedSet.has(l.id),
-    }));
-
-    // unlocked logic: first lesson unlocked; next unlocked if prev completed; respect manual lock
+    // No per-lesson progress model exists in this project right now.
+    // So: unlocked = all lessons not locked; completed defaults to false.
     const unlocked = new Set();
-    lessons.forEach((lesson, idx) => {
-      if (lesson.is_locked) return;
-      if (idx === 0) unlocked.add(lesson.id);
-      else {
-        const prevId = lessons[idx - 1].id;
-        if (completedSet.has(prevId)) unlocked.add(lesson.id);
-      }
+    lessons.forEach((l) => {
+      if (!l.isLocked) unlocked.add(l.id);
     });
 
-    // 🔁 Normalize field name for frontend compatibility
-    const lessonsOut = lessonsWithStatus.map((l) => ({
+    const lessonsOut = lessons.map((l) => ({
       ...l,
+      completed: false, // placeholder until per-lesson progress exists
       is_locked: l.isLocked, // alias for older UI code
     }));
 
@@ -98,17 +77,8 @@ router.get("/:id", authRequired, async (req, res) => {
       return res.status(404).json({ ok: false, message: "Lesson not found" });
     }
 
-    const progress = await prisma.userProgress.findFirst({
-      where: { user_id: userId, lesson_id: lessonId },
-      select: {
-        completed: true,
-        attempts: true,
-        best_score: true,
-        last_attempt_at: true,
-      },
-    });
-
-    return res.json({ ok: true, lesson, progress: progress || null });
+    // No per-lesson progress table exists yet, so return null for now
+    return res.json({ ok: true, lesson, progress: null });
   } catch (err) {
     console.error("❌ /api/lessons/:id error:", err);
     return res
