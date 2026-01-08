@@ -80,14 +80,15 @@ router.get("/:id", authRequired, async (req, res) => {
 
     // normalize field for older UI code
     const lessonOut = { ...lesson, is_locked: lesson.isLocked };
-    
-    const progress = await prisma.userProgress.findFirst({
-      where: { user_id: userId, lesson_id: lessonId },
+
+    // userProgress is per-user (no lesson_id in this schema)
+    const userProgress = await prisma.userProgress.findFirst({
+      where: { user_id: userId },
       select: {
-        completed: true,
-        attempts: true,
-        best_score: true,
-        last_attempt_at: true,
+        xp: true,
+        streak: true,
+        badges: true,
+        updated_at: true,
       },
     });
 
@@ -95,7 +96,7 @@ router.get("/:id", authRequired, async (req, res) => {
     return res.json({
       ok: true,
       lesson: lessonOut,
-      progress: progress || null,
+      userProgress: userProgress || null,
     });
   } catch (err) {
     console.error("❌ /api/lessons/:id error:", err);
