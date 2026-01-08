@@ -221,11 +221,11 @@ export default function SentencePractice() {
     setLoading(true);
     setLoadError("");
     try {
-      const res = await api.get(`/quizzes/by-lesson/${lessonId}`, {
-        params: { mode: activeMode },
-      });
-
+      const res = await api.get(
+        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(activeMode)}`,
+      );
       const data = res?.data ?? res;
+      if (!data?.ok) throw new Error(data?.error || "Failed to load questions");      
 
       // supports: array OR {questions:[...]} OR {items:[...]} OR {exercises:[...]}
       const arr = Array.isArray(data)

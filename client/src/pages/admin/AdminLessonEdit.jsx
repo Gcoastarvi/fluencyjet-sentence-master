@@ -1,39 +1,45 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { api } from "../../api/apiClient";
+import { api } from "@/api/apiClient";
 
-const AdminLessonEdit = () => {
-  const { id } = useParams();
+export default function AdminLessonEdit() {
+  const { lessonId } = useParams();
+  const idNum = Number(lessonId);
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchLesson = async () => {
+    (async () => {
       try {
-        const res = await api.get(`/admin/lessons/${id}`);
+        setLoading(true);
+        setError("");
 
-        if (res.data.ok) {
-          setTitle(res.data.lesson.title);
-          setDescription(res.data.lesson.description);
-        }
-      } catch (err) {
-        console.error("Failed to load lesson:", err);
+        if (!Number.isFinite(idNum)) throw new Error("Invalid lesson id");
+
+        const res = await api.get(`/admin/lessons/${idNum}`);
+        const data = res?.data ?? res;
+
+        if (!data?.ok) throw new Error(data?.error || "Failed to load lesson");
+
+        setTitle(data.lesson?.title || "");
+        setDescription(data.lesson?.description || "");
+      } catch (e) {
+        setError(e?.message || "Failed to load lesson");
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchLesson();
-  }, [id]);
+    })();
+  }, [idNum]);
 
   const updateLesson = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await api.put(`/admin/lessons/${id}`, { title, description });
+      const res = await api.put(`/admin/lessons/${idNum}`, { title, description });
 
       if (res.data.ok) {
         alert("Lesson updated successfully!");
@@ -76,6 +82,4 @@ const AdminLessonEdit = () => {
       </form>
     </div>
   );
-};
-
-export default AdminLessonEdit;
+}

@@ -1,64 +1,41 @@
 // client/src/pages/LessonDetail.jsx
-
 import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { apiRequest } from "@/hooks/useApi.js";
+import { useParams } from "react-router-dom";
+import { api } from "@/api/apiClient";
 
 export default function LessonDetail() {
-  const { lessonId } = useParams();
-  const id = Number(lessonId);
+  const params = useParams();
+  const rawLessonId = params.lessonId ?? params.id; // fallback safety
+  const lessonId = Number(rawLessonId);
 
-  if (!Number.isFinite(id)) {
-    // show the same UI error you already show
-    // (or set error state and return)
-  }
-
-  const lessonId = Number(id);
-  const navigate = useNavigate();
-
-  const [lesson, setLesson] = useState(null);
-  const [progress, setProgress] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [locked, setLocked] = useState(false);
-  const [nextLessonId, setNextLessonId] = useState(null);
-
-  async function loadLesson() {
-    try {
-      setLoading(true);
-
-      // Fetch lesson details
-      const data = await apiRequest(`/api/lessons/${lessonId}`);
-      if (!data?.ok) throw new Error(data.message);
-
-      setLesson(data.lesson);
-      setProgress(data.progress || {});
-
-      // Unlock list
-      const all = await apiRequest("/api/lessons");
-      const unlockedList = all.unlocked || [];
-
-      if (!unlockedList.includes(lessonId)) {
-        setLocked(true);
-      }
-
-      // Calculate next lesson
-      if (all.lessons && data.lesson) {
-        const lessons = all.lessons.sort((a, b) => a.order - b.order);
-        const index = lessons.findIndex((l) => l.id === data.lesson.id);
-        if (index !== -1 && index < lessons.length - 1) {
-          setNextLessonId(lessons[index + 1].id);
-        }
-      }
-    } catch (err) {
-      console.error("Lesson load error:", err);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const [lesson, setLesson] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    loadLesson();
-  }, [lessonId]);
+    (async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        if (!Number.isFinite(lessonId)) {
+          throw new Error("Invalid lesson id");
+        }
+
+        const res = await api.get(`/lessons/${lessonId}`);
+        const data = res?.data ?? res;
+
+        if (!data?.ok) throw new Error(data?.error || "Failed to load lesson");
+
+        setLesson(data.lesson || null);
+      } catch (e) {
+        setLesson(null);
+        setError(e?.message || "Failed to load lesson");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [lessonId]);  
 
   // Loading state
   if (loading) {
