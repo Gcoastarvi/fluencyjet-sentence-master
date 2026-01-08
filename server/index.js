@@ -23,6 +23,7 @@ import xpRouter from "./routes/xp.js";
 import progressRouter from "./routes/progress.js";
 import leaderboardRouter from "./routes/leaderboard.js";
 import dashboardRouter from "./routes/dashboard.js";
+import lessonsRouter from "./routes/lessons.js";
 
 // Auth middleware
 import { authMiddleware } from "./middleware/authMiddleware.js";
@@ -135,6 +136,7 @@ app.use("/api/xp", xpRouter);
 app.use("/api/progress", progressRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/lessons", lessonsRouter);
 
 /* --------------------------------------------------
    Optional static frontend (Replit / monolith)
