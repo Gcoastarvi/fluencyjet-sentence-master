@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from "react";
-import {
-  getLesson,
-  updateLesson,
-  deleteLesson,
-} from "../../api/adminApi";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { api } from "../../api/apiClient";
 
 const AdminLessonEdit = () => {
   const { id } = useParams();
@@ -14,14 +10,10 @@ const AdminLessonEdit = () => {
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("fj_admin_token");
-
   useEffect(() => {
     const fetchLesson = async () => {
       try {
-        const res = await API.get(`/api/admin/lessons/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await api.get(`/admin/lessons/${id}`);
 
         if (res.data.ok) {
           setTitle(res.data.lesson.title);
@@ -41,11 +33,7 @@ const AdminLessonEdit = () => {
     e.preventDefault();
 
     try {
-      const res = await API.put(
-        `/api/admin/lessons/${id}`,
-        { title, description },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+      const res = await api.put(`/admin/lessons/${id}`, { title, description });
 
       if (res.data.ok) {
         alert("Lesson updated successfully!");

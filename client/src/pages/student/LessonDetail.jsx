@@ -5,7 +5,14 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { apiRequest } from "@/hooks/useApi.js";
 
 export default function LessonDetail() {
-  const { id } = useParams();
+  const { lessonId } = useParams();
+  const id = Number(lessonId);
+
+  if (!Number.isFinite(id)) {
+    // show the same UI error you already show
+    // (or set error state and return)
+  }
+
   const lessonId = Number(id);
   const navigate = useNavigate();
 

@@ -95,7 +95,13 @@ function playSound(key) {
 /* ===================================================================== */
 
 export default function LessonQuiz() {
-  const { id } = useParams();
+  const { lessonId } = useParams();
+  const id = Number(lessonId);
+
+  if (!Number.isFinite(id)) {
+    // handle invalid
+  }
+
   const navigate = useNavigate();
   const api = useApi();
   const { awardXP } = useXP();
