@@ -96,11 +96,10 @@ function playSound(key) {
 
 export default function LessonQuiz() {
   const { lessonId } = useParams();
-  const id = Number(lessonId);
 
-  if (!Number.isFinite(id)) {
-    // handle invalid
-  }
+  // ✅ safe parse
+  const id = Number(lessonId);
+  const isValidId = Number.isFinite(id) && id > 0;
 
   const navigate = useNavigate();
   const api = useApi();
@@ -129,6 +128,8 @@ export default function LessonQuiz() {
   /* ---------------------- INITIAL LOAD ---------------------- */
 
   useEffect(() => {
+    if (!isValidId) return;
+
     async function loadLessonAndXp() {
       try {
         const [lessonData, xpData] = await Promise.all([
@@ -151,6 +152,17 @@ export default function LessonQuiz() {
     }
     loadLessonAndXp();
   }, [id, api]);
+
+  if (!isValidId) {
+    return (
+      <div className="max-w-xl mx-auto mt-10 text-center">
+        <p className="text-red-600 font-semibold">Lesson not found</p>
+        <Link to="/lessons" className="text-purple-600 underline">
+          Back to Lessons
+        </Link>
+      </div>
+    );
+  }
 
   if (!lesson) {
     return (
