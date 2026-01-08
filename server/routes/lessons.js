@@ -67,18 +67,26 @@ router.get("/:id", authRequired, async (req, res) => {
         slug: true,
         title: true,
         description: true,
-        content: true,
         difficulty: true,
-        order: true,
+        isLocked: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
     if (!lesson) {
-      return res.status(404).json({ ok: false, message: "Lesson not found" });
+      return res.status(404).json({ ok: false, error: "Lesson not found" });
     }
 
+    // normalize field for older UI code
+    const lessonOut = { ...lesson, is_locked: lesson.isLocked };
+
     // No per-lesson progress table exists yet, so return null for now
-    return res.json({ ok: true, lesson, progress: null });
+    return res.json({
+      ok: true,
+      lesson: lessonOut,
+      progress: progress || null,
+    });
   } catch (err) {
     console.error("❌ /api/lessons/:id error:", err);
     return res
