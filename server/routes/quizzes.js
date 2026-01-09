@@ -123,82 +123,88 @@ router.get("/random", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
-// GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder&difficulty=beginner|intermediate|advanced
 router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
   try {
     const lessonId = Number(req.params.lessonId);
-    if (!Number.isFinite(lessonId) || lessonId <= 0) {
-      return res.status(400).json({ ok: false, message: "Invalid lessonId" });
+    if (!Number.isFinite(lessonId)) {
+      return res.status(400).json({ ok: false, error: "Invalid lessonId" });
     }
 
-    // Map difficulty -> UserLevel enum
-    const diff = String(req.query.difficulty || "beginner").toLowerCase();
-    const level =
-      diff === "advanced"
-        ? "ADVANCED"
-        : diff === "intermediate"
-          ? "INTERMEDIATE"
-          : "BEGINNER";
+    // Accept mode from query OR params (extra safe)
+    const requestedModeRaw = String(
+      req.query.mode || req.params.mode || "typing",
+    ).toLowerCase();
+    const requestedMode = requestedModeRaw === "reorder" ? "reorder" : "typing";
+    const requestedType = requestedMode === "typing" ? "TYPING" : "REORDER";
 
-    // Respect mode filtering (typing / reorder)
-    const requestedMode = String(req.query.mode || "")
-      .toLowerCase()
-      .trim(); // "typing" | "reorder" | ""
-
-    const day = await prisma.practiceDay.findFirst({
-      where: { dayNumber: lessonId, level },
-      include: { exercises: { orderBy: { orderIndex: "asc" } } },
+    // Fetch lesson to derive level (keep your existing logic if you already have it)
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, difficulty: true },
     });
 
-    if (!day) {
-      return res.json({ ok: true, lessonId, level, questions: [] });
-    }
+    // --- IMPORTANT ---
+    // Keep YOUR existing prisma query that fetches exercises for lessonId.
+    // I’m using `exercises` as a placeholder. Replace with your current variable.
+    const exercises = await prisma.exercise.findMany({
+      where: { lesson_id: lessonId },
+      orderBy: [{ orderIndex: "asc" }],
+      select: {
+        id: true,
+        promptTa: true,
+        expected: true,
+        orderIndex: true,
+        xp: true,
+      },
+    });
 
-    const questionsAll = (day.exercises || []).map((ex) => {
+    const questionsAll = exercises.map((ex) => {
       const expected = ex.expected || {};
-      const modeRaw = String(expected.mode || expected.practiceType || "")
-        .toLowerCase()
-        .trim();
 
-      const modeNormalized = modeRaw === "typing" ? "typing" : "reorder";
+      // Try to read each question's type from DB first.
+      // (Your DB may store it inside expected.mode, expected.type, or ex.type.)
+      const raw = String(
+        expected.mode || expected.type || ex.type || "",
+      ).toUpperCase();
+      const inferredType = raw.includes("REORDER")
+        ? "REORDER"
+        : raw.includes("TYPING")
+          ? "TYPING"
+          : null;
 
-      // tokens for reorder/typing
-      const tokens =
-        expected.correctOrder ||
-        expected.tokens ||
-        String(expected.sentence || expected.answer || "")
-          .trim()
-          .split(/\s+/)
-          .filter(Boolean);
+      const tokens = Array.isArray(expected.correctOrder)
+        ? expected.correctOrder
+        : typeof expected.sentence === "string"
+          ? expected.sentence.split(" ")
+          : typeof expected.answer === "string"
+            ? expected.answer.split(" ")
+            : [];
 
       const answer = String(expected.sentence || expected.answer || "").trim();
 
       return {
         id: ex.id,
-        type: modeNormalized === "typing" ? "TYPING" : "REORDER",
+        type: inferredType || requestedType, // fallback to requestedType if DB has no type
         tamil: ex.promptTa,
-        correctOrder: Array.isArray(tokens) ? tokens : [],
+        correctOrder: tokens,
         answer,
         orderIndex: ex.orderIndex,
         xp: ex.xp,
       };
     });
 
-    const questions =
-      requestedMode === "typing"
-        ? questionsAll.filter((q) => q.type === "TYPING")
-        : requestedMode === "reorder"
-          ? questionsAll.filter((q) => q.type === "REORDER")
-          : questionsAll; // if no mode passed, return all
+    // Now actually filter by requested mode
+    const questions = questionsAll.filter((q) => q.type === requestedType);
 
-    return res.json({ ok: true, lessonId, level, questions });
-  } catch (err) {
-    console.error("❌ GET /api/quizzes/by-lesson error:", err);
-    return res.status(500).json({
-      ok: false,
-      message: "Failed to load lesson quizzes",
-      error: String(err?.message || err),
+    return res.json({
+      ok: true,
+      lessonId,
+      level: String(lesson?.difficulty || "BEGINNER").toUpperCase(),
+      questions,
     });
+  } catch (err) {
+    console.error("❌ /api/quizzes/by-lesson error:", err);
+    return res.status(500).json({ ok: false, error: "Failed to load quizzes" });
   }
 });
 
