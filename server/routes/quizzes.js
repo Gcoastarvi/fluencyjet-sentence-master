@@ -132,7 +132,12 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     }
 
     // requested mode from UI
-    const requestedMode = String(req.query.mode || "reorder").toLowerCase(); // typing | reorder
+    const requestedMode = String(req.query.mode || "").toLowerCase();
+    if (!["typing", "reorder"].includes(requestedMode)) {
+      return res
+        .status(400)
+        .json({ ok: false, error: "mode must be typing|reorder" });
+    }
 
     // Map difficulty -> expected enum values used in DB (BEGINNER/INTERMEDIATE/ADVANCED)
     const diff = String(req.query.difficulty || "beginner").toLowerCase();

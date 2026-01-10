@@ -19,6 +19,9 @@ export default function SentencePractice() {
     ? rawMode
     : DEFAULT_PRACTICE_MODE;
 
+  const safeMode =
+    activeMode === "typing" || activeMode === "reorder" ? activeMode : "typing";
+
   const search = new URLSearchParams(window.location.search);
   const lessonId = Number(search.get("lessonId") || 1);
 
@@ -99,21 +102,28 @@ export default function SentencePractice() {
     setLessonExercises([]);
     loadLessonBatch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMode, lessonId]);
+  }, [safeMode, lessonId]);
 
   useEffect(() => {
     initQuiz();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, activeMode, lessonExercises]);
+  }, [currentIndex, safeMode, lessonExercises]);
+
+  function insertWord(word) {
+    setTypedAnswer((prev) => {
+      const next = (prev || "").trim();
+      return next ? `${next} ${word}` : word;
+    });
+  }
 
   // ✅ Typing Word Bank (shows shuffled words as a hint, but we don't reveal the full sentence)
   const typingWordBank = useMemo(() => {
-    if (activeMode !== "typing") return [];
+    if (safeMode !== "typing") return [];
     const words = Array.isArray(currentQuestion?.correctOrder)
       ? [...currentQuestion.correctOrder]
       : [];
     return words.sort(() => Math.random() - 0.5);
-  }, [activeMode, currentQuestion, currentIndex]);
+  }, [safeMode, currentQuestion, currentIndex]);
 
   // 🔊 Initialize sounds once
   useEffect(() => {
@@ -212,20 +222,20 @@ export default function SentencePractice() {
 
     return {
       id: ex.id ?? ex.exerciseId ?? null,
-      type: ex.type ?? ex.practiceType ?? ex.mode ?? null,   // ✅ ADD THIS
+      type: ex.type ?? ex.practiceType ?? ex.mode ?? null, // ✅ ADD THIS
       tamil: ex.tamil ?? ex.promptTamil ?? ex.tamilLine ?? ex.promptTa ?? "",
       correctOrder: Array.isArray(ex.correctOrder) ? ex.correctOrder : [],
       answer: ex.answer ?? ex.english ?? "",
-      xp: ex.xp ?? 0,                                       // optional, but useful
+      xp: ex.xp ?? 0, // optional, but useful
     };
   }
-
+  
   async function loadLessonBatch() {
     setLoading(true);
     setLoadError("");
     try {
       const res = await api.get(
-        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(activeMode)}`,
+        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(safeMode)}`,
       );
 
       const data = res?.data ?? res;
@@ -285,22 +295,16 @@ export default function SentencePractice() {
   }
 
   function initQuiz() {
-    if (!currentQuestion) return;
-
-    // reset common
     setAttempts(0);
     setStatus("idle");
     setShowHint(false);
     setWrongIndexes([]);
     setEarnedXP(0);
-
-    // reset typing/cloze
-    setSelectedOption(null);
     setTypedAnswer("");
 
     // initialize by mode
-    if (activeMode === "reorder" && currentQuestion.type === "REORDER") {
-      const shuffled = [...currentQuestion.correctOrder].sort(
+    if (safeMode === "reorder") {
+      const shuffled = [...(currentQuestion?.correctOrder || [])].sort(
         () => Math.random() - 0.5,
       );
       setTiles(shuffled);
@@ -309,7 +313,7 @@ export default function SentencePractice() {
       setTiles([]);
       setAnswer([]);
     }
-  } // ✅ IMPORTANT: this closing brace was missing in your backup
+  }
 
   function loadNextQuestion() {
     setCurrentIndex((prev) => prev + 1);
@@ -344,7 +348,9 @@ export default function SentencePractice() {
     }
 
     if (activeMode === "reorder") {
-      const reshuffled = [...(currentQuestion.correctOrder || [])].sort(() => Math.random() - 0.5);
+      const reshuffled = [...(currentQuestion.correctOrder || [])].sort(
+        () => Math.random() - 0.5
+      );
       setTiles(reshuffled);
     }
   }
@@ -578,17 +584,18 @@ export default function SentencePractice() {
             </div>
           </div>
 
-          {/* Word Bank (tap-to-type) */}
+          {/* Word Bank (tap-to-insert) */}
           <div className="mb-3">
             <div className="text-xs font-semibold text-slate-600 mb-2">
-              Word Bank (tap words to build your sentence)
+              Word Bank (tap to insert)
             </div>
+
             <div className="flex flex-wrap gap-2">
               {typingWordBank.map((w, idx) => (
                 <button
                   key={`${w}_${idx}`}
                   type="button"
-                  onClick={() => addToTyped(w)}
+                  onClick={() => insertWord(w)}
                   className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-sm"
                   disabled={status === "correct" || status === "reveal"}
                 >
