@@ -12,7 +12,10 @@ const SUPPORTED_PRACTICE_MODES = new Set([
 const MAX_ATTEMPTS = 3;
 const LESSON_ID = 1; // MUST be numeric for backend validation
 
+return <div style={{ padding: 20 }}>SentencePractice mounted ✅</div>;
+
 export default function SentencePractice() {
+  console.log("SentencePractice rendered ✅", { url: window.location.href });
   const { mode: urlMode } = useParams();
   const rawMode = (urlMode || DEFAULT_PRACTICE_MODE).toLowerCase();
   const activeMode = SUPPORTED_PRACTICE_MODES.has(rawMode)
@@ -346,13 +349,14 @@ export default function SentencePractice() {
       );
       setTiles(reshuffled);
     }
+  }
 
-    function checkAnswer() {
+  function checkAnswer() {
       if (!currentQuestion) return;
       if (status === "correct") return;
 
       // ⌨️ TYPING validation
-      if (activeMode === "typing") {
+      if (safeMode === "typing") {
         const normalize = (s) =>
           String(s || "")
             .trim()
@@ -746,4 +750,3 @@ export default function SentencePractice() {
       </div>
     );
   }
-}
