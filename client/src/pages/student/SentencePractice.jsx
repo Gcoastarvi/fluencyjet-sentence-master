@@ -68,7 +68,7 @@ export default function SentencePractice() {
 
     return {
       ...q,
-      type: "REORDER", // keep your UI logic stable
+      // keep backend-provided type (TYPING / REORDER)
       answer: target,
     };
   }, [lessonExercises, currentIndex]);
@@ -208,12 +208,15 @@ export default function SentencePractice() {
   function normalizeExercise(raw) {
     if (!raw) return null;
 
-    const ex = raw.exercise ?? raw; // supports {exercise:{...}} or direct
+    const ex = raw.exercise ?? raw;
+
     return {
       id: ex.id ?? ex.exerciseId ?? null,
-      tamil: ex.tamil ?? ex.promptTamil ?? ex.tamilLine ?? "",
+      type: ex.type ?? ex.practiceType ?? ex.mode ?? null,   // ✅ ADD THIS
+      tamil: ex.tamil ?? ex.promptTamil ?? ex.tamilLine ?? ex.promptTa ?? "",
       correctOrder: Array.isArray(ex.correctOrder) ? ex.correctOrder : [],
       answer: ex.answer ?? ex.english ?? "",
+      xp: ex.xp ?? 0,                                       // optional, but useful
     };
   }
 
@@ -222,10 +225,11 @@ export default function SentencePractice() {
     setLoadError("");
     try {
       const res = await api.get(
-        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(activeMode)}`,
+        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(safeMode)}`,
       );
+
       const data = res?.data ?? res;
-      if (!data?.ok) throw new Error(data?.error || "Failed to load questions");      
+      if (!data?.ok) throw new Error(data?.error || "Failed to load questions");
 
       // supports: array OR {questions:[...]} OR {items:[...]} OR {exercises:[...]}
       const arr = Array.isArray(data)
@@ -295,9 +299,9 @@ export default function SentencePractice() {
     setTypedAnswer("");
 
     // initialize by mode
-    if (activeMode === "reorder" && currentQuestion.type === "REORDER") {
-      const shuffled = [...currentQuestion.correctOrder].sort(
-        () => Math.random() - 0.5,
+    if (safeMode === "reorder") {
+      const shuffled = [...(currentQuestion?.correctOrder || [])].sort(
+        () => Math.random() - 0.5
       );
       setTiles(shuffled);
       setAnswer([]);
@@ -305,7 +309,6 @@ export default function SentencePractice() {
       setTiles([]);
       setAnswer([]);
     }
-  } // ✅ IMPORTANT: this closing brace was missing in your backup
 
   function loadNextQuestion() {
     setCurrentIndex((prev) => prev + 1);
@@ -339,13 +342,10 @@ export default function SentencePractice() {
       return;
     }
 
-    if (currentQuestion?.type === "REORDER") {
-      const reshuffled = [...currentQuestion.correctOrder].sort(
-        () => Math.random() - 0.5,
-      );
+    if (safeMode === "reorder") {
+      const reshuffled = [...(currentQuestion.correctOrder || [])].sort(() => Math.random() - 0.5);
       setTiles(reshuffled);
     }
-  }
 
   function checkAnswer() {
     if (!currentQuestion) return;
