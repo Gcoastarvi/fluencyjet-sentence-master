@@ -107,14 +107,7 @@ export default function SentencePractice() {
   useEffect(() => {
     initQuiz();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, safeMode, lessonExercises]);
-
-  function insertWord(word) {
-    setTypedAnswer((prev) => {
-      const next = (prev || "").trim();
-      return next ? `${next} ${word}` : word;
-    });
-  }
+  }, [currentIndex, safeMode, lessonExercises]);  
 
   // ✅ Typing Word Bank (shows shuffled words as a hint, but we don't reveal the full sentence)
   const typingWordBank = useMemo(() => {
@@ -342,18 +335,17 @@ export default function SentencePractice() {
     setShowHint(false);
     setAttempts(0);
 
-    if (activeMode === "typing") {
+    if (safeMode === "typing") {
       setTypedAnswer("");
       return;
     }
 
-    if (activeMode === "reorder") {
+    if (safeMode === "reorder") {
       const reshuffled = [...(currentQuestion.correctOrder || [])].sort(
         () => Math.random() - 0.5
       );
       setTiles(reshuffled);
     }
-  }
 
   function checkAnswer() {
     if (!currentQuestion) return;
@@ -595,7 +587,7 @@ export default function SentencePractice() {
                 <button
                   key={`${w}_${idx}`}
                   type="button"
-                  onClick={() => insertWord(w)}
+                  onClick={() => addToTyped(w)}
                   className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-sm"
                   disabled={status === "correct" || status === "reveal"}
                 >
