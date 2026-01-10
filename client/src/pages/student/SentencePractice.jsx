@@ -225,7 +225,7 @@ export default function SentencePractice() {
     setLoadError("");
     try {
       const res = await api.get(
-        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(safeMode)}`,
+        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(activeMode)}`,
       );
 
       const data = res?.data ?? res;
@@ -299,9 +299,9 @@ export default function SentencePractice() {
     setTypedAnswer("");
 
     // initialize by mode
-    if (safeMode === "reorder") {
-      const shuffled = [...(currentQuestion?.correctOrder || [])].sort(
-        () => Math.random() - 0.5
+    if (activeMode === "reorder" && currentQuestion.type === "REORDER") {
+      const shuffled = [...currentQuestion.correctOrder].sort(
+        () => Math.random() - 0.5,
       );
       setTiles(shuffled);
       setAnswer([]);
@@ -309,6 +309,7 @@ export default function SentencePractice() {
       setTiles([]);
       setAnswer([]);
     }
+  } // ✅ IMPORTANT: this closing brace was missing in your backup
 
   function loadNextQuestion() {
     setCurrentIndex((prev) => prev + 1);
@@ -342,10 +343,11 @@ export default function SentencePractice() {
       return;
     }
 
-    if (safeMode === "reorder") {
+    if (activeMode === "reorder") {
       const reshuffled = [...(currentQuestion.correctOrder || [])].sort(() => Math.random() - 0.5);
       setTiles(reshuffled);
     }
+  }
 
   function checkAnswer() {
     if (!currentQuestion) return;
