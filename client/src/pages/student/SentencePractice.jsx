@@ -12,10 +12,16 @@ const SUPPORTED_PRACTICE_MODES = new Set([
 const MAX_ATTEMPTS = 3;
 const LESSON_ID = 1; // MUST be numeric for backend validation
 
-return <div style={{ padding: 20 }}>SentencePractice mounted ✅</div>;
+
 
 export default function SentencePractice() {
   console.log("SentencePractice rendered ✅", { url: window.location.href });
+
+  const DEBUG_MOUNT = true; // 🔁 set true only for testing
+  if (DEBUG_MOUNT) {
+    return <div style={{ padding: 20 }}>SentencePractice mounted ✅</div>;
+  }  
+  
   const { mode: urlMode } = useParams();
   const rawMode = (urlMode || DEFAULT_PRACTICE_MODE).toLowerCase();
   const activeMode = SUPPORTED_PRACTICE_MODES.has(rawMode)
