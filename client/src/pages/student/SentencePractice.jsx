@@ -734,5 +734,6 @@ export default function SentencePractice() {
         `}
       </style>
     </div>
-  );
+   );
+  }
 }
