@@ -13,7 +13,16 @@ const MAX_ATTEMPTS = 3;
 
 export default function SentencePractice() {
   const { mode: urlMode } = useParams();
-  const rawMode = (urlMode || DEFAULT_PRACTICE_MODE).toLowerCase();
+
+  // robust fallback: extract mode from URL path if useParams fails
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  const practiceIdx = segments.indexOf("practice");
+  const pathMode = practiceIdx >= 0 ? segments[practiceIdx + 1] : null;
+
+  const rawMode = String(
+    urlMode || pathMode || DEFAULT_PRACTICE_MODE,
+  ).toLowerCase();
+
   const activeMode = SUPPORTED_PRACTICE_MODES.has(rawMode)
     ? rawMode
     : DEFAULT_PRACTICE_MODE;
@@ -550,6 +559,11 @@ export default function SentencePractice() {
       <h1 className="text-2xl font-bold text-center mb-6">
         Build the sentence
       </h1>
+
+      <div className="text-center text-xs text-slate-400 mb-3">
+        urlMode: <b>{String(urlMode)}</b> | activeMode: <b>{activeMode}</b> |
+        safeMode: <b>{safeMode}</b> | lessonId: <b>{lessonId}</b>
+      </div>
 
       <div className="text-center text-sm text-gray-500 mb-3">
         Question {currentIndex + 1} / {totalQuestions}
