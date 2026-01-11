@@ -12,16 +12,7 @@ const SUPPORTED_PRACTICE_MODES = new Set([
 const MAX_ATTEMPTS = 3;
 const LESSON_ID = 1; // MUST be numeric for backend validation
 
-
-
 export default function SentencePractice() {
-  console.log("SentencePractice rendered ✅", { url: window.location.href });
-
-  const DEBUG_MOUNT = true; // 🔁 set true only for testing
-  if (DEBUG_MOUNT) {
-    return <div style={{ padding: 20 }}>SentencePractice mounted ✅</div>;
-  }  
-  
   const { mode: urlMode } = useParams();
   const rawMode = (urlMode || DEFAULT_PRACTICE_MODE).toLowerCase();
   const activeMode = SUPPORTED_PRACTICE_MODES.has(rawMode)
@@ -33,6 +24,20 @@ export default function SentencePractice() {
 
   const search = new URLSearchParams(window.location.search);
   const lessonId = Number(search.get("lessonId") || 1);
+
+  // ---- DEBUG (optional) ----
+  const DEBUG_MOUNT = false;
+
+  useEffect(() => {
+    if (!DEBUG_MOUNT) return;
+    window.__fj_practice_loaded = true;
+    console.log("✅ SentencePractice mounted", {
+      url: window.location.href,
+      activeMode,
+      safeMode,
+      lessonId,
+    });
+  }, [DEBUG_MOUNT, activeMode, safeMode, lessonId]);
 
   // -------------------
   // refs
@@ -235,35 +240,55 @@ export default function SentencePractice() {
   async function loadLessonBatch() {
     setLoading(true);
     setLoadError("");
+    console.log("[loadLessonBatch] start", { safeMode, lessonId });
     try {
+      console.log("[loadLessonBatch] calling API...");
       const res = await api.get(
         `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(safeMode)}`,
       );
 
       const data = res?.data ?? res;
-      if (!data?.ok) throw new Error(data?.error || "Failed to load questions");
+      console.log("[loadLessonBatch] got data", data);
 
+      const ok = Array.isArray(data) ? true : data?.ok;
+      if (!ok)
+        
+        throw new Error((data && data.error) || "Failed to load questions");
       // supports: array OR {questions:[...]} OR {items:[...]} OR {exercises:[...]}
       const arr = Array.isArray(data)
         ? data
         : Array.isArray(data.questions)
           ? data.questions
-          : Array.isArray(data.items)
-            ? data.items
-            : Array.isArray(data.exercises)
-              ? data.exercises
-              : [];
+          : Array.isArray(data.data?.questions)
+            ? data.data.questions
+            : Array.isArray(data.items)
+              ? data.items
+              : Array.isArray(data.exercises)
+                ? data.exercises
+                : [];
+
+      console.log(
+        "[loadLessonBatch] arr length",
+        arr?.length,
+        "first",
+        arr?.[0],
+      );
 
       const normalized = arr.map(normalizeExercise).filter(Boolean);
 
+      console.log("[loadLessonBatch] normalized exercises", normalized);
+
       if (!normalized.length) {
         setLessonExercises([]);
-        setLoadError("No exercises found for this lesson.");
+        setLoadError(
+          `No exercises found. mode=${safeMode} lessonId=${lessonId}`,
+        );
         return;
       }
 
       setLessonExercises(normalized);
     } catch (e) {
+      console.log("[loadLessonBatch] FAILED", { safeMode, lessonId });
       console.error("[Practice] loadLessonBatch failed", e);
       setLoadError("Failed to load lesson exercises.");
     } finally {
@@ -324,7 +349,13 @@ export default function SentencePractice() {
   function addToAnswer(word) {
     if (status === "correct" || status === "reveal") return;
     setAnswer((prev) => [...prev, word]);
-    setTiles((prev) => prev.filter((w) => w !== word));
+    setTiles((prev) => {
+      const idx = prev.indexOf(word);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next.splice(idx, 1);
+      return next;
+    });
   }
 
   // ✅ Typing helper: tap a word chip to append into typedAnswer
@@ -350,7 +381,7 @@ export default function SentencePractice() {
     }
 
     if (safeMode === "reorder") {
-      const reshuffled = [...(currentQuestion.correctOrder || [])].sort(
+      const reshuffled = [...(currentQuestion?.correctOrder || [])].sort(
         () => Math.random() - 0.5,
       );
       setTiles(reshuffled);
@@ -358,95 +389,45 @@ export default function SentencePractice() {
   }
 
   function checkAnswer() {
-      if (!currentQuestion) return;
-      if (status === "correct") return;
+    if (!currentQuestion) return;
+    if (status === "correct") return;
 
-      // ⌨️ TYPING validation
-      if (safeMode === "typing") {
-        const normalize = (s) =>
-          String(s || "")
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, " ");
+    // ⌨️ TYPING validation
+    if (safeMode === "typing") {
+      const normalize = (s) =>
+        String(s || "")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, " ");
 
-        const target =
-          currentQuestion.answer?.trim() ||
-          (currentQuestion.correctOrder || []).join(" ");
-        const user = typedAnswer;
+      const target =
+        currentQuestion.answer?.trim() ||
+        (currentQuestion.correctOrder || []).join(" ");
+      const user = typedAnswer;
 
-        if (!normalize(user)) {
-          setStatus("wrong");
-          setShowHint(true);
-          return;
-        }
-
-        const attemptNumber = attempts + 1;
-
-        if (normalize(user) === normalize(target)) {
-          correctSoundRef.current?.play?.();
-          setStatus("correct");
-          setWrongIndexes([]);
-
-          commitXP({
-            isCorrect: true,
-            attemptNo: attemptNumber,
-            mode: "typing",
-          });
-
-          localStorage.setItem(
-            "fj_last_session",
-            JSON.stringify({
-              practiceType: "typing",
-              questionIndex: currentIndex + 1,
-              timestamp: Date.now(),
-            }),
-          );
-          return;
-        }
-
-        // wrong typing
-        wrongSoundRef.current?.play?.();
-        const nextAttempts = attempts + 1;
-        setAttempts(nextAttempts);
-        setStatus("wrong");
-        setShowHint(true);
-
-        if (nextAttempts >= MAX_ATTEMPTS) {
-          setStatus("reveal");
-          setEarnedXP(0);
-        }
-        return;
-      }
-
-      // ✅ REORDER validation
-      if (answer.length !== currentQuestion.correctOrder.length) {
+      if (!normalize(user)) {
         setStatus("wrong");
         setShowHint(true);
         return;
       }
 
-      const incorrect = [];
-      answer.forEach((word, index) => {
-        if (word !== currentQuestion.correctOrder[index]) incorrect.push(index);
-      });
+      const attemptNumber = attempts + 1;
 
-      if (incorrect.length === 0) {
+      if (normalize(user) === normalize(target)) {
         correctSoundRef.current?.play?.();
-        const attemptNumber = attempts + 1;
-
-        setWrongIndexes([]);
         setStatus("correct");
+        setWrongIndexes([]);
 
         commitXP({
           isCorrect: true,
           attemptNo: attemptNumber,
-          mode: "reorder",
+          mode: "typing",
         });
 
         localStorage.setItem(
           "fj_last_session",
           JSON.stringify({
-            practiceType: "reorder",
+            practiceType: "typing",
             questionIndex: currentIndex + 1,
             timestamp: Date.now(),
           }),
@@ -454,293 +435,343 @@ export default function SentencePractice() {
         return;
       }
 
-      // WRONG
+      // wrong typing
       wrongSoundRef.current?.play?.();
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
       setStatus("wrong");
       setShowHint(true);
-      setWrongIndexes(incorrect);
 
       if (nextAttempts >= MAX_ATTEMPTS) {
         setStatus("reveal");
         setEarnedXP(0);
       }
+      return;
     }
 
-    // -------------------
-    // mode guard (MVP)
-    // -------------------
-    if (activeMode !== "reorder" && activeMode !== "typing") {
-      return (
-        <div className="max-w-3xl mx-auto p-6 text-center">
-          <h1 className="text-2xl font-bold mb-2">
-            Practice mode: {activeMode}
-          </h1>
-          <p className="text-gray-600">
-            This mode is coming next. For now, use <b>/practice/reorder</b> or{" "}
-            <b>/practice/typing</b>.
-          </p>
-        </div>
+    // ✅ REORDER validation
+    if (answer.length !== currentQuestion.correctOrder.length) {
+      setStatus("wrong");
+      setShowHint(true);
+      return;
+    }
+
+    const incorrect = [];
+    answer.forEach((word, index) => {
+      if (word !== currentQuestion.correctOrder[index]) incorrect.push(index);
+    });
+
+    if (incorrect.length === 0) {
+      correctSoundRef.current?.play?.();
+      const attemptNumber = attempts + 1;
+
+      setWrongIndexes([]);
+      setStatus("correct");
+
+      commitXP({
+        isCorrect: true,
+        attemptNo: attemptNumber,
+        mode: "reorder",
+      });
+
+      localStorage.setItem(
+        "fj_last_session",
+        JSON.stringify({
+          practiceType: "reorder",
+          questionIndex: currentIndex + 1,
+          timestamp: Date.now(),
+        }),
       );
+      return;
     }
 
-    // -------------------
-    // completion
-    // -------------------
-    if (totalQuestions > 0 && currentIndex >= totalQuestions) {
-      return (
-        <div className="max-w-3xl mx-auto p-6 text-center">
-          <h1 className="text-2xl font-bold mb-4">🎉 Session Complete!</h1>
-          <p className="mb-4">Great job! You finished today’s practice.</p>
+    // WRONG
+    wrongSoundRef.current?.play?.();
+    const nextAttempts = attempts + 1;
+    setAttempts(nextAttempts);
+    setStatus("wrong");
+    setShowHint(true);
+    setWrongIndexes(incorrect);
 
-          <button
-            className="bg-purple-600 text-white px-6 py-3 rounded-lg"
-            onClick={() => {
-              setCurrentIndex(0);
-              setStatus("idle");
-              loadLessonBatch(); // reload for another run
-            }}
-          >
-            Practice Again
-          </button>
-        </div>
-      );
+    if (nextAttempts >= MAX_ATTEMPTS) {
+      setStatus("reveal");
+      setEarnedXP(0);
     }
+  }
 
-    if (loading) {
-      return (
-        <div className="max-w-3xl mx-auto p-6 text-center">
-          <div className="text-lg font-semibold">Loading practice…</div>
-          <div className="text-sm text-slate-500 mt-2">Fetching exercises</div>
-        </div>
-      );
-    }
-
-    if (loadError) {
-      return (
-        <div className="max-w-3xl mx-auto p-6 text-center">
-          <div className="text-lg font-semibold text-red-600">{loadError}</div>
-          <button
-            className="mt-4 bg-purple-600 text-white px-5 py-2 rounded-lg"
-            onClick={() => loadLessonBatch()}
-          >
-            Retry
-          </button>
-        </div>
-      );
-    }
-
-    if (!currentQuestion) {
-      return (
-        <div className="max-w-3xl mx-auto p-6 text-center">
-          <h1 className="text-2xl font-bold mb-2">No questions found</h1>
-          <p className="text-gray-600">Please reload.</p>
-        </div>
-      );
-    }
-
-    // -------------------
-    // UI
-    // -------------------
+  // -------------------
+  // mode guard (MVP)
+  // -------------------
+  if (safeMode !== "reorder" && safeMode !== "typing") {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <h1 className="text-2xl font-bold text-center mb-6">
-          Build the sentence
-        </h1>
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold mb-2">Practice mode: {safeMode}</h1>
+        <p className="text-gray-600">
+          This mode is coming next. For now, use <b>/practice/reorder</b> or{" "}
+          <b>/practice/typing</b>.
+        </p>
+      </div>
+    );
+  }
 
-        <div className="text-center text-sm text-gray-500 mb-3">
-          Question {currentIndex + 1} / {totalQuestions}
+  // -------------------
+  // completion
+  // -------------------
+  if (totalQuestions > 0 && currentIndex >= totalQuestions) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold mb-4">🎉 Session Complete!</h1>
+        <p className="mb-4">Great job! You finished today’s practice.</p>
+
+        <button
+          className="bg-purple-600 text-white px-6 py-3 rounded-lg"
+          onClick={() => {
+            setCurrentIndex(0);
+            setStatus("idle");
+            loadLessonBatch(); // reload for another run
+          }}
+        >
+          Practice Again
+        </button>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <div className="text-lg font-semibold">Loading practice…</div>
+        <div className="text-sm text-slate-500 mt-2">Fetching exercises</div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <div className="text-lg font-semibold text-red-600">{loadError}</div>
+        <button
+          className="mt-4 bg-purple-600 text-white px-5 py-2 rounded-lg"
+          onClick={() => loadLessonBatch()}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!currentQuestion) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold mb-2">No questions found</h1>
+        <p className="text-gray-600">Please reload.</p>
+      </div>
+    );
+  }
+
+  // -------------------
+  // UI
+  // -------------------
+  return (
+    <div className="max-w-3xl mx-auto p-6">
+      <h1 className="text-2xl font-bold text-center mb-6">
+        Build the sentence
+      </h1>
+
+      <div className="text-center text-sm text-gray-500 mb-3">
+        Question {currentIndex + 1} / {totalQuestions}
+      </div>
+
+      <div className="flex justify-center items-center gap-2 mb-4 text-orange-600 font-semibold">
+        🔥 {streak}-day streak
+      </div>
+
+      {/* Tamil Prompt */}
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 text-lg">
+        {currentQuestion.tamil}
+      </div>
+
+      {/* Hint */}
+      {showHint && status !== "correct" && (
+        <div className="bg-purple-100 text-purple-800 p-3 rounded mb-4">
+          💡 Hint: Subject → Verb → Action
         </div>
+      )}
 
-        <div className="flex justify-center items-center gap-2 mb-4 text-orange-600 font-semibold">
-          🔥 {streak}-day streak
-        </div>
+      {/* ⌨️ TYPING UI */}
+      {safeMode === "typing" && (
+        <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-purple-700">
+              Typing Practice
+            </h2>
 
-        {/* Tamil Prompt */}
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 text-lg">
-          {currentQuestion.tamil}
-        </div>
-
-        {/* Hint */}
-        {showHint && status !== "correct" && (
-          <div className="bg-purple-100 text-purple-800 p-3 rounded mb-4">
-            💡 Hint: Subject → Verb → Action
-          </div>
-        )}
-
-        {/* ⌨️ TYPING UI */}
-        {safeMode === "typing" && (
-          <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xl font-bold text-purple-700">
-                Typing Practice
-              </h2>
-
-              <button
-                onClick={() => setTypedAnswer("")}
-                className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
-                disabled={status === "correct" || status === "reveal"}
-              >
-                Clear
-              </button>
-            </div>
-
-            {/* Tamil prompt (what they should convert to English) */}
-            <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 mb-3">
-              <div className="text-xs font-semibold text-purple-700 mb-1">
-                Tamil prompt
-              </div>
-              <div className="text-sm text-slate-800">
-                {currentQuestion.tamil}
-              </div>
-            </div>
-
-            {/* Word Bank (tap-to-insert) */}
-            <div className="mb-3">
-              <div className="text-xs font-semibold text-slate-600 mb-2">
-                Word Bank (tap to insert)
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {typingWordBank.map((w, idx) => (
-                  <button
-                    key={`${w}_${idx}`}
-                    type="button"
-                    onClick={() => addToTyped(w)}
-                    className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-sm"
-                    disabled={status === "correct" || status === "reveal"}
-                  >
-                    {w}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Input */}
-            <textarea
-              value={typedAnswer}
-              onChange={(e) => setTypedAnswer(e.target.value)}
-              placeholder="Type the full English sentence here..."
-              className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
-              rows={3}
+            <button
+              onClick={() => setTypedAnswer("")}
+              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
               disabled={status === "correct" || status === "reveal"}
-            />
+            >
+              Clear
+            </button>
+          </div>
 
-            <div className="flex items-center gap-3 mt-3">
-              <button
-                onClick={checkAnswer}
-                className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
-                disabled={status === "correct" || status === "reveal"}
-              >
-                Submit
-              </button>
-
-              <button
-                onClick={() => setStatus("reveal")}
-                className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
-                disabled={status === "correct" || status === "reveal"}
-              >
-                Show Answer
-              </button>
+          {/* Tamil prompt (what they should convert to English) */}
+          <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 mb-3">
+            <div className="text-xs font-semibold text-purple-700 mb-1">
+              Tamil prompt
+            </div>
+            <div className="text-sm text-slate-800">
+              {currentQuestion.tamil}
             </div>
           </div>
-        )}
 
-        {/* REORDER UI */}
-        {safeMode === "reorder" && currentQuestion.type === "REORDER" && (
-          <>
-            {/* Answer Area */}
-            <div className="border-2 border-dashed rounded-lg p-4 min-h-[70px] mb-4 flex flex-wrap gap-2">
-              {answer.map((word, index) => {
-                const isWrong = wrongIndexes.includes(index);
-                return (
-                  <span
-                    key={index}
-                    className={`px-4 py-2 rounded-full text-white transition ${
-                      isWrong ? "bg-red-500 animate-shake" : "bg-blue-600"
-                    }`}
-                  >
-                    {word}
-                  </span>
-                );
-              })}
+          {/* Word Bank (tap-to-insert) */}
+          <div className="mb-3">
+            <div className="text-xs font-semibold text-slate-600 mb-2">
+              Word Bank (tap to insert)
             </div>
 
-            {/* Tile Bank */}
-            <div className="border-2 border-dashed rounded-lg p-4 mb-6 flex flex-wrap gap-2">
-              {tiles.map((word, index) => (
+            <div className="flex flex-wrap gap-2">
+              {typingWordBank.map((w, idx) => (
                 <button
-                  key={`${word}-${index}`}
-                  onClick={() => addToAnswer(word)}
-                  className="px-4 py-2 rounded-full bg-blue-600 text-white hover:opacity-90"
+                  key={`${w}_${idx}`}
+                  type="button"
+                  onClick={() => addToTyped(w)}
+                  className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-sm"
+                  disabled={status === "correct" || status === "reveal"}
                 >
-                  {word}
+                  {w}
                 </button>
               ))}
             </div>
-          </>
-        )}
+          </div>
 
-        {/* Check */}
-        {status === "idle" && (
-          <button
-            onClick={checkAnswer}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
-          >
-            Check Answer
-          </button>
-        )}
+          {/* Input */}
+          <textarea
+            value={typedAnswer}
+            onChange={(e) => setTypedAnswer(e.target.value)}
+            placeholder="Type the full English sentence here..."
+            className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+            rows={3}
+            disabled={status === "correct" || status === "reveal"}
+          />
 
-        {/* Wrong */}
-        {status === "wrong" && (
-          <div className="mt-6">
-            <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
-              ❌ Not correct. Try again. ({attempts}/{MAX_ATTEMPTS})
-            </div>
+          <div className="flex items-center gap-3 mt-3">
             <button
-              onClick={handleTryAgain}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+              onClick={checkAnswer}
+              className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
+              disabled={status === "correct" || status === "reveal"}
             >
-              Try again
+              Submit
+            </button>
+
+            <button
+              onClick={() => setStatus("reveal")}
+              className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+              disabled={status === "correct" || status === "reveal"}
+            >
+              Show Answer
             </button>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* XP Toast */}
-        {showXPToast && (
-          <div className="fixed top-24 right-6 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce z-50">
-            +{earnedXP} XP ✨
+      {/* REORDER UI */}
+      {safeMode === "reorder" && (
+        <>
+          {/* Answer Area */}
+          <div className="border-2 border-dashed rounded-lg p-4 min-h-[70px] mb-4 flex flex-wrap gap-2">
+            {answer.map((word, index) => {
+              const isWrong = wrongIndexes.includes(index);
+              return (
+                <span
+                  key={index}
+                  className={`px-4 py-2 rounded-full text-white transition ${
+                    isWrong ? "bg-red-500 animate-shake" : "bg-blue-600"
+                  }`}
+                >
+                  {word}
+                </span>
+              );
+            })}
           </div>
-        )}
 
-        {/* Correct */}
-        {status === "correct" && (
-          <div className="bg-green-100 text-green-700 p-4 rounded mt-6 text-center">
-            ✅ Correct! Well done. <br />
-            <span className="font-semibold">+{earnedXP} XP earned</span>
+          {/* Tile Bank */}
+          <div className="border-2 border-dashed rounded-lg p-4 mb-6 flex flex-wrap gap-2">
+            {tiles.map((word, index) => (
+              <button
+                key={`${word}-${index}`}
+                type="button"
+                onClick={() => addToAnswer(word)}
+                disabled={status === "correct" || status === "reveal"}
+                className="px-4 py-2 rounded-full bg-blue-600 text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {word}
+              </button>
+            ))}
           </div>
-        )}
+        </>
+      )}
 
-        {/* Reveal */}
-        {status === "reveal" && (
-          <div className="bg-yellow-100 p-4 rounded mt-6">
-            📘 <strong>Good attempt! Here is the correct sentence:</strong>
-            <div className="mt-3">
-              <div className="flex flex-wrap gap-2">
-                {(currentQuestion?.correctOrder || []).map((word, index) => (
-                  <span key={index} className="px-3 py-1 bg-green-200 rounded">
-                    {word}
-                  </span>
-                ))}
-              </div>
+      {/* Check */}
+      {status === "idle" && (
+        <button
+          onClick={checkAnswer}
+          className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+        >
+          Check Answer
+        </button>
+      )}
+
+      {/* Wrong */}
+      {status === "wrong" && (
+        <div className="mt-6">
+          <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
+            ❌ Not correct. Try again. ({attempts}/{MAX_ATTEMPTS})
+          </div>
+          <button
+            onClick={handleTryAgain}
+            className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
+      {/* XP Toast */}
+      {showXPToast && (
+        <div className="fixed top-24 right-6 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce z-50">
+          +{earnedXP} XP ✨
+        </div>
+      )}
+
+      {/* Correct */}
+      {status === "correct" && (
+        <div className="bg-green-100 text-green-700 p-4 rounded mt-6 text-center">
+          ✅ Correct! Well done. <br />
+          <span className="font-semibold">+{earnedXP} XP earned</span>
+        </div>
+      )}
+
+      {/* Reveal */}
+      {status === "reveal" && (
+        <div className="bg-yellow-100 p-4 rounded mt-6">
+          📘 <strong>Good attempt! Here is the correct sentence:</strong>
+          <div className="mt-3">
+            <div className="flex flex-wrap gap-2">
+              {(currentQuestion?.correctOrder || []).map((word, index) => (
+                <span key={index} className="px-3 py-1 bg-green-200 rounded">
+                  {word}
+                </span>
+              ))}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Shake animation */}
-        <style>
-          {`
+      {/* Shake animation */}
+      <style>
+        {`
           @keyframes shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-4px); }
@@ -752,7 +783,7 @@ export default function SentencePractice() {
             animation: shake 0.3s ease-in-out;
           }
         `}
-        </style>
-      </div>
-    );
-  }
+      </style>
+    </div>
+  );
+}
