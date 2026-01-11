@@ -4,13 +4,14 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 
 const replitHost =
-  process.env.REPL_SLUG && process.env.REPL_OWNER
+  process.env.REPL_SLUG && process.env.REPL_ID
     ? `${process.env.REPL_SLUG}-${process.env.REPL_ID}.spock.replit.dev`
     : undefined;
 
 export default defineConfig({
   plugins: [react()],
-  base: "./",
+  // Use root base for Railway/browser. (CLI --base=/ also works, but this keeps it consistent.)
+  base: "/",
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -23,19 +24,19 @@ export default defineConfig({
       "localhost",
       ".repl.co",
       ".replit.dev",
-      "spock.replit.dev",
+      ".spock.replit.dev",
       replitHost,
       ".railway.app",
     ].filter(Boolean),
-    // 👇 NEW: dev proxy → forwards /api to your Node server at 8080
     proxy: {
       "/api": {
-        target: "http://localhost:8080",
+        target: "http://127.0.0.1:8080",
         changeOrigin: true,
       },
     },
   },
   build: {
     outDir: "dist",
+    sourcemap: true, // ✅ enables source maps for production build
   },
 });

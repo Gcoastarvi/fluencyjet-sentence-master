@@ -14,7 +14,7 @@ hidden = [
 
 [nix]
 channel = "stable-24_05"
-packages = ["railway", "postgresql_12", "nano", "file"]
+packages = ["railway", "postgresql_12", "nano", "file", "lsof"]
 
 [env]
 HOST = "0.0.0.0"
@@ -27,6 +27,14 @@ externalPort = 80
 [[ports]]
 localPort = 3001
 externalPort = 3001
+
+[[ports]]
+localPort = 3005
+externalPort = 3000
+
+[[ports]]
+localPort = 3010
+externalPort = 3002
 
 [[ports]]
 localPort = 5173

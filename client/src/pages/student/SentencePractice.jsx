@@ -672,7 +672,7 @@ export default function SentencePractice() {
               const isWrong = wrongIndexes.includes(index);
               return (
                 <span
-                  key={index}
+                  key={`${word}-${index}`}
                   className={`px-4 py-2 rounded-full text-white transition ${
                     isWrong ? "bg-red-500 animate-shake" : "bg-blue-600"
                   }`}
@@ -697,17 +697,18 @@ export default function SentencePractice() {
               </button>
             ))}
           </div>
-        </>
-      )}
 
-      {/* Check (REORDER only) */}
-      {safeMode === "reorder" && status === "idle" && (
-        <button
-          onClick={checkAnswer}
-          className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
-        >
-          Check Answer
-        </button>
+          {/* Check Answer button (REORDER only) */}
+          {status === "idle" && (
+            <button
+              type="button"
+              onClick={checkAnswer}
+              className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+            >
+              Check Answer
+            </button>
+          )}
+        </>
       )}
 
       {/* Wrong */}
