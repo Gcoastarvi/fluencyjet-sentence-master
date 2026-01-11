@@ -612,23 +612,20 @@ export default function SentencePractice() {
             </div>
           </div>
 
-          {/* Word Bank (tap-to-insert) */}
+          {/* Word Bank (hint only — not clickable) */}
           <div className="mb-3">
             <div className="text-xs font-semibold text-slate-600 mb-2">
-              Word Bank (tap to insert)
+              Word Bank (hint only)
             </div>
 
             <div className="flex flex-wrap gap-2">
               {typingWordBank.map((w, idx) => (
-                <button
+                <span
                   key={`${w}_${idx}`}
-                  type="button"
-                  onClick={() => addToTyped(w)}
-                  className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 hover:bg-slate-100 text-sm"
-                  disabled={status === "correct" || status === "reveal"}
+                  className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-sm"
                 >
                   {w}
-                </button>
+                </span>
               ))}
             </div>
           </div>
