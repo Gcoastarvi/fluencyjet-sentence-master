@@ -10,7 +10,6 @@ const SUPPORTED_PRACTICE_MODES = new Set([
   "audio",
 ]);
 const MAX_ATTEMPTS = 3;
-const LESSON_ID = 1; // MUST be numeric for backend validation
 
 export default function SentencePractice() {
   const { mode: urlMode } = useParams();
@@ -24,20 +23,6 @@ export default function SentencePractice() {
 
   const search = new URLSearchParams(window.location.search);
   const lessonId = Number(search.get("lessonId") || 1);
-
-  // ---- DEBUG (optional) ----
-  const DEBUG_MOUNT = false;
-
-  useEffect(() => {
-    if (!DEBUG_MOUNT) return;
-    window.__fj_practice_loaded = true;
-    console.log("✅ SentencePractice mounted", {
-      url: window.location.href,
-      activeMode,
-      safeMode,
-      lessonId,
-    });
-  }, [DEBUG_MOUNT, activeMode, safeMode, lessonId]);
 
   // -------------------
   // refs
@@ -240,21 +225,19 @@ export default function SentencePractice() {
   async function loadLessonBatch() {
     setLoading(true);
     setLoadError("");
-    console.log("[loadLessonBatch] start", { safeMode, lessonId });
+
     try {
-      console.log("[loadLessonBatch] calling API...");
       const res = await api.get(
         `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(safeMode)}`,
       );
 
       const data = res?.data ?? res;
-      console.log("[loadLessonBatch] got data", data);
 
       const ok = Array.isArray(data) ? true : data?.ok;
-      if (!ok)
-        
+      if (!ok) {
         throw new Error((data && data.error) || "Failed to load questions");
-      // supports: array OR {questions:[...]} OR {items:[...]} OR {exercises:[...]}
+      }
+
       const arr = Array.isArray(data)
         ? data
         : Array.isArray(data.questions)
@@ -267,16 +250,7 @@ export default function SentencePractice() {
                 ? data.exercises
                 : [];
 
-      console.log(
-        "[loadLessonBatch] arr length",
-        arr?.length,
-        "first",
-        arr?.[0],
-      );
-
       const normalized = arr.map(normalizeExercise).filter(Boolean);
-
-      console.log("[loadLessonBatch] normalized exercises", normalized);
 
       if (!normalized.length) {
         setLessonExercises([]);
@@ -288,7 +262,6 @@ export default function SentencePractice() {
 
       setLessonExercises(normalized);
     } catch (e) {
-      console.log("[loadLessonBatch] FAILED", { safeMode, lessonId });
       console.error("[Practice] loadLessonBatch failed", e);
       setLoadError("Failed to load lesson exercises.");
     } finally {
@@ -713,8 +686,8 @@ export default function SentencePractice() {
         </>
       )}
 
-      {/* Check */}
-      {status === "idle" && (
+      {/* Check (REORDER only) */}
+      {safeMode === "reorder" && status === "idle" && (
         <button
           onClick={checkAnswer}
           className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
