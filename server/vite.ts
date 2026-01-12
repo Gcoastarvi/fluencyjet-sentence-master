@@ -24,7 +24,7 @@ export async function setupVite(app: Express, server: Server) {
     appType: "spa",
   });
 
-  app.use("*", async (req, res, next) => {
+  app.get("*", async (req, res, next) => {
     const url = req.originalUrl;
 
     // ✅ IMPORTANT: never let SPA fallback swallow API routes
@@ -54,7 +54,7 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  app.use("*", (req, res, next) => {
+  app.get("*", (req, res, next) => {
     if (req.originalUrl.startsWith("/api")) return next();
     res.sendFile(path.resolve(distPath, "index.html"));
   });
