@@ -25,7 +25,7 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.get("*", async (req, res, next) => {
-    const url = req.originalUrl;
+    if (req.originalUrl.startsWith("/api")) return next();
 
     // ✅ IMPORTANT: never let SPA fallback swallow API routes
     if (url.startsWith("/api")) return next();
