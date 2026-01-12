@@ -24,6 +24,7 @@ import progressRouter from "./routes/progress.js";
 import leaderboardRouter from "./routes/leaderboard.js";
 import dashboardRouter from "./routes/dashboard.js";
 import lessonsRouter from "./routes/lessons.js";
+import adminExercises from "./routes/adminExercises.js";
 
 // Auth middleware
 import { authMiddleware } from "./middleware/authMiddleware.js";
@@ -137,6 +138,7 @@ app.use("/api/progress", progressRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/lessons", lessonsRouter);
+app.use("/api/admin/exercises", adminExercises);
 
 /* --------------------------------------------------
    Optional static frontend (Replit / monolith)
