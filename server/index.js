@@ -140,24 +140,22 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/lessons", lessonsRouter);
 app.use("/api/admin/exercises", adminExercises);
 
-import http from "http";
-import { setupVite, serveStatic } from "./vite.ts";
+/* --------------------------------------------------
+   Static frontend (production build output)
+   NOTE: your build script copies client build into server/dist/public
+-------------------------------------------------- */
+const distPath = path.resolve(process.cwd(), "dist", "public");
 
-const server = http.createServer(app);
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
 
-async function start() {
-  if (process.env.NODE_ENV !== "production") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 API running on port ${PORT}`);
+  // SPA fallback (must be AFTER API routes)
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
   });
 }
 
-start().catch((err) => {
-  console.error("❌ Server failed to start:", err);
-  process.exit(1);
+/* -------------------------------------------------- */
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 API running on port ${PORT}`);
 });
