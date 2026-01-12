@@ -49,17 +49,28 @@ router.post("/bulk", async (req, res) => {
     }
 
     const rowsToInsert = rows.map((r, i) => ({
-      lessonId: lessonIdNum,
-      type: modeStr, // matches Quiz.type default style in schema
-      question: r.english, // Quiz.question
-      prompt: r.tamil, // Quiz.prompt (Tamil)
-      xpReward: xpNum, // Quiz.xpReward
-      data: null, // optional
+      lesson_id: lessonIdNum,
+      // match the style your practice pipeline expects
+      type: modeStr.toUpperCase(),          // "TYPING" / "REORDER"
+      promptTa: r.tamil,                    // Tamil prompt
+      expected: r.english,                  // English expected answer
+      orderIndex: i + 1,
+      xp: xpNum,
     }));
 
-    const result = await prisma.quiz.createMany({
-      data: rowsToInsert,
-    });
+    let result;
+    try {
+      result = await prisma.exercise.createMany({ data: rowsToInsert });
+    } catch (err) {
+      // Safety: if your Exercise model doesn’t have `type`, retry without it
+      const msg = String(err?.message || "");
+      if (msg.includes("Unknown argument") && msg.includes("type")) {
+        const stripped = rowsToInsert.map(({ type, ...rest }) => rest);
+        result = await prisma.exercise.createMany({ data: stripped });
+      } else {
+        throw err;
+      }
+    }    
 
     return res.json({ ok: true, inserted: result.count });
   } catch (err) {
