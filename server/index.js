@@ -95,6 +95,16 @@ const ALLOW_HEADERS =
   "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match";
 const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 
+app.get("/api/debug/static", (_req, res) => {
+  const distPath = path.resolve(process.cwd(), "dist", "public");
+  res.json({
+    cwd: process.cwd(),
+    distPath,
+    exists: fs.existsSync(distPath),
+    files: fs.existsSync(distPath) ? fs.readdirSync(distPath).slice(0, 10) : [],
+  });
+});
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
