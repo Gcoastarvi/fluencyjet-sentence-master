@@ -123,7 +123,7 @@ router.get("/random", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
-// GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder&difficulty=beginner|intermediate|advanced
+// GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder
 router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
   try {
     const lessonId = Number(req.params.lessonId);
@@ -131,7 +131,6 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       return res.status(400).json({ ok: false, error: "Invalid lessonId" });
     }
 
-    // requested mode from UI
     const requestedMode = String(req.query.mode || "").toLowerCase();
     if (!["typing", "reorder"].includes(requestedMode)) {
       return res
@@ -139,65 +138,34 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
         .json({ ok: false, error: "mode must be typing|reorder" });
     }
 
-    // Map difficulty -> expected enum values used in DB (BEGINNER/INTERMEDIATE/ADVANCED)
-    const diff = String(req.query.difficulty || "beginner").toLowerCase();
-    const level =
-      diff === "advanced"
-        ? "ADVANCED"
-        : diff === "intermediate"
-          ? "INTERMEDIATE"
-          : "BEGINNER";
-
-    // Your schema supports practiceDay -> exercises relation (this is the safe query)
-    const day = await prisma.practiceDay.findFirst({
-      where: { dayNumber: lessonId, level },
-      include: { exercises: { orderBy: { orderIndex: "asc" } } },
+    const quizzes = await prisma.quiz.findMany({
+      where: { lessonId, type: requestedMode }, // type stored as "typing"/"reorder"
+      orderBy: { id: "asc" },
     });
 
-    if (!day) {
-      return res.json({ ok: true, lessonId, level, questions: [] });
-    }
+    const questions = quizzes.map((q) => {
+      const data = q.data || {};
+      const answer = String(q.question || "").trim();
 
-    const questionsAll = (day.exercises || []).map((ex) => {
-      const expected = ex.expected || {};
-
-      const mode = String(
-        expected.mode || expected.practiceType || "",
-      ).toLowerCase();
-      const computedType = mode === "typing" ? "TYPING" : "REORDER";
-
-      const tokens =
-        expected.correctOrder ||
-        expected.tokens ||
-        String(expected.sentence || expected.answer || "")
-          .trim()
-          .split(/\s+/)
-          .filter(Boolean);
-
-      const answer = String(expected.sentence || expected.answer || "").trim();
+      const correctOrder = Array.isArray(data.correctOrder)
+        ? data.correctOrder
+        : answer.split(/\s+/).filter(Boolean);
 
       return {
-        id: ex.id,
-        type: computedType,
-        tamil: ex.promptTa || "",
-        correctOrder: Array.isArray(tokens) ? tokens : [],
+        id: q.id,
+        type: requestedMode === "typing" ? "TYPING" : "REORDER",
+        tamil: q.prompt || "",
+        correctOrder,
         answer,
-        orderIndex: ex.orderIndex ?? 0,
-        xp: ex.xp ?? 0,
+        orderIndex: q.id,
+        xp: q.xpReward ?? 0,
       };
     });
 
-    // ✅ Filter by requested mode so typing UI gets TYPING questions, reorder UI gets REORDER questions
-    const wantType = requestedMode === "typing" ? "TYPING" : "REORDER";
-    const questions = questionsAll.filter((q) => q.type === wantType);
-
-    return res.json({ ok: true, lessonId, level, questions });
+    return res.json({ ok: true, lessonId, questions });
   } catch (err) {
     console.error("❌ GET /api/quizzes/by-lesson error:", err);
-    return res.status(500).json({
-      ok: false,
-      error: "Failed to load quizzes",
-    });
+    return res.status(500).json({ ok: false, error: "Failed to load quizzes" });
   }
 });
 
