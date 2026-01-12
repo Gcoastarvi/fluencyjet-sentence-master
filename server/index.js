@@ -140,21 +140,24 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/lessons", lessonsRouter);
 app.use("/api/admin/exercises", adminExercises);
 
-/* --------------------------------------------------
-   Optional static frontend (Replit / monolith)
--------------------------------------------------- */
-const distPath = path.join(__dirname, "../client/dist");
+import http from "http";
+import { setupVite, serveStatic } from "./vite.ts";
 
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
+const server = http.createServer(app);
 
-  // SPA fallback
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+async function start() {
+  if (process.env.NODE_ENV !== "production") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 API running on port ${PORT}`);
   });
 }
 
-/* -------------------------------------------------- */
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 API running on port ${PORT}`);
+start().catch((err) => {
+  console.error("❌ Server failed to start:", err);
+  process.exit(1);
 });
