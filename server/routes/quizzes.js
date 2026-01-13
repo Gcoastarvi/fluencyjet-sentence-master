@@ -124,7 +124,7 @@ router.get("/random", authRequired, async (req, res) => {
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
 // GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder
-router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
+router.get("/by-lesson/:lessonId", async (req, res) => {
   try {
     const lessonId = Number(req.params.lessonId);
     if (!Number.isFinite(lessonId) || lessonId <= 0) {
