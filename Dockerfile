@@ -13,6 +13,10 @@ FROM node:22-alpine AS server-build
 WORKDIR /app/server
 
 COPY server/package*.json ./
+
+# ✅ IMPORTANT: Prisma schema must exist before npm ci (postinstall runs prisma generate)
+COPY server/prisma ./prisma
+
 RUN npm ci
 
 COPY server .
