@@ -13,23 +13,30 @@ const BASE = RAW_BASE.endsWith("/api") ? RAW_BASE : `${RAW_BASE}/api`;
    Token helpers (single source of truth)
 ─────────────────────────────── */
 
-const TOKEN_KEY = "token";
+const TOKEN_KEYS = ["token", "fj_token", "access_token"]; // read-compat
+const CANONICAL_TOKEN_KEY = "token"; // write here only
 
 export function setToken(token) {
   try {
-    if (typeof window === "undefined") return;
-    if (!token) localStorage.removeItem(TOKEN_KEY);
-    else localStorage.setItem(TOKEN_KEY, token);
-  } catch {}
+    // clear any legacy keys
+    for (const k of TOKEN_KEYS) localStorage.removeItem(k);
+
+    if (token) localStorage.setItem(CANONICAL_TOKEN_KEY, token);
+  } catch {
+    // ignore
+  }
 }
 
 export function getToken() {
   try {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem(TOKEN_KEY);
+    for (const k of TOKEN_KEYS) {
+      const v = localStorage.getItem(k);
+      if (v && v.trim()) return v;
+    }
   } catch {
-    return null;
+    // ignore
   }
+  return null;
 }
 
 export async function request(path, options = {}) {
