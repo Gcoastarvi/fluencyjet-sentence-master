@@ -50,9 +50,11 @@ export async function request(path, options = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  // Authorization
+  // Authorization (robust)
   const token = getToken();
-  if (token && !headers.has("Authorization")) {
+  const existingAuth = headers.get("Authorization");
+
+  if (token && (!existingAuth || existingAuth.trim() === "")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
