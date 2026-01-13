@@ -12,7 +12,8 @@ function extractToken(req) {
 
 export function authMiddleware(req, res, next) {
   try {
-    const token = extractToken(req);
+    const header = req.headers.authorization || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
 
     if (!token) {
       req.user = null;
@@ -23,8 +24,9 @@ export function authMiddleware(req, res, next) {
     req.user = payload;
     return next();
   } catch (err) {
+    console.error("[authMiddleware] jwt.verify failed:", err?.message);
     req.user = null;
-    return next(); // IMPORTANT: always next()
+    return next(); // ✅ IMPORTANT
   }
 }
 

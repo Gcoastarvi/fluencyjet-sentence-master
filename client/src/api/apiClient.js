@@ -50,11 +50,32 @@ export async function request(path, options = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  // Authorization (robust)
-  const token = getToken();
-  const existingAuth = headers.get("Authorization");
+  // ---- Token helpers (top of file or near apiClient) ----
+  const TOKEN_KEY = "fj_token";
 
-  if (token && (!existingAuth || existingAuth.trim() === "")) {
+  export function getToken() {
+    return (
+      localStorage.getItem(TOKEN_KEY) ||
+      sessionStorage.getItem(TOKEN_KEY) ||
+      null
+    );
+  }
+
+  export function setToken(token) {
+    if (!token) {
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+      return;
+    }
+    // choose ONE place; localStorage is simplest
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+
+  // ---- inside apiClient request ----
+
+  // Authorization
+  const token = getToken();
+  if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
@@ -65,7 +86,7 @@ export async function request(path, options = {}) {
     ...options,
     headers,
     cache: "no-store",
-    credentials: "include",
+    credentials: "include", // ✅ important if you ever use cookies
   });
 
   let data = null;
@@ -79,6 +100,11 @@ export async function request(path, options = {}) {
     }
   } catch {
     data = null;
+  }
+
+  // ✅ Auto-save token if the response includes one (login/register)
+  if (data && typeof data === "object" && data.token) {
+    setToken(data.token);
   }
 
   // Fire a global event after XP update so dashboards can refresh instantly
