@@ -1,34 +1,33 @@
-# ---------- Build stage ----------
+# ---------- Build client ----------
 FROM node:22-alpine AS build
 WORKDIR /app
 
-# Copy package files first for caching
+# client deps
 COPY client/package*.json ./client/
-COPY server/package*.json ./server/
-
-# Install deps
 RUN cd client && npm ci
-RUN cd server && npm ci
 
-# Copy source
+# client source + build
 COPY client ./client
-COPY server ./server
+RUN cd client && npm run build
 
-# Build client and copy to server dist/public
-RUN cd server && npm run build
-
-# ---------- Run stage ----------
-FROM node:22-alpine AS run
-WORKDIR /app
-
-# Only server runtime deps
-COPY server/package*.json ./server/
-RUN cd server && npm ci --omit=dev
-
-# Copy server code + built dist from build stage
-COPY --from=build /app/server /app/server
-
+# ---------- Runtime (server) ----------
+FROM node:22-alpine AS runtime
 WORKDIR /app/server
 ENV NODE_ENV=production
+
+# server deps
+COPY server/package*.json ./
+RUN npm ci --omit=dev
+
+# server source
+COPY server ./
+
+# prisma client
+RUN npx prisma generate
+
+# copy built frontend into server/dist/public
+RUN rm -rf dist && mkdir -p dist/public
+COPY --from=build /app/client/dist ./dist/public
+
 EXPOSE 8080
 CMD ["node", "index.js"]
