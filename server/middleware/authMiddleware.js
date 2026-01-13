@@ -1,10 +1,21 @@
-// server/middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
 
 export function authMiddleware(req, res, next) {
   try {
     const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+    let token = header.startsWith("Bearer ") ? header.slice(7) : null;
+
+    // ✅ also support cookie-based auth (common for browser apps)
+    if (!token) {
+      token =
+        req.cookies?.token ||
+        req.cookies?.jwt ||
+        req.cookies?.access_token ||
+        req.cookies?.accessToken ||
+        req.cookies?.auth_token ||
+        req.cookies?.authToken ||
+        null;
+    }
 
     if (!token) {
       req.user = null;
@@ -13,18 +24,11 @@ export function authMiddleware(req, res, next) {
 
     const payload = jwt.verify(token, process.env.JWT_SECRET || "dev-secret");
     req.user = payload;
-    next();
+    return next();
   } catch (err) {
     console.error("[authMiddleware] jwt.verify failed:", err?.message);
-    console.error(
-      "[authMiddleware] hasAuthHeader:",
-      !!req.headers.authorization,
-    );
-    console.error(
-      "[authMiddleware] secretLen:",
-      (process.env.JWT_SECRET || "dev-secret").length,
-    );
     req.user = null;
+    return next(); // ✅ critical: don’t hang requests
   }
 }
 
