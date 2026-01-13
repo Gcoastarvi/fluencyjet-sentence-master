@@ -150,6 +150,28 @@ app.use("/api/dashboard", dashboardRouter);
 app.use("/api/lessons", lessonsRouter);
 app.use("/api/admin/exercises", adminExercises);
 
+// -----------------------------
+// Serve React build in production
+// -----------------------------
+if (process.env.NODE_ENV === "production") {
+  const distPath = path.resolve(__dirname, "dist", "public");
+
+  if (!fs.existsSync(distPath)) {
+    console.warn("⚠️ dist/public not found:", distPath);
+  } else {
+    app.use(express.static(distPath));
+
+    // SPA fallback (must be AFTER api routes)
+    app.get("*", (req, res) => {
+      // don’t hijack API routes
+      if (req.path.startsWith("/api")) {
+        return res.status(404).json({ ok: false, error: "Not found" });
+      }
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+}
+
 /* --------------------------------------------------
    Static frontend (production build output)
    NOTE: your build script copies client build into server/dist/public
