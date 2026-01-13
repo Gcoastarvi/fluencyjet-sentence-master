@@ -13,15 +13,17 @@ const BASE = RAW_BASE.endsWith("/api") ? RAW_BASE : `${RAW_BASE}/api`;
    Token helpers (single source of truth)
 ─────────────────────────────── */
 
-const TOKEN_KEYS = ["token", "fj_token", "access_token"]; // read-compat
-const CANONICAL_TOKEN_KEY = "token"; // write here only
+const TOKEN_KEYS = ["fj_token", "token", "access_token"];
 
 export function setToken(token) {
   try {
-    // clear any legacy keys
-    for (const k of TOKEN_KEYS) localStorage.removeItem(k);
-
-    if (token) localStorage.setItem(CANONICAL_TOKEN_KEY, token);
+    // Write to both "fj_token" (new) and "token" (legacy) so nothing breaks
+    if (!token) {
+      TOKEN_KEYS.forEach((k) => localStorage.removeItem(k));
+      return;
+    }
+    localStorage.setItem("fj_token", token);
+    localStorage.setItem("token", token);
   } catch {
     // ignore
   }
@@ -30,8 +32,8 @@ export function setToken(token) {
 export function getToken() {
   try {
     for (const k of TOKEN_KEYS) {
-      const v = localStorage.getItem(k);
-      if (v && v.trim()) return v;
+      const t = localStorage.getItem(k);
+      if (t && t.trim()) return t;
     }
   } catch {
     // ignore

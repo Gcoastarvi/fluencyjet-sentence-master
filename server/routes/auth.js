@@ -56,6 +56,14 @@ router.post("/signup", async (req, res) => {
 
     const token = signToken(user);
 
+    res.cookie("fj_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Railway = https
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.status(201).json({
       ok: true,
       token,
@@ -99,6 +107,14 @@ router.post("/login", async (req, res) => {
     }
 
     const token = signToken(user);
+
+    res.cookie("fj_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
 
     res.json({
       ok: true,
