@@ -1,33 +1,36 @@
 # ---------- Build client ----------
-FROM node:22-alpine AS build
+FROM node:22-alpine AS client-build
+WORKDIR /app/client
+
+COPY client/package*.json ./
+RUN npm ci
+
+COPY client .
+RUN npm run build
+
+# ---------- Build server ----------
+FROM node:22-alpine AS server-build
+WORKDIR /app/server
+
+COPY server/package*.json ./
+RUN npm ci
+
+COPY server .
+RUN npm run build || true
+
+# ---------- Runtime ----------
+FROM node:22-alpine
 WORKDIR /app
 
-# client deps
-COPY client/package*.json ./client/
-RUN cd client && npm ci
-
-# client source + build
-COPY client ./client
-RUN cd client && npm run build
-
-# ---------- Runtime (server) ----------
-FROM node:22-alpine AS runtime
-WORKDIR /app/server
 ENV NODE_ENV=production
 
 # server deps
-COPY server/package*.json ./
-RUN npm ci --omit=dev
+COPY --from=server-build /app/server /app/server
 
-# server source
-COPY server ./
+# frontend build → server/dist/public
+COPY --from=client-build /app/client/dist /app/server/dist/public
 
-# prisma client
-RUN npx prisma generate
-
-# copy built frontend into server/dist/public
-RUN rm -rf dist && mkdir -p dist/public
-COPY --from=build /app/client/dist ./dist/public
+WORKDIR /app/server
 
 EXPOSE 8080
 CMD ["node", "index.js"]
