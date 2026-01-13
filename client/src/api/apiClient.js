@@ -10,29 +10,27 @@ if (!RAW_BASE) {
 const BASE = RAW_BASE.endsWith("/api") ? RAW_BASE : `${RAW_BASE}/api`;
 
 /* ───────────────────────────────
-   Token helpers
-─────────────────────────────── */
-
-function getToken() {
-  try {
-    return localStorage.getItem("token");
-  } catch {
-    return null;
-  }
-}
-
-function setToken(token) {
-  try {
-    if (!token) localStorage.removeItem("token");
-    else localStorage.setItem("token", token);
-  } catch {
-    // ignore
-  }
-}
-
-/* ───────────────────────────────
    Core request helper
 ─────────────────────────────── */
+
+const TOKEN_KEY = "fj_token";
+
+export function setToken(token) {
+  try {
+    if (typeof window !== "undefined" && token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+  } catch {}
+}
+
+export function getToken() {
+  try {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+  } catch {}
+  return null;
+}
 
 export async function request(path, options = {}) {
   const url = path.startsWith("http")
@@ -50,32 +48,10 @@ export async function request(path, options = {}) {
     headers.set("Content-Type", "application/json");
   }
 
-  // ---- Token helpers (top of file or near apiClient) ----
-  const TOKEN_KEY = "fj_token";
-
-  export function getToken() {
-    return (
-      localStorage.getItem(TOKEN_KEY) ||
-      sessionStorage.getItem(TOKEN_KEY) ||
-      null
-    );
-  }
-
-  export function setToken(token) {
-    if (!token) {
-      localStorage.removeItem(TOKEN_KEY);
-      sessionStorage.removeItem(TOKEN_KEY);
-      return;
-    }
-    // choose ONE place; localStorage is simplest
-    localStorage.setItem(TOKEN_KEY, token);
-  }
-
-  // ---- inside apiClient request ----
-
   // Authorization
   const token = getToken();
-  if (token && !headers.has("Authorization")) {
+  const existingAuth = headers.get("Authorization");
+  if (token && (!existingAuth || existingAuth.trim() === "")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
@@ -86,7 +62,7 @@ export async function request(path, options = {}) {
     ...options,
     headers,
     cache: "no-store",
-    credentials: "include", // ✅ important if you ever use cookies
+    credentials: "include",
   });
 
   let data = null;
@@ -102,7 +78,7 @@ export async function request(path, options = {}) {
     data = null;
   }
 
-  // ✅ Auto-save token if the response includes one (login/register)
+  // ✅ Auto-save token if response includes one (login/register)
   if (data && typeof data === "object" && data.token) {
     setToken(data.token);
   }
