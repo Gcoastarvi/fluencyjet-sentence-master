@@ -1,21 +1,18 @@
 import jwt from "jsonwebtoken";
 
+function extractToken(req) {
+  // 1) Authorization: Bearer <token>
+  const header = req.headers.authorization || "";
+  if (header.startsWith("Bearer ")) return header.slice(7);
+
+  // 2) Cookie token (common names)
+  const c = req.cookies || {};
+  return c.token || c.access_token || c.jwt || null;
+}
+
 export function authMiddleware(req, res, next) {
   try {
-    const header = req.headers.authorization || "";
-    let token = header.startsWith("Bearer ") ? header.slice(7) : null;
-
-    // ✅ also support cookie-based auth (common for browser apps)
-    if (!token) {
-      token =
-        req.cookies?.token ||
-        req.cookies?.jwt ||
-        req.cookies?.access_token ||
-        req.cookies?.accessToken ||
-        req.cookies?.auth_token ||
-        req.cookies?.authToken ||
-        null;
-    }
+    const token = extractToken(req);
 
     if (!token) {
       req.user = null;
@@ -26,9 +23,8 @@ export function authMiddleware(req, res, next) {
     req.user = payload;
     return next();
   } catch (err) {
-    console.error("[authMiddleware] jwt.verify failed:", err?.message);
     req.user = null;
-    return next(); // ✅ critical: don’t hang requests
+    return next(); // IMPORTANT: always next()
   }
 }
 

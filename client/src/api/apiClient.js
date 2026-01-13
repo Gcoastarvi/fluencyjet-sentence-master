@@ -65,6 +65,7 @@ export async function request(path, options = {}) {
     ...options,
     headers,
     cache: "no-store",
+    credentials: "include",
   });
 
   let data = null;
