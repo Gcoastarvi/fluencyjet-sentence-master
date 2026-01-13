@@ -26,7 +26,7 @@ export function authMiddleware(req, res, next) {
   } catch (err) {
     console.error("[authMiddleware] jwt.verify failed:", err?.message);
     req.user = null;
-    return next(); // ✅ IMPORTANT
+    return next();
   }
 }
 

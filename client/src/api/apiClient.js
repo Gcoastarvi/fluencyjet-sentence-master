@@ -10,26 +10,26 @@ if (!RAW_BASE) {
 const BASE = RAW_BASE.endsWith("/api") ? RAW_BASE : `${RAW_BASE}/api`;
 
 /* ───────────────────────────────
-   Core request helper
+   Token helpers (single source of truth)
 ─────────────────────────────── */
 
-const TOKEN_KEY = "fj_token";
+const TOKEN_KEY = "token";
 
 export function setToken(token) {
   try {
-    if (typeof window !== "undefined" && token) {
-      localStorage.setItem(TOKEN_KEY, token);
-    }
+    if (typeof window === "undefined") return;
+    if (!token) localStorage.removeItem(TOKEN_KEY);
+    else localStorage.setItem(TOKEN_KEY, token);
   } catch {}
 }
 
 export function getToken() {
   try {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(TOKEN_KEY);
-    }
-  } catch {}
-  return null;
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export async function request(path, options = {}) {
