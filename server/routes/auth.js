@@ -83,31 +83,34 @@ router.post("/signup", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    let { email, password } = req.body;
-    email = normalizeEmail(email);
+    // robust extraction
+    let email = req.body?.email ?? "";
+    let password = req.body?.password ?? "";
+
+    email = normalizeEmail(String(email || ""));
+    password = String(password || "");
+
+    // TEMP DEBUG — keep until fixed
+    console.log("[LOGIN] content-type:", req.headers["content-type"]);
+    console.log("[LOGIN] body:", req.body);
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "Missing credentials" });
+      return res.status(400).json({ ok: false, message: "Missing credentials" });
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !user.password) {
-      return res
-        .status(401)
-        .json({ ok: false, message: "Invalid credentials" });
+      return res.status(401).json({ ok: false, message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res
-        .status(401)
-        .json({ ok: false, message: "Invalid credentials" });
+      return res.status(401).json({ ok: false, message: "Invalid credentials" });
     }
 
     const token = signToken(user);
 
+    // ✅ KEEP cookie pathway (existing behavior)
     res.cookie("fj_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -116,7 +119,8 @@ router.post("/login", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({
+    // ✅ KEEP returning token (works for localStorage/Bearer)
+    return res.json({
       ok: true,
       token,
       email: user.email,
@@ -124,9 +128,10 @@ router.post("/login", async (req, res) => {
     });
   } catch (err) {
     console.error("Login error:", err);
-    res.status(500).json({ ok: false, message: "Login failed" });
+    return res.status(500).json({ ok: false, message: "Login failed" });
   }
 });
+
 
 /* ───────────────────────────────
    SESSION CHECK

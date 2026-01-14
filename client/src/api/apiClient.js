@@ -2,12 +2,17 @@
 // FINAL SAFE VERSION — NO TOP-LEVEL AWAIT
 
 const RAW_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
-if (!RAW_BASE) {
-  throw new Error("VITE_API_BASE_URL is not defined");
-}
+
+// ✅ Monolith-safe default: same origin
+const origin =
+  typeof window !== "undefined" && window.location?.origin
+    ? window.location.origin
+    : "";
+
+const API_BASE = RAW_BASE || origin;
 
 // Ensure /api suffix
-const BASE = RAW_BASE.endsWith("/api") ? RAW_BASE : `${RAW_BASE}/api`;
+const BASE = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 
 /* ───────────────────────────────
    Token helpers (single source of truth)
