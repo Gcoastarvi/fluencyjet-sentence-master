@@ -154,31 +154,37 @@ export default function SentencePractice() {
     // backend-friendly numeric IDs
     const numericQuestionId = Number(currentIndex + 1); // 1..N
 
+    // choose xp by mode (keep your economy)
+    const xpValue = isCorrect ? (mode === "typing" ? 150 : 100) : 0;
+
+    // ✅ build payload correctly (NO statements inside object literal)
     const payload = {
       attemptId,
+      attemptNo: Number(attemptNo ?? 1) || 1,
 
-      // ✅ send BOTH (backend may accept one; numeric is the important one)
+      // ✅ REQUIRED for XP award logic
+      xp: xpValue,
+      event: isCorrect ? `${mode}_correct` : `${mode}_wrong`,
+      meta: {
+        lessonId,
+        mode,
+        questionId: numericQuestionId,
+      },
+
+      // keep your existing fields (safe/backward compatible)
       lessonId, // numeric (dynamic)
       questionId: numericQuestionId,
 
-      // optional extra keys (harmless; useful for debugging/logging)
-      lessonKey: `L${lessonId}`, // dynamic
+      lessonKey: `L${lessonId}`,
       questionKey: `Q${numericQuestionId}`,
 
-      // backend variants
       practiceType: mode,
       mode,
 
-      isCorrect,
-      attemptNo,
+      isCorrect: !!isCorrect,
       completedQuiz: false,
       timeTakenSec: null,
     };
-
-    payload.attemptId =
-      payload.attemptId ||
-      (crypto?.randomUUID?.() ??
-        `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 
     try {
       const res = await api.post("/progress/update", payload);
@@ -203,14 +209,15 @@ export default function SentencePractice() {
             0,
         ) || 0;
 
+      // TEMP DEBUG (remove later if you want)
+      console.log("[XP] awarded from server:", awarded, "raw:", data);
+
       setEarnedXP(awarded);
       setStreak(Number(data.streak ?? data.currentStreak ?? 0) || 0);
 
       setShowXPToast(true);
       setTimeout(() => setShowXPToast(false), 1200);
 
-      // If your Dashboard listens to this event, keep it.
-      // If apiClient already dispatches it, this is still safe.
       window.dispatchEvent(new Event("fj:xp_updated"));
     } catch (err) {
       console.error("[XP] update failed", err);
