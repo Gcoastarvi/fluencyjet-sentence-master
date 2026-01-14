@@ -81,7 +81,7 @@ router.post("/signup", async (req, res) => {
    POST /api/auth/login
 ─────────────────────────────── */
 
-router.post("/login", async (req, res) => {
+router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
   try {
     // robust extraction
     let email = req.body?.email ?? "";
@@ -95,17 +95,23 @@ router.post("/login", async (req, res) => {
     console.log("[LOGIN] body:", req.body);
 
     if (!email || !password) {
-      return res.status(400).json({ ok: false, message: "Missing credentials" });
+      return res
+        .status(400)
+        .json({ ok: false, message: "Missing credentials" });
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user || !user.password) {
-      return res.status(401).json({ ok: false, message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ ok: false, message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ ok: false, message: "Invalid credentials" });
     }
 
     const token = signToken(user);
@@ -131,7 +137,6 @@ router.post("/login", async (req, res) => {
     return res.status(500).json({ ok: false, message: "Login failed" });
   }
 });
-
 
 /* ───────────────────────────────
    SESSION CHECK
