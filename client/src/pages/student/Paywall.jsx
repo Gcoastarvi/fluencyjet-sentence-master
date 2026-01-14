@@ -55,7 +55,7 @@ export default function Paywall() {
         setLoading(false);
       } catch (err) {
         console.error("[Paywall] Access check failed", err);
-        localStorage.removeItem("fj_token");
+        clearToken();
         setError("Session expired. Please login again.");
         setLoading(false);
       }

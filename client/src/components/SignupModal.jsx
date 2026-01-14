@@ -25,7 +25,7 @@ export default function SignupModal({ visible, close, onAuth }) {
 
       // apiClient already throws on non-200
       if (data?.token) {
-        localStorage.setItem("fj_token", data.token);
+        setToken(data.token);
         onAuth?.(data);
         close();
       } else {
@@ -102,9 +102,7 @@ export default function SignupModal({ visible, close, onAuth }) {
             required
           />
 
-          {error && (
-            <p className="text-red-600 text-sm text-center">{error}</p>
-          )}
+          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
 
           <button
             disabled={loading}
@@ -113,8 +111,8 @@ export default function SignupModal({ visible, close, onAuth }) {
             {loading
               ? "Please wait…"
               : mode === "signup"
-              ? "Create Account"
-              : "Login"}
+                ? "Create Account"
+                : "Login"}
           </button>
         </form>
 

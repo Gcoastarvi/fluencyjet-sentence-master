@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import { getDisplayName } from "@/utils/displayName";
+import { getToken } from "@/utils/tokenStore";
 
 const LEVELS = [
   { level: 1, xp: 0 },
@@ -66,13 +67,7 @@ function humanizeEventType(type = "") {
 const DEV_ONLY = import.meta.env.DEV;
 
 function getJwt() {
-  try {
-    return (
-      localStorage.getItem("fj_token") || localStorage.getItem("token") || ""
-    );
-  } catch {
-    return "";
-  }
+  return getToken() || "";
 }
 
 export default function Dashboard() {

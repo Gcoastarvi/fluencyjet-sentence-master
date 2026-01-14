@@ -17,7 +17,7 @@ export default function Home() {
   }, []);
 
   function handleLogout() {
-    localStorage.removeItem("fj_token");
+    clearToken();
     setUser(null);
     alert("Logged out successfully!");
   }

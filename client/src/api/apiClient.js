@@ -1,5 +1,6 @@
 // client/src/api/apiClient.js
 // FINAL SAFE VERSION — NO TOP-LEVEL AWAIT
+import { getToken, setToken } from "@/utils/tokenStore";
 
 const RAW_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
@@ -17,34 +18,6 @@ const BASE = API_BASE.endsWith("/api") ? API_BASE : `${API_BASE}/api`;
 /* ───────────────────────────────
    Token helpers (single source of truth)
 ─────────────────────────────── */
-
-const TOKEN_KEYS = ["fj_token", "token", "access_token"];
-
-export function setToken(token) {
-  try {
-    // Write to both "fj_token" (new) and "token" (legacy) so nothing breaks
-    if (!token) {
-      TOKEN_KEYS.forEach((k) => localStorage.removeItem(k));
-      return;
-    }
-    localStorage.setItem("fj_token", token);
-    localStorage.setItem("token", token);
-  } catch {
-    // ignore
-  }
-}
-
-export function getToken() {
-  try {
-    for (const k of TOKEN_KEYS) {
-      const t = localStorage.getItem(k);
-      if (t && t.trim()) return t;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-}
 
 export async function request(path, options = {}) {
   const url = path.startsWith("http")

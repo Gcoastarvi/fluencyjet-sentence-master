@@ -1,19 +1,11 @@
 // client/src/lib/xpTracker.js
 import { API_BASE } from "@/lib/api";
+import { getToken } from "@/utils/tokenStore";
 
 function makeAttemptId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID)
     return crypto.randomUUID();
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-function getStoredToken() {
-  try {
-    // Support both keys (some parts of app used token, some used fj_token)
-    return localStorage.getItem("fj_token") || localStorage.getItem("token");
-  } catch {
-    return null;
-  }
 }
 
 function buildProgressUrl(path) {
@@ -34,7 +26,7 @@ export async function awardXP({
   lessonId = null, // optional, but strongly recommended
   meta = {}, // extra metadata to store
 } = {}) {
-  const token = getStoredToken();
+  const token = getToken();
   if (!token) {
     console.warn("[XP] No auth token — skipping XP update.");
     return null;
@@ -78,7 +70,7 @@ export async function awardXP({
 
 // Fetch the current user's progress (xp, streak, badges)
 export async function fetchMyProgress() {
-  const token = getStoredToken();
+  const token = getToken();
   if (!token) return null;
 
   const res = await fetch(buildProgressUrl("/api/progress/me"), {
