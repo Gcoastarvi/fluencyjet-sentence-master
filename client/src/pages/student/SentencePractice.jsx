@@ -175,6 +175,11 @@ export default function SentencePractice() {
       timeTakenSec: null,
     };
 
+    payload.attemptId =
+      payload.attemptId ||
+      (crypto?.randomUUID?.() ??
+        `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
     try {
       const res = await api.post("/progress/update", payload);
       const data = res?.data ?? res;

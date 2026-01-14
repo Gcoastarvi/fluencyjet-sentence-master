@@ -304,7 +304,13 @@ export default function LessonQuiz() {
       handleXpGain(COMPLETION_XP);
 
       await api.post("/progress/update", {
-        lessonId: lesson.id,
+        attemptId:
+          crypto?.randomUUID?.() ??
+          `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        xp: 0,
+        event: "lesson_quiz_completed",
+        attemptNo: 1,
+        meta: { lessonId: lesson.id },
       });
     } catch (err) {
       console.error("Completion error:", err);
