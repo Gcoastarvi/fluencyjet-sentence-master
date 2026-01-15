@@ -463,10 +463,8 @@ export default function SentencePractice() {
               attemptNo: attemptNumber,
               mode: "typing",
             });
-
             const isLastQuestion =
               currentIndex >= (lessonExercises?.length || 0) - 1;
-
             if (isLastQuestion) {
               const bonus = await awardCompletionBonus("typing");
               setCompletionXp(bonus.awarded || 300);
@@ -888,6 +886,52 @@ export default function SentencePractice() {
         </div>
       )}
 
+      {/* ✅ Lesson completion modal */}
+      {showCompleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="text-xl font-semibold">✅ Lesson Completed!</div>
+            <div className="mt-2 text-sm text-gray-600">
+              You earned <span className="font-semibold">+{completionXp}</span>{" "}
+              XP bonus.
+            </div>
+
+            <div className="mt-5 grid gap-2">
+              <button
+                className="w-full rounded-xl bg-black px-4 py-2 text-white"
+                onClick={() => {
+                  setShowCompleteModal(false);
+                  const next = Number(lessonId) + 1;
+                  window.location.href = `/practice/${completionMode}?lessonId=${next}`;
+                }}
+              >
+                Next Lesson →
+              </button>
+
+              <button
+                className="w-full rounded-xl border border-gray-300 px-4 py-2"
+                onClick={() => {
+                  setShowCompleteModal(false);
+                  window.location.href = "/student/leaderboard";
+                }}
+              >
+                View Leaderboard
+              </button>
+
+              <button
+                className="w-full rounded-xl border border-gray-300 px-4 py-2"
+                onClick={() => {
+                  setShowCompleteModal(false);
+                  initQuiz();
+                }}
+              >
+                Repeat Lesson
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Shake animation */}
       <style>
         {`
@@ -903,6 +947,7 @@ export default function SentencePractice() {
           }
         `}
       </style>
-    </div>
-  );
-}
+      </div>
+      );
+      }
+
