@@ -12,7 +12,7 @@ const router = express.Router();
  */
 router.post("/bulk", async (req, res) => {
   try {
-    const { lessonId, mode, text, xp } = req.body || {};
+    const { lessonId, mode, text, xp, items } = req.body || {};
 
     const lessonIdNum = Number(lessonId);
     const modeStr = String(mode || "").toLowerCase();
@@ -28,23 +28,43 @@ router.post("/bulk", async (req, res) => {
       return res.status(400).json({ ok: false, error: "Missing text" });
     }
 
-    // Parse: each line must be "Tamil | English"
-    const rows = text
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter(Boolean)
-      .map((line) => line.split("|").map((p) => p.trim()))
-      .filter((parts) => parts.length >= 2)
-      .map((parts) => ({
-        tamil: parts[0],
-        english: parts.slice(1).join(" | "),
-      }))
-      .filter((r) => r.tamil && r.english);
+    // Build rows from either `items[]` (preferred) OR `text` (legacy)
+    let rows = [];
+
+    // Preferred: items[]
+    if (Array.isArray(items) && items.length > 0) {
+      rows = items
+        .map((it) => ({
+          tamil: String(it.promptTa || it.tamil || "").trim(),
+          english: String(it.answer || it.english || it.question || "").trim(),
+          orderIndex: Number(it.orderIndex ?? it.order_index ?? 0) || 0,
+          xp: Number(it.xp ?? xpNum) || xpNum,
+        }))
+        .filter((r) => r.tamil && r.english);
+    }
+
+    // Legacy: text "Tamil | English"
+    if (!rows.length && typeof text === "string" && text.trim()) {
+      rows = text
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .map((line) => line.split("|").map((p) => p.trim()))
+        .filter((parts) => parts.length >= 2)
+        .map((parts, idx) => ({
+          tamil: parts[0],
+          english: parts.slice(1).join(" | "),
+          orderIndex: idx + 1,
+          xp: xpNum,
+        }))
+        .filter((r) => r.tamil && r.english);
+    }
 
     if (!rows.length) {
       return res.status(400).json({
         ok: false,
-        error: "No valid rows found. Expected: Tamil | English per line.",
+        error:
+          "No valid rows found. Provide either items[] or text (Tamil | English per line).",
       });
     }
 
@@ -55,11 +75,14 @@ router.post("/bulk", async (req, res) => {
 
       return {
         lessonId: lessonIdNum,
-        type: modeStr,              // store as "typing" or "reorder" (lowercase)
-        prompt: r.tamil,            // Tamil prompt
-        question: english,          // English answer
-        xpReward: xpNum,
-        data: modeStr === "reorder" ? { correctOrder: words } : null,
+        type: modeStr, // "typing" or "reorder"
+        prompt: r.tamil, // Tamil prompt
+        question: english, // English answer
+        xpReward: Number(r.xp || xpNum) || xpNum,
+        data:
+          modeStr === "reorder"
+            ? { correctOrder: words, orderIndex: r.orderIndex || i + 1 }
+            : { orderIndex: r.orderIndex || i + 1 },
       };
     });
 

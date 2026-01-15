@@ -157,7 +157,7 @@ router.get("/by-lesson/:lessonId", async (req, res) => {
         tamil: q.prompt || "",
         correctOrder,
         answer,
-        orderIndex: q.id,
+        orderIndex: Number((q.data && q.data.orderIndex) || q.id) || q.id,
         xp: q.xpReward ?? 0,
       };
     });
