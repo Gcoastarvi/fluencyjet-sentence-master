@@ -153,7 +153,7 @@ router.get("/by-lesson/:lessonId", async (req, res) => {
 
       return {
         id: q.id,
-        type: requestedMode === "typing" ? "TYPING" : "REORDER",
+        type: requestedMode, // "typing" | "reorder"
         tamil: q.prompt || "",
         correctOrder,
         answer,
