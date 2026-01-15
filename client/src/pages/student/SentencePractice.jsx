@@ -57,6 +57,10 @@ export default function SentencePractice() {
   const [loadError, setLoadError] = useState("");
   const [sessionTarget] = useState(10); // MVP: 10 questions per session
 
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completionXp, setCompletionXp] = useState(0);
+  const [completionMode, setCompletionMode] = useState("typing");
+
   // typing/cloze shared input state
   const [selectedOption, setSelectedOption] = useState(null);
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -225,6 +229,45 @@ export default function SentencePractice() {
     }
   }
 
+  async function awardCompletionBonus(mode) {
+    const attemptId =
+      globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
+        ? globalThis.crypto.randomUUID()
+        : `complete_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+    const payload = {
+      attemptId,
+      attemptNo: 1,
+      xp: 300,
+      event: "lesson_completed",
+      meta: { lessonId, mode },
+      lessonId,
+      practiceType: mode,
+      mode,
+      completedQuiz: true,
+    };
+
+    try {
+      const res = await api.post("/progress/update", payload);
+      const data = res?.data ?? res;
+
+      const awarded =
+        Number(
+          data?.xpAwarded ??
+            data?.xpDelta ??
+            data?.xp_delta ??
+            data?.earnedXP ??
+            data?.xp ??
+            300,
+        ) || 300;
+
+      return { ok: true, awarded };
+    } catch (err) {
+      console.error("[XP] completion bonus failed", err);
+      return { ok: false, awarded: 0 };
+    }
+  }
+
   // -------------------
   // helpers
   // -------------------
@@ -382,7 +425,7 @@ export default function SentencePractice() {
     }
   }
 
-  function checkAnswer() {
+  async function checkAnswer() {
     if (!currentQuestion) return;
     if (status === "correct") return;
 
@@ -412,11 +455,28 @@ export default function SentencePractice() {
         setStatus("correct");
         setWrongIndexes([]);
 
-        commitXP({
-          isCorrect: true,
-          attemptNo: attemptNumber,
-          mode: "typing",
-        });
+        // Run XP + completion bonus asynchronously
+        (async () => {
+          try {
+            await commitXP({
+              isCorrect: true,
+              attemptNo: attemptNumber,
+              mode: "typing",
+            });
+
+            const isLastQuestion =
+              currentIndex >= (lessonExercises?.length || 0) - 1;
+
+            if (isLastQuestion) {
+              const bonus = await awardCompletionBonus("typing");
+              setCompletionXp(bonus.awarded || 300);
+              setCompletionMode("typing");
+              setShowCompleteModal(true);
+            }
+          } catch (err) {
+            console.error("[XP] typing commitXP/completion failed", err);
+          }
+        })();
 
         localStorage.setItem(
           "fj_last_session",
@@ -462,11 +522,28 @@ export default function SentencePractice() {
       setWrongIndexes([]);
       setStatus("correct");
 
-      commitXP({
-        isCorrect: true,
-        attemptNo: attemptNumber,
-        mode: "reorder",
-      });
+      // Run XP + completion bonus asynchronously (no await needed here)
+      (async () => {
+        try {
+          await commitXP({
+            isCorrect: true,
+            attemptNo: attemptNumber,
+            mode: "reorder",
+          });
+
+          const isLastQuestion =
+            currentIndex >= (lessonExercises?.length || 0) - 1;
+
+          if (isLastQuestion) {
+            const bonus = await awardCompletionBonus("reorder");
+            setCompletionXp(bonus.awarded || 300);
+            setCompletionMode("reorder");
+            setShowCompleteModal(true);
+          }
+        } catch (err) {
+          console.error("[XP] reorder commitXP/completion failed", err);
+        }
+      })();
 
       localStorage.setItem(
         "fj_last_session",
@@ -761,6 +838,51 @@ export default function SentencePractice() {
                   {word}
                 </span>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCompleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="text-xl font-semibold">✅ Lesson Completed!</div>
+            <div className="mt-2 text-sm text-gray-600">
+              You earned <span className="font-semibold">+{completionXp}</span>{" "}
+              XP bonus.
+            </div>
+
+            <div className="mt-5 grid gap-2">
+              <button
+                className="w-full rounded-xl bg-black px-4 py-2 text-white"
+                onClick={() => {
+                  setShowCompleteModal(false);
+                  const next = Number(lessonId) + 1;
+                  window.location.href = `/practice/${completionMode}?lessonId=${next}`;
+                }}
+              >
+                Next Lesson →
+              </button>
+
+              <button
+                className="w-full rounded-xl border border-gray-300 px-4 py-2"
+                onClick={() => {
+                  setShowCompleteModal(false);
+                  window.location.href = "/student/leaderboard";
+                }}
+              >
+                View Leaderboard
+              </button>
+
+              <button
+                className="w-full rounded-xl border border-gray-300 px-4 py-2"
+                onClick={() => {
+                  setShowCompleteModal(false);
+                  initQuiz();
+                }}
+              >
+                Repeat Lesson
+              </button>
             </div>
           </div>
         </div>
