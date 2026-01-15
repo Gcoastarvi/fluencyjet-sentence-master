@@ -1,9 +1,24 @@
-// client/src/pages/Lessons.jsx
+// client/src/pages/student/Lessons.jsx
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/api/apiClient";
 
 export default function Lessons() {
+  const navigate = useNavigate();
+
+  const [showModePicker, setShowModePicker] = useState(false);
+  const [selectedLesson, setSelectedLesson] = useState(null);
+
+  function openModePicker(lesson) {
+    setSelectedLesson(lesson);
+    setShowModePicker(true);
+  }
+
+  function closeModePicker() {
+    setShowModePicker(false);
+    setSelectedLesson(null);
+  }
+
   const [loading, setLoading] = useState(true);
   const [lessons, setLessons] = useState([]);
   const [unlocked, setUnlocked] = useState([]);
@@ -91,14 +106,19 @@ export default function Lessons() {
 
                 <div className="mt-4">
                   {isUnlocked ? (
-                    <Link
-                      to={`/lessons/${lesson.id}`}
+                    <button
+                      type="button"
+                      onClick={() => openModePicker(lesson)}
                       className="px-4 py-2 bg-indigo-600 text-white rounded-full hover:scale-105 transition inline-block"
                     >
                       Start →
-                    </Link>
+                    </button>
                   ) : (
-                    <button className="px-4 py-2 bg-gray-300 text-gray-600 rounded-full cursor-not-allowed inline-block">
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-gray-300 text-gray-600 rounded-full cursor-not-allowed inline-block"
+                      disabled
+                    >
                       Locked
                     </button>
                   )}
@@ -108,6 +128,57 @@ export default function Lessons() {
           );
         })}
       </div>
+      {/* Mode Picker Modal */}
+      {showModePicker && selectedLesson && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold">Choose Practice Mode</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {selectedLesson.title}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeModePicker}
+                className="text-gray-500 hover:text-gray-800"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  closeModePicker();
+                  navigate(`/practice/typing?lessonId=${selectedLesson.id}`);
+                }}
+                className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:opacity-95"
+              >
+                Typing Practice →
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeModePicker();
+                  navigate(`/practice/reorder?lessonId=${selectedLesson.id}`);
+                }}
+                className="w-full rounded-xl bg-indigo-100 px-4 py-3 text-indigo-800 font-semibold hover:bg-indigo-200"
+              >
+                Reorder Practice →
+              </button>
+            </div>
+
+            <p className="mt-4 text-xs text-gray-400">
+              Cloze + Audio will appear here next.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
