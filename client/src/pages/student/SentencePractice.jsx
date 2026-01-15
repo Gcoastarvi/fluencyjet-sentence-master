@@ -924,14 +924,16 @@ export default function SentencePractice() {
         </div>
       )}
 
-      {/* ✅ Correct banner (Typing + Reorder) */}
-      {status === "correct" && (
-        <div className="mt-4 rounded-xl bg-green-100 border border-green-300 p-3 text-center">
-          <div className="font-semibold text-green-800">
-            ✅ Correct! Well done
-          </div>
-          <div className="text-green-800 font-bold">
-            +{Number(earnedXP || 0)} XP earned
+      {/* ✅ Correct banner (Typing + Reorder) — bottom floating */}
+      {status === "correct" && Number(earnedXP || 0) > 0 && (
+        <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50">
+          <div className="rounded-xl bg-green-100 border border-green-300 px-5 py-3 text-center shadow-lg">
+            <div className="font-semibold text-green-800">
+              ✅ Correct! Well done
+            </div>
+            <div className="text-green-800 font-bold">
+              +{Number(earnedXP || 0)} XP earned
+            </div>
           </div>
         </div>
       )}
