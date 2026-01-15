@@ -24,8 +24,13 @@ router.post("/bulk", async (req, res) => {
     if (!["typing", "reorder"].includes(modeStr)) {
       return res.status(400).json({ ok: false, error: "Invalid mode" });
     }
-    if (typeof text !== "string" || !text.trim()) {
-      return res.status(400).json({ ok: false, error: "Missing text" });
+    const hasItems = Array.isArray(items) && items.length > 0;
+
+    if (!hasItems && (typeof text !== "string" || !text.trim())) {
+      return res.status(400).json({
+        ok: false,
+        error: "Missing text (or provide items[])",
+      });
     }
 
     // Build rows from either `items[]` (preferred) OR `text` (legacy)
