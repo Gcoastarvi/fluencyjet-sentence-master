@@ -817,14 +817,6 @@ export default function SentencePractice() {
         </div>
       )}
 
-      {/* Correct */}
-      {status === "correct" && (
-        <div className="bg-green-100 text-green-700 p-4 rounded mt-6 text-center">
-          ✅ Correct! Well done. <br />
-          <span className="font-semibold">+{earnedXP} XP earned</span>
-        </div>
-      )}
-
       {/* Reveal */}
       {status === "reveal" && (
         <div className="bg-yellow-100 p-4 rounded mt-6">
@@ -931,19 +923,7 @@ export default function SentencePractice() {
           </div>
         </div>
       )}
-
-      {/* ✅ Correct banner (works for BOTH typing + reorder) */}
-      {status === "correct" && (
-        <div className="mt-4 rounded-xl bg-green-100 border border-green-300 p-3 text-center">
-          <div className="font-semibold text-green-800">
-            ✅ Correct! Well done
-          </div>
-          <div className="text-green-800 font-bold">
-            +{Number(earnedXP || 0)} XP earned
-          </div>
-        </div>
-      )}
-
+         
       {/* Shake animation */}
       <style>
         {`
