@@ -12,6 +12,9 @@ const OUT_DIR = process.env.OUT_DIR || "out";
 const EMAIL = process.env.ADMIN_EMAIL;
 const PASSWORD = process.env.ADMIN_PASSWORD;
 
+const REPLACE = String(process.env.REPLACE || "").trim().toLowerCase(); // "1" or "true"
+const REPLACE_QS = (REPLACE === "1" || REPLACE === "true") ? "?replace=1" : "";
+
 if (!EMAIL || !PASSWORD) {
   console.error('❌ Set ADMIN_EMAIL and ADMIN_PASSWORD env vars.');
   process.exit(1);
@@ -56,7 +59,13 @@ async function upsertLesson(token, { slug, title, level }) {
 }
 
 async function bulkImport(token, { lessonId, mode, xp, items }) {
-  const data = await postJSON(`${BASE_URL}/api/admin/exercises/bulk`, token, { lessonId, mode, xp, items });
+  const replace = process.env.REPLACE === "1";
+  const data = await postJSON(`${BASE_URL}/api/admin/exercises/bulk${REPLACE_QS}`, token, {
+    lessonId,
+    mode,
+    xp,
+    items,
+  });
   return data;
 }
 

@@ -28,7 +28,14 @@ function makeSourceKey({ lessonId, mode, orderIndex, tamil, english }) {
  */
 router.post("/bulk", async (req, res) => {
   try {
-    const { lessonId, mode, text, xp, items } = req.body || {};
+    // Optional: replace existing rows for this lesson+mode before inserting
+    const replace =
+      String(req.query.replace || req.query.replaceMode || "")
+        .trim()
+        .toLowerCase() === "1" ||
+      String(req.query.replace || req.query.replaceMode || "")
+        .trim()
+        .toLowerCase() === "true";
 
     const lessonIdNum = Number(lessonId);
     const modeStr = String(mode || "").toLowerCase();
@@ -87,6 +94,24 @@ router.post("/bulk", async (req, res) => {
         error:
           "No valid rows found. Provide either items[] or text (Tamil | English per line).",
       });
+    }
+
+    // Optional: wipe existing quizzes for this lesson+mode (clean re-import)
+    if (replace === true) {
+      await prisma.quiz.deleteMany({
+        where: { lessonId: lessonIdNum, type: modeStr },
+      });
+    }
+
+    if (replace) {
+      const del = await prisma.quiz.deleteMany({
+        where: { lessonId: lessonIdNum, type: modeStr },
+      });
+
+      // Clear duplicates set because we just wiped the lesson+mode
+      console.log(
+        `[adminExercises] replace=1 deleted ${del.count} rows for lessonId=${lessonIdNum} mode=${modeStr}`,
+      );
     }
 
     // Fetch existing sourceKeys to prevent duplicates (idempotent import)
