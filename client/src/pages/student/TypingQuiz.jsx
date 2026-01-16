@@ -9,7 +9,7 @@ import {
   getLastSessionForLesson,
   setLastSession,
   clearLastSession,
-} from "../utils/lessonSession";
+} from "../../utils/lessonSession.js";
 
 // 🧠 Sample Tamil→English sentences
 const QUESTIONS = [
