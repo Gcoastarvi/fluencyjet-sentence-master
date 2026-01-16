@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { getLastSessionForLesson } from "../../utils/lessonSession";
+import { getLastSessionForLesson } from "../../utils/lessonSession.js";
 
 // IMPORTANT:
 // This page expects Lessons page to navigate here with `state: { lesson }`.
