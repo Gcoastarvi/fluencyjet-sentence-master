@@ -1,170 +1,161 @@
-// client/src/pages/student/LessonDetail.jsx
-import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { api } from "@/api/apiClient";
+import React, { useMemo } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { getLastSessionForLesson } from "../../utils/lessonSession";
+
+// IMPORTANT:
+// This page expects Lessons page to navigate here with `state: { lesson }`.
+// If not present (hard refresh), we gracefully fall back to showing a minimal UI.
 
 export default function LessonDetail() {
-  const { lessonId } = useParams(); // route is /lessons/:lessonId
-  const id = Number(lessonId);
+  const { lessonSlug } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
 
-  const [lesson, setLesson] = useState(null);
-  const [userProgress, setUserProgress] = useState(null);
+  const lesson = location.state?.lesson || null;
 
-  const [loading, setLoading] = useState(true);
-  const [locked, setLocked] = useState(false);
-  const [error, setError] = useState("");
+  const lessonId = lesson?.id;
+  const title = lesson?.lessonTitle || lesson?.title || lessonSlug;
 
-  useEffect(() => {
-    let cancelled = false;
+  const session = useMemo(() => {
+    if (!lessonId) return null;
+    return getLastSessionForLesson(lessonId);
+  }, [lessonId]);
 
-    (async () => {
-      setLoading(true);
-      setError("");
-      setLesson(null);
-      setUserProgress(null);
-      setLocked(false);
+  const continueHref =
+    session && lessonId
+      ? `/practice/${session.mode}?lessonId=${encodeURIComponent(lessonId)}`
+      : null;
 
-      // ✅ invalid id handling must be INSIDE effect (not an early return above hooks)
-      if (!Number.isFinite(id)) {
-        setLoading(false);
-        setError("Invalid lesson id");
-        return;
-      }
-
-      try {
-        const res = await api.get(`/lessons/${id}`);
-        const data = res?.data ?? res;
-
-        if (!data?.ok) throw new Error(data?.error || "Failed to load lesson");
-
-        if (cancelled) return;
-
-        setLesson(data.lesson || null);
-        setUserProgress(data.userProgress || null);
-
-        // backend sends isLocked; we also keep is_locked alias in some places
-        const isLocked = Boolean(
-          data?.lesson?.isLocked ?? data?.lesson?.is_locked,
-        );
-        setLocked(isLocked);
-      } catch (e) {
-        if (cancelled) return;
-        setError(e?.message || "Failed to load lesson");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [id]);
-
-  // ---------- RENDER ----------
-  if (!Number.isFinite(id)) {
-    return (
-      <div className="max-w-xl mx-auto p-6 mt-10 text-center">
-        <div className="text-xl text-red-600 font-semibold">
-          Lesson not found
-        </div>
-        <div className="mt-4">
-          <Link
-            to="/lessons"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
-          >
-            Go back to Lessons
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="text-center mt-16 text-xl text-indigo-500">
-        Loading lesson…
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-xl mx-auto p-6 mt-10 text-center">
-        <div className="text-xl text-red-600 font-semibold">{error}</div>
-        <div className="mt-4">
-          <Link
-            to="/lessons"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg"
-          >
-            Go back to Lessons
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  if (!lesson) {
-    return (
-      <div className="text-center mt-16 text-xl text-red-500">
-        Lesson not found
-      </div>
-    );
-  }
-
-  if (locked) {
-    return (
-      <div className="max-w-xl mx-auto p-6 mt-10 text-center bg-red-50 border border-red-200 rounded-xl">
-        <h2 className="text-2xl font-bold text-red-600 mb-3">
-          🔒 This lesson is locked
-        </h2>
-        <p className="text-gray-700 mb-4">
-          Please complete the previous lesson to unlock this one.
-        </p>
-        <Link
-          to="/lessons"
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:scale-105 transition"
-        >
-          Go back to Lessons
-        </Link>
-      </div>
-    );
+  function startMode(mode) {
+    if (!lessonId) return;
+    navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lessonId)}`);
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-indigo-700">{lesson.title}</h1>
-      </div>
-
-      {/* Content (backend does NOT provide lesson.content right now) */}
-      <div className="bg-white p-5 shadow rounded-xl">
-        <p className="text-gray-700">{lesson.description}</p>
-
-        {userProgress && (
-          <div className="mt-4 text-sm text-gray-600">
-            <div>XP: {userProgress.xp ?? 0}</div>
-            <div>Streak: {userProgress.streak ?? 0}</div>
+    <div className="mx-auto max-w-3xl p-4">
+      <div className="rounded-2xl border bg-white p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold">{title}</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Practice hub • Choose a mode to begin
+            </p>
           </div>
-        )}
-      </div>
 
-      {/* Start Practice */}
-      <div className="flex gap-3 justify-center flex-wrap">
-        <button
-          onClick={() => navigate(`/practice/typing?lessonId=${id}`)}
-          className="px-5 py-3 bg-indigo-600 text-white rounded-xl shadow hover:scale-105 transition text-lg font-semibold"
-        >
-          Start Typing →
-        </button>
+          <button
+            onClick={() => navigate(-1)}
+            className="rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            Back
+          </button>
+        </div>
 
-        <button
-          onClick={() => navigate(`/practice/reorder?lessonId=${id}`)}
-          className="px-5 py-3 bg-indigo-100 text-indigo-700 rounded-xl shadow hover:scale-105 transition text-lg font-semibold"
-        >
-          Start Reorder →
-        </button>
+        <div className="mt-5 rounded-2xl bg-gray-50 p-4">
+          <div className="text-sm font-medium">Progress summary</div>
+
+          {!lessonId ? (
+            <div className="mt-2 text-sm text-gray-600">
+              (Tip: open this page from Lessons list so it can load lesson
+              details.)
+            </div>
+          ) : (
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div className="rounded-xl bg-white p-3">
+                <div className="text-xs text-gray-500">Lesson</div>
+                <div className="text-sm font-semibold">{lessonSlug}</div>
+              </div>
+
+              <div className="rounded-xl bg-white p-3">
+                <div className="text-xs text-gray-500">Continue</div>
+                <div className="text-sm font-semibold">
+                  {session ? `Mode: ${session.mode}` : "No session yet"}
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-white p-3">
+                <div className="text-xs text-gray-500">Last position</div>
+                <div className="text-sm font-semibold">
+                  {session ? `Q# ${Number(session.questionIndex) + 1}` : "—"}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Continue */}
+          {continueHref ? (
+            <Link
+              to={continueHref}
+              className="rounded-2xl bg-black px-4 py-4 text-center text-white hover:opacity-90"
+            >
+              <div className="text-base font-semibold">Continue</div>
+              <div className="mt-1 text-xs text-gray-200">
+                Resume exactly where you left off
+              </div>
+            </Link>
+          ) : (
+            <button
+              disabled
+              className="cursor-not-allowed rounded-2xl bg-gray-200 px-4 py-4 text-center text-gray-500"
+            >
+              <div className="text-base font-semibold">Continue</div>
+              <div className="mt-1 text-xs">Start a mode to enable</div>
+            </button>
+          )}
+
+          {/* Typing */}
+          <button
+            onClick={() => startMode("typing")}
+            disabled={!lessonId}
+            className={`rounded-2xl px-4 py-4 text-center ${
+              lessonId
+                ? "border bg-white hover:bg-gray-50"
+                : "cursor-not-allowed bg-gray-100 text-gray-400"
+            }`}
+          >
+            <div className="text-base font-semibold">Typing</div>
+            <div className="mt-1 text-xs text-gray-500">
+              Fast fluency builder
+            </div>
+          </button>
+
+          {/* Reorder */}
+          <button
+            onClick={() => startMode("reorder")}
+            disabled={!lessonId}
+            className={`rounded-2xl px-4 py-4 text-center ${
+              lessonId
+                ? "border bg-white hover:bg-gray-50"
+                : "cursor-not-allowed bg-gray-100 text-gray-400"
+            }`}
+          >
+            <div className="text-base font-semibold">Reorder</div>
+            <div className="mt-1 text-xs text-gray-500">
+              Fix word order instantly
+            </div>
+          </button>
+
+          {/* Cloze (disabled) */}
+          <button
+            disabled
+            className="cursor-not-allowed rounded-2xl border bg-white px-4 py-4 text-center opacity-60"
+            title="Coming soon"
+          >
+            <div className="text-base font-semibold">Cloze</div>
+            <div className="mt-1 text-xs text-gray-500">Coming soon</div>
+          </button>
+
+          {/* Audio (disabled) */}
+          <button
+            disabled
+            className="cursor-not-allowed rounded-2xl border bg-white px-4 py-4 text-center opacity-60"
+            title="Coming soon"
+          >
+            <div className="text-base font-semibold">Audio</div>
+            <div className="mt-1 text-xs text-gray-500">Coming soon</div>
+          </button>
+        </div>
       </div>
     </div>
   );

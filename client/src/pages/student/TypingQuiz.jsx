@@ -1,9 +1,15 @@
 // client/src/pages/TypingQuiz.jsx
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { awardXP } from "@/lib/xpTracker";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
+
+import {
+  getLastSessionForLesson,
+  setLastSession,
+  clearLastSession,
+} from "../utils/lessonSession";
 
 // 🧠 Sample Tamil→English sentences
 const QUESTIONS = [
@@ -32,6 +38,16 @@ function normalize(str) {
 }
 
 export default function TypingQuiz() {
+  // Get lessonId from query string (?lessonId=123)
+  const lessonId = useMemo(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("lessonId");
+    } catch {
+      return null;
+    }
+  }, []);
+
   const [current, setCurrent] = useState(0);
   const [answer, setAnswer] = useState("");
   const [score, setScore] = useState(0);
@@ -46,10 +62,40 @@ export default function TypingQuiz() {
   const { xpCapReached, setXpCapReached } = useAuth();
   const navigate = useNavigate();
 
+  // Resume point (only if same lesson + same mode)
+  useEffect(() => {
+    if (!lessonId) return;
+
+    const session = getLastSessionForLesson(lessonId);
+    if (!session) return;
+    if (session.mode !== "typing") return;
+
+    // only set if still at default start
+    setCurrent((prev) =>
+      prev === 0 ? Number(session.questionIndex || 0) : prev,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId]);
+
+  // Persist progress as user moves through questions
+  useEffect(() => {
+    if (!lessonId) return;
+    setLastSession({ lessonId, mode: "typing", questionIndex: current });
+  }, [lessonId, current]);
+
   function showToast(msg, type = "info") {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 2000);
   }
+
+  // Safety: if quiz is done, clear continue session
+  useEffect(() => {
+    if (!lessonId) return;
+    if (!Array.isArray(sentences) || sentences.length === 0) return;
+
+    const isDone = current >= sentences.length;
+    if (isDone) clearLastSession();
+  }, [lessonId, current, sentences]);
 
   // ====== HANDLE SUBMISSION ======
   async function handleSubmit(e) {
