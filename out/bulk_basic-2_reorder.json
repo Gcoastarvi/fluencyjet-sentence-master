@@ -1,0 +1,15 @@
+{
+  "lessonSlug": "basic-2",
+  "lessonTitle": "Basic Lesson 2",
+  "lessonLevel": "basic",
+  "mode": "reorder",
+  "xp": 150,
+  "items": [
+    {
+      "orderIndex": 1,
+      "promptTa": "நீ என்னை புரிந்துகொண்டாயா",
+      "answer": "Did you understand me",
+      "xp": 150
+    }
+  ]
+}

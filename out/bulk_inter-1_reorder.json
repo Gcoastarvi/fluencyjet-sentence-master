@@ -1,0 +1,15 @@
+{
+  "lessonSlug": "inter-1",
+  "lessonTitle": "Intermediate Lesson 1",
+  "lessonLevel": "intermediate",
+  "mode": "reorder",
+  "xp": 150,
+  "items": [
+    {
+      "orderIndex": 1,
+      "promptTa": "உங்களிடம் ஒரு கேள்வி இருக்கிறது",
+      "answer": "I have a question for you",
+      "xp": 150
+    }
+  ]
+}

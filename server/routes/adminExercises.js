@@ -3,6 +3,22 @@ import prisma from "../db/client.js";
 
 const router = express.Router();
 
+function makeSourceKey({ lessonId, mode, orderIndex, tamil, english }) {
+  const norm = (s) =>
+    String(s || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+
+  return [
+    `L${lessonId}`,
+    `M${mode}`,
+    `O${Number(orderIndex) || 0}`,
+    `TA:${norm(tamil)}`,
+    `EN:${norm(english)}`,
+  ].join("|");
+}
+
 /**
  * POST /api/admin/exercises/bulk
  * Body: { lessonId: number, mode: "typing"|"reorder", text: string, xp?: number }
@@ -73,34 +89,73 @@ router.post("/bulk", async (req, res) => {
       });
     }
 
+    // Fetch existing sourceKeys to prevent duplicates (idempotent import)
+    const existing = await prisma.quiz.findMany({
+      where: { lessonId: lessonIdNum, type: modeStr },
+      select: { data: true },
+    });
+
+    const existingKeys = new Set(
+      existing
+        .map((q) => q?.data?.sourceKey)
+        .filter((k) => typeof k === "string" && k.length > 0),
+    );
+
     // Insert into Quiz table (this exists in your schema)
-    const rowsToInsert = rows.map((r, i) => {
+    const rowsToInsert = [];
+    let skipped = 0;
+
+    rows.forEach((r, i) => {
       const english = String(r.english || "").trim();
       const words = english.split(/\s+/).filter(Boolean);
 
-      return {
+      const orderIndex = Number(r.orderIndex || i + 1) || i + 1;
+
+      const sourceKey = makeSourceKey({
         lessonId: lessonIdNum,
-        type: modeStr, // "typing" or "reorder"
-        prompt: r.tamil, // Tamil prompt
-        question: english, // English answer
+        mode: modeStr,
+        orderIndex,
+        tamil: r.tamil,
+        english,
+      });
+
+      if (existingKeys.has(sourceKey)) {
+        skipped++;
+        return;
+      }
+
+      rowsToInsert.push({
+        lessonId: lessonIdNum,
+        type: modeStr,
+        prompt: r.tamil,
+        question: english,
         xpReward: Number(r.xp || xpNum) || xpNum,
         data:
           modeStr === "reorder"
-            ? { correctOrder: words, orderIndex: r.orderIndex || i + 1 }
-            : { orderIndex: r.orderIndex || i + 1 },
-      };
+            ? { correctOrder: words, orderIndex, sourceKey }
+            : { orderIndex, sourceKey },
+      });
     });
 
-    const result = await prisma.quiz.createMany({ data: rowsToInsert });
+    if (rowsToInsert.length === 0) {
+      return res.json({
+        ok: true,
+        inserted: 0,
+        skipped,
+        message: "All exercises already exist (skipped duplicates).",
+      });
+    }
 
-    return res.json({ ok: true, inserted: result.count });
+    const created = await prisma.quiz.createMany({ data: rowsToInsert });
+
+    return res.json({
+      ok: true,
+      inserted: created.count,
+      skipped,
+    });
   } catch (err) {
-    console.error("[bulk] ERROR full:", err);
-    return res.status(500).json({
-      ok: false,
-      error: "Bulk insert failed",
-      debug: { name: err?.name, message: err?.message },
-    });
+    console.error("[adminExercises] bulk import error:", err);
+    return res.status(500).json({ ok: false, error: "Server error" });
   }
 });
 
