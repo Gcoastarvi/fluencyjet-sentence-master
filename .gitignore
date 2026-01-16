@@ -6,3 +6,4 @@ vite.config.ts.*
 *.tar.gzpayload.json
 tmp_lesson1.txt
 payload_reorder.json
+*.old.jsx
