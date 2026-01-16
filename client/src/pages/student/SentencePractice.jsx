@@ -435,6 +435,10 @@ export default function SentencePractice() {
         String(s || "")
           .trim()
           .toLowerCase()
+          // ✅ make curly apostrophes equal to normal apostrophe
+          .replace(/[’‘‛ʼ]/g, "'")
+          // ✅ (optional but safe) normalize curly quotes too
+          .replace(/[“”]/g, '"')
           .replace(/\s+/g, " ");
 
       const target =
