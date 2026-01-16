@@ -5,7 +5,7 @@
 import fs from "fs";
 import path from "path";
 
-( function main() {
+(function main() {
   const inputPath = process.argv[2] || "content.csv";
   if (!fs.existsSync(inputPath)) {
     console.error(`❌ CSV not found: ${inputPath}`);
@@ -43,24 +43,54 @@ import path from "path";
   }
 
   const raw = fs.readFileSync(inputPath, "utf8");
-  const rows = parseCSV(raw).filter(r => r.some(x => String(x||"").trim() !== ""));
+  const rows = parseCSV(raw).filter(r => r.some(x => String(x || "").trim() !== ""));
   if (rows.length < 2) {
     console.error("❌ CSV has no data rows.");
     process.exit(1);
   }
 
-  const headers = rows[0].map(h => String(h||"").trim());
-  const idx = Object.fromEntries(headers.map((h, i) => [h, i]));
+  // Normalize headers so CSV is tolerant (case-insensitive, snake_case, spaces)
+  const rawHeaders = rows[0].map(h => String(h || "").trim());
 
-  const required = ["lessonSlug","lessonTitle","lessonLevel","mode","orderIndex","promptTa","answer"];
-  const missing = required.filter(h => !(h in idx));
+  const norm = (h) =>
+    String(h || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "")      // remove spaces
+      .replace(/[_-]/g, "");    // remove _ and -
+
+  // Build index map with normalized keys
+  const idx = {};
+  for (let i = 0; i < rawHeaders.length; i++) {
+    const key = norm(rawHeaders[i]);
+    if (!key) continue;
+    idx[key] = i;
+  }
+
+  // Alias support: allow multiple header styles
+  const col = {
+    lessonSlug: idx.lessonslug ?? idx.slug,
+    lessonTitle: idx.lessontitle ?? idx.title,
+    lessonLevel: idx.lessonlevel ?? idx.level,
+    mode: idx.mode ?? idx.type,
+    orderIndex: idx.orderindex ?? idx.order ?? idx.index,
+    promptTa: idx.promptta ?? idx.tamil ?? idx.ta,
+    answer: idx.answer ?? idx.english ?? idx.en,
+    xp: idx.xp,
+  };
+
+  const required = ["lessonSlug", "lessonTitle", "lessonLevel", "mode", "orderIndex", "promptTa", "answer"];
+  const missing = required.filter((k) => col[k] == null);
+
   if (missing.length) {
     console.error("❌ Missing CSV headers:", missing.join(", "));
+    console.error("   Found headers:", rawHeaders.join(", "));
+    console.error("   Tip: expected headers like lessonSlug, lessonTitle, lessonLevel, mode, orderIndex, promptTa, answer, xp(optional)");
     process.exit(1);
   }
 
-  const validLevels = new Set(["basic","intermediate"]);
-  const validModes = new Set(["typing","reorder"]);
+  const validLevels = new Set(["basic", "intermediate"]);
+  const validModes = new Set(["typing", "reorder"]);
 
   const groups = new Map(); // key: slug|mode -> { slug, title, level, mode, items[] }
   const errors = [];
@@ -69,15 +99,16 @@ import path from "path";
     const row = rows[r];
     const rowNum = r + 1;
 
-    const lessonSlug = String(row[idx.lessonSlug] || "").trim();
-    const lessonTitle = String(row[idx.lessonTitle] || "").trim();
-    const lessonLevel = String(row[idx.lessonLevel] || "").trim().toLowerCase();
-    const mode = String(row[idx.mode] || "").trim().toLowerCase();
-    const orderIndex = Number(String(row[idx.orderIndex] || "").trim());
-    const promptTa = String(row[idx.promptTa] || "").trim();
-    const answer = String(row[idx.answer] || "").trim();
-    const xp = ("xp" in idx && String(row[idx.xp]||"").trim())
-      ? Number(String(row[idx.xp]).trim())
+    const lessonSlug = String(row[col.lessonSlug] || "").trim();
+    const lessonTitle = String(row[col.lessonTitle] || "").trim();
+    const lessonLevel = String(row[col.lessonLevel] || "").trim().toLowerCase();
+    const mode = String(row[col.mode] || "").trim().toLowerCase();
+    const orderIndex = Number(String(row[col.orderIndex] || "").trim());
+    const promptTa = String(row[col.promptTa] || "").trim();
+    const answer = String(row[col.answer] || "").trim();
+
+    const xp = (col.xp != null && String(row[col.xp] || "").trim())
+      ? Number(String(row[col.xp]).trim())
       : 150;
 
     if (!lessonSlug) { errors.push(`Row ${rowNum}: missing lessonSlug`); continue; }
@@ -99,13 +130,13 @@ import path from "path";
   if (errors.length) {
     console.error("❌ Validation failed:");
     errors.slice(0, 50).forEach(e => console.error("  -", e));
-    if (errors.length > 50) console.error(`  ...and ${errors.length-50} more`);
+    if (errors.length > 50) console.error(`  ...and ${errors.length - 50} more`);
     process.exit(1);
   }
 
   let fileCount = 0;
   for (const g of groups.values()) {
-    g.items.sort((a,b)=>a.orderIndex-b.orderIndex);
+    g.items.sort((a, b) => a.orderIndex - b.orderIndex);
 
     const payload = {
       lessonSlug: g.lessonSlug,
@@ -123,4 +154,4 @@ import path from "path";
 
   console.log(`✅ Wrote ${fileCount} payload file(s) into: ${outDir}`);
   console.log(`   Next: node scripts/import_bulk_all.mjs`);
-} )();
+})();

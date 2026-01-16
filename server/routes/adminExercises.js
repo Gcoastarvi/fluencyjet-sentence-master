@@ -146,6 +146,15 @@ router.post("/bulk", async (req, res) => {
       });
     }
 
+    // ✅ Safety: prevent accidental huge imports (helps avoid Railway timeouts)
+    if (rowsToInsert.length > 5000) {
+      return res.status(400).json({
+        ok: false,
+        error: "Too many rows in one bulk import (max 5000). Split the CSV.",
+        debug: { rowsToInsert: rowsToInsert.length, skipped },
+      });
+    }
+
     const created = await prisma.quiz.createMany({ data: rowsToInsert });
 
     return res.json({
