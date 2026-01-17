@@ -48,6 +48,51 @@ export default function TypingQuiz() {
     }
   }, []);
 
+  function progressKey(lid, mode) {
+    return `fj_progress:${lid}:${mode}`;
+  }
+
+  function readProgress(lid, mode) {
+    try {
+      return JSON.parse(localStorage.getItem(progressKey(lid, mode)) || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function writeProgress(lid, mode, patch) {
+    try {
+      const prev = readProgress(lid, mode) || {};
+      const next = {
+        lessonId: lid,
+        mode,
+        completed: Number(prev.completed || 0),
+        total: Number(prev.total || 0),
+        updatedAt: Date.now(),
+        ...patch,
+      };
+      localStorage.setItem(progressKey(lid, mode), JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  }
+
+  function writeLastSessionTyping(lid, nextQuestionIndex) {
+    try {
+      localStorage.setItem(
+        "fj_last_session",
+        JSON.stringify({
+          lessonId: lid,
+          mode: "typing",
+          questionIndex: nextQuestionIndex,
+          timestamp: Date.now(),
+        }),
+      );
+    } catch {
+      // ignore
+    }
+  }
+
   const [current, setCurrent] = useState(0);
   const [answer, setAnswer] = useState("");
   const [score, setScore] = useState(0);
@@ -61,6 +106,12 @@ export default function TypingQuiz() {
 
   const { xpCapReached, setXpCapReached } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!lessonId) return;
+    writeProgress(Number(lessonId), "typing", { total: QUESTIONS.length });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId]);
 
   // Resume point (only if same lesson + same mode)
   useEffect(() => {
@@ -109,6 +160,23 @@ export default function TypingQuiz() {
       setScore((s) => s + 1);
       showToast("+150 XP", "success");
 
+      // ✅ Update local progress + session (Typing)
+      if (lessonId) {
+        const lid = Number(lessonId);
+        const prev = readProgress(lid, "typing");
+        const completedNow = Math.max(
+          Number(prev?.completed || 0),
+          current + 1,
+        );
+        const totalNow = Number(prev?.total || QUESTIONS.length || 0);
+        writeProgress(lid, "typing", {
+          completed: completedNow,
+          total: totalNow,
+        });
+        // store next question index (resume will start from next)
+        writeLastSessionTyping(lid, current + 1);
+      }
+
       try {
         setLoading(true);
         await awardXP({
@@ -147,6 +215,13 @@ export default function TypingQuiz() {
   async function handleQuizComplete() {
     setFinished(true);
     showToast("Completed! +300 XP", "success");
+
+    // ✅ Clear continue session for this lesson after completion
+    try {
+      localStorage.removeItem("fj_last_session");
+    } catch {
+      // ignore
+    }
 
     try {
       setLoading(true);
