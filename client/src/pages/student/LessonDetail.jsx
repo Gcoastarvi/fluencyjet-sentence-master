@@ -26,6 +26,20 @@ export default function LessonDetail() {
     return s;
   }, [lessonId]);
 
+  const modeLabel = (m) => {
+    if (!m) return "";
+    const x = String(m).toLowerCase();
+    if (x === "typing") return "Typing";
+    if (x === "reorder") return "Reorder";
+    if (x === "cloze") return "Cloze";
+    if (x === "audio") return "Audio";
+    return x.charAt(0).toUpperCase() + x.slice(1);
+  };
+
+  const continueText = session
+    ? `Continue • ${modeLabel(session.mode)} • Q${Math.max(1, Number(session.questionIndex || 0) + 1)}`
+    : "Continue";
+
   const continueHref =
     session && session.mode
       ? `/practice/${session.mode}?lessonId=${encodeURIComponent(lessonId)}`
@@ -102,7 +116,7 @@ export default function LessonDetail() {
               to={continueHref}
               className="rounded-2xl bg-black px-4 py-4 text-center text-white hover:opacity-90"
             >
-              <div className="text-base font-semibold">Continue</div>
+              <div className="text-base font-semibold">{continueText}</div>
               <div className="mt-1 text-xs text-gray-200">
                 Resume exactly where you left off
               </div>
