@@ -15,6 +15,14 @@ export default function LessonDetail() {
   const lessonId = lesson?.id;
   const title = lesson?.lessonTitle || lesson?.title || lessonSlug;
 
+  function readLastSession() {
+    try {
+      return JSON.parse(localStorage.getItem("fj_last_session") || "null");
+    } catch {
+      return null;
+    }
+  }
+
   const session = useMemo(() => {
     if (!lessonId) return null;
     const s = readLastSession();
@@ -36,8 +44,12 @@ export default function LessonDetail() {
     return x.charAt(0).toUpperCase() + x.slice(1);
   };
 
+  const qNum = session
+    ? Math.max(1, Number(session.questionIndex || 0) + 1)
+    : null;
+
   const continueText = session
-    ? `Continue • ${modeLabel(session.mode)} • Q${Math.max(1, Number(session.questionIndex || 0) + 1)}`
+    ? `Continue • ${modeLabel(session.mode)} • Q${qNum}`
     : "Continue";
 
   const continueHref =
@@ -48,14 +60,6 @@ export default function LessonDetail() {
   function startMode(mode) {
     if (!lessonId) return;
     navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lessonId)}`);
-  }
-
-  function readLastSession() {
-    try {
-      return JSON.parse(localStorage.getItem("fj_last_session") || "null");
-    } catch {
-      return null;
-    }
   }
 
   return (
