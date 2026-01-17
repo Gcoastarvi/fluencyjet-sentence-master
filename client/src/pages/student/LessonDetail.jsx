@@ -55,12 +55,28 @@ export default function LessonDetail() {
     () => (lessonId ? readProgress(lessonId, "reorder") : null),
     [lessonId],
   );
+  const clozeProg = useMemo(
+    () => (lessonId ? readProgress(lessonId, "cloze") : null),
+    [lessonId],
+  );
 
   const pct = (p) => {
     const total = Number(p?.total || 0);
     const done = Number(p?.completed || 0);
     if (!total) return 0;
     return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+  };
+
+  const lastAt = (p) => Number(p?.updatedAt || 0);
+
+  const formatLast = (ms) => {
+    if (!ms) return "—";
+    const diff = Date.now() - ms;
+    if (diff < 60_000) return "just now";
+    if (diff < 60 * 60_000) return `${Math.floor(diff / 60_000)}m ago`;
+    if (diff < 24 * 60 * 60_000)
+      return `${Math.floor(diff / (60 * 60_000))}h ago`;
+    return `${Math.floor(diff / (24 * 60 * 60_000))}d ago`;
   };
 
   const modeLabel = (m) => {
@@ -140,6 +156,29 @@ export default function LessonDetail() {
                     {session ? `Q# ${Number(session.questionIndex) + 1}` : "—"}
                   </div>
                 </div>
+              </div>
+
+              {/* Mode badges */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "Typing", p: typingProg },
+                  { label: "Reorder", p: reorderProg },
+                  { label: "Cloze", p: clozeProg },
+                ].map(({ label, p }) => (
+                  <div
+                    key={label}
+                    className="rounded-full border bg-white px-3 py-1 text-xs"
+                    title={`Last practiced: ${formatLast(lastAt(p))}`}
+                  >
+                    <span className="font-semibold">{label}</span>
+                    <span className="text-gray-500"> • </span>
+                    <span>{pct(p)}%</span>
+                    <span className="text-gray-500"> • </span>
+                    <span className="text-gray-600">
+                      {formatLast(lastAt(p))}
+                    </span>
+                  </div>
+                ))}
               </div>
 
               {/* Typing progress */}
@@ -239,14 +278,20 @@ export default function LessonDetail() {
             </div>
           </button>
 
-          {/* Cloze (disabled) */}
+          {/* Cloze */}
           <button
-            disabled
-            className="cursor-not-allowed rounded-2xl border bg-white px-4 py-4 text-center opacity-60"
-            title="Coming soon"
+            onClick={() => startMode("cloze")}
+            disabled={!lessonId}
+            className={`rounded-2xl px-4 py-4 text-center ${
+              lessonId
+                ? "border bg-white hover:bg-gray-50"
+                : "cursor-not-allowed bg-gray-100 text-gray-400"
+            }`}
           >
             <div className="text-base font-semibold">Cloze</div>
-            <div className="mt-1 text-xs text-gray-500">Coming soon</div>
+            <div className="mt-1 text-xs text-gray-500">
+              Fill the missing word
+            </div>
           </button>
 
           {/* Audio (disabled) */}
