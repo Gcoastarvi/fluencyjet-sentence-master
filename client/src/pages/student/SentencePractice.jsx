@@ -958,6 +958,13 @@ export default function SentencePractice() {
               {cloze?.masked || "____"}
             </div>
 
+            <div className="mt-2 text-[11px] text-slate-500">
+              debug • mode={safeMode} • status={status} • earnedXP={earnedXP} •
+              toast=
+              {String(showXPToast)} • expected={cloze?.missingWord} • got="
+              {typedAnswer}"
+            </div>
+
             <div className="mt-3">
               <input
                 value={typedAnswer}
