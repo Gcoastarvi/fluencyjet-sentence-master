@@ -36,6 +36,10 @@ export default function SentencePractice() {
   // Cloze + Audio reuse Typing exercises for MVP
   const fetchMode = safeMode === "reorder" ? "reorder" : "typing";
 
+  // XP mode (what we send to backend XP pipeline)
+  // Backend currently supports only typing/reorder
+  const xpMode = safeMode === "reorder" ? "reorder" : "typing";
+
   const search = new URLSearchParams(window.location.search);
   const lessonId = Number(search.get("lessonId") || 1);
 
@@ -133,7 +137,6 @@ export default function SentencePractice() {
     const target =
       currentQuestion?.answer?.trim() ||
       currentQuestion?.expected?.trim() ||
-      
       (Array.isArray(currentQuestion?.correctOrder)
         ? currentQuestion.correctOrder.join(" ")
         : "");
@@ -642,27 +645,37 @@ export default function SentencePractice() {
       const isCorrect = expected && got === expected;
 
       if (isCorrect) {
+        const attemptNumber = attempts + 1;
+
         setStatus("correct");
         setFeedback("✅ Correct!");
 
-        const attemptNumber = attempts + 1;
+        // ✅ Cloze XP (UI)
+        setEarnedXP(80);
+        setShowXPToast(true);
+        setTimeout(() => setShowXPToast(false), 900);
 
-        // Run XP + completion bonus asynchronously
+        // ✅ SFX
+        try {
+          playCorrect?.();
+        } catch {}
+
+        // ✅ XP + completion bonus asynchronously (backend-safe)
         (async () => {
           try {
             await commitXP({
               isCorrect: true,
               attemptNo: attemptNumber,
-              mode: "cloze",
+              mode: xpMode, // ✅ cloze counted as typing in backend
             });
 
             const isLastQuestion =
               currentIndex >= (lessonExercises?.length || 0) - 1;
 
             if (isLastQuestion) {
-              const bonus = await awardCompletionBonus("cloze");
+              const bonus = await awardCompletionBonus(xpMode);
               setCompletionXp(bonus.awarded || 300);
-              setCompletionMode("cloze");
+              setCompletionMode("cloze"); // keep UI label as cloze
               setShowCompleteModal(true);
             }
           } catch (err) {
@@ -670,22 +683,14 @@ export default function SentencePractice() {
           }
         })();
 
-        // Update lesson progress (Cloze)
-        {
-          const prev = readProgress(lessonId, "cloze");
-          const completedNow = Math.max(
-            Number(prev?.completed || 0),
-            currentIndex + 1,
-          );
-          const totalNow = Number(prev?.total || lessonExercises?.length || 0);
-          writeProgress(lessonId, "cloze", {
-            completed: completedNow,
-            total: totalNow,
-            updatedAt: Date.now(),
-          });
-        }
+        // ✅ Update progress (Cloze)
+        writeProgress(lessonId, "cloze", {
+          total: lessonExercises.length,
+          completed: Math.min(lessonExercises.length, currentIndex + 1),
+          updatedAt: Date.now(),
+        });
 
-        // Save session (Cloze) — resume next question
+        // ✅ Save session (Cloze) — resume next question
         localStorage.setItem(
           "fj_last_session",
           JSON.stringify({
@@ -696,12 +701,26 @@ export default function SentencePractice() {
           }),
         );
 
+        // ✅ Advance after short beat so user sees toast/banner
+        setTimeout(() => {
+          loadNextQuestion();
+          setTypedAnswer("");
+          setShowHint(false);
+          setStatus("idle");
+          setFeedback("");
+        }, 700);
+
         return;
       }
 
       // wrong cloze
       setStatus("wrong");
       setFeedback(`❌ Correct answer: "${cloze?.missingWord || ""}"`);
+      setEarnedXP(0);
+      try {
+        playWrong?.();
+      } catch {}
+      setShowHint(true);
       return;
     }
 
@@ -917,7 +936,9 @@ export default function SentencePractice() {
       {safeMode === "cloze" && (
         <div className="bg-white shadow-lg rounded-xl p-5 border border-indigo-200">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold text-indigo-700">Cloze Practice</h2>
+            <h2 className="text-xl font-bold text-indigo-700">
+              Cloze Practice
+            </h2>
 
             <button
               onClick={() => setTypedAnswer("")}
@@ -928,7 +949,9 @@ export default function SentencePractice() {
             </button>
           </div>
 
-          <div className="text-sm text-gray-600 mb-2">Fill the missing word:</div>
+          <div className="text-sm text-gray-600 mb-2">
+            Fill the missing word:
+          </div>
 
           <div className="rounded-xl border bg-white p-4">
             <div className="text-lg font-semibold tracking-wide">
@@ -965,7 +988,8 @@ export default function SentencePractice() {
 
             {status === "reveal" && (
               <div className="mt-3 text-sm text-gray-700">
-                ✅ Answer: <span className="font-semibold">{cloze?.missingWord}</span>
+                ✅ Answer:{" "}
+                <span className="font-semibold">{cloze?.missingWord}</span>
               </div>
             )}
           </div>
