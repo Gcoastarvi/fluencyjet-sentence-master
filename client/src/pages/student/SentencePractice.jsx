@@ -151,19 +151,6 @@ export default function SentencePractice() {
     return { missingWord, masked, index: pick.i };
   }, [safeMode, currentQuestion, currentIndex]);
 
-
-    // ensure typing has a usable target
-    const target =
-      q.answer?.trim() ||
-      (Array.isArray(q.correctOrder) ? q.correctOrder.join(" ") : "");
-
-    return {
-      ...q,
-      // keep backend-provided type (TYPING / REORDER)
-      answer: target,
-    };
-  }, [lessonExercises, currentIndex]);
-
   // -------------------
   // effects
   // -------------------
