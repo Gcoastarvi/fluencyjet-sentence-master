@@ -27,8 +27,14 @@ export default function SentencePractice() {
     ? rawMode
     : DEFAULT_PRACTICE_MODE;
 
-  const safeMode =
-    activeMode === "typing" || activeMode === "reorder" ? activeMode : "typing";
+  // UI mode (what the user sees)
+  const safeMode = SUPPORTED_PRACTICE_MODES.has(activeMode)
+    ? activeMode
+    : DEFAULT_PRACTICE_MODE;
+
+  // Fetch mode (what we load from DB)
+  // Cloze + Audio reuse Typing exercises for MVP
+  const fetchMode = safeMode === "reorder" ? "reorder" : "typing";
 
   const search = new URLSearchParams(window.location.search);
   const lessonId = Number(search.get("lessonId") || 1);
@@ -150,7 +156,7 @@ export default function SentencePractice() {
     setLessonExercises([]);
     loadLessonBatch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [safeMode, lessonId]);
+  }, [fetchMode, lessonId]);
 
   // Keep total question count stored for LessonDetail progress summary
   useEffect(() => {
@@ -422,7 +428,7 @@ export default function SentencePractice() {
     setLoadError("");
     try {
       const res = await api.get("/quizzes/random", {
-        params: { mode: activeMode, lessonId }, // lessonId optional if backend supports
+        params: { mode: fetchMode, lessonId },
       });
       const data = res?.data ?? res;
       const ex = normalizeExercise(data);
@@ -834,6 +840,27 @@ export default function SentencePractice() {
           onClick={() => loadLessonBatch()}
         >
           Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (
+    !loading &&
+    !loadError &&
+    (!lessonExercises || lessonExercises.length === 0)
+  ) {
+    return (
+      <div className="max-w-3xl mx-auto p-6 text-center">
+        <h1 className="text-2xl font-bold mb-2">No exercises found</h1>
+        <p className="text-gray-600">
+          This lesson doesn’t have practice items yet.
+        </p>
+        <button
+          onClick={() => window.history.back()}
+          className="mt-4 px-4 py-2 rounded-xl border hover:bg-gray-50"
+        >
+          Back
         </button>
       </div>
     );
