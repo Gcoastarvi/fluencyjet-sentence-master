@@ -112,6 +112,15 @@ export default function SentencePractice() {
     const q = lessonExercises[currentIndex];
     if (!q) return null;
 
+    // ✅ Typing Word Bank (hint chips)
+    const typingWordBank = useMemo(() => {
+      if (safeMode !== "typing") return [];
+      const words = Array.isArray(currentQuestion?.correctOrder)
+        ? [...currentQuestion.correctOrder]
+        : [];
+      return words.sort(() => Math.random() - 0.5);
+    }, [safeMode, currentQuestion, currentIndex]);
+
     // ensure typing has a usable target
     const target =
       q.answer?.trim() ||
@@ -382,7 +391,7 @@ export default function SentencePractice() {
 
     try {
       const res = await api.get(
-        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(safeMode)}`,
+        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(fetchMode)}`,
       );
 
       const data = res?.data ?? res;
@@ -937,22 +946,24 @@ export default function SentencePractice() {
           </div>
 
           {/* Word Bank (hint only — not clickable) */}
-          <div className="mb-3">
-            <div className="text-xs font-semibold text-slate-600 mb-2">
-              Word Bank (hint only)
-            </div>
+          {safeMode === "typing" && (
+            <div className="mb-3">
+              <div className="text-xs font-semibold text-slate-600 mb-2">
+                Word Bank (hint only)
+              </div>
 
-            <div className="flex flex-wrap gap-2">
-              {typingWordBank.map((w, idx) => (
-                <span
-                  key={`${w}_${idx}`}
-                  className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-sm"
-                >
-                  {w}
-                </span>
-              ))}
+              <div className="flex flex-wrap gap-2">
+                {(typingWordBank || []).map((w, idx) => (
+                  <span
+                    key={`${w}_${idx}`}
+                    className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-sm"
+                  >
+                    {w}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {safeMode === "cloze" && (
             <div className="mt-4">
