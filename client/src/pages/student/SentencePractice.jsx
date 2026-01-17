@@ -34,6 +34,36 @@ export default function SentencePractice() {
   const lessonId = Number(search.get("lessonId") || 1);
 
   // -------------------
+  // Local progress store (LessonDetail summary)
+  // -------------------
+  const progressKey = (lid, mode) => `fj_progress:${lid}:${mode}`;
+
+  function readProgress(lid, mode) {
+    try {
+      return JSON.parse(localStorage.getItem(progressKey(lid, mode)) || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function writeProgress(lid, mode, patch) {
+    try {
+      const prev = readProgress(lid, mode) || {};
+      const next = {
+        lessonId: lid,
+        mode,
+        completed: Number(prev.completed || 0),
+        total: Number(prev.total || 0),
+        updatedAt: prev.updatedAt || Date.now(),
+        ...patch,
+      };
+      localStorage.setItem(progressKey(lid, mode), JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  }
+
+  // -------------------
   // refs
   // -------------------
   const correctSoundRef = useRef(null);
@@ -95,7 +125,9 @@ export default function SentencePractice() {
   // 🔁 Smart Resume (auto, exact lesson + mode)
   useEffect(() => {
     try {
-      const last = JSON.parse(localStorage.getItem("fj_last_session") || "null");
+      const last = JSON.parse(
+        localStorage.getItem("fj_last_session") || "null",
+      );
       if (!last) return;
 
       // Must match current lesson + mode
@@ -119,6 +151,19 @@ export default function SentencePractice() {
     loadLessonBatch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeMode, lessonId]);
+
+  // Keep total question count stored for LessonDetail progress summary
+  useEffect(() => {
+    if (!lessonId) return;
+    if (!lessonExercises || lessonExercises.length === 0) return;
+
+    // store total for both supported modes (typing/reorder)
+    writeProgress(lessonId, safeMode, {
+      total: lessonExercises.length,
+      updatedAt: Date.now(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId, safeMode, lessonExercises?.length]);
 
   useEffect(() => {
     initQuiz();
@@ -484,6 +529,21 @@ export default function SentencePractice() {
           }
         })();
 
+        // Update lesson progress (Typing)
+        {
+          const prev = readProgress(lessonId, "typing");
+          const completedNow = Math.max(
+            Number(prev?.completed || 0),
+            currentIndex + 1,
+          );
+          const totalNow = Number(prev?.total || lessonExercises?.length || 0);
+          writeProgress(lessonId, "typing", {
+            completed: completedNow,
+            total: totalNow,
+            updatedAt: Date.now(),
+          });
+        }
+
         localStorage.setItem(
           "fj_last_session",
           JSON.stringify({
@@ -551,6 +611,21 @@ export default function SentencePractice() {
           console.error("[XP] reorder commitXP/completion failed", err);
         }
       })();
+
+      // Update lesson progress (Reorder)
+      {
+        const prev = readProgress(lessonId, "reorder");
+        const completedNow = Math.max(
+          Number(prev?.completed || 0),
+          currentIndex + 1,
+        );
+        const totalNow = Number(prev?.total || lessonExercises?.length || 0);
+        writeProgress(lessonId, "reorder", {
+          completed: completedNow,
+          total: totalNow,
+          updatedAt: Date.now(),
+        });
+      }
 
       localStorage.setItem(
         "fj_last_session",

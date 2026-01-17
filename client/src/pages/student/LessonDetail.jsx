@@ -23,6 +23,16 @@ export default function LessonDetail() {
     }
   }
 
+  function readProgress(lessonId, mode) {
+    try {
+      return JSON.parse(
+        localStorage.getItem(`fj_progress:${lessonId}:${mode}`) || "null",
+      );
+    } catch {
+      return null;
+    }
+  }
+
   const session = useMemo(() => {
     if (!lessonId) return null;
     const s = readLastSession();
@@ -36,6 +46,22 @@ export default function LessonDetail() {
 
     return s;
   }, [lessonId]);
+
+  const typingProg = useMemo(
+    () => (lessonId ? readProgress(lessonId, "typing") : null),
+    [lessonId],
+  );
+  const reorderProg = useMemo(
+    () => (lessonId ? readProgress(lessonId, "reorder") : null),
+    [lessonId],
+  );
+
+  const pct = (p) => {
+    const total = Number(p?.total || 0);
+    const done = Number(p?.completed || 0);
+    if (!total) return 0;
+    return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+  };
 
   const modeLabel = (m) => {
     if (!m) return "";
@@ -93,23 +119,66 @@ export default function LessonDetail() {
               details.)
             </div>
           ) : (
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <div className="rounded-xl bg-white p-3">
-                <div className="text-xs text-gray-500">Lesson</div>
-                <div className="text-sm font-semibold">{lessonSlug}</div>
-              </div>
+            <div className="mt-3 space-y-3">
+              {/* Top mini-cards */}
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-gray-500">Lesson</div>
+                  <div className="text-sm font-semibold">{lessonSlug}</div>
+                </div>
 
-              <div className="rounded-xl bg-white p-3">
-                <div className="text-xs text-gray-500">Continue</div>
-                <div className="text-sm font-semibold">
-                  {session ? `Mode: ${session.mode}` : "No session yet"}
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-gray-500">Continue</div>
+                  <div className="text-sm font-semibold">
+                    {session ? `Mode: ${session.mode}` : "No session yet"}
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-white p-3">
+                  <div className="text-xs text-gray-500">Last position</div>
+                  <div className="text-sm font-semibold">
+                    {session ? `Q# ${Number(session.questionIndex) + 1}` : "—"}
+                  </div>
                 </div>
               </div>
 
+              {/* Typing progress */}
               <div className="rounded-xl bg-white p-3">
-                <div className="text-xs text-gray-500">Last position</div>
-                <div className="text-sm font-semibold">
-                  {session ? `Q# ${Number(session.questionIndex) + 1}` : "—"}
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold">Typing</div>
+                  <div className="text-xs text-gray-600">
+                    {typingProg?.completed || 0}/{typingProg?.total || 0}
+                  </div>
+                </div>
+
+                <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-indigo-600"
+                    style={{ width: `${pct(typingProg)}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {pct(typingProg)}% complete
+                </div>
+              </div>
+
+              {/* Reorder progress */}
+              <div className="rounded-xl bg-white p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold">Reorder</div>
+                  <div className="text-xs text-gray-600">
+                    {reorderProg?.completed || 0}/{reorderProg?.total || 0}
+                  </div>
+                </div>
+
+                <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-indigo-600"
+                    style={{ width: `${pct(reorderProg)}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {pct(reorderProg)}% complete
                 </div>
               </div>
             </div>
