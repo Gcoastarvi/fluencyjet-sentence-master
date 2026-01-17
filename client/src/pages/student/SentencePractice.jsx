@@ -106,20 +106,51 @@ export default function SentencePractice() {
   const [showXPToast, setShowXPToast] = useState(false);
   const [streak, setStreak] = useState(0);
 
-  const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
+  const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);    
 
+  // -------------------
+  // Derived data (must be declared AFTER state)
+  // -------------------
   const currentQuestion = useMemo(() => {
-    const q = lessonExercises[currentIndex];
-    if (!q) return null;
+    const list = Array.isArray(lessonExercises) ? lessonExercises : [];
+    const q = list[currentIndex];
+    return q || null;
+  }, [lessonExercises, currentIndex]);
 
-    // ✅ Typing Word Bank (hint chips)
-    const typingWordBank = useMemo(() => {
-      if (safeMode !== "typing") return [];
-      const words = Array.isArray(currentQuestion?.correctOrder)
-        ? [...currentQuestion.correctOrder]
-        : [];
-      return words.sort(() => Math.random() - 0.5);
-    }, [safeMode, currentQuestion, currentIndex]);
+  // ✅ Typing Word Bank (hint chips)
+  const typingWordBank = useMemo(() => {
+    if (safeMode !== "typing") return [];
+    const words = Array.isArray(currentQuestion?.correctOrder)
+      ? [...currentQuestion.correctOrder]
+      : [];
+    return words.sort(() => Math.random() - 0.5);
+  }, [safeMode, currentQuestion, currentIndex]);
+
+  // ✅ Cloze: build masked sentence + missing word
+  const cloze = useMemo(() => {
+    if (safeMode !== "cloze") return null;
+
+    const words = Array.isArray(currentQuestion?.correctOrder)
+      ? [...currentQuestion.correctOrder]
+      : [];
+
+    if (words.length < 3) return null;
+
+    const candidates = words
+      .map((w, i) => ({ w, i }))
+      .filter(({ w }) => String(w || "").replace(/[^a-zA-Z']/g, "").length >= 3);
+
+    const pick = candidates.length
+      ? candidates[Math.floor(candidates.length / 2)]
+      : { w: words[Math.floor(words.length / 2)], i: Math.floor(words.length / 2) };
+
+    const missingWord = String(pick.w || "").trim();
+    const maskedWords = words.map((w, idx) => (idx === pick.i ? "____" : w));
+    const masked = maskedWords.join(" ");
+
+    return { missingWord, masked, index: pick.i };
+  }, [safeMode, currentQuestion, currentIndex]);
+
 
     // ensure typing has a usable target
     const target =
@@ -183,43 +214,7 @@ export default function SentencePractice() {
   useEffect(() => {
     initQuiz();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, safeMode, lessonExercises]);
-
-  // ✅ Cloze: build masked sentence + missing word
-  const cloze = useMemo(() => {
-    if (safeMode !== "cloze") return null;
-
-    const words = Array.isArray(currentQuestion?.correctOrder)
-      ? [...currentQuestion.correctOrder]
-      : [];
-
-    if (words.length < 3) return null;
-
-    // pick a "good" blank word (avoid tiny words)
-    const candidates = words
-      .map((w, i) => ({ w, i }))
-      .filter(
-        ({ w }) => String(w || "").replace(/[^a-zA-Z']/g, "").length >= 3,
-      );
-
-    const pick = candidates.length
-      ? candidates[Math.floor(candidates.length / 2)]
-      : {
-          w: words[Math.floor(words.length / 2)],
-          i: Math.floor(words.length / 2),
-        };
-
-    const missingWord = String(pick.w || "").trim();
-
-    const maskedWords = words.map((w, idx) => (idx === pick.i ? "____" : w));
-    const masked = maskedWords.join(" ");
-
-    return {
-      missingWord,
-      masked,
-      index: pick.i,
-    };
-  }, [safeMode, currentQuestion, currentIndex]);
+  }, [currentIndex, safeMode, lessonExercises]);  
 
   // 🔊 Initialize sounds once
   useEffect(() => {
