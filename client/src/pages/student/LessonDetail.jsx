@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { getLastSessionForLesson } from "../../utils/lessonSession.js";
 
 // IMPORTANT:
 // This page expects Lessons page to navigate here with `state: { lesson }`.
@@ -18,17 +17,31 @@ export default function LessonDetail() {
 
   const session = useMemo(() => {
     if (!lessonId) return null;
-    return getLastSessionForLesson(lessonId);
+    const s = readLastSession();
+    if (!s) return null;
+
+    const sameLesson = String(s.lessonId) === String(lessonId);
+    if (!sameLesson) return null;
+
+    return s;
   }, [lessonId]);
 
   const continueHref =
-    session && lessonId
+    session && session.mode
       ? `/practice/${session.mode}?lessonId=${encodeURIComponent(lessonId)}`
       : null;
 
   function startMode(mode) {
     if (!lessonId) return;
     navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lessonId)}`);
+  }
+
+  function readLastSession() {
+    try {
+      return JSON.parse(localStorage.getItem("fj_last_session") || "null");
+    } catch {
+      return null;
+    }
   }
 
   return (

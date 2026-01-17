@@ -92,22 +92,26 @@ export default function SentencePractice() {
   // effects
   // -------------------
 
-  // 🔁 Smart Resume (optional)
+  // 🔁 Smart Resume (auto, exact lesson + mode)
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("resume") === "1") {
-      try {
-        const last = JSON.parse(
-          localStorage.getItem("fj_last_session") || "null",
-        );
-        if (last?.questionIndex != null) {
-          setCurrentIndex(last.questionIndex);
-        }
-      } catch {
-        // ignore
+    try {
+      const last = JSON.parse(localStorage.getItem("fj_last_session") || "null");
+      if (!last) return;
+
+      // Must match current lesson + mode
+      const sameLesson = String(last.lessonId) === String(lessonId);
+      const sameMode = String(last.mode) === String(safeMode);
+
+      if (!sameLesson || !sameMode) return;
+
+      if (last?.questionIndex != null) {
+        setCurrentIndex(Number(last.questionIndex) || 0);
       }
+    } catch {
+      // ignore
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonId, safeMode]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -483,13 +487,12 @@ export default function SentencePractice() {
         localStorage.setItem(
           "fj_last_session",
           JSON.stringify({
-            practiceType: "typing",
+            lessonId,
+            mode: "typing",
             questionIndex: currentIndex + 1,
             timestamp: Date.now(),
           }),
         );
-        return;
-      }
 
       // wrong typing
       wrongSoundRef.current?.play?.();
@@ -550,13 +553,12 @@ export default function SentencePractice() {
       localStorage.setItem(
         "fj_last_session",
         JSON.stringify({
-          practiceType: "reorder",
+          lessonId,
+          mode: "reorder",
           questionIndex: currentIndex + 1,
           timestamp: Date.now(),
         }),
       );
-      return;
-    }
 
     // WRONG
     wrongSoundRef.current?.play?.();
