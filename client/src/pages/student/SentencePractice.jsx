@@ -106,7 +106,7 @@ export default function SentencePractice() {
   const [showXPToast, setShowXPToast] = useState(false);
   const [streak, setStreak] = useState(0);
 
-  const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);    
+  const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
 
   // -------------------
   // Derived data (must be declared AFTER state)
@@ -130,19 +130,32 @@ export default function SentencePractice() {
   const cloze = useMemo(() => {
     if (safeMode !== "cloze") return null;
 
-    const words = Array.isArray(currentQuestion?.correctOrder)
-      ? [...currentQuestion.correctOrder]
-      : [];
+    const target =
+      currentQuestion?.answer?.trim() ||
+      currentQuestion?.expected?.trim() ||
+      
+      (Array.isArray(currentQuestion?.correctOrder)
+        ? currentQuestion.correctOrder.join(" ")
+        : "");
 
+    const words = String(target || "")
+      .split(/\s+/)
+      .filter(Boolean);
     if (words.length < 3) return null;
 
+    // pick a "good" blank word (avoid tiny words)
     const candidates = words
       .map((w, i) => ({ w, i }))
-      .filter(({ w }) => String(w || "").replace(/[^a-zA-Z']/g, "").length >= 3);
+      .filter(
+        ({ w }) => String(w || "").replace(/[^a-zA-Z']/g, "").length >= 3,
+      );
 
     const pick = candidates.length
       ? candidates[Math.floor(candidates.length / 2)]
-      : { w: words[Math.floor(words.length / 2)], i: Math.floor(words.length / 2) };
+      : {
+          w: words[Math.floor(words.length / 2)],
+          i: Math.floor(words.length / 2),
+        };
 
     const missingWord = String(pick.w || "").trim();
     const maskedWords = words.map((w, idx) => (idx === pick.i ? "____" : w));
@@ -201,7 +214,7 @@ export default function SentencePractice() {
   useEffect(() => {
     initQuiz();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, safeMode, lessonExercises]);  
+  }, [currentIndex, safeMode, lessonExercises]);
 
   // 🔊 Initialize sounds once
   useEffect(() => {
@@ -897,6 +910,65 @@ export default function SentencePractice() {
       {showHint && status !== "correct" && (
         <div className="bg-purple-100 text-purple-800 p-3 rounded mb-4">
           💡 Hint: Subject → Verb → Action
+        </div>
+      )}
+
+      {/* 🧩 CLOZE UI */}
+      {safeMode === "cloze" && (
+        <div className="bg-white shadow-lg rounded-xl p-5 border border-indigo-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-indigo-700">Cloze Practice</h2>
+
+            <button
+              onClick={() => setTypedAnswer("")}
+              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+              disabled={status === "correct" || status === "reveal"}
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="text-sm text-gray-600 mb-2">Fill the missing word:</div>
+
+          <div className="rounded-xl border bg-white p-4">
+            <div className="text-lg font-semibold tracking-wide">
+              {cloze?.masked || "____"}
+            </div>
+
+            <div className="mt-3">
+              <input
+                value={typedAnswer}
+                onChange={(e) => setTypedAnswer(e.target.value)}
+                placeholder="Type the missing word..."
+                className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                disabled={status === "correct" || status === "reveal"}
+              />
+            </div>
+
+            <div className="flex items-center gap-3 mt-3">
+              <button
+                onClick={checkAnswer}
+                className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                disabled={status === "correct" || status === "reveal" || !cloze}
+              >
+                Submit
+              </button>
+
+              <button
+                onClick={() => setStatus("reveal")}
+                className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+                disabled={status === "correct" || status === "reveal"}
+              >
+                Show Answer
+              </button>
+            </div>
+
+            {status === "reveal" && (
+              <div className="mt-3 text-sm text-gray-700">
+                ✅ Answer: <span className="font-semibold">{cloze?.missingWord}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
