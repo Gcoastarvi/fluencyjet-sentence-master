@@ -170,13 +170,40 @@ export default function SentencePractice() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, safeMode, lessonExercises]);
 
-  // ✅ Typing Word Bank (shows shuffled words as a hint, but we don't reveal the full sentence)
-  const typingWordBank = useMemo(() => {
-    if (safeMode !== "typing") return [];
+  // ✅ Cloze: build masked sentence + missing word
+  const cloze = useMemo(() => {
+    if (safeMode !== "cloze") return null;
+
     const words = Array.isArray(currentQuestion?.correctOrder)
       ? [...currentQuestion.correctOrder]
       : [];
-    return words.sort(() => Math.random() - 0.5);
+
+    if (words.length < 3) return null;
+
+    // pick a "good" blank word (avoid tiny words)
+    const candidates = words
+      .map((w, i) => ({ w, i }))
+      .filter(
+        ({ w }) => String(w || "").replace(/[^a-zA-Z']/g, "").length >= 3,
+      );
+
+    const pick = candidates.length
+      ? candidates[Math.floor(candidates.length / 2)]
+      : {
+          w: words[Math.floor(words.length / 2)],
+          i: Math.floor(words.length / 2),
+        };
+
+    const missingWord = String(pick.w || "").trim();
+
+    const maskedWords = words.map((w, idx) => (idx === pick.i ? "____" : w));
+    const masked = maskedWords.join(" ");
+
+    return {
+      missingWord,
+      masked,
+      index: pick.i,
+    };
   }, [safeMode, currentQuestion, currentIndex]);
 
   // 🔊 Initialize sounds once
@@ -208,7 +235,15 @@ export default function SentencePractice() {
     const numericQuestionId = Number(currentIndex + 1); // 1..N
 
     // choose xp by mode (keep your economy)
-    const xpValue = isCorrect ? (mode === "typing" ? 150 : 100) : 0;
+    const xpValue = isCorrect
+      ? mode === "typing"
+        ? 150
+        : mode === "reorder"
+          ? 100
+          : mode === "cloze"
+            ? 80
+            : 0
+      : 0;
 
     // ✅ build payload correctly (NO statements inside object literal)
     const payload = {
@@ -466,6 +501,11 @@ export default function SentencePractice() {
       return;
     }
 
+    if (safeMode === "cloze") {
+      setTypedAnswer("");
+      return;
+    }
+
     if (safeMode === "reorder") {
       const reshuffled = [...(currentQuestion?.correctOrder || [])].sort(
         () => Math.random() - 0.5,
@@ -570,6 +610,91 @@ export default function SentencePractice() {
       return;
     }
 
+    // 🧩 CLOZE validation
+    if (safeMode === "cloze") {
+      const normalizeWord = (s) =>
+        String(s || "")
+          .trim()
+          .toLowerCase()
+          .replace(/[’‘‛ʼ]/g, "'")
+          .replace(/[“”]/g, '"')
+          .replace(/\s+/g, " ");
+
+      const expected = normalizeWord(cloze?.missingWord);
+      const got = normalizeWord(typedAnswer);
+
+      if (!got) {
+        setStatus("wrong");
+        setShowHint(true);
+        return;
+      }
+
+      const isCorrect = expected && got === expected;
+
+      if (isCorrect) {
+        setStatus("correct");
+        setFeedback("✅ Correct!");
+
+        const attemptNumber = attempts + 1;
+
+        // Run XP + completion bonus asynchronously
+        (async () => {
+          try {
+            await commitXP({
+              isCorrect: true,
+              attemptNo: attemptNumber,
+              mode: "cloze",
+            });
+
+            const isLastQuestion =
+              currentIndex >= (lessonExercises?.length || 0) - 1;
+
+            if (isLastQuestion) {
+              const bonus = await awardCompletionBonus("cloze");
+              setCompletionXp(bonus.awarded || 300);
+              setCompletionMode("cloze");
+              setShowCompleteModal(true);
+            }
+          } catch (err) {
+            console.error("[XP] cloze commitXP/completion failed", err);
+          }
+        })();
+
+        // Update lesson progress (Cloze)
+        {
+          const prev = readProgress(lessonId, "cloze");
+          const completedNow = Math.max(
+            Number(prev?.completed || 0),
+            currentIndex + 1,
+          );
+          const totalNow = Number(prev?.total || lessonExercises?.length || 0);
+          writeProgress(lessonId, "cloze", {
+            completed: completedNow,
+            total: totalNow,
+            updatedAt: Date.now(),
+          });
+        }
+
+        // Save session (Cloze) — resume next question
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId,
+            mode: "cloze",
+            questionIndex: currentIndex + 1,
+            timestamp: Date.now(),
+          }),
+        );
+
+        return;
+      }
+
+      // wrong cloze
+      setStatus("wrong");
+      setFeedback(`❌ Correct answer: "${cloze?.missingWord || ""}"`);
+      return;
+    }
+
     // ✅ REORDER validation
     if (answer.length !== currentQuestion.correctOrder.length) {
       setStatus("wrong");
@@ -656,7 +781,7 @@ export default function SentencePractice() {
   // -------------------
   // mode guard (MVP)
   // -------------------
-  if (safeMode !== "reorder" && safeMode !== "typing") {
+  if (safeMode !== "reorder" && safeMode !== "typing" && safeMode !== "cloze") {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
         <h1 className="text-2xl font-bold mb-2">Practice mode: {safeMode}</h1>
@@ -801,6 +926,50 @@ export default function SentencePractice() {
               ))}
             </div>
           </div>
+
+          {safeMode === "cloze" && (
+            <div className="mt-4">
+              <div className="text-sm text-gray-600 mb-2">
+                Fill the missing word:
+              </div>
+
+              <div className="rounded-xl border bg-white p-4">
+                <div className="text-lg font-semibold tracking-wide">
+                  {cloze?.masked || "____"}
+                </div>
+
+                <div className="mt-3">
+                  <input
+                    value={typedAnswer}
+                    onChange={(e) => setTypedAnswer(e.target.value)}
+                    placeholder="Type the missing word..."
+                    className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    disabled={status === "correct" || status === "reveal"}
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 mt-3">
+                  <button
+                    onClick={checkAnswer}
+                    className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
+                    disabled={
+                      status === "correct" || status === "reveal" || !cloze
+                    }
+                  >
+                    Submit
+                  </button>
+
+                  <button
+                    onClick={() => setStatus("reveal")}
+                    className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+                    disabled={status === "correct" || status === "reveal"}
+                  >
+                    Show Answer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Input */}
           <textarea
