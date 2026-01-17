@@ -397,7 +397,7 @@ export default function SentencePractice() {
       const data = res?.data ?? res;
 
       const ok = Array.isArray(data) ? true : data?.ok;
-      if (!ok) {
+      if (data?.ok === false) {
         throw new Error((data && data.error) || "Failed to load questions");
       }
 
