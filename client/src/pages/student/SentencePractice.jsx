@@ -493,6 +493,8 @@ export default function SentencePractice() {
             timestamp: Date.now(),
           }),
         );
+        return;
+      }
 
       // wrong typing
       wrongSoundRef.current?.play?.();
@@ -559,6 +561,8 @@ export default function SentencePractice() {
           timestamp: Date.now(),
         }),
       );
+      return;
+    }
 
     // WRONG
     wrongSoundRef.current?.play?.();

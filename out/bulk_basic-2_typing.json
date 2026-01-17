@@ -1,0 +1,39 @@
+{
+  "lessonSlug": "basic-2",
+  "lessonTitle": "Basic Lesson 2",
+  "lessonLevel": "basic",
+  "mode": "typing",
+  "xp": 150,
+  "items": [
+    {
+      "orderIndex": 1,
+      "promptTa": "அதுவும் சரிதான்",
+      "answer": "That’s true too",
+      "xp": 150
+    },
+    {
+      "orderIndex": 2,
+      "promptTa": "அதுக்கு நான் ரெடி",
+      "answer": "I’m ready for that",
+      "xp": 150
+    },
+    {
+      "orderIndex": 3,
+      "promptTa": "சரி, ஒத்துக்கிறேன்",
+      "answer": "Okay, I agree",
+      "xp": 150
+    },
+    {
+      "orderIndex": 4,
+      "promptTa": "அதுக்காக நான் காத்திருந்தேன்",
+      "answer": "I was waiting for that",
+      "xp": 150
+    },
+    {
+      "orderIndex": 5,
+      "promptTa": "ஒன்னும் ப்ரொப்ளம் இல்ல",
+      "answer": "No problem at all",
+      "xp": 150
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "lessonSlug": "inter-2",
+  "lessonTitle": "Intermediate Lesson 2",
+  "lessonLevel": "intermediate",
+  "mode": "reorder",
+  "xp": 150,
+  "items": [
+    {
+      "orderIndex": 1,
+      "promptTa": "கண்டிப்பா முயற்சி பண்ணேன்",
+      "answer": "I definitely tried",
+      "xp": 150
+    },
+    {
+      "orderIndex": 2,
+      "promptTa": "எனக்கு வேணாம்",
+      "answer": "I don’t want it",
+      "xp": 150
+    },
+    {
+      "orderIndex": 3,
+      "promptTa": "அந்த மாதிரி இல்ல",
+      "answer": "It’s not like that",
+      "xp": 150
+    },
+    {
+      "orderIndex": 4,
+      "promptTa": "அதுதான் எனக்கு தெரியாதது",
+      "answer": "That’s what I didn’t know",
+      "xp": 150
+    },
+    {
+      "orderIndex": 5,
+      "promptTa": "நீங்க தான் சொல்லணும்",
+      "answer": "You should be the one to say",
+      "xp": 150
+    }
+  ]
+}

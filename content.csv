@@ -1,0 +1,31 @@
+lessonSlug,lessonTitle,lessonLevel,mode,orderIndex,promptTa,answer,xp
+basic-2,Basic Lesson 2,basic,reorder,1,உண்மையாவா சொல்றே?,Are you serious?,150
+basic-2,Basic Lesson 2,basic,reorder,2,இல்ல அப்படி இல்ல,"No, not really",150
+basic-2,Basic Lesson 2,basic,reorder,3,ரொம்ப நல்லா இருக்கு,That’s really nice,150
+basic-2,Basic Lesson 2,basic,reorder,4,"நன்றி, ரொம்ப பயனுள்ளதா இருந்துச்சு",Thanks that was really useful,150
+basic-2,Basic Lesson 2,basic,reorder,5,"சரி, அப்புறம் பேசலாம்",Okay let’s talk later,150
+basic-2,Basic Lesson 2,basic,typing,1,அதுவும் சரிதான்,That’s true too,150
+basic-2,Basic Lesson 2,basic,typing,2,அதுக்கு நான் ரெடி,I’m ready for that,150
+basic-2,Basic Lesson 2,basic,typing,3,"சரி, ஒத்துக்கிறேன்","Okay, I agree",150
+basic-2,Basic Lesson 2,basic,typing,4,அதுக்காக நான் காத்திருந்தேன்,I was waiting for that,150
+basic-2,Basic Lesson 2,basic,typing,5,ஒன்னும் ப்ரொப்ளம் இல்ல,No problem at all,150
+basic-3,Basic Lesson 3,basic,reorder,1,எனக்கு கொஞ்சம் கஷ்டம் தான்,It’s a bit difficult for me,150
+basic-3,Basic Lesson 3,basic,reorder,2,உங்க point புரியுது,I get your point,150
+basic-3,Basic Lesson 3,basic,reorder,3,எனக்கு பிடிச்சிருக்கே,I like it,150
+basic-3,Basic Lesson 3,basic,reorder,4,நான் அதை ஏற்க முடியாது,I can’t accept that,150
+basic-3,Basic Lesson 3,basic,reorder,5,ரொம்ப நாள் ஆகுது,It’s been a long time,150
+basic-3,Basic Lesson 3,basic,typing,1,என்னால முடியாது,I can’t do it,150
+basic-3,Basic Lesson 3,basic,typing,2,அப்படி இல்ல,It’s not like that,150
+basic-3,Basic Lesson 3,basic,typing,3,அதுக்கு நீ தான் காரணம்,You’re the reason for that,150
+basic-3,Basic Lesson 3,basic,typing,4,கொஞ்சம் டைம் குடு,Give me some time,150
+basic-3,Basic Lesson 3,basic,typing,5,எனக்கே சந்தோஷம்,The pleasure is mine,150
+inter-2,Intermediate Lesson 2,intermediate,reorder,1,கண்டிப்பா முயற்சி பண்ணேன்,I definitely tried,150
+inter-2,Intermediate Lesson 2,intermediate,reorder,2,எனக்கு வேணாம்,I don’t want it,150
+inter-2,Intermediate Lesson 2,intermediate,reorder,3,அந்த மாதிரி இல்ல,It’s not like that,150
+inter-2,Intermediate Lesson 2,intermediate,reorder,4,அதுதான் எனக்கு தெரியாதது,That’s what I didn’t know,150
+inter-2,Intermediate Lesson 2,intermediate,reorder,5,நீங்க தான் சொல்லணும்,You should be the one to say,150
+inter-2,Intermediate Lesson 2,intermediate,typing,1,வேறென்ன சொல்ல முடியும்?,What else can I say?,150
+inter-2,Intermediate Lesson 2,intermediate,typing,2,அதைப்பற்றி நானும் கேள்விப்பட்டேன்,I heard about that too,150
+inter-2,Intermediate Lesson 2,intermediate,typing,3,நல்லா பண்ணியிருக்கீங்க,Well done!,150
+inter-2,Intermediate Lesson 2,intermediate,typing,4,இதை நம்ப முடியல,I can’t believe this,150
+inter-2,Intermediate Lesson 2,intermediate,typing,5,"சரி, அதில் தவறே இல்ல","Alright, no doubt about that",150
