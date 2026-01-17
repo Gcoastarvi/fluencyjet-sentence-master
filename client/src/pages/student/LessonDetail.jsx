@@ -28,6 +28,9 @@ export default function LessonDetail() {
     const s = readLastSession();
     if (!s) return null;
 
+    // ✅ allow Continue only for supported modes
+    if (s.mode !== "typing" && s.mode !== "reorder") return null;
+
     const sameLesson = String(s.lessonId) === String(lessonId);
     if (!sameLesson) return null;
 
