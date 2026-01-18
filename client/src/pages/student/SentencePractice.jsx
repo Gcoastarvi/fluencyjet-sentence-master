@@ -785,71 +785,6 @@ export default function SentencePractice() {
         return;
       }
 
-      // 🔊 AUDIO validation (self-reported)
-      if (safeMode === "audio") {
-        // mark as correct (premium UX)
-        setStatus("correct");
-        setFeedback("✅ Nice! Keep repeating it out loud.");
-
-        // UI XP
-        setEarnedXP(150);
-        setShowXPToast(true);
-        setTimeout(() => setShowXPToast(false), 900);
-
-        try {
-          playCorrect?.();
-        } catch {}
-
-        const attemptNumber = attempts + 1;
-
-        (async () => {
-          try {
-            await commitXP({
-              isCorrect: true,
-              attemptNo: attemptNumber,
-              mode: "typing", // ✅ count audio as typing in backend for now
-            });
-
-            const isLastQuestion =
-              currentIndex >= (lessonExercises?.length || 0) - 1;
-
-            if (isLastQuestion) {
-              const bonus = await awardCompletionBonus("typing");
-              setCompletionXp(bonus.awarded || 300);
-              setCompletionMode("audio");
-              setShowCompleteModal(true);
-            }
-          } catch (err) {
-            console.error("[XP] audio commitXP/completion failed", err);
-          }
-        })();
-
-        // progress
-        writeProgress(lessonId, "audio", {
-          total: lessonExercises.length,
-          completed: Math.min(lessonExercises.length, currentIndex + 1),
-          updatedAt: Date.now(),
-        });
-
-        // session
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId,
-            mode: "audio",
-            questionIndex: currentIndex + 1,
-            timestamp: Date.now(),
-          }),
-        );
-
-        // advance after beat
-        setTimeout(() => {
-          loadNextQuestion();
-        }, 900);
-
-        return;
-      }
-
       // ✅ Accept either the missing word OR the full sentence
       const gotWords = got.split(" ").filter(Boolean);
       const expectedWordOk = expected && got === expected;
@@ -987,76 +922,6 @@ export default function SentencePractice() {
         }
       })();
 
-      // 🔊 Audio mode: auto-advance after correct
-      // Audio “I repeated it” XP flow
-      async function handleAudioRepeated() {
-        if (!currentQuestion) return;
-        if (status === "correct") return;
-
-        // count audio as typing for backend XP economy
-        const xpMode = "typing";
-        const attemptNumber = attempts + 1;
-
-        setStatus("correct");
-        setFeedback("✅ Great! +150 XP");
-        setEarnedXP(150);
-        setShowXPToast(true);
-        setTimeout(() => setShowXPToast(false), 900);
-
-        try {
-          playCorrect?.();
-        } catch {}
-
-        // XP + completion bonus (async)
-        (async () => {
-          try {
-            await commitXP({
-              isCorrect: true,
-              attemptNo: attemptNumber,
-              mode: xpMode,
-            });
-
-            const isLastQuestion =
-              currentIndex >= (lessonExercises?.length || 0) - 1;
-
-            if (isLastQuestion) {
-              const bonus = await awardCompletionBonus(xpMode);
-              setCompletionXp(bonus.awarded || 300);
-              setCompletionMode("audio");
-              setShowCompleteModal(true);
-            }
-          } catch (err) {
-            console.error("[XP] audio commitXP/completion failed", err);
-          }
-        })();
-
-        // ✅ Update progress (Audio)
-        writeProgress(lessonId, "audio", {
-          total: lessonExercises.length,
-          completed: Math.min(lessonExercises.length, currentIndex + 1),
-          updatedAt: Date.now(),
-        });
-
-        // ✅ Save session (Audio)
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId,
-            mode: "audio",
-            questionIndex: currentIndex + 1,
-            timestamp: Date.now(),
-          }),
-        );
-
-        // ✅ Advance so user sees toast/banner
-        setTimeout(() => {
-          loadNextQuestion();
-          setRevealEnglish(false);
-          setStatus("idle");
-          setFeedback("");
-          setShowHint(false);
-        }, 700);
-      }
 
       // Update lesson progress (Reorder)
       {
@@ -1514,7 +1379,7 @@ export default function SentencePractice() {
                 <span
                   key={`${word}-${index}`}
                   className={`px-4 py-2 rounded-full text-white transition ${
-                    isWrong ? "bg-red-500 animate-shake" : "bg-blue-600"
+                    isWrong ? "bg-red-500 fj-animate-shake" : "bg-blue-600"
                   }`}
                 >
                   {word}
@@ -1697,15 +1562,15 @@ export default function SentencePractice() {
       {/* Shake animation */}
       <style>
         {`
-          @keyframes shake {
+          @keyframes fj-shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(-4px); }
             50% { transform: translateX(4px); }
             75% { transform: translateX(-4px); }
             100% { transform: translateX(0); }
           }
-          .animate-shake {
-            animation: shake 0.3s ease-in-out;
+          .fj-animate-shake {
+            animation: fj-shake 0.3s ease-in-out;
           }
         `}
       </style>
