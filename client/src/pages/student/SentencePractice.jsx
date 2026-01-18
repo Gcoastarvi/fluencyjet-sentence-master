@@ -164,6 +164,7 @@ export default function SentencePractice() {
     const missingWord = String(pick.w || "").trim();
     const maskedWords = words.map((w, idx) => (idx === pick.i ? "____" : w));
     const masked = maskedWords.join(" ");
+    const full = words.join(" ");
 
     return {
       missingWord,
