@@ -149,6 +149,7 @@ export default function SentencePractice() {
   // 🔊 Audio (TTS)
   const [revealEnglish, setRevealEnglish] = useState(false);
   const [ttsRate, setTtsRate] = useState(1.0);
+  const [ttsLang, setTtsLang] = useState("en-IN");
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   useEffect(() => {
@@ -785,6 +786,71 @@ export default function SentencePractice() {
         return;
       }
 
+      // 🔊 AUDIO validation (self-reported)
+      if (safeMode === "audio") {
+        // mark as correct (premium UX)
+        setStatus("correct");
+        setFeedback("✅ Nice! Keep repeating it out loud.");
+
+        // UI XP
+        setEarnedXP(150);
+        setShowXPToast(true);
+        setTimeout(() => setShowXPToast(false), 900);
+
+        try {
+          playCorrect?.();
+        } catch {}
+
+        const attemptNumber = attempts + 1;
+
+        (async () => {
+          try {
+            await commitXP({
+              isCorrect: true,
+              attemptNo: attemptNumber,
+              mode: "typing", // ✅ count audio as typing in backend for now
+            });
+
+            const isLastQuestion =
+              currentIndex >= (lessonExercises?.length || 0) - 1;
+
+            if (isLastQuestion) {
+              const bonus = await awardCompletionBonus("typing");
+              setCompletionXp(bonus.awarded || 300);
+              setCompletionMode("audio");
+              setShowCompleteModal(true);
+            }
+          } catch (err) {
+            console.error("[XP] audio commitXP/completion failed", err);
+          }
+        })();
+
+        // progress
+        writeProgress(lessonId, "audio", {
+          total: lessonExercises.length,
+          completed: Math.min(lessonExercises.length, currentIndex + 1),
+          updatedAt: Date.now(),
+        });
+
+        // session
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId,
+            mode: "audio",
+            questionIndex: currentIndex + 1,
+            timestamp: Date.now(),
+          }),
+        );
+
+        // advance after beat
+        setTimeout(() => {
+          loadNextQuestion();
+        }, 900);
+
+        return;
+      }
+
       // ✅ Accept either the missing word OR the full sentence
       const gotWords = got.split(" ").filter(Boolean);
       const expectedWordOk = expected && got === expected;
@@ -922,6 +988,76 @@ export default function SentencePractice() {
         }
       })();
 
+      // 🔊 Audio mode: auto-advance after correct
+      // Audio “I repeated it” XP flow
+      async function handleAudioRepeated() {
+        if (!currentQuestion) return;
+        if (status === "correct") return;
+
+        // count audio as typing for backend XP economy
+        const xpMode = "typing";
+        const attemptNumber = attempts + 1;
+
+        setStatus("correct");
+        setFeedback("✅ Great! +150 XP");
+        setEarnedXP(150);
+        setShowXPToast(true);
+        setTimeout(() => setShowXPToast(false), 900);
+
+        try {
+          playCorrect?.();
+        } catch {}
+
+        // XP + completion bonus (async)
+        (async () => {
+          try {
+            await commitXP({
+              isCorrect: true,
+              attemptNo: attemptNumber,
+              mode: xpMode,
+            });
+
+            const isLastQuestion =
+              currentIndex >= (lessonExercises?.length || 0) - 1;
+
+            if (isLastQuestion) {
+              const bonus = await awardCompletionBonus(xpMode);
+              setCompletionXp(bonus.awarded || 300);
+              setCompletionMode("audio");
+              setShowCompleteModal(true);
+            }
+          } catch (err) {
+            console.error("[XP] audio commitXP/completion failed", err);
+          }
+        })();
+
+        // ✅ Update progress (Audio)
+        writeProgress(lessonId, "audio", {
+          total: lessonExercises.length,
+          completed: Math.min(lessonExercises.length, currentIndex + 1),
+          updatedAt: Date.now(),
+        });
+
+        // ✅ Save session (Audio)
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId,
+            mode: "audio",
+            questionIndex: currentIndex + 1,
+            timestamp: Date.now(),
+          }),
+        );
+
+        // ✅ Advance so user sees toast/banner
+        setTimeout(() => {
+          loadNextQuestion();
+          setRevealEnglish(false);
+          setStatus("idle");
+          setFeedback("");
+          setShowHint(false);
+        }, 700);
+      }
 
       // Update lesson progress (Reorder)
       {
@@ -1158,185 +1294,40 @@ export default function SentencePractice() {
         </div>
       )}
 
-           {/* ⌨️ TYPING UI */}
-           {safeMode === "typing" && (
-             <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
-               <div className="flex items-center justify-between mb-3">
-                 <h2 className="text-xl font-bold text-purple-700">Typing Practice</h2>
+      {/* ⌨️ TYPING UI */}
+      {safeMode === "typing" && (
+        <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-purple-700">
+              Typing Practice
+            </h2>
 
-                 <button
-                   onClick={() => setTypedAnswer("")}
-                   className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
-                   disabled={status === "correct" || status === "reveal"}
-                 >
-                   Clear
-                 </button>
-               </div>
+            <button
+              onClick={() => setTypedAnswer("")}
+              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+              disabled={status === "correct" || status === "reveal"}
+            >
+              Clear
+            </button>
+          </div>
 
-               {/* Word Bank (hint only — not clickable) */}
-               <div className="mb-3">
-                 <div className="text-xs font-semibold text-slate-600 mb-2">
-                   Word Bank (hint only)
-                 </div>
-
-                 <div className="flex flex-wrap gap-2">
-                   {(typingWordBank || []).map((w, idx) => (
-                     <span
-                       key={`${w}_${idx}`}
-                       className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-sm"
-                     >
-                       {w}
-                     </span>
-                   ))}
-                 </div>
-               </div>
-
-               {/* Input */}
-               <textarea
-                 value={typedAnswer}
-                 onChange={(e) => setTypedAnswer(e.target.value)}
-                 placeholder="Type the full English sentence here..."
-                 className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                 rows={3}
-                 disabled={status === "correct" || status === "reveal"}
-               />
-
-               <div className="flex items-center gap-3 mt-3">
-                 <button
-                   onClick={checkAnswer}
-                   className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
-                   disabled={status === "correct" || status === "reveal"}
-                 >
-                   Submit
-                 </button>
-
-                 <button
-                   onClick={() => setStatus("reveal")}
-                   className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
-                   disabled={status === "correct" || status === "reveal"}
-                 >
-                   Show Answer
-                 </button>
-               </div>
-             </div>
-           )}
-
-          {/* 🔊 AUDIO UI */}
-          {safeMode === "audio" && (
-            <div className="bg-white shadow-lg rounded-xl p-5 border border-emerald-200">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold text-emerald-700">
-                  Audio Practice
-                </h2>
-
-                <button
-                  onClick={() => {
-                    stopSpeech();
-                    setAudioShowEnglish(false);
-                  }}
-                  className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
-                >
-                  Reset
-                </button>
-              </div>
-
-              <div className="text-sm text-gray-600 mb-2">
-                Listen and repeat. Then mark it done.
-              </div>
-
-              {/* Tamil prompt */}
-              <div className="rounded-xl border bg-white p-4">
-                <div className="text-lg font-semibold tracking-wide">
-                  {currentQuestion?.promptTa || "—"}
-                </div>
-
-                {/* Reveal English toggle */}
-                <div className="mt-3 flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setAudioShowEnglish((v) => !v)}
-                    className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm"
-                    disabled={!currentQuestion}
-                  >
-                    {audioShowEnglish ? "Hide English" : "Reveal English"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      speak(getFullEnglishSentence(currentQuestion))
-                    }
-                    className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
-                    disabled={!currentQuestion}
-                  >
-                    ▶ Play
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => stopSpeech()}
-                    className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
-                  >
-                    Stop
-                  </button>
-                </div>
-
-                {audioShowEnglish && (
-                  <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
-                    <div className="text-xs text-emerald-700 font-semibold mb-1">
-                      English
-                    </div>
-                    <div className="text-base font-semibold text-emerald-900">
-                      {getFullEnglishSentence(currentQuestion) || "—"}
-                    </div>
-                  </div>
-                )}
-
-                {/* Controls */}
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <label className="text-sm">
-                    <div className="text-xs text-gray-500 mb-1">Rate</div>
-                    <input
-                      type="range"
-                      min="0.8"
-                      max="1.2"
-                      step="0.05"
-                      value={audioRate}
-                      onChange={(e) => setAudioRate(Number(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="text-xs text-gray-600 mt-1">
-                      {audioRate.toFixed(2)}
-                    </div>
-                  </label>
-
-                  <label className="text-sm">
-                    <div className="text-xs text-gray-500 mb-1">Accent</div>
-                    <select
-                      value={audioLang}
-                      onChange={(e) => setAudioLang(e.target.value)}
-                      className="w-full rounded-lg border px-2 py-2 text-sm"
-                    >
-                      <option value="en-US">US</option>
-                      <option value="en-GB">UK</option>
-                      <option value="en-IN">India</option>
-                    </select>
-                  </label>
-
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={() => checkAnswer()} // we’ll wire this in Step 3
-                      className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-                      disabled={!currentQuestion}
-                    >
-                      I repeated it ✅
-                    </button>
-                  </div>
-                </div>
-              </div>
+          {/* Word Bank (hint only — not clickable) */}
+          <div className="mb-3">
+            <div className="text-xs font-semibold text-slate-600 mb-2">
+              Word Bank (hint only)
             </div>
-          )}
+
+            <div className="flex flex-wrap gap-2">
+              {(typingWordBank || []).map((w, idx) => (
+                <span
+                  key={`${w}_${idx}`}
+                  className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-sm"
+                >
+                  {w}
+                </span>
+              ))}
+            </div>
+          </div>
 
           {/* Input */}
           <textarea
@@ -1368,212 +1359,382 @@ export default function SentencePractice() {
         </div>
       )}
 
-      {/* REORDER UI */}
-      {safeMode === "reorder" && (
-        <>
-          {/* Answer Area */}
-          <div className="border-2 border-dashed rounded-lg p-4 min-h-[70px] mb-4 flex flex-wrap gap-2">
-            {answer.map((word, index) => {
-              const isWrong = wrongIndexes.includes(index);
-              return (
-                <span
-                  key={`${word}-${index}`}
-                  className={`px-4 py-2 rounded-full text-white transition ${
-                    isWrong ? "bg-red-500 fj-animate-shake" : "bg-blue-600"
-                  }`}
-                >
-                  {word}
-                </span>
-              );
-            })}
-          </div>
+      {/* 🔊 AUDIO UI */}
+      {safeMode === "audio" && (
+        <div className="bg-white shadow-lg rounded-xl p-5 border border-emerald-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-emerald-700">
+              Audio Practice
+            </h2>
 
-          {/* Tile Bank */}
-          <div className="border-2 border-dashed rounded-lg p-4 mb-6 flex flex-wrap gap-2">
-            {tiles.map((word, index) => (
-              <button
-                key={`${word}-${index}`}
-                type="button"
-                onClick={() => addToAnswer(word)}
-                disabled={status === "correct" || status === "reveal"}
-                className="px-4 py-2 rounded-full bg-blue-600 text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {word}
-              </button>
-            ))}
-          </div>
-
-          {/* Check Answer button (REORDER only) */}
-          {status === "idle" && (
             <button
-              type="button"
-              onClick={checkAnswer}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+              onClick={() => {
+                stopTTS();
+                setRevealEnglish(false);
+              }}
+              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
             >
-              Check Answer
+              Reset
             </button>
-          )}
-        </>
-      )}
-
-      {/* Wrong */}
-      {status === "wrong" && (
-        <div className="mt-6">
-          <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
-            ❌ Not correct. Try again. ({attempts}/{MAX_ATTEMPTS})
           </div>
-          <button
-            onClick={handleTryAgain}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
-          >
-            Try again
-          </button>
-        </div>
-      )}
 
-      {/* XP Toast */}
-      {showXPToast && (
-        <div className="fixed top-24 right-6 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce z-50">
-          +{earnedXP} XP ✨
-        </div>
-      )}
-
-      {/* Reveal */}
-      {status === "reveal" && (
-        <div className="bg-yellow-100 p-4 rounded mt-6">
-          📘 <strong>Good attempt! Here is the correct sentence:</strong>
-          <div className="mt-3">
-            <div className="flex flex-wrap gap-2">
-              {(currentQuestion?.correctOrder || []).map((word, index) => (
-                <span key={index} className="px-3 py-1 bg-green-200 rounded">
-                  {word}
-                </span>
-              ))}
-            </div>
+          <div className="text-sm text-gray-600 mb-2">
+            Listen and repeat. Then mark it done.
           </div>
-        </div>
-      )}
 
-      {showCompleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="text-xl font-semibold">✅ Lesson Completed!</div>
-            <div className="mt-2 text-sm text-gray-600">
-              You earned <span className="font-semibold">+{completionXp}</span>{" "}
-              XP bonus.
+          <div className="rounded-xl border bg-white p-4">
+            {/* Tamil prompt */}
+            <div className="text-lg font-semibold tracking-wide">
+              {currentQuestion?.tamil || currentQuestion?.promptTa || "—"}
             </div>
 
-            <div className="mt-5 grid gap-2">
+            {/* Reveal English + Play */}
+            <div className="mt-3 flex items-center gap-3 flex-wrap">
               <button
-                className="w-full rounded-xl bg-black px-4 py-2 text-white"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  const next = Number(lessonId) + 1;
-                  window.location.href = `/practice/${completionMode}?lessonId=${next}`;
-                }}
+                type="button"
+                onClick={() => setRevealEnglish((v) => !v)}
+                className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm"
+                disabled={!currentQuestion}
               >
-                Next Lesson →
+                {revealEnglish ? "Hide English" : "Reveal English"}
               </button>
 
               <button
-                className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  window.location.href = "/student/leaderboard";
-                }}
+                type="button"
+                onClick={() =>
+                  speakTTS(getFullEnglishSentence(currentQuestion))
+                }
+                className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+                disabled={!currentQuestion || isSpeaking}
               >
-                View Leaderboard
+                ▶ {isSpeaking ? "Playing..." : "Play"}
               </button>
 
               <button
-                className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  initQuiz();
-                }}
+                type="button"
+                onClick={stopTTS}
+                className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
+                disabled={!isSpeaking}
               >
-                Repeat Lesson
+                Stop
               </button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* ✅ Lesson completion modal */}
-      {showCompleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="text-xl font-semibold">✅ Lesson Completed!</div>
-            <div className="mt-2 text-sm text-gray-600">
-              You earned <span className="font-semibold">+{completionXp}</span>{" "}
-              XP bonus.
-            </div>
+            {revealEnglish && (
+              <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <div className="text-xs text-emerald-700 font-semibold mb-1">
+                  English
+                </div>
+                <div className="text-base font-semibold text-emerald-900">
+                  {getFullEnglishSentence(currentQuestion) || "—"}
+                </div>
+              </div>
+            )}
 
-            <div className="mt-5 grid gap-2">
-              <button
-                className="w-full rounded-xl bg-black px-4 py-2 text-white"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  const next = Number(lessonId) + 1;
-                  window.location.href = `/practice/${completionMode}?lessonId=${next}`;
-                }}
-              >
-                Next Lesson →
-              </button>
+            {/* Controls */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label className="text-sm">
+                <div className="text-xs text-gray-500 mb-1">Rate</div>
+                <input
+                  type="range"
+                  min="0.8"
+                  max="1.2"
+                  step="0.05"
+                  value={ttsRate}
+                  onChange={(e) => setTtsRate(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-gray-600 mt-1">
+                  {ttsRate.toFixed(2)}
+                </div>
+              </label>
 
-              <button
-                className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  window.location.href = "/student/leaderboard";
-                }}
-              >
-                View Leaderboard
-              </button>
+              <label className="text-sm">
+                <div className="text-xs text-gray-500 mb-1">Accent</div>
+                <select
+                  value={ttsLang}
+                  onChange={(e) => setTtsLang(e.target.value)}
+                  className="w-full rounded-lg border px-2 py-2 text-sm"
+                >
+                  <option value="en-IN">India</option>
+                  <option value="en-US">US</option>
+                  <option value="en-GB">UK</option>
+                </select>
+              </label>
 
-              <button
-                className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  initQuiz();
-                }}
-              >
-                Repeat Lesson
-              </button>
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={checkAnswer}
+                  className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                  disabled={!currentQuestion}
+                >
+                  I repeated it ✅
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ✅ Correct banner (Typing + Reorder) — bottom floating */}
-      {status === "correct" && Number(earnedXP || 0) > 0 && (
-        <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50">
-          <div className="rounded-xl bg-green-100 border border-green-300 px-5 py-3 text-center shadow-lg">
-            <div className="font-semibold text-green-800">
-              ✅ Correct! Well done
-            </div>
-            <div className="text-green-800 font-bold">
-              +{Number(earnedXP || 0)} XP earned
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Input */}
+      <textarea
+        value={typedAnswer}
+        onChange={(e) => setTypedAnswer(e.target.value)}
+        placeholder="Type the full English sentence here..."
+        className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+        rows={3}
+        disabled={status === "correct" || status === "reveal"}
+      />
 
-      {/* Shake animation */}
-      <style>
-        {`
-          @keyframes fj-shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            50% { transform: translateX(4px); }
-            75% { transform: translateX(-4px); }
-            100% { transform: translateX(0); }
-          }
-          .fj-animate-shake {
-            animation: fj-shake 0.3s ease-in-out;
-          }
-        `}
-      </style>
+      <div className="flex items-center gap-3 mt-3">
+        <button
+          onClick={checkAnswer}
+          className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
+          disabled={status === "correct" || status === "reveal"}
+        >
+          Submit
+        </button>
+
+        <button
+          onClick={() => setStatus("reveal")}
+          className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+          disabled={status === "correct" || status === "reveal"}
+        >
+          Show Answer
+        </button>
+      </div>
     </div>
   );
 }
+
+{
+  /* REORDER UI */
+}
+{
+  safeMode === "reorder" && (
+    <>
+      {/* Answer Area */}
+      <div className="border-2 border-dashed rounded-lg p-4 min-h-[70px] mb-4 flex flex-wrap gap-2">
+        {answer.map((word, index) => {
+          const isWrong = wrongIndexes.includes(index);
+          return (
+            <span
+              key={`${word}-${index}`}
+              className={`px-4 py-2 rounded-full text-white transition ${
+                isWrong ? "bg-red-500 animate-shake" : "bg-blue-600"
+              }`}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+
+      {/* Tile Bank */}
+      <div className="border-2 border-dashed rounded-lg p-4 mb-6 flex flex-wrap gap-2">
+        {tiles.map((word, index) => (
+          <button
+            key={`${word}-${index}`}
+            type="button"
+            onClick={() => addToAnswer(word)}
+            disabled={status === "correct" || status === "reveal"}
+            className="px-4 py-2 rounded-full bg-blue-600 text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {word}
+          </button>
+        ))}
+      </div>
+
+      {/* Check Answer button (REORDER only) */}
+      {status === "idle" && (
+        <button
+          type="button"
+          onClick={checkAnswer}
+          className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+        >
+          Check Answer
+        </button>
+      )}
+    </>
+  );
+}
+
+{
+  /* Wrong */
+}
+{
+  status === "wrong" && (
+    <div className="mt-6">
+      <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
+        ❌ Not correct. Try again. ({attempts}/{MAX_ATTEMPTS})
+      </div>
+      <button
+        onClick={handleTryAgain}
+        className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+      >
+        Try again
+      </button>
+    </div>
+  );
+}
+
+{
+  /* XP Toast */
+}
+{
+  showXPToast && (
+    <div className="fixed top-24 right-6 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce z-50">
+      +{earnedXP} XP ✨
+    </div>
+  );
+}
+
+{
+  /* Reveal */
+}
+{
+  status === "reveal" && (
+    <div className="bg-yellow-100 p-4 rounded mt-6">
+      📘 <strong>Good attempt! Here is the correct sentence:</strong>
+      <div className="mt-3">
+        <div className="flex flex-wrap gap-2">
+          {(currentQuestion?.correctOrder || []).map((word, index) => (
+            <span key={index} className="px-3 py-1 bg-green-200 rounded">
+              {word}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+{
+  showCompleteModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="text-xl font-semibold">✅ Lesson Completed!</div>
+        <div className="mt-2 text-sm text-gray-600">
+          You earned <span className="font-semibold">+{completionXp}</span> XP
+          bonus.
+        </div>
+
+        <div className="mt-5 grid gap-2">
+          <button
+            className="w-full rounded-xl bg-black px-4 py-2 text-white"
+            onClick={() => {
+              setShowCompleteModal(false);
+              const next = Number(lessonId) + 1;
+              window.location.href = `/practice/${completionMode}?lessonId=${next}`;
+            }}
+          >
+            Next Lesson →
+          </button>
+
+          <button
+            className="w-full rounded-xl border border-gray-300 px-4 py-2"
+            onClick={() => {
+              setShowCompleteModal(false);
+              window.location.href = "/student/leaderboard";
+            }}
+          >
+            View Leaderboard
+          </button>
+
+          <button
+            className="w-full rounded-xl border border-gray-300 px-4 py-2"
+            onClick={() => {
+              setShowCompleteModal(false);
+              initQuiz();
+            }}
+          >
+            Repeat Lesson
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+{
+  /* ✅ Lesson completion modal */
+}
+{
+  showCompleteModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="text-xl font-semibold">✅ Lesson Completed!</div>
+        <div className="mt-2 text-sm text-gray-600">
+          You earned <span className="font-semibold">+{completionXp}</span> XP
+          bonus.
+        </div>
+
+        <div className="mt-5 grid gap-2">
+          <button
+            className="w-full rounded-xl bg-black px-4 py-2 text-white"
+            onClick={() => {
+              setShowCompleteModal(false);
+              const next = Number(lessonId) + 1;
+              window.location.href = `/practice/${completionMode}?lessonId=${next}`;
+            }}
+          >
+            Next Lesson →
+          </button>
+
+          <button
+            className="w-full rounded-xl border border-gray-300 px-4 py-2"
+            onClick={() => {
+              setShowCompleteModal(false);
+              window.location.href = "/student/leaderboard";
+            }}
+          >
+            View Leaderboard
+          </button>
+
+          <button
+            className="w-full rounded-xl border border-gray-300 px-4 py-2"
+            onClick={() => {
+              setShowCompleteModal(false);
+              initQuiz();
+            }}
+          >
+            Repeat Lesson
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+{
+  /* ✅ Correct banner (Typing + Reorder) — bottom floating */
+}
+{
+  status === "correct" && Number(earnedXP || 0) > 0 && (
+    <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50">
+      <div className="rounded-xl bg-green-100 border border-green-300 px-5 py-3 text-center shadow-lg">
+        <div className="font-semibold text-green-800">
+          ✅ Correct! Well done
+        </div>
+        <div className="text-green-800 font-bold">
+          +{Number(earnedXP || 0)} XP earned
+        </div>
+      </div>
+    </div>
+  );
+}
+
+//* Shake animation */
+<style>{`
+  @keyframes fj-shake {
+    0% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    50% { transform: translateX(4px); }
+    75% { transform: translateX(-4px); }
+    100% { transform: translateX(0); }
+  }
+  .fj-animate-shake {
+    animation: fj-shake 0.3s ease-in-out;
+  }
+`}</style>;
