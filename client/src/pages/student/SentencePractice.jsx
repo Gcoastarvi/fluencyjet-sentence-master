@@ -143,7 +143,8 @@ export default function SentencePractice() {
 
     const words = String(target || "")
       .split(/\s+/)
-      .filter(Boolean);
+      .filter(Boolean)
+      .map((w) => String(w));
     if (words.length < 3) return null;
 
     // pick a "good" blank word (avoid tiny words)
@@ -164,7 +165,13 @@ export default function SentencePractice() {
     const maskedWords = words.map((w, idx) => (idx === pick.i ? "____" : w));
     const masked = maskedWords.join(" ");
 
-    return { missingWord, masked, index: pick.i };
+    return {
+      missingWord,
+      masked,
+      index: pick.i,
+      words,
+      full,
+    };
   }, [safeMode, currentQuestion, currentIndex]);
 
   // -------------------
@@ -642,7 +649,23 @@ export default function SentencePractice() {
         return;
       }
 
-      const isCorrect = expected && got === expected;
+      // ✅ Accept either the missing word OR the full sentence
+      const gotWords = got.split(" ").filter(Boolean);
+      const expectedWordOk = expected && got === expected;
+
+      const expectedFull = normalizeWord(String(cloze?.full || ""));
+      const expectedFullOk = expectedFull && got === expectedFull;
+
+      // If user typed full sentence with same number of words,
+      // validate the blank position word
+      const positionalOk =
+        Array.isArray(cloze?.words) &&
+        typeof cloze?.index === "number" &&
+        gotWords.length === cloze.words.length &&
+        normalizeWord(gotWords[cloze.index]) === expected;
+
+      const isCorrect =
+        expected && (expectedWordOk || expectedFullOk || positionalOk);
 
       if (isCorrect) {
         const attemptNumber = attempts + 1;
@@ -969,7 +992,7 @@ export default function SentencePractice() {
               <input
                 value={typedAnswer}
                 onChange={(e) => setTypedAnswer(e.target.value)}
-                placeholder="Type the missing word..."
+                placeholder="Type ONLY the missing word (or type the full sentence)..."
                 className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 disabled={status === "correct" || status === "reveal"}
               />
