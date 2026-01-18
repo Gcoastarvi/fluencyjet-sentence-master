@@ -112,6 +112,15 @@ export default function SentencePractice() {
 
   const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
 
+  useEffect(() => {
+    console.log("[UI] status/earnedXP/toast", {
+      safeMode,
+      status,
+      earnedXP,
+      showXPToast,
+    });
+  }, [safeMode, status, earnedXP, showXPToast]);
+
   // -------------------
   // Derived data (must be declared AFTER state)
   // -------------------
@@ -354,6 +363,7 @@ export default function SentencePractice() {
 
     try {
       const res = await api.post("/progress/update", payload);
+      console.log("[XP] commitXP response", res?.data ?? res);
       const data = res?.data ?? res;
 
       const awarded =
@@ -468,7 +478,6 @@ export default function SentencePractice() {
     setStatus("idle");
     setShowHint(false);
     setWrongIndexes([]);
-    setEarnedXP(0);
     setTypedAnswer("");
 
     // initialize by mode
@@ -485,6 +494,19 @@ export default function SentencePractice() {
   }
 
   function loadNextQuestion() {
+    // reset transient UI for next question
+    setEarnedXP(0);
+    setShowXPToast(false);
+    setStatus("idle");
+    setFeedback("");
+    setShowHint(false);
+    setTypedAnswer("");
+    setWrongIndexes([]);
+
+    // mode-specific resets
+    setAnswer([]);
+    setTiles([]);
+
     setCurrentIndex((prev) => prev + 1);
   }
 
@@ -625,8 +647,7 @@ export default function SentencePractice() {
       setShowHint(true);
 
       if (nextAttempts >= MAX_ATTEMPTS) {
-        setStatus("reveal");
-        setEarnedXP(0);
+        setStatus("reveal");        
       }
       return;
     }
@@ -675,9 +696,11 @@ export default function SentencePractice() {
         setFeedback("✅ Correct!");
 
         // ✅ Cloze XP (UI)
-        setEarnedXP(80);
+        setEarnedXP(150);
         setShowXPToast(true);
         setTimeout(() => setShowXPToast(false), 900);
+
+        console.log("[CLOZE] correct: set toast+xp", { xp: 150, safeMode });
 
         // ✅ SFX
         try {
@@ -692,6 +715,10 @@ export default function SentencePractice() {
               attemptNo: attemptNumber,
               mode: xpMode, // ✅ cloze counted as typing in backend
             });
+
+            try {
+              await api.get("/me");
+            } catch {}
 
             const isLastQuestion =
               currentIndex >= (lessonExercises?.length || 0) - 1;
@@ -725,14 +752,9 @@ export default function SentencePractice() {
           }),
         );
 
-        // ✅ Advance after short beat so user sees toast/banner
         setTimeout(() => {
-          loadNextQuestion();
-          setTypedAnswer("");
-          setShowHint(false);
-          setStatus("idle");
-          setFeedback("");
-        }, 700);
+          loadNextQuestion(); // loadNextQuestion will handle resets
+        }, 900);
 
         return;
       }
