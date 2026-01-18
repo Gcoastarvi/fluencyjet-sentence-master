@@ -133,11 +133,6 @@ export default function SentencePractice() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [typedAnswer, setTypedAnswer] = useState("");
 
-  // 🔊 AUDIO (TTS)
-  const [audioShowEnglish, setAudioShowEnglish] = useState(false);
-  const [audioRate, setAudioRate] = useState(1.0);
-  const [audioLang, setAudioLang] = useState("en-US"); // safe default
-
   // server-driven UI
   const [earnedXP, setEarnedXP] = useState(0);
   const [showXPToast, setShowXPToast] = useState(false);
@@ -553,47 +548,6 @@ export default function SentencePractice() {
     setWrongIndexes([]);
     setTypedAnswer("");
 
-    setAudioShowEnglish(false);
-    stopSpeech();
-
-    // -------------------
-    // 🔊 AUDIO (TTS) helpers
-    // -------------------
-    function getFullEnglishSentence(q) {
-      if (!q) return "";
-      const byAnswer = String(q.answer || "").trim();
-      if (byAnswer) return byAnswer;
-      const byOrder = Array.isArray(q.correctOrder)
-        ? q.correctOrder.join(" ")
-        : "";
-      return String(byOrder || "").trim();
-    }
-
-    function stopSpeech() {
-      try {
-        if (typeof window !== "undefined" && window.speechSynthesis) {
-          window.speechSynthesis.cancel();
-        }
-      } catch {}
-    }
-
-    function speak(text) {
-      const t = String(text || "").trim();
-      if (!t) return;
-
-      try {
-        if (!window.speechSynthesis) return;
-        window.speechSynthesis.cancel();
-
-        const u = new SpeechSynthesisUtterance(t);
-        u.lang = audioLang || "en-US";
-        u.rate = Number(audioRate || 1.0) || 1.0;
-        window.speechSynthesis.speak(u);
-      } catch (e) {
-        console.warn("[Audio] speak failed", e);
-      }
-    }
-
     // initialize by mode
     if (safeMode === "reorder") {
       const shuffled = [...(currentQuestion?.correctOrder || [])].sort(
@@ -922,6 +876,76 @@ export default function SentencePractice() {
         }
       })();
 
+      // 🔊 Audio mode: auto-advance after correct
+      // Audio “I repeated it” XP flow
+      async function handleAudioRepeated() {
+        if (!currentQuestion) return;
+        if (status === "correct") return;
+
+        // count audio as typing for backend XP economy
+        const xpMode = "typing";
+        const attemptNumber = attempts + 1;
+
+        setStatus("correct");
+        setFeedback("✅ Great! +150 XP");
+        setEarnedXP(150);
+        setShowXPToast(true);
+        setTimeout(() => setShowXPToast(false), 900);
+
+        try {
+          playCorrect?.();
+        } catch {}
+
+        // XP + completion bonus (async)
+        (async () => {
+          try {
+            await commitXP({
+              isCorrect: true,
+              attemptNo: attemptNumber,
+              mode: xpMode,
+            });
+
+            const isLastQuestion =
+              currentIndex >= (lessonExercises?.length || 0) - 1;
+
+            if (isLastQuestion) {
+              const bonus = await awardCompletionBonus(xpMode);
+              setCompletionXp(bonus.awarded || 300);
+              setCompletionMode("audio");
+              setShowCompleteModal(true);
+            }
+          } catch (err) {
+            console.error("[XP] audio commitXP/completion failed", err);
+          }
+        })();
+
+        // ✅ Update progress (Audio)
+        writeProgress(lessonId, "audio", {
+          total: lessonExercises.length,
+          completed: Math.min(lessonExercises.length, currentIndex + 1),
+          updatedAt: Date.now(),
+        });
+
+        // ✅ Save session (Audio)
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId,
+            mode: "audio",
+            questionIndex: currentIndex + 1,
+            timestamp: Date.now(),
+          }),
+        );
+
+        // ✅ Advance so user sees toast/banner
+        setTimeout(() => {
+          loadNextQuestion();
+          setRevealEnglish(false);
+          setStatus("idle");
+          setFeedback("");
+          setShowHint(false);
+        }, 700);
+      }
 
       // Update lesson progress (Reorder)
       {
@@ -1158,183 +1182,170 @@ export default function SentencePractice() {
         </div>
       )}
 
-           {/* ⌨️ TYPING UI */}
-           {safeMode === "typing" && (
-             <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
-               <div className="flex items-center justify-between mb-3">
-                 <h2 className="text-xl font-bold text-purple-700">Typing Practice</h2>
+      {/* ⌨️ TYPING UI */}
+      {safeMode === "typing" && (
+        <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-purple-700">
+              Typing Practice
+            </h2>
 
-                 <button
-                   onClick={() => setTypedAnswer("")}
-                   className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
-                   disabled={status === "correct" || status === "reveal"}
-                 >
-                   Clear
-                 </button>
-               </div>
+            <button
+              onClick={() => setTypedAnswer("")}
+              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+              disabled={status === "correct" || status === "reveal"}
+            >
+              Clear
+            </button>
+          </div>
 
-               {/* Word Bank (hint only — not clickable) */}
-               <div className="mb-3">
-                 <div className="text-xs font-semibold text-slate-600 mb-2">
-                   Word Bank (hint only)
-                 </div>
+          {/* Tamil prompt (what they should convert to English) */}
+          <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 mb-3">
+            <div className="text-xs font-semibold text-purple-700 mb-1">
+              Tamil prompt
+            </div>
+            <div className="text-sm text-slate-800">
+              {currentQuestion.tamil}
+            </div>
+          </div>
 
-                 <div className="flex flex-wrap gap-2">
-                   {(typingWordBank || []).map((w, idx) => (
-                     <span
-                       key={`${w}_${idx}`}
-                       className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-sm"
-                     >
-                       {w}
-                     </span>
-                   ))}
-                 </div>
-               </div>
+          {/* Word Bank (hint only — not clickable) */}
+          {safeMode === "typing" && (
+            <div className="mb-3">
+              <div className="text-xs font-semibold text-slate-600 mb-2">
+                Word Bank (hint only)
+              </div>
 
-               {/* Input */}
-               <textarea
-                 value={typedAnswer}
-                 onChange={(e) => setTypedAnswer(e.target.value)}
-                 placeholder="Type the full English sentence here..."
-                 className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                 rows={3}
-                 disabled={status === "correct" || status === "reveal"}
-               />
+              <div className="flex flex-wrap gap-2">
+                {(typingWordBank || []).map((w, idx) => (
+                  <span
+                    key={`${w}_${idx}`}
+                    className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-sm"
+                  >
+                    {w}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
-               <div className="flex items-center gap-3 mt-3">
-                 <button
-                   onClick={checkAnswer}
-                   className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
-                   disabled={status === "correct" || status === "reveal"}
-                 >
-                   Submit
-                 </button>
+          {safeMode === "cloze" && (
+            <div className="mt-4">
+              <div className="text-sm text-gray-600 mb-2">
+                Fill the missing word:
+              </div>
 
-                 <button
-                   onClick={() => setStatus("reveal")}
-                   className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
-                   disabled={status === "correct" || status === "reveal"}
-                 >
-                   Show Answer
-                 </button>
-               </div>
-             </div>
-           )}
+              <div className="rounded-xl border bg-white p-4">
+                <div className="text-lg font-semibold tracking-wide">
+                  {cloze?.masked || "____"}
+                </div>
+
+                <div className="mt-3">
+                  <input
+                    value={typedAnswer}
+                    onChange={(e) => setTypedAnswer(e.target.value)}
+                    placeholder="Type the missing word..."
+                    className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    disabled={status === "correct" || status === "reveal"}
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 mt-3">
+                  <button
+                    onClick={checkAnswer}
+                    className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
+                    disabled={
+                      status === "correct" || status === "reveal" || !cloze
+                    }
+                  >
+                    Submit
+                  </button>
+
+                  <button
+                    onClick={() => setStatus("reveal")}
+                    className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+                    disabled={status === "correct" || status === "reveal"}
+                  >
+                    Show Answer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 🔊 AUDIO UI */}
           {safeMode === "audio" && (
-            <div className="bg-white shadow-lg rounded-xl p-5 border border-emerald-200">
+            <div className="bg-white shadow-lg rounded-xl p-5 border border-indigo-200">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold text-emerald-700">
+                <h2 className="text-xl font-bold text-indigo-700">
                   Audio Practice
                 </h2>
 
-                <button
-                  onClick={() => {
-                    stopSpeech();
-                    setAudioShowEnglish(false);
-                  }}
-                  className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
-                >
-                  Reset
-                </button>
-              </div>
-
-              <div className="text-sm text-gray-600 mb-2">
-                Listen and repeat. Then mark it done.
-              </div>
-
-              {/* Tamil prompt */}
-              <div className="rounded-xl border bg-white p-4">
-                <div className="text-lg font-semibold tracking-wide">
-                  {currentQuestion?.promptTa || "—"}
-                </div>
-
-                {/* Reveal English toggle */}
-                <div className="mt-3 flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button
-                    type="button"
-                    onClick={() => setAudioShowEnglish((v) => !v)}
-                    className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm"
-                    disabled={!currentQuestion}
+                    onClick={() => speakTTS(englishFull)}
+                    className="text-xs px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                    disabled={!englishFull}
                   >
-                    {audioShowEnglish ? "Hide English" : "Reveal English"}
+                    {isSpeaking ? "Speaking..." : "Play"}
                   </button>
 
                   <button
-                    type="button"
-                    onClick={() =>
-                      speak(getFullEnglishSentence(currentQuestion))
-                    }
-                    className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
-                    disabled={!currentQuestion}
-                  >
-                    ▶ Play
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => stopSpeech()}
-                    className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
+                    onClick={stopTTS}
+                    className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
                   >
                     Stop
                   </button>
                 </div>
+              </div>
 
-                {audioShowEnglish && (
-                  <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
-                    <div className="text-xs text-emerald-700 font-semibold mb-1">
-                      English
-                    </div>
-                    <div className="text-base font-semibold text-emerald-900">
-                      {getFullEnglishSentence(currentQuestion) || "—"}
-                    </div>
-                  </div>
-                )}
+              <div className="text-sm text-gray-600 mb-2">
+                Listen, repeat aloud, then mark as done.
+              </div>
 
-                {/* Controls */}
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <label className="text-sm">
-                    <div className="text-xs text-gray-500 mb-1">Rate</div>
-                    <input
-                      type="range"
-                      min="0.8"
-                      max="1.2"
-                      step="0.05"
-                      value={audioRate}
-                      onChange={(e) => setAudioRate(Number(e.target.value))}
-                      className="w-full"
-                    />
-                    <div className="text-xs text-gray-600 mt-1">
-                      {audioRate.toFixed(2)}
-                    </div>
-                  </label>
-
-                  <label className="text-sm">
-                    <div className="text-xs text-gray-500 mb-1">Accent</div>
-                    <select
-                      value={audioLang}
-                      onChange={(e) => setAudioLang(e.target.value)}
-                      className="w-full rounded-lg border px-2 py-2 text-sm"
-                    >
-                      <option value="en-US">US</option>
-                      <option value="en-GB">UK</option>
-                      <option value="en-IN">India</option>
-                    </select>
-                  </label>
-
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={() => checkAnswer()} // we’ll wire this in Step 3
-                      className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-                      disabled={!currentQuestion}
-                    >
-                      I repeated it ✅
-                    </button>
-                  </div>
+              {/* Rate */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="text-xs text-slate-600 w-12">Rate</div>
+                <input
+                  type="range"
+                  min="0.8"
+                  max="1.1"
+                  step="0.05"
+                  value={ttsRate}
+                  onChange={(e) => setTtsRate(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-slate-600 w-10">
+                  {ttsRate.toFixed(2)}
                 </div>
               </div>
+
+              {/* Reveal English */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setRevealEnglish((v) => !v)}
+                  className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+                >
+                  {revealEnglish ? "Hide English" : "Reveal English"}
+                </button>
+
+                <button
+                  onClick={handleAudioRepeated}
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                  disabled={status === "correct"}
+                >
+                  I repeated it (+150 XP)
+                </button>
+              </div>
+
+              {revealEnglish && (
+                <div className="rounded-xl border bg-white p-4">
+                  <div className="text-sm text-gray-600 mb-1">English</div>
+                  <div className="text-lg font-semibold tracking-wide">
+                    {englishFull}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1379,7 +1390,7 @@ export default function SentencePractice() {
                 <span
                   key={`${word}-${index}`}
                   className={`px-4 py-2 rounded-full text-white transition ${
-                    isWrong ? "bg-red-500 fj-animate-shake" : "bg-blue-600"
+                    isWrong ? "bg-red-500 animate-shake" : "bg-blue-600"
                   }`}
                 >
                   {word}
@@ -1558,4 +1569,22 @@ export default function SentencePractice() {
           </div>
         </div>
       )}
-   
+
+      {/* Shake animation */}
+      <style>
+        {`
+          @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            50% { transform: translateX(4px); }
+            75% { transform: translateX(-4px); }
+            100% { transform: translateX(0); }
+          }
+          .animate-shake {
+            animation: shake 0.3s ease-in-out;
+          }
+        `}
+      </style>
+    </div>
+  );
+}
