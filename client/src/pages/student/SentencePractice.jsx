@@ -243,6 +243,28 @@ export default function SentencePractice() {
     wrongSoundRef.current = new Audio("/sounds/wrong.mp3");
   }, []);
 
+  const playCorrect = async () => {
+    try {
+      const a = correctSoundRef.current;
+      if (!a) return;
+      a.currentTime = 0;
+      await a.play();
+    } catch (e) {
+      console.log("[SFX] correct blocked/failed", e);
+    }
+  };
+
+  const playWrong = async () => {
+    try {
+      const a = wrongSoundRef.current;
+      if (!a) return;
+      a.currentTime = 0;
+      await a.play();
+    } catch (e) {
+      console.log("[SFX] wrong blocked/failed", e);
+    }
+  };
+
   // AUTO NEXT after correct/reveal
   useEffect(() => {
     if (status === "correct" || status === "reveal") {
@@ -953,7 +975,7 @@ export default function SentencePractice() {
       <h1 className="text-2xl font-bold text-center mb-6">
         Build the sentence
       </h1>
-
+      
       <div className="text-center text-xs text-slate-400 mb-3">
         urlMode: <b>{String(urlMode)}</b> | activeMode: <b>{activeMode}</b> |
         safeMode: <b>{safeMode}</b> | lessonId: <b>{lessonId}</b>
