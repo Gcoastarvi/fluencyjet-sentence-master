@@ -739,10 +739,6 @@ export default function SentencePractice() {
               mode: xpMode, // ✅ cloze counted as typing in backend
             });
 
-            try {
-              await api.get("/me");
-            } catch {}
-
             const isLastQuestion =
               currentIndex >= (lessonExercises?.length || 0) - 1;
 
@@ -1025,13 +1021,6 @@ export default function SentencePractice() {
           <div className="rounded-xl border bg-white p-4">
             <div className="text-lg font-semibold tracking-wide">
               {cloze?.masked || "____"}
-            </div>
-
-            <div className="mt-2 text-[11px] text-slate-500">
-              debug • mode={safeMode} • status={status} • earnedXP={earnedXP} •
-              toast=
-              {String(showXPToast)} • expected={cloze?.missingWord} • got="
-              {typedAnswer}"
             </div>
 
             <div className="mt-3">
