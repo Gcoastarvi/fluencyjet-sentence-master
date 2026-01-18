@@ -133,6 +133,11 @@ export default function SentencePractice() {
   const [selectedOption, setSelectedOption] = useState(null);
   const [typedAnswer, setTypedAnswer] = useState("");
 
+  // 🔊 AUDIO (TTS)
+  const [audioShowEnglish, setAudioShowEnglish] = useState(false);
+  const [audioRate, setAudioRate] = useState(1.0);
+  const [audioLang, setAudioLang] = useState("en-US"); // safe default
+
   // server-driven UI
   const [earnedXP, setEarnedXP] = useState(0);
   const [showXPToast, setShowXPToast] = useState(false);
@@ -548,6 +553,47 @@ export default function SentencePractice() {
     setWrongIndexes([]);
     setTypedAnswer("");
 
+    setAudioShowEnglish(false);
+    stopSpeech();
+
+    // -------------------
+    // 🔊 AUDIO (TTS) helpers
+    // -------------------
+    function getFullEnglishSentence(q) {
+      if (!q) return "";
+      const byAnswer = String(q.answer || "").trim();
+      if (byAnswer) return byAnswer;
+      const byOrder = Array.isArray(q.correctOrder)
+        ? q.correctOrder.join(" ")
+        : "";
+      return String(byOrder || "").trim();
+    }
+
+    function stopSpeech() {
+      try {
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+        }
+      } catch {}
+    }
+
+    function speak(text) {
+      const t = String(text || "").trim();
+      if (!t) return;
+
+      try {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+
+        const u = new SpeechSynthesisUtterance(t);
+        u.lang = audioLang || "en-US";
+        u.rate = Number(audioRate || 1.0) || 1.0;
+        window.speechSynthesis.speak(u);
+      } catch (e) {
+        console.warn("[Audio] speak failed", e);
+      }
+    }
+
     // initialize by mode
     if (safeMode === "reorder") {
       const shuffled = [...(currentQuestion?.correctOrder || [])].sort(
@@ -736,6 +782,71 @@ export default function SentencePractice() {
       if (!got) {
         setStatus("wrong");
         setShowHint(true);
+        return;
+      }
+
+      // 🔊 AUDIO validation (self-reported)
+      if (safeMode === "audio") {
+        // mark as correct (premium UX)
+        setStatus("correct");
+        setFeedback("✅ Nice! Keep repeating it out loud.");
+
+        // UI XP
+        setEarnedXP(150);
+        setShowXPToast(true);
+        setTimeout(() => setShowXPToast(false), 900);
+
+        try {
+          playCorrect?.();
+        } catch {}
+
+        const attemptNumber = attempts + 1;
+
+        (async () => {
+          try {
+            await commitXP({
+              isCorrect: true,
+              attemptNo: attemptNumber,
+              mode: "typing", // ✅ count audio as typing in backend for now
+            });
+
+            const isLastQuestion =
+              currentIndex >= (lessonExercises?.length || 0) - 1;
+
+            if (isLastQuestion) {
+              const bonus = await awardCompletionBonus("typing");
+              setCompletionXp(bonus.awarded || 300);
+              setCompletionMode("audio");
+              setShowCompleteModal(true);
+            }
+          } catch (err) {
+            console.error("[XP] audio commitXP/completion failed", err);
+          }
+        })();
+
+        // progress
+        writeProgress(lessonId, "audio", {
+          total: lessonExercises.length,
+          completed: Math.min(lessonExercises.length, currentIndex + 1),
+          updatedAt: Date.now(),
+        });
+
+        // session
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId,
+            mode: "audio",
+            questionIndex: currentIndex + 1,
+            timestamp: Date.now(),
+          }),
+        );
+
+        // advance after beat
+        setTimeout(() => {
+          loadNextQuestion();
+        }, 900);
+
         return;
       }
 
@@ -1275,77 +1386,118 @@ export default function SentencePractice() {
 
           {/* 🔊 AUDIO UI */}
           {safeMode === "audio" && (
-            <div className="bg-white shadow-lg rounded-xl p-5 border border-indigo-200">
+            <div className="bg-white shadow-lg rounded-xl p-5 border border-emerald-200">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold text-indigo-700">
+                <h2 className="text-xl font-bold text-emerald-700">
                   Audio Practice
                 </h2>
 
-                <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    stopSpeech();
+                    setAudioShowEnglish(false);
+                  }}
+                  className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+                >
+                  Reset
+                </button>
+              </div>
+
+              <div className="text-sm text-gray-600 mb-2">
+                Listen and repeat. Then mark it done.
+              </div>
+
+              {/* Tamil prompt */}
+              <div className="rounded-xl border bg-white p-4">
+                <div className="text-lg font-semibold tracking-wide">
+                  {currentQuestion?.promptTa || "—"}
+                </div>
+
+                {/* Reveal English toggle */}
+                <div className="mt-3 flex items-center gap-3">
                   <button
-                    onClick={() => speakTTS(englishFull)}
-                    className="text-xs px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                    disabled={!englishFull}
+                    type="button"
+                    onClick={() => setAudioShowEnglish((v) => !v)}
+                    className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm"
+                    disabled={!currentQuestion}
                   >
-                    {isSpeaking ? "Speaking..." : "Play"}
+                    {audioShowEnglish ? "Hide English" : "Reveal English"}
                   </button>
 
                   <button
-                    onClick={stopTTS}
-                    className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+                    type="button"
+                    onClick={() =>
+                      speak(getFullEnglishSentence(currentQuestion))
+                    }
+                    className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+                    disabled={!currentQuestion}
+                  >
+                    ▶ Play
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => stopSpeech()}
+                    className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
                   >
                     Stop
                   </button>
                 </div>
-              </div>
 
-              <div className="text-sm text-gray-600 mb-2">
-                Listen, repeat aloud, then mark as done.
-              </div>
+                {audioShowEnglish && (
+                  <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                    <div className="text-xs text-emerald-700 font-semibold mb-1">
+                      English
+                    </div>
+                    <div className="text-base font-semibold text-emerald-900">
+                      {getFullEnglishSentence(currentQuestion) || "—"}
+                    </div>
+                  </div>
+                )}
 
-              {/* Rate */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="text-xs text-slate-600 w-12">Rate</div>
-                <input
-                  type="range"
-                  min="0.8"
-                  max="1.1"
-                  step="0.05"
-                  value={ttsRate}
-                  onChange={(e) => setTtsRate(Number(e.target.value))}
-                  className="w-full"
-                />
-                <div className="text-xs text-slate-600 w-10">
-                  {ttsRate.toFixed(2)}
-                </div>
-              </div>
+                {/* Controls */}
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <label className="text-sm">
+                    <div className="text-xs text-gray-500 mb-1">Rate</div>
+                    <input
+                      type="range"
+                      min="0.8"
+                      max="1.2"
+                      step="0.05"
+                      value={audioRate}
+                      onChange={(e) => setAudioRate(Number(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="text-xs text-gray-600 mt-1">
+                      {audioRate.toFixed(2)}
+                    </div>
+                  </label>
 
-              {/* Reveal English */}
-              <div className="flex items-center justify-between mb-3">
-                <button
-                  onClick={() => setRevealEnglish((v) => !v)}
-                  className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
-                >
-                  {revealEnglish ? "Hide English" : "Reveal English"}
-                </button>
+                  <label className="text-sm">
+                    <div className="text-xs text-gray-500 mb-1">Accent</div>
+                    <select
+                      value={audioLang}
+                      onChange={(e) => setAudioLang(e.target.value)}
+                      className="w-full rounded-lg border px-2 py-2 text-sm"
+                    >
+                      <option value="en-US">US</option>
+                      <option value="en-GB">UK</option>
+                      <option value="en-IN">India</option>
+                    </select>
+                  </label>
 
-                <button
-                  onClick={handleAudioRepeated}
-                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-                  disabled={status === "correct"}
-                >
-                  I repeated it (+150 XP)
-                </button>
-              </div>
-
-              {revealEnglish && (
-                <div className="rounded-xl border bg-white p-4">
-                  <div className="text-sm text-gray-600 mb-1">English</div>
-                  <div className="text-lg font-semibold tracking-wide">
-                    {englishFull}
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => checkAnswer()} // we’ll wire this in Step 3
+                      className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                      disabled={!currentQuestion}
+                    >
+                      I repeated it ✅
+                    </button>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
 

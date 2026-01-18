@@ -306,7 +306,7 @@ export default function LessonDetail() {
             }`}
           >
             <div className="text-base font-semibold">Audio</div>
-            <div className="mt-1 text-xs text-gray-500">Listen & shadow</div>
+            <div className="mt-1 text-xs text-gray-500">Listen + repeat</div>
           </button>
         </div>
       </div>
