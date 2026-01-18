@@ -109,6 +109,7 @@ export default function SentencePractice() {
   const [earnedXP, setEarnedXP] = useState(0);
   const [showXPToast, setShowXPToast] = useState(false);
   const [streak, setStreak] = useState(0);
+  const [feedback, setFeedback] = useState("");
 
   const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
 
@@ -250,7 +251,7 @@ export default function SentencePractice() {
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [status]);
+  }, [status, loadNextQuestion]);
 
   // -------------------
   // XP update (stable + backend-friendly)
@@ -647,12 +648,12 @@ export default function SentencePractice() {
       setShowHint(true);
 
       if (nextAttempts >= MAX_ATTEMPTS) {
-        setStatus("reveal");        
+        setStatus("reveal");
       }
       return;
     }
 
-    // 🧩 CLOZE validation
+    // 🧩 CLOZE validationsetEarnedXP
     if (safeMode === "cloze") {
       const normalizeWord = (s) =>
         String(s || "")
