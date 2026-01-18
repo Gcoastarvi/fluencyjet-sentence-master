@@ -39,7 +39,8 @@ export default function LessonDetail() {
     if (!s) return null;
 
     // ✅ allow Continue only for supported modes
-    if (s.mode !== "typing" && s.mode !== "reorder") return null;
+    const m = String(s.mode || "").toLowerCase();
+    if (!["typing", "reorder", "cloze", "audio"].includes(m)) return null;
 
     const sameLesson = String(s.lessonId) === String(lessonId);
     if (!sameLesson) return null;
@@ -294,14 +295,18 @@ export default function LessonDetail() {
             </div>
           </button>
 
-          {/* Audio (disabled) */}
+          {/* Audio */}
           <button
-            disabled
-            className="cursor-not-allowed rounded-2xl border bg-white px-4 py-4 text-center opacity-60"
-            title="Coming soon"
+            onClick={() => startMode("audio")}
+            disabled={!lessonId}
+            className={`rounded-2xl px-4 py-4 text-center ${
+              lessonId
+                ? "border bg-white hover:bg-gray-50"
+                : "cursor-not-allowed bg-gray-100 text-gray-400"
+            }`}
           >
             <div className="text-base font-semibold">Audio</div>
-            <div className="mt-1 text-xs text-gray-500">Coming soon</div>
+            <div className="mt-1 text-xs text-gray-500">Listen & shadow</div>
           </button>
         </div>
       </div>

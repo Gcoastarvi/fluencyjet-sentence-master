@@ -73,6 +73,34 @@ export default function SentencePractice() {
     }
   }
 
+  function stopTTS() {
+    try {
+      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+    } catch {}
+    setIsSpeaking(false);
+  }
+
+  function speakTTS(text) {
+    try {
+      if (!("speechSynthesis" in window)) return;
+      if (!text) return;
+
+      window.speechSynthesis.cancel();
+
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = Number(ttsRate || 1.0);
+      u.lang = "en-US"; // good default; can change later
+      u.onend = () => setIsSpeaking(false);
+      u.onerror = () => setIsSpeaking(false);
+
+      setIsSpeaking(true);
+      window.speechSynthesis.speak(u);
+    } catch (e) {
+      console.log("[TTS] failed", e);
+      setIsSpeaking(false);
+    }
+  }
+
   // -------------------
   // refs
   // -------------------
@@ -113,6 +141,11 @@ export default function SentencePractice() {
 
   const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
 
+  // 🔊 Audio (TTS)
+  const [revealEnglish, setRevealEnglish] = useState(false);
+  const [ttsRate, setTtsRate] = useState(1.0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
   useEffect(() => {
     console.log("[UI] status/earnedXP/toast", {
       safeMode,
@@ -121,6 +154,11 @@ export default function SentencePractice() {
       showXPToast,
     });
   }, [safeMode, status, earnedXP, showXPToast]);
+
+  useEffect(() => {
+    stopTTS();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, safeMode]);
 
   // -------------------
   // Derived data (must be declared AFTER state)
@@ -139,6 +177,13 @@ export default function SentencePractice() {
       : [];
     return words.sort(() => Math.random() - 0.5);
   }, [safeMode, currentQuestion, currentIndex]);
+
+  const englishFull = useMemo(() => {
+    const target =
+      currentQuestion?.answer?.trim() ||
+      (currentQuestion?.correctOrder || []).join(" ");
+    return String(target || "").trim();
+  }, [currentQuestion, currentIndex]);
 
   // ✅ Cloze: build masked sentence + missing word
   const cloze = useMemo(() => {
@@ -831,6 +876,77 @@ export default function SentencePractice() {
         }
       })();
 
+      // 🔊 Audio mode: auto-advance after correct
+      // Audio “I repeated it” XP flow
+      async function handleAudioRepeated() {
+        if (!currentQuestion) return;
+        if (status === "correct") return;
+
+        // count audio as typing for backend XP economy
+        const xpMode = "typing";
+        const attemptNumber = attempts + 1;
+
+        setStatus("correct");
+        setFeedback("✅ Great! +150 XP");
+        setEarnedXP(150);
+        setShowXPToast(true);
+        setTimeout(() => setShowXPToast(false), 900);
+
+        try {
+          playCorrect?.();
+        } catch {}
+
+        // XP + completion bonus (async)
+        (async () => {
+          try {
+            await commitXP({
+              isCorrect: true,
+              attemptNo: attemptNumber,
+              mode: xpMode,
+            });
+
+            const isLastQuestion =
+              currentIndex >= (lessonExercises?.length || 0) - 1;
+
+            if (isLastQuestion) {
+              const bonus = await awardCompletionBonus(xpMode);
+              setCompletionXp(bonus.awarded || 300);
+              setCompletionMode("audio");
+              setShowCompleteModal(true);
+            }
+          } catch (err) {
+            console.error("[XP] audio commitXP/completion failed", err);
+          }
+        })();
+
+        // ✅ Update progress (Audio)
+        writeProgress(lessonId, "audio", {
+          total: lessonExercises.length,
+          completed: Math.min(lessonExercises.length, currentIndex + 1),
+          updatedAt: Date.now(),
+        });
+
+        // ✅ Save session (Audio)
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId,
+            mode: "audio",
+            questionIndex: currentIndex + 1,
+            timestamp: Date.now(),
+          }),
+        );
+
+        // ✅ Advance so user sees toast/banner
+        setTimeout(() => {
+          loadNextQuestion();
+          setRevealEnglish(false);
+          setStatus("idle");
+          setFeedback("");
+          setShowHint(false);
+        }, 700);
+      }
+
       // Update lesson progress (Reorder)
       {
         const prev = readProgress(lessonId, "reorder");
@@ -875,7 +991,12 @@ export default function SentencePractice() {
   // -------------------
   // mode guard (MVP)
   // -------------------
-  if (safeMode !== "reorder" && safeMode !== "typing" && safeMode !== "cloze") {
+  if (
+    safeMode !== "reorder" &&
+    safeMode !== "typing" &&
+    safeMode !== "cloze" &&
+    safeMode !== "audio"
+  ) {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
         <h1 className="text-2xl font-bold mb-2">Practice mode: {safeMode}</h1>
@@ -971,7 +1092,7 @@ export default function SentencePractice() {
       <h1 className="text-2xl font-bold text-center mb-6">
         Build the sentence
       </h1>
-      
+
       <div className="text-center text-xs text-slate-400 mb-3">
         urlMode: <b>{String(urlMode)}</b> | activeMode: <b>{activeMode}</b> |
         safeMode: <b>{safeMode}</b> | lessonId: <b>{lessonId}</b>
@@ -1149,6 +1270,82 @@ export default function SentencePractice() {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* 🔊 AUDIO UI */}
+          {safeMode === "audio" && (
+            <div className="bg-white shadow-lg rounded-xl p-5 border border-indigo-200">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-bold text-indigo-700">
+                  Audio Practice
+                </h2>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => speakTTS(englishFull)}
+                    className="text-xs px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                    disabled={!englishFull}
+                  >
+                    {isSpeaking ? "Speaking..." : "Play"}
+                  </button>
+
+                  <button
+                    onClick={stopTTS}
+                    className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+                  >
+                    Stop
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-sm text-gray-600 mb-2">
+                Listen, repeat aloud, then mark as done.
+              </div>
+
+              {/* Rate */}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="text-xs text-slate-600 w-12">Rate</div>
+                <input
+                  type="range"
+                  min="0.8"
+                  max="1.1"
+                  step="0.05"
+                  value={ttsRate}
+                  onChange={(e) => setTtsRate(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-slate-600 w-10">
+                  {ttsRate.toFixed(2)}
+                </div>
+              </div>
+
+              {/* Reveal English */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  onClick={() => setRevealEnglish((v) => !v)}
+                  className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+                >
+                  {revealEnglish ? "Hide English" : "Reveal English"}
+                </button>
+
+                <button
+                  onClick={handleAudioRepeated}
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                  disabled={status === "correct"}
+                >
+                  I repeated it (+150 XP)
+                </button>
+              </div>
+
+              {revealEnglish && (
+                <div className="rounded-xl border bg-white p-4">
+                  <div className="text-sm text-gray-600 mb-1">English</div>
+                  <div className="text-lg font-semibold tracking-wide">
+                    {englishFull}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
