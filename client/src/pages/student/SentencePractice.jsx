@@ -89,7 +89,7 @@ export default function SentencePractice() {
 
       const u = new SpeechSynthesisUtterance(text);
       u.rate = Number(ttsRate || 1.0);
-      u.lang = ttsLang || "en-IN";
+      u.lang = String(ttsLang || "en-IN");
 
       setIsSpeaking(true);
       u.onend = () => setIsSpeaking(false);
@@ -100,7 +100,7 @@ export default function SentencePractice() {
       setIsSpeaking(false);
     }
 
-    function getFullEnglishSentence(q) {
+    function englishFull(q) {
       if (!q) return "";
 
       // Typing exercises (most common)
@@ -177,6 +177,12 @@ export default function SentencePractice() {
       showXPToast,
     });
   }, [safeMode, status, earnedXP, showXPToast]);
+
+  useEffect(() => {
+    if (safeMode !== "audio") return;
+    stopTTS();
+    setRevealEnglish(false);
+  }, [currentIndex, safeMode]);
 
   useEffect(() => {
     stopTTS();
@@ -646,6 +652,61 @@ export default function SentencePractice() {
       );
       setTiles(reshuffled);
     }
+  }
+
+  async function handleAudioRepeated() {
+    // Audio is “self-attested”: user says they repeated it.
+    setStatus("correct");
+    setEarnedXP(150);
+    setShowXPToast(true);
+    setTimeout(() => setShowXPToast(false), 900);
+
+    // ✅ Update progress (Audio)
+    writeProgress(lessonId, "audio", {
+      total: lessonExercises.length,
+      completed: Math.min(lessonExercises.length, currentIndex + 1),
+      updatedAt: Date.now(),
+    });
+
+    // ✅ Save session (Audio)
+    localStorage.setItem(
+      "fj_last_session",
+      JSON.stringify({
+        lessonId,
+        mode: "audio",
+        questionIndex: currentIndex + 1,
+        timestamp: Date.now(),
+      }),
+    );
+
+    // ✅ XP + completion bonus asynchronously (backend-safe)
+    (async () => {
+      try {
+        await commitXP({
+          isCorrect: true,
+          attemptNo: 1,
+          mode: xpMode, // audio counted as typing in backend
+        });
+
+        // Refresh /me so dashboard/leaderboard update immediately
+        try {
+          await api.get("/me");
+        } catch {}
+      } catch (e) {
+        console.warn("[AUDIO] commitXP failed", e);
+      }
+    })();
+
+    // ✅ Advance after short beat so user sees toast/banner
+    setTimeout(() => {
+      loadNextQuestion();
+      setShowHint(false);
+      setWrongIndexes([]);
+      setTypedAnswer("");
+      setStatus("idle");
+      setFeedback("");
+      setRevealEnglish(false);
+    }, 700);
   }
 
   async function checkAnswer() {
@@ -1346,7 +1407,7 @@ export default function SentencePractice() {
                   English
                 </div>
                 <div className="text-base font-semibold text-emerald-900">
-                  {getFullEnglishSentence(currentQuestion) || "—"}
+                  {englishFull || "—"}
                 </div>
               </div>
             )}
@@ -1385,9 +1446,9 @@ export default function SentencePractice() {
               <div className="flex items-end">
                 <button
                   type="button"
-                  onClick={checkAnswer}
+                  onClick={handleAudioRepeated}
                   className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-                  disabled={!currentQuestion}
+                  disabled={!currentQuestion || status === "correct"}
                 >
                   I repeated it ✅
                 </button>
