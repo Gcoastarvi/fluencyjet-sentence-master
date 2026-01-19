@@ -1227,127 +1227,7 @@ export default function SentencePractice() {
                 ))}
               </div>
             </div>
-          )}
-
-          {safeMode === "cloze" && (
-            <div className="mt-4">
-              <div className="text-sm text-gray-600 mb-2">
-                Fill the missing word:
-              </div>
-
-              <div className="rounded-xl border bg-white p-4">
-                <div className="text-lg font-semibold tracking-wide">
-                  {cloze?.masked || "____"}
-                </div>
-
-                <div className="mt-3">
-                  <input
-                    value={typedAnswer}
-                    onChange={(e) => setTypedAnswer(e.target.value)}
-                    placeholder="Type the missing word..."
-                    className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                    disabled={status === "correct" || status === "reveal"}
-                  />
-                </div>
-
-                <div className="flex items-center gap-3 mt-3">
-                  <button
-                    onClick={checkAnswer}
-                    className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
-                    disabled={
-                      status === "correct" || status === "reveal" || !cloze
-                    }
-                  >
-                    Submit
-                  </button>
-
-                  <button
-                    onClick={() => setStatus("reveal")}
-                    className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
-                    disabled={status === "correct" || status === "reveal"}
-                  >
-                    Show Answer
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 🔊 AUDIO UI */}
-          {safeMode === "audio" && (
-            <div className="bg-white shadow-lg rounded-xl p-5 border border-indigo-200">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold text-indigo-700">
-                  Audio Practice
-                </h2>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => speakTTS(englishFull)}
-                    className="text-xs px-3 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                    disabled={!englishFull}
-                  >
-                    {isSpeaking ? "Speaking..." : "Play"}
-                  </button>
-
-                  <button
-                    onClick={stopTTS}
-                    className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
-                  >
-                    Stop
-                  </button>
-                </div>
-              </div>
-
-              <div className="text-sm text-gray-600 mb-2">
-                Listen, repeat aloud, then mark as done.
-              </div>
-
-              {/* Rate */}
-              <div className="flex items-center gap-3 mb-3">
-                <div className="text-xs text-slate-600 w-12">Rate</div>
-                <input
-                  type="range"
-                  min="0.8"
-                  max="1.1"
-                  step="0.05"
-                  value={ttsRate}
-                  onChange={(e) => setTtsRate(Number(e.target.value))}
-                  className="w-full"
-                />
-                <div className="text-xs text-slate-600 w-10">
-                  {ttsRate.toFixed(2)}
-                </div>
-              </div>
-
-              {/* Reveal English */}
-              <div className="flex items-center justify-between mb-3">
-                <button
-                  onClick={() => setRevealEnglish((v) => !v)}
-                  className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
-                >
-                  {revealEnglish ? "Hide English" : "Reveal English"}
-                </button>
-
-                <button
-                  onClick={handleAudioRepeated}
-                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-                  disabled={status === "correct"}
-                >
-                  I repeated it (+150 XP)
-                </button>
-              </div>
-
-              {revealEnglish && (
-                <div className="rounded-xl border bg-white p-4">
-                  <div className="text-sm text-gray-600 mb-1">English</div>
-                  <div className="text-lg font-semibold tracking-wide">
-                    {englishFull}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+          )}        
 
           {/* Input */}
           <textarea
@@ -1375,6 +1255,117 @@ export default function SentencePractice() {
             >
               Show Answer
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🔊 AUDIO UI */}
+      {safeMode === "audio" && (
+        <div className="bg-white shadow-lg rounded-xl p-5 border border-emerald-200">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-emerald-700">Audio Practice</h2>
+
+            <button
+              type="button"
+              onClick={() => {
+                stopTTS();
+                setRevealEnglish(false);
+              }}
+              className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+            >
+              Reset
+            </button>
+          </div>
+
+          <div className="text-sm text-gray-600 mb-2">
+            Listen and repeat. Then mark it done.
+          </div>
+
+          <div className="rounded-xl border bg-white p-4">
+            {/* Tamil prompt */}
+            <div className="text-lg font-semibold tracking-wide">
+              {currentQuestion?.tamil || "—"}
+            </div>
+
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setRevealEnglish((v) => !v)}
+                className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm"
+                disabled={!currentQuestion}
+              >
+                {revealEnglish ? "Hide English" : "Reveal English"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => speakTTS(getFullEnglishSentence(currentQuestion))}
+                className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+                disabled={!currentQuestion}
+              >
+                {isSpeaking ? "Speaking..." : "▶ Play"}
+              </button>
+
+              <button
+                type="button"
+                onClick={stopTTS}
+                className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
+              >
+                Stop
+              </button>
+            </div>
+
+            {revealEnglish && (
+              <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+                <div className="text-xs text-emerald-700 font-semibold mb-1">
+                  English
+                </div>
+                <div className="text-base font-semibold text-emerald-900">
+                  {getFullEnglishSentence(currentQuestion) || "—"}
+                </div>
+              </div>
+            )}
+
+            {/* Controls */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label className="text-sm">
+                <div className="text-xs text-gray-500 mb-1">Rate</div>
+                <input
+                  type="range"
+                  min="0.8"
+                  max="1.2"
+                  step="0.05"
+                  value={ttsRate}
+                  onChange={(e) => setTtsRate(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-gray-600 mt-1">{ttsRate.toFixed(2)}</div>
+              </label>
+
+              <label className="text-sm">
+                <div className="text-xs text-gray-500 mb-1">Accent</div>
+                <select
+                  value={ttsLang}
+                  onChange={(e) => setTtsLang(e.target.value)}
+                  className="w-full rounded-lg border px-2 py-2 text-sm"
+                >
+                  <option value="en-US">US</option>
+                  <option value="en-GB">UK</option>
+                  <option value="en-IN">India</option>
+                </select>
+              </label>
+
+              <div className="flex items-end">
+                <button
+                  type="button"
+                  onClick={checkAnswer}
+                  className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                  disabled={!currentQuestion}
+                >
+                  I repeated it ✅
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
