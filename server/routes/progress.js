@@ -3,6 +3,8 @@ import express from "express";
 import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
 
+import crypto from "crypto";
+
 const router = express.Router();
 
 /* TIME HELPERS */
@@ -68,6 +70,12 @@ function normalizeEventType(input) {
     .toUpperCase();
   if (DB_EVENT_TYPES.has(upper)) return upper;
   return "GENERIC";
+}
+
+function hashKey(prefix, raw, maxLen = 50) {
+  const h = crypto.createHash("sha1").update(String(raw)).digest("hex"); // 40 chars
+  const key = `${prefix}_${h}`; // "qxp_" + 40 = 44 chars
+  return key.length > maxLen ? key.slice(0, maxLen) : key;
 }
 
 async function ensureProgress(tx, userId) {
@@ -392,16 +400,16 @@ router.post("/update", authRequired, async (req, res) => {
       const streakBonus = 0;
 
       // 3) idempotency key (store in xpEvent.type)
-      const keyBase = String(attemptId).replace(/-/g, "");
-      const eventKey = `xp_${keyBase.slice(0, 16)}`; // short key fits column length
+      const eventKey = hashKey("xp", attemptId);
 
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
         select: { id: true },
       });
 
-      // ✅ Strong anti-abuse: only award once per (day + lesson + question + mode)
+      // Keep type length safe (type column usually limited)
       const dayKey = now.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+
       const lessonKeyForDedupe =
         !Number.isNaN(lessonIdNum) && lessonIdNum > 0
           ? `L${lessonIdNum}`
@@ -410,12 +418,12 @@ router.post("/update", authRequired, async (req, res) => {
       const qKeyRaw = String(questionId || "").trim();
       const questionKeyForDedupe = qKeyRaw ? qKeyRaw : `Q${attemptNo}`;
 
-      // Keep type length safe (type column usually limited)
-      const qEventKey =
-        `qxp_${dayKey}_${lessonKeyForDedupe}_${practiceType}_${questionKeyForDedupe}`.slice(
-          0,
-          191,
-        );
+      // ✅ hashed + short (fits VarChar(50))
+      const qEventKey = hashKey(
+        "qxp",
+        `${dayKey}|${lessonKeyForDedupe}|${practiceType}|${questionKeyForDedupe}`,
+        50,
+      );
 
       const existingQuestionAward = isCorrect
         ? await tx.xpEvent.findFirst({
