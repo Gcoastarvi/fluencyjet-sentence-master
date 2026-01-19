@@ -89,14 +89,14 @@ export default function SentencePractice() {
 
       const u = new SpeechSynthesisUtterance(text);
       u.rate = Number(ttsRate || 1.0);
-      u.lang = "en-US"; // good default; can change later
+      u.lang = ttsLang || "en-IN";
+
+      setIsSpeaking(true);
       u.onend = () => setIsSpeaking(false);
       u.onerror = () => setIsSpeaking(false);
 
-      setIsSpeaking(true);
       window.speechSynthesis.speak(u);
-    } catch (e) {
-      console.log("[TTS] failed", e);
+    } catch {
       setIsSpeaking(false);
     }
   }
@@ -106,6 +106,8 @@ export default function SentencePractice() {
   // -------------------
   const correctSoundRef = useRef(null);
   const wrongSoundRef = useRef(null);
+
+  const [ttsLang, setTtsLang] = useState("en-IN"); // default accent
 
   // -------------------
   // state
@@ -1227,7 +1229,7 @@ export default function SentencePractice() {
                 ))}
               </div>
             </div>
-          )}        
+          )}
 
           {/* Input */}
           <textarea
@@ -1263,7 +1265,9 @@ export default function SentencePractice() {
       {safeMode === "audio" && (
         <div className="bg-white shadow-lg rounded-xl p-5 border border-emerald-200">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold text-emerald-700">Audio Practice</h2>
+            <h2 className="text-xl font-bold text-emerald-700">
+              Audio Practice
+            </h2>
 
             <button
               type="button"
@@ -1299,7 +1303,9 @@ export default function SentencePractice() {
 
               <button
                 type="button"
-                onClick={() => speakTTS(getFullEnglishSentence(currentQuestion))}
+                onClick={() =>
+                  speakTTS(getFullEnglishSentence(currentQuestion))
+                }
                 className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
                 disabled={!currentQuestion}
               >
@@ -1339,7 +1345,9 @@ export default function SentencePractice() {
                   onChange={(e) => setTtsRate(Number(e.target.value))}
                   className="w-full"
                 />
-                <div className="text-xs text-gray-600 mt-1">{ttsRate.toFixed(2)}</div>
+                <div className="text-xs text-gray-600 mt-1">
+                  {ttsRate.toFixed(2)}
+                </div>
               </label>
 
               <label className="text-sm">
