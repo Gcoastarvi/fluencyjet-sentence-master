@@ -99,6 +99,27 @@ export default function SentencePractice() {
     } catch {
       setIsSpeaking(false);
     }
+
+    function getFullEnglishSentence(q) {
+      if (!q) return "";
+
+      // Typing exercises (most common)
+      if (typeof q.expected === "string" && q.expected.trim()) {
+        return q.expected.trim();
+      }
+
+      // Reorder exercises
+      if (Array.isArray(q.correctOrder) && q.correctOrder.length) {
+        return q.correctOrder.join(" ").trim();
+      }
+
+      // Cloze variants (if you ever store it differently)
+      if (typeof q.fullSentence === "string" && q.fullSentence.trim()) {
+        return q.fullSentence.trim();
+      }
+
+      return "";
+    }
   }
 
   // -------------------
@@ -1303,11 +1324,9 @@ export default function SentencePractice() {
 
               <button
                 type="button"
-                onClick={() =>
-                  speakTTS(getFullEnglishSentence(currentQuestion))
-                }
+                onClick={() => speakTTS(englishFull)}
                 className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
-                disabled={!currentQuestion}
+                disabled={!englishFull}
               >
                 {isSpeaking ? "Speaking..." : "▶ Play"}
               </button>
