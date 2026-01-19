@@ -371,8 +371,14 @@ router.post("/update", authRequired, async (req, res) => {
           ? String(lessonKeyMaybe)
           : "L0";
 
-    const XP_BY_TYPE = { reorder: 150, typing: 150, cloze: 80, audio: 80 };
-    const baseXP = isCorrect ? (XP_BY_TYPE[practiceType] ?? 100) : 0;
+    // XP economy (server is source of truth)
+    const XP_BY_TYPE = { typing: 150, reorder: 100, cloze: 80, audio: 150 };
+
+    // If client sends xp, accept it only up to allowed max for that mode (prevents cheating)
+    const requestedXp = Number(body.xp ?? 0) || 0;
+    const maxXp = XP_BY_TYPE[practiceType] ?? 100;
+
+    const baseXP = isCorrect ? Math.min(Math.max(requestedXp, 0), maxXp) : 0;
 
     const result = await prisma.$transaction(async (tx) => {
       // 1) ensure user progress row exists
@@ -394,14 +400,49 @@ router.post("/update", authRequired, async (req, res) => {
         select: { id: true },
       });
 
-      const xpDelta = existing ? 0 : baseXP + streakBonus;
+      // ✅ Strong anti-abuse: only award once per (day + lesson + question + mode)
+      const dayKey = now.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+      const lessonKeyForDedupe =
+        !Number.isNaN(lessonIdNum) && lessonIdNum > 0
+          ? `L${lessonIdNum}`
+          : lessonTag;
 
-      if (!existing && xpDelta > 0) {
+      const qKeyRaw = String(questionId || "").trim();
+      const questionKeyForDedupe = qKeyRaw ? qKeyRaw : `Q${attemptNo}`;
+
+      // Keep type length safe (type column usually limited)
+      const qEventKey =
+        `qxp_${dayKey}_${lessonKeyForDedupe}_${practiceType}_${questionKeyForDedupe}`.slice(
+          0,
+          191,
+        );
+
+      const existingQuestionAward = isCorrect
+        ? await tx.xpEvent.findFirst({
+            where: { user_id: userId, type: qEventKey },
+            select: { id: true },
+          })
+        : null;
+
+      const xpDelta =
+        existing || existingQuestionAward ? 0 : baseXP + streakBonus;
+
+      if (!existing && !existingQuestionAward && xpDelta > 0) {
+        // award xp (attempt-level idempotency)
         await tx.xpEvent.create({
           data: {
             user_id: userId,
             type: eventKey,
             xp_delta: xpDelta,
+          },
+        });
+
+        // lock per-question-per-day (prevents spamming the same question)
+        await tx.xpEvent.create({
+          data: {
+            user_id: userId,
+            type: qEventKey,
+            xp_delta: 0,
           },
         });
       }
@@ -410,12 +451,12 @@ router.post("/update", authRequired, async (req, res) => {
       const updatedProgress = await tx.userProgress.update({
         where: { user_id: userId },
         data: {
-          xp: { increment: xpDelta },  // xpDelta is 0 if duplicate/wrong -> safe
-          streak: newStreak,           // currently constant; later we’ll compute properly
+          xp: { increment: xpDelta }, // xpDelta is 0 if duplicate/wrong -> safe
+          streak: newStreak, // currently constant; later we’ll compute properly
           updated_at: now,
         },
       });
-      
+
       // 5) optional: only on quiz completion -> mark lesson complete + unlock next
       let lessonPayload = null;
 
