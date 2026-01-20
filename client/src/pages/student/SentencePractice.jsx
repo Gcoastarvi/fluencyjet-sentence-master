@@ -851,13 +851,6 @@ export default function SentencePractice() {
         setStatus("correct");
         setFeedback("✅ Correct!");
 
-        // ✅ Cloze XP (UI)
-        setEarnedXP(150);
-        setShowXPToast(true);
-        setTimeout(() => setShowXPToast(false), 900);
-
-        console.log("[CLOZE] correct: set toast+xp", { xp: 150, safeMode });
-
         // ✅ SFX
         try {
           playCorrect?.();
