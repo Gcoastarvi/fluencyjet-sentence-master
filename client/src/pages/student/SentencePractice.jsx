@@ -1438,7 +1438,7 @@ export default function SentencePractice() {
                 <span
                   key={`${word}-${index}`}
                   className={`px-4 py-2 rounded-full text-white transition ${
-                    isWrong ? "bg-red-500 animate-shake" : "bg-blue-600"
+                    isWrong ? "bg-red-500" : "bg-blue-600"
                   }`}
                 >
                   {word}
@@ -1511,52 +1511,7 @@ export default function SentencePractice() {
             </div>
           </div>
         </div>
-      )}
-
-      {showCompleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="text-xl font-semibold">✅ Lesson Completed!</div>
-            <div className="mt-2 text-sm text-gray-600">
-              You earned <span className="font-semibold">+{completionXp}</span>{" "}
-              XP bonus.
-            </div>
-
-            <div className="mt-5 grid gap-2">
-              <button
-                className="w-full rounded-xl bg-black px-4 py-2 text-white"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  const next = Number(lessonId) + 1;
-                  window.location.href = `/practice/${completionMode}?lessonId=${next}`;
-                }}
-              >
-                Next Lesson →
-              </button>
-
-              <button
-                className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  window.location.href = "/student/leaderboard";
-                }}
-              >
-                View Leaderboard
-              </button>
-
-              <button
-                className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  initQuiz();
-                }}
-              >
-                Repeat Lesson
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      )}      
 
       {/* ✅ Lesson completion modal */}
       {showCompleteModal && (
@@ -1617,22 +1572,6 @@ export default function SentencePractice() {
           </div>
         </div>
       )}
-
-      {/* Shake animation */}
-      <style>
-        {`
-          @keyframes shake {
-            0% { transform: translateX(0); }
-            25% { transform: translateX(-4px); }
-            50% { transform: translateX(4px); }
-            75% { transform: translateX(-4px); }
-            100% { transform: translateX(0); }
-          }
-          .animate-shake {
-            animation: shake 0.3s ease-in-out;
-          }
-        `}
-      </style>
     </div>
   );
 }
