@@ -102,19 +102,6 @@ export default function SentencePractice() {
     } catch {
       setIsSpeaking(false);
     }
-    function openAudioGateAfter(ms = 1800) {
-      setAudioGateOpen(false);
-      if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
-      audioGateTimerRef.current = setTimeout(() => {
-        setAudioGateOpen(true);
-      }, ms);
-    }
-
-    function resetAudioGate() {
-      setAudioGateOpen(false);
-      if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
-      audioGateTimerRef.current = null;
-    }
   }
 
   // -------------------
@@ -169,6 +156,20 @@ export default function SentencePractice() {
 
   const [audioGateOpen, setAudioGateOpen] = useState(false);
   const audioGateTimerRef = useRef(null);
+
+  function openAudioGateAfter(ms = 1800) {
+    setAudioGateOpen(false);
+    if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
+    audioGateTimerRef.current = setTimeout(() => {
+      setAudioGateOpen(true);
+    }, ms);
+  }
+
+  function resetAudioGate() {
+    setAudioGateOpen(false);
+    if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
+    audioGateTimerRef.current = null;
+  }
 
   useEffect(() => {
     ttsRateRef.current = ttsRate;
@@ -1332,11 +1333,10 @@ export default function SentencePractice() {
                 onClick={() => {
                   stopTTS();
                   resetAudioGate();
-                  setRevealEnglish(false); // optional UX reset
                 }}
-                className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
+                className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
               >
-                Reset
+                Stop
               </button>
             </div>
 
