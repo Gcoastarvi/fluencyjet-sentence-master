@@ -654,6 +654,55 @@ export default function SentencePractice() {
     }
   }  
 
+  async function handleAudioRepeated() {
+    if (!currentQuestion) return;
+    if (status === "correct") return;
+
+    const xpMode = "typing";
+    const attemptNumber = attempts + 1;
+
+    // UI feedback first (instant)
+    setStatus("correct");
+    setFeedback("✅ Great!"); // optional
+    setEarnedXP(150);
+    setShowXPToast(true);
+    setTimeout(() => setShowXPToast(false), 900);
+
+    // keep sound even if XP becomes 0 later (feels rewarding)
+    try {
+      playCorrect?.();
+    } catch {}
+
+    // commit XP (server is source of truth; may return 0 on dedupe)
+    try {
+      await commitXP({
+        isCorrect: true,
+        attemptNo: attemptNumber,
+        mode: xpMode,
+      });
+    } catch (e) {
+      console.warn("[AUDIO] commitXP failed", e);
+    }
+
+    // progress (local)
+    writeProgress(lessonId, "audio", {
+      total: lessonExercises.length,
+      completed: Math.min(lessonExercises.length, currentIndex + 1),
+      updatedAt: Date.now(),
+    });
+
+    // advance after a short beat
+    setTimeout(() => {
+      loadNextQuestion();
+      setRevealEnglish(false);
+      setShowHint(false);
+      setWrongIndexes([]);
+      setTypedAnswer("");
+      setStatus("idle");
+      setFeedback("");
+    }, 700);
+  }
+
   async function checkAnswer() {
     if (!currentQuestion) return;
     if (status === "correct") return;
@@ -903,72 +952,7 @@ export default function SentencePractice() {
         } catch (err) {
           console.error("[XP] reorder commitXP/completion failed", err);
         }
-      })();
-
-      // 🔊 Audio mode: auto-advance after correct      
-      async function handleAudioRepeated() {
-        if (!currentQuestion) return;
-        if (status === "correct") return;
-
-        // count audio as typing for backend XP economy
-        const xpMode = "typing";
-        const attemptNumber = attempts + 1;
-
-        setStatus("correct");
-        setFeedback("✅ Great!");
-
-        // SFX should play even if XP=0
-        try {
-          playCorrect?.();
-        } catch {}
-
-        // XP + completion bonus
-        try {
-          await commitXP({
-            isCorrect: true,
-            attemptNo: attemptNumber,
-            mode: xpMode,
-          });
-
-          const isLastQuestion = currentIndex >= (lessonExercises?.length || 0) - 1;
-
-          if (isLastQuestion) {
-            const bonus = await awardCompletionBonus(xpMode);
-            setCompletionXp(bonus.awarded || 300);
-            setCompletionMode("audio");
-            setShowCompleteModal(true);
-          }
-        } catch (err) {
-          console.error("[XP] audio commitXP/completion failed", err);
-        }
-
-        // ✅ Update progress (Audio)
-        writeProgress(lessonId, "audio", {
-          total: lessonExercises.length,
-          completed: Math.min(lessonExercises.length, currentIndex + 1),
-          updatedAt: Date.now(),
-        });
-
-        // ✅ Save session (Audio)
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId,
-            mode: "audio",
-            questionIndex: currentIndex + 1,
-            timestamp: Date.now(),
-          }),
-        );
-
-        // ✅ Advance so user sees toast/banner
-        setTimeout(() => {
-          loadNextQuestion();
-          setRevealEnglish(false);
-          setStatus("idle");
-          setFeedback("");
-          setShowHint(false);
-        }, 700);
-      }
+      })();     
 
       // Update lesson progress (Reorder)
       {
