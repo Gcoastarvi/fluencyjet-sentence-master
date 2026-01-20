@@ -98,8 +98,22 @@ export default function SentencePractice() {
       u.onerror = () => setIsSpeaking(false);
 
       window.speechSynthesis.speak(u);
+      console.log("[TTS] rate/lang", u.rate, u.lang);
     } catch {
       setIsSpeaking(false);
+    }
+    function openAudioGateAfter(ms = 1800) {
+      setAudioGateOpen(false);
+      if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
+      audioGateTimerRef.current = setTimeout(() => {
+        setAudioGateOpen(true);
+      }, ms);
+    }
+
+    function resetAudioGate() {
+      setAudioGateOpen(false);
+      if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
+      audioGateTimerRef.current = null;
     }
   }
 
@@ -152,6 +166,9 @@ export default function SentencePractice() {
 
   const ttsRateRef = useRef(ttsRate);
   const ttsLangRef = useRef(ttsLang);
+
+  const [audioGateOpen, setAudioGateOpen] = useState(false);
+  const audioGateTimerRef = useRef(null);
 
   useEffect(() => {
     ttsRateRef.current = ttsRate;
@@ -648,18 +665,16 @@ export default function SentencePractice() {
   async function handleAudioRepeated() {
     if (!currentQuestion) return;
     if (status === "correct") return;
+    if (!audioGateOpen) return; // ✅ anti-abuse gate
 
     const xpMode = "typing";
     const attemptNumber = attempts + 1;
 
     // UI feedback first (instant)
     setStatus("correct");
-    setFeedback("✅ Great!"); // optional
-    setEarnedXP(150);
-    setShowXPToast(true);
-    setTimeout(() => setShowXPToast(false), 900);
+    setFeedback("✅ Great!");
 
-    // keep sound even if XP becomes 0 later (feels rewarding)
+    // keep sound even if XP becomes 0 later
     try {
       playCorrect?.();
     } catch {}
@@ -674,6 +689,9 @@ export default function SentencePractice() {
     } catch (e) {
       console.warn("[AUDIO] commitXP failed", e);
     }
+
+    // close gate after submission (prevents rapid double-submits)
+    resetAudioGate();
 
     // progress (local)
     writeProgress(lessonId, "audio", {
@@ -1299,7 +1317,10 @@ export default function SentencePractice() {
 
               <button
                 type="button"
-                onClick={() => speakTTS(englishFull)}
+                onClick={() => {
+                  openAudioGateAfter(1800);
+                  speakTTS(englishFull);
+                }}
                 className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
                 disabled={!englishFull}
               >
@@ -1308,10 +1329,14 @@ export default function SentencePractice() {
 
               <button
                 type="button"
-                onClick={stopTTS}
-                className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
+                onClick={() => {
+                  stopTTS();
+                  resetAudioGate();
+                  setRevealEnglish(false); // optional UX reset
+                }}
+                className="text-xs px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"
               >
-                Stop
+                Reset
               </button>
             </div>
 
@@ -1332,9 +1357,9 @@ export default function SentencePractice() {
                 <div className="text-xs text-gray-500 mb-1">Rate</div>
                 <input
                   type="range"
-                  min="0.8"
-                  max="1.2"
-                  step="0.05"
+                  min="0.6"
+                  max="1.8"
+                  step="0.1"
                   value={ttsRate}
                   onChange={(e) => setTtsRate(Number(e.target.value))}
                   className="w-full"
@@ -1362,7 +1387,9 @@ export default function SentencePractice() {
                   type="button"
                   onClick={handleAudioRepeated}
                   className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-                  disabled={!currentQuestion || status === "correct"}
+                  disabled={
+                    !currentQuestion || status === "correct" || !audioGateOpen
+                  }
                 >
                   I repeated it ✅
                 </button>
