@@ -87,9 +87,11 @@ export default function SentencePractice() {
 
       window.speechSynthesis.cancel();
 
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = Number(ttsRate || 1.0);
-      u.lang = String(ttsLang || "en-IN");
+      const u = new SpeechSynthesisUtterance(String(text));
+
+      // ✅ always latest values (no stale closure)
+      u.rate = Number(ttsRateRef.current || 1.0);
+      u.lang = String(ttsLangRef.current || "en-IN");
 
       setIsSpeaking(true);
       u.onend = () => setIsSpeaking(false);
@@ -98,27 +100,6 @@ export default function SentencePractice() {
       window.speechSynthesis.speak(u);
     } catch {
       setIsSpeaking(false);
-    }
-
-    function englishFull(q) {
-      if (!q) return "";
-
-      // Typing exercises (most common)
-      if (typeof q.expected === "string" && q.expected.trim()) {
-        return q.expected.trim();
-      }
-
-      // Reorder exercises
-      if (Array.isArray(q.correctOrder) && q.correctOrder.length) {
-        return q.correctOrder.join(" ").trim();
-      }
-
-      // Cloze variants (if you ever store it differently)
-      if (typeof q.fullSentence === "string" && q.fullSentence.trim()) {
-        return q.fullSentence.trim();
-      }
-
-      return "";
     }
   }
 
@@ -168,6 +149,16 @@ export default function SentencePractice() {
   const [revealEnglish, setRevealEnglish] = useState(false);
   const [ttsRate, setTtsRate] = useState(1.0);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const ttsRateRef = useRef(ttsRate);
+  const ttsLangRef = useRef(ttsLang);
+
+  useEffect(() => {
+    ttsRateRef.current = ttsRate;
+  }, [ttsRate]);
+  useEffect(() => {
+    ttsLangRef.current = ttsLang;
+  }, [ttsLang]);
 
   useEffect(() => {
     console.log("[UI] status/earnedXP/toast", {
@@ -652,7 +643,7 @@ export default function SentencePractice() {
       );
       setTiles(reshuffled);
     }
-  }  
+  }
 
   async function handleAudioRepeated() {
     if (!currentQuestion) return;
@@ -952,7 +943,7 @@ export default function SentencePractice() {
         } catch (err) {
           console.error("[XP] reorder commitXP/completion failed", err);
         }
-      })();     
+      })();
 
       // Update lesson progress (Reorder)
       {
@@ -1465,7 +1456,7 @@ export default function SentencePractice() {
             </div>
           </div>
         </div>
-      )}      
+      )}
 
       {/* ✅ Lesson completion modal */}
       {showCompleteModal && (
