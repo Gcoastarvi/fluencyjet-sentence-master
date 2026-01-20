@@ -654,36 +654,6 @@ export default function SentencePractice() {
     }
   }  
 
-    // ✅ XP + completion bonus asynchronously (backend-safe)
-    (async () => {
-      try {
-        await commitXP({
-          isCorrect: true,
-          attemptNo: 1,
-          mode: xpMode, // audio counted as typing in backend
-        });
-
-        // Refresh /me so dashboard/leaderboard update immediately
-        try {
-          await api.get("/me");
-        } catch {}
-      } catch (e) {
-        console.warn("[AUDIO] commitXP failed", e);
-      }
-    })();
-
-    // ✅ Advance after short beat so user sees toast/banner
-    setTimeout(() => {
-      loadNextQuestion();
-      setShowHint(false);
-      setWrongIndexes([]);
-      setTypedAnswer("");
-      setStatus("idle");
-      setFeedback("");
-      setRevealEnglish(false);
-    }, 700);
-  }
-
   async function checkAnswer() {
     if (!currentQuestion) return;
     if (status === "correct") return;
