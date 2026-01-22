@@ -1,24 +1,29 @@
 import express from "express";
-import { prisma } from "../db/client.js"; // adjust path to your prisma client
-import { requireAuth } from "../middleware/requireAuth.js"; // adjust to your auth
+import prisma from "../db/client.js";
+import { authRequired } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/entitlements", requireAuth, async (req, res) => {
-  // req.user.id should exist if your auth middleware attaches it
+router.get("/entitlements", authRequired, async (req, res) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user.id },
-    select: { plan: true, proExpiresAt: true },
+    select: { has_access: true, tier_level: true, plan: true },
   });
 
-  const now = new Date();
+  const tier = String(user?.tier_level || "").toLowerCase();
+  const plan = String(user?.plan || "").toLowerCase();
+
   const proActive =
-    user?.plan === "pro" &&
-    (!user.proExpiresAt || new Date(user.proExpiresAt) > now);
+    !!user?.has_access ||
+    tier === "pro" ||
+    tier === "all" ||
+    plan === "pro" ||
+    plan === "paid";
 
   res.json({
-    plan: user?.plan ?? "free",
-    proExpiresAt: user?.proExpiresAt ?? null,
+    ok: true,
+    tier_level: user?.tier_level || "free",
+    plan: user?.plan || "FREE",
     proActive,
   });
 });
