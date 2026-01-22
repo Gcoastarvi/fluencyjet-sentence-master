@@ -28,7 +28,7 @@ export function authMiddleware(req, res, next) {
 }
 
 export function authRequired(req, res, next) {
-  if (!req.user) {
+  if (!req.user?.id) {
     return res.status(401).json({ ok: false, message: "Unauthorized" });
   }
   return next();

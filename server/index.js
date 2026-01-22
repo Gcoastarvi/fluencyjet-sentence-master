@@ -27,6 +27,7 @@ import lessonsRouter from "./routes/lessons.js";
 import adminExercises from "./routes/adminExercises.js";
 import adminLessonsRouter from "./routes/adminLessons.js";
 import adminLessonsUpsertRouter from "./routes/adminLessonsUpsert.js";
+import meRouter from "./routes/me.js";
 
 // Auth middleware
 import { authMiddleware } from "./middleware/authMiddleware.js";
@@ -164,6 +165,7 @@ app.use("/api/lessons", lessonsRouter);
 app.use("/api/admin/exercises", adminExercises);
 app.use("/api/admin", adminLessonsRouter);
 app.use("/api/admin", adminLessonsUpsertRouter);
+app.use("/api/me", meRouter);
 
 // -----------------------------
 // Serve React build in production
