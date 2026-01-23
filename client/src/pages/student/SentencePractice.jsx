@@ -518,9 +518,10 @@ export default function SentencePractice() {
 
       const data = res?.data ?? res;
 
-      const ok = Array.isArray(data) ? true : data?.ok;
       if (data?.ok === false) {
-        throw new Error((data && data.error) || "Failed to load questions");
+        throw new Error(
+          (data && (data.error || data.message)) || "Failed to load questions",
+        );
       }
 
       const arr = Array.isArray(data)
@@ -547,8 +548,29 @@ export default function SentencePractice() {
 
       setLessonExercises(normalized);
     } catch (e) {
+      const status = e?.response?.status;
+      const code = e?.response?.data?.code;
+      const msg =
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        e?.message ||
+        "Failed to load lesson exercises.";
+
+      // ✅ PAYWALL redirect
+      if (status === 403 && code === "PAYWALL") {
+        window.location.href = `/lesson/${lessonId}`;
+        return;
+      }
+
+      // ✅ Friendly 404 message
+      if (status === 404) {
+        setLessonExercises([]);
+        setLoadError(msg);
+        return;
+      }
+
       console.error("[Practice] loadLessonBatch failed", e);
-      setLoadError("Failed to load lesson exercises.");
+      setLoadError(msg);
     } finally {
       setLoading(false);
     }
