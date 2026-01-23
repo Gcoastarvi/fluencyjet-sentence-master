@@ -77,8 +77,26 @@ function Practice() {
         );
 
         if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.message || "Failed to load quiz");
+          const errData = await res.json().catch(() => ({}));
+
+          // ✅ PAYWALL → redirect to LessonDetail (upgrade screen)
+          if (
+            res.status === 403 &&
+            (errData.code === "PAYWALL" ||
+              /upgrade|locked/i.test(errData.message || ""))
+          ) {
+            window.location.href = `/lesson/${lessonId}`;
+            return;
+          }
+
+          // ✅ Auth expired / invalid token
+          if (res.status === 401) {
+            setError("Session expired. Please log in again.");
+            setLoading(false);
+            return;
+          }
+
+          throw new Error(errData.message || "Failed to load quiz");
         }
 
         const data = await res.json();
