@@ -39,6 +39,7 @@ import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminUserDetail from "./pages/admin/AdminUserDetail.jsx";
 import AdminXP from "./pages/admin/AdminXP.jsx";
 import AdminAnalytics from "./pages/admin/AdminAnalytics.jsx";
+import LessonDetail from "./pages/student/LessonDetail";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -78,6 +79,7 @@ export default function App() {
               path="/practice"
               element={<Navigate to="/practice/reorder" replace />}
             />
+            <Route path="/lesson/:lessonId" element={<LessonDetail />} />
 
             {/* Student-protected */}
             <Route

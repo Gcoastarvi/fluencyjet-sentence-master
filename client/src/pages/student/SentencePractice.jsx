@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "@/api/apiClient";
+import { useLocation } from "react-router-dom";
 
 const DEFAULT_PRACTICE_MODE = "reorder";
 const SUPPORTED_PRACTICE_MODES = new Set([
@@ -156,6 +157,11 @@ export default function SentencePractice() {
 
   const [audioGateOpen, setAudioGateOpen] = useState(false);
   const audioGateTimerRef = useRef(null);
+
+  const location = useLocation();
+  const lessonIdFromQuery = Number(
+    new URLSearchParams(location.search).get("lessonId"),
+  );
 
   function openAudioGateAfter(ms = 1800) {
     setAudioGateOpen(false);
@@ -513,7 +519,7 @@ export default function SentencePractice() {
 
     try {
       const res = await api.get(
-        `/quizzes/by-lesson/${lessonId}?mode=${encodeURIComponent(fetchMode)}`,
+        `/quizzes/by-lesson/${lessonIdFromQuery}?mode=${encodeURIComponent(fetchMode)}`,
       );
 
       const data = res?.data ?? res;
@@ -525,7 +531,7 @@ export default function SentencePractice() {
 
         // ✅ PAYWALL redirect
         if (code === "PAYWALL") {
-          window.location.href = `/lesson/${lessonId}`;
+          window.location.href = `/lesson/${lessonIdFromQuery}`;
           return;
         }
 

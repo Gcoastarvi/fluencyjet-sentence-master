@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 // IMPORTANT:
 // This page expects Lessons page to navigate here with `state: { lesson }`.
@@ -12,8 +13,39 @@ export default function LessonDetail() {
 
   const lesson = location.state?.lesson || null;
 
-  const lessonId = lesson?.id;
-  const title = lesson?.lessonTitle || lesson?.title || lessonSlug;
+  const { lessonId: lessonIdParam } = useParams();
+  const lessonIdNum = Number(lessonIdParam); // this is dayNumber for paywall redirect
+
+  const lessonDbId = lesson?.id; // this is Lesson table id if present via navigation state
+  const title =
+    lesson?.lessonTitle ||
+    lesson?.title ||
+    lessonSlug ||
+    `Lesson ${lessonIdNum || ""}`;
+
+  if (!lesson) {
+    return (
+      <div className="max-w-xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-2">Lesson {lessonIdNum}</h1>
+        <p className="text-red-600 font-semibold mb-4">
+          Locked. Upgrade required to continue.
+        </p>
+
+        <div className="space-y-3">
+          <a
+            href="/checkout"
+            className="inline-block px-5 py-3 rounded-xl bg-purple-600 text-white font-semibold"
+          >
+            Unlock Beginner Course
+          </a>
+
+          <a href="/lessons" className="block text-sm underline">
+            Go back to lessons
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   function readLastSession() {
     try {
