@@ -39,7 +39,6 @@ import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminUserDetail from "./pages/admin/AdminUserDetail.jsx";
 import AdminXP from "./pages/admin/AdminXP.jsx";
 import AdminAnalytics from "./pages/admin/AdminAnalytics.jsx";
-import LessonDetail from "./pages/student/LessonDetail";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -96,15 +95,6 @@ export default function App() {
               element={
                 <ProtectedRoute>
                   <Lessons /> {/* Launch mode: no PlanGate */}
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/lessons/:lessonId"
-              element={
-                <ProtectedRoute>
-                  <LessonDetail />
                 </ProtectedRoute>
               }
             />
