@@ -209,7 +209,7 @@ function Practice() {
   };
 
   const handleBackToLesson = () => {
-    navigate(`/lessons/${lessonId}`);
+    navigate(`/lesson/${lessonId}`);
   };
 
   if (!lessonId) {

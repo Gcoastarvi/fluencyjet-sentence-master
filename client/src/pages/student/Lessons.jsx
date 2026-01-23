@@ -71,6 +71,11 @@ export default function Lessons() {
       <div className="text-center text-xl text-red-600 mt-20">{error}</div>
     );
 
+  if (!lesson.dayNumber) {
+    console.error("Lesson missing dayNumber", lesson);
+    return null;
+  }
+
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6 mt-6">
       <h1 className="text-3xl font-bold text-indigo-700 text-center">
