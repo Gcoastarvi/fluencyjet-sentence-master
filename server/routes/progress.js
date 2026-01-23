@@ -95,24 +95,28 @@ async function ensureProgress(tx, userId) {
 }
 
 async function ensureLessonProgress(tx, userId, lessonId) {
-  let lp = await tx.userLessonProgress.findFirst({
-    where: { user_id: userId, lesson_id: lessonId },
+  let row = await tx.userDayProgress.findFirst({
+    where: {
+      userId,
+      dayNumber: lessonId,
+    },
   });
 
-  if (!lp) {
-    lp = await tx.userLessonProgress.create({
+  if (!row) {
+    row = await tx.userDayProgress.create({
       data: {
-        user_id: userId,
-        lesson_id: lessonId,
-        attempts: 0,
-        best_score: 0,
+        userId,
+        dayNumber: lessonId,
+        level: "BEGINNER", // current system = lesson/day
         completed: false,
-        last_attempt_at: new Date(),
+        xpEarned: 0,
       },
     });
   }
-  return lp;
+
+  return row;
 }
+
 function parseLessonId(raw) {
   // Accept: 1, "1", "L1", "lesson-1"
   if (raw === undefined || raw === null) return null;
