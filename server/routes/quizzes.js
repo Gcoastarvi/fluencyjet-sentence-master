@@ -67,50 +67,29 @@ router.get("/random", authRequired, async (req, res) => {
     // ---- PAYWALL HARD BLOCK (Lesson-based = PracticeDay.dayNumber) ----
     const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
 
-    // Free lessons always allowed
-    if (lessonId > FREE_LESSONS) {
-      const userRow = await prisma.user.findUnique({
-        where: { id: req.user.id },
-        select: { has_access: true, tier_level: true, plan: true },
+    const userRow = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { has_access: true, tier_level: true, plan: true },
+    });
+
+    const tier = String(userRow?.tier_level || "").toLowerCase();
+    const plan = String(userRow?.plan || "").toLowerCase();
+
+    const proActive =
+      !!userRow?.has_access ||
+      tier === "pro" ||
+      tier === "all" ||
+      plan === "pro" ||
+      plan === "paid";
+
+    // ✅ Hard rule: free users only get first N lessons
+    if (!proActive && lessonId > FREE_LESSONS) {
+      return res.status(403).json({
+        ok: false,
+        code: "PAYWALL",
+        message: `Locked. Upgrade required to access Lesson ${lessonId}.`,
+        freeLessons: FREE_LESSONS,
       });
-
-      const tier = String(userRow?.tier_level || "").toLowerCase();
-      const plan = String(userRow?.plan || "").toLowerCase();
-
-      // Convert current "level" enum to something we can compare
-      // level variable already computed above: "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
-      const wantsBeginner = level === "BEGINNER";
-      const wantsIntermediate =
-        level === "INTERMEDIATE" || level === "ADVANCED";
-
-      // Minimal entitlement rules (MVP):
-      // - has_access true => allow everything (admin/testing)
-      // - tier_level "all" or "pro" => allow everything
-      // - tier_level "beginner" => allow only BEGINNER
-      // - tier_level "intermediate" => allow INTERMEDIATE/ADVANCED (and optionally beginner too if you want)
-      const proAll =
-        !!userRow?.has_access ||
-        tier === "pro" ||
-        tier === "all" ||
-        plan === "pro" ||
-        plan === "paid";
-
-      const hasBeginnerAccess = proAll || tier === "beginner";
-      const hasIntermediateAccess = proAll || tier === "intermediate";
-
-      const allowed =
-        (wantsBeginner && hasBeginnerAccess) ||
-        (wantsIntermediate && hasIntermediateAccess);
-
-      if (!allowed) {
-        return res.status(403).json({
-          ok: false,
-          message: "Locked. Upgrade required for this level.",
-          code: "PAYWALL",
-          freeLessons: FREE_LESSONS,
-          requestedLevel: level,
-        });
-      }
     }
     // ---- END PAYWALL HARD BLOCK ----
 
