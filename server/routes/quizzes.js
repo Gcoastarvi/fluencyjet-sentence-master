@@ -153,48 +153,91 @@ router.get("/random", authRequired, async (req, res) => {
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
 // GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder
-router.get("/by-lesson/:lessonId", async (req, res) => {
+router.get("/:lessonId", authRequired, async (req, res) => {
   try {
-    const lessonId = Number(req.params.lessonId);
-    if (!Number.isFinite(lessonId) || lessonId <= 0) {
-      return res.status(400).json({ ok: false, error: "Invalid lessonId" });
-    }
+    const lessonIdNum = Number(req.params.lessonId);
+    const mode = String(req.query.mode || "typing").toLowerCase();
+    const diff = String(req.query.difficulty || "beginner").toLowerCase();
 
-    const requestedMode = String(req.query.mode || "").toLowerCase();
-    if (!["typing", "reorder"].includes(requestedMode)) {
+    if (Number.isNaN(lessonIdNum) || lessonIdNum <= 0) {
       return res
         .status(400)
-        .json({ ok: false, error: "mode must be typing|reorder" });
+        .json({ ok: false, message: "lessonId must be a number" });
     }
 
-    const quizzes = await prisma.quiz.findMany({
-      where: { lessonId, type: requestedMode }, // type stored as "typing"/"reorder"
-      orderBy: { id: "asc" },
+    const level =
+      diff === "advanced"
+        ? "ADVANCED"
+        : diff === "intermediate"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
+
+    // 🔒 HARD PAYWALL (same rule as /random)
+    const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
+
+    const userRow = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { has_access: true, tier_level: true, plan: true },
     });
 
-    const questions = quizzes.map((q) => {
-      const data = q.data || {};
-      const answer = String(q.question || "").trim();
+    const tier = String(userRow?.tier_level || "").toLowerCase();
+    const plan = String(userRow?.plan || "").toLowerCase();
 
-      const correctOrder = Array.isArray(data.correctOrder)
-        ? data.correctOrder
-        : answer.split(/\s+/).filter(Boolean);
+    const proActive =
+      !!userRow?.has_access ||
+      tier === "pro" ||
+      tier === "all" ||
+      plan === "pro" ||
+      plan === "paid";
 
-      return {
-        id: q.id,
-        type: requestedMode, // "typing" | "reorder"
-        tamil: q.prompt || "",
-        correctOrder,
-        answer,
-        orderIndex: Number((q.data && q.data.orderIndex) || q.id) || q.id,
-        xp: q.xpReward ?? 0,
-      };
+    if (!proActive && lessonIdNum > FREE_LESSONS) {
+      return res.status(403).json({
+        ok: false,
+        code: "PAYWALL",
+        message: `Locked. Upgrade required to access Lesson ${lessonIdNum}.`,
+        freeLessons: FREE_LESSONS,
+      });
+    }
+
+    // ✅ Fetch PracticeDay by (level, dayNumber)
+    const day = await prisma.practiceDay.findFirst({
+      where: { level, dayNumber: lessonIdNum, isActive: true },
+      include: { exercises: { orderBy: { orderIndex: "asc" } } },
     });
 
-    return res.json({ ok: true, lessonId, questions });
+    if (!day || !day.exercises?.length) {
+      return res.status(404).json({
+        ok: false,
+        message: `No exercises found. mode=${mode} lessonId=${lessonIdNum}`,
+      });
+    }
+
+    // ✅ Filter by mode using expected.mode (or fallback)
+    const exercises = day.exercises.filter((ex) => {
+      const expected = ex.expected || {};
+      const m = String(
+        expected.mode || expected.practiceType || "",
+      ).toLowerCase();
+      return !mode || m === mode;
+    });
+
+    if (!exercises.length) {
+      return res.status(404).json({
+        ok: false,
+        message: `No exercises found. mode=${mode} lessonId=${lessonIdNum}`,
+      });
+    }
+
+    return res.json({
+      ok: true,
+      lessonId: lessonIdNum,
+      level,
+      mode,
+      exercises,
+    });
   } catch (err) {
-    console.error("❌ GET /api/quizzes/by-lesson error:", err);
-    return res.status(500).json({ ok: false, error: "Failed to load quizzes" });
+    console.error("❌ /api/quizzes/:lessonId error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
 
