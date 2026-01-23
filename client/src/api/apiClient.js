@@ -123,11 +123,14 @@ export const api = {
 export async function loginUser(email, password) {
   const res = await api.post("/auth/login", { email, password });
 
-  if (!res.ok || !res.data?.token) {
+  // Axios response => res.data holds the JSON
+  const token = res.data?.token;
+
+  if (!token) {
     throw new Error(res.data?.message || "Login failed");
   }
 
-  setToken(res.data.token);
+  setToken(token);
 
   localStorage.setItem(
     "user",
@@ -137,7 +140,7 @@ export async function loginUser(email, password) {
     }),
   );
 
-  return res.data;
+  return res.data; // important: return payload, not axios response
 }
 
 export async function signupUser(payload) {
