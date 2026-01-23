@@ -97,64 +97,61 @@ export default function Lessons() {
             <div
               key={lesson.id ?? `${lesson.slug ?? "lesson"}_${index}`}
               className="relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition group"
-            >
-              {/* ... your existing card UI ... */}
+            >              
+              <div className="space-y-4">
+                {lessons.map((lesson, index) => {
+                  const isUnlocked = unlocked.includes(lesson.id);
+                  const isCompleted = Boolean(lesson.completed);
 
-              {/* ✅ START button should go to /lesson/:lessonId (singular) */}
-              <Link
-                to={`/lesson/${dayNumber}`}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-purple-600 text-white font-semibold hover:opacity-95"
-              >
-                Start <span aria-hidden>→</span>
-              </Link>
+                  const dayNumber =
+                    lesson.dayNumber ?? lesson.day_number ?? lesson.orderIndex ?? (index + 1);
 
-              {/* ... keep the rest of your existing content ... */}
-            </div>
-          );
-        })}
-      </div>
-
-              {/* Lock Overlay */}
-              {!isUnlocked && (
-                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl text-gray-600">
-                  🔒
-                </div>
-              )}
-
-              <div className={isUnlocked ? "" : "opacity-40"}>
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  Lesson {index + 1}: {lesson.title}
-                  {isCompleted && (
-                    <span className="text-green-600 text-lg font-bold">✓</span>
-                  )}
-                </h2>
-
-                <p className="text-gray-500 mt-1">{lesson.description}</p>
-
-                <div className="mt-4">
-                  {isUnlocked ? (
-                    <Link
-                      to={`/lessons/${lesson.lessonSlug || lesson.slug}`}
-                      state={{ lesson }}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-full hover:scale-105 transition inline-block"
+                  return (
+                    <div
+                      key={lesson.id ?? `${lesson.slug ?? "lesson"}_${index}`}
+                      className="relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition group"
                     >
-                      Start →
-                    </Link>
-                  ) : (
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-gray-300 text-gray-600 rounded-full cursor-not-allowed inline-block"
-                      disabled
-                    >
-                      Locked
-                    </button>
-                  )}
-                </div>
+                      {!isUnlocked && (
+                        <div className="absolute inset-0 bg-white/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl text-gray-600">
+                          🔒
+                        </div>
+                      )}
+
+                      <div className={isUnlocked ? "" : "opacity-40"}>
+                        <h2 className="text-xl font-semibold flex items-center gap-2">
+                          Lesson {dayNumber}: {lesson.title}
+                          {isCompleted && (
+                            <span className="text-green-600 text-lg font-bold">✓</span>
+                          )}
+                        </h2>
+
+                        <p className="text-gray-500 mt-1">{lesson.description}</p>
+
+                        <div className="mt-4">
+                          {isUnlocked ? (
+                            <Link
+                              to={`/lesson/${dayNumber}`}
+                              state={{ lesson }}
+                              className="px-4 py-2 bg-indigo-600 text-white rounded-full hover:scale-105 transition inline-block"
+                            >
+                              Start →
+                            </Link>
+                          ) : (
+                            <button
+                              type="button"
+                              className="px-4 py-2 bg-gray-300 text-gray-600 rounded-full cursor-not-allowed inline-block"
+                              disabled
+                            >
+                              Locked
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
-          );
-        })}
-      </div>
+
       {/* Mode Picker Modal */}
       {showModePicker && selectedLesson && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
