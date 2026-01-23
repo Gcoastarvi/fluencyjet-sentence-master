@@ -518,10 +518,18 @@ export default function SentencePractice() {
 
       const data = res?.data ?? res;
 
+      // ✅ Handle API-level errors that come back as JSON
       if (data?.ok === false) {
-        throw new Error(
-          (data && (data.error || data.message)) || "Failed to load questions",
-        );
+        const code = data?.code;
+        const msg = data?.message || data?.error || "Failed to load questions";
+
+        // ✅ PAYWALL redirect
+        if (code === "PAYWALL") {
+          window.location.href = `/lesson/${lessonId}`;
+          return;
+        }
+
+        throw new Error(msg);
       }
 
       const arr = Array.isArray(data)
