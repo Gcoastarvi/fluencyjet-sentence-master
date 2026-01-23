@@ -1,13 +1,28 @@
 // client/src/pages/student/Lessons.jsx
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/api/apiClient";
 
 export default function Lessons() {
   const navigate = useNavigate();
 
+  const [lessons, setLessons] = useState([]);
+  const [unlocked, setUnlocked] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Mode picker modal
   const [showModePicker, setShowModePicker] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState(null);
+
+  const getDayNumber = (lesson, index) =>
+    Number(
+      lesson?.dayNumber ??
+        lesson?.day_number ??
+        lesson?.orderIndex ??
+        lesson?.order_index ??
+        index + 1,
+    );
 
   function openModePicker(lesson) {
     setSelectedLesson(lesson);
@@ -19,27 +34,28 @@ export default function Lessons() {
     setSelectedLesson(null);
   }
 
-  const [loading, setLoading] = useState(true);
-  const [lessons, setLessons] = useState([]);
-  const [unlocked, setUnlocked] = useState([]);
-  const [error, setError] = useState("");
+  const selectedDayNumber = useMemo(() => {
+    if (!selectedLesson) return null;
+    const idx = lessons.findIndex((l) => l?.id === selectedLesson?.id);
+    return getDayNumber(selectedLesson, idx >= 0 ? idx : 0);
+  }, [selectedLesson, lessons]);
 
   useEffect(() => {
     let alive = true;
 
-    const fetchLessons = async () => {
-      setLoading(true);
-      setError("");
-
+    async function fetchLessons() {
       try {
+        setLoading(true);
+        setError("");
+
         const res = await api.get("/lessons");
         const data = res?.data ?? res;
 
         if (!data?.ok) throw new Error(data?.error || "Failed to load lessons");
 
         if (!alive) return;
-        setLessons(data.lessons || []);
-        setUnlocked(data.unlocked || []);
+        setLessons(Array.isArray(data.lessons) ? data.lessons : []);
+        setUnlocked(Array.isArray(data.unlocked) ? data.unlocked : []);
       } catch (err) {
         console.error("❌ Lessons fetch failed:", err);
         if (!alive) return;
@@ -48,28 +64,27 @@ export default function Lessons() {
         if (!alive) return;
         setLoading(false);
       }
-    };
+    }
 
     fetchLessons();
-
     return () => {
       alive = false;
     };
   }, []);
 
-  if (loading) return <div className="p-4">Loading…</div>;
-
-  if (loading)
+  if (loading) {
     return (
       <div className="text-center text-xl text-indigo-600 mt-20">
         Loading lessons…
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
       <div className="text-center text-xl text-red-600 mt-20">{error}</div>
     );
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6 mt-6">
@@ -81,76 +96,54 @@ export default function Lessons() {
         {lessons.map((lesson, index) => {
           const isUnlocked = unlocked.includes(lesson.id);
           const isCompleted = Boolean(lesson.completed);
-
-          // ✅ TEMP: derive a stable "lesson number" for routing + practice
-          // Prefer dayNumber if backend provides it; otherwise fall back safely.
-          const dayNumber =
-            lesson.dayNumber ?? lesson.day_number ?? lesson.orderIndex ?? (index + 1);
-
-          // Optional: log once when dayNumber is missing (doesn't break UI)
-          // (Remove later after backend returns dayNumber)
-          if (lesson.dayNumber == null && lesson.day_number == null && lesson.orderIndex == null) {
-            console.warn("[Lessons] dayNumber missing; using index+1 fallback", lesson);
-          }
+          const dayNumber = getDayNumber(lesson, index);
 
           return (
             <div
               key={lesson.id ?? `${lesson.slug ?? "lesson"}_${index}`}
-              className="relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition group"
-            >              
-              <div className="space-y-4">
-                {lessons.map((lesson, index) => {
-                  const isUnlocked = unlocked.includes(lesson.id);
-                  const isCompleted = Boolean(lesson.completed);
+              className="relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition"
+            >
+              {!isUnlocked && (
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl text-gray-600">
+                  🔒
+                </div>
+              )}
 
-                  const dayNumber =
-                    lesson.dayNumber ?? lesson.day_number ?? lesson.orderIndex ?? (index + 1);
+              <div className={isUnlocked ? "" : "opacity-40"}>
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  Lesson {dayNumber}: {lesson.title}
+                  {isCompleted && (
+                    <span className="text-green-600 text-lg font-bold">✓</span>
+                  )}
+                </h2>
 
-                  return (
-                    <div
-                      key={lesson.id ?? `${lesson.slug ?? "lesson"}_${index}`}
-                      className="relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition group"
+                <p className="text-gray-500 mt-1">{lesson.description}</p>
+
+                <div className="mt-4 flex items-center gap-3">
+                  {/* If unlocked: open mode picker */}
+                  {isUnlocked ? (
+                    <button
+                      type="button"
+                      onClick={() => openModePicker(lesson)}
+                      className="px-4 py-2 bg-indigo-600 text-white rounded-full hover:scale-105 transition inline-block"
                     >
-                      {!isUnlocked && (
-                        <div className="absolute inset-0 bg-white/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl text-gray-600">
-                          🔒
-                        </div>
-                      )}
-
-                      <div className={isUnlocked ? "" : "opacity-40"}>
-                        <h2 className="text-xl font-semibold flex items-center gap-2">
-                          Lesson {dayNumber}: {lesson.title}
-                          {isCompleted && (
-                            <span className="text-green-600 text-lg font-bold">✓</span>
-                          )}
-                        </h2>
-
-                        <p className="text-gray-500 mt-1">{lesson.description}</p>
-
-                        <div className="mt-4">
-                          {isUnlocked ? (
-                            <Link
-                              to={`/lesson/${dayNumber}`}
-                              state={{ lesson }}
-                              className="px-4 py-2 bg-indigo-600 text-white rounded-full hover:scale-105 transition inline-block"
-                            >
-                              Start →
-                            </Link>
-                          ) : (
-                            <button
-                              type="button"
-                              className="px-4 py-2 bg-gray-300 text-gray-600 rounded-full cursor-not-allowed inline-block"
-                              disabled
-                            >
-                              Locked
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      Start →
+                    </button>
+                  ) : (
+                    // If locked: go to paywall detail page for that lesson/dayNumber
+                    <Link
+                      to={`/lesson/${dayNumber}`}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition inline-block"
+                    >
+                      View →
+                    </Link>
+                  )}
+                </div>
               </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Mode Picker Modal */}
       {showModePicker && selectedLesson && (
@@ -178,7 +171,7 @@ export default function Lessons() {
                 type="button"
                 onClick={() => {
                   closeModePicker();
-                  navigate(`/practice/typing?lessonId=${selectedLesson.id}`);
+                  navigate(`/practice/typing?lessonId=${selectedDayNumber}`);
                 }}
                 className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:opacity-95"
               >
@@ -189,7 +182,7 @@ export default function Lessons() {
                 type="button"
                 onClick={() => {
                   closeModePicker();
-                  navigate(`/practice/reorder?lessonId=${selectedLesson.id}`);
+                  navigate(`/practice/reorder?lessonId=${selectedDayNumber}`);
                 }}
                 className="w-full rounded-xl bg-indigo-100 px-4 py-3 text-indigo-800 font-semibold hover:bg-indigo-200"
               >
