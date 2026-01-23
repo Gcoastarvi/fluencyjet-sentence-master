@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { useParams } from "react-router-dom";
 
 // IMPORTANT:
 // This page expects Lessons page to navigate here with `state: { lesson }`.
