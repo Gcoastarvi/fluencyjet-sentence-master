@@ -13,6 +13,97 @@ router.use(express.text({ type: "text/plain", limit: "2mb" }));
 // ✅ attach req.user if Bearer token exists
 router.use(authMiddleware);
 
+// ✅ GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder|cloze|audio
+router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
+  try {
+    const lessonIdNum = Number(req.params.lessonId);
+    const mode = String(req.query.mode || "").toLowerCase();
+    const diff = String(req.query.difficulty || "beginner").toLowerCase();
+
+    if (Number.isNaN(lessonIdNum) || lessonIdNum <= 0) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "lessonId must be a number" });
+    }
+
+    const level =
+      diff === "advanced"
+        ? "ADVANCED"
+        : diff === "intermediate"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
+
+    // 🔒 HARD PAYWALL
+    const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
+
+    const userRow = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { has_access: true, tier_level: true, plan: true },
+    });
+
+    const tier = String(userRow?.tier_level || "").toLowerCase();
+    const plan = String(userRow?.plan || "").toLowerCase();
+
+    const proActive =
+      !!userRow?.has_access ||
+      tier === "pro" ||
+      tier === "all" ||
+      plan === "pro" ||
+      plan === "paid";
+
+    if (!proActive && lessonIdNum > FREE_LESSONS) {
+      return res.status(403).json({
+        ok: false,
+        code: "PAYWALL",
+        message: `Locked. Upgrade required to access Lesson ${lessonIdNum}.`,
+        freeLessons: FREE_LESSONS,
+      });
+    }
+
+    // ✅ Fetch PracticeDay + exercises
+    const day = await prisma.practiceDay.findFirst({
+      where: { level, dayNumber: lessonIdNum, isActive: true },
+      include: { exercises: { orderBy: { orderIndex: "asc" } } },
+    });
+
+    if (!day || !day.exercises?.length) {
+      return res.status(404).json({
+        ok: false,
+        message: `No exercises found. mode=${mode || "any"} lessonId=${lessonIdNum}`,
+      });
+    }
+
+    // NOTE: We filter by expected.mode (recommended), since ExerciseType enum is different
+    const exercises = mode
+      ? day.exercises.filter((ex) => {
+          const expected = ex.expected || {};
+          const m = String(
+            expected.mode || expected.practiceType || "",
+          ).toLowerCase();
+          return m === mode;
+        })
+      : day.exercises;
+
+    if (!exercises.length) {
+      return res.status(404).json({
+        ok: false,
+        message: `No exercises found. mode=${mode} lessonId=${lessonIdNum}`,
+      });
+    }
+
+    return res.json({
+      ok: true,
+      lessonId: lessonIdNum,
+      level,
+      mode: mode || null,
+      exercises,
+    });
+  } catch (err) {
+    console.error("❌ /api/quizzes/by-lesson error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
 const VALID_DIFFICULTIES = new Set(["beginner", "intermediate", "advanced"]);
 
 function normalizeDifficulty(value) {
