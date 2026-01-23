@@ -71,11 +71,6 @@ export default function Lessons() {
       <div className="text-center text-xl text-red-600 mt-20">{error}</div>
     );
 
-  if (!lesson.dayNumber) {
-    console.error("Lesson missing dayNumber", lesson);
-    return null;
-  }
-
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6 mt-6">
       <h1 className="text-3xl font-bold text-indigo-700 text-center">
@@ -87,11 +82,38 @@ export default function Lessons() {
           const isUnlocked = unlocked.includes(lesson.id);
           const isCompleted = Boolean(lesson.completed);
 
+          // ✅ TEMP: derive a stable "lesson number" for routing + practice
+          // Prefer dayNumber if backend provides it; otherwise fall back safely.
+          const dayNumber =
+            lesson.dayNumber ?? lesson.day_number ?? lesson.orderIndex ?? (index + 1);
+
+          // Optional: log once when dayNumber is missing (doesn't break UI)
+          // (Remove later after backend returns dayNumber)
+          if (lesson.dayNumber == null && lesson.day_number == null && lesson.orderIndex == null) {
+            console.warn("[Lessons] dayNumber missing; using index+1 fallback", lesson);
+          }
+
           return (
             <div
-              key={lesson.id}
-              className={`relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition group`}
+              key={lesson.id ?? `${lesson.slug ?? "lesson"}_${index}`}
+              className="relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition group"
             >
+              {/* ... your existing card UI ... */}
+
+              {/* ✅ START button should go to /lesson/:lessonId (singular) */}
+              <Link
+                to={`/lesson/${dayNumber}`}
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-purple-600 text-white font-semibold hover:opacity-95"
+              >
+                Start <span aria-hidden>→</span>
+              </Link>
+
+              {/* ... keep the rest of your existing content ... */}
+            </div>
+          );
+        })}
+      </div>
+
               {/* Lock Overlay */}
               {!isUnlocked && (
                 <div className="absolute inset-0 bg-white/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl text-gray-600">
