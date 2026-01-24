@@ -562,31 +562,21 @@ export default function SentencePractice() {
 
       setLessonExercises(normalized);
     } catch (e) {
-      const status = e?.response?.status;
-      const code = e?.response?.data?.code;
+      const status = e?.response?.status ?? e?.status ?? null;
+      const code = e?.response?.data?.code ?? e?.data?.code ?? null;
       const msg =
-        e?.response?.data?.message ||
-        e?.response?.data?.error ||
-        e?.message ||
-        "Failed to load lesson exercises.";
+        e?.response?.data?.message ?? e?.data?.message ?? e?.message ?? "";
 
-      // ✅ PAYWALL redirect
-      if (status === 403 && code === "PAYWALL") {
-        window.location.href = `/lesson/${lessonId}`;
-        return;
-      }
-
-      // ✅ Friendly 404 message
-      if (status === 404) {
-        setLessonExercises([]);
-        setLoadError(msg);
+      if (
+        status === 403 &&
+        (code === "PAYWALL" || String(msg).toLowerCase().includes("locked"))
+      ) {
+        navigate(`/lesson/${lessonId}`, { replace: true });
         return;
       }
 
       console.error("[Practice] loadLessonBatch failed", e);
-      setLoadError(msg);
-    } finally {
-      setLoading(false);
+      setLoadError("Failed to load lesson exercises.");
     }
   }
 
@@ -607,32 +597,29 @@ export default function SentencePractice() {
 
       setLessonExercises([ex]); // single-item “batch”
       setCurrentIndex(0);
-      } catch (e) {
-        // ✅ 1) Detect PAYWALL and redirect immediately (no UI error flash)
-        const status = e?.response?.status ?? e?.status ?? null;
-        const code = e?.response?.data?.code ?? e?.data?.code ?? null;
-        const msg =
-          e?.response?.data?.message ??
-          e?.data?.message ??
-          e?.message ??
-          "";
+    } catch (e) {
+      // ✅ 1) Detect PAYWALL and redirect immediately (no UI error flash)
+      const status = e?.response?.status ?? e?.status ?? null;
+      const code = e?.response?.data?.code ?? e?.data?.code ?? null;
+      const msg =
+        e?.response?.data?.message ?? e?.data?.message ?? e?.message ?? "";
 
-        if (
-          status === 403 &&
-          (code === "PAYWALL" || String(msg).toLowerCase().includes("locked"))
-        ) {
-          // go to lesson detail page
-          navigate(`/lesson/${lessonId}`, { replace: true });
-          return; // ⛔ stops setLoadError below
-        }
-
-        // ✅ 2) Normal error handling
-        console.error("[Practice] loadRandomOne failed", e);
-        setLoadError("Failed to load a random exercise.");
+      if (
+        status === 403 &&
+        (code === "PAYWALL" || String(msg).toLowerCase().includes("locked"))
+      ) {
+        // go to lesson detail page
+        navigate(`/lesson/${lessonId}`, { replace: true });
+        return; // ⛔ stops setLoadError below
       }
-      setLoading(false);
+
+      // ✅ 2) Normal error handling
+      console.error("[Practice] loadRandomOne failed", e);
+      setLoadError("Failed to load a random exercise.");
     }
-  
+    setLoading(false);
+  }
+
   function initQuiz() {
     setAttempts(0);
     setStatus("idle");

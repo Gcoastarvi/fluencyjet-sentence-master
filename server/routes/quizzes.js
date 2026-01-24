@@ -15,25 +15,16 @@ router.use(authMiddleware);
 
 // ✅ GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder|cloze|audio
 router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
-  try {
-    const lessonIdNum = Number(req.params.lessonId);
+  try {    
     const mode = String(req.query.mode || "").toLowerCase();
-    const diff = String(req.query.difficulty || "beginner").toLowerCase();
+    const diff = String(req.query.difficulty || "beginner").toLowerCase();    
 
+    const lessonIdNum = Number(req.params.lessonId);
     if (Number.isNaN(lessonIdNum) || lessonIdNum <= 0) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "lessonId must be a number" });
+      return res.status(400).json({ ok: false, message: "Invalid lessonId" });
     }
 
-    const level =
-      diff === "advanced"
-        ? "ADVANCED"
-        : diff === "intermediate"
-          ? "INTERMEDIATE"
-          : "BEGINNER";
-
-    // 🔒 HARD PAYWALL
+    // ---- PAYWALL HARD BLOCK ----
     const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
 
     const userRow = await prisma.user.findUnique({
@@ -59,6 +50,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
         freeLessons: FREE_LESSONS,
       });
     }
+    // ---- END PAYWALL HARD BLOCK ----
 
     // ✅ Fetch PracticeDay + exercises
     const day = await prisma.practiceDay.findFirst({
