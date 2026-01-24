@@ -25,22 +25,24 @@ export default function LessonDetail() {
   if (!lesson) {
     return (
       <div className="max-w-xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-2">Lesson {lessonIdNum}</h1>
+        <h1 className="text-2xl font-bold mb-2">Lesson {lessonIdNum || ""}</h1>
+
         <p className="text-red-600 font-semibold mb-4">
           Locked. Upgrade required to continue.
         </p>
 
         <div className="space-y-3">
-          <a
-            href="/checkout"
-            className="inline-block px-5 py-3 rounded-xl bg-purple-600 text-white font-semibold"
+          <button
+            type="button"
+            onClick={() =>
+              navigate(
+                `/paywall?plan=BEGINNER&from=lesson_${lessonIdNum || ""}`,
+              )
+            }
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-purple-600 text-white font-semibold hover:opacity-95"
           >
-            Unlock Beginner Course
-          </a>
-
-          <a href="/lessons" className="block text-sm underline">
-            Go back to lessons
-          </a>
+            Unlock Beginner Course <span aria-hidden>→</span>
+          </button>
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 // client/src/pages/student/Paywall.jsx
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { request } from "../../api/apiClient";
 
 /**
@@ -17,6 +17,9 @@ export default function Paywall() {
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState(null); // FREE | PRO | null
   const [error, setError] = useState(null);
+
+  const [searchParams] = useSearchParams();
+  const selectedPlan = (searchParams.get("plan") || "BEGINNER").toUpperCase();
 
   useEffect(() => {
     async function checkAccess() {
@@ -111,7 +114,9 @@ export default function Paywall() {
         </ul>
 
         <button
-          onClick={() => navigate("/checkout")}
+          onClick={() =>
+            navigate(`/checkout?plan=${encodeURIComponent(selectedPlan)}`)
+          }
           className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold"
         >
           Upgrade Now

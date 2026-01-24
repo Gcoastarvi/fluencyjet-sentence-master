@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { updateMyPlan } from "../../api/apiClient";
 
@@ -7,9 +7,21 @@ export default function Checkout() {
   const location = useLocation();
   const { plan, setPlan } = useAuth();
 
+  const [searchParams] = useSearchParams();
+  const planFromUrl = searchParams.get("plan");
+
   // We’ll pass these from Paywall
-  const selectedPlan = location.state?.selectedPlan || "PRO";
-  const priceLabel = location.state?.priceLabel || "₹499 (launch offer)";
+  const selectedPlan =
+    planFromUrl || location.state?.selectedPlan || "BEGINNER";
+  const priceLabel =
+    location.state?.priceLabel ||
+    (selectedPlan === "BEGINNER" ? "₹199 (beginner)" : "₹499 (launch offer)");
+
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get("returnTo") || "/lessons";
+
+  // after payment success + verify ok:
+  window.location.href = returnTo;
 
   // If already upgraded, bounce
   if (plan === "PRO" || plan === "LIFETIME") {
@@ -65,7 +77,9 @@ export default function Checkout() {
       </button>
 
       <button
-        onClick={() => navigate("/paywall")}
+        onClick={() =>
+          navigate(`/paywall?plan=${encodeURIComponent(selectedPlan)}`)
+        }
         className="w-full py-2 border rounded text-gray-600 hover:bg-gray-50"
       >
         Back to Paywall

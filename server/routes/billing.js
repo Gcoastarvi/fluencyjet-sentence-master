@@ -92,10 +92,16 @@ router.post("/create-order", authMiddleware, async (req, res) => {
  * POST /api/billing/verify-payment
  * =================================================
  */
-router.post("/verify-payment", authMiddleware, async (req, res) => {
+router.post("/verify-payment", authRequired, async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } =
       req.body || {};
+
+    const cfg = getPlanConfig(plan); // ✅ ADD HERE
+
+    // ... signature verify ...
+    // ... payment update uses cfg.label ...
+    // ... user update uses cfg.label ...
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res
@@ -125,9 +131,7 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
       return res
         .status(400)
         .json({ ok: false, message: "Invalid payment signature" });
-    }
-
-    const cfg = getPlanConfig(plan);
+    }   
 
     /**
      * 2) MARK PAYMENT AS PAID (idempotent)
@@ -145,12 +149,23 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
     /**
      * 3) UPGRADE USER PLAN
      */
+    // 🔒 require login (verify-payment must be protected)
+    if (!req.user?.id) {
+      return res.status(401).json({ ok: false, message: "Unauthorized" });
+    }
+
+    /**
+     * 3) UNLOCK USER (idempotent)
+     * - plan: cfg.label (ex: "BEGINNER" / "PRO")
+     * - tier_level: lowercased label
+     * - has_access: true
+     */
     const user = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         plan: cfg.label,
         has_access: true,
-        tier_level: cfg.label.toLowerCase(),
+        tier_level: String(cfg.label || "").toLowerCase(),
       },
       select: {
         id: true,
@@ -163,7 +178,10 @@ router.post("/verify-payment", authMiddleware, async (req, res) => {
 
     return res.json({
       ok: true,
+      message: "Payment verified and access granted",
       plan: user.plan,
+      tier_level: user.tier_level,
+      has_access: user.has_access,
       user,
     });
   } catch (err) {
