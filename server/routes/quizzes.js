@@ -15,16 +15,23 @@ router.use(authMiddleware);
 
 // ✅ GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder|cloze|audio
 router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
-  try {    
-    const mode = String(req.query.mode || "").toLowerCase();
-    const diff = String(req.query.difficulty || "beginner").toLowerCase();    
-
+  try {
     const lessonIdNum = Number(req.params.lessonId);
-    if (Number.isNaN(lessonIdNum) || lessonIdNum <= 0) {
-      return res.status(400).json({ ok: false, message: "Invalid lessonId" });
+    if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
+      return res.status(400).json({ ok: false, message: "lessonId invalid" });
     }
 
-    // ---- PAYWALL HARD BLOCK ----
+    const diff = String(req.query.difficulty || "beginner").toLowerCase();
+    const mode = String(req.query.mode || "typing").toLowerCase();
+
+    const level =
+      diff === "advanced"
+        ? "ADVANCED"
+        : diff === "intermediate"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
+
+    // ---- PAYWALL HARD BLOCK (Lesson-based = PracticeDay.dayNumber) ----
     const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
 
     const userRow = await prisma.user.findUnique({
@@ -52,42 +59,34 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     }
     // ---- END PAYWALL HARD BLOCK ----
 
-    // ✅ Fetch PracticeDay + exercises
     const day = await prisma.practiceDay.findFirst({
-      where: { level, dayNumber: lessonIdNum, isActive: true },
+      where: { level, dayNumber: lessonIdNum },
       include: { exercises: { orderBy: { orderIndex: "asc" } } },
     });
 
-    if (!day || !day.exercises?.length) {
-      return res.status(404).json({
-        ok: false,
-        message: `No exercises found. mode=${mode || "any"} lessonId=${lessonIdNum}`,
+    if (!day) {
+      // ✅ Never 500 on “missing day”
+      return res.json({
+        ok: true,
+        lessonId: lessonIdNum,
+        level,
+        mode,
+        exercises: [],
       });
     }
 
-    // NOTE: We filter by expected.mode (recommended), since ExerciseType enum is different
-    const exercises = mode
-      ? day.exercises.filter((ex) => {
-          const expected = ex.expected || {};
-          const m = String(
-            expected.mode || expected.practiceType || "",
-          ).toLowerCase();
-          return m === mode;
-        })
-      : day.exercises;
-
-    if (!exercises.length) {
-      return res.status(404).json({
-        ok: false,
-        message: `No exercises found. mode=${mode} lessonId=${lessonIdNum}`,
-      });
-    }
+    const exercises = (day.exercises || []).filter((ex) => {
+      const m = String(
+        ex?.expected?.mode || ex?.expected?.practiceType || "",
+      ).toLowerCase();
+      return !mode || m === mode;
+    });
 
     return res.json({
       ok: true,
       lessonId: lessonIdNum,
       level,
-      mode: mode || null,
+      mode,
       exercises,
     });
   } catch (err) {
