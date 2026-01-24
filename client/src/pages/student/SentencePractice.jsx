@@ -632,7 +632,7 @@ export default function SentencePractice() {
       }
       setLoading(false);
     }
-
+  
   function initQuiz() {
     setAttempts(0);
     setStatus("idle");
