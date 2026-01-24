@@ -92,104 +92,113 @@ router.post("/create-order", authMiddleware, async (req, res) => {
  * POST /api/billing/verify-payment
  * =================================================
  */
-router.post("/verify-payment", authRequired, async (req, res) => {
-  try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan } =
-      req.body || {};
+router.post(
+  "/verify-payment",
+  authMiddleware,
+  authRequired,
+  async (req, res) => {
+    try {
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        plan,
+      } = req.body || {};
 
-    const cfg = getPlanConfig(plan); // ✅ ADD HERE
+      const cfg = getPlanConfig(plan); // ✅ ADD HERE
 
-    // ... signature verify ...
-    // ... payment update uses cfg.label ...
-    // ... user update uses cfg.label ...
+      // ... signature verify ...
+      // ... payment update uses cfg.label ...
+      // ... user update uses cfg.label ...
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "Missing payment fields" });
-    }
+      if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+        return res
+          .status(400)
+          .json({ ok: false, message: "Missing payment fields" });
+      }
 
-    /**
-     * 1) VERIFY SIGNATURE
-     */
-    const payload = `${razorpay_order_id}|${razorpay_payment_id}`;
-    const expected = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-      .update(payload)
-      .digest("hex");
+      /**
+       * 1) VERIFY SIGNATURE
+       */
+      const payload = `${razorpay_order_id}|${razorpay_payment_id}`;
+      const expected = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .update(payload)
+        .digest("hex");
 
-    if (expected !== razorpay_signature) {
+      if (expected !== razorpay_signature) {
+        await prisma.payment.update({
+          where: { orderId: razorpay_order_id },
+          data: {
+            paymentId: razorpay_payment_id,
+            signature: razorpay_signature,
+            status: "FAILED",
+          },
+        });
+
+        return res
+          .status(400)
+          .json({ ok: false, message: "Invalid payment signature" });
+      }
+
+      /**
+       * 2) MARK PAYMENT AS PAID (idempotent)
+       */
       await prisma.payment.update({
         where: { orderId: razorpay_order_id },
         data: {
           paymentId: razorpay_payment_id,
           signature: razorpay_signature,
-          status: "FAILED",
+          status: "PAID",
+          plan: cfg.label,
         },
       });
 
+      /**
+       * 3) UPGRADE USER PLAN
+       */
+      // 🔒 require login (verify-payment must be protected)
+      if (!req.user?.id) {
+        return res.status(401).json({ ok: false, message: "Unauthorized" });
+      }
+
+      /**
+       * 3) UNLOCK USER (idempotent)
+       * - plan: cfg.label (ex: "BEGINNER" / "PRO")
+       * - tier_level: lowercased label
+       * - has_access: true
+       */
+      const user = await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          plan: cfg.label,
+          has_access: true,
+          tier_level: String(cfg.label || "").toLowerCase(),
+        },
+        select: {
+          id: true,
+          email: true,
+          plan: true,
+          has_access: true,
+          tier_level: true,
+        },
+      });
+
+      return res.json({
+        ok: true,
+        message: "Payment verified and access granted",
+        plan: user.plan,
+        tier_level: user.tier_level,
+        has_access: user.has_access,
+        user,
+      });
+    } catch (err) {
+      console.error("VERIFY PAYMENT ERROR:", err);
       return res
-        .status(400)
-        .json({ ok: false, message: "Invalid payment signature" });
+        .status(500)
+        .json({ ok: false, message: "Payment verification failed" });
     }
-
-    /**
-     * 2) MARK PAYMENT AS PAID (idempotent)
-     */
-    await prisma.payment.update({
-      where: { orderId: razorpay_order_id },
-      data: {
-        paymentId: razorpay_payment_id,
-        signature: razorpay_signature,
-        status: "PAID",
-        plan: cfg.label,
-      },
-    });
-
-    /**
-     * 3) UPGRADE USER PLAN
-     */
-    // 🔒 require login (verify-payment must be protected)
-    if (!req.user?.id) {
-      return res.status(401).json({ ok: false, message: "Unauthorized" });
-    }
-
-    /**
-     * 3) UNLOCK USER (idempotent)
-     * - plan: cfg.label (ex: "BEGINNER" / "PRO")
-     * - tier_level: lowercased label
-     * - has_access: true
-     */
-    const user = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        plan: cfg.label,
-        has_access: true,
-        tier_level: String(cfg.label || "").toLowerCase(),
-      },
-      select: {
-        id: true,
-        email: true,
-        plan: true,
-        has_access: true,
-        tier_level: true,
-      },
-    });
-
-    return res.json({
-      ok: true,
-      message: "Payment verified and access granted",
-      plan: user.plan,
-      tier_level: user.tier_level,
-      has_access: user.has_access,
-      user,
-    });
-  } catch (err) {
-    console.error("VERIFY PAYMENT ERROR:", err);
-    return res
-      .status(500)
-      .json({ ok: false, message: "Payment verification failed" });
-  }
-});
+  },
+);
 
 export default router;

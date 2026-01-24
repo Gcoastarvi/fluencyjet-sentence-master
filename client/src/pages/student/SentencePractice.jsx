@@ -607,10 +607,29 @@ export default function SentencePractice() {
 
       setLessonExercises([ex]); // single-item “batch”
       setCurrentIndex(0);
-    } catch (e) {
-      console.error("[Practice] loadRandomOne failed", e);
-      setLoadError("Failed to load a random exercise.");
-    } finally {
+      } catch (e) {
+        // ✅ 1) Detect PAYWALL and redirect immediately (no UI error flash)
+        const status = e?.response?.status ?? e?.status ?? null;
+        const code = e?.response?.data?.code ?? e?.data?.code ?? null;
+        const msg =
+          e?.response?.data?.message ??
+          e?.data?.message ??
+          e?.message ??
+          "";
+
+        if (
+          status === 403 &&
+          (code === "PAYWALL" || String(msg).toLowerCase().includes("locked"))
+        ) {
+          // go to lesson detail page
+          navigate(`/lesson/${lessonId}`, { replace: true });
+          return; // ⛔ stops setLoadError below
+        }
+
+        // ✅ 2) Normal error handling
+        console.error("[Practice] loadRandomOne failed", e);
+        setLoadError("Failed to load a random exercise.");
+      }
       setLoading(false);
     }
   }
