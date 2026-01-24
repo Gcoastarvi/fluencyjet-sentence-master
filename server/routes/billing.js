@@ -2,7 +2,7 @@ import express from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import prisma from "../db/client.js";
-import authMiddleware from "../middleware/authMiddleware.js";
+import { authMiddleware, authRequired } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -131,7 +131,7 @@ router.post("/verify-payment", authRequired, async (req, res) => {
       return res
         .status(400)
         .json({ ok: false, message: "Invalid payment signature" });
-    }   
+    }
 
     /**
      * 2) MARK PAYMENT AS PAID (idempotent)
