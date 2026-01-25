@@ -503,15 +503,44 @@ export default function SentencePractice() {
   function normalizeExercise(raw) {
     if (!raw) return null;
 
-    const ex = raw.exercise ?? raw;
+    // expected may be object or JSON string
+    let expected = raw.expected;
+    if (typeof expected === "string") {
+      try {
+        expected = JSON.parse(expected);
+      } catch {}
+    }
+    expected = expected || {};
+
+    // normalize fields across old Quiz vs new PracticeExercise
+    const id = raw.id;
+    const promptTa = raw.promptTa || raw.prompt || raw.questionTa || "";
+    const xp = Number(raw.xp || expected.xp || 0) || 0;
+
+    const mode = String(
+      expected.mode || expected.practiceType || "",
+    ).toLowerCase();
+
+    const words = Array.isArray(expected.words)
+      ? expected.words
+      : Array.isArray(expected.tokens)
+        ? expected.tokens
+        : [];
+
+    const answer =
+      expected.answer ||
+      expected.correct ||
+      expected.expected ||
+      raw.answer ||
+      raw.expectedAnswer ||
+      "";
 
     return {
-      id: ex.id ?? ex.exerciseId ?? null,
-      type: ex.type ?? ex.practiceType ?? ex.mode ?? null, // ✅ ADD THIS
-      tamil: ex.tamil ?? ex.promptTamil ?? ex.tamilLine ?? ex.promptTa ?? "",
-      correctOrder: Array.isArray(ex.correctOrder) ? ex.correctOrder : [],
-      answer: ex.answer ?? ex.english ?? "",
-      xp: ex.xp ?? 0, // optional, but useful
+      id,
+      promptTa,
+      xp,
+      orderIndex: raw.orderIndex ?? 0,
+      expected: { ...expected, mode, words, answer },
     };
   }
 

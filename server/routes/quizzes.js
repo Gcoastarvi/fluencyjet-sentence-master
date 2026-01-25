@@ -242,6 +242,16 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       const m = String(
         ex?.expected?.mode || ex?.expected?.practiceType || "",
       ).toLowerCase();
+
+      // if asked reorder, allow:
+      // - reorder exercises
+      // - OR typing exercises that have words[]
+      if (mode === "reorder") {
+        const hasWords =
+          Array.isArray(ex?.expected?.words) && ex.expected.words.length > 1;
+        return m === "reorder" || (m === "typing" && hasWords);
+      }
+
       return !mode || m === mode;
     });
 

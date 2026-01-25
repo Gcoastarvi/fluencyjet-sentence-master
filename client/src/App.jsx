@@ -73,7 +73,15 @@ export default function App() {
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/diagnostic" element={<DiagnosticStart />} />
             <Route path="/diagnostic/result" element={<DiagnosticResult />} />
-            <Route path="/practice/:mode" element={<SentencePractice />} />
+            <Route
+              path="/practice/:mode"
+              element={
+                <ProtectedRoute>
+                  <SentencePractice />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/practice"
               element={<Navigate to="/practice/reorder" replace />}
