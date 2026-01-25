@@ -27,7 +27,7 @@ export default function Login() {
         return;
       }
 
-      // ✅ SUCCESS → redirect to intended page
+      // ✅ SUCCESS → redirect back to where user wanted to go
       navigate(next, { replace: true });
     } catch (err) {
       console.error("Login failed", err);
