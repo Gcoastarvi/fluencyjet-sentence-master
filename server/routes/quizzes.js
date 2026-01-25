@@ -13,124 +13,6 @@ router.use(express.text({ type: "text/plain", limit: "2mb" }));
 // ✅ attach req.user if Bearer token exists
 router.use(authMiddleware);
 
-// ✅ GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder|cloze|audio
-router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
-  try {
-    const lessonIdNum = Number(req.params.lessonId);
-    if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
-      return res.status(400).json({ ok: false, message: "lessonId invalid" });
-    }
-
-    const mode = String(req.query.mode || "typing").toLowerCase();
-
-    // ---- PAYWALL HARD BLOCK (Lesson-based = PracticeDay.dayNumber) ----
-    const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
-
-    const userRow = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { has_access: true, tier_level: true, plan: true },
-    });
-
-    const tier = String(userRow?.tier_level || "").toLowerCase();
-    const plan = String(userRow?.plan || "").toLowerCase();
-
-    const proActive =
-      !!userRow?.has_access ||
-      tier === "pro" ||
-      tier === "all" ||
-      plan === "pro" ||
-      plan === "paid";
-
-    if (!proActive && lessonIdNum > FREE_LESSONS) {
-      return res.status(403).json({
-        ok: false,
-        code: "PAYWALL",
-        message: `Locked. Upgrade required to access Lesson ${lessonIdNum}.`,
-        freeLessons: FREE_LESSONS,
-      });
-    }
-    // ---- END PAYWALL HARD BLOCK ----
-
-    // 1) Find the Lesson row (lessonIdNum is Lesson.id)
-    const lessonRow = await prisma.lesson.findUnique({
-      where: { id: lessonIdNum },
-      select: { id: true, difficulty: true },
-    });
-
-    if (!lessonRow) {
-      return res.status(404).json({ ok: false, message: "Lesson not found" });
-    }
-
-    // 2) Map lesson difficulty -> practiceDay level
-    const diff = String(lessonRow.difficulty || "beginner").toLowerCase();
-    const lessonLevel =
-      diff === "advanced"
-        ? "ADVANCED"
-        : diff === "intermediate"
-          ? "INTERMEDIATE"
-          : "BEGINNER";
-
-    // 3) Compute dayNumber within this difficulty group (index + 1)
-    const sameDiffLessons = await prisma.lesson.findMany({
-      where: { difficulty: diff },
-      orderBy: { id: "asc" },
-      select: { id: true },
-    });
-
-    const idx = sameDiffLessons.findIndex((l) => l.id === lessonRow.id);
-    const practiceDayNumber = idx >= 0 ? idx + 1 : 1;
-
-    // 4) Fetch practiceDay using correct level + dayNumber
-    const day = await prisma.practiceDay.findFirst({
-      where: { level: lessonLevel, dayNumber: practiceDayNumber },
-      include: { exercises: { orderBy: { orderIndex: "asc" } } },
-    });
-
-    if (!day) {
-      return res.json({
-        ok: true,
-        lessonId: lessonIdNum,
-        level: lessonLevel,
-        mode,
-        exercises: [],
-      });
-    }
-
-    // 5) Filter exercises by requested mode
-    const exercises = (day.exercises || []).filter((ex) => {
-      // If your Exercise model has ex.mode, use it
-      if (ex.mode) return String(ex.mode).toLowerCase() === mode;
-
-      // Otherwise, detect from expected JSON
-      let parsed = null;
-      try {
-        parsed =
-          typeof ex.expected === "string"
-            ? JSON.parse(ex.expected)
-            : ex.expected;
-      } catch {
-        parsed = ex.expected;
-      }
-
-      const m = String(
-        parsed?.mode || parsed?.practiceType || "",
-      ).toLowerCase();
-      return !mode || m === mode;
-    });
-
-    return res.json({
-      ok: true,
-      lessonId: lessonIdNum,
-      level: lessonLevel,
-      mode,
-      exercises,
-    });
-  } catch (err) {
-    console.error("❌ /api/quizzes/by-lesson error:", err);
-    return res.status(500).json({ ok: false, message: "Server error" });
-  }
-});
-
 const VALID_DIFFICULTIES = new Set(["beginner", "intermediate", "advanced"]);
 
 function normalizeDifficulty(value) {
@@ -294,7 +176,6 @@ router.get("/random", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
-// GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder
 router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
   try {
     const lessonIdNum = Number(req.params.lessonId);
@@ -304,36 +185,17 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
 
     const mode = String(req.query.mode || "typing").toLowerCase();
 
-    // 1) Lesson row (Lesson.id)
-    const lessonRow = await prisma.lesson.findUnique({
-      where: { id: lessonIdNum },
-      select: { id: true, difficulty: true },
-    });
+    // ✅ IMPORTANT: define diff BEFORE using it
+    const diff = String(req.query.difficulty || "beginner").toLowerCase();
 
-    if (!lessonRow) {
-      return res.status(404).json({ ok: false, message: "Lesson not found" });
-    }
-
-    // 2) Map Lesson.difficulty -> PracticeDay.level
-    const diff = String(lessonRow.difficulty || "beginner").toLowerCase();
-    const lessonLevel =
+    const level =
       diff === "advanced"
         ? "ADVANCED"
         : diff === "intermediate"
           ? "INTERMEDIATE"
           : "BEGINNER";
 
-    // 3) Compute dayNumber within this difficulty group (index + 1)
-    const sameDiffLessons = await prisma.lesson.findMany({
-      where: { difficulty: diff },
-      orderBy: { id: "asc" },
-      select: { id: true },
-    });
-
-    const idx = sameDiffLessons.findIndex((l) => l.id === lessonRow.id);
-    const practiceDayNumber = idx >= 0 ? idx + 1 : 1;
-
-    // 4) PAYWALL HARD BLOCK (based on practice day number)
+    // ---- PAYWALL HARD BLOCK (lessonId = PracticeDay.dayNumber) ----
     const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
 
     const userRow = await prisma.user.findUnique({
@@ -351,18 +213,18 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       plan === "pro" ||
       plan === "paid";
 
-    if (!proActive && practiceDayNumber > FREE_LESSONS) {
+    if (!proActive && lessonIdNum > FREE_LESSONS) {
       return res.status(403).json({
         ok: false,
         code: "PAYWALL",
-        message: `Locked. Upgrade required to access Lesson ${practiceDayNumber}.`,
+        message: `Locked. Upgrade required to access Lesson ${lessonIdNum}.`,
         freeLessons: FREE_LESSONS,
       });
     }
+    // ---- END PAYWALL ----
 
-    // 5) Fetch practice day + exercises
     const day = await prisma.practiceDay.findFirst({
-      where: { level: lessonLevel, dayNumber: practiceDayNumber },
+      where: { level, dayNumber: lessonIdNum },
       include: { exercises: { orderBy: { orderIndex: "asc" } } },
     });
 
@@ -370,8 +232,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       return res.json({
         ok: true,
         lessonId: lessonIdNum,
-        dayNumber: practiceDayNumber,
-        level: lessonLevel,
+        level,
         mode,
         exercises: [],
       });
@@ -387,8 +248,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     return res.json({
       ok: true,
       lessonId: lessonIdNum,
-      dayNumber: practiceDayNumber,
-      level: lessonLevel,
+      level,
       mode,
       exercises,
     });
