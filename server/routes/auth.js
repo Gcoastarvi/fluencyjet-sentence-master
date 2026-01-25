@@ -1,5 +1,4 @@
 // server/routes/auth.js
-
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -142,8 +141,6 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
    SESSION CHECK
    GET /api/auth/me
 ─────────────────────────────── */
-
-import prisma from "../db/client.js";
 
 router.get("/me", authRequired, async (req, res) => {
   try {
