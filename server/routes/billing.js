@@ -201,4 +201,39 @@ router.post(
   },
 );
 
+// ✅ TEMP ADMIN: Grant PRO access (remove after MVP)
+router.post("/admin/grant-pro", async (req, res) => {
+  try {
+    const { email, secret } = req.body || {};
+
+    if (!secret || secret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ ok: false, message: "Unauthorized" });
+    }
+    if (!email) {
+      return res.status(400).json({ ok: false, message: "Missing email" });
+    }
+
+    const user = await prisma.user.update({
+      where: { email },
+      data: {
+        plan: "PRO",
+        tier_level: "pro",
+        has_access: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        plan: true,
+        tier_level: true,
+        has_access: true,
+      },
+    });
+
+    return res.json({ ok: true, user });
+  } catch (err) {
+    console.error("grant-pro error:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
 export default router;

@@ -135,6 +135,15 @@ export default function App() {
               }
             />
 
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Admin-protected (unchanged) */}
             <Route
               path="/admin"
