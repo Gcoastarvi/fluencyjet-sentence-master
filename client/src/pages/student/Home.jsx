@@ -9,7 +9,7 @@ export default function Home() {
 
   useEffect(() => {
     // Check if a JWT token exists in localStorage
-    const token = localStorage.getItem("fj_token");
+    const token = localStorage.getItem("token");
     if (token) {
       // Decode basic info (optional) or mark as logged in
       setUser({ token });

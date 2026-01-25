@@ -2,7 +2,7 @@
 import axios from "axios";
 import { API_BASE_URL } from "./config";
 
-const TOKEN_KEY = "fj_token"; // NEW canonical key
+const TOKEN_KEY = "token";
 const LEGACY_KEY = "token"; // keep for backward compatibility
 
 function getStoredToken() {

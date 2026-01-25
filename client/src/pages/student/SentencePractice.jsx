@@ -508,24 +508,29 @@ export default function SentencePractice() {
     if (typeof expected === "string") {
       try {
         expected = JSON.parse(expected);
-      } catch {}
+      } catch {
+        expected = {};
+      }
     }
     expected = expected || {};
 
-    // normalize fields across old Quiz vs new PracticeExercise
     const id = raw.id;
     const promptTa = raw.promptTa || raw.prompt || raw.questionTa || "";
     const xp = Number(raw.xp || expected.xp || 0) || 0;
 
     const mode = String(
-      expected.mode || expected.practiceType || "",
-    ).toLowerCase();
+      expected.mode || expected.practiceType || raw.mode || "",
+    )
+      .toLowerCase()
+      .trim();
 
     const words = Array.isArray(expected.words)
       ? expected.words
       : Array.isArray(expected.tokens)
         ? expected.tokens
-        : [];
+        : Array.isArray(raw.words)
+          ? raw.words
+          : [];
 
     const answer =
       expected.answer ||
@@ -533,6 +538,7 @@ export default function SentencePractice() {
       expected.expected ||
       raw.answer ||
       raw.expectedAnswer ||
+      raw.expected_answer ||
       "";
 
     return {
@@ -540,6 +546,13 @@ export default function SentencePractice() {
       promptTa,
       xp,
       orderIndex: raw.orderIndex ?? 0,
+
+      // ✅ top-level fields for older UI code
+      mode,
+      words,
+      answer,
+
+      // ✅ keep expected too
       expected: { ...expected, mode, words, answer },
     };
   }
