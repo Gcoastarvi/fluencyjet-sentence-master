@@ -86,7 +86,36 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     // But in many setups dayNumber is already the correct practiceDay dayNumber.
     const practiceDayNumber = Number(lessonRow.dayNumber || lessonIdNum);
 
-    // 4) Fetch practiceDay using correct (level + dayNumber)
+    // 1) Find the Lesson row (lessonIdNum is Lesson.id)
+    const lessonRow = await prisma.lesson.findUnique({
+      where: { id: lessonIdNum },
+      select: { id: true, difficulty: true },
+    });
+
+    if (!lessonRow) {
+      return res.status(404).json({ ok: false, message: "Lesson not found" });
+    }
+
+    // 2) Map lesson difficulty -> practiceDay level
+    const diff = String(lessonRow.difficulty || "beginner").toLowerCase();
+    const lessonLevel =
+      diff === "advanced"
+        ? "ADVANCED"
+        : diff === "intermediate"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
+
+    // 3) Compute dayNumber within this difficulty group (index + 1)
+    const sameDiffLessons = await prisma.lesson.findMany({
+      where: { difficulty: diff },
+      orderBy: { id: "asc" },
+      select: { id: true },
+    });
+
+    const idx = sameDiffLessons.findIndex((l) => l.id === lessonRow.id);
+    const practiceDayNumber = idx >= 0 ? idx + 1 : 1;
+
+    // 4) Fetch practiceDay using correct level + dayNumber
     const day = await prisma.practiceDay.findFirst({
       where: { level: lessonLevel, dayNumber: practiceDayNumber },
       include: { exercises: { orderBy: { orderIndex: "asc" } } },
@@ -102,12 +131,12 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       });
     }
 
-    // 5) Filter exercises by mode (support both JSON expected OR direct field)
+    // 5) Filter exercises by requested mode
     const exercises = (day.exercises || []).filter((ex) => {
-      // If your Exercise model has ex.mode, this will catch it
+      // If your Exercise model has ex.mode, use it
       if (ex.mode) return String(ex.mode).toLowerCase() === mode;
 
-      // Otherwise fall back to expected JSON detection
+      // Otherwise, detect from expected JSON
       let parsed = null;
       try {
         parsed =
@@ -117,6 +146,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       } catch {
         parsed = ex.expected;
       }
+
       const m = String(
         parsed?.mode || parsed?.practiceType || "",
       ).toLowerCase();
