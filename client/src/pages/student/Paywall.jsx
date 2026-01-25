@@ -1,6 +1,7 @@
 // client/src/pages/student/Paywall.jsx
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import api from "../../api/apiClient"; // ✅ same api used in other pages
 
 /**
  * PAYWALL LOGIC (FINAL – CLEAN)
@@ -20,13 +21,20 @@ export default function Paywall() {
   const selectedPlan = (searchParams.get("plan") || "BEGINNER").toUpperCase();
 
   useEffect(() => {
+    const clearToken = () => {
+      localStorage.removeItem("token");
+    };
+
     async function checkAccess() {
       try {
         const token = localStorage.getItem("token");
 
-        // 1️⃣ Not logged in → go to login
+        // 1️⃣ Not logged in → go to login (with next)
         if (!token) {
-          const next = `/paywall?plan=${encodeURIComponent(selectedPlan)}&from=${encodeURIComponent(searchParams.get("from") || "")}`;
+          const next = `/paywall?plan=${encodeURIComponent(
+            selectedPlan,
+          )}&from=${encodeURIComponent(searchParams.get("from") || "")}`;
+
           navigate(`/login?next=${encodeURIComponent(next)}`, {
             replace: true,
           });
@@ -34,28 +42,32 @@ export default function Paywall() {
         }
 
         // 2️⃣ Ask backend who this user is
-        const res = await api.request("/auth/me");
-        /* Expected backend response
-           {
-             ok: true,
-             email: "user@email.com",
-             plan: "FREE" | "PRO"
-           }
-        */
+        const r = await api.get("/auth/me");
+        const res = r?.data ?? r;
 
-        if (!res?.ok) {
-          throw new Error("Invalid auth state");
-        }
+        if (!res?.ok) throw new Error("Invalid auth state");
 
-        setPlan(res.plan);
+        // Normalize plan flags (your backend might return plan/has_access/tier_level)
+        const plan = (res.plan || res.user?.plan || "")
+          .toString()
+          .toUpperCase();
+        const proActive =
+          res.has_access === true ||
+          res.user?.has_access === true ||
+          res.tier_level === "pro" ||
+          res.user?.tier_level === "pro" ||
+          plan === "PRO" ||
+          plan === "PAID";
 
-        // 3️⃣ Paid user → full access
-        if (res.plan === "PRO") {
+        setPlan(proActive ? "PRO" : "FREE");
+
+        // 3️⃣ Paid user → skip paywall
+        if (proActive) {
           navigate("/dashboard", { replace: true });
           return;
         }
 
-        // 4️⃣ FREE user → show paywall
+        // 4️⃣ Free user → show paywall
         setLoading(false);
       } catch (err) {
         console.error("[Paywall] Access check failed", err);
@@ -66,7 +78,7 @@ export default function Paywall() {
     }
 
     checkAccess();
-  }, [navigate]);
+  }, [navigate, selectedPlan, searchParams]);
 
   /* ---------------- UI STATES ---------------- */
 
