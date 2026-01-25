@@ -1,8 +1,6 @@
 // client/src/pages/student/Paywall.jsx
-
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { request } from "../../api/apiClient";
 
 /**
  * PAYWALL LOGIC (FINAL – CLEAN)
@@ -24,11 +22,14 @@ export default function Paywall() {
   useEffect(() => {
     async function checkAccess() {
       try {
-        const token = localStorage.getItem("fj_token");
+        const token = localStorage.getItem("token");
 
         // 1️⃣ Not logged in → go to login
         if (!token) {
-          navigate("/login", { replace: true });
+          const next = `/paywall?plan=${encodeURIComponent(selectedPlan)}&from=${encodeURIComponent(searchParams.get("from") || "")}`;
+          navigate(`/login?next=${encodeURIComponent(next)}`, {
+            replace: true,
+          });
           return;
         }
 
@@ -114,16 +115,20 @@ export default function Paywall() {
         </ul>
 
         <button
-          onClick={() =>
-            navigate(`/checkout?plan=${encodeURIComponent(selectedPlan)}`)
-          }
+          onClick={() => {
+            const params = new URLSearchParams(window.location.search);
+            const from = params.get("from") || "";
+            navigate(
+              `/checkout?plan=${encodeURIComponent(selectedPlan)}&from=${encodeURIComponent(from)}`,
+            );
+          }}
           className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold"
         >
           Upgrade Now
         </button>
 
         <button
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/lessons")}
           className="w-full mt-3 py-2 text-sm text-gray-500 hover:underline"
         >
           Continue with Free Access
