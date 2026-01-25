@@ -21,14 +21,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       return res.status(400).json({ ok: false, message: "lessonId invalid" });
     }
 
-    const mode = String(req.query.mode || "typing").toLowerCase();    
-
-    const level =
-      diff === "advanced"
-        ? "ADVANCED"
-        : diff === "intermediate"
-          ? "INTERMEDIATE"
-          : "BEGINNER";
+    const mode = String(req.query.mode || "typing").toLowerCase();
 
     // ---- PAYWALL HARD BLOCK (Lesson-based = PracticeDay.dayNumber) ----
     const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
@@ -218,32 +211,28 @@ router.get("/random", authRequired, async (req, res) => {
     }
     // ---- END PAYWALL HARD BLOCK ----
 
-    const lessonIdNum = Number(req.params.lessonId);
-
-    // find lesson by dayNumber first, fallback to id
-    const lessonRow = await prisma.lesson.findFirst({
-      where: {
-        OR: [{ dayNumber: lessonIdNum }, { id: lessonIdNum }],
-      },
-      select: { id: true, dayNumber: true, title: true },
+    // ✅ PracticeDay lookup (this is what your seeding created)
+    const day = await prisma.practiceDay.findFirst({
+      where: { level, dayNumber: lessonIdNum },
+      include: { exercises: { orderBy: { orderIndex: "asc" } } },
     });
 
-    if (!lessonRow) {
-      return res.status(404).json({ ok: false, message: "Lesson not found" });
+    if (!day) {
+      return res.json({
+        ok: true,
+        lessonId: lessonIdNum,
+        level,
+        mode,
+        exercises: [],
+      });
     }
 
-    // IMPORTANT: use lessonRow.id for exercise lookup
-    const exercises = await prisma.exercise.findMany({
-      where: { lesson_id: lessonRow.id },
-      orderBy: [{ orderIndex: "asc" }],
-      select: {
-        id: true,
-        promptTa: true,
-        expected: true,
-        orderIndex: true,
-        xp: true,
-        // include mode/type field here ONLY if your schema has it
-      },
+    // ✅ Filter by requested mode using expected.mode
+    const exercises = (day.exercises || []).filter((ex) => {
+      const m = String(
+        ex?.expected?.mode || ex?.expected?.practiceType || "",
+      ).toLowerCase();
+      return !mode || m === mode;
     });
 
     // Pull a few days, then sample exercises in JS
@@ -306,26 +295,45 @@ router.get("/random", authRequired, async (req, res) => {
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
 // GET /api/quizzes/by-lesson/:lessonId?mode=typing|reorder
-router.get("/:lessonId", authRequired, async (req, res) => {
+router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
   try {
     const lessonIdNum = Number(req.params.lessonId);
-    const mode = String(req.query.mode || "typing").toLowerCase();
-    const diff = String(req.query.difficulty || "beginner").toLowerCase();
-
-    if (Number.isNaN(lessonIdNum) || lessonIdNum <= 0) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "lessonId must be a number" });
+    if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
+      return res.status(400).json({ ok: false, message: "lessonId invalid" });
     }
 
-    const level =
+    const mode = String(req.query.mode || "typing").toLowerCase();
+
+    // 1) Lesson row (Lesson.id)
+    const lessonRow = await prisma.lesson.findUnique({
+      where: { id: lessonIdNum },
+      select: { id: true, difficulty: true },
+    });
+
+    if (!lessonRow) {
+      return res.status(404).json({ ok: false, message: "Lesson not found" });
+    }
+
+    // 2) Map Lesson.difficulty -> PracticeDay.level
+    const diff = String(lessonRow.difficulty || "beginner").toLowerCase();
+    const lessonLevel =
       diff === "advanced"
         ? "ADVANCED"
         : diff === "intermediate"
           ? "INTERMEDIATE"
           : "BEGINNER";
 
-    // 🔒 HARD PAYWALL (same rule as /random)
+    // 3) Compute dayNumber within this difficulty group (index + 1)
+    const sameDiffLessons = await prisma.lesson.findMany({
+      where: { difficulty: diff },
+      orderBy: { id: "asc" },
+      select: { id: true },
+    });
+
+    const idx = sameDiffLessons.findIndex((l) => l.id === lessonRow.id);
+    const practiceDayNumber = idx >= 0 ? idx + 1 : 1;
+
+    // 4) PAYWALL HARD BLOCK (based on practice day number)
     const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
 
     const userRow = await prisma.user.findUnique({
@@ -343,53 +351,49 @@ router.get("/:lessonId", authRequired, async (req, res) => {
       plan === "pro" ||
       plan === "paid";
 
-    if (!proActive && lessonIdNum > FREE_LESSONS) {
+    if (!proActive && practiceDayNumber > FREE_LESSONS) {
       return res.status(403).json({
         ok: false,
         code: "PAYWALL",
-        message: `Locked. Upgrade required to access Lesson ${lessonIdNum}.`,
+        message: `Locked. Upgrade required to access Lesson ${practiceDayNumber}.`,
         freeLessons: FREE_LESSONS,
       });
     }
 
-    // ✅ Fetch PracticeDay by (level, dayNumber)
+    // 5) Fetch practice day + exercises
     const day = await prisma.practiceDay.findFirst({
-      where: { level, dayNumber: lessonIdNum, isActive: true },
+      where: { level: lessonLevel, dayNumber: practiceDayNumber },
       include: { exercises: { orderBy: { orderIndex: "asc" } } },
     });
 
-    if (!day || !day.exercises?.length) {
-      return res.status(404).json({
-        ok: false,
-        message: `No exercises found. mode=${mode} lessonId=${lessonIdNum}`,
+    if (!day) {
+      return res.json({
+        ok: true,
+        lessonId: lessonIdNum,
+        dayNumber: practiceDayNumber,
+        level: lessonLevel,
+        mode,
+        exercises: [],
       });
     }
 
-    // ✅ Filter by mode using expected.mode (or fallback)
-    const exercises = day.exercises.filter((ex) => {
-      const expected = ex.expected || {};
+    const exercises = (day.exercises || []).filter((ex) => {
       const m = String(
-        expected.mode || expected.practiceType || "",
+        ex?.expected?.mode || ex?.expected?.practiceType || "",
       ).toLowerCase();
       return !mode || m === mode;
     });
 
-    if (!exercises.length) {
-      return res.status(404).json({
-        ok: false,
-        message: `No exercises found. mode=${mode} lessonId=${lessonIdNum}`,
-      });
-    }
-
     return res.json({
       ok: true,
       lessonId: lessonIdNum,
-      level,
+      dayNumber: practiceDayNumber,
+      level: lessonLevel,
       mode,
       exercises,
     });
   } catch (err) {
-    console.error("❌ /api/quizzes/:lessonId error:", err);
+    console.error("❌ /api/quizzes/by-lesson error:", err);
     return res.status(500).json({ ok: false, message: "Server error" });
   }
 });
