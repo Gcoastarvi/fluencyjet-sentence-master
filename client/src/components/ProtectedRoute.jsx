@@ -1,18 +1,17 @@
 // client/src/components/ProtectedRoute.jsx
-import { Navigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
-
-navigate(
-  `/login?next=${encodeURIComponent(location.pathname + location.search)}`,
-  { replace: true },
-);
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
 export default function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth();
+  const location = useLocation();
+  const token = localStorage.getItem("token");
 
-  if (loading) return null; // or a loader
+  // Not logged in → redirect to /login with next=
+  if (!token) {
+    const next = `${location.pathname}${location.search || ""}`;
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+  }
 
-  if (!user) return <Navigate to="/login" replace />;
-
+  // Logged in → allow page
   return children;
 }
