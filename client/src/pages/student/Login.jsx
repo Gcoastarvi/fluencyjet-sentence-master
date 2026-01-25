@@ -6,6 +6,10 @@ export default function Login() {
   const navigate = useNavigate(); // ✅ DEFINE IT
   const { login } = useAuth();
 
+  const params = new URLSearchParams(window.location.search);
+  const next = params.get("next") || "/dashboard";
+  navigate(next, { replace: true });
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

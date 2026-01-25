@@ -2,6 +2,11 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
+navigate(
+  `/login?next=${encodeURIComponent(location.pathname + location.search)}`,
+  { replace: true },
+);
+
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
 

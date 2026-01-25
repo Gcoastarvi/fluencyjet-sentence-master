@@ -44,6 +44,8 @@ export default function SentencePractice() {
   const search = new URLSearchParams(window.location.search);
   const lessonId = Number(search.get("lessonId") || 1);
 
+  const navigate = useNavigate();
+
   // -------------------
   // Local progress store (LessonDetail summary)
   // -------------------
@@ -517,66 +519,67 @@ export default function SentencePractice() {
     setLoading(true);
     setLoadError("");
 
+    const lessonIdNum = Number(lessonIdFromQuery);
+
     try {
       const res = await api.get(
-        `/quizzes/by-lesson/${lessonIdFromQuery}?mode=${encodeURIComponent(fetchMode)}`,
+        `/quizzes/by-lesson/${lessonIdNum}?mode=${encodeURIComponent(fetchMode)}&difficulty=beginner`,
       );
 
       const data = res?.data ?? res;
 
-      // ✅ Handle API-level errors that come back as JSON
-      if (data?.ok === false) {
-        const code = data?.code;
-        const msg = data?.message || data?.error || "Failed to load questions";
-
-        // ✅ PAYWALL redirect
-        if (code === "PAYWALL") {
-          window.location.href = `/lesson/${lessonIdFromQuery}`;
-          return;
-        }
-
-        throw new Error(msg);
+      // ✅ PAYWALL redirect (fast path, no error flash)
+      if (
+        data?.ok === false &&
+        (data?.code === "PAYWALL" ||
+          String(data?.message || data?.error || "")
+            .toLowerCase()
+            .includes("locked"))
+      ) {
+        navigate(`/lesson/${lessonIdNum}`, { replace: true });
+        return;
       }
 
-      const arr = Array.isArray(data)
-        ? data
-        : Array.isArray(data.questions)
-          ? data.questions
-          : Array.isArray(data.data?.questions)
-            ? data.data.questions
-            : Array.isArray(data.items)
-              ? data.items
-              : Array.isArray(data.exercises)
-                ? data.exercises
-                : [];
+      // ✅ Backend shape: { ok:true, exercises:[...] }
+      const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
 
-      const normalized = arr.map(normalizeExercise).filter(Boolean);
+      const normalized = exercises.map(normalizeExercise).filter(Boolean);
 
       if (!normalized.length) {
         setLessonExercises([]);
         setLoadError(
-          `No exercises found. mode=${safeMode} lessonId=${lessonId}`,
+          `No exercises found. mode=${fetchMode} lessonId=${lessonIdNum}`,
         );
         return;
       }
 
       setLessonExercises(normalized);
+      setCurrentIndex(0);
     } catch (e) {
       const status = e?.response?.status ?? e?.status ?? null;
       const code = e?.response?.data?.code ?? e?.data?.code ?? null;
       const msg =
-        e?.response?.data?.message ?? e?.data?.message ?? e?.message ?? "";
+        e?.response?.data?.message ??
+        e?.response?.data?.error ??
+        e?.data?.message ??
+        e?.message ??
+        "";
 
+      // ✅ PAYWALL redirect from HTTP error response
       if (
         status === 403 &&
         (code === "PAYWALL" || String(msg).toLowerCase().includes("locked"))
       ) {
-        navigate(`/lesson/${lessonId}`, { replace: true });
+        navigate(`/lesson/${lessonIdNum}`, { replace: true });
         return;
       }
 
       console.error("[Practice] loadLessonBatch failed", e);
-      setLoadError("Failed to load lesson exercises.");
+      setLoadError(
+        status === 500 ? "Server error" : "Failed to load lesson exercises.",
+      );
+    } finally {
+      setLoading(false);
     }
   }
 
