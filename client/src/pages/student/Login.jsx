@@ -1,15 +1,13 @@
 import { useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
-  const navigate = useNavigate(); // ✅ DEFINE IT
+  const navigate = useNavigate();
   const { login } = useAuth();
-  const [searchParams] = useSearchParams();
 
   const params = new URLSearchParams(window.location.search);
   const next = params.get("next") || "/dashboard";
-  navigate(next, { replace: true });
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,8 +27,8 @@ export default function Login() {
         return;
       }
 
-      // ✅ SUCCESS → redirect
-      navigate("/dashboard");
+      // ✅ SUCCESS → redirect to intended page
+      navigate(next, { replace: true });
     } catch (err) {
       console.error("Login failed", err);
       setError("Something went wrong. Please try again.");

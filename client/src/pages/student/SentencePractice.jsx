@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "@/api/apiClient";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const DEFAULT_PRACTICE_MODE = "reorder";
 const SUPPORTED_PRACTICE_MODES = new Set([
