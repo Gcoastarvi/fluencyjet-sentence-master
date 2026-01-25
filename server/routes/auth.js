@@ -145,14 +145,24 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
 
 router.get("/me", authRequired, async (req, res) => {
   try {
-    const user = req.user;
-    res.json({
-      ok: true,
-      email: user.email,
-      plan: user.plan || "FREE",
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        plan: true,
+        has_access: true,
+        tier_level: true,
+      },
     });
+
+    if (!user)
+      return res.status(401).json({ ok: false, message: "Unauthorized" });
+
+    return res.json({ ok: true, user });
   } catch (err) {
-    res.status(401).json({ ok: false });
+    console.error("ME ERROR:", err);
+    return res.status(401).json({ ok: false, message: "Unauthorized" });
   }
 });
 

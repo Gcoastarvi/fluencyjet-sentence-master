@@ -59,25 +59,66 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     }
     // ---- END PAYWALL HARD BLOCK ----
 
+    // 1) Find lesson row first (so we know its true level + internal dayNumber)
+    const lessonRow = await prisma.lesson.findFirst({
+      where: {
+        OR: [{ id: lessonIdNum }, { dayNumber: lessonIdNum }],
+      },
+      select: { id: true, dayNumber: true, level: true, difficulty: true },
+    });
+
+    if (!lessonRow) {
+      return res.status(404).json({ ok: false, message: "Lesson not found" });
+    }
+
+    // 2) Determine correct level for practiceDay
+    const lessonLevelRaw =
+      lessonRow.level || lessonRow.difficulty || level || "BEGINNER";
+    const lessonLevel =
+      String(lessonLevelRaw).toUpperCase() === "ADVANCED"
+        ? "ADVANCED"
+        : String(lessonLevelRaw).toUpperCase() === "INTERMEDIATE"
+          ? "INTERMEDIATE"
+          : "BEGINNER";
+
+    // 3) Determine correct dayNumber for practiceDay
+    // If your lessonRow.dayNumber is the global lesson number, you might need a per-level field.
+    // But in many setups dayNumber is already the correct practiceDay dayNumber.
+    const practiceDayNumber = Number(lessonRow.dayNumber || lessonIdNum);
+
+    // 4) Fetch practiceDay using correct (level + dayNumber)
     const day = await prisma.practiceDay.findFirst({
-      where: { level, dayNumber: lessonIdNum },
+      where: { level: lessonLevel, dayNumber: practiceDayNumber },
       include: { exercises: { orderBy: { orderIndex: "asc" } } },
     });
 
     if (!day) {
-      // ✅ Never 500 on “missing day”
       return res.json({
         ok: true,
         lessonId: lessonIdNum,
-        level,
+        level: lessonLevel,
         mode,
         exercises: [],
       });
     }
 
+    // 5) Filter exercises by mode (support both JSON expected OR direct field)
     const exercises = (day.exercises || []).filter((ex) => {
+      // If your Exercise model has ex.mode, this will catch it
+      if (ex.mode) return String(ex.mode).toLowerCase() === mode;
+
+      // Otherwise fall back to expected JSON detection
+      let parsed = null;
+      try {
+        parsed =
+          typeof ex.expected === "string"
+            ? JSON.parse(ex.expected)
+            : ex.expected;
+      } catch {
+        parsed = ex.expected;
+      }
       const m = String(
-        ex?.expected?.mode || ex?.expected?.practiceType || "",
+        parsed?.mode || parsed?.practiceType || "",
       ).toLowerCase();
       return !mode || m === mode;
     });
@@ -85,7 +126,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     return res.json({
       ok: true,
       lessonId: lessonIdNum,
-      level,
+      level: lessonLevel,
       mode,
       exercises,
     });
@@ -174,6 +215,34 @@ router.get("/random", authRequired, async (req, res) => {
       });
     }
     // ---- END PAYWALL HARD BLOCK ----
+
+    const lessonIdNum = Number(req.params.lessonId);
+
+    // find lesson by dayNumber first, fallback to id
+    const lessonRow = await prisma.lesson.findFirst({
+      where: {
+        OR: [{ dayNumber: lessonIdNum }, { id: lessonIdNum }],
+      },
+      select: { id: true, dayNumber: true, title: true },
+    });
+
+    if (!lessonRow) {
+      return res.status(404).json({ ok: false, message: "Lesson not found" });
+    }
+
+    // IMPORTANT: use lessonRow.id for exercise lookup
+    const exercises = await prisma.exercise.findMany({
+      where: { lesson_id: lessonRow.id },
+      orderBy: [{ orderIndex: "asc" }],
+      select: {
+        id: true,
+        promptTa: true,
+        expected: true,
+        orderIndex: true,
+        xp: true,
+        // include mode/type field here ONLY if your schema has it
+      },
+    });
 
     // Pull a few days, then sample exercises in JS
     const days = await prisma.practiceDay.findMany({
