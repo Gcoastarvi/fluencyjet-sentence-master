@@ -21,8 +21,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       return res.status(400).json({ ok: false, message: "lessonId invalid" });
     }
 
-    const diff = String(req.query.difficulty || "beginner").toLowerCase();
-    const mode = String(req.query.mode || "typing").toLowerCase();
+    const mode = String(req.query.mode || "typing").toLowerCase();    
 
     const level =
       diff === "advanced"
@@ -58,33 +57,6 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       });
     }
     // ---- END PAYWALL HARD BLOCK ----
-
-    // 1) Find lesson row first (so we know its true level + internal dayNumber)
-    const lessonRow = await prisma.lesson.findFirst({
-      where: {
-        OR: [{ id: lessonIdNum }, { dayNumber: lessonIdNum }],
-      },
-      select: { id: true, dayNumber: true, level: true, difficulty: true },
-    });
-
-    if (!lessonRow) {
-      return res.status(404).json({ ok: false, message: "Lesson not found" });
-    }
-
-    // 2) Determine correct level for practiceDay
-    const lessonLevelRaw =
-      lessonRow.level || lessonRow.difficulty || level || "BEGINNER";
-    const lessonLevel =
-      String(lessonLevelRaw).toUpperCase() === "ADVANCED"
-        ? "ADVANCED"
-        : String(lessonLevelRaw).toUpperCase() === "INTERMEDIATE"
-          ? "INTERMEDIATE"
-          : "BEGINNER";
-
-    // 3) Determine correct dayNumber for practiceDay
-    // If your lessonRow.dayNumber is the global lesson number, you might need a per-level field.
-    // But in many setups dayNumber is already the correct practiceDay dayNumber.
-    const practiceDayNumber = Number(lessonRow.dayNumber || lessonIdNum);
 
     // 1) Find the Lesson row (lessonIdNum is Lesson.id)
     const lessonRow = await prisma.lesson.findUnique({
