@@ -60,7 +60,7 @@ export default function SentencePractice() {
   const search = new URLSearchParams(window.location.search);
   const lessonId = Number(search.get("lessonId") || 1);
 
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   const asArr = (v) => (Array.isArray(v) ? v : []);
   const norm = (s) =>
@@ -190,6 +190,10 @@ export default function SentencePractice() {
       : expectedAnswer
         ? expectedAnswer.split(/\s+/)
         : [];
+
+  console.log("[DBG] current", current);
+  console.log("[DBG] expectedWords", expectedWords);
+  console.log("[DBG] expectedAnswerRaw", expectedAnswerRaw);
 
   const [loadError, setLoadError] = useState("");
   const [sessionTarget] = useState(10); // MVP: 10 questions per session
