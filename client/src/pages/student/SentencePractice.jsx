@@ -46,6 +46,26 @@ export default function SentencePractice() {
 
   const navigate = useNavigate();
 
+  const current = lessonExercises?.[currentIndex] || null;
+
+  // expected may be missing during reorder
+  const expected = current?.expected || {};
+  const wordsArr = Array.isArray(expected.words) ? expected.words : [];
+
+  const expectedWords = asArr(expected.words ?? expected.tokens);
+  const expectedAnswer = expected.answer || expectedWords.join(" ");
+
+  const asArr = (v) => (Array.isArray(v) ? v : []);
+  const norm = (s) =>
+    String(s || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+
+  const correctOrderArr = expectedWords?.length
+    ? expectedWords
+    : asArr(currentQuestion?.correctOrder || currentQuestion?.words);
+
   // -------------------
   // Local progress store (LessonDetail summary)
   // -------------------
@@ -536,6 +556,7 @@ export default function SentencePractice() {
       expected.answer ||
       expected.correct ||
       expected.expected ||
+      expected.expectedAnswer ||
       raw.answer ||
       raw.expectedAnswer ||
       raw.expected_answer ||
@@ -586,6 +607,11 @@ export default function SentencePractice() {
       const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
 
       const normalized = exercises.map(normalizeExercise).filter(Boolean);
+
+      console.log("[Practice] data:", data);
+      console.log("[Practice] raw exercises[0]:", exercises?.[0]);
+      console.log("[Practice] normalized[0]:", normalized?.[0]);
+      console.log("[Practice] normalized length:", normalized.length);
 
       if (!normalized.length) {
         setLessonExercises([]);
@@ -674,9 +700,7 @@ export default function SentencePractice() {
 
     // initialize by mode
     if (safeMode === "reorder") {
-      const shuffled = [...(currentQuestion?.correctOrder || [])].sort(
-        () => Math.random() - 0.5,
-      );
+      const shuffled = [...correctOrderArr].sort(() => Math.random() - 0.5);
       setTiles(shuffled);
       setAnswer([]);
     } else {
@@ -742,10 +766,9 @@ export default function SentencePractice() {
     }
 
     if (safeMode === "reorder") {
-      const reshuffled = [...(currentQuestion?.correctOrder || [])].sort(
-        () => Math.random() - 0.5,
-      );
+      const reshuffled = [...correctOrderArr].sort(() => Math.random() - 0.5);
       setTiles(reshuffled);
+      setAnswer([]);
     }
   }
 
@@ -802,6 +825,32 @@ export default function SentencePractice() {
   async function checkAnswer() {
     if (!currentQuestion) return;
     if (status === "correct") return;
+
+    if (safeMode === "reorder") {
+      const userWords = asArr(answer); // <-- your reorder selected words state
+      const expected = correctOrderArr;
+
+      if (!expected.length || !userWords.length) {
+        setStatus("wrong");
+        setFeedback("⚠️ Arrange the words first.");
+        setEarnedXP(0);
+        return;
+      }
+
+      const isCorrect = norm(userWords.join(" ")) === norm(expected.join(" "));
+
+      if (isCorrect) {
+        setStatus("correct");
+        setFeedback("✅ Correct!");
+        setEarnedXP(Number(currentQuestion?.xp || 0) || 0);
+        // if you have XP pipeline call, keep it here
+      } else {
+        setStatus("wrong");
+        setFeedback(`❌ Correct answer: "${expected.join(" ")}"`);
+        setEarnedXP(0);
+      }
+      return;
+    }
 
     // ⌨️ TYPING validation
     if (safeMode === "typing") {
