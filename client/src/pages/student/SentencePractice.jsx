@@ -60,29 +60,7 @@ export default function SentencePractice() {
   const search = new URLSearchParams(window.location.search);
   const lessonId = Number(search.get("lessonId") || 1);
 
-  const navigate = useNavigate();
-
-  const current = Array.isArray(lessonExercises)
-    ? lessonExercises[currentIndex] || null
-    : null;
-
-  const expected = current?.expected ?? {};
-
-  const expectedWords = asArr(
-    expected.words ?? expected.tokens ?? expected.correctOrder, // optional fallback for reorder sources
-  );
-
-  const expectedAnswerRaw =
-    expected.answer ??
-    expected.correct ??
-    expected.expected ??
-    current?.answer ??
-    current?.expectedAnswer ??
-    current?.expected_answer ??
-    "";
-
-  const expectedAnswer =
-    String(expectedAnswerRaw || "").trim() || expectedWords.join(" ");
+  const navigate = useNavigate(); 
 
   const asArr = (v) => (Array.isArray(v) ? v : []);
   const norm = (s) =>
@@ -179,6 +157,40 @@ export default function SentencePractice() {
 
   const [lessonExercises, setLessonExercises] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // ✅ Derived (must be AFTER useState declarations)
+  const current =
+    Array.isArray(lessonExercises) && typeof currentIndex === "number"
+      ? (lessonExercises[currentIndex] ?? null)
+      : null;
+
+  const expected = current?.expected ?? {};
+
+  const expectedWords = Array.isArray(expected.words)
+    ? expected.words
+    : Array.isArray(expected.tokens)
+      ? expected.tokens
+      : [];
+
+  const expectedAnswerRaw =
+    expected.answer ??
+    expected.correct ??
+    expected.expected ??
+    current?.answer ??
+    current?.expectedAnswer ??
+    current?.expected_answer ??
+    "";
+
+  const expectedAnswer = String(expectedAnswerRaw || "").trim();
+
+  const correctOrder = Array.isArray(expected.correctOrder)
+    ? expected.correctOrder
+    : expectedWords.length
+      ? expectedWords
+      : expectedAnswer
+        ? expectedAnswer.split(/\s+/)
+        : [];
+
   const [loadError, setLoadError] = useState("");
   const [sessionTarget] = useState(10); // MVP: 10 questions per session
 
