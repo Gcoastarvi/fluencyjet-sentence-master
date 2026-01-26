@@ -177,14 +177,7 @@ export default function SentencePractice() {
         ? expectedAnswer.split(/\s+/)
         : [];
 
-  const expected = current && current.expected ? current.expected : {};
-
-  const asArr = (v) => (Array.isArray(v) ? v : []);
-  const norm = (s) =>
-    String(s || "")
-      .trim()
-      .replace(/\s+/g, " ")
-      .toLowerCase();
+  const expected = current && current.expected ? current.expected : {}; 
 
   const expectedWords = asArr(expected.words ?? expected.tokens);
 
