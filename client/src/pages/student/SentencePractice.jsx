@@ -69,9 +69,10 @@ export default function SentencePractice() {
       .replace(/\s+/g, " ")
       .toLowerCase();
 
-  const correctOrderArr = expectedWords?.length
-    ? expectedWords
-    : asArr(currentQuestion?.correctOrder || currentQuestion?.words);
+  const correctOrderArr =
+    expectedWords.length > 0
+      ? expectedWords
+      : asArr(expected.correctOrder ?? expected.words ?? expected.tokens ?? []);
 
   // -------------------
   // Local progress store (LessonDetail summary)
@@ -270,76 +271,6 @@ export default function SentencePractice() {
     stopTTS();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, safeMode]);
-
-  // -------------------
-  // Derived data (must be declared AFTER state)
-  // -------------------
-  const currentQuestion = useMemo(() => {
-    const list = Array.isArray(lessonExercises) ? lessonExercises : [];
-    const q = list[currentIndex];
-    return q || null;
-  }, [lessonExercises, currentIndex]);
-
-  // ✅ Typing Word Bank (hint chips)
-  const typingWordBank = useMemo(() => {
-    if (safeMode !== "typing") return [];
-    const words = Array.isArray(currentQuestion?.correctOrder)
-      ? [...currentQuestion.correctOrder]
-      : [];
-    return words.sort(() => Math.random() - 0.5);
-  }, [safeMode, currentQuestion, currentIndex]);
-
-  const englishFull = useMemo(() => {
-    const target =
-      currentQuestion?.answer?.trim() ||
-      (currentQuestion?.correctOrder || []).join(" ");
-    return String(target || "").trim();
-  }, [currentQuestion, currentIndex]);
-
-  // ✅ Cloze: build masked sentence + missing word
-  const cloze = useMemo(() => {
-    if (safeMode !== "cloze") return null;
-
-    const target =
-      currentQuestion?.answer?.trim() ||
-      currentQuestion?.expected?.trim() ||
-      (Array.isArray(currentQuestion?.correctOrder)
-        ? currentQuestion.correctOrder.join(" ")
-        : "");
-
-    const words = String(target || "")
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((w) => String(w));
-    if (words.length < 3) return null;
-
-    // pick a "good" blank word (avoid tiny words)
-    const candidates = words
-      .map((w, i) => ({ w, i }))
-      .filter(
-        ({ w }) => String(w || "").replace(/[^a-zA-Z']/g, "").length >= 3,
-      );
-
-    const pick = candidates.length
-      ? candidates[Math.floor(candidates.length / 2)]
-      : {
-          w: words[Math.floor(words.length / 2)],
-          i: Math.floor(words.length / 2),
-        };
-
-    const missingWord = String(pick.w || "").trim();
-    const maskedWords = words.map((w, idx) => (idx === pick.i ? "____" : w));
-    const masked = maskedWords.join(" ");
-    const full = words.join(" ");
-
-    return {
-      missingWord,
-      masked,
-      index: pick.i,
-      words,
-      full,
-    };
-  }, [safeMode, currentQuestion, currentIndex]);
 
   // -------------------
   // effects
@@ -818,7 +749,7 @@ export default function SentencePractice() {
   }
 
   async function handleAudioRepeated() {
-    if (!currentQuestion) return;
+    if (!current) return;
     if (status === "correct") return;
     if (!audioGateOpen) return; // ✅ anti-abuse gate
 
@@ -868,12 +799,12 @@ export default function SentencePractice() {
   }
 
   async function checkAnswer() {
-    if (!currentQuestion) return;
+    if (!current) return;
     if (status === "correct") return;
 
     if (safeMode === "reorder") {
       const userWords = asArr(answer); // <-- your reorder selected words state
-      const expected = correctOrderArr;
+      const expectedOrder = correctOrderArr; // or correctOrder
 
       if (!expected.length || !userWords.length) {
         setStatus("wrong");
@@ -909,9 +840,7 @@ export default function SentencePractice() {
           .replace(/[“”]/g, '"')
           .replace(/\s+/g, " ");
 
-      const target =
-        currentQuestion.answer?.trim() ||
-        (currentQuestion.correctOrder || []).join(" ");
+      const target = expectedAnswer || correctOrder.join(" ");
       const user = typedAnswer;
 
       if (!normalize(user)) {
@@ -998,7 +927,7 @@ export default function SentencePractice() {
           .replace(/[“”]/g, '"')
           .replace(/\s+/g, " ");
 
-      const expected = normalizeWord(cloze?.missingWord);
+      const expectedMissing = normalizeWord(cloze?.missingWord);
       const got = normalizeWord(typedAnswer);
 
       if (!got) {
@@ -1096,7 +1025,7 @@ export default function SentencePractice() {
     }
 
     // ✅ REORDER validation
-    if (answer.length !== currentQuestion.correctOrder.length) {
+    if (asArr(answer).length !== correctOrder.length) {
       setStatus("wrong");
       setShowHint(true);
       return;
@@ -1104,7 +1033,7 @@ export default function SentencePractice() {
 
     const incorrect = [];
     answer.forEach((word, index) => {
-      if (word !== currentQuestion.correctOrder[index]) incorrect.push(index);
+      if (word !== correctOrder[index]) incorrect.push(index);
     });
 
     if (incorrect.length === 0) {
@@ -1265,7 +1194,7 @@ export default function SentencePractice() {
     );
   }
 
-  if (!currentQuestion) {
+  if (!current) {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
         <h1 className="text-2xl font-bold mb-2">No questions found</h1>
@@ -1298,7 +1227,7 @@ export default function SentencePractice() {
 
       {/* Tamil Prompt */}
       <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 text-lg">
-        {currentQuestion.tamil}
+        {current?.promptTa}
       </div>
 
       {/* Hint */}
@@ -1394,9 +1323,7 @@ export default function SentencePractice() {
             <div className="text-xs font-semibold text-purple-700 mb-1">
               Tamil prompt
             </div>
-            <div className="text-sm text-slate-800">
-              {currentQuestion.tamil}
-            </div>
+            <div className="text-sm text-slate-800">{current?.promptTa}</div>
           </div>
 
           {/* Word Bank (hint only — not clickable) */}
@@ -1476,7 +1403,7 @@ export default function SentencePractice() {
           <div className="rounded-xl border bg-white p-4">
             {/* Tamil prompt */}
             <div className="text-lg font-semibold tracking-wide">
-              {currentQuestion?.tamil || "—"}
+              {current?.promptTa || "—"}
             </div>
 
             <div className="mt-3 flex items-center gap-3">
@@ -1484,7 +1411,7 @@ export default function SentencePractice() {
                 type="button"
                 onClick={() => setRevealEnglish((v) => !v)}
                 className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm"
-                disabled={!currentQuestion}
+                disabled={!current}
               >
                 {revealEnglish ? "Hide English" : "Reveal English"}
               </button>
@@ -1560,9 +1487,7 @@ export default function SentencePractice() {
                   type="button"
                   onClick={handleAudioRepeated}
                   className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-                  disabled={
-                    !currentQuestion || status === "correct" || !audioGateOpen
-                  }
+                  disabled={!current || status === "correct" || !audioGateOpen}
                 >
                   I repeated it ✅
                 </button>
@@ -1648,7 +1573,7 @@ export default function SentencePractice() {
           📘 <strong>Good attempt! Here is the correct sentence:</strong>
           <div className="mt-3">
             <div className="flex flex-wrap gap-2">
-              {(currentQuestion?.correctOrder || []).map((word, index) => (
+              {correctOrder.map((word, index) => (
                 <span key={index} className="px-3 py-1 bg-green-200 rounded">
                   {word}
                 </span>
