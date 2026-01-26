@@ -69,11 +69,6 @@ export default function SentencePractice() {
       .replace(/\s+/g, " ")
       .toLowerCase();
 
-  const correctOrderArr =
-    expectedWords.length > 0
-      ? expectedWords
-      : asArr(expected.correctOrder ?? expected.words ?? expected.tokens ?? []);
-
   // -------------------
   // Local progress store (LessonDetail summary)
   // -------------------
@@ -165,14 +160,6 @@ export default function SentencePractice() {
       ? (lessonExercises[currentIndex] ?? null)
       : null;
 
-  const expected = current?.expected ?? {};
-
-  const expectedWords = Array.isArray(expected.words)
-    ? expected.words
-    : Array.isArray(expected.tokens)
-      ? expected.tokens
-      : [];
-
   const expectedAnswerRaw =
     expected.answer ??
     expected.correct ??
@@ -182,10 +169,37 @@ export default function SentencePractice() {
     current?.expected_answer ??
     "";
 
-  const expectedAnswer = String(expectedAnswerRaw || "").trim();
-
   const correctOrder = Array.isArray(expected.correctOrder)
     ? expected.correctOrder
+    : expectedWords.length
+      ? expectedWords
+      : expectedAnswer
+        ? expectedAnswer.split(/\s+/)
+        : [];
+
+  const expected = current && current.expected ? current.expected : {};
+
+  const asArr = (v) => (Array.isArray(v) ? v : []);
+  const norm = (s) =>
+    String(s || "")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toLowerCase();
+
+  const expectedWords = asArr(expected.words ?? expected.tokens);
+
+  const expectedAnswer = String(
+    expected.answer ??
+      expected.correct ??
+      expected.expected ??
+      current?.answer ??
+      current?.expectedAnswer ??
+      current?.expected_answer ??
+      "",
+  ).trim();
+
+  const correctOrderArr = asArr(expected.correctOrder).length
+    ? asArr(expected.correctOrder)
     : expectedWords.length
       ? expectedWords
       : expectedAnswer
