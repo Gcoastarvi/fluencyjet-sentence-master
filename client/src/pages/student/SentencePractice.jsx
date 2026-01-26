@@ -3,6 +3,22 @@ import { useParams } from "react-router-dom";
 import { api } from "@/api/apiClient";
 import { useLocation, useNavigate } from "react-router-dom";
 
+function asArr(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    const t = value.trim();
+    return t ? t.split(/\s+/) : [];
+  }
+  return [];
+}
+
+function normalizeText(s) {
+  return String(s || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+}
+
 const DEFAULT_PRACTICE_MODE = "reorder";
 const SUPPORTED_PRACTICE_MODES = new Set([
   "reorder",
@@ -46,14 +62,27 @@ export default function SentencePractice() {
 
   const navigate = useNavigate();
 
-  const current = lessonExercises?.[currentIndex] || null;
+  const current = Array.isArray(lessonExercises)
+    ? lessonExercises[currentIndex] || null
+    : null;
 
-  // expected may be missing during reorder
-  const expected = current?.expected || {};
-  const wordsArr = Array.isArray(expected.words) ? expected.words : [];
+  const expected = current?.expected ?? {};
 
-  const expectedWords = asArr(expected.words ?? expected.tokens);
-  const expectedAnswer = expected.answer || expectedWords.join(" ");
+  const expectedWords = asArr(
+    expected.words ?? expected.tokens ?? expected.correctOrder, // optional fallback for reorder sources
+  );
+
+  const expectedAnswerRaw =
+    expected.answer ??
+    expected.correct ??
+    expected.expected ??
+    current?.answer ??
+    current?.expectedAnswer ??
+    current?.expected_answer ??
+    "";
+
+  const expectedAnswer =
+    String(expectedAnswerRaw || "").trim() || expectedWords.join(" ");
 
   const asArr = (v) => (Array.isArray(v) ? v : []);
   const norm = (s) =>
