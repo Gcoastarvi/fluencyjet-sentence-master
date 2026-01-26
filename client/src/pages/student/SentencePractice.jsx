@@ -158,28 +158,11 @@ export default function SentencePractice() {
   const current =
     Array.isArray(lessonExercises) && typeof currentIndex === "number"
       ? (lessonExercises[currentIndex] ?? null)
-      : null;
+      : null;  
 
-  const expectedAnswerRaw =
-    expected.answer ??
-    expected.correct ??
-    expected.expected ??
-    current?.answer ??
-    current?.expectedAnswer ??
-    current?.expected_answer ??
-    "";
+  const expected = current?.expected ?? {};
 
-  const correctOrder = Array.isArray(expected.correctOrder)
-    ? expected.correctOrder
-    : expectedWords.length
-      ? expectedWords
-      : expectedAnswer
-        ? expectedAnswer.split(/\s+/)
-        : [];
-
-  const expected = current && current.expected ? current.expected : {}; 
-
-  const expectedWords = asArr(expected.words ?? expected.tokens);
+  const expectedWords = asArr(expected.words ?? expected.tokens ?? []);
 
   const expectedAnswer = String(
     expected.answer ??
