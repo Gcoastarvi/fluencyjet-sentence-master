@@ -3,6 +3,34 @@ import { useParams } from "react-router-dom";
 import { api } from "@/api/apiClient";
 import { useLocation, useNavigate } from "react-router-dom";
 
+// ===== helpers (reorder/typing normalization) =====
+const norm = (v) =>
+  String(v ?? "")
+    .trim()
+    .replace(/\s+/g, " ");
+
+const toTextArray = (arr) =>
+  (Array.isArray(arr) ? arr : [])
+    .map((x) =>
+      typeof x === "string"
+        ? x
+        : (x?.text ?? x?.word ?? x?.label ?? x?.value ?? ""),
+    )
+    .map(norm)
+    .filter(Boolean);
+
+const arraysEqualStrict = (a, b) => {
+  const aa = toTextArray(a);
+  const bb = toTextArray(b);
+  if (aa.length !== bb.length) return false;
+  for (let i = 0; i < aa.length; i++) if (aa[i] !== bb[i]) return false;
+  return true;
+};
+
+// Create stable tokens so duplicates are safe (e.g., "to", "to")
+const makeTokens = (words, qid = "q") =>
+  toTextArray(words).map((text, idx) => ({ id: `${qid}-${idx}`, text }));
+
 function asArr(value) {
   if (Array.isArray(value)) return value;
   if (typeof value === "string") {
@@ -357,6 +385,16 @@ export default function SentencePractice() {
     }
   };
 
+  const onPickToken = (token) => {
+    setReorderPicked((prev) => [...prev, token]);
+    setReorderBank((prev) => prev.filter((x) => x.id !== token.id));
+  };
+
+  const onUnpickToken = (token) => {
+    setReorderBank((prev) => [...prev, token]);
+    setReorderPicked((prev) => prev.filter((x) => x.id !== token.id));
+  };
+
   // AUTO NEXT after correct/reveal
   useEffect(() => {
     if (status === "correct" || status === "reveal") {
@@ -366,6 +404,20 @@ export default function SentencePractice() {
       return () => clearTimeout(timer);
     }
   }, [status, loadNextQuestion]);
+
+  useEffect(() => {
+    if (!current) return;
+
+    // Only reset for reorder screen
+    if (safeMode !== "reorder") return;
+
+    const tokens = makeTokens(expectedWords, current.id);
+    // If you already have a shuffle() utility, use it; otherwise simple shuffle:
+    const shuffled = [...tokens].sort(() => Math.random() - 0.5);
+
+    setReorderBank(shuffled);
+    setReorderPicked([]);
+  }, [current?.id, safeMode]); // do NOT add expectedWords here; current.id change is enough
 
   // -------------------
   // XP update (stable + backend-friendly)
@@ -725,6 +777,38 @@ export default function SentencePractice() {
       return next;
     });
   }
+
+  // ===== REORDER: check correctness =====
+  const checkReorderAnswer = () => {
+    // correctOrderArr is your derived correct array (from expectedWords/correctOrderArr)
+    const userArr = toTextArray(answer); // answer is your current selected array
+    const correctArr = toTextArray(correctOrderArr);
+
+    const isCorrect = arraysEqualStrict(userArr, correctArr);
+
+    // highlight wrong positions
+    const wrong = [];
+    const L = Math.max(userArr.length, correctArr.length);
+    for (let i = 0; i < L; i++) {
+      if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
+    }
+
+    console.log("[DBG] REORDER userArr   =", userArr);
+    console.log("[DBG] REORDER correctArr=", correctArr);
+    console.log("[DBG] REORDER isCorrect =", isCorrect);
+    console.log("[DBG] REORDER wrongIdx  =", wrong);
+
+    setWrongIndexes(wrong);
+
+    if (isCorrect) {
+      setStatus("correct");
+      // If your XP pipeline is triggered elsewhere on status="correct", this is enough.
+      // If you have a direct XP trigger function, call it here (see Step 4).
+      return;
+    }
+
+    setStatus("wrong");
+  };
 
   // ✅ Typing helper: tap a word chip to append into typedAnswer
   function addToTyped(word) {
@@ -1554,7 +1638,7 @@ export default function SentencePractice() {
           {status === "idle" && (
             <button
               type="button"
-              onClick={checkAnswer}
+              onClick={checkReorderAnswer}
               className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
             >
               Check Answer
