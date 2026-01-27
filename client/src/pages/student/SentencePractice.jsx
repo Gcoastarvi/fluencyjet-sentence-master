@@ -179,6 +179,16 @@ export default function SentencePractice() {
           ? expectedAnswer.split(/\s+/)
           : [];
 
+  // Typing hint-only word bank (from backend)
+  const typingWordBank =
+    Array.isArray(expectedWords) && expectedWords.length
+      ? expectedWords
+      : Array.isArray(correctOrderArr) && correctOrderArr.length
+        ? correctOrderArr
+        : expectedAnswer
+          ? expectedAnswer.split(/\s+/)
+          : [];
+
   console.log(
     "[DBG] currentIndex =",
     currentIndex,
