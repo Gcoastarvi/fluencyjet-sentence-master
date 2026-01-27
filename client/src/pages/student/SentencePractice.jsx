@@ -405,20 +405,6 @@ export default function SentencePractice() {
     }
   }, [status, loadNextQuestion]);
 
-  useEffect(() => {
-    if (!current) return;
-
-    // Only reset for reorder screen
-    if (safeMode !== "reorder") return;
-
-    const tokens = makeTokens(expectedWords, current.id);
-    // If you already have a shuffle() utility, use it; otherwise simple shuffle:
-    const shuffled = [...tokens].sort(() => Math.random() - 0.5);
-
-    setReorderBank(shuffled);
-    setReorderPicked([]);
-  }, [current?.id, safeMode]); // do NOT add expectedWords here; current.id change is enough
-
   // -------------------
   // XP update (stable + backend-friendly)
   // -------------------
