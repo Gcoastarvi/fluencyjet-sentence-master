@@ -158,33 +158,38 @@ export default function SentencePractice() {
   const current =
     Array.isArray(lessonExercises) && typeof currentIndex === "number"
       ? (lessonExercises[currentIndex] ?? null)
-      : null;  
+      : null;
 
+  // ✅ Derived data (single source of truth)
   const expected = current?.expected ?? {};
 
-  const expectedWords = asArr(expected.words ?? expected.tokens ?? []);
+  const expectedWords = asArr(expected.words ?? expected.tokens);
 
   const expectedAnswer = String(
-    expected.answer ??
-      expected.correct ??
-      expected.expected ??
-      current?.answer ??
-      current?.expectedAnswer ??
-      current?.expected_answer ??
-      "",
+    expected.answer ?? expected.correct ?? expected.expected ?? "",
   ).trim();
 
-  const correctOrderArr = asArr(expected.correctOrder).length
-    ? asArr(expected.correctOrder)
-    : expectedWords.length
-      ? expectedWords
-      : expectedAnswer
-        ? expectedAnswer.split(/\s+/)
-        : [];
+  // For reorder: correctOrder (array) OR fallback to words OR split expectedAnswer
+  const correctOrderArr =
+    Array.isArray(expected.correctOrder) && expected.correctOrder.length
+      ? expected.correctOrder
+      : expectedWords.length
+        ? expectedWords
+        : expectedAnswer
+          ? expectedAnswer.split(/\s+/)
+          : [];
+
+  console.log(
+    "[DBG] currentIndex =",
+    currentIndex,
+    "| lessonExercises len =",
+    lessonExercises?.length,
+  );
 
   console.log("[DBG] current", current);
   console.log("[DBG] expectedWords", expectedWords);
-  console.log("[DBG] expectedAnswerRaw", expectedAnswerRaw);
+  console.log("[DBG] expectedAnswer", expectedAnswer);
+  console.log("[DBG] correctOrderArr", correctOrderArr);
 
   const [loadError, setLoadError] = useState("");
   const [sessionTarget] = useState(10); // MVP: 10 questions per session
@@ -598,6 +603,13 @@ export default function SentencePractice() {
         e?.data?.message ??
         e?.message ??
         "";
+
+      console.log(
+        "[Practice] setLessonExercises called, len =",
+        normalized.length,
+      );
+      setLessonExercises(normalized);
+      setCurrentIndex(0);
 
       // ✅ PAYWALL redirect from HTTP error response
       if (
@@ -1192,6 +1204,12 @@ export default function SentencePractice() {
       </div>
     );
   }
+
+  if (loading) return <div className="p-6">Loading…</div>;
+
+  if (loadError) return <div className="p-6 text-red-600">{loadError}</div>;
+
+  if (!current) return <div className="p-6">No question loaded yet.</div>;
 
   // -------------------
   // UI
