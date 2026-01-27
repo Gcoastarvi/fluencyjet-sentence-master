@@ -496,28 +496,42 @@ export default function SentencePractice() {
     }
   }
 
-  async function awardCompletionBonus(mode) {
+  // ===== Universal XP event commit (inside component) =====
+  async function awardXPEvent({
+    xp,
+    event,
+    mode,
+    lessonId: lid,
+    exerciseId = null,
+    meta = {},
+    completedQuiz = false,
+  }) {
     const attemptId =
       globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
         ? globalThis.crypto.randomUUID()
-        : `complete_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        : `xp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
     const payload = {
       attemptId,
       attemptNo: 1,
-      xp: 300,
-      event: "lesson_completed",
-      meta: { lessonId, mode },
-      lessonId,
+      xp: Number(xp) || 0,
+      event,
+      meta: { lessonId: lid, mode, exerciseId, ...meta },
+      lessonId: lid,
       practiceType: mode,
       mode,
-      completedQuiz: true,
+      exerciseId,
+      completedQuiz: !!completedQuiz,
     };
 
     try {
       const res = await api.post("/progress/update", payload);
-      console.log("[XP] commitXP response", res?.data ?? res);
       const data = res?.data ?? res;
+
+      if (!data || data.ok !== true) {
+        console.error("[XP] /progress/update not ok", { payload, response: data });
+        return { ok: false, awarded: 0, data };
+      }
 
       const awarded =
         Number(
@@ -526,14 +540,24 @@ export default function SentencePractice() {
             data?.xp_delta ??
             data?.earnedXP ??
             data?.xp ??
-            300,
-        ) || 300;
+            xp,
+        ) || (Number(xp) || 0);
 
-      return { ok: true, awarded };
+      return { ok: true, awarded, data };
     } catch (err) {
-      console.error("[XP] completion bonus failed", err);
+      console.error("[XP] /progress/update failed", err);
       return { ok: false, awarded: 0 };
     }
+  }
+
+  async function awardCompletionBonus(mode) {
+    return awardXPEvent({
+      xp: 300,
+      event: "lesson_completed",
+      mode,
+      lessonId: Number(lessonId),
+      completedQuiz: true,
+    });
   }
 
   // -------------------
@@ -764,8 +788,25 @@ export default function SentencePractice() {
     });
   }
 
+  function playCorrectSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.value = 0.05;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {
+      // ignore if blocked
+    }
+  }
+
   // ===== REORDER: check correctness =====
-  const checkReorderAnswer = () => {
+  const checkReorderAnswer = async () => {
     // correctOrderArr is your derived correct array (from expectedWords/correctOrderArr)
     const userArr = toTextArray(answer); // answer is your current selected array
     const correctArr = toTextArray(correctOrderArr);
@@ -787,9 +828,31 @@ export default function SentencePractice() {
     setWrongIndexes(wrong);
 
     if (isCorrect) {
+      const xpDelta = Number(current?.xp ?? 150) || 150;
+
+      // 1) UI feedback (same as typing)
+      setEarnedXP(xpDelta);
+      setShowXPToast(true);
+      playCorrectSound();
+
+      // If you have a floating XP flag, keep this line; if not, delete it
+      // setShowFloatingXP(true);
+
+      // If you have a sound function used by typing, call it here.
+      // Search in file for "new Audio" or "play(" and reuse the same function.
+      // playCorrectSfx?.();
+
+      // 2) Backend XP commit (IMPORTANT)
+      // ✅ Replace commitXPDelta with the REAL function name you found in Step 1A
+      await awardXPEvent({
+        xp: xpDelta,
+        event: "exercise_correct",
+        mode: safeMode,
+        lessonId: Number(lessonId),
+        exerciseId: current?.id,
+      });
+
       setStatus("correct");
-      // If your XP pipeline is triggered elsewhere on status="correct", this is enough.
-      // If you have a direct XP trigger function, call it here (see Step 4).
       return;
     }
 
@@ -896,6 +959,8 @@ export default function SentencePractice() {
       }
 
       const isCorrect = norm(userWords.join(" ")) === norm(expected.join(" "));
+
+      playCorrectSound();
 
       if (isCorrect) {
         setStatus("correct");
