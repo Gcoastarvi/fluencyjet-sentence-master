@@ -524,12 +524,19 @@ export default function SentencePractice() {
       completedQuiz: !!completedQuiz,
     };
 
+    console.log("[XP] awardXPEvent payload", payload);
+
     try {
       const res = await api.post("/progress/update", payload);
+      console.log("[XP] awardXPEvent response", res?.data ?? res);
+
       const data = res?.data ?? res;
 
       if (!data || data.ok !== true) {
-        console.error("[XP] /progress/update not ok", { payload, response: data });
+        console.error("[XP] /progress/update not ok", {
+          payload,
+          response: data,
+        });
         return { ok: false, awarded: 0, data };
       }
 
@@ -541,7 +548,9 @@ export default function SentencePractice() {
             data?.earnedXP ??
             data?.xp ??
             xp,
-        ) || (Number(xp) || 0);
+        ) ||
+        Number(xp) ||
+        0;
 
       return { ok: true, awarded, data };
     } catch (err) {
@@ -948,30 +957,51 @@ export default function SentencePractice() {
     if (status === "correct") return;
 
     if (safeMode === "reorder") {
-      const userWords = asArr(answer); // <-- your reorder selected words state
-      const expectedOrder = correctOrderArr; // or correctOrder
+      const userWords = asArr(answer);
+      const correctWords = asArr(correctOrderArr); // use your derived correct array
 
-      if (!expected.length || !userWords.length) {
+      if (!correctWords.length || !userWords.length) {
         setStatus("wrong");
         setFeedback("⚠️ Arrange the words first.");
         setEarnedXP(0);
         return;
       }
 
-      const isCorrect = norm(userWords.join(" ")) === norm(expected.join(" "));
-
-      playCorrectSound();
+      const isCorrect =
+        norm(userWords.join(" ")) === norm(correctWords.join(" "));
 
       if (isCorrect) {
-        setStatus("correct");
-        setFeedback("✅ Correct!");
-        setEarnedXP(Number(currentQuestion?.xp || 0) || 0);
-        // if you have XP pipeline call, keep it here
-      } else {
+        const xpDelta = Number(current?.xp ?? 150) || 150;
+
+        const result = await awardXPEvent({
+          xp: xpDelta,
+          event: "exercise_correct",
+          mode: safeMode,
+          lessonId: Number(lessonId),
+          exerciseId: current?.id,
+        });
+
+        if (result?.ok) {
+          const shown = Number(result.awarded ?? xpDelta) || xpDelta;
+          setEarnedXP(shown);
+          setShowXPToast(true);
+          playCorrectSound();
+
+          setStatus("correct");
+          setFeedback("✅ Correct!");
+          return;
+        }
+
+        console.error("[XP] reorder: XP not awarded");
         setStatus("wrong");
-        setFeedback(`❌ Correct answer: "${expected.join(" ")}"`);
+        setFeedback("⚠️ XP not awarded. Please retry.");
         setEarnedXP(0);
+        return;
       }
+
+      setStatus("wrong");
+      setFeedback(`❌ Correct answer: "${correctWords.join(" ")}"`);
+      setEarnedXP(0);
       return;
     }
 
@@ -1002,6 +1032,25 @@ export default function SentencePractice() {
         correctSoundRef.current?.play?.();
         setStatus("correct");
         setWrongIndexes([]);
+
+        const xpDelta = Number(current?.xp ?? 150) || 150;
+
+        const result = await awardXPEvent({
+          xp: xpDelta,
+          event: "exercise_correct",
+          mode: safeMode, // "typing"
+          lessonId: Number(lessonId),
+          exerciseId: current?.Question?.id ?? current?.id, // use current?.id if you don't have currentQuestion
+        });
+
+        if (result?.ok) {
+          const shown = Number(result.awarded ?? xpDelta) || xpDelta;
+          setEarnedXP(shown);
+          setShowXPToast(true);
+          // optional: playCorrectSound(); // only if you want same beep
+        } else {
+          console.error("[XP] typing: XP not awarded");
+        }
 
         // Run XP + completion bonus asynchronously
         (async () => {
