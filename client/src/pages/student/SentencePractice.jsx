@@ -264,6 +264,14 @@ export default function SentencePractice() {
     new URLSearchParams(location.search).get("lessonId"),
   );
 
+  const xpInFlightRef = useRef(false);
+
+  if (xpInFlightRef.current) {
+    console.warn("[XP] skipped duplicate awardXPEvent (in-flight)");
+    return { ok: false, awarded: 0, skipped: true };
+  }
+  xpInFlightRef.current = true;
+
   function openAudioGateAfter(ms = 1800) {
     setAudioGateOpen(false);
     if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
@@ -304,6 +312,17 @@ export default function SentencePractice() {
     stopTTS();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, safeMode]);
+
+  useEffect(() => {
+    if (!showXPToast) return;
+
+    const t = setTimeout(() => {
+      setShowXPToast(false);
+      setEarnedXP(0);
+    }, 1500); // 1.5s so it doesn’t flash
+
+    return () => clearTimeout(t);
+  }, [showXPToast]);
 
   // -------------------
   // effects

@@ -459,6 +459,15 @@ router.post("/update", authRequired, async (req, res) => {
         });
       }
 
+      console.log(
+        "[DBG] tx keys:",
+        Object.keys(tx)
+          .filter((k) => !k.startsWith("$"))
+          .slice(0, 200),
+      );
+      console.log("[DBG] tx.userProgress?", !!tx.userProgress);
+      console.log("[DBG] tx.userLessonProgress?", !!tx.userLessonProgress);
+
       // 4) Update UserProgress (keep cached totals/streak in sync with XpEvent)
       const updatedProgress = await tx.userProgress.update({
         where: { user_id: userId },
@@ -478,21 +487,57 @@ router.post("/update", authRequired, async (req, res) => {
         } else {
           let lp = await ensureLessonProgress(tx, userId, lessonIdNum);
 
-          const wasCompleted = lp.completed;
-          lp = await tx.userLessonProgress.update({
-            where: { id: lp.id },
-            data: {
-              completed: true,
-              attempts: (lp.attempts || 0) + 1,
-              last_attempt_at: now,
-            },
-          });
+          // ✅ Completion tracking using UserDayProgress (replaces removed UserLessonProgress)
+          if (completedQuiz) {
+            // We need level + dayNumber. If your client sends them, use those.
+            // Fallback mapping: treat lessonId as dayNumber, and mode as level bucket.
+            const level =
+              mode === "beginner"
+                ? "BEGINNER"
+                : mode === "intermediate"
+                  ? "INTERMEDIATE"
+                  : mode === "advanced"
+                    ? "ADVANCED"
+                    : "BEGINNER";
 
-          if (!wasCompleted) {
-            await tx.userProgress.update({
-              where: { user_id: userId },
-              data: { lessons_completed: { increment: 1 } },
+            const dayNumber = Number(lessonId) || 1;
+
+            const existingDay = await tx.userDayProgress.findFirst({
+              where: { userId, level, dayNumber },
             });
+
+            const wasCompleted = Boolean(existingDay?.completed);
+
+            if (existingDay) {
+              await tx.userDayProgress.update({
+                where: { id: existingDay.id },
+                data: {
+                  completed: true,
+                  completedAt: now,
+                  // Optional: accumulate XP if you want
+                  // xpEarned: { increment: xpDelta },
+                },
+              });
+            } else {
+              await tx.userDayProgress.create({
+                data: {
+                  userId,
+                  level,
+                  dayNumber,
+                  completed: true,
+                  completedAt: now,
+                  // xpEarned: xpDelta,
+                },
+              });
+            }
+
+            // Keep the "lessons_completed" counter in UserProgress if you still use it on dashboard
+            if (!wasCompleted) {
+              await tx.userProgress.update({
+                where: { user_id: userId },
+                data: { lessons_completed: { increment: 1 } },
+              });
+            }
           }
 
           const lesson = await tx.lesson.findUnique({
