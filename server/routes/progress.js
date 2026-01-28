@@ -513,7 +513,7 @@ router.post("/update", authRequired, async (req, res) => {
                     ? "ADVANCED"
                     : "BEGINNER";
 
-            const dayNumber = Number(lessonId) || 1;
+            const dayNumber = lessonIdNum || 1;
 
             const existingDay = await tx.userDayProgress.findFirst({
               where: { userId, level, dayNumber },
