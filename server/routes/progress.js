@@ -469,11 +469,19 @@ router.post("/update", authRequired, async (req, res) => {
       console.log("[DBG] tx.userLessonProgress?", !!tx.userLessonProgress);
 
       // 4) Update UserProgress (keep cached totals/streak in sync with XpEvent)
-      const updatedProgress = await tx.userProgress.update({
+      const updatedProgress = await tx.userProgress.upsert({
         where: { user_id: userId },
-        data: {
-          xp: { increment: xpDelta }, // xpDelta is 0 if duplicate/wrong -> safe
-          streak: newStreak, // currently constant; later we’ll compute properly
+        update: {
+          xp: { increment: xpDelta },
+          streak: newStreak,
+          updated_at: now,
+        },
+        create: {
+          user_id: userId,
+          xp: Number(xpDelta) || 0,
+          streak: newStreak,
+          lessons_completed: 0,
+          created_at: now,
           updated_at: now,
         },
       });
@@ -532,12 +540,18 @@ router.post("/update", authRequired, async (req, res) => {
             }
 
             // Keep the "lessons_completed" counter in UserProgress if you still use it on dashboard
-            if (!wasCompleted) {
-              await tx.userProgress.update({
-                where: { user_id: userId },
-                data: { lessons_completed: { increment: 1 } },
-              });
-            }
+            await tx.userProgress.upsert({
+              where: { user_id: userId },
+              update: { lessons_completed: { increment: 1 }, updated_at: now },
+              create: {
+                user_id: userId,
+                xp: 0,
+                streak: 0,
+                lessons_completed: 1,
+                created_at: now,
+                updated_at: now,
+              },
+            });            
           }
 
           const lesson = await tx.lesson.findUnique({
