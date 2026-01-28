@@ -546,8 +546,9 @@ router.post("/update", authRequired, async (req, res) => {
 
             // Keep the "lessons_completed" counter in UserProgress if you still use it on dashboard
           }
+        }
 
-          if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
+        if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
             lessonPayload = { skipped: true, reason: "lessonId missing/invalid" };
           } else {
             const lesson = await tx.lesson.findUnique({
