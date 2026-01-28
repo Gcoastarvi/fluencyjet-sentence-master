@@ -480,8 +480,7 @@ router.post("/update", authRequired, async (req, res) => {
           user_id: userId,
           xp: Number(xpDelta) || 0,
           streak: newStreak,
-          lessons_completed: 0,
-          created_at: now,
+          badges: [],
           updated_at: now,
         },
       });
@@ -540,18 +539,7 @@ router.post("/update", authRequired, async (req, res) => {
             }
 
             // Keep the "lessons_completed" counter in UserProgress if you still use it on dashboard
-            await tx.userProgress.upsert({
-              where: { user_id: userId },
-              update: { lessons_completed: { increment: 1 }, updated_at: now },
-              create: {
-                user_id: userId,
-                xp: 0,
-                streak: 0,
-                lessons_completed: 1,
-                created_at: now,
-                updated_at: now,
-              },
-            });            
+            
           }
 
           const lesson = await tx.lesson.findUnique({
