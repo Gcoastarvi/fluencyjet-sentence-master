@@ -246,6 +246,18 @@ export default function SentencePractice() {
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState("");
 
+  // ✅ Auto-hide XP toast + reset earnedXP
+  useEffect(() => {
+    if (!showXPToast) return;
+
+    const t = setTimeout(() => {
+      setShowXPToast(false);
+      setEarnedXP(0);
+    }, 1400);
+
+    return () => clearTimeout(t);
+  }, [showXPToast]);
+
   const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
 
   // 🔊 Audio (TTS)
@@ -265,12 +277,6 @@ export default function SentencePractice() {
   );
 
   const xpInFlightRef = useRef(false);
-
-  if (xpInFlightRef.current) {
-    console.warn("[XP] skipped duplicate awardXPEvent (in-flight)");
-    return { ok: false, awarded: 0, skipped: true };
-  }
-  xpInFlightRef.current = true;
 
   function openAudioGateAfter(ms = 1800) {
     setAudioGateOpen(false);
@@ -525,6 +531,13 @@ export default function SentencePractice() {
     meta = {},
     completedQuiz = false,
   }) {
+    // 🔒 Prevent duplicate /progress/update calls
+    if (xpInFlightRef.current) {
+      console.warn("[XP] skipped duplicate awardXPEvent (in-flight)");
+      return { ok: false, awarded: 0, skipped: true };
+    }
+    xpInFlightRef.current = true;
+
     const attemptId =
       globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
         ? globalThis.crypto.randomUUID()
@@ -547,9 +560,9 @@ export default function SentencePractice() {
 
     try {
       const res = await api.post("/progress/update", payload);
-      console.log("[XP] awardXPEvent response", res?.data ?? res);
-
       const data = res?.data ?? res;
+
+      console.log("[XP] awardXPEvent response", data);
 
       if (!data || data.ok !== true) {
         console.error("[XP] /progress/update not ok", {
@@ -575,6 +588,9 @@ export default function SentencePractice() {
     } catch (err) {
       console.error("[XP] /progress/update failed", err);
       return { ok: false, awarded: 0 };
+    } finally {
+      // 🔓 Always release lock
+      xpInFlightRef.current = false;
     }
   }
 
