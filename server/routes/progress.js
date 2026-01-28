@@ -547,39 +547,45 @@ router.post("/update", authRequired, async (req, res) => {
             // Keep the "lessons_completed" counter in UserProgress if you still use it on dashboard
           }
 
-          const lesson = await tx.lesson.findUnique({
-            where: { id: lessonIdNum },
-          });
-          if (lesson) {
-            const nextLesson = await tx.lesson.findFirst({
-              where: { order: { gt: lesson.order } },
-              orderBy: { order: "asc" },
-            });
-
-            if (nextLesson) {
-              await tx.unlockedLesson.upsert({
-                where: {
-                  user_id_lesson_id: {
-                    user_id: userId,
-                    lesson_id: nextLesson.id,
-                  },
-                },
-                update: {},
-                create: { user_id: userId, lesson_id: nextLesson.id },
-              });
-            }
-
-            const unlocked = await tx.unlockedLesson.findMany({
-              where: { user_id: userId },
-            });
-
-            lessonPayload = {
-              lessonProgress: lp,
-              unlockedLessons: unlocked.map((u) => u.lesson_id),
-              nextLessonId: nextLesson?.id || null,
-            };
+          if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
+            lessonPayload = { skipped: true, reason: "lessonId missing/invalid" };
           } else {
-            lessonPayload = { skipped: true, reason: "lesson not found" };
+            const lesson = await tx.lesson.findUnique({
+              where: { id: lessonIdNum },
+            });
+
+            let nextLesson = null;
+
+            if (lesson) {
+              nextLesson = await tx.lesson.findFirst({
+                where: { id: { gt: lesson.id } },
+                orderBy: { id: "asc" },
+              });
+
+              if (nextLesson) {
+                await tx.unlockedLesson.upsert({
+                  where: {
+                    user_id_lesson_id: {
+                      user_id: userId,
+                      lesson_id: nextLesson.id,
+                    },
+                  },
+                  update: {},
+                  create: { user_id: userId, lesson_id: nextLesson.id },
+                });
+              }
+
+              const unlocked = await tx.unlockedLesson.findMany({
+                where: { user_id: userId },
+              });
+
+              lessonPayload = {
+                lessonProgress: lp,
+                unlockedLessons: unlocked.map((u) => u.lesson_id),
+                nextLessonId: nextLesson ? nextLesson.id : null,
+              };
+            } else {
+              lessonPayload = { skipped: true, reason: "lesson not found" };
           }
         }
       }
