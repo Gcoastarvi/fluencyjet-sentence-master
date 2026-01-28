@@ -587,8 +587,9 @@ router.post("/update", authRequired, async (req, res) => {
               };
             } else {
               lessonPayload = { skipped: true, reason: "lesson not found" };
+            }
           }
-        }      
+        }
 
       return {
         xpAwarded: xpDelta,
