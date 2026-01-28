@@ -79,19 +79,18 @@ function hashKey(prefix, raw, maxLen = 50) {
 }
 
 async function ensureProgress(tx, userId) {
-  let p = await tx.userProgress.findUnique({ where: { user_id: userId } });
-  if (!p) {
-    p = await tx.userProgress.create({
-      data: {
-        user_id: userId,
-        xp: 0,
-        streak: 0,
-        badges: [],
-        lessons_completed: 0,
-      },
-    });
-  }
-  return p;
+  // ✅ Always ensure a row exists, even for old/new users
+  return tx.userProgress.upsert({
+    where: { user_id: userId },
+    update: {}, // no-op if exists
+    create: {
+      user_id: userId,
+      xp: 0,
+      streak: 0,
+      badges: [],
+      // updated_at has default(now()) in schema, so we can omit it
+    },
+  });
 }
 
 async function ensureLessonProgress(tx, userId, lessonId) {
@@ -539,7 +538,6 @@ router.post("/update", authRequired, async (req, res) => {
             }
 
             // Keep the "lessons_completed" counter in UserProgress if you still use it on dashboard
-            
           }
 
           const lesson = await tx.lesson.findUnique({
