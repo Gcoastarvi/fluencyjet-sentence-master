@@ -360,6 +360,13 @@ router.post("/update", authRequired, async (req, res) => {
         .json({ ok: false, message: "attemptId is required" });
     }
 
+    // normalize mode safely (avoid "mode is not defined")
+    const mode = String(
+      body.mode || body.practiceType || body.practice_type || "",
+    )
+      .trim()
+      .toLowerCase();
+
     const attemptNo = Number(body.attemptNo ?? body.attempt_no ?? 1) || 1;
     const isCorrect = Boolean(body.isCorrect);
     const completedQuiz = Boolean(body.completedQuiz);

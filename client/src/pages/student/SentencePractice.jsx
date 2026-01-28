@@ -851,52 +851,67 @@ export default function SentencePractice() {
 
   // ===== REORDER: check correctness =====
   const checkReorderAnswer = async () => {
-    // correctOrderArr is your derived correct array (from expectedWords/correctOrderArr)
-    const userArr = toTextArray(answer); // answer is your current selected array
+    if (!current) return;
+    if (status === "correct" || status === "reveal") return;
+
+    // answer: your selected words state
+    const userArr = toTextArray(answer);
     const correctArr = toTextArray(correctOrderArr);
 
     const isCorrect = arraysEqualStrict(userArr, correctArr);
 
-    // highlight wrong positions
-    const wrong = [];
-    const L = Math.max(userArr.length, correctArr.length);
-    for (let i = 0; i < L; i++) {
-      if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
+    // highlight wrong positions (only when wrong)
+    if (!isCorrect) {
+      const wrong = [];
+      const L = Math.max(userArr.length, correctArr.length);
+      for (let i = 0; i < L; i++) {
+        if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
+      }
+      setWrongIndexes(wrong);
+    } else {
+      setWrongIndexes([]);
     }
 
     console.log("[DBG] REORDER userArr   =", userArr);
     console.log("[DBG] REORDER correctArr=", correctArr);
     console.log("[DBG] REORDER isCorrect =", isCorrect);
-    console.log("[DBG] REORDER wrongIdx  =", wrong);
-
-    setWrongIndexes(wrong);
 
     if (isCorrect) {
-      const xpDelta = Number(current?.xp ?? 150) || 150;
+      const xp = Number(current?.xp ?? 150) || 150;
 
-      // 1) UI feedback (same as typing)
-      setEarnedXP(xpDelta);
-      setShowXPToast(true);
-      playCorrectSound();
-
-      // If you have a floating XP flag, keep this line; if not, delete it
-      // setShowFloatingXP(true);
-
-      // If you have a sound function used by typing, call it here.
-      // Search in file for "new Audio" or "play(" and reuse the same function.
-      // playCorrectSfx?.();
-
-      // 2) Backend XP commit (IMPORTANT)
-      // ✅ Replace commitXPDelta with the REAL function name you found in Step 1A
-      await awardXPEvent({
-        xp: xpDelta,
-        event: "exercise_correct",
-        mode: safeMode,
-        lessonId: Number(lessonId),
-        exerciseId: current?.id,
-      });
-
+      // 1) UI feedback immediately
+      playCorrectSound?.();
       setStatus("correct");
+
+      // 2) Commit XP to backend using universal pipeline
+      try {
+        const result = await awardXPEvent({
+          xp,
+          event: "exercise_correct",
+          mode: "reorder", // ✅ IMPORTANT: literal, avoids TS issues
+          lessonId: Number(lessonId),
+          exerciseId: current?.id,
+        });
+
+        const awarded = Number(result?.awarded ?? xp) || xp;
+        setEarnedXP(awarded);
+        setShowXPToast(true);
+      } catch (e) {
+        console.error("[XP] reorder awardXPEvent failed", e);
+        // still show UI XP even if backend fails
+        setEarnedXP(xp);
+        setShowXPToast(true);
+      }
+
+      // 3) Completion bonus only on last question
+      if (currentIndex + 1 >= totalQuestions) {
+        try {
+          await awardCompletionBonus("reorder");
+        } catch (e) {
+          console.error("[XP] reorder completion bonus failed", e);
+        }
+      }
+
       return;
     }
 
