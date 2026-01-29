@@ -94,6 +94,8 @@ async function ensureProgress(tx, userId) {
 }
 
 async function ensureLessonProgress(tx, userId, lessonId) {
+  // If this model doesn't exist in Prisma schema yet, skip safely.
+  if (!tx?.userLessonProgress) return null;
   let row = await tx.userDayProgress.findFirst({
     where: {
       userId,
@@ -494,15 +496,74 @@ router.post("/update", authRequired, async (req, res) => {
       // 5) optional: only on quiz completion -> mark lesson complete + unlock next
       let lessonPayload = null;
 
+      // Optional: only on quiz completion -> mark lesson complete + unlock next
       if (completedQuiz) {
         if (Number.isNaN(lessonIdNum) || lessonIdNum <= 0) {
           lessonPayload = { skipped: true, reason: "lessonId missing/invalid" };
         } else {
-          let lp = await ensureLessonProgress(tx, userId, lessonIdNum);
+          // If Prisma schema doesn't have these models yet, skip safely.
+          if (!tx?.lesson || !tx?.unlockedLesson || !tx?.userLessonProgress) {
+            lessonPayload = { skipped: true, reason: "unlock models not in schema yet" };
+          } else {
+            // userLessonProgress might still be absent for some users; ensureLessonProgress returns null if model missing
+            let lp = await ensureLessonProgress(tx, userId, lessonIdNum);
+
+            // If ensureLessonProgress returned null, skip safely
+            if (!lp) {
+              lessonPayload = { skipped: true, reason: "lesson progress table not available" };
+            } else {
+              const wasCompleted = Boolean(lp.completed);
+
+              lp = await tx.userLessonProgress.update({
+                where: { id: lp.id },
+                data: {
+                  completed: true,
+                  attempts: (lp.attempts || 0) + 1,
+                  last_attempt_at: now,
+                },
+              });
+
+              // Unlock next lesson using "order" ONLY if your schema actually has an "order" field.
+              // If your Lesson model doesn't have "order", comment out this entire unlock section.
+              const lesson = await tx.lesson.findUnique({ where: { id: lessonIdNum } });
+
+              let nextLesson = null;
+              if (lesson && typeof lesson.order === "number") {
+                nextLesson = await tx.lesson.findFirst({
+                  where: { order: { gt: lesson.order } },
+                  orderBy: { order: "asc" },
+                });
+
+                if (nextLesson) {
+                  await tx.unlockedLesson.upsert({
+                    where: {
+                      user_id_lesson_id: {
+                        user_id: userId,
+                        lesson_id: nextLesson.id,
+                      },
+                    },
+                    update: {},
+                    create: { user_id: userId, lesson_id: nextLesson.id },
+                  });
+                }
+              }
+
+              const unlocked = await tx.unlockedLesson.findMany({
+                where: { user_id: userId },
+              });
+
+              lessonPayload = {
+                lessonProgress: lp,
+                unlockedLessons: unlocked.map((u) => u.lesson_id),
+                nextLessonId: nextLesson ? nextLesson.id : null,
+              };
+            }
+          }
 
           // ✅ Completion tracking using UserDayProgress (replaces removed UserLessonProgress)
+          // ✅ Completion tracking using UserDayProgress (replaces removed UserLessonProgress)
           if (completedQuiz) {
-            // We need level + dayNumber. If your client sends them, use those.
+            // Need level + dayNumber. If client sends them, use those.
             // Fallback mapping: treat lessonId as dayNumber, and mode as level bucket.
             const level =
               mode === "beginner"
@@ -514,6 +575,32 @@ router.post("/update", authRequired, async (req, res) => {
                     : "BEGINNER";
 
             const dayNumber = lessonIdNum || 1;
+
+            // If schema/table not present, skip safely (prevents tx.userDayProgress undefined)
+            if (!tx?.userDayProgress) {
+              // don't crash completion
+            } else {
+              await tx.userDayProgress.upsert({
+                where: {
+                  userId_level_dayNumber: {
+                    userId,
+                    level,
+                    dayNumber,
+                  },
+                },
+                update: {
+                  completed: true,
+                  completedAt: now,
+                },
+                create: {
+                  userId,
+                  level,
+                  dayNumber,
+                  completed: true,
+                  completedAt: now,
+                },
+              });
+            }            
 
             const existingDay = await tx.userDayProgress.findFirst({
               where: { userId, level, dayNumber },
@@ -549,47 +636,47 @@ router.post("/update", authRequired, async (req, res) => {
         }
 
         if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
-            lessonPayload = { skipped: true, reason: "lessonId missing/invalid" };
-          } else {
-            const lesson = await tx.lesson.findUnique({
-              where: { id: lessonIdNum },
+          lessonPayload = { skipped: true, reason: "lessonId missing/invalid" };
+        } else {
+          const lesson = await tx.lesson.findUnique({
+            where: { id: lessonIdNum },
+          });
+
+          let nextLesson = null;
+
+          if (lesson) {
+            nextLesson = await tx.lesson.findFirst({
+              where: { id: { gt: lesson.id } },
+              orderBy: { id: "asc" },
             });
 
-            let nextLesson = null;
-
-            if (lesson) {
-              nextLesson = await tx.lesson.findFirst({
-                where: { id: { gt: lesson.id } },
-                orderBy: { id: "asc" },
-              });
-
-              if (nextLesson) {
-                await tx.unlockedLesson.upsert({
-                  where: {
-                    user_id_lesson_id: {
-                      user_id: userId,
-                      lesson_id: nextLesson.id,
-                    },
+            if (nextLesson) {
+              await tx.unlockedLesson.upsert({
+                where: {
+                  user_id_lesson_id: {
+                    user_id: userId,
+                    lesson_id: nextLesson.id,
                   },
-                  update: {},
-                  create: { user_id: userId, lesson_id: nextLesson.id },
-                });
-              }
-
-              const unlocked = await tx.unlockedLesson.findMany({
-                where: { user_id: userId },
+                },
+                update: {},
+                create: { user_id: userId, lesson_id: nextLesson.id },
               });
-
-              lessonPayload = {
-                lessonProgress: lp,
-                unlockedLessons: unlocked.map((u) => u.lesson_id),
-                nextLessonId: nextLesson ? nextLesson.id : null,
-              };
-            } else {
-              lessonPayload = { skipped: true, reason: "lesson not found" };
             }
+
+            const unlocked = await tx.unlockedLesson.findMany({
+              where: { user_id: userId },
+            });
+
+            lessonPayload = {
+              lessonProgress: lp,
+              unlockedLessons: unlocked.map((u) => u.lesson_id),
+              nextLessonId: nextLesson ? nextLesson.id : null,
+            };
+          } else {
+            lessonPayload = { skipped: true, reason: "lesson not found" };
           }
         }
+      }
 
       return {
         xpAwarded: xpDelta,
