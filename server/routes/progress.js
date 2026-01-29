@@ -670,35 +670,42 @@ router.post("/update", authRequired, async (req, res) => {
 
             if (
               !tx.unlockedLesson ||
-              typeof tx.unlockedLesson.upsert !== "function"
+              typeof tx.unlockedLesson.upsert !== "function" ||
+              typeof tx.unlockedLesson.findMany !== "function"
             ) {
               console.warn("[unlock] skipped: unlockedLesson model missing");
+
+              // Still return a payload so completion doesn't 500
+              lessonPayload = {
+                lessonProgress: lp,
+                unlockedLessons: [],
+                nextLessonId: nextLesson ? nextLesson.id : null,
+                unlockSkipped: true,
+              };
             } else {
-              // existing unlock code (upsert + findMany)
-            }
-
-            if (nextLesson) {
-              await tx.unlockedLesson.upsert({
-                where: {
-                  user_id_lesson_id: {
-                    user_id: userId,
-                    lesson_id: nextLesson.id,
+              if (nextLesson) {
+                await tx.unlockedLesson.upsert({
+                  where: {
+                    user_id_lesson_id: {
+                      user_id: userId,
+                      lesson_id: nextLesson.id,
+                    },
                   },
-                },
-                update: {},
-                create: { user_id: userId, lesson_id: nextLesson.id },
+                  update: {},
+                  create: { user_id: userId, lesson_id: nextLesson.id },
+                });
+              }
+
+              const unlocked = await tx.unlockedLesson.findMany({
+                where: { user_id: userId },
               });
+
+              lessonPayload = {
+                lessonProgress: lp,
+                unlockedLessons: unlocked.map((u) => u.lesson_id),
+                nextLessonId: nextLesson ? nextLesson.id : null,
+              };
             }
-
-            const unlocked = await tx.unlockedLesson.findMany({
-              where: { user_id: userId },
-            });
-
-            lessonPayload = {
-              lessonProgress: lp,
-              unlockedLessons: unlocked.map((u) => u.lesson_id),
-              nextLessonId: nextLesson ? nextLesson.id : null,
-            };
           } else {
             lessonPayload = { skipped: true, reason: "lesson not found" };
           }
