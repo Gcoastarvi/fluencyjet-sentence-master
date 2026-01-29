@@ -96,95 +96,165 @@ router.post("/bulk", async (req, res) => {
       });
     }
 
-    // Optional: wipe existing quizzes for this lesson+mode (clean re-import)
-    if (replace === true) {
-      await prisma.quiz.deleteMany({
-        where: { lessonId: lessonIdNum, type: modeStr },
+    // ✅ NEW: Write into PracticeDay + PracticeExercise (NOT Quiz)
+    // Optional: wipe existing PracticeExercises for this lessonId(dayNumber)+mode
+    // Idempotent behavior without replace: upsert by (practiceDayId + type + orderIndex)
+
+    const now = new Date();
+
+    // 1) Resolve level + title from Lesson (best), fallback to BEGINNER
+    let level = "BEGINNER";
+    let titleEn = `Lesson ${lessonIdNum}`;
+
+    try {
+      const lesson = await prisma.lesson.findUnique({
+        where: { id: lessonIdNum },
+        select: { title: true, difficulty: true },
+      });
+
+      if (lesson?.title) titleEn = lesson.title;
+
+      const d = String(lesson?.difficulty || "")
+        .trim()
+        .toLowerCase();
+      if (d.includes("inter")) level = "INTERMEDIATE";
+      else if (d.includes("adv")) level = "ADVANCED";
+      else if (d.includes("beg") || d.includes("basic")) level = "BEGINNER";
+    } catch (e) {
+      // safe fallback
+    }
+
+    // 2) Find-or-create PracticeDay (maps lessonId => dayNumber forever)
+    let day = await prisma.practiceDay.findFirst({
+      where: { level, dayNumber: lessonIdNum },
+      select: { id: true },
+    });
+
+    if (!day) {
+      day = await prisma.practiceDay.create({
+        data: {
+          level,
+          dayNumber: lessonIdNum,
+          titleEn,
+          titleTa: "",
+          isActive: true,
+        },
+        select: { id: true },
       });
     }
 
-    if (replace) {
-      const del = await prisma.quiz.deleteMany({
-        where: { lessonId: lessonIdNum, type: modeStr },
+    // 3) Safety: avoid timeouts
+    if (rows.length > 5000) {
+      return res.status(400).json({
+        ok: false,
+        error: "Too many rows in one bulk import (max 5000). Split the CSV.",
+        debug: { rows: rows.length },
       });
+    }
 
-      // Clear duplicates set because we just wiped the lesson+mode
+    // 4) Optional replace: delete only this day+mode
+    if (replace === true) {
+      const del = await prisma.practiceExercise.deleteMany({
+        where: { practiceDayId: day.id, type: modeStr },
+      });
       console.log(
-        `[adminExercises] replace=1 deleted ${del.count} rows for lessonId=${lessonIdNum} mode=${modeStr}`,
+        `[adminExercises] replace=1 deleted ${del.count} practice rows for dayNumber=${lessonIdNum} level=${level} mode=${modeStr}`,
       );
     }
 
-    // Fetch existing sourceKeys to prevent duplicates (idempotent import)
-    const existing = await prisma.quiz.findMany({
-      where: { lessonId: lessonIdNum, type: modeStr },
-      select: { data: true },
-    });
-
-    const existingKeys = new Set(
-      existing
-        .map((q) => q?.data?.sourceKey)
-        .filter((k) => typeof k === "string" && k.length > 0),
-    );
-
-    // Insert into Quiz table (this exists in your schema)
-    const rowsToInsert = [];
+    // 5) Upsert rows by (practiceDayId + type + orderIndex)
+    // We do loop-upsert (safe and truly idempotent even without unique constraints)
+    let inserted = 0;
+    let updated = 0;
     let skipped = 0;
 
-    rows.forEach((r, i) => {
+    const seenOrder = new Set();
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const tamil = String(r.tamil || "").trim();
       const english = String(r.english || "").trim();
-      const words = english.split(/\s+/).filter(Boolean);
 
       const orderIndex = Number(r.orderIndex || i + 1) || i + 1;
 
+      if (
+        !tamil ||
+        !english ||
+        !Number.isFinite(orderIndex) ||
+        orderIndex <= 0
+      ) {
+        skipped++;
+        continue;
+      }
+
+      // Prevent duplicates inside the same payload
+      const keyInPayload = `${modeStr}:${orderIndex}`;
+      if (seenOrder.has(keyInPayload)) {
+        skipped++;
+        continue;
+      }
+      seenOrder.add(keyInPayload);
+
+      const words = english.split(/\s+/).filter(Boolean);
+
+      // Stable idempotency key (stored inside expected for future-proofing)
       const sourceKey = makeSourceKey({
         lessonId: lessonIdNum,
         mode: modeStr,
         orderIndex,
-        tamil: r.tamil,
+        tamil,
         english,
       });
 
-      if (existingKeys.has(sourceKey)) {
-        skipped++;
-        return;
+      const expected = {
+        mode: modeStr,
+        words,
+        answer: english,
+        sourceKey,
+      };
+
+      const existing = await prisma.practiceExercise.findFirst({
+        where: {
+          practiceDayId: day.id,
+          type: modeStr,
+          orderIndex,
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        await prisma.practiceExercise.update({
+          where: { id: existing.id },
+          data: {
+            promptTa: tamil,
+            expected,
+            xp: Number(r.xp ?? xpNum) || xpNum,
+          },
+        });
+        updated++;
+      } else {
+        await prisma.practiceExercise.create({
+          data: {
+            practiceDayId: day.id,
+            type: modeStr,
+            promptTa: tamil,
+            expected,
+            xp: Number(r.xp ?? xpNum) || xpNum,
+            orderIndex,
+          },
+        });
+        inserted++;
       }
-
-      rowsToInsert.push({
-        lessonId: lessonIdNum,
-        type: modeStr,
-        prompt: r.tamil,
-        question: english,
-        xpReward: Number(r.xp || xpNum) || xpNum,
-        data:
-          modeStr === "reorder"
-            ? { correctOrder: words, orderIndex, sourceKey }
-            : { orderIndex, sourceKey },
-      });
-    });
-
-    if (rowsToInsert.length === 0) {
-      return res.json({
-        ok: true,
-        inserted: 0,
-        skipped,
-        message: "All exercises already exist (skipped duplicates).",
-      });
     }
-
-    // ✅ Safety: prevent accidental huge imports (helps avoid Railway timeouts)
-    if (rowsToInsert.length > 5000) {
-      return res.status(400).json({
-        ok: false,
-        error: "Too many rows in one bulk import (max 5000). Split the CSV.",
-        debug: { rowsToInsert: rowsToInsert.length, skipped },
-      });
-    }
-
-    const created = await prisma.quiz.createMany({ data: rowsToInsert });
 
     return res.json({
       ok: true,
-      inserted: created.count,
+      lessonId: lessonIdNum,
+      dayNumber: lessonIdNum,
+      level,
+      mode: modeStr,
+      inserted,
+      updated,
       skipped,
     });
   } catch (err) {
