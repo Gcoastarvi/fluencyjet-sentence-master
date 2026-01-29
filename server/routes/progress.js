@@ -503,14 +503,20 @@ router.post("/update", authRequired, async (req, res) => {
         } else {
           // If Prisma schema doesn't have these models yet, skip safely.
           if (!tx?.lesson || !tx?.unlockedLesson || !tx?.userLessonProgress) {
-            lessonPayload = { skipped: true, reason: "unlock models not in schema yet" };
+            lessonPayload = {
+              skipped: true,
+              reason: "unlock models not in schema yet",
+            };
           } else {
             // userLessonProgress might still be absent for some users; ensureLessonProgress returns null if model missing
             let lp = await ensureLessonProgress(tx, userId, lessonIdNum);
 
             // If ensureLessonProgress returned null, skip safely
             if (!lp) {
-              lessonPayload = { skipped: true, reason: "lesson progress table not available" };
+              lessonPayload = {
+                skipped: true,
+                reason: "lesson progress table not available",
+              };
             } else {
               const wasCompleted = Boolean(lp.completed);
 
@@ -525,7 +531,9 @@ router.post("/update", authRequired, async (req, res) => {
 
               // Unlock next lesson using "order" ONLY if your schema actually has an "order" field.
               // If your Lesson model doesn't have "order", comment out this entire unlock section.
-              const lesson = await tx.lesson.findUnique({ where: { id: lessonIdNum } });
+              const lesson = await tx.lesson.findUnique({
+                where: { id: lessonIdNum },
+              });
 
               let nextLesson = null;
               if (lesson && typeof lesson.order === "number") {
@@ -533,6 +541,17 @@ router.post("/update", authRequired, async (req, res) => {
                   where: { order: { gt: lesson.order } },
                   orderBy: { order: "asc" },
                 });
+
+                if (
+                  !tx.unlockedLesson ||
+                  typeof tx.unlockedLesson.upsert !== "function"
+                ) {
+                  console.warn(
+                    "[unlock] skipped: unlockedLesson model missing",
+                  );
+                } else {
+                  // existing unlock code (upsert + findMany)
+                }
 
                 if (nextLesson) {
                   await tx.unlockedLesson.upsert({
@@ -559,7 +578,7 @@ router.post("/update", authRequired, async (req, res) => {
               };
             }
           }
-          
+
           // ✅ Completion tracking using UserDayProgress (replaces removed UserLessonProgress)
           if (completedQuiz) {
             // Need level + dayNumber. If client sends them, use those.
@@ -590,10 +609,16 @@ router.post("/update", authRequired, async (req, res) => {
                 });
               } else {
                 await tx.userDayProgress.create({
-                  data: { userId, level, dayNumber, completed: true, completedAt: now },
+                  data: {
+                    userId,
+                    level,
+                    dayNumber,
+                    completed: true,
+                    completedAt: now,
+                  },
                 });
               }
-            }            
+            }
 
             const existingDay = await tx.userDayProgress.findFirst({
               where: { userId, level, dayNumber },
@@ -642,6 +667,15 @@ router.post("/update", authRequired, async (req, res) => {
               where: { id: { gt: lesson.id } },
               orderBy: { id: "asc" },
             });
+
+            if (
+              !tx.unlockedLesson ||
+              typeof tx.unlockedLesson.upsert !== "function"
+            ) {
+              console.warn("[unlock] skipped: unlockedLesson model missing");
+            } else {
+              // existing unlock code (upsert + findMany)
+            }
 
             if (nextLesson) {
               await tx.unlockedLesson.upsert({
