@@ -677,7 +677,6 @@ router.post("/update", authRequired, async (req, res) => {
 
               // Still return a payload so completion doesn't 500
               lessonPayload = {
-                lessonProgress: lp,
                 unlockedLessons: [],
                 nextLessonId: nextLesson ? nextLesson.id : null,
                 unlockSkipped: true,
@@ -701,7 +700,6 @@ router.post("/update", authRequired, async (req, res) => {
               });
 
               lessonPayload = {
-                lessonProgress: lp,
                 unlockedLessons: unlocked.map((u) => u.lesson_id),
                 nextLessonId: nextLesson ? nextLesson.id : null,
               };
