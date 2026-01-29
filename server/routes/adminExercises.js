@@ -275,8 +275,12 @@ router.post("/bulk", async (req, res) => {
       skipped,
     });
   } catch (err) {
-    console.error("[adminExercises] bulk import error:", err);
-    return res.status(500).json({ ok: false, error: "Server error" });
+    console.error("[adminExercises] bulk import error:", err?.stack || err);
+    return res.status(500).json({
+      ok: false,
+      error: "Server error",
+      details: String(err?.message || err),
+    });
   }
 });
 
