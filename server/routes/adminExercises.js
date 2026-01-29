@@ -28,6 +28,8 @@ function makeSourceKey({ lessonId, mode, orderIndex, tamil, english }) {
  */
 router.post("/bulk", async (req, res) => {
   try {
+    const body = req.body ?? {};
+
     // Optional: replace existing rows for this lesson+mode before inserting
     const replace =
       String(req.query.replace || req.query.replaceMode || "")
@@ -37,22 +39,37 @@ router.post("/bulk", async (req, res) => {
         .trim()
         .toLowerCase() === "true";
 
-    const lessonIdNum = Number(lessonId);
-    const modeStr = String(mode || "").toLowerCase();
-    const xpNum = Number(xp || 150);
+    // Accept both legacy + new payload shapes
+    const lessonIdNum = Number(
+      body.lessonId ?? body.lesson_id ?? body.lessonIdNum ?? 0,
+    );
+    const modeStr = String(body.mode ?? body.practiceType ?? body.type ?? "")
+      .trim()
+      .toLowerCase();
+    const xpNum = Number(body.xp ?? 150) || 150;
+
+    const items = Array.isArray(body.items)
+      ? body.items
+      : Array.isArray(body.rows)
+        ? body.rows
+        : [];
+    const text = typeof body.text === "string" ? body.text : "";
 
     if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
       return res.status(400).json({ ok: false, error: "Invalid lessonId" });
     }
-    if (!["typing", "reorder"].includes(modeStr)) {
+
+    // ✅ Future-proof: allow upcoming modes too
+    if (!["typing", "reorder", "audio", "cloze"].includes(modeStr)) {
       return res.status(400).json({ ok: false, error: "Invalid mode" });
     }
+
     const hasItems = Array.isArray(items) && items.length > 0;
 
-    if (!hasItems && (typeof text !== "string" || !text.trim())) {
+    if (!hasItems && (!text || !text.trim())) {
       return res.status(400).json({
         ok: false,
-        error: "Missing text (or provide items[])",
+        error: "Missing text (or provide items[] / rows[])",
       });
     }
 
