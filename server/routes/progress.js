@@ -399,7 +399,17 @@ router.post("/update", authRequired, async (req, res) => {
     const mode = rawMode || practiceType;
 
     const attemptNo = Number(body.attemptNo ?? body.attempt_no ?? 1) || 1;
-    const isCorrect = Boolean(body.isCorrect);
+
+    const event = String(body.event || "")
+      .trim()
+      .toLowerCase();
+
+    // Treat "exercise_correct" as correct even if client didn't send isCorrect:true
+    const isCorrect =
+      body.isCorrect !== undefined
+        ? Boolean(body.isCorrect)
+        : event === "exercise_correct";
+
     const completedQuiz = Boolean(body.completedQuiz);
 
     const questionIdRaw =
@@ -423,9 +433,16 @@ router.post("/update", authRequired, async (req, res) => {
 
     // If client sends xp, accept it only up to allowed max for that mode (prevents cheating)
     const requestedXp = Number(body.xp ?? 0) || 0;
-    const maxXp = XP_BY_TYPE[practiceType] ?? 100;
+    const maxXp = Number(XP_BY_TYPE?.[practiceType] ?? 100) || 100;
 
-    const baseXP = isCorrect ? Math.min(Math.max(requestedXp, 0), maxXp) : 0;
+    const eventName = String(body.event ?? "")
+      .trim()
+      .toLowerCase();
+    const shouldAward = eventName
+      ? eventName === "exercise_correct" && isCorrect
+      : isCorrect;
+
+    const baseXP = shouldAward ? Math.min(Math.max(requestedXp, 0), maxXp) : 0;
 
     const result = await prisma.$transaction(async (tx) => {
       // 1) ensure user progress row exists
