@@ -362,18 +362,45 @@ router.post("/update", authRequired, async (req, res) => {
         .json({ ok: false, message: "attemptId is required" });
     }
 
-    // normalize mode safely (avoid "mode is not defined")
-    const mode = String(
-      body.mode || body.practiceType || body.practice_type || "",
+    // normalize mode + practiceType safely
+    const rawMode = String(
+      body.mode ?? body.practiceType ?? body.practice_type ?? "",
     )
       .trim()
       .toLowerCase();
 
+    const rawType = String(
+      body.practiceType ?? body.practice_type ?? body.mode ?? "",
+    )
+      .trim()
+      .toLowerCase();
+
+    // normalize to the 4 known practice types
+    const practiceType =
+      rawType === "typing"
+        ? "typing"
+        : rawType === "reorder"
+          ? "reorder"
+          : rawType === "cloze"
+            ? "cloze"
+            : rawType === "audio"
+              ? "audio"
+              : rawMode === "typing"
+                ? "typing"
+                : rawMode === "reorder"
+                  ? "reorder"
+                  : rawMode === "cloze"
+                    ? "cloze"
+                    : rawMode === "audio"
+                      ? "audio"
+                      : "reorder";
+
+    // keep `mode` for any other logic (level mapping etc.)
+    const mode = rawMode || practiceType;
+
     const attemptNo = Number(body.attemptNo ?? body.attempt_no ?? 1) || 1;
     const isCorrect = Boolean(body.isCorrect);
     const completedQuiz = Boolean(body.completedQuiz);
-
-    const practiceType = String(body.practiceType || body.mode || "reorder");
 
     const questionIdRaw =
       body.questionId ?? body.questionKey ?? body.question_id ?? "";
@@ -417,6 +444,16 @@ router.post("/update", authRequired, async (req, res) => {
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
         select: { id: true },
+      });
+
+      console.log("[progress/update]", {
+        event: body.event,
+        xp: body.xp,
+        mode: body.mode,
+        practiceType: body.practiceType,
+        practice_type: body.practice_type,
+        lessonId: body.lessonId,
+        exerciseId: body.exerciseId,
       });
 
       // Keep type length safe (type column usually limited)
