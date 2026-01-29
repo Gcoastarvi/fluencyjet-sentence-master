@@ -559,8 +559,7 @@ router.post("/update", authRequired, async (req, res) => {
               };
             }
           }
-
-          // ✅ Completion tracking using UserDayProgress (replaces removed UserLessonProgress)
+          
           // ✅ Completion tracking using UserDayProgress (replaces removed UserLessonProgress)
           if (completedQuiz) {
             // Need level + dayNumber. If client sends them, use those.
@@ -580,26 +579,20 @@ router.post("/update", authRequired, async (req, res) => {
             if (!tx?.userDayProgress) {
               // don't crash completion
             } else {
-              await tx.userDayProgress.upsert({
-                where: {
-                  userId_level_dayNumber: {
-                    userId,
-                    level,
-                    dayNumber,
-                  },
-                },
-                update: {
-                  completed: true,
-                  completedAt: now,
-                },
-                create: {
-                  userId,
-                  level,
-                  dayNumber,
-                  completed: true,
-                  completedAt: now,
-                },
+              const existing = await tx.userDayProgress.findFirst({
+                where: { userId, level, dayNumber },
               });
+
+              if (existing) {
+                await tx.userDayProgress.update({
+                  where: { id: existing.id },
+                  data: { completed: true, completedAt: now },
+                });
+              } else {
+                await tx.userDayProgress.create({
+                  data: { userId, level, dayNumber, completed: true, completedAt: now },
+                });
+              }
             }            
 
             const existingDay = await tx.userDayProgress.findFirst({
