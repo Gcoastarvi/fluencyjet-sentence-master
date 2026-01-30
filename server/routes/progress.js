@@ -473,22 +473,27 @@ router.post("/update", authRequired, async (req, res) => {
       const lessonIdNum = Number(body.lessonId ?? body.lesson_id ?? 0) || 0;
       const attemptNo = Number(body.attemptNo ?? body.attempt_no ?? 1) || 1;
 
-      const eventKey = [
+      // Build a verbose raw key (for debugging / uniqueness)
+      const rawKey = [
         "xp",
         userId,
-        lessonIdNum,
-        practiceType, // already normalized earlier in your route
+        Number.isFinite(lessonIdNum) ? lessonIdNum : 0,
+        String(practiceType || ""),
         String(body.event || "unknown"),
-        exerciseIdNum,
-        attemptNo,
-        attemptId,
+        String(exerciseIdNum || ""),
+        Number(attemptNo || 1),
+        String(attemptId || ""),
       ].join("|");
+
+      // ✅ Store ONLY a short hash in DB (prevents Prisma P2000 "too long")
+      const eventKey = hashKey("xp", rawKey, 50);
 
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
         select: { id: true },
       });
 
+      console.log("[XPDBG] rawKey", rawKey);
       console.log("[XPDBG] eventKey", eventKey);
 
       console.log("[progress/update]", {
