@@ -72,10 +72,11 @@ function normalizeEventType(input) {
   return "GENERIC";
 }
 
-function hashKey(prefix, raw, maxLen = 50) {
-  const h = crypto.createHash("sha1").update(String(raw)).digest("hex"); // 40 chars
-  const key = `${prefix}_${h}`; // "qxp_" + 40 = 44 chars
-  return key.length > maxLen ? key.slice(0, maxLen) : key;
+// Fixed-length idempotency key (safe for DB varchar limits)
+function hashKey(prefix, raw) {
+  const input = String(raw ?? "");
+  const digest = crypto.createHash("sha1").update(input).digest("hex"); // 40 chars
+  return `${prefix}_${digest}`; // ~43 chars total
 }
 
 async function ensureProgress(tx, userId) {
