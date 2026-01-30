@@ -803,20 +803,22 @@ export default function SentencePractice() {
 
   function loadNextQuestion() {
     // reset transient UI for next question
+    setEarnedXP(0);
     setShowXPToast(false);
     setStatus("idle");
     setFeedback("");
     setShowHint(false);
     setTypedAnswer("");
     setWrongIndexes([]);
+    setRevealEnglish(false);
+
+    // mode-specific resets
+    setAnswer([]);
+    setTiles([]);
+
+    // go next
+    setCurrentIndex((prev) => prev + 1);
   }
-
-  // mode-specific resets
-  setAnswer([]);
-  setTiles([]);
-
-  setCurrentIndex((prev) => prev + 1);
-}
 
 function addToAnswer(word) {
   if (status === "correct" || status === "reveal") return;
