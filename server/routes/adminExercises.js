@@ -10,6 +10,13 @@ function makeSourceKey({ lessonId, mode, orderIndex, tamil, english }) {
       .toLowerCase()
       .replace(/\s+/g, " ");
 
+  const EXERCISE_TYPE = {
+    typing: "MAKE_SENTENCE",
+    reorder: "DRAG_DROP",
+    cloze: "FILL_BLANK",
+    audio: "TRANSLATE", // or MAKE_SENTENCE if you prefer; see note below
+  };
+
   return [
     `L${lessonId}`,
     `M${mode}`,
@@ -46,6 +53,8 @@ router.post("/bulk", async (req, res) => {
     const modeStr = String(body.mode ?? body.practiceType ?? body.type ?? "")
       .trim()
       .toLowerCase();
+
+    const exerciseType = EXERCISE_TYPE[modeStr];
     const xpNum = Number(body.xp ?? 150) || 150;
 
     const items = Array.isArray(body.items)
@@ -60,7 +69,7 @@ router.post("/bulk", async (req, res) => {
     }
 
     // ✅ Future-proof: allow upcoming modes too
-    if (!["typing", "reorder", "audio", "cloze"].includes(modeStr)) {
+    if (!exerciseType) {
       return res.status(400).json({ ok: false, error: "Invalid mode" });
     }
 
@@ -233,7 +242,7 @@ router.post("/bulk", async (req, res) => {
       const existing = await prisma.practiceExercise.findFirst({
         where: {
           practiceDayId: day.id,
-          type: modeStr,
+          type: exerciseType,
           orderIndex,
         },
         select: { id: true },
@@ -246,6 +255,7 @@ router.post("/bulk", async (req, res) => {
             promptTa: tamil,
             expected,
             xp: Number(r.xp ?? xpNum) || xpNum,
+            orderIndex,
           },
         });
         updated++;
@@ -253,7 +263,7 @@ router.post("/bulk", async (req, res) => {
         await prisma.practiceExercise.create({
           data: {
             practiceDayId: day.id,
-            type: modeStr,
+            type: exerciseType,
             promptTa: tamil,
             expected,
             xp: Number(r.xp ?? xpNum) || xpNum,
