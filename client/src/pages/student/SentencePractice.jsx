@@ -820,107 +820,107 @@ export default function SentencePractice() {
     setCurrentIndex((prev) => prev + 1);
   }
 
-function addToAnswer(word) {
-  if (status === "correct" || status === "reveal") return;
-  setAnswer((prev) => [...prev, word]);
-  setTiles((prev) => {
-    const idx = prev.indexOf(word);
-    if (idx === -1) return prev;
-    const next = [...prev];
-    next.splice(idx, 1);
-    return next;
-  });
-}
-
-function playCorrectSound() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = 880;
-    gain.gain.value = 0.05;
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.12);
-  } catch (e) {
-    // ignore if blocked
-  }
-}
-
-// ===== REORDER: check correctness =====
-const checkReorderAnswer = async () => {
-  if (!current) return;
-  if (status === "correct" || status === "reveal") return;
-
-  // answer: your selected words state
-  const userArr = toTextArray(answer);
-  const correctArr = toTextArray(correctOrderArr);
-
-  const isCorrect = arraysEqualStrict(userArr, correctArr);
-
-  // highlight wrong positions (only when wrong)
-  if (!isCorrect) {
-    const wrong = [];
-    const L = Math.max(userArr.length, correctArr.length);
-    for (let i = 0; i < L; i++) {
-      if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
-    }
-    setWrongIndexes(wrong);
-  } else {
-    setWrongIndexes([]);
+  function addToAnswer(word) {
+    if (status === "correct" || status === "reveal") return;
+    setAnswer((prev) => [...prev, word]);
+    setTiles((prev) => {
+      const idx = prev.indexOf(word);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next.splice(idx, 1);
+      return next;
+    });
   }
 
-  console.log("[DBG] REORDER userArr   =", userArr);
-  console.log("[DBG] REORDER correctArr=", correctArr);
-  console.log("[DBG] REORDER isCorrect =", isCorrect);
-
-  if (isCorrect) {
-    const xp = Number(current?.xp ?? 150) || 150;
-
-    // 1) UI feedback immediately
-    playCorrectSound?.();
-    setStatus("correct");
-
-    // 2) Commit XP to backend using universal pipeline
-    // 2) Commit XP to backend using universal pipeline
+  function playCorrectSound() {
     try {
-      const result = await awardXPEvent({
-        xp,
-        event: "exercise_correct",
-        mode: "reorder", // ✅ IMPORTANT: literal, avoids TS issues
-        lessonId: Number(lessonId),
-        exerciseId: current?.id,
-      });
-
-      const awarded = Number(result?.awarded ?? 0) || 0;
-
-      if (result?.ok && awarded > 0) {
-        setEarnedXP(awarded);
-        setShowXPToast(true);
-      } else {
-        console.error("[XP] reorder: XP not awarded", result);
-      }
-
-      // 3) Completion bonus only on last question
-      if (currentIndex + 1 >= totalQuestions) {
-        try {
-          await awardCompletionBonus("reorder");
-        } catch (e) {
-          console.error("[XP] reorder completion bonus failed", e);
-        }
-      }
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.value = 0.05;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
     } catch (e) {
-      console.error("[XP] reorder awardXPEvent failed", e);
+      // ignore if blocked
+    }
+  }
+
+  // ===== REORDER: check correctness =====
+  const checkReorderAnswer = async () => {
+    if (!current) return;
+    if (status === "correct" || status === "reveal") return;
+
+    // answer: your selected words state
+    const userArr = toTextArray(answer);
+    const correctArr = toTextArray(correctOrderArr);
+
+    const isCorrect = arraysEqualStrict(userArr, correctArr);
+
+    // highlight wrong positions (only when wrong)
+    if (!isCorrect) {
+      const wrong = [];
+      const L = Math.max(userArr.length, correctArr.length);
+      for (let i = 0; i < L; i++) {
+        if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
+      }
+      setWrongIndexes(wrong);
+    } else {
+      setWrongIndexes([]);
     }
 
-    // important: stop here; do NOT fall through to wrong
-    return;
+    console.log("[DBG] REORDER userArr   =", userArr);
+    console.log("[DBG] REORDER correctArr=", correctArr);
+    console.log("[DBG] REORDER isCorrect =", isCorrect);
 
-    setStatus("wrong");
-  }
-};
+    if (isCorrect) {
+      const xp = Number(current?.xp ?? 150) || 150;
+
+      // 1) UI feedback immediately
+      playCorrectSound?.();
+      setStatus("correct");
+
+      // 2) Commit XP to backend using universal pipeline
+      // 2) Commit XP to backend using universal pipeline
+      try {
+        const result = await awardXPEvent({
+          xp,
+          event: "exercise_correct",
+          mode: "reorder", // ✅ IMPORTANT: literal, avoids TS issues
+          lessonId: Number(lessonId),
+          exerciseId: current?.id,
+        });
+
+        const awarded = Number(result?.awarded ?? 0) || 0;
+
+        if (result?.ok && awarded > 0) {
+          setEarnedXP(awarded);
+          setShowXPToast(true);
+        } else {
+          console.error("[XP] reorder: XP not awarded", result);
+        }
+
+        // 3) Completion bonus only on last question
+        if (currentIndex + 1 >= totalQuestions) {
+          try {
+            await awardCompletionBonus("reorder");
+          } catch (e) {
+            console.error("[XP] reorder completion bonus failed", e);
+          }
+        }
+      } catch (e) {
+        console.error("[XP] reorder awardXPEvent failed", e);
+      }
+
+      // important: stop here; do NOT fall through to wrong
+      return;
+
+      setStatus("wrong");
+    }
+  };
 
   // ✅ Typing helper: tap a word chip to append into typedAnswer
   function addToTyped(word) {
@@ -1097,12 +1097,13 @@ const checkReorderAnswer = async () => {
           exerciseId: current?.Question?.id ?? current?.id, // use current?.id if you don't have currentQuestion
         });
 
-        if (result?.ok && Number(result.awarded ?? 0) > 0) {
-          const shown = Number(result.awarded);
-          setEarnedXP(shown);
+        const awarded = Number(result?.awarded ?? result?.xpAwarded ?? 0) || 0;
+
+        if (result?.ok && awarded > 0) {
+          setEarnedXP(awarded);
           setShowXPToast(true);
         } else {
-          console.error("[XP] typing: XP not awarded");
+          console.error("[XP] typing: XP not awarded", result);
         }
 
         // Run XP + completion bonus asynchronously
@@ -1911,4 +1912,4 @@ const checkReorderAnswer = async () => {
       )}
     </div>
   );
-};
+}

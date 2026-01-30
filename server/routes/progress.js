@@ -358,11 +358,19 @@ router.post("/update", authRequired, async (req, res) => {
     // --- attemptId normalize (idempotency) ---
     // Accept camel + snake; if missing, generate a safe server fallback.
     // This prevents "all answers collapse to the same eventKey".
-    const rawAttemptId = body.attemptId ?? body.attempt_id ?? "";
+    const rawAttemptId = String(body.attemptId ?? body.attempt_id ?? "").trim();
+
+    const lessonIdForAttempt =
+      Number(body.lessonId ?? body.lesson_id ?? 0) || 0;
+    const exerciseIdForAttempt =
+      String(body.exerciseId ?? body.exercise_id ?? "").trim() || "0";
+    const attemptNoForAttempt =
+      Number(body.attemptNo ?? body.attempt_no ?? 1) || 1;
+
+    // Deterministic fallback => idempotency works even if client forgets attemptId
     const attemptId =
-      typeof rawAttemptId === "string" && rawAttemptId.trim()
-        ? rawAttemptId.trim()
-        : `srv_${userId}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      rawAttemptId ||
+      `u${userId}-l${lessonIdForAttempt}-e${exerciseIdForAttempt}-a${attemptNoForAttempt}`;
 
     // normalize mode + practiceType safely
     const rawMode = String(
@@ -517,11 +525,11 @@ router.post("/update", authRequired, async (req, res) => {
           })
         : null;
 
-      const xpDelta =
+      const rawDelta =
         existing || existingQuestionAward ? 0 : baseXP + streakBonus;
+      const xpDelta = Number.isFinite(rawDelta) ? Math.trunc(rawDelta) : 0;
 
       if (!existing && !existingQuestionAward && xpDelta > 0) {
-        // award xp (attempt-level idempotency)
         await tx.xpEvent.create({
           data: {
             user_id: userId,
@@ -784,7 +792,8 @@ router.post("/update", authRequired, async (req, res) => {
       }
 
       return {
-        xpAwarded: xpDelta,
+        awarded: xpDelta, // ✅ client expects this
+        xpAwarded: xpDelta, // ✅ keep backward compatibility
         streak: updatedProgress.streak,
         totalXP: updatedProgress.xp,
         lesson: lessonPayload,
