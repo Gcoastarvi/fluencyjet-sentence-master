@@ -920,6 +920,7 @@ const checkReorderAnswer = async () => {
 
     setStatus("wrong");
   }
+};
 
   // ✅ Typing helper: tap a word chip to append into typedAnswer
   function addToTyped(word) {
