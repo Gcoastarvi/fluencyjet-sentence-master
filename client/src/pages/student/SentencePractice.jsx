@@ -811,94 +811,95 @@ export default function SentencePractice() {
     setWrongIndexes([]);
   }
 
-    // mode-specific resets
-    setAnswer([]);
-    setTiles([]);
+  // mode-specific resets
+  setAnswer([]);
+  setTiles([]);
 
-    setCurrentIndex((prev) => prev + 1);
+  setCurrentIndex((prev) => prev + 1);
+}
+
+function addToAnswer(word) {
+  if (status === "correct" || status === "reveal") return;
+  setAnswer((prev) => [...prev, word]);
+  setTiles((prev) => {
+    const idx = prev.indexOf(word);
+    if (idx === -1) return prev;
+    const next = [...prev];
+    next.splice(idx, 1);
+    return next;
+  });
+}
+
+function playCorrectSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 880;
+    gain.gain.value = 0.05;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch (e) {
+    // ignore if blocked
+  }
+}
+
+// ===== REORDER: check correctness =====
+const checkReorderAnswer = async () => {
+  if (!current) return;
+  if (status === "correct" || status === "reveal") return;
+
+  // answer: your selected words state
+  const userArr = toTextArray(answer);
+  const correctArr = toTextArray(correctOrderArr);
+
+  const isCorrect = arraysEqualStrict(userArr, correctArr);
+
+  // highlight wrong positions (only when wrong)
+  if (!isCorrect) {
+    const wrong = [];
+    const L = Math.max(userArr.length, correctArr.length);
+    for (let i = 0; i < L; i++) {
+      if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
+    }
+    setWrongIndexes(wrong);
+  } else {
+    setWrongIndexes([]);
   }
 
-  function addToAnswer(word) {
-    if (status === "correct" || status === "reveal") return;
-    setAnswer((prev) => [...prev, word]);
-    setTiles((prev) => {
-      const idx = prev.indexOf(word);
-      if (idx === -1) return prev;
-      const next = [...prev];
-      next.splice(idx, 1);
-      return next;
-    });
-  }
+  console.log("[DBG] REORDER userArr   =", userArr);
+  console.log("[DBG] REORDER correctArr=", correctArr);
+  console.log("[DBG] REORDER isCorrect =", isCorrect);
 
-  function playCorrectSound() {
+  if (isCorrect) {
+    const xp = Number(current?.xp ?? 150) || 150;
+
+    // 1) UI feedback immediately
+    playCorrectSound?.();
+    setStatus("correct");
+
+    // 2) Commit XP to backend using universal pipeline
+    // 2) Commit XP to backend using universal pipeline
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 880;
-      gain.gain.value = 0.05;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.12);
-    } catch (e) {
-      // ignore if blocked
-    }
-  }
+      const result = await awardXPEvent({
+        xp,
+        event: "exercise_correct",
+        mode: "reorder", // ✅ IMPORTANT: literal, avoids TS issues
+        lessonId: Number(lessonId),
+        exerciseId: current?.id,
+      });
 
-  // ===== REORDER: check correctness =====
-  const checkReorderAnswer = async () => {
-    if (!current) return;
-    if (status === "correct" || status === "reveal") return;
+      const awarded = Number(result?.awarded ?? 0) || 0;
 
-    // answer: your selected words state
-    const userArr = toTextArray(answer);
-    const correctArr = toTextArray(correctOrderArr);
-
-    const isCorrect = arraysEqualStrict(userArr, correctArr);
-
-    // highlight wrong positions (only when wrong)
-    if (!isCorrect) {
-      const wrong = [];
-      const L = Math.max(userArr.length, correctArr.length);
-      for (let i = 0; i < L; i++) {
-        if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
+      if (result?.ok && awarded > 0) {
+        setEarnedXP(awarded);
+        setShowXPToast(true);
+      } else {
+        console.error("[XP] reorder: XP not awarded", result);
       }
-      setWrongIndexes(wrong);
-    } else {
-      setWrongIndexes([]);
-    }
-
-    console.log("[DBG] REORDER userArr   =", userArr);
-    console.log("[DBG] REORDER correctArr=", correctArr);
-    console.log("[DBG] REORDER isCorrect =", isCorrect);
-
-    if (isCorrect) {
-      const xp = Number(current?.xp ?? 150) || 150;
-
-      // 1) UI feedback immediately
-      playCorrectSound?.();
-      setStatus("correct");
-
-      // 2) Commit XP to backend using universal pipeline
-      try {
-        const result = await awardXPEvent({
-          xp,
-          event: "exercise_correct",
-          mode: "reorder", // ✅ IMPORTANT: literal, avoids TS issues
-          lessonId: Number(lessonId),
-          exerciseId: current?.id,
-        });
-
-        const awarded = Number(result?.awarded ?? 0) || 0;
-
-        if (result?.ok && awarded > 0) {
-          setEarnedXP(awarded);
-          setShowXPToast(true);
-        } else {
-          console.error("[XP] reorder: XP not awarded", result);
-        }
 
       // 3) Completion bonus only on last question
       if (currentIndex + 1 >= totalQuestions) {
@@ -908,12 +909,15 @@ export default function SentencePractice() {
           console.error("[XP] reorder completion bonus failed", e);
         }
       }
-
-      return;
+    } catch (e) {
+      console.error("[XP] reorder awardXPEvent failed", e);
     }
 
+    // important: stop here; do NOT fall through to wrong
+    return;
+
     setStatus("wrong");
-  };
+  }
 
   // ✅ Typing helper: tap a word chip to append into typedAnswer
   function addToTyped(word) {
@@ -1101,13 +1105,29 @@ export default function SentencePractice() {
         // Run XP + completion bonus asynchronously
         (async () => {
           try {
-            await commitXP({
-              isCorrect: true,
-              attemptNo: attemptNumber,
-              mode: "typing",
+            const xpDelta = Number(current?.xp ?? 150) || 150;
+
+            const result = await awardXPEvent({
+              xp: xpDelta,
+              event: "exercise_correct",
+              mode: "typing", // literal
+              lessonId: Number(lessonId),
+              exerciseId: current?.id,
             });
+
+            const awarded = Number(result?.awarded ?? 0) || 0;
+
+            if (result?.ok && awarded > 0) {
+              setEarnedXP(awarded);
+              setShowXPToast(true);
+              playCorrectSound?.();
+            } else {
+              console.error("[XP] typing: XP not awarded", result);
+            }
+
             const isLastQuestion =
               currentIndex >= (lessonExercises?.length || 0) - 1;
+
             if (isLastQuestion) {
               const bonus = await awardCompletionBonus("typing");
               setCompletionXp(bonus.awarded || 300);
@@ -1115,7 +1135,7 @@ export default function SentencePractice() {
               setShowCompleteModal(true);
             }
           } catch (err) {
-            console.error("[XP] typing commitXP/completion failed", err);
+            console.error("[XP] typing awardXPEvent/completion failed", err);
           }
         })();
 
@@ -1207,28 +1227,24 @@ export default function SentencePractice() {
           playCorrect?.();
         } catch {}
 
-        // ✅ XP + completion bonus asynchronously (backend-safe)
-        (async () => {
-          try {
-            await commitXP({
-              isCorrect: true,
-              attemptNo: attemptNumber,
-              mode: xpMode, // ✅ cloze counted as typing in backend
-            });
+        const xpDelta = Number(current?.xp ?? 80) || 80;
 
-            const isLastQuestion =
-              currentIndex >= (lessonExercises?.length || 0) - 1;
+        const result = await awardXPEvent({
+          xp: xpDelta,
+          event: "exercise_correct",
+          mode: xpMode, // keep your mapping if xpMode is "typing"
+          lessonId: Number(lessonId),
+          exerciseId: current?.id,
+        });
 
-            if (isLastQuestion) {
-              const bonus = await awardCompletionBonus(xpMode);
-              setCompletionXp(bonus.awarded || 300);
-              setCompletionMode("cloze"); // keep UI label as cloze
-              setShowCompleteModal(true);
-            }
-          } catch (err) {
-            console.error("[XP] cloze commitXP/completion failed", err);
-          }
-        })();
+        const awarded = Number(result?.awarded ?? 0) || 0;
+
+        if (result?.ok && awarded > 0) {
+          setEarnedXP(awarded);
+          setShowXPToast(true);
+        } else {
+          console.error("[XP] cloze: XP not awarded", result);
+        }
 
         // ✅ Update progress (Cloze)
         writeProgress(lessonId, "cloze", {
@@ -1892,4 +1908,4 @@ export default function SentencePractice() {
       )}
     </div>
   );
-}
+};
