@@ -355,12 +355,14 @@ router.post("/update", authRequired, async (req, res) => {
 
     const body = req.body || {};
 
-    const attemptId = String(body.attemptId || body.attempt_id || "");
-    if (!attemptId) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "attemptId is required" });
-    }
+    // --- attemptId normalize (idempotency) ---
+    // Accept camel + snake; if missing, generate a safe server fallback.
+    // This prevents "all answers collapse to the same eventKey".
+    const rawAttemptId = body.attemptId ?? body.attempt_id ?? "";
+    const attemptId =
+      typeof rawAttemptId === "string" && rawAttemptId.trim()
+        ? rawAttemptId.trim()
+        : `srv_${userId}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 
     // normalize mode + practiceType safely
     const rawMode = String(
@@ -456,12 +458,29 @@ router.post("/update", authRequired, async (req, res) => {
       const streakBonus = 0;
 
       // 3) idempotency key (store in xpEvent.type)
-      const eventKey = hashKey("xp", attemptId);
+      // Make it unique per question attempt (prevents xpDelta becoming 0 after Q1)
+      const exerciseIdNum =
+        Number(body.exerciseId ?? body.exercise_id ?? 0) || 0;
+      const lessonIdNum = Number(body.lessonId ?? body.lesson_id ?? 0) || 0;
+      const attemptNo = Number(body.attemptNo ?? body.attempt_no ?? 1) || 1;
+
+      const eventKey = [
+        "xp",
+        userId,
+        lessonIdNum,
+        practiceType, // already normalized earlier in your route
+        String(body.event || "unknown"),
+        exerciseIdNum,
+        attemptNo,
+        attemptId,
+      ].join("|");
 
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
         select: { id: true },
       });
+
+      console.log("[XPDBG] eventKey", eventKey);
 
       console.log("[progress/update]", {
         event: body.event,

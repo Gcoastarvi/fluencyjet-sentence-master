@@ -252,7 +252,6 @@ export default function SentencePractice() {
 
     const t = setTimeout(() => {
       setShowXPToast(false);
-      setEarnedXP(0);
     }, 1400);
 
     return () => clearTimeout(t);
@@ -324,8 +323,7 @@ export default function SentencePractice() {
 
     const t = setTimeout(() => {
       setShowXPToast(false);
-      setEarnedXP(0);
-    }, 1500); // 1.5s so it doesn’t flash
+    }, 1500);
 
     return () => clearTimeout(t);
   }, [showXPToast]);
@@ -805,13 +803,13 @@ export default function SentencePractice() {
 
   function loadNextQuestion() {
     // reset transient UI for next question
-    setEarnedXP(0);
     setShowXPToast(false);
     setStatus("idle");
     setFeedback("");
     setShowHint(false);
     setTypedAnswer("");
     setWrongIndexes([]);
+  }
 
     // mode-specific resets
     setAnswer([]);
@@ -893,15 +891,14 @@ export default function SentencePractice() {
           exerciseId: current?.id,
         });
 
-        const awarded = Number(result?.awarded ?? xp) || xp;
-        setEarnedXP(awarded);
-        setShowXPToast(true);
-      } catch (e) {
-        console.error("[XP] reorder awardXPEvent failed", e);
-        // still show UI XP even if backend fails
-        setEarnedXP(xp);
-        setShowXPToast(true);
-      }
+        const awarded = Number(result?.awarded ?? 0) || 0;
+
+        if (result?.ok && awarded > 0) {
+          setEarnedXP(awarded);
+          setShowXPToast(true);
+        } else {
+          console.error("[XP] reorder: XP not awarded", result);
+        }
 
       // 3) Completion bonus only on last question
       if (currentIndex + 1 >= totalQuestions) {
@@ -1031,8 +1028,8 @@ export default function SentencePractice() {
           exerciseId: current?.id,
         });
 
-        if (result?.ok) {
-          const shown = Number(result.awarded ?? xpDelta) || xpDelta;
+        if (result?.ok && Number(result.awarded ?? 0) > 0) {
+          const shown = Number(result.awarded);
           setEarnedXP(shown);
           setShowXPToast(true);
           playCorrectSound();
@@ -1093,11 +1090,10 @@ export default function SentencePractice() {
           exerciseId: current?.Question?.id ?? current?.id, // use current?.id if you don't have currentQuestion
         });
 
-        if (result?.ok) {
-          const shown = Number(result.awarded ?? xpDelta) || xpDelta;
+        if (result?.ok && Number(result.awarded ?? 0) > 0) {
+          const shown = Number(result.awarded);
           setEarnedXP(shown);
           setShowXPToast(true);
-          // optional: playCorrectSound(); // only if you want same beep
         } else {
           console.error("[XP] typing: XP not awarded");
         }

@@ -1,0 +1,69 @@
+{
+  "lessonSlug": "basic-1",
+  "lessonTitle": "Basic Lesson 1",
+  "lessonLevel": "basic",
+  "mode": "reorder",
+  "xp": 150,
+  "items": [
+    {
+      "orderIndex": 1,
+      "promptTa": "கண்டிப்பா இல்ல",
+      "answer": "Definitely not",
+      "xp": 150
+    },
+    {
+      "orderIndex": 2,
+      "promptTa": "சரி, ஓகே",
+      "answer": "Alright, okay",
+      "xp": 150
+    },
+    {
+      "orderIndex": 3,
+      "promptTa": "எனக்கு தெரியல",
+      "answer": "I don't know",
+      "xp": 150
+    },
+    {
+      "orderIndex": 4,
+      "promptTa": "யோசிச்சுப் பார்க்கிறேன்",
+      "answer": "I will think about it",
+      "xp": 150
+    },
+    {
+      "orderIndex": 5,
+      "promptTa": "அது நல்ல ஐடியா",
+      "answer": "That's a good idea",
+      "xp": 150
+    },
+    {
+      "orderIndex": 6,
+      "promptTa": "அத மறந்துடு",
+      "answer": "Forget it",
+      "xp": 150
+    },
+    {
+      "orderIndex": 7,
+      "promptTa": "அத தான் நானும் நெனச்சேன்",
+      "answer": "That's what I thought too",
+      "xp": 150
+    },
+    {
+      "orderIndex": 8,
+      "promptTa": "சும்மா கேக்கறேன்",
+      "answer": "Just asking",
+      "xp": 150
+    },
+    {
+      "orderIndex": 9,
+      "promptTa": "நல்லா இருக்கு",
+      "answer": "Sounds good",
+      "xp": 150
+    },
+    {
+      "orderIndex": 10,
+      "promptTa": "இது எனக்கு ஒரு சவால்",
+      "answer": "This is a challenge for me",
+      "xp": 150
+    }
+  ]
+}

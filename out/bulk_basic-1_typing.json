@@ -1,6 +1,6 @@
 {
-  "lessonSlug": "basic-2",
-  "lessonTitle": "Basic Lesson 2",
+  "lessonSlug": "basic-1",
+  "lessonTitle": "Basic Lesson 1",
   "lessonLevel": "basic",
   "mode": "typing",
   "xp": 150,
@@ -8,13 +8,13 @@
     {
       "orderIndex": 1,
       "promptTa": "அதுவும் சரிதான்",
-      "answer": "That’s true too",
+      "answer": "That's true too",
       "xp": 150
     },
     {
       "orderIndex": 2,
       "promptTa": "அதுக்கு நான் ரெடி",
-      "answer": "I’m ready for that",
+      "answer": "I'm ready for that",
       "xp": 150
     },
     {
