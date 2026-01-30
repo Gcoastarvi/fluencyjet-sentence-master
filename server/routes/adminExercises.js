@@ -3,19 +3,20 @@ import prisma from "../db/client.js";
 
 const router = express.Router();
 
+// Map UI modes -> Prisma enum ExerciseType
+const EXERCISE_TYPE = {
+  typing: "MAKE_SENTENCE",
+  reorder: "DRAG_DROP",
+  cloze: "FILL_BLANK",
+  audio: "TRANSLATE",
+};
+
 function makeSourceKey({ lessonId, mode, orderIndex, tamil, english }) {
   const norm = (s) =>
     String(s || "")
       .trim()
       .toLowerCase()
       .replace(/\s+/g, " ");
-
-  const EXERCISE_TYPE = {
-    typing: "MAKE_SENTENCE",
-    reorder: "DRAG_DROP",
-    cloze: "FILL_BLANK",
-    audio: "TRANSLATE", // or MAKE_SENTENCE if you prefer; see note below
-  };
 
   return [
     `L${lessonId}`,
