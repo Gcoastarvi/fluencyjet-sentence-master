@@ -171,7 +171,7 @@ export default function Lessons() {
                 type="button"
                 onClick={() => {
                   closeModePicker();
-                  navigate(`/practice/typing?lessonId=${selectedDayNumber}`);
+                  navigate(`/lesson/${selectedDayNumber}`);
                 }}
                 className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:opacity-95"
               >
@@ -182,7 +182,7 @@ export default function Lessons() {
                 type="button"
                 onClick={() => {
                   closeModePicker();
-                  navigate(`/practice/reorder?lessonId=${selectedDayNumber}`);
+                  navigate(`/lesson/${selectedDayNumber}`);
                 }}
                 className="w-full rounded-xl bg-indigo-100 px-4 py-3 text-indigo-800 font-semibold hover:bg-indigo-200"
               >
