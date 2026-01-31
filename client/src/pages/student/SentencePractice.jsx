@@ -493,6 +493,17 @@ export default function SentencePractice() {
         return;
       }
 
+      const serverAwarded =
+        Number(
+          data?.xpAwarded ??
+            data?.xpDelta ??
+            data?.xp_delta ??
+            data?.earnedXP ??
+            0,
+        ) || 0;
+
+      setEarnedXP(serverAwarded);
+
       const awarded =
         Number(
           data.xpAwarded ??
@@ -570,19 +581,18 @@ export default function SentencePractice() {
         return { ok: false, awarded: 0, data };
       }
 
-      const awarded =
+      // IMPORTANT: Only trust server-awarded XP. Do NOT fall back to requested xp,
+      // otherwise UI will show XP even when backend awarded 0.
+      const xpAwarded =
         Number(
           data?.xpAwarded ??
             data?.xpDelta ??
             data?.xp_delta ??
             data?.earnedXP ??
-            data?.xp ??
-            xp,
-        ) ||
-        Number(xp) ||
-        0;
+            0,
+        ) || 0;
 
-      return { ok: true, awarded, data };
+      return { ok: true, awarded: xpAwarded, data };
     } catch (err) {
       console.error("[XP] /progress/update failed", err);
       return { ok: false, awarded: 0 };
