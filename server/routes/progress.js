@@ -468,8 +468,9 @@ router.post("/update", authRequired, async (req, res) => {
 
       // 3) idempotency key (store in xpEvent.type)
       // Make it unique per question attempt (prevents xpDelta becoming 0 after Q1)
-      const exerciseIdNum =
-        Number(body.exerciseId ?? body.exercise_id ?? 0) || 0;
+      const exerciseKey =
+        String(body.exerciseId ?? body.exercise_id ?? "").trim() || "0";
+
       const lessonIdNum = Number(body.lessonId ?? body.lesson_id ?? 0) || 0;
       const attemptNo = Number(body.attemptNo ?? body.attempt_no ?? 1) || 1;
 
@@ -480,7 +481,7 @@ router.post("/update", authRequired, async (req, res) => {
         Number.isFinite(lessonIdNum) ? lessonIdNum : 0,
         String(practiceType || ""),
         String(body.event || "unknown"),
-        String(exerciseIdNum || ""),
+        String(exerciseKey),
         Number(attemptNo || 1),
         String(attemptId || ""),
       ].join("|");
@@ -515,7 +516,14 @@ router.post("/update", authRequired, async (req, res) => {
           : lessonTag;
 
       const qKeyRaw = String(questionId || "").trim();
-      const questionKeyForDedupe = qKeyRaw ? qKeyRaw : `Q${attemptNo}`;
+
+      // Use exerciseId as the stable per-question identity (client already sends it)
+      // Fallback order: questionId -> exerciseId -> attemptId
+      const questionKeyForDedupe = qKeyRaw
+        ? `Q${qKeyRaw}`
+        : exerciseKey && exerciseKey !== "0"
+          ? `E${exerciseKey}`
+          : `A${attemptId}`;
 
       // ✅ hashed + short (fits VarChar(50))
       const qEventKey = hashKey(
@@ -534,6 +542,21 @@ router.post("/update", authRequired, async (req, res) => {
       const rawDelta =
         existing || existingQuestionAward ? 0 : baseXP + streakBonus;
       const xpDelta = Number.isFinite(rawDelta) ? Math.trunc(rawDelta) : 0;
+
+      console.log("[XPDBG] awardCheck", {
+        isCorrect,
+        event: body.event,
+        baseXP,
+        streakBonus,
+        existingEventKey: !!existing,
+        existingQuestionAward: !!existingQuestionAward,
+        xpDelta,
+        qEventKey,
+        eventKey,
+        exerciseIdNum,
+        lessonIdNum,
+        practiceType,
+      });
 
       if (!existing && !existingQuestionAward && xpDelta > 0) {
         await tx.xpEvent.create({

@@ -555,8 +555,19 @@ export default function SentencePractice() {
     const payload = {
       attemptId,
       attemptNo: 1,
-      xp: Number(xp) || 0,
+
+      xp:
+        mode === "typing" || mode === "audio"
+          ? 150
+          : mode === "reorder"
+            ? 100
+            : 80,
+
       event,
+
+      // ✅ Server awards XP only when it knows this is a correct attempt
+      isCorrect: event === "exercise_correct",
+
       meta: { lessonId: lid, mode, exerciseId, ...meta },
       lessonId: lid,
       practiceType: mode,

@@ -144,8 +144,8 @@ export default function Lessons() {
           );
         })}
       </div>
-
-      {/* Mode Picker Modal */}
+      
+      {/* Mode Picker Modal (disabled for MVP)
       {showModePicker && selectedLesson && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
@@ -196,6 +196,7 @@ export default function Lessons() {
           </div>
         </div>
       )}
+      */}
     </div>
   );
 }

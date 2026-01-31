@@ -34,9 +34,7 @@ function writePrefShowTa(v) {
 }
 
 function readProgress(lessonId, mode) {
-  return safeJsonParse(
-    localStorage.getItem(`fj_progress:${lessonId}:${mode}`) || "null",
-  );
+  return safeJsonParse(localStorage.getItem(`fj_progress:${lessonId}:${mode}`) || "null");
 }
 
 function readLastSession() {
@@ -55,8 +53,7 @@ function formatLast(ms) {
   const diff = Date.now() - ms;
   if (diff < 60_000) return "just now";
   if (diff < 60 * 60_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 24 * 60 * 60_000)
-    return `${Math.floor(diff / (60 * 60_000))}h ago`;
+  if (diff < 24 * 60 * 60_000) return `${Math.floor(diff / (60 * 60_000))}h ago`;
   return `${Math.floor(diff / (24 * 60 * 60_000))}d ago`;
 }
 
@@ -87,11 +84,11 @@ export default function LessonDetail() {
   const isLocked = !isFree;
 
   // Preference toggle (Show Tamil help)
-  const [showTa, setShowTa] = useState(() => {
+  //const [showTa, setShowTa] = useState(() => {
     // Avoid SSR issues (not relevant here) and keep predictable default
-    if (typeof window === "undefined") return true;
-    return readPrefShowTa(lessonIdNum);
-  });
+    //if (typeof window === "undefined") return true;
+    //return readPrefShowTa(lessonIdNum);
+  //});
 
   useEffect(() => {
     // Ensure localStorage has a value (so practice pages can rely on it)
@@ -110,11 +107,7 @@ export default function LessonDetail() {
         const data = await res.json();
 
         // data may be { lessons: [...] } or just [...]
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.lessons)
-            ? data.lessons
-            : [];
+        const list = Array.isArray(data) ? data : Array.isArray(data?.lessons) ? data.lessons : [];
 
         const found =
           list.find((l) => String(l?.id) === String(lessonIdNum)) ||
@@ -158,29 +151,13 @@ export default function LessonDetail() {
     return s;
   }, [lessonId]);
 
-  const typingProg = useMemo(
-    () => (lessonId ? readProgress(lessonId, "typing") : null),
-    [lessonId],
-  );
-  const reorderProg = useMemo(
-    () => (lessonId ? readProgress(lessonId, "reorder") : null),
-    [lessonId],
-  );
-  const clozeProg = useMemo(
-    () => (lessonId ? readProgress(lessonId, "cloze") : null),
-    [lessonId],
-  );
-  const audioProg = useMemo(
-    () => (lessonId ? readProgress(lessonId, "audio") : null),
-    [lessonId],
-  );
+  const typingProg = useMemo(() => (lessonId ? readProgress(lessonId, "typing") : null), [lessonId]);
+  const reorderProg = useMemo(() => (lessonId ? readProgress(lessonId, "reorder") : null), [lessonId]);
+  const clozeProg = useMemo(() => (lessonId ? readProgress(lessonId, "cloze") : null), [lessonId]);
+  const audioProg = useMemo(() => (lessonId ? readProgress(lessonId, "audio") : null), [lessonId]);
 
-  const qNum = session
-    ? Math.max(1, Number(session.questionIndex || 0) + 1)
-    : null;
-  const continueText = session
-    ? `Continue • ${modeLabel(session.mode)} • Q${qNum}`
-    : "Continue";
+  const qNum = session ? Math.max(1, Number(session.questionIndex || 0) + 1) : null;
+  const continueText = session ? `Continue • ${modeLabel(session.mode)} • Q${qNum}` : "Continue";
   const continueHref =
     session && session.mode
       ? `/practice/${session.mode}?lessonId=${encodeURIComponent(lessonId)}`
@@ -237,7 +214,7 @@ export default function LessonDetail() {
         ) : null}
 
         {/* Preference toggle */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gray-50 p-4">
+        {/*<div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gray-50 p-4">
           <div>
             <div className="text-sm font-semibold">Language help</div>
             <div className="text-xs text-gray-600">
@@ -264,17 +241,13 @@ export default function LessonDetail() {
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="rounded-xl bg-white p-3">
                 <div className="text-xs text-gray-500">Lesson</div>
-                <div className="text-sm font-semibold">
-                  {lessonIdNum || "—"}
-                </div>
+                <div className="text-sm font-semibold">{lessonIdNum || "—"}</div>
               </div>
 
               <div className="rounded-xl bg-white p-3">
                 <div className="text-xs text-gray-500">Continue</div>
                 <div className="text-sm font-semibold">
-                  {session
-                    ? `Mode: ${modeLabel(session.mode)}`
-                    : "No session yet"}
+                  {session ? `Mode: ${modeLabel(session.mode)}` : "No session yet"}
                 </div>
               </div>
 
@@ -327,9 +300,7 @@ export default function LessonDetail() {
                   style={{ width: `${pct(typingProg)}%` }}
                 />
               </div>
-              <div className="mt-1 text-xs text-gray-500">
-                {pct(typingProg)}% complete
-              </div>
+              <div className="mt-1 text-xs text-gray-500">{pct(typingProg)}% complete</div>
             </div>
 
             {/* Reorder progress */}
@@ -347,9 +318,7 @@ export default function LessonDetail() {
                   style={{ width: `${pct(reorderProg)}%` }}
                 />
               </div>
-              <div className="mt-1 text-xs text-gray-500">
-                {pct(reorderProg)}% complete
-              </div>
+              <div className="mt-1 text-xs text-gray-500">{pct(reorderProg)}% complete</div>
             </div>
           </div>
         </div>
@@ -383,9 +352,7 @@ export default function LessonDetail() {
             className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
           >
             <div className="text-base font-semibold">Typing</div>
-            <div className="mt-1 text-xs text-gray-500">
-              Fast fluency builder
-            </div>
+            <div className="mt-1 text-xs text-gray-500">Fast fluency builder</div>
           </button>
 
           {/* Reorder */}
@@ -394,9 +361,7 @@ export default function LessonDetail() {
             className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
           >
             <div className="text-base font-semibold">Reorder</div>
-            <div className="mt-1 text-xs text-gray-500">
-              Fix word order instantly
-            </div>
+            <div className="mt-1 text-xs text-gray-500">Fix word order instantly</div>
           </button>
 
           {/* Cloze (kept future-ready, off by default) */}
@@ -434,8 +399,7 @@ export default function LessonDetail() {
 
         {/* Tiny note for devs */}
         <div className="mt-4 text-xs text-gray-400">
-          Preference saved:{" "}
-          <span className="font-mono">{PREF_KEY_SHOW_TA}</span>
+          Preference saved: <span className="font-mono">{PREF_KEY_SHOW_TA}</span>
         </div>
       </div>
     </div>
