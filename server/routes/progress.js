@@ -468,26 +468,34 @@ router.post("/update", authRequired, async (req, res) => {
 
       // 3) idempotency key (store in xpEvent.type)
       // Make it unique per question attempt (prevents xpDelta becoming 0 after Q1)
+      // --- Stable identifiers (server-side source of truth) ---
+      const lessonIdNum = Number(body.lessonId ?? body.lesson_id ?? 0) || 0;
+
+      // exerciseId might be string or number; keep a stable string key
       const exerciseKey =
         String(body.exerciseId ?? body.exercise_id ?? "").trim() || "0";
 
-      const lessonIdNum = Number(body.lessonId ?? body.lesson_id ?? 0) || 0;
+      // Back-compat numeric helper (safe even if exerciseKey is not a number)
+      const exerciseIdNum = Number(exerciseKey) || 0;
+
       const attemptNo = Number(body.attemptNo ?? body.attempt_no ?? 1) || 1;
 
       // Build a verbose raw key (for debugging / uniqueness)
       const rawKey = [
         "xp",
         userId,
-        Number.isFinite(lessonIdNum) ? lessonIdNum : 0,
+        lessonIdNum,
         String(practiceType || ""),
         String(body.event || "unknown"),
-        String(exerciseKey),
-        Number(attemptNo || 1),
-        String(attemptId || ""),
+        // Use exerciseKey (stable) to avoid numeric-parsing collisions
+        `ex:${exerciseKey}`,
+        `a:${attemptNo}`,
+        `id:${attemptId || ""}`,
       ].join("|");
 
       // ✅ Store ONLY a short hash in DB (prevents Prisma P2000 "too long")
       const eventKey = hashKey("xp", rawKey, 50);
+
 
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
@@ -553,7 +561,7 @@ router.post("/update", authRequired, async (req, res) => {
         xpDelta,
         qEventKey,
         eventKey,
-        exerciseIdNum,
+        exerciseKey,
         lessonIdNum,
         practiceType,
       });
