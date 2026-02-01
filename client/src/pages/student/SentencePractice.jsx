@@ -267,6 +267,8 @@ export default function SentencePractice() {
   const ttsRateRef = useRef(ttsRate);
   const ttsLangRef = useRef(ttsLang);
 
+  const [audioVariant, setAudioVariant] = useState("repeat"); // "repeat" | "dictation"
+
   const [audioGateOpen, setAudioGateOpen] = useState(false);
   const audioGateTimerRef = useRef(null);
 
@@ -276,6 +278,8 @@ export default function SentencePractice() {
   );
 
   const xpInFlightRef = useRef(false);
+
+  const englishFull = String(expectedAnswer || current?.expected || "").trim();
 
   function openAudioGateAfter(ms = 1800) {
     setAudioGateOpen(false);
@@ -311,11 +315,6 @@ export default function SentencePractice() {
     if (safeMode !== "audio") return;
     stopTTS();
     setRevealEnglish(false);
-  }, [currentIndex, safeMode]);
-
-  useEffect(() => {
-    stopTTS();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, safeMode]);
 
   useEffect(() => {
@@ -1081,7 +1080,10 @@ export default function SentencePractice() {
     }
 
     // ⌨️ TYPING validation
-    if (safeMode === "typing") {
+    if (
+      safeMode === "typing" ||
+      (safeMode === "audio" && audioVariant === "dictation")
+    ) {
       const normalize = (s) =>
         String(s || "")
           .trim()
@@ -1092,7 +1094,10 @@ export default function SentencePractice() {
           .replace(/[“”]/g, '"')
           .replace(/\s+/g, " ");
 
-      const target = expectedAnswer || correctOrder.join(" ");
+      const target =
+        String(expectedAnswer || "").trim() ||
+        String((correctOrder || []).join(" ")).trim();
+
       const user = typedAnswer;
 
       if (!normalize(user)) {
@@ -1591,11 +1596,14 @@ export default function SentencePractice() {
       )}
 
       {/* ⌨️ TYPING UI */}
-      {safeMode === "typing" && (
+      {(safeMode === "typing" ||
+        (safeMode === "audio" && audioVariant === "dictation")) && (
         <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-bold text-purple-700">
-              Typing Practice
+              {safeMode === "audio" && audioVariant === "dictation"
+                ? "Audio Dictation"
+                : "Typing Practice"}
             </h2>
 
             <button
@@ -1607,6 +1615,28 @@ export default function SentencePractice() {
             </button>
           </div>
 
+          {/* 🔊 Audio Dictation Controls (only when audio + dictation) */}
+          {safeMode === "audio" && audioVariant === "dictation" && (
+            <div className="mb-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => speakTTS(englishFull)}
+                className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
+                disabled={!englishFull}
+              >
+                {isSpeaking ? "Speaking..." : "▶ Play Audio"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => stopTTS()}
+                className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
+              >
+                Stop
+              </button>
+            </div>
+          )}
+
           {/* Tamil prompt (what they should convert to English) */}
           <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 mb-3">
             <div className="text-xs font-semibold text-purple-700 mb-1">
@@ -1616,7 +1646,8 @@ export default function SentencePractice() {
           </div>
 
           {/* Word Bank (hint only — not clickable) */}
-          {safeMode === "typing" && (
+          {(safeMode === "typing" ||
+            (safeMode === "audio" && audioVariant === "dictation")) && (
             <div className="mb-3">
               <div className="text-xs font-semibold text-slate-600 mb-2">
                 Word Bank (hint only)
@@ -1666,7 +1697,33 @@ export default function SentencePractice() {
       )}
 
       {/* 🔊 AUDIO UI */}
-      {safeMode === "audio" && (
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setAudioVariant("repeat")}
+          className={`px-3 py-2 rounded-lg border text-sm ${
+            audioVariant === "repeat"
+              ? "bg-black text-white"
+              : "bg-white hover:bg-gray-50"
+          }`}
+        >
+          Repeat
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAudioVariant("dictation")}
+          className={`px-3 py-2 rounded-lg border text-sm ${
+            audioVariant === "dictation"
+              ? "bg-black text-white"
+              : "bg-white hover:bg-gray-50"
+          }`}
+        >
+          Dictation
+        </button>
+      </div>
+
+      {safeMode === "audio" && audioVariant === "repeat" && (
         <div className="bg-white shadow-lg rounded-xl p-5 border border-emerald-200">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-bold text-emerald-700">
