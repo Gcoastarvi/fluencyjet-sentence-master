@@ -571,6 +571,8 @@ export default function SentencePractice() {
       attemptId,
       attemptNo: 1,
 
+      questionId: questionId ? String(questionId) : undefined,
+
       xp:
         mode === "typing" || mode === "audio"
           ? 150
@@ -952,7 +954,7 @@ export default function SentencePractice() {
       }
 
       // important: stop here; do NOT fall through to wrong
-      return;      
+      return;
     }
   };
 
@@ -1009,6 +1011,9 @@ export default function SentencePractice() {
       mode: "audio",
       practiceType: "audio",
       exerciseId: current.id,
+
+      questionId: `repeat_${current.id}`, // ✅ ADD THIS LINE
+
       meta: { audioVariant: "repeat" },
       completedQuiz: false,
       isCorrect: true,
@@ -1041,8 +1046,8 @@ export default function SentencePractice() {
       setFeedback("");
     }, 700);
 
-    xpInFlightRef.current = false;    
-    }  
+    xpInFlightRef.current = false;
+  }
 
   async function checkAnswer() {
     if (!current) return;
