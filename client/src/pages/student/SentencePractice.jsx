@@ -546,6 +546,7 @@ export default function SentencePractice() {
 
   // ===== Universal XP event commit (inside component) =====
   async function awardXPEvent({
+    questionId,
     xp,
     event,
     mode,
@@ -951,9 +952,7 @@ export default function SentencePractice() {
       }
 
       // important: stop here; do NOT fall through to wrong
-      return;
-
-      setStatus("wrong");
+      return;      
     }
   };
 
@@ -1001,58 +1000,49 @@ export default function SentencePractice() {
 
     const attemptNumber = attempts + 1;
 
+    const result = await awardXPEvent({
+      attemptId: `audio-repeat-${current.id}-${attemptNumber}`,
+      attemptNo: attemptNumber,
+      xp: 150,
+      event: "exercise_correct",
+      lessonId: lessonIdFromQuery,
+      mode: "audio",
+      practiceType: "audio",
+      exerciseId: current.id,
+      meta: { audioVariant: "repeat" },
+      completedQuiz: false,
+      isCorrect: true,
+    });
+
+    const awarded = Number(result?.awarded || 0);
+
+    setStatus("correct");
+    setFeedback(awarded > 0 ? `✅ Great! +${awarded} XP` : "✅ Great!");
+
     try {
-      const result = await awardXPEvent({
-        attemptId: `audio-repeat-${current.id}-${attemptNumber}`,
-        attemptNo: attemptNumber,
-        xp: 150,
-        event: "exercise_correct",
-        lessonId: lessonIdFromQuery,
-        mode: "audio",
-        practiceType: "audio",
-        exerciseId: current.id,
-        meta: { audioVariant: "repeat" },
-        completedQuiz: false,
-        isCorrect: true,
-      });
+      playCorrect?.();
+    } catch {}
 
-      const awarded = Number(result?.awarded || 0);
+    resetAudioGate();
 
-      // UI feedback AFTER server response (matches reality)
-      setStatus("correct");
-      setFeedback(awarded > 0 ? `✅ Great! +${awarded} XP` : "✅ Great!");
+    writeProgress(lessonId, "audio", {
+      total: lessonExercises.length,
+      completed: Math.min(lessonExercises.length, currentIndex + 1),
+      updatedAt: Date.now(),
+    });
 
-      // keep sound even if XP becomes 0 later
-      try {
-        playCorrect?.();
-      } catch {}
+    setTimeout(() => {
+      loadNextQuestion();
+      setRevealEnglish(false);
+      setShowHint(false);
+      setWrongIndexes([]);
+      setTypedAnswer("");
+      setStatus("idle");
+      setFeedback("");
+    }, 700);
 
-      // close gate after submission (prevents rapid double-submits)
-      resetAudioGate();
-
-      // progress (local)
-      writeProgress(lessonId, "audio", {
-        total: lessonExercises.length,
-        completed: Math.min(lessonExercises.length, currentIndex + 1),
-        updatedAt: Date.now(),
-      });
-
-      // advance after a short beat
-      setTimeout(() => {
-        loadNextQuestion();
-        setRevealEnglish(false);
-        setShowHint(false);
-        setWrongIndexes([]);
-        setTypedAnswer("");
-        setStatus("idle");
-        setFeedback("");
-      }, 700);
-    } catch (err) {
-      console.error("[audio/repeat] award failed", err);
-      setStatus("wrong");
-      setFeedback("❌ Try again");
-    } finally {
-      xpInFlightRef.current = false;
+    xpInFlightRef.current = false;
+    
     }
   }
 
