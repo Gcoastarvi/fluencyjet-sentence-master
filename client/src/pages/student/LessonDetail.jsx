@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 // Audio v1 can be turned on later without refactor:
-const ENABLE_AUDIO = false; // set true later when /practice/audio is shipped
+const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 
 const PREF_KEY_SHOW_TA = "fj_pref_show_ta"; // "1" or "0"
