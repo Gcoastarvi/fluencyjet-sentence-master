@@ -1041,10 +1041,8 @@ export default function SentencePractice() {
       setFeedback("");
     }, 700);
 
-    xpInFlightRef.current = false;
-    
-    }
-  }
+    xpInFlightRef.current = false;    
+    }  
 
   async function checkAnswer() {
     if (!current) return;
