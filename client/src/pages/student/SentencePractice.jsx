@@ -1002,7 +1002,6 @@ export default function SentencePractice() {
     const attemptNumber = attempts + 1;
 
     try {
-      // Award through the SAME stable pipeline as typing/dictation
       const result = await awardXPEvent({
         attemptId: `audio-repeat-${current.id}-${attemptNumber}`,
         attemptNo: attemptNumber,
@@ -1019,58 +1018,42 @@ export default function SentencePractice() {
 
       const awarded = Number(result?.awarded || 0);
 
-      // UI feedback (only after server response)
+      // UI feedback AFTER server response (matches reality)
       setStatus("correct");
       setFeedback(awarded > 0 ? `✅ Great! +${awarded} XP` : "✅ Great!");
 
+      // keep sound even if XP becomes 0 later
       try {
         playCorrect?.();
       } catch {}
 
-      // If you use XP toast function, call it here:
-      if (awarded > 0 && typeof showXpToast === "function") {
-        showXpToast(awarded);
-      }
+      // close gate after submission (prevents rapid double-submits)
+      resetAudioGate();
+
+      // progress (local)
+      writeProgress(lessonId, "audio", {
+        total: lessonExercises.length,
+        completed: Math.min(lessonExercises.length, currentIndex + 1),
+        updatedAt: Date.now(),
+      });
+
+      // advance after a short beat
+      setTimeout(() => {
+        loadNextQuestion();
+        setRevealEnglish(false);
+        setShowHint(false);
+        setWrongIndexes([]);
+        setTypedAnswer("");
+        setStatus("idle");
+        setFeedback("");
+      }, 700);
     } catch (err) {
-      console.error("[audio/repeat] /progress/update failed", err);
+      console.error("[audio/repeat] award failed", err);
       setStatus("wrong");
       setFeedback("❌ Try again");
     } finally {
       xpInFlightRef.current = false;
     }
-  }
-
-    // commit XP (server is source of truth; may return 0 on dedupe)
-    try {
-      await commitXP({
-        isCorrect: true,
-        attemptNo: attemptNumber,
-        mode: xpMode,
-      });
-    } catch (e) {
-      console.warn("[AUDIO] commitXP failed", e);
-    }
-
-    // close gate after submission (prevents rapid double-submits)
-    resetAudioGate();
-
-    // progress (local)
-    writeProgress(lessonId, "audio", {
-      total: lessonExercises.length,
-      completed: Math.min(lessonExercises.length, currentIndex + 1),
-      updatedAt: Date.now(),
-    });
-
-    // advance after a short beat
-    setTimeout(() => {
-      loadNextQuestion();
-      setRevealEnglish(false);
-      setShowHint(false);
-      setWrongIndexes([]);
-      setTypedAnswer("");
-      setStatus("idle");
-      setFeedback("");
-    }, 700);
   }
 
   async function checkAnswer() {
