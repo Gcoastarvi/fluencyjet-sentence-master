@@ -995,8 +995,15 @@ export default function SentencePractice() {
   async function handleAudioRepeated() {
     if (!current) return;
     if (status === "correct") return;
-    if (!audioGateOpen) return; // ✅ anti-abuse gate
+    //if (!audioGateOpen) return; // ✅ anti-abuse gate
     if (xpInFlightRef.current) return;
+
+    console.log("[AUDIO_REPEAT] clicked", {
+      audioGateOpen,
+      currentId: current?.id,
+      status,
+      inFlight: xpInFlightRef.current,
+    });
 
     xpInFlightRef.current = true;
 
@@ -1070,12 +1077,18 @@ export default function SentencePractice() {
       if (isCorrect) {
         const xpDelta = Number(current?.xp ?? 150) || 150;
 
+        const isAudioDictation =
+          safeMode === "audio" && audioVariant === "dictation";
+
         const result = await awardXPEvent({
-          xp: xpDelta,
+          xp: 150,
           event: "exercise_correct",
-          mode: safeMode,
+          mode: isAudioDictation ? "audio" : safeMode,
           lessonId: Number(lessonId),
           exerciseId: current?.id,
+
+          // ✅ ADD THIS for dictation only
+          questionId: isAudioDictation ? `dict_${current?.id}` : undefined,
         });
 
         if (result?.ok && Number(result.awarded ?? 0) > 0) {
@@ -1862,7 +1875,7 @@ export default function SentencePractice() {
                   type="button"
                   onClick={handleAudioRepeated}
                   className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-                  disabled={!current || status === "correct" || !audioGateOpen}
+                  disabled={!current || status === "correct"}
                 >
                   I repeated it ✅
                 </button>
