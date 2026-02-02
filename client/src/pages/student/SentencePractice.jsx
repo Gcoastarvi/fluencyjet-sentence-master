@@ -97,6 +97,14 @@ export default function SentencePractice() {
       .replace(/\s+/g, " ")
       .toLowerCase();
 
+  function goAudio(variant) {
+    const lid = Number(new URLSearchParams(location.search).get("lessonId"));
+    if (!lid) return;
+    navigate(
+      `/practice/audio?lessonId=${lid}&variant=${encodeURIComponent(variant)}`,
+    );
+  }
+
   // -------------------
   // Local progress store (LessonDetail summary)
   // -------------------
@@ -301,6 +309,13 @@ export default function SentencePractice() {
   useEffect(() => {
     ttsLangRef.current = ttsLang;
   }, [ttsLang]);
+
+  useEffect(() => {
+    if (safeMode !== "audio") return;
+    const v = new URLSearchParams(location.search).get("variant");
+    if (v === "repeat" || v === "dictation") setAudioVariant(v);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [safeMode, location.search]);
 
   useEffect(() => {
     console.log("[UI] status/earnedXP/toast", {
@@ -1700,7 +1715,10 @@ export default function SentencePractice() {
       <div className="mt-3 flex gap-2">
         <button
           type="button"
-          onClick={() => setAudioVariant("repeat")}
+          onClick={() => {
+            if (safeMode === "audio") setAudioVariant("repeat");
+            else goAudio("repeat");
+          }}
           className={`px-3 py-2 rounded-lg border text-sm ${
             audioVariant === "repeat"
               ? "bg-black text-white"
@@ -1712,7 +1730,10 @@ export default function SentencePractice() {
 
         <button
           type="button"
-          onClick={() => setAudioVariant("dictation")}
+          onClick={() => {
+            if (safeMode === "audio") setAudioVariant("dictation");
+            else goAudio("dictation");
+          }}
           className={`px-3 py-2 rounded-lg border text-sm ${
             audioVariant === "dictation"
               ? "bg-black text-white"

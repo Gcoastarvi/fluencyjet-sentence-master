@@ -412,20 +412,18 @@ export default function LessonDetail() {
             </div>
           </button>
 
-          {/* Audio (future-ready, off by default) */}
+          {/* Audio */}
           <button
             onClick={() => startMode("audio")}
-            disabled={!ENABLE_AUDIO}
+            disabled={!lessonId}
             className={`rounded-2xl px-4 py-4 text-center ${
-              ENABLE_AUDIO
+              lessonId
                 ? "border bg-white hover:bg-gray-50"
                 : "cursor-not-allowed bg-gray-100 text-gray-400"
             }`}
           >
             <div className="text-base font-semibold">Audio</div>
-            <div className="mt-1 text-xs text-gray-500">
-              {ENABLE_AUDIO ? "Listen + type" : "Coming soon"}
-            </div>
+            <div className="mt-1 text-xs text-gray-500">Repeat + Dictation</div>
           </button>
         </div>
 
