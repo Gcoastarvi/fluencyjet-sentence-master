@@ -995,18 +995,50 @@ export default function SentencePractice() {
     if (!current) return;
     if (status === "correct") return;
     if (!audioGateOpen) return; // ✅ anti-abuse gate
+    if (xpInFlightRef.current) return;
 
-    const xpMode = "typing";
+    xpInFlightRef.current = true;
+
     const attemptNumber = attempts + 1;
 
-    // UI feedback first (instant)
-    setStatus("correct");
-    setFeedback("✅ Great!");
-
-    // keep sound even if XP becomes 0 later
     try {
-      playCorrect?.();
-    } catch {}
+      // Award through the SAME stable pipeline as typing/dictation
+      const result = await awardXPEvent({
+        attemptId: `audio-repeat-${current.id}-${attemptNumber}`,
+        attemptNo: attemptNumber,
+        xp: 150,
+        event: "exercise_correct",
+        lessonId: lessonIdFromQuery,
+        mode: "audio",
+        practiceType: "audio",
+        exerciseId: current.id,
+        meta: { audioVariant: "repeat" },
+        completedQuiz: false,
+        isCorrect: true,
+      });
+
+      const awarded = Number(result?.awarded || 0);
+
+      // UI feedback (only after server response)
+      setStatus("correct");
+      setFeedback(awarded > 0 ? `✅ Great! +${awarded} XP` : "✅ Great!");
+
+      try {
+        playCorrect?.();
+      } catch {}
+
+      // If you use XP toast function, call it here:
+      if (awarded > 0 && typeof showXpToast === "function") {
+        showXpToast(awarded);
+      }
+    } catch (err) {
+      console.error("[audio/repeat] /progress/update failed", err);
+      setStatus("wrong");
+      setFeedback("❌ Try again");
+    } finally {
+      xpInFlightRef.current = false;
+    }
+  }
 
     // commit XP (server is source of truth; may return 0 on dedupe)
     try {
