@@ -172,6 +172,8 @@ export default function SentencePractice() {
   const correctSoundRef = useRef(null);
   const wrongSoundRef = useRef(null);
 
+  const xpInFlightKeysRef = useRef(new Set());
+
   const [ttsLang, setTtsLang] = useState("en-IN"); // default accent
 
   // -------------------
@@ -563,9 +565,15 @@ export default function SentencePractice() {
     isCorrect,
     practiceType,
   }) {
-    // 🔒 Prevent duplicate /progress/update calls
-    if (xpInFlightRef.current) {
-      console.warn("[XP] skipped duplicate awardXPEvent (in-flight)", {
+    // 🔒 Prevent duplicate *same attempt* calls (but allow other XP events to run)
+    const dedupeKey = String(
+      attemptId ??
+        `${mode}:${questionId ?? exerciseId ?? "na"}:${event}:${Number(attemptNo ?? 1) || 1}`,
+    );
+
+    if (xpInFlightKeysRef.current.has(dedupeKey)) {
+      console.warn("[XP] skipped duplicate awardXPEvent (same key)", {
+        dedupeKey,
         mode,
         event,
         questionId,
@@ -576,17 +584,7 @@ export default function SentencePractice() {
       return { ok: false, awarded: 0, skipped: true };
     }
 
-    console.log("[XP] awardXPEvent ENTER", {
-      mode,
-      event,
-      questionId,
-      exerciseId,
-      attemptId,
-      attemptNo,
-      inFlight: xpInFlightRef.current,
-    });
-
-    xpInFlightRef.current = true;
+    xpInFlightKeysRef.current.add(dedupeKey);
 
     try {
       const payload = {
@@ -638,9 +636,9 @@ export default function SentencePractice() {
       console.error("[XP] /progress/update failed", err);
       return { ok: false, awarded: 0, error: String(err?.message || err) };
     } finally {
-      // 🔓 ALWAYS release lock, even on early returns/errors
-      xpInFlightRef.current = false;
-      console.log("[XP] awardXPEvent RELEASE", { mode, event, questionId });
+      // 🔓 ALWAYS release this specific attempt lock
+      xpInFlightKeysRef.current.delete(dedupeKey);
+      console.log("[XP] awardXPEvent RELEASE", { dedupeKey, mode, event, questionId });
     }
   }
 
