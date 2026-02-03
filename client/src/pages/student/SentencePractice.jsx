@@ -987,8 +987,16 @@ export default function SentencePractice() {
   async function handleAudioRepeated() {
     if (!current) return;
     if (status === "correct") return;
-    //if (!audioGateOpen) return; // ✅ anti-abuse gate
+
+    // ✅ Anti-abuse gate (keep it ON for MVP)
+    if (!audioGateOpen) {
+      setFeedback("▶ Please play the audio first");
+      return;
+    }
+
+    // ✅ Prevent double submits
     if (xpInFlightRef.current) return;
+    xpInFlightRef.current = true;
 
     console.log("[AUDIO_REPEAT] clicked", {
       audioGateOpen,
@@ -997,57 +1005,69 @@ export default function SentencePractice() {
       inFlight: xpInFlightRef.current,
     });
 
-    xpInFlightRef.current = true;
-
-    const attemptNumber = attempts + 1;
-
-    const result = await awardXPEvent({
-      attemptId: `audio-repeat-${current.id}-${attemptNumber}`,
-      attemptNo: attemptNumber,
-      xp: 150,
-      event: "exercise_correct",
-      lessonId: lessonIdFromQuery,
-      mode: "audio",
-      practiceType: "audio",
-      exerciseId: current.id,
-
-      questionId: qid,
-
-      questionId: `repeat_${current.id}`, // ✅ ADD THIS LINE
-
-      meta: { audioVariant: "repeat" },
-      completedQuiz: false,
-      isCorrect: true,
-    });
-
-    const awarded = Number(result?.awarded || 0);
-
-    setStatus("correct");
-    setFeedback(awarded > 0 ? `✅ Great! +${awarded} XP` : "✅ Great!");
+    const attemptNumber = (Number(attempts) || 0) + 1;
 
     try {
-      playCorrect?.();
-    } catch {}
+      const result = await awardXPEvent({
+        attemptId: `audio-repeat-${current.id}-${attemptNumber}`,
+        attemptNo: attemptNumber,
+        xp: 150,
+        event: "exercise_correct",
+        lessonId: Number(lessonIdFromQuery || lessonId) || 0,
+        mode: "audio",
+        practiceType: "audio",
+        exerciseId: current.id,
+        questionId: `repeat_${current.id}`, // ✅ stable per-question dedupe
+        meta: { audioVariant: "repeat" },
+        completedQuiz: false,
+        isCorrect: true,
+      });
 
-    resetAudioGate();
+      const awarded = Number(result?.awarded ?? 0) || 0;
 
-    writeProgress(lessonId, "audio", {
-      total: lessonExercises.length,
-      completed: Math.min(lessonExercises.length, currentIndex + 1),
-      updatedAt: Date.now(),
-    });
+      // ✅ UI feedback should match server award
+      setStatus("correct");
+      setFeedback(awarded > 0 ? `✅ Great! +${awarded} XP` : "✅ Great!");
 
-    setTimeout(() => {
-      loadNextQuestion();
-      setRevealEnglish(false);
-      setShowHint(false);
-      setWrongIndexes([]);
-      setTypedAnswer("");
-      setStatus("idle");
-      setFeedback("");
-    }, 700);
+      if (awarded > 0) {
+        setEarnedXP(awarded);
+        setShowXPToast(true);
+      } else {
+        setEarnedXP(0);
+      }
 
-    xpInFlightRef.current = false;
+      try {
+        playCorrect?.();
+      } catch {}
+
+      // ✅ close gate after submit
+      resetAudioGate();
+
+      // ✅ local progress
+      writeProgress(lessonId, "audio", {
+        total: lessonExercises.length,
+        completed: Math.min(lessonExercises.length, currentIndex + 1),
+        updatedAt: Date.now(),
+      });
+
+      // ✅ advance
+      setTimeout(() => {
+        loadNextQuestion();
+        setRevealEnglish(false);
+        setShowHint(false);
+        setWrongIndexes([]);
+        setTypedAnswer("");
+        setStatus("idle");
+        setFeedback("");
+      }, 700);
+    } catch (err) {
+      console.error("[audio/repeat] award failed", err);
+      setStatus("wrong");
+      setFeedback("❌ Try again");
+      setEarnedXP(0);
+    } finally {
+      xpInFlightRef.current = false;
+    }
   }
 
   async function checkAnswer() {
@@ -1151,11 +1171,24 @@ export default function SentencePractice() {
         const xpDelta = Number(current?.xp ?? 150) || 150;
 
         const result = await awardXPEvent({
+          attemptId: `${qid}-${attemptNumber}`,
+          attemptNo: attemptNumber,
+          questionId: qid,
+
           xp: xpDelta,
           event: "exercise_correct",
-          mode: safeMode, // "typing"
+
+          mode: safeMode === "audio" ? "audio" : "typing",
+          practiceType: safeMode === "audio" ? "audio" : "typing",
+
           lessonId: Number(lessonId),
-          exerciseId: current?.Question?.id ?? current?.id, // use current?.id if you don't have currentQuestion
+          exerciseId: current?.id,
+          meta:
+            safeMode === "audio" && audioVariant === "dictation"
+              ? { audioVariant: "dictation" }
+              : {},
+          completedQuiz: false,
+          isCorrect: true,
         });
 
         const awarded = Number(result?.awarded ?? result?.xpAwarded ?? 0) || 0;
@@ -1166,43 +1199,6 @@ export default function SentencePractice() {
         } else {
           console.error("[XP] typing: XP not awarded", result);
         }
-
-        // Run XP + completion bonus asynchronously
-        (async () => {
-          try {
-            const xpDelta = Number(current?.xp ?? 150) || 150;
-
-            const result = await awardXPEvent({
-              xp: xpDelta,
-              event: "exercise_correct",
-              mode: "typing", // literal
-              lessonId: Number(lessonId),
-              exerciseId: current?.id,
-            });
-
-            const awarded = Number(result?.awarded ?? 0) || 0;
-
-            if (result?.ok && awarded > 0) {
-              setEarnedXP(awarded);
-              setShowXPToast(true);
-              playCorrectSound?.();
-            } else {
-              console.error("[XP] typing: XP not awarded", result);
-            }
-
-            const isLastQuestion =
-              currentIndex >= (lessonExercises?.length || 0) - 1;
-
-            if (isLastQuestion) {
-              const bonus = await awardCompletionBonus("typing");
-              setCompletionXp(bonus.awarded || 300);
-              setCompletionMode("typing");
-              setShowCompleteModal(true);
-            }
-          } catch (err) {
-            console.error("[XP] typing awardXPEvent/completion failed", err);
-          }
-        })();
 
         // Update lesson progress (Typing)
         {
@@ -1228,6 +1224,29 @@ export default function SentencePractice() {
             timestamp: Date.now(),
           }),
         );
+        // ✅ Completion bonus (ONLY once, only on last question)
+        const isLastQuestion =
+          currentIndex >= (lessonExercises?.length || 0) - 1;
+
+        if (isLastQuestion) {
+          try {
+            const bonus = await awardCompletionBonus(
+              safeMode === "audio" && audioVariant === "dictation"
+                ? "audio"
+                : "typing",
+            );
+
+            setCompletionXp(Number(bonus?.awarded ?? 300) || 300);
+            setCompletionMode(
+              safeMode === "audio" && audioVariant === "dictation"
+                ? "audio"
+                : "typing",
+            );
+            setShowCompleteModal(true);
+          } catch (err) {
+            console.error("[XP] completion bonus failed", err);
+          }
+        }
         return;
       }
 
@@ -2032,3 +2051,4 @@ export default function SentencePractice() {
     </div>
   );
 }
+// DISK_MARKER_1770108265
