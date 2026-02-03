@@ -442,6 +442,10 @@ export default function SentencePractice() {
     }
   }, [status, loadNextQuestion]);
 
+  useEffect(() => {
+    xpInFlightRef.current = false;
+  }, [safeMode, currentIndex]);
+
   // -------------------
   // XP update (stable + backend-friendly)
   // -------------------
@@ -561,9 +565,26 @@ export default function SentencePractice() {
   }) {
     // 🔒 Prevent duplicate /progress/update calls
     if (xpInFlightRef.current) {
-      console.warn("[XP] skipped duplicate awardXPEvent (in-flight)");
+      console.warn("[XP] skipped duplicate awardXPEvent (in-flight)", {
+        mode,
+        event,
+        questionId,
+        exerciseId,
+        attemptId,
+        attemptNo,
+      });
       return { ok: false, awarded: 0, skipped: true };
     }
+
+    console.log("[XP] awardXPEvent ENTER", {
+      mode,
+      event,
+      questionId,
+      exerciseId,
+      attemptId,
+      attemptNo,
+      inFlight: xpInFlightRef.current,
+    });
 
     xpInFlightRef.current = true;
 
@@ -619,6 +640,7 @@ export default function SentencePractice() {
     } finally {
       // 🔓 ALWAYS release lock, even on early returns/errors
       xpInFlightRef.current = false;
+      console.log("[XP] awardXPEvent RELEASE", { mode, event, questionId });
     }
   }
 
