@@ -554,52 +554,46 @@ export default function SentencePractice() {
     exerciseId = null,
     meta = {},
     completedQuiz = false,
+    attemptId,
+    attemptNo,
+    isCorrect,
+    practiceType,
   }) {
     // 🔒 Prevent duplicate /progress/update calls
     if (xpInFlightRef.current) {
       console.warn("[XP] skipped duplicate awardXPEvent (in-flight)");
       return { ok: false, awarded: 0, skipped: true };
     }
+
     xpInFlightRef.current = true;
 
-    const attemptId =
-      globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
-        ? globalThis.crypto.randomUUID()
-        : `xp_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-
-    const payload = {
-      attemptId,
-      attemptNo: 1,
-
-      questionId: questionId ? String(questionId) : undefined,
-
-      xp:
-        mode === "typing" || mode === "audio"
-          ? 150
-          : mode === "reorder"
-            ? 100
-            : 80,
-
-      event,
-
-      // ✅ Server awards XP only when it knows this is a correct attempt
-      isCorrect: event === "exercise_correct",
-
-      meta: { lessonId: lid, mode, exerciseId, ...meta },
-      lessonId: lid,
-      practiceType: mode,
-      mode,
-      exerciseId,
-      completedQuiz: !!completedQuiz,
-    };
-
-    console.log("[XP] awardXPEvent payload", payload);
-
     try {
+      const payload = {
+        attemptId,
+        attemptNo: Number(attemptNo ?? 1) || 1,
+
+        // ✅ IMPORTANT: make questionId real, not undefined noise
+        ...(questionId ? { questionId: String(questionId) } : {}),
+
+        // xp: if you already compute xp elsewhere, keep it; else:
+        xp: Number(xp) || 0,
+        event,
+
+        // keep your existing fields
+        lessonId: Number(lid) || 0,
+        practiceType: practiceType || mode,
+        mode,
+        exerciseId,
+
+        meta: { lessonId: Number(lid) || 0, mode, exerciseId, ...meta },
+
+        completedQuiz: !!completedQuiz,
+        isCorrect:
+          isCorrect === undefined ? event === "exercise_correct" : !!isCorrect,
+      };
+
       const res = await api.post("/progress/update", payload);
       const data = res?.data ?? res;
-
-      console.log("[XP] awardXPEvent response", data);
 
       if (!data || data.ok !== true) {
         console.error("[XP] /progress/update not ok", {
@@ -609,23 +603,21 @@ export default function SentencePractice() {
         return { ok: false, awarded: 0, data };
       }
 
-      // IMPORTANT: Only trust server-awarded XP. Do NOT fall back to requested xp,
-      // otherwise UI will show XP even when backend awarded 0.
-      const xpAwarded =
+      const serverAwarded =
         Number(
           data?.xpAwarded ??
+            data?.awarded ??
             data?.xpDelta ??
             data?.xp_delta ??
-            data?.earnedXP ??
             0,
         ) || 0;
 
-      return { ok: true, awarded: xpAwarded, data };
+      return { ok: true, awarded: serverAwarded, data };
     } catch (err) {
       console.error("[XP] /progress/update failed", err);
-      return { ok: false, awarded: 0 };
+      return { ok: false, awarded: 0, error: String(err?.message || err) };
     } finally {
-      // 🔓 Always release lock
+      // 🔓 ALWAYS release lock, even on early returns/errors
       xpInFlightRef.current = false;
     }
   }
@@ -1019,6 +1011,8 @@ export default function SentencePractice() {
       practiceType: "audio",
       exerciseId: current.id,
 
+      questionId: qid,
+
       questionId: `repeat_${current.id}`, // ✅ ADD THIS LINE
 
       meta: { audioVariant: "repeat" },
@@ -1143,6 +1137,11 @@ export default function SentencePractice() {
       }
 
       const attemptNumber = attempts + 1;
+
+      const qid =
+        safeMode === "audio" && audioVariant === "dictation"
+          ? `dict_${current.id}`
+          : `typing_${current.id}`;
 
       if (normalize(user) === normalize(target)) {
         correctSoundRef.current?.play?.();
