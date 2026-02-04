@@ -289,6 +289,9 @@ export default function SentencePractice() {
 
   const xpInFlightRef = useRef(false);
 
+  const audioSubmitRef = useRef(new Set()); // per-question "already submitted"
+  const [audioSubmitting, setAudioSubmitting] = useState(false); // UX: disable button while saving
+
   const englishFull = String(expectedAnswer || current?.expected || "").trim();
 
   function openAudioGateAfter(ms = 1800) {
@@ -304,6 +307,10 @@ export default function SentencePractice() {
     if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
     audioGateTimerRef.current = null;
   }
+
+  useEffect(() => {
+    audioSubmitRef.current = new Set();
+  }, [lessonIdFromQuery, lessonId]);
 
   useEffect(() => {
     ttsRateRef.current = ttsRate;
@@ -638,7 +645,12 @@ export default function SentencePractice() {
     } finally {
       // 🔓 ALWAYS release this specific attempt lock
       xpInFlightKeysRef.current.delete(dedupeKey);
-      console.log("[XP] awardXPEvent RELEASE", { dedupeKey, mode, event, questionId });
+      console.log("[XP] awardXPEvent RELEASE", {
+        dedupeKey,
+        mode,
+        event,
+        questionId,
+      });
     }
   }
 
@@ -1008,15 +1020,21 @@ export default function SentencePractice() {
     if (!current) return;
     if (status === "correct") return;
 
-    // ✅ Anti-abuse gate (keep it ON for MVP)
-    if (!audioGateOpen) {
-      setFeedback("▶ Please play the audio first");
+    // ✅ prevent double submit on same question
+    if (audioSubmitRef.current.has(current.id)) {
       return;
     }
 
-    // ✅ Prevent double submits
-    if (xpInFlightRef.current) return;
-    xpInFlightRef.current = true;
+    // ✅ anti-abuse: must press Play first
+    if (!audioGateOpen) {
+      setFeedback("▶ Tap Play first, then click “I repeated it ✅”");
+      return;
+    }
+
+    // ✅ prevent spam clicks while request is running
+    if (audioSubmitting) return;
+
+    setAudioSubmitting(true);
 
     console.log("[AUDIO_REPEAT] clicked", {
       audioGateOpen,
@@ -1025,7 +1043,7 @@ export default function SentencePractice() {
       inFlight: xpInFlightRef.current,
     });
 
-    const attemptNumber = (Number(attempts) || 0) + 1;
+    const attemptNumber = attempts + 1;
 
     try {
       const result = await awardXPEvent({
@@ -1037,40 +1055,32 @@ export default function SentencePractice() {
         mode: "audio",
         practiceType: "audio",
         exerciseId: current.id,
-        questionId: `repeat_${current.id}`, // ✅ stable per-question dedupe
+        questionId: `repeat_${current.id}`, // ✅ stable dedupe key
         meta: { audioVariant: "repeat" },
         completedQuiz: false,
         isCorrect: true,
       });
 
-      const awarded = Number(result?.awarded ?? 0) || 0;
+      const awarded = Number(result?.awarded || 0);
 
-      // ✅ UI feedback should match server award
+      // ✅ mark this question as submitted no matter what
+      audioSubmitRef.current.add(current.id);
+
       setStatus("correct");
       setFeedback(awarded > 0 ? `✅ Great! +${awarded} XP` : "✅ Great!");
-
-      if (awarded > 0) {
-        setEarnedXP(awarded);
-        setShowXPToast(true);
-      } else {
-        setEarnedXP(0);
-      }
 
       try {
         playCorrect?.();
       } catch {}
 
-      // ✅ close gate after submit
       resetAudioGate();
 
-      // ✅ local progress
       writeProgress(lessonId, "audio", {
         total: lessonExercises.length,
         completed: Math.min(lessonExercises.length, currentIndex + 1),
         updatedAt: Date.now(),
       });
 
-      // ✅ advance
       setTimeout(() => {
         loadNextQuestion();
         setRevealEnglish(false);
@@ -1084,9 +1094,8 @@ export default function SentencePractice() {
       console.error("[audio/repeat] award failed", err);
       setStatus("wrong");
       setFeedback("❌ Try again");
-      setEarnedXP(0);
     } finally {
-      xpInFlightRef.current = false;
+      setAudioSubmitting(false);
     }
   }
 
@@ -1913,9 +1922,14 @@ export default function SentencePractice() {
                   type="button"
                   onClick={handleAudioRepeated}
                   className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
-                  disabled={!current || status === "correct"}
+                  disabled={
+                    !current ||
+                    status === "correct" ||
+                    !audioGateOpen ||
+                    audioSubmitting
+                  }
                 >
-                  I repeated it ✅
+                  {audioSubmitting ? "⏳ Saving..." : "I repeated it ✅"}
                 </button>
               </div>
             </div>
