@@ -458,7 +458,7 @@ export default function SentencePractice() {
   // -------------------
   // XP update (stable + backend-friendly)
   // -------------------
-  async function commitXP({ isCorrect, attemptNo, mode }) {
+  async function awardXPEvent({ isCorrect, attemptNo, mode }) {
     const attemptId =
       globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
         ? globalThis.crypto.randomUUID()
@@ -485,12 +485,14 @@ export default function SentencePractice() {
 
       // ✅ REQUIRED for XP award logic
       xp: xpValue,
-      event: isCorrect ? `${mode}_correct` : `${mode}_wrong`,
+      event: isCorrect ? "exercise_correct" : "exercise_wrong",
       meta: {
         lessonId,
         mode,
         questionId: numericQuestionId,
       },
+
+      exerciseId: current?.id,
 
       // keep your existing fields (safe/backward compatible)
       lessonId, // numeric (dynamic)
@@ -1062,22 +1064,28 @@ export default function SentencePractice() {
 
       const awarded = Number(result?.awarded ?? 0) || 0;
 
-      if (result?.ok && awarded > 0) {
-        // ✅ mark submitted ONLY when XP is actually awarded
+      // ✅ mark submitted once the server responds OK (even if deduped to 0)
+      if (result?.ok) {
         audioSubmitRef.current.add(current.id);
+      }
 
-        // ✅ show the same UI pipeline as typing/reorder
+      // ✅ always treat Repeat as success UI (no "wrong")
+      setStatus("correct");
+
+      if (result?.ok && awarded > 0) {
         setEarnedXP(awarded);
         setShowXPToast(true);
         playCorrectSound?.();
-
-        setStatus("correct");
         setFeedback(`✅ Great! +${awarded} XP`);
+      } else if (result?.ok && awarded === 0) {
+        // Deduped / already awarded / or server chose 0 — don't punish the user
+        setFeedback("✅ Saved!");
       } else {
-        console.error("[AUDIO/repeat] XP not awarded", result);
-        setStatus("wrong");
-        setFeedback("⚠️ XP not awarded. Tap Play and try again.");
-        return; // ✅ do NOT advance
+        // only real failure should block
+        console.error("[AUDIO/repeat] awardXPEvent failed", result);
+        setStatus("idle");
+        setFeedback("⚠️ Couldn’t save. Please try again.");
+        return;
       }
 
       resetAudioGate();
@@ -1432,7 +1440,7 @@ export default function SentencePractice() {
         if (result?.ok && awarded > 0) {
           setEarnedXP(awarded);
           setShowXPToast(true);
-          correctSoundRef.current?.play?.(); // ✅ play only after XP success
+          playCorrectSound?.();
           setFeedback("✅ Correct!");
         } else {
           console.error("[XP] reorder: XP not awarded", result);
