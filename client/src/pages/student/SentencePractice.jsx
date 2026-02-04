@@ -946,7 +946,6 @@ export default function SentencePractice() {
       setStatus("correct");
 
       // 2) Commit XP to backend using universal pipeline
-      // 2) Commit XP to backend using universal pipeline
       try {
         const result = await awardXPEvent({
           xp,
@@ -1061,17 +1060,25 @@ export default function SentencePractice() {
         isCorrect: true,
       });
 
-      const awarded = Number(result?.awarded || 0);
+      const awarded = Number(result?.awarded ?? 0) || 0;
 
-      // ✅ mark this question as submitted no matter what
-      audioSubmitRef.current.add(current.id);
+      if (result?.ok && awarded > 0) {
+        // ✅ mark submitted ONLY when XP is actually awarded
+        audioSubmitRef.current.add(current.id);
 
-      setStatus("correct");
-      setFeedback(awarded > 0 ? `✅ Great! +${awarded} XP` : "✅ Great!");
+        // ✅ show the same UI pipeline as typing/reorder
+        setEarnedXP(awarded);
+        setShowXPToast(true);
+        playCorrectSound?.();
 
-      try {
-        playCorrect?.();
-      } catch {}
+        setStatus("correct");
+        setFeedback(`✅ Great! +${awarded} XP`);
+      } else {
+        console.error("[AUDIO/repeat] XP not awarded", result);
+        setStatus("wrong");
+        setFeedback("⚠️ XP not awarded. Tap Play and try again.");
+        return; // ✅ do NOT advance
+      }
 
       resetAudioGate();
 
@@ -1193,7 +1200,6 @@ export default function SentencePractice() {
           : `typing_${current.id}`;
 
       if (normalize(user) === normalize(target)) {
-        correctSoundRef.current?.play?.();
         setStatus("correct");
         setWrongIndexes([]);
 
@@ -1220,11 +1226,12 @@ export default function SentencePractice() {
           isCorrect: true,
         });
 
-        const awarded = Number(result?.awarded ?? result?.xpAwarded ?? 0) || 0;
+        const awarded = Number(result?.awarded ?? 0) || 0;
 
         if (result?.ok && awarded > 0) {
           setEarnedXP(awarded);
           setShowXPToast(true);
+          correctSoundRef.current?.play?.(); // play only after award success
         } else {
           console.error("[XP] typing: XP not awarded", result);
         }
@@ -1396,46 +1403,53 @@ export default function SentencePractice() {
     }
 
     // ✅ REORDER validation
-    if (asArr(answer).length !== correctOrder.length) {
-      setStatus("wrong");
-      setShowHint(true);
-      return;
-    }
-
-    const incorrect = [];
-    answer.forEach((word, index) => {
-      if (word !== correctOrder[index]) incorrect.push(index);
-    });
-
     if (incorrect.length === 0) {
-      correctSoundRef.current?.play?.();
       const attemptNumber = attempts + 1;
 
       setWrongIndexes([]);
       setStatus("correct");
 
-      // Run XP + completion bonus asynchronously (no await needed here)
-      (async () => {
-        try {
-          await commitXP({
-            isCorrect: true,
-            attemptNo: attemptNumber,
-            mode: "reorder",
-          });
+      try {
+        const xpDelta = Number(current?.xp ?? 100) || 100;
 
-          const isLastQuestion =
-            currentIndex >= (lessonExercises?.length || 0) - 1;
+        const result = await awardXPEvent({
+          attemptId: `reorder_${current?.id}-${attemptNumber}`,
+          attemptNo: attemptNumber,
+          questionId: `reorder_${current?.id}`,
+          xp: xpDelta,
+          event: "exercise_correct",
+          mode: "reorder",
+          practiceType: "reorder",
+          lessonId: Number(lessonId),
+          exerciseId: current?.id,
+          meta: {},
+          completedQuiz: false,
+          isCorrect: true,
+        });
 
-          if (isLastQuestion) {
-            const bonus = await awardCompletionBonus("reorder");
-            setCompletionXp(bonus.awarded || 300);
-            setCompletionMode("reorder");
-            setShowCompleteModal(true);
-          }
-        } catch (err) {
-          console.error("[XP] reorder commitXP/completion failed", err);
+        const awarded = Number(result?.awarded ?? 0) || 0;
+
+        if (result?.ok && awarded > 0) {
+          setEarnedXP(awarded);
+          setShowXPToast(true);
+          correctSoundRef.current?.play?.(); // ✅ play only after XP success
+          setFeedback("✅ Correct!");
+        } else {
+          console.error("[XP] reorder: XP not awarded", result);
+          setFeedback("✅ Correct! (XP not awarded)");
         }
-      })();
+
+        const isLastQuestion =
+          currentIndex >= (lessonExercises?.length || 0) - 1;
+        if (isLastQuestion) {
+          const bonus = await awardCompletionBonus("reorder");
+          setCompletionXp(Number(bonus?.awarded ?? 300) || 300);
+          setCompletionMode("reorder");
+          setShowCompleteModal(true);
+        }
+      } catch (err) {
+        console.error("[XP] reorder awardXPEvent/completion failed", err);
+      }
 
       // Update lesson progress (Reorder)
       {
@@ -1461,6 +1475,7 @@ export default function SentencePractice() {
           timestamp: Date.now(),
         }),
       );
+
       return;
     }
 
