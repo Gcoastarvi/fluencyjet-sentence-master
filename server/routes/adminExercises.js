@@ -194,8 +194,7 @@ router.post("/bulk", async (req, res) => {
             select: { id: true },
           });
           if (!day) throw e;
-        }
-      }
+        }       
 
       // Optional replace: delete only this day+mode (IMPORTANT: use enum, not modeStr)
       let deleted = 0;
