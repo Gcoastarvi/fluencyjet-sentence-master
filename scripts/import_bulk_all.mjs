@@ -106,7 +106,15 @@ async function bulkImport(token, { lessonId, mode, xp, items }) {
     const lessonId = lessonCache.get(lessonSlug);
 
     // Bulk import (id-based endpoint)
-    const res = await bulkImport(token, { lessonId, mode, xp: xp || 150, items });
+    const res = await bulkImport(token, {
+      lessonId,
+      mode,
+      level: lessonLevel,            // NEW
+      dayNumber: lessonId,           // NEW (explicit for now)
+      xp: xp || 150,
+      items,
+    });
+
     console.log("   bulk ok => inserted:", res.inserted, "skipped:", res.skipped || 0);
 
     imported++;
