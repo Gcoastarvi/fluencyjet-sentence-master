@@ -172,16 +172,46 @@ export default function LessonDetail() {
     [lessonId],
   );
 
-  const qNum = session
-    ? Math.max(1, Number(session.questionIndex || 0) + 1)
-    : null;
-  const continueText = session
-    ? `Continue • ${modeLabel(session.mode)} • Q${qNum}`
+  // --- Safe Continue (guards stale session + adds q=) ---
+  const totalsByMode = {
+    typing: Number(typingProg?.total || 0),
+    reorder: Number(reorderProg?.total || 0),
+    cloze: ENABLE_CLOZE ? Number(clozeProg?.total || 0) : 0,
+    audio: ENABLE_AUDIO ? Number(audioProg?.total || 0) : 0,
+  };
+
+  const normalizedSession = (() => {
+    if (!session) return null;
+
+    const m = String(session?.mode || "").toLowerCase();
+    const idx = Number(session?.questionIndex);
+
+    // mode gate
+    if (!["typing", "reorder", "cloze", "audio"].includes(m)) return null;
+    if (m === "audio" && !ENABLE_AUDIO) return null;
+    if (m === "cloze" && !ENABLE_CLOZE) return null;
+
+    // index gate
+    if (!Number.isFinite(idx) || idx < 0) return null;
+
+    const total = Number(totalsByMode[m] || 0);
+    if (total <= 0) return null; // nothing to resume
+    if (idx >= total) return null; // stale/out-of-range session
+
+    return { mode: m, questionIndex: idx, total };
+  })();
+
+  const qNum = normalizedSession ? normalizedSession.questionIndex + 1 : null;
+
+  const continueText = normalizedSession
+    ? `Continue • ${modeLabel(normalizedSession.mode)} • Q${qNum}`
     : "Continue";
-  const continueHref =
-    session && session.mode
-      ? `/practice/${session.mode}?lessonId=${encodeURIComponent(lessonId)}`
-      : null;
+
+  const continueHref = normalizedSession
+    ? `/practice/${normalizedSession.mode}?lessonId=${encodeURIComponent(
+        lessonId,
+      )}&q=${encodeURIComponent(normalizedSession.questionIndex)}`
+    : null;
 
   function goPaywall() {
     navigate(`/paywall?plan=BEGINNER&from=lesson_${lessonIdNum || ""}`);
@@ -415,9 +445,9 @@ export default function LessonDetail() {
           {/* Audio */}
           <button
             onClick={() => startMode("audio")}
-            disabled={!lessonId}
+            disabled={!lessonIdNum}
             className={`rounded-2xl px-4 py-4 text-center ${
-              lessonId
+              lessonIdNum
                 ? "border bg-white hover:bg-gray-50"
                 : "cursor-not-allowed bg-gray-100 text-gray-400"
             }`}
