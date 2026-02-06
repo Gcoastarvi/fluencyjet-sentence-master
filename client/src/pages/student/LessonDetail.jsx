@@ -231,6 +231,21 @@ export default function LessonDetail() {
     navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lessonId)}`);
   }
 
+  function smartStart() {
+    if (!lessonId) return;
+    if (isLocked) return goPaywall();
+
+    // If Continue is available, use it.
+    if (continueHref) {
+      navigate(continueHref);
+      return;
+    }
+
+    // MVP: default Typing, fallback Reorder
+    // (Later we can probe backend to pick mode that exists.)
+    navigate(`/practice/typing?lessonId=${encodeURIComponent(lessonId)}`);
+  }
+
   return (
     <div className="mx-auto max-w-3xl p-4">
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -387,6 +402,19 @@ export default function LessonDetail() {
 
         {/* Actions */}
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Smart Start */}
+          <button
+            onClick={smartStart}
+            className="rounded-2xl bg-purple-600 px-4 py-4 text-center text-white hover:opacity-95"
+          >
+            <div className="text-base font-semibold">
+              {continueHref ? "Start (or Continue)" : "Start Practice"}
+            </div>
+            <div className="mt-1 text-xs text-purple-100">
+              Auto-picks the best mode for you
+            </div>
+          </button>
+
           {/* Continue */}
           {continueHref ? (
             <Link
