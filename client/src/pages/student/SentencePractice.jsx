@@ -661,13 +661,32 @@ export default function SentencePractice() {
       const data = res?.data ?? res;
 
       // ✅ PAYWALL redirect (fast path, no error flash)
-      if (
+      const isLocked =
         data?.ok === false &&
         (data?.code === "PAYWALL" ||
           String(data?.message || data?.error || "")
             .toLowerCase()
-            .includes("locked"))
-      ) {
+            .includes("locked"));
+
+      if (isLocked) {
+        const action = data?.nextAction;
+        const from = action?.from || `lesson_${lessonIdNum}`;
+
+        // If backend provided a redirect target, follow it
+        if (action?.url) {
+          const sep = String(action.url).includes("?") ? "&" : "?";
+          const target = `${action.url}${sep}from=${encodeURIComponent(from)}`;
+
+          // support external links too
+          if (/^https?:\/\//i.test(target)) {
+            window.location.href = target;
+          } else {
+            navigate(target, { replace: true });
+          }
+          return;
+        }
+
+        // fallback: go to practice hub (LessonDetail)
         navigate(`/lesson/${lessonIdNum}`, { replace: true });
         return;
       }
@@ -1471,7 +1490,7 @@ export default function SentencePractice() {
         </div>
       </div>
     );
-  }  
+  }
 
   // -------------------
   // empty / error / no current (single source of truth)

@@ -30,6 +30,22 @@ function shuffle(array) {
   return array;
 }
 
+function paywallResponse({ lessonId, freeLessons }) {
+  return {
+    ok: false,
+    code: "PAYWALL",
+    message: `Locked. Upgrade required to access Lesson ${lessonId}.`,
+    freeLessons,
+
+    // marketing-flex redirect (optional)
+    nextAction: {
+      type: process.env.LOCK_REDIRECT_TYPE || "PAYWALL",
+      url: process.env.LOCK_REDIRECT_URL || "/paywall?plan=BEGINNER",
+      from: `lesson_${lessonId}`,
+    },
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /*                    GET /api/quizzes/random                                 */
 /* -------------------------------------------------------------------------- */
@@ -83,13 +99,12 @@ router.get("/random", authRequired, async (req, res) => {
       plan === "paid";
 
     // ✅ Hard rule: free users only get first N lessons
-    if (!proActive && lessonId > FREE_LESSONS) {
-      return res.status(403).json({
-        ok: false,
-        code: "PAYWALL",
-        message: `Locked. Upgrade required to access Lesson ${lessonId}.`,
-        freeLessons: FREE_LESSONS,
-      });
+    if (!proActive && lessonIdNum > FREE_LESSONS) {
+      return res
+        .status(403)
+        .json(
+          paywallResponse({ lessonId: lessonIdNum, freeLessons: FREE_LESSONS }),
+        );
     }
     // ---- END PAYWALL HARD BLOCK ----
 
@@ -214,12 +229,11 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       plan === "paid";
 
     if (!proActive && lessonIdNum > FREE_LESSONS) {
-      return res.status(403).json({
-        ok: false,
-        code: "PAYWALL",
-        message: `Locked. Upgrade required to access Lesson ${lessonIdNum}.`,
-        freeLessons: FREE_LESSONS,
-      });
+      return res
+        .status(403)
+        .json(
+          paywallResponse({ lessonId: lessonIdNum, freeLessons: FREE_LESSONS }),
+        );
     }
     // ---- END PAYWALL ----
 

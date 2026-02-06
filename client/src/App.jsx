@@ -78,14 +78,7 @@ export default function App() {
             <Route path="/lesson/:lessonId" element={<LessonDetail />} />
             <Route path="/login" element={<Login />} />
 
-            <Route
-              path="/practice/:mode"
-              element={
-                <ProtectedRoute>
-                  <SentencePractice />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/practice/:mode" element={<SentencePractice />} />
 
             <Route
               path="/practice"
