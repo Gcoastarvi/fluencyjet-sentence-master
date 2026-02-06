@@ -3,6 +3,24 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/api/apiClient";
 
+// --- local progress helpers (from SentencePractice) ---
+const progressKey = (lid, mode) => `fj_progress:${lid}:${mode}`;
+
+function readProgress(lid, mode) {
+  try {
+    return JSON.parse(localStorage.getItem(progressKey(lid, mode)) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function pct(p) {
+  const c = Number(p?.completed || 0);
+  const t = Number(p?.total || 0);
+  if (!t) return 0;
+  return Math.max(0, Math.min(100, Math.round((c / t) * 100)));
+}
+
 export default function Lessons() {
   const navigate = useNavigate();
 
@@ -98,11 +116,47 @@ export default function Lessons() {
           const isCompleted = Boolean(lesson.completed);
           const dayNumber = getDayNumber(lesson, index);
 
+      // ---- local progress for this lesson (uses lesson number as key) ----
+      const typingProg = readProgress(dayNumber, "typing");
+      const reorderProg = readProgress(dayNumber, "reorder");
+      const audioProg = readProgress(dayNumber, "audio");
+
+      const bestPct = Math.max(pct(typingProg), pct(reorderProg), pct(audioProg));
+
+      const hasStarted =
+        (Number(typingProg?.completed || 0) > 0 && Number(typingProg?.total || 0) > 0) ||
+        (Number(reorderProg?.completed || 0) > 0 && Number(reorderProg?.total || 0) > 0) ||
+        (Number(audioProg?.completed || 0) > 0 && Number(audioProg?.total || 0) > 0);
+
+      const primaryLabel = !isUnlocked ? "Locked" : hasStarted ? "Continue" : "Start";
+
+      const goPrimary = () => {
+        if (!isUnlocked) {
+          navigate(`/paywall?plan=BEGINNER&from=lesson_${dayNumber}`);
+          return;
+        }
+        navigate(`/lesson/${dayNumber}`);
+      };
+
           return (
             <div
               key={lesson.id ?? `${lesson.slug ?? "lesson"}_${index}`}
               className="relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition"
             >
+              {/* Lock badge */}
+              {!isUnlocked && (
+                <div className="absolute right-3 top-3 rounded-full bg-gray-900/90 px-3 py-1 text-xs font-semibold text-white">
+                  🔒 Locked
+                </div>
+              )}
+
+              {/* Progress badge */}
+              {isUnlocked && (
+                <div className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-800 border">
+                  {bestPct}% done
+                </div>
+              )}
+
               {!isUnlocked && (
                 <div className="absolute inset-0 bg-white/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl text-gray-600">
                   🔒
@@ -118,27 +172,41 @@ export default function Lessons() {
                 </h2>
 
                 <p className="text-gray-500 mt-1">{lesson.description}</p>
+                
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  {/* Progress chips */}
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: "Typing", p: typingProg },
+                      { label: "Reorder", p: reorderProg },
+                      { label: "Audio", p: audioProg },
+                    ].map(({ label, p }) => (
+                      <span
+                        key={label}
+                        className="rounded-full border bg-white px-3 py-1 text-xs text-gray-700"
+                        title={`${label}: ${Number(p?.completed || 0)}/${Number(p?.total || 0)}`}
+                      >
+                        <span className="font-semibold">{label}</span>
+                        <span className="text-gray-500"> • </span>
+                        <span>{pct(p)}%</span>
+                      </span>
+                    ))}
+                  </div>
 
-                <div className="mt-4 flex items-center gap-3">
-                  {/* If unlocked: open mode picker */}
-                  {isUnlocked ? (
-                    <button
-                      type="button"
-                      onClick={() => openModePicker(lesson)}
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-full hover:scale-105 transition inline-block"
-                    >
-                      Start →
-                    </button>
-                  ) : (
-                    // If locked: go to paywall detail page for that lesson/dayNumber
-                    <Link
-                      to={`/lesson/${dayNumber}`}
-                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition inline-block"
-                    >
-                      View →
-                    </Link>
-                  )}
+                  {/* Primary CTA */}
+                  <button
+                    type="button"
+                    onClick={goPrimary}
+                    className={`px-4 py-2 rounded-full transition inline-block ${
+                      isUnlocked
+                        ? "bg-indigo-600 text-white hover:scale-105"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    {primaryLabel} →
+                  </button>
                 </div>
+
               </div>
             </div>
           );
