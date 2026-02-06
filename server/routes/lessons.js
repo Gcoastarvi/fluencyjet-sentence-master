@@ -4,15 +4,18 @@ import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
 import requireAdmin from "../middleware/admin.js";
 
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import prisma from "../prisma.js"; // adjust import to your project
+
 const router = express.Router();
 
 /* -----------------------------------------------------------
    USER ENDPOINTS — SAFE, UNTOUCHED, SAME AS YOUR WORKING CODE
 ----------------------------------------------------------- */
 /* GET /api/lessons  → list lessons + unlocked logic */
-router.get("/", authRequired, async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id ?? null;
 
     const lessons = await prisma.lesson.findMany({
       orderBy: [{ id: "asc" }], // ✅ order column doesn't exist; use id
@@ -55,10 +58,10 @@ router.get("/", authRequired, async (req, res) => {
 });
 
 /* GET /api/lessons/:id → lesson details + progress */
-router.get("/:id", authRequired, async (req, res) => {
+router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const lessonId = Number(req.params.id);
-    const userId = req.user.id;
+    const userId = req.user?.id ? Number(req.user.id) : null;
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -81,22 +84,19 @@ router.get("/:id", authRequired, async (req, res) => {
     // normalize field for older UI code
     const lessonOut = { ...lesson, is_locked: lesson.isLocked };
 
-    // userProgress is per-user (no lesson_id in this schema)
-    const userProgress = await prisma.userProgress.findFirst({
-      where: { user_id: userId },
-      select: {
-        xp: true,
-        streak: true,
-        badges: true,
-        updated_at: true,
-      },
-    });
+    let userProgress = null;
+    if (req.user?.id) {
+      const userId = Number(req.user.id);
+      userProgress = await prisma.userProgress.findFirst({
+        where: { user_id: userId },
+        select: { xp: true, streak: true, badges: true, updated_at: true },
+      });
+    }
 
-    // No per-lesson progress table exists yet, so return null for now
     return res.json({
       ok: true,
       lesson: lessonOut,
-      userProgress: userProgress || null,
+      userProgress,
     });
   } catch (err) {
     console.error("❌ /api/lessons/:id error:", err);
@@ -178,7 +178,9 @@ router.post("/admin/lessons/upsert", authRequired, async (req, res) => {
       return res.status(400).json({ ok: false, error: "slug is required" });
     }
 
-    const cleanLevel = String(level || "").trim().toLowerCase();
+    const cleanLevel = String(level || "")
+      .trim()
+      .toLowerCase();
     const difficulty = cleanLevel === "intermediate" ? "intermediate" : "basic";
 
     const cleanTitle =
