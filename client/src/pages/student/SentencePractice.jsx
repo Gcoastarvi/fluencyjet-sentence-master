@@ -310,7 +310,7 @@ export default function SentencePractice() {
 
   useEffect(() => {
     audioSubmitRef.current = new Set();
-  }, [lessonIdFromQuery, lessonId]);
+  }, [lessonIdFromQuery, lessonId, audioVariant, safeMode]);
 
   useEffect(() => {
     ttsRateRef.current = ttsRate;
@@ -367,7 +367,16 @@ export default function SentencePractice() {
       const sameLesson = String(last.lessonId) === String(lessonId);
       const sameMode = String(last.mode) === String(safeMode);
 
-      if (!sameLesson || !sameMode) return;
+      let sameVariant = true;
+      if (String(safeMode) === "audio") {
+        const v = String(audioVariant || "");
+        const lastV = String(last?.variant || "");
+        // If last session had no variant, we allow resume (backward compatible)
+        // If it has a variant, it must match.
+        sameVariant = !lastV || lastV === v;
+      }
+
+      if (!sameLesson || !sameMode || !sameVariant) return;
 
       if (last?.questionIndex != null) {
         setCurrentIndex(Number(last.questionIndex) || 0);
@@ -377,6 +386,21 @@ export default function SentencePractice() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonId, safeMode]);
+
+  useEffect(() => {
+    try {
+      const session = {
+        lessonId: String(lessonId),
+        mode: String(safeMode),
+        questionIndex: Number(currentIndex) || 0,
+        updatedAt: Date.now(),
+        ...(safeMode === "audio" ? { variant: audioVariant } : {}),
+      };
+      localStorage.setItem("fj_last_session", JSON.stringify(session));
+    } catch {
+      // ignore
+    }
+  }, [lessonId, safeMode, currentIndex, audioVariant]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -454,110 +478,6 @@ export default function SentencePractice() {
   useEffect(() => {
     xpInFlightRef.current = false;
   }, [safeMode, currentIndex]);
-
-  // -------------------
-  // XP update (stable + backend-friendly)
-  // -------------------
-  async function awardXPEvent({ isCorrect, attemptNo, mode }) {
-    const attemptId =
-      globalThis.crypto && typeof globalThis.crypto.randomUUID === "function"
-        ? globalThis.crypto.randomUUID()
-        : `att_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-
-    // backend-friendly numeric IDs
-    const numericQuestionId = Number(currentIndex + 1); // 1..N
-
-    // choose xp by mode (keep your economy)
-    const xpValue = isCorrect
-      ? mode === "typing"
-        ? 150
-        : mode === "reorder"
-          ? 100
-          : mode === "cloze"
-            ? 80
-            : 0
-      : 0;
-
-    // ✅ build payload correctly (NO statements inside object literal)
-    const payload = {
-      attemptId,
-      attemptNo: Number(attemptNo ?? 1) || 1,
-
-      // ✅ REQUIRED for XP award logic
-      xp: xpValue,
-      event: isCorrect ? "exercise_correct" : "exercise_wrong",
-      meta: {
-        lessonId,
-        mode,
-        questionId: numericQuestionId,
-      },
-
-      exerciseId: current?.id,
-
-      // keep your existing fields (safe/backward compatible)
-      lessonId, // numeric (dynamic)
-      questionId: numericQuestionId,
-
-      lessonKey: `L${lessonId}`,
-      questionKey: `Q${numericQuestionId}`,
-
-      practiceType: mode,
-      mode,
-
-      isCorrect: !!isCorrect,
-      completedQuiz: false,
-      timeTakenSec: null,
-    };
-
-    try {
-      const res = await api.post("/progress/update", payload);
-      const data = res?.data ?? res;
-
-      if (!data || data.ok !== true) {
-        console.error("[XP] /progress/update not ok", {
-          payload,
-          response: data,
-        });
-        setEarnedXP(0);
-        return;
-      }
-
-      const serverAwarded =
-        Number(
-          data?.xpAwarded ??
-            data?.xpDelta ??
-            data?.xp_delta ??
-            data?.earnedXP ??
-            0,
-        ) || 0;
-
-      setEarnedXP(serverAwarded);
-
-      const awarded =
-        Number(
-          data.xpAwarded ??
-            data.xpDelta ??
-            data.xp_delta ??
-            data.earnedXP ??
-            data.xp ??
-            0,
-        ) || 0;
-
-      // TEMP DEBUG (remove later if you want)
-      console.log("[XP] awarded from server:", awarded, "raw:", data);
-
-      setEarnedXP(awarded);
-      setStreak(Number(data.streak ?? data.currentStreak ?? 0) || 0);
-
-      setShowXPToast(true);
-      setTimeout(() => setShowXPToast(false), 1200);
-
-      window.dispatchEvent(new Event("fj:xp_updated"));
-    } catch (err) {
-      console.error("[XP] update failed", err);
-      setEarnedXP(0);
-    }
-  }
 
   // ===== Universal XP event commit (inside component) =====
   async function awardXPEvent({
@@ -782,11 +702,7 @@ export default function SentencePractice() {
         e?.message ??
         "";
 
-      console.log(
-        "[Practice] setLessonExercises called, len =",
-        normalized.length,
-      );
-      setLessonExercises(normalized);
+      setLessonExercises([]);
       setCurrentIndex(0);
 
       // ✅ PAYWALL redirect from HTTP error response
@@ -1021,8 +937,10 @@ export default function SentencePractice() {
     if (!current) return;
     if (status === "correct") return;
 
+    const submitKey = `${audioVariant}:${current.id}`;
+
     // ✅ prevent double submit on same question
-    if (audioSubmitRef.current.has(current.id)) {
+    if (audioSubmitRef.current.has(submitKey)) {
       return;
     }
 
@@ -1066,7 +984,7 @@ export default function SentencePractice() {
 
       // ✅ mark submitted once the server responds OK (even if deduped to 0)
       if (result?.ok) {
-        audioSubmitRef.current.add(current.id);
+        audioSubmitRef.current.add(submitKey);
       }
 
       // ✅ always treat Repeat as success UI (no "wrong")
@@ -1115,63 +1033,12 @@ export default function SentencePractice() {
   }
 
   async function checkAnswer() {
+    if (safeMode === "reorder") {
+      return checkReorderAnswer();
+    }
+
     if (!current) return;
     if (status === "correct") return;
-
-    if (safeMode === "reorder") {
-      const userWords = asArr(answer);
-      const correctWords = asArr(correctOrderArr); // use your derived correct array
-
-      if (!correctWords.length || !userWords.length) {
-        setStatus("wrong");
-        setFeedback("⚠️ Arrange the words first.");
-        setEarnedXP(0);
-        return;
-      }
-
-      const isCorrect =
-        norm(userWords.join(" ")) === norm(correctWords.join(" "));
-
-      if (isCorrect) {
-        const xpDelta = Number(current?.xp ?? 150) || 150;
-
-        const isAudioDictation =
-          safeMode === "audio" && audioVariant === "dictation";
-
-        const result = await awardXPEvent({
-          xp: 150,
-          event: "exercise_correct",
-          mode: isAudioDictation ? "audio" : safeMode,
-          lessonId: Number(lessonId),
-          exerciseId: current?.id,
-
-          // ✅ ADD THIS for dictation only
-          questionId: isAudioDictation ? `dict_${current?.id}` : undefined,
-        });
-
-        if (result?.ok && Number(result.awarded ?? 0) > 0) {
-          const shown = Number(result.awarded);
-          setEarnedXP(shown);
-          setShowXPToast(true);
-          playCorrectSound();
-
-          setStatus("correct");
-          setFeedback("✅ Correct!");
-          return;
-        }
-
-        console.error("[XP] reorder: XP not awarded");
-        setStatus("wrong");
-        setFeedback("⚠️ XP not awarded. Please retry.");
-        setEarnedXP(0);
-        return;
-      }
-
-      setStatus("wrong");
-      setFeedback(`❌ Correct answer: "${correctWords.join(" ")}"`);
-      setEarnedXP(0);
-      return;
-    }
 
     // ⌨️ TYPING validation
     if (
@@ -1553,37 +1420,129 @@ export default function SentencePractice() {
     );
   }
 
-  if (loadError) {
+  // -------------------
+  // empty state (no exercises)
+  // -------------------
+  if (!loading && (loadError || !(lessonExercises?.length > 0))) {
+    const lid = lessonIdFromQuery || lessonId;
+
     return (
-      <div className="max-w-3xl mx-auto p-6 text-center">
-        <div className="text-lg font-semibold text-red-600">{loadError}</div>
-        <button
-          className="mt-4 bg-purple-600 text-white px-5 py-2 rounded-lg"
-          onClick={() => loadLessonBatch()}
-        >
-          Retry
-        </button>
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="text-lg font-semibold">No questions yet</div>
+
+          <div className="mt-1 text-sm text-gray-600">
+            {loadError ||
+              `No exercises found. mode=${fetchMode} lessonId=${lid}`}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(`/lesson/${lid}`)}
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Back to Lesson
+            </button>
+
+            <button
+              type="button"
+              onClick={() => loadLessonBatch()}
+              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Retry
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  `/practice/${fetchMode === "reorder" ? "typing" : "reorder"}?lessonId=${encodeURIComponent(
+                    lid,
+                  )}`,
+                  { replace: true },
+                )
+              }
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Try other mode
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }  
+
+  // -------------------
+  // empty / error / no current (single source of truth)
+  // -------------------
+  if (loadError) {
+    const lid = lessonIdFromQuery || lessonId;
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="text-lg font-semibold text-red-600">{loadError}</div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(`/lesson/${lid}`)}
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Back to Lesson
+            </button>
+            <button
+              type="button"
+              onClick={() => loadLessonBatch()}
+              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (
-    !loading &&
-    !loadError &&
-    (!lessonExercises || lessonExercises.length === 0)
-  ) {
+  if (!loading && !(lessonExercises?.length > 0)) {
+    const lid = lessonIdFromQuery || lessonId;
     return (
-      <div className="max-w-3xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-2">No exercises found</h1>
-        <p className="text-gray-600">
-          This lesson doesn’t have practice items yet.
-        </p>
-        <button
-          onClick={() => window.history.back()}
-          className="mt-4 px-4 py-2 rounded-xl border hover:bg-gray-50"
-        >
-          Back
-        </button>
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="text-lg font-semibold">No questions yet</div>
+          <div className="mt-1 text-sm text-gray-600">
+            This lesson doesn’t have practice items yet.
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(`/lesson/${lid}`)}
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Back to Lesson
+            </button>
+            <button
+              type="button"
+              onClick={() => loadLessonBatch()}
+              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  `/practice/${fetchMode === "reorder" ? "typing" : "reorder"}?lessonId=${encodeURIComponent(
+                    lid,
+                  )}`,
+                  { replace: true },
+                )
+              }
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
+            >
+              Try other mode
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1591,17 +1550,18 @@ export default function SentencePractice() {
   if (!current) {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-2">No questions found</h1>
-        <p className="text-gray-600">Please reload.</p>
+        <h1 className="text-2xl font-bold mb-2">No question loaded yet</h1>
+        <p className="text-gray-600">Please retry.</p>
+        <button
+          type="button"
+          onClick={() => loadLessonBatch()}
+          className="mt-4 rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+        >
+          Retry
+        </button>
       </div>
     );
   }
-
-  if (loading) return <div className="p-6">Loading…</div>;
-
-  if (loadError) return <div className="p-6 text-red-600">{loadError}</div>;
-
-  if (!current) return <div className="p-6">No question loaded yet.</div>;
 
   // -------------------
   // UI

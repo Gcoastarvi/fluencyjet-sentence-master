@@ -13,11 +13,16 @@ const EMAIL = process.env.ADMIN_EMAIL;
 const PASSWORD = process.env.ADMIN_PASSWORD;
 
 const REPLACE = String(process.env.REPLACE || "").trim().toLowerCase(); // "1" or "true"
-const REPLACE_QS = (REPLACE === "1" || REPLACE === "true") ? "?replace=1" : "";
+const REPLACE_QS = process.env.REPLACE === "1" ? "?replace=1" : "";
 
 if (!EMAIL || !PASSWORD) {
   console.error('❌ Set ADMIN_EMAIL and ADMIN_PASSWORD env vars.');
   process.exit(1);
+}
+
+function dayNumberFromSlug(slug) {
+  const m = String(slug || "").match(/(\d+)\s*$/);
+  return m ? Number(m[1]) : null;
 }
 
 function listPayloads() {
@@ -58,13 +63,14 @@ async function upsertLesson(token, { slug, title, level }) {
   return data.lesson;
 }
 
-async function bulkImport(token, { lessonId, mode, xp, items }) {
-  const replace = process.env.REPLACE === "1";
+async function bulkImport(token, { lessonId, mode, xp, items, level, dayNumber }) {
   const data = await postJSON(`${BASE_URL}/api/admin/exercises/bulk${REPLACE_QS}`, token, {
     lessonId,
     mode,
     xp,
     items,
+    level,      // forward to server
+    dayNumber,  // forward to server
   });
   return data;
 }
@@ -106,16 +112,25 @@ async function bulkImport(token, { lessonId, mode, xp, items }) {
     const lessonId = lessonCache.get(lessonSlug);
 
     // Bulk import (id-based endpoint)
+    const dayNumber = dayNumberFromSlug(lessonSlug) ?? lessonId;
+
     const res = await bulkImport(token, {
       lessonId,
       mode,
-      level: lessonLevel,            // NEW
-      dayNumber: lessonId,           // NEW (explicit for now)
+      level: lessonLevel,
+      dayNumber,          // ✅ stable when slug has a number
       xp: xp || 150,
       items,
     });
 
     console.log("   bulk ok => inserted:", res.inserted, "skipped:", res.skipped || 0);
+
+    console.log(
+      "   computed => level:", res?.computed?.level,
+      "dayNumber:", res?.computed?.dayNumber,
+      "dayId:", res?.computed?.dayId,
+      "exerciseType:", res?.computed?.exerciseType
+    );
 
     imported++;
   }

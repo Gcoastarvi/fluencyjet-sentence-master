@@ -198,7 +198,7 @@ export default function LessonDetail() {
     if (total <= 0) return null; // nothing to resume
     if (idx >= total) return null; // stale/out-of-range session
 
-    return { mode: m, questionIndex: idx, total };
+    return { mode: m, questionIndex: idx, total, variant: session?.variant };
   })();
 
   const qNum = normalizedSession ? normalizedSession.questionIndex + 1 : null;
@@ -210,7 +210,11 @@ export default function LessonDetail() {
   const continueHref = normalizedSession
     ? `/practice/${normalizedSession.mode}?lessonId=${encodeURIComponent(
         lessonId,
-      )}&q=${encodeURIComponent(normalizedSession.questionIndex)}`
+      )}&q=${encodeURIComponent(normalizedSession.questionIndex)}${
+        normalizedSession.mode === "audio" && normalizedSession.variant
+          ? `&variant=${encodeURIComponent(normalizedSession.variant)}`
+          : ""
+      }`
     : null;
 
   function goPaywall() {
