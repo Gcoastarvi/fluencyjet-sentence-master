@@ -8,6 +8,9 @@ const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 const PREF_KEY_SHOW_TA = "fj_pref_show_ta"; // "1" or "0"
 const LAST_SESSION_KEY = "fj_last_session";
 
+const [smartStarting, setSmartStarting] = useState(false);
+const [smartStartMsg, setSmartStartMsg] = useState("");
+
 function safeJsonParse(s) {
   try {
     return JSON.parse(s);
@@ -231,19 +234,56 @@ export default function LessonDetail() {
     navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lessonId)}`);
   }
 
-  function smartStart() {
+  async function hasExercises(lessonIdNum, mode) {
+    try {
+      const res = await fetch(
+        `/api/quizzes/by-lesson/${lessonIdNum}?mode=${encodeURIComponent(mode)}&difficulty=beginner`,
+        { credentials: "include" },
+      );
+      if (!res.ok) return false;
+      const data = await res.json();
+      const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
+      return exercises.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
+  async function smartStart() {
     if (!lessonId) return;
     if (isLocked) return goPaywall();
 
-    // If Continue is available, use it.
+    // If Continue exists, always honor it first
     if (continueHref) {
       navigate(continueHref);
       return;
     }
 
-    // MVP: default Typing, fallback Reorder
-    // (Later we can probe backend to pick mode that exists.)
-    navigate(`/practice/typing?lessonId=${encodeURIComponent(lessonId)}`);
+    const lid = Number(lessonIdNum);
+    if (!lid) return;
+
+    setSmartStarting(true);
+    setSmartStartMsg("");
+
+    try {
+      // Prefer Typing (fluency), fallback Reorder
+      const typingOk = await hasExercises(lid, "typing");
+      if (typingOk) {
+        navigate(`/practice/typing?lessonId=${encodeURIComponent(lessonId)}`);
+        return;
+      }
+
+      const reorderOk = await hasExercises(lid, "reorder");
+      if (reorderOk) {
+        navigate(`/practice/reorder?lessonId=${encodeURIComponent(lessonId)}`);
+        return;
+      }
+
+      // Nothing found
+      setSmartStartMsg("No practice items yet for this lesson.");
+    } finally {
+      setSmartStarting(false);
+    }
   }
 
   return (
@@ -405,10 +445,19 @@ export default function LessonDetail() {
           {/* Smart Start */}
           <button
             onClick={smartStart}
-            className="rounded-2xl bg-purple-600 px-4 py-4 text-center text-white hover:opacity-95"
+            disabled={smartStarting}
+            className={`rounded-2xl px-4 py-4 text-center text-white ${
+              smartStarting
+                ? "bg-purple-400 cursor-not-allowed"
+                : "bg-purple-600 hover:opacity-95"
+            }`}
           >
             <div className="text-base font-semibold">
-              {continueHref ? "Start (or Continue)" : "Start Practice"}
+              {smartStarting
+                ? "Starting..."
+                : continueHref
+                  ? "Start (or Continue)"
+                  : "Start Practice"}
             </div>
             <div className="mt-1 text-xs text-purple-100">
               Auto-picks the best mode for you
@@ -435,6 +484,12 @@ export default function LessonDetail() {
               <div className="mt-1 text-xs">Start a mode to enable</div>
             </button>
           )}
+
+          {smartStartMsg ? (
+            <div className="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              {smartStartMsg}
+            </div>
+          ) : null}
 
           {/* Typing */}
           <button
