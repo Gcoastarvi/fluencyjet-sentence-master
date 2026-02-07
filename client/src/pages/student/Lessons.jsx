@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/api/apiClient";
 
-// --- local progress helpers (from SentencePractice) ---
+// --- local progress helpers (same storage keys used by SentencePractice) ---
 const progressKey = (lid, mode) => `fj_progress:${lid}:${mode}`;
 
 function readProgress(lid, mode) {
@@ -58,6 +58,44 @@ export default function Lessons() {
     return getDayNumber(selectedLesson, idx >= 0 ? idx : 0);
   }, [selectedLesson, lessons]);
 
+  const pct = (p) => {
+    const c = Number(p?.completed || 0);
+    const t = Number(p?.total || 0);
+    if (!t) return 0;
+    return Math.max(0, Math.min(100, Math.round((c / t) * 100)));
+  };
+
+  const getTileProgress = (dayNumber) => {
+    const typingProg = readProgress(dayNumber, "typing");
+    const reorderProg = readProgress(dayNumber, "reorder");
+    const audioProg = readProgress(dayNumber, "audio");
+
+    const typingPct = pct(typingProg);
+    const reorderPct = pct(reorderProg);
+    const audioPct = pct(audioProg);
+
+    const bestPct = Math.max(typingPct, reorderPct, audioPct);
+
+    const hasStarted =
+      (Number(typingProg?.completed || 0) > 0 &&
+        Number(typingProg?.total || 0) > 0) ||
+      (Number(reorderProg?.completed || 0) > 0 &&
+        Number(reorderProg?.total || 0) > 0) ||
+      (Number(audioProg?.completed || 0) > 0 &&
+        Number(audioProg?.total || 0) > 0);
+
+    return {
+      typingProg,
+      reorderProg,
+      audioProg,
+      bestPct,
+      hasStarted,
+      typingPct,
+      reorderPct,
+      audioPct,
+    };
+  };
+
   useEffect(() => {
     let alive = true;
 
@@ -90,6 +128,48 @@ export default function Lessons() {
     };
   }, []);
 
+  const orderedLessons = useMemo(() => {
+    const arr = Array.isArray(lessons) ? [...lessons] : [];
+    return arr.sort((a, b) => {
+      const aDay = getDayNumber(a, 0);
+      const bDay = getDayNumber(b, 0);
+
+      const aUnlocked = unlocked.includes(a?.id);
+      const bUnlocked = unlocked.includes(b?.id);
+
+      // unlocked first
+      if (aUnlocked !== bUnlocked) return aUnlocked ? -1 : 1;
+
+      // then by dayNumber ascending
+      return aDay - bDay;
+    });
+  }, [lessons, unlocked]);
+
+  const recommendedLessonId = useMemo(() => {
+    // rule: first unlocked lesson with lowest progress %
+    const unlockedLessons = orderedLessons.filter((l) =>
+      unlocked.includes(l?.id),
+    );
+    if (!unlockedLessons.length) return null;
+
+    let best = null;
+    let bestScore = Infinity;
+
+    for (let i = 0; i < unlockedLessons.length; i++) {
+      const l = unlockedLessons[i];
+      const dayNumber = getDayNumber(l, i);
+      const t = getTileProgress(dayNumber);
+      const score = Number.isFinite(t.bestPct) ? t.bestPct : 0;
+
+      if (score < bestScore) {
+        bestScore = score;
+        best = l;
+      }
+    }
+
+    return best?.id ?? null;
+  }, [orderedLessons, unlocked]);
+
   if (loading) {
     return (
       <div className="text-center text-xl text-indigo-600 mt-20">
@@ -111,32 +191,36 @@ export default function Lessons() {
       </h1>
 
       <div className="space-y-4">
-        {lessons.map((lesson, index) => {
+        {orderedLessons.map((lesson, index) => {
           const isUnlocked = unlocked.includes(lesson.id);
           const isCompleted = Boolean(lesson.completed);
           const dayNumber = getDayNumber(lesson, index);
 
-      // ---- local progress for this lesson (uses lesson number as key) ----
-      const typingProg = readProgress(dayNumber, "typing");
-      const reorderProg = readProgress(dayNumber, "reorder");
-      const audioProg = readProgress(dayNumber, "audio");
+          const t = getTileProgress(dayNumber);
+          const bestPct = t.bestPct;
+          const isRecommended = isUnlocked && recommendedLessonId === lesson.id;
 
-      const bestPct = Math.max(pct(typingProg), pct(reorderProg), pct(audioProg));
+          const hasStarted =
+            (Number(typingProg?.completed || 0) > 0 &&
+              Number(typingProg?.total || 0) > 0) ||
+            (Number(reorderProg?.completed || 0) > 0 &&
+              Number(reorderProg?.total || 0) > 0) ||
+            (Number(audioProg?.completed || 0) > 0 &&
+              Number(audioProg?.total || 0) > 0);
 
-      const hasStarted =
-        (Number(typingProg?.completed || 0) > 0 && Number(typingProg?.total || 0) > 0) ||
-        (Number(reorderProg?.completed || 0) > 0 && Number(reorderProg?.total || 0) > 0) ||
-        (Number(audioProg?.completed || 0) > 0 && Number(audioProg?.total || 0) > 0);
+          const primaryLabel = !isUnlocked
+            ? "Locked"
+            : hasStarted
+              ? "Continue"
+              : "Start";
 
-      const primaryLabel = !isUnlocked ? "Locked" : hasStarted ? "Continue" : "Start";
-
-      const goPrimary = () => {
-        if (!isUnlocked) {
-          navigate(`/paywall?plan=BEGINNER&from=lesson_${dayNumber}`);
-          return;
-        }
-        navigate(`/lesson/${dayNumber}`);
-      };
+          const goPrimary = () => {
+            if (!isUnlocked) {
+              navigate(`/paywall?plan=BEGINNER&from=lesson_${dayNumber}`);
+              return;
+            }
+            navigate(`/lesson/${dayNumber}`);
+          };
 
           return (
             <div
@@ -163,6 +247,12 @@ export default function Lessons() {
                 </div>
               )}
 
+              {isRecommended && (
+                <div className="absolute left-3 top-3 rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">
+                  ⭐ Recommended next
+                </div>
+              )}
+
               <div className={isUnlocked ? "" : "opacity-40"}>
                 <h2 className="text-xl font-semibold flex items-center gap-2">
                   Lesson {dayNumber}: {lesson.title}
@@ -172,7 +262,7 @@ export default function Lessons() {
                 </h2>
 
                 <p className="text-gray-500 mt-1">{lesson.description}</p>
-                
+
                 <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   {/* Progress chips */}
                   <div className="flex flex-wrap gap-2">
@@ -206,13 +296,12 @@ export default function Lessons() {
                     {primaryLabel} →
                   </button>
                 </div>
-
               </div>
             </div>
           );
         })}
       </div>
-      
+
       {/* Mode Picker Modal (disabled for MVP) */}
       {showModePicker && selectedLesson && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -263,7 +352,7 @@ export default function Lessons() {
             </p>
           </div>
         </div>
-      )}    
+      )}
     </div>
   );
 }
