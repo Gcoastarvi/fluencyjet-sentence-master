@@ -198,15 +198,10 @@ export default function Lessons() {
 
           const t = getTileProgress(dayNumber);
           const bestPct = t.bestPct;
-          const isRecommended = isUnlocked && recommendedLessonId === lesson.id;
+      
+          const hasStarted = t.hasStarted;
 
-          const hasStarted =
-            (Number(typingProg?.completed || 0) > 0 &&
-              Number(typingProg?.total || 0) > 0) ||
-            (Number(reorderProg?.completed || 0) > 0 &&
-              Number(reorderProg?.total || 0) > 0) ||
-            (Number(audioProg?.completed || 0) > 0 &&
-              Number(audioProg?.total || 0) > 0);
+          const isRecommended = isUnlocked && recommendedLessonId === lesson.id;
 
           const primaryLabel = !isUnlocked
             ? "Locked"
