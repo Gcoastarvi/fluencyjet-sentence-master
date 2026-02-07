@@ -65,7 +65,7 @@ export default function Lessons() {
     return Math.max(0, Math.min(100, Math.round((c / t) * 100)));
   };
 
-  const getTileProgress = (dayNumber) => {
+  const getTileProgress = (dayNumber) => {    
     const typingProg = readProgress(dayNumber, "typing");
     const reorderProg = readProgress(dayNumber, "reorder");
     const audioProg = readProgress(dayNumber, "audio");
@@ -198,7 +198,7 @@ export default function Lessons() {
 
           const t = getTileProgress(dayNumber);
           const bestPct = t.bestPct;
-      
+
           const hasStarted = t.hasStarted;
 
           const isRecommended = isUnlocked && recommendedLessonId === lesson.id;
@@ -262,9 +262,9 @@ export default function Lessons() {
                   {/* Progress chips */}
                   <div className="flex flex-wrap gap-2">
                     {[
-                      { label: "Typing", p: typingProg },
-                      { label: "Reorder", p: reorderProg },
-                      { label: "Audio", p: audioProg },
+                      { label: "Typing", p: t.typingProg },
+                      { label: "Reorder", p: t.reorderProg },
+                      { label: "Audio", p: t.audioProg },
                     ].map(({ label, p }) => (
                       <span
                         key={label}
