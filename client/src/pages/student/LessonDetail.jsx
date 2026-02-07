@@ -8,8 +8,6 @@ const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 const PREF_KEY_SHOW_TA = "fj_pref_show_ta"; // "1" or "0"
 const LAST_SESSION_KEY = "fj_last_session";
 
-const [showMoreModes, setShowMoreModes] = useState(false);
-
 function safeJsonParse(s) {
   try {
     return JSON.parse(s);
@@ -79,6 +77,8 @@ export default function LessonDetail() {
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [showMoreModes, setShowMoreModes] = useState(false);
 
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
