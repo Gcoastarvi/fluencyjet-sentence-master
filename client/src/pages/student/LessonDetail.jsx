@@ -8,6 +8,8 @@ const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 const PREF_KEY_SHOW_TA = "fj_pref_show_ta"; // "1" or "0"
 const LAST_SESSION_KEY = "fj_last_session";
 
+const [showMoreModes, setShowMoreModes] = useState(false);
+
 function safeJsonParse(s) {
   try {
     return JSON.parse(s);
@@ -225,6 +227,7 @@ export default function LessonDetail() {
   }
 
   function startMode(mode) {
+    setShowMoreModes(false);
     if (!lessonId) return;
     if (isLocked) return goPaywall();
 
@@ -440,108 +443,115 @@ export default function LessonDetail() {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {/* Smart Start */}
-          <button
-            onClick={smartStart}
-            disabled={smartStarting}
-            className={`rounded-2xl px-4 py-4 text-center text-white ${
-              smartStarting
-                ? "bg-purple-400 cursor-not-allowed"
-                : "bg-purple-600 hover:opacity-95"
-            }`}
-          >
-            <div className="text-base font-semibold">
-              {smartStarting
-                ? "Starting..."
-                : continueHref
-                  ? "Start (or Continue)"
-                  : "Start Practice"}
-            </div>
-            <div className="mt-1 text-xs text-purple-100">
-              Auto-picks the best mode for you
-            </div>
-          </button>
+        {/* Actions (dominant primary + More modes) */}
+        <div className="mt-6">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* Primary: Continue if exists, else Smart Start */}
+            {continueHref ? (
+              <Link
+                to={continueHref}
+                className="rounded-2xl bg-black px-4 py-4 text-center text-white hover:opacity-90"
+              >
+                <div className="text-base font-semibold">{continueText}</div>
+                <div className="mt-1 text-xs text-gray-200">
+                  Resume exactly where you left off
+                </div>
+              </Link>
+            ) : (
+              <button
+                onClick={smartStart}
+                disabled={smartStarting}
+                className={`rounded-2xl px-4 py-4 text-center text-white ${
+                  smartStarting
+                    ? "bg-purple-400 cursor-not-allowed"
+                    : "bg-purple-600 hover:opacity-95"
+                }`}
+              >
+                <div className="text-base font-semibold">
+                  {smartStarting ? "Starting..." : "Start practice"}
+                </div>
+                <div className="mt-1 text-xs text-purple-100">
+                  Auto-picks the best mode for you
+                </div>
+              </button>
+            )}
 
-          {/* Continue */}
-          {continueHref ? (
-            <Link
-              to={continueHref}
-              className="rounded-2xl bg-black px-4 py-4 text-center text-white hover:opacity-90"
-            >
-              <div className="text-base font-semibold">{continueText}</div>
-              <div className="mt-1 text-xs text-gray-200">
-                Resume exactly where you left off
-              </div>
-            </Link>
-          ) : (
+            {/* Secondary: More modes toggle */}
             <button
-              disabled
-              className="cursor-not-allowed rounded-2xl bg-gray-200 px-4 py-4 text-center text-gray-500"
+              type="button"
+              onClick={() => setShowMoreModes((v) => !v)}
+              className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
             >
-              <div className="text-base font-semibold">Continue</div>
-              <div className="mt-1 text-xs">Start a mode to enable</div>
+              <div className="text-base font-semibold">
+                {showMoreModes ? "Hide modes" : "More modes"}
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                Choose Typing, Reorder{ENABLE_AUDIO ? ", Audio" : ""}
+                {ENABLE_CLOZE ? ", Cloze" : ""}
+              </div>
             </button>
-          )}
+          </div>
 
           {smartStartMsg ? (
-            <div className="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               {smartStartMsg}
             </div>
           ) : null}
 
-          {/* Typing */}
-          <button
-            onClick={() => startMode("typing")}
-            className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
-          >
-            <div className="text-base font-semibold">Typing</div>
-            <div className="mt-1 text-xs text-gray-500">
-              Fast fluency builder
-            </div>
-          </button>
+          {/* Collapsible modes panel */}
+          {showMoreModes ? (
+            <div className="mt-3 rounded-2xl border bg-white p-3">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                  onClick={() => startMode("typing")}
+                  className="rounded-xl border bg-white px-4 py-3 text-left hover:bg-gray-50"
+                >
+                  <div className="font-semibold">Typing</div>
+                  <div className="text-xs text-gray-500">
+                    Fast fluency builder
+                  </div>
+                </button>
 
-          {/* Reorder */}
-          <button
-            onClick={() => startMode("reorder")}
-            className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
-          >
-            <div className="text-base font-semibold">Reorder</div>
-            <div className="mt-1 text-xs text-gray-500">
-              Fix word order instantly
-            </div>
-          </button>
+                <button
+                  onClick={() => startMode("reorder")}
+                  className="rounded-xl border bg-white px-4 py-3 text-left hover:bg-gray-50"
+                >
+                  <div className="font-semibold">Reorder</div>
+                  <div className="text-xs text-gray-500">
+                    Fix word order instantly
+                  </div>
+                </button>
 
-          {/* Cloze (kept future-ready, off by default) */}
-          <button
-            onClick={() => startMode("cloze")}
-            disabled={!ENABLE_CLOZE}
-            className={`rounded-2xl px-4 py-4 text-center ${
-              ENABLE_CLOZE
-                ? "border bg-white hover:bg-gray-50"
-                : "cursor-not-allowed bg-gray-100 text-gray-400"
-            }`}
-          >
-            <div className="text-base font-semibold">Cloze</div>
-            <div className="mt-1 text-xs text-gray-500">
-              {ENABLE_CLOZE ? "Fill the missing word" : "Coming soon"}
-            </div>
-          </button>
+                <button
+                  onClick={() => startMode("audio")}
+                  disabled={!ENABLE_AUDIO || !lessonIdNum}
+                  className={`rounded-xl px-4 py-3 text-left ${
+                    ENABLE_AUDIO && lessonIdNum
+                      ? "border bg-white hover:bg-gray-50"
+                      : "cursor-not-allowed bg-gray-100 text-gray-400"
+                  }`}
+                >
+                  <div className="font-semibold">Audio</div>
+                  <div className="text-xs">Repeat + Dictation</div>
+                </button>
 
-          {/* Audio */}
-          <button
-            onClick={() => startMode("audio")}
-            disabled={!lessonIdNum}
-            className={`rounded-2xl px-4 py-4 text-center ${
-              lessonIdNum
-                ? "border bg-white hover:bg-gray-50"
-                : "cursor-not-allowed bg-gray-100 text-gray-400"
-            }`}
-          >
-            <div className="text-base font-semibold">Audio</div>
-            <div className="mt-1 text-xs text-gray-500">Repeat + Dictation</div>
-          </button>
+                <button
+                  onClick={() => startMode("cloze")}
+                  disabled={!ENABLE_CLOZE}
+                  className={`rounded-xl px-4 py-3 text-left ${
+                    ENABLE_CLOZE
+                      ? "border bg-white hover:bg-gray-50"
+                      : "cursor-not-allowed bg-gray-100 text-gray-400"
+                  }`}
+                >
+                  <div className="font-semibold">Cloze</div>
+                  <div className="text-xs">
+                    {ENABLE_CLOZE ? "Fill the missing word" : "Coming soon"}
+                  </div>
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Tiny note for devs */}
