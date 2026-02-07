@@ -29,10 +29,6 @@ export default function Lessons() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Mode picker modal
-  const [showModePicker, setShowModePicker] = useState(false);
-  const [selectedLesson, setSelectedLesson] = useState(null);
-
   const getDayNumber = (lesson, index) =>
     Number(
       lesson?.dayNumber ??
@@ -42,23 +38,7 @@ export default function Lessons() {
         index + 1,
     );
 
-  function openModePicker(lesson) {
-    setSelectedLesson(lesson);
-    setShowModePicker(true);
-  }
-
-  function closeModePicker() {
-    setShowModePicker(false);
-    setSelectedLesson(null);
-  }
-
-  const selectedDayNumber = useMemo(() => {
-    if (!selectedLesson) return null;
-    const idx = lessons.findIndex((l) => l?.id === selectedLesson?.id);
-    return getDayNumber(selectedLesson, idx >= 0 ? idx : 0);
-  }, [selectedLesson, lessons]);
-
-    const getTileProgress = (dayNumber) => {    
+  const getTileProgress = (dayNumber) => {
     const typingProg = readProgress(dayNumber, "typing");
     const reorderProg = readProgress(dayNumber, "reorder");
     const audioProg = readProgress(dayNumber, "audio");
@@ -189,7 +169,7 @@ export default function Lessons() {
           const isCompleted = Boolean(lesson.completed);
           const dayNumber = getDayNumber(lesson, index);
 
-          const t = getTileProgress(dayNumber);    
+          const t = getTileProgress(dayNumber);
           const bestPct = t.bestPct;
           const hasStarted = t.hasStarted;
 
@@ -270,76 +250,40 @@ export default function Lessons() {
                     ))}
                   </div>
 
-                  {/* Primary CTA */}
+                  {/* Primary CTA (single, clear) */}
                   <button
                     type="button"
                     onClick={goPrimary}
-                    className={`px-4 py-2 rounded-full transition inline-block ${
+                    className={`px-5 py-2.5 rounded-full transition inline-flex items-center gap-2 ${
                       isUnlocked
                         ? "bg-indigo-600 text-white hover:scale-105"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                     }`}
                   >
-                    {primaryLabel} →
+                    <span className="font-semibold">
+                      {!isUnlocked
+                        ? "Locked"
+                        : hasStarted
+                          ? "Continue"
+                          : "Start"}
+                    </span>
+                    <span aria-hidden>→</span>
                   </button>
+
+                  {/* Small helper text under CTA (optional but makes it feel premium) */}
+                  <div className="text-xs text-gray-500 sm:text-right">
+                    {!isUnlocked
+                      ? `Unlock to access`
+                      : hasStarted
+                        ? `Resume where you left off`
+                        : `Open Practice Hub`}
+                  </div>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
-
-      {/* Mode Picker Modal (disabled for MVP) */}
-      {showModePicker && selectedLesson && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-lg font-semibold">Choose Practice Mode</h3>
-                <p className="text-sm text-gray-500 mt-1">
-                  {selectedLesson.title}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeModePicker}
-                className="text-gray-500 hover:text-gray-800"
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <button
-                type="button"
-                onClick={() => {
-                  closeModePicker();
-                  navigate(`/lesson/${selectedDayNumber}`);
-                }}
-                className="w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:opacity-95"
-              >
-                Typing Practice →
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  closeModePicker();
-                  navigate(`/lesson/${selectedDayNumber}`);
-                }}
-                className="w-full rounded-xl bg-indigo-100 px-4 py-3 text-indigo-800 font-semibold hover:bg-indigo-200"
-              >
-                Reorder Practice →
-              </button>
-            </div>
-
-            <p className="mt-4 text-xs text-gray-400">
-              Cloze + Audio will appear here next.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
