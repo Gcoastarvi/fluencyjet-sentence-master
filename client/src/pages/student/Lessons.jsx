@@ -58,14 +58,7 @@ export default function Lessons() {
     return getDayNumber(selectedLesson, idx >= 0 ? idx : 0);
   }, [selectedLesson, lessons]);
 
-  const pct = (p) => {
-    const c = Number(p?.completed || 0);
-    const t = Number(p?.total || 0);
-    if (!t) return 0;
-    return Math.max(0, Math.min(100, Math.round((c / t) * 100)));
-  };
-
-  const getTileProgress = (dayNumber) => {    
+    const getTileProgress = (dayNumber) => {    
     const typingProg = readProgress(dayNumber, "typing");
     const reorderProg = readProgress(dayNumber, "reorder");
     const audioProg = readProgress(dayNumber, "audio");
@@ -196,9 +189,8 @@ export default function Lessons() {
           const isCompleted = Boolean(lesson.completed);
           const dayNumber = getDayNumber(lesson, index);
 
-          const t = getTileProgress(dayNumber);
+          const t = getTileProgress(dayNumber);    
           const bestPct = t.bestPct;
-
           const hasStarted = t.hasStarted;
 
           const isRecommended = isUnlocked && recommendedLessonId === lesson.id;
