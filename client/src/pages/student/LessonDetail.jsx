@@ -262,32 +262,13 @@ export default function LessonDetail() {
 
       const data = res?.data ?? null;
 
-      console.log("[hasExercises][200]", {
-        lessonIdNum,
-        mode,
-        status: res?.status,
-        ok: data?.ok,
-        level: data?.level,
-        exercisesLen: Array.isArray(data?.exercises)
-          ? data.exercises.length
-          : "NOT_ARRAY",
-      });
-
       if (!data || data.ok !== true) return false;
 
       const exercises = Array.isArray(data.exercises) ? data.exercises : [];
       return exercises.length > 0;
     } catch (e) {
       const status = e?.response?.status ?? null;
-      const data = e?.response?.data ?? null;
-
-      console.log("[hasExercises][catch]", {
-        lessonIdNum,
-        mode,
-        status,
-        data,
-        msg: e?.message,
-      });
+      const data = e?.response?.data ?? null;      
 
       // Unauthorized → go login and come back
       if (status === 401) {
