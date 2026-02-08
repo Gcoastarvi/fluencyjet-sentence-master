@@ -149,6 +149,13 @@ export default function LessonDetail() {
   });
   const [checkingModes, setCheckingModes] = useState(true);
 
+  const noModes =
+    !checkingModes &&
+    !modeAvail.typing &&
+    !modeAvail.reorder &&
+    !modeAvail.audio &&
+    !modeAvail.cloze;
+
   // Continue session (supports typing/reorder, and audio later)
   const session = useMemo(() => {
     if (!lessonId) return null;
@@ -260,7 +267,9 @@ export default function LessonDetail() {
         status: res?.status,
         ok: data?.ok,
         level: data?.level,
-        exercisesLen: Array.isArray(data?.exercises) ? data.exercises.length : "NOT_ARRAY",
+        exercisesLen: Array.isArray(data?.exercises)
+          ? data.exercises.length
+          : "NOT_ARRAY",
       });
 
       if (!data || data.ok !== true) return false;
@@ -330,13 +339,27 @@ export default function LessonDetail() {
           ENABLE_CLOZE ? hasExercises(lid, "cloze") : Promise.resolve(false),
         ]);
 
+        // If auth/paywall happened during checks, stop (navigation already triggered)
+        if (
+          typingOk === "AUTH" ||
+          typingOk === "PAYWALL" ||
+          reorderOk === "AUTH" ||
+          reorderOk === "PAYWALL" ||
+          audioOk === "AUTH" ||
+          audioOk === "PAYWALL" ||
+          clozeOk === "AUTH" ||
+          clozeOk === "PAYWALL"
+        ) {
+          return;
+        }
+
         if (!alive) return;
 
         setModeAvail({
-          typing: Boolean(typingOk),
-          reorder: Boolean(reorderOk),
-          audio: Boolean(audioOk),
-          cloze: Boolean(clozeOk),
+          typing: typingOk === true,
+          reorder: reorderOk === true,
+          audio: audioOk === true,
+          cloze: clozeOk === true,
         });
       } finally {
         if (!alive) return;
@@ -509,14 +532,11 @@ export default function LessonDetail() {
             </div>
 
             {/* If no modes have items, show a single empty-state */}
-            {!checkingModes &&
-              !modeAvail.typing &&
-              !modeAvail.reorder &&
-              !modeAvail.audio && (
-                <div className="rounded-xl border bg-gray-50 p-4 text-sm text-gray-600">
-                  No practice items yet for this lesson.
-                </div>
-              )}
+            {!showMoreModes && noModes && (
+              <div className="rounded-xl border bg-gray-50 p-4 text-sm text-gray-600">
+                No practice items yet for this lesson.
+              </div>
+            )}
 
             {/* Typing progress */}
             {modeAvail.typing && (
@@ -620,14 +640,11 @@ export default function LessonDetail() {
           {/* COLLAPSIBLE MODES */}
           {showMoreModes && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {!checkingModes &&
-                !modeAvail.typing &&
-                !modeAvail.reorder &&
-                !modeAvail.audio && (
-                  <div className="sm:col-span-2 rounded-xl border bg-gray-50 p-3 text-sm text-gray-600">
-                    No modes available yet for this lesson.
-                  </div>
-                )}
+              {noModes && (
+                <div className="sm:col-span-2 rounded-xl border bg-gray-50 p-3 text-sm text-gray-600">
+                  No modes available yet for this lesson.
+                </div>
+              )}
 
               {/* Typing */}
               {modeAvail.typing && (
