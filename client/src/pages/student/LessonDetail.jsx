@@ -252,35 +252,17 @@ export default function LessonDetail() {
         withCredentials: true,
       });
 
-      console.log("[hasExercises]", {
-        lessonIdNum,
-        mode,
-        status: res.status,
-        ok: res.ok,
-      });
-
-      if (!res.ok) {
-        let body = "";
-        try {
-          body = await res.text();
-        } catch {}
-        console.log("[hasExercises][non-ok body]", body);
-      }
-
       const data = res?.data ?? null;
 
-      console.log("[hasExercises]", {
+      console.log("[hasExercises][200]", {
         lessonIdNum,
         mode,
         status: res?.status,
         ok: data?.ok,
         level: data?.level,
-        exercisesLen: Array.isArray(data?.exercises)
-          ? data.exercises.length
-          : "NOT_ARRAY",
+        exercisesLen: Array.isArray(data?.exercises) ? data.exercises.length : "NOT_ARRAY",
       });
 
-      // If backend ever returns a non-ok payload, treat it as empty
       if (!data || data.ok !== true) return false;
 
       const exercises = Array.isArray(data.exercises) ? data.exercises : [];
@@ -292,19 +274,19 @@ export default function LessonDetail() {
       console.log("[hasExercises][catch]", {
         lessonIdNum,
         mode,
-        status: e?.response?.status,
-        data: e?.response?.data,
+        status,
+        data,
         msg: e?.message,
       });
 
-      // ✅ Unauthorized → go login and come back
+      // Unauthorized → go login and come back
       if (status === 401) {
         const next = `/lesson/${lessonIdNum}`;
         navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
         return "AUTH";
       }
 
-      // ✅ Paywall → follow backend nextAction if present
+      // Paywall → follow backend nextAction if present
       if (status === 403 && data?.code === "PAYWALL") {
         const action = data?.nextAction || null;
         const from = action?.from || `lesson_${lessonIdNum}`;
