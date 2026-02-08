@@ -247,44 +247,40 @@ export default function LessonDetail() {
 
   async function hasExercises(lessonIdNum, mode) {
     try {
-      const url = `/api/quizzes/by-lesson/${lessonIdNum}?mode=${encodeURIComponent(
-        mode,
-      )}&difficulty=beginner`;
+      const res = await api.get(`/quizzes/by-lesson/${lessonIdNum}`, {
+        params: { mode, difficulty: "beginner" },
+        withCredentials: true,
+      });
 
-      const res = await fetch(url, { credentials: "include" });
+      const data = res?.data ?? null;
 
-      // AUTH: send to login, then stop
-      if (res.status === 401) {
+      // If backend ever returns a non-ok payload, treat it as empty
+      if (!data || data.ok !== true) return false;
+
+      const exercises = Array.isArray(data.exercises) ? data.exercises : [];
+      return exercises.length > 0;
+    } catch (e) {
+      const status = e?.response?.status ?? null;
+      const data = e?.response?.data ?? null;
+
+      // ✅ Unauthorized → go login and come back
+      if (status === 401) {
         const next = `/lesson/${lessonIdNum}`;
         navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
-        return false;
+        return "AUTH";
       }
 
-      // PAYWALL: follow backend action if present
-      if (res.status === 403) {
-        let data = null;
-        try {
-          data = await res.json();
-        } catch {}
-
-        if (data?.code === "PAYWALL") {
-          const action = data?.nextAction || null;
-          const from = action?.from || `lesson_${lessonIdNum}`;
-          const base = action?.url || `/paywall?plan=BEGINNER`;
-          const sep = String(base).includes("?") ? "&" : "?";
-          navigate(`${base}${sep}from=${encodeURIComponent(from)}`, {
-            replace: true,
-          });
-        }
-        return false;
+      // ✅ Paywall → follow backend nextAction if present
+      if (status === 403 && data?.code === "PAYWALL") {
+        const action = data?.nextAction || null;
+        const from = action?.from || `lesson_${lessonIdNum}`;
+        const base = action?.url || `/paywall?plan=BEGINNER`;
+        const sep = String(base).includes("?") ? "&" : "?";
+        const target = `${base}${sep}from=${encodeURIComponent(from)}`;
+        navigate(target, { replace: true });
+        return "PAYWALL";
       }
 
-      if (!res.ok) return false;
-
-      const data = await res.json();
-      const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
-      return exercises.length > 0;
-    } catch {
       return false;
     }
   }
