@@ -253,14 +253,14 @@ export default function LessonDetail() {
 
       const res = await fetch(url, { credentials: "include" });
 
-      // ✅ If unauthorized -> send to login with next back to this lesson
+      // AUTH: send to login, then stop
       if (res.status === 401) {
         const next = `/lesson/${lessonIdNum}`;
         navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
-        return "AUTH";
+        return false;
       }
 
-      // ✅ If paywall -> follow backend nextAction if present
+      // PAYWALL: follow backend action if present
       if (res.status === 403) {
         let data = null;
         try {
@@ -272,11 +272,10 @@ export default function LessonDetail() {
           const from = action?.from || `lesson_${lessonIdNum}`;
           const base = action?.url || `/paywall?plan=BEGINNER`;
           const sep = String(base).includes("?") ? "&" : "?";
-          const target = `${base}${sep}from=${encodeURIComponent(from)}`;
-          navigate(target, { replace: true });
-          return "PAYWALL";
+          navigate(`${base}${sep}from=${encodeURIComponent(from)}`, {
+            replace: true,
+          });
         }
-
         return false;
       }
 
@@ -295,7 +294,10 @@ export default function LessonDetail() {
 
     async function check() {
       const lid = Number(lessonIdNum);
+
+      // If no valid lessonId -> reset and stop
       if (!lid) {
+        if (!alive) return;
         setModeAvail({
           typing: false,
           reorder: false,
@@ -319,10 +321,10 @@ export default function LessonDetail() {
         if (!alive) return;
 
         setModeAvail({
-          typing: !!typingOk,
-          reorder: !!reorderOk,
-          audio: !!audioOk,
-          cloze: !!clozeOk,
+          typing: Boolean(typingOk),
+          reorder: Boolean(reorderOk),
+          audio: Boolean(audioOk),
+          cloze: Boolean(clozeOk),
         });
       } finally {
         if (!alive) return;
@@ -331,6 +333,7 @@ export default function LessonDetail() {
     }
 
     check();
+
     return () => {
       alive = false;
     };
@@ -355,21 +358,18 @@ export default function LessonDetail() {
     try {
       // Prefer Typing (fluency), fallback Reorder, then Audio
       const typingOk = await hasExercises(lid, "typing");
-      if (typingOk === "AUTH" || typingOk === "PAYWALL") return;
       if (typingOk) {
         navigate(`/practice/typing?lessonId=${encodeURIComponent(lessonId)}`);
         return;
       }
 
       const reorderOk = await hasExercises(lid, "reorder");
-      if (reorderOk === "AUTH" || reorderOk === "PAYWALL") return;
       if (reorderOk) {
         navigate(`/practice/reorder?lessonId=${encodeURIComponent(lessonId)}`);
         return;
       }
 
       const audioOk = await hasExercises(lid, "audio");
-      if (audioOk === "AUTH" || audioOk === "PAYWALL") return;
       if (audioOk) {
         navigate(`/practice/audio?lessonId=${encodeURIComponent(lessonId)}`);
         return;
