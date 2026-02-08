@@ -141,6 +141,14 @@ export default function LessonDetail() {
     lesson?.name ||
     `Lesson ${lessonIdNum || ""}`;
 
+  const [modeAvail, setModeAvail] = useState({
+    typing: false,
+    reorder: false,
+    audio: false,
+    cloze: false,
+  });
+  const [checkingModes, setCheckingModes] = useState(true);
+
   // Continue session (supports typing/reorder, and audio later)
   const session = useMemo(() => {
     if (!lessonId) return null;
@@ -252,6 +260,52 @@ export default function LessonDetail() {
     }
   }
 
+  useEffect(() => {
+    let alive = true;
+
+    async function check() {
+      const lid = Number(lessonIdNum);
+      if (!lid) {
+        setModeAvail({
+          typing: false,
+          reorder: false,
+          audio: false,
+          cloze: false,
+        });
+        setCheckingModes(false);
+        return;
+      }
+
+      setCheckingModes(true);
+
+      try {
+        const [typingOk, reorderOk, audioOk, clozeOk] = await Promise.all([
+          hasExercises(lid, "typing"),
+          hasExercises(lid, "reorder"),
+          hasExercises(lid, "audio"),
+          ENABLE_CLOZE ? hasExercises(lid, "cloze") : Promise.resolve(false),
+        ]);
+
+        if (!alive) return;
+
+        setModeAvail({
+          typing: !!typingOk,
+          reorder: !!reorderOk,
+          audio: !!audioOk,
+          cloze: !!clozeOk,
+        });
+      } finally {
+        if (!alive) return;
+        setCheckingModes(false);
+      }
+    }
+
+    check();
+    return () => {
+      alive = false;
+    };
+  }, [lessonIdNum]); // keep minimal deps
+
   async function smartStart() {
     if (!lessonId) return;
     if (isLocked) return goPaywall();
@@ -269,7 +323,7 @@ export default function LessonDetail() {
     setSmartStartMsg("");
 
     try {
-      // Prefer Typing (fluency), fallback Reorder
+      // Prefer Typing (fluency), fallback Reorder, then Audio
       const typingOk = await hasExercises(lid, "typing");
       if (typingOk) {
         navigate(`/practice/typing?lessonId=${encodeURIComponent(lessonId)}`);
@@ -282,7 +336,12 @@ export default function LessonDetail() {
         return;
       }
 
-      // Nothing found
+      const audioOk = await hasExercises(lid, "audio");
+      if (audioOk) {
+        navigate(`/practice/audio?lessonId=${encodeURIComponent(lessonId)}`);
+        return;
+      }
+
       setSmartStartMsg("No practice items yet for this lesson.");
     } finally {
       setSmartStarting(false);
@@ -401,45 +460,59 @@ export default function LessonDetail() {
                 ))}
             </div>
 
+            {/* If no modes have items, show a single empty-state */}
+            {!checkingModes &&
+              !modeAvail.typing &&
+              !modeAvail.reorder &&
+              !modeAvail.audio && (
+                <div className="rounded-xl border bg-gray-50 p-4 text-sm text-gray-600">
+                  No practice items yet for this lesson.
+                </div>
+              )}
+
             {/* Typing progress */}
-            <div className="rounded-xl bg-white p-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">Typing</div>
-                <div className="text-xs text-gray-600">
-                  {typingProg?.completed || 0}/{typingProg?.total || 0}
+            {modeAvail.typing && (
+              <div className="rounded-xl bg-white p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold">Typing</div>
+                  <div className="text-xs text-gray-600">
+                    {typingProg?.completed || 0}/{typingProg?.total || 0}
+                  </div>
+                </div>
+
+                <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-indigo-600"
+                    style={{ width: `${pct(typingProg)}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {pct(typingProg)}% complete
                 </div>
               </div>
-
-              <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
-                <div
-                  className="h-2 rounded-full bg-indigo-600"
-                  style={{ width: `${pct(typingProg)}%` }}
-                />
-              </div>
-              <div className="mt-1 text-xs text-gray-500">
-                {pct(typingProg)}% complete
-              </div>
-            </div>
+            )}
 
             {/* Reorder progress */}
-            <div className="rounded-xl bg-white p-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">Reorder</div>
-                <div className="text-xs text-gray-600">
-                  {reorderProg?.completed || 0}/{reorderProg?.total || 0}
+            {modeAvail.reorder && (
+              <div className="rounded-xl bg-white p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold">Reorder</div>
+                  <div className="text-xs text-gray-600">
+                    {reorderProg?.completed || 0}/{reorderProg?.total || 0}
+                  </div>
+                </div>
+
+                <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2 rounded-full bg-indigo-600"
+                    style={{ width: `${pct(reorderProg)}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {pct(reorderProg)}% complete
                 </div>
               </div>
-
-              <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
-                <div
-                  className="h-2 rounded-full bg-indigo-600"
-                  style={{ width: `${pct(reorderProg)}%` }}
-                />
-              </div>
-              <div className="mt-1 text-xs text-gray-500">
-                {pct(reorderProg)}% complete
-              </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -499,43 +572,53 @@ export default function LessonDetail() {
           {/* COLLAPSIBLE MODES */}
           {showMoreModes && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {!checkingModes &&
+                !modeAvail.typing &&
+                !modeAvail.reorder &&
+                !modeAvail.audio && (
+                  <div className="sm:col-span-2 rounded-xl border bg-gray-50 p-3 text-sm text-gray-600">
+                    No modes available yet for this lesson.
+                  </div>
+                )}
+
               {/* Typing */}
-              <button
-                onClick={() => startMode("typing")}
-                className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
-              >
-                <div className="text-base font-semibold">Typing</div>
-                <div className="mt-1 text-xs text-gray-500">
-                  Fast fluency builder
-                </div>
-              </button>
+              {modeAvail.typing && (
+                <button
+                  onClick={() => startMode("typing")}
+                  className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
+                >
+                  <div className="text-base font-semibold">Typing</div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Fast fluency builder
+                  </div>
+                </button>
+              )}
 
               {/* Reorder */}
-              <button
-                onClick={() => startMode("reorder")}
-                className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
-              >
-                <div className="text-base font-semibold">Reorder</div>
-                <div className="mt-1 text-xs text-gray-500">
-                  Fix word order instantly
-                </div>
-              </button>
+              {modeAvail.reorder && (
+                <button
+                  onClick={() => startMode("reorder")}
+                  className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
+                >
+                  <div className="text-base font-semibold">Reorder</div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Fix word order instantly
+                  </div>
+                </button>
+              )}
 
               {/* Audio */}
-              <button
-                onClick={() => startMode("audio")}
-                disabled={!lessonIdNum}
-                className={`rounded-2xl px-4 py-4 text-center ${
-                  lessonIdNum
-                    ? "border bg-white hover:bg-gray-50"
-                    : "cursor-not-allowed bg-gray-100 text-gray-400"
-                }`}
-              >
-                <div className="text-base font-semibold">Audio</div>
-                <div className="mt-1 text-xs text-gray-500">
-                  Repeat + Dictation
-                </div>
-              </button>
+              {modeAvail.audio && (
+                <button
+                  onClick={() => startMode("audio")}
+                  className="rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
+                >
+                  <div className="text-base font-semibold">Audio</div>
+                  <div className="mt-1 text-xs text-gray-500">
+                    Repeat + Dictation
+                  </div>
+                </button>
+              )}
 
               {/* Cloze */}
               <button
