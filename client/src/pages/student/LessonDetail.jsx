@@ -252,7 +252,33 @@ export default function LessonDetail() {
         withCredentials: true,
       });
 
+      console.log("[hasExercises]", {
+        lessonIdNum,
+        mode,
+        status: res.status,
+        ok: res.ok,
+      });
+
+      if (!res.ok) {
+        let body = "";
+        try {
+          body = await res.text();
+        } catch {}
+        console.log("[hasExercises][non-ok body]", body);
+      }
+
       const data = res?.data ?? null;
+
+      console.log("[hasExercises]", {
+        lessonIdNum,
+        mode,
+        status: res?.status,
+        ok: data?.ok,
+        level: data?.level,
+        exercisesLen: Array.isArray(data?.exercises)
+          ? data.exercises.length
+          : "NOT_ARRAY",
+      });
 
       // If backend ever returns a non-ok payload, treat it as empty
       if (!data || data.ok !== true) return false;
@@ -262,6 +288,14 @@ export default function LessonDetail() {
     } catch (e) {
       const status = e?.response?.status ?? null;
       const data = e?.response?.data ?? null;
+
+      console.log("[hasExercises][catch]", {
+        lessonIdNum,
+        mode,
+        status: e?.response?.status,
+        data: e?.response?.data,
+        msg: e?.message,
+      });
 
       // ✅ Unauthorized → go login and come back
       if (status === 401) {
@@ -354,18 +388,21 @@ export default function LessonDetail() {
     try {
       // Prefer Typing (fluency), fallback Reorder, then Audio
       const typingOk = await hasExercises(lid, "typing");
+      if (typingOk === "AUTH" || typingOk === "PAYWALL") return;
       if (typingOk) {
         navigate(`/practice/typing?lessonId=${encodeURIComponent(lessonId)}`);
         return;
       }
 
       const reorderOk = await hasExercises(lid, "reorder");
+      if (reorderOk === "AUTH" || reorderOk === "PAYWALL") return;
       if (reorderOk) {
         navigate(`/practice/reorder?lessonId=${encodeURIComponent(lessonId)}`);
         return;
       }
 
       const audioOk = await hasExercises(lid, "audio");
+      if (audioOk === "AUTH" || audioOk === "PAYWALL") return;
       if (audioOk) {
         navigate(`/practice/audio?lessonId=${encodeURIComponent(lessonId)}`);
         return;
