@@ -191,7 +191,7 @@ router.get("/random", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
-router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
+router.get("/by-lesson/:lessonId", async (req, res) => {
   try {
     const lessonIdNum = Number(req.params.lessonId);
     if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
@@ -213,10 +213,14 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     // ---- PAYWALL HARD BLOCK (lessonId = PracticeDay.dayNumber) ----
     const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
 
-    const userRow = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { has_access: true, tier_level: true, plan: true },
-    });
+    const userId = req.user?.id || null;
+
+    const userRow = userId
+      ? await prisma.user.findUnique({
+          where: { id: userId },
+          select: { has_access: true, tier_level: true, plan: true },
+        })
+      : null;
 
     const tier = String(userRow?.tier_level || "").toLowerCase();
     const plan = String(userRow?.plan || "").toLowerCase();
