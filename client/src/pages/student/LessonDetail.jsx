@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { api } from "../../api/apiClient";
 
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
