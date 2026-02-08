@@ -247,11 +247,41 @@ export default function LessonDetail() {
 
   async function hasExercises(lessonIdNum, mode) {
     try {
-      const res = await fetch(
-        `/api/quizzes/by-lesson/${lessonIdNum}?mode=${encodeURIComponent(mode)}&difficulty=beginner`,
-        { credentials: "include" },
-      );
+      const url = `/api/quizzes/by-lesson/${lessonIdNum}?mode=${encodeURIComponent(
+        mode,
+      )}&difficulty=beginner`;
+
+      const res = await fetch(url, { credentials: "include" });
+
+      // ✅ If unauthorized -> send to login with next back to this lesson
+      if (res.status === 401) {
+        const next = `/lesson/${lessonIdNum}`;
+        navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
+        return "AUTH";
+      }
+
+      // ✅ If paywall -> follow backend nextAction if present
+      if (res.status === 403) {
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {}
+
+        if (data?.code === "PAYWALL") {
+          const action = data?.nextAction || null;
+          const from = action?.from || `lesson_${lessonIdNum}`;
+          const base = action?.url || `/paywall?plan=BEGINNER`;
+          const sep = String(base).includes("?") ? "&" : "?";
+          const target = `${base}${sep}from=${encodeURIComponent(from)}`;
+          navigate(target, { replace: true });
+          return "PAYWALL";
+        }
+
+        return false;
+      }
+
       if (!res.ok) return false;
+
       const data = await res.json();
       const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
       return exercises.length > 0;
@@ -325,18 +355,21 @@ export default function LessonDetail() {
     try {
       // Prefer Typing (fluency), fallback Reorder, then Audio
       const typingOk = await hasExercises(lid, "typing");
+      if (typingOk === "AUTH" || typingOk === "PAYWALL") return;
       if (typingOk) {
         navigate(`/practice/typing?lessonId=${encodeURIComponent(lessonId)}`);
         return;
       }
 
       const reorderOk = await hasExercises(lid, "reorder");
+      if (reorderOk === "AUTH" || reorderOk === "PAYWALL") return;
       if (reorderOk) {
         navigate(`/practice/reorder?lessonId=${encodeURIComponent(lessonId)}`);
         return;
       }
 
       const audioOk = await hasExercises(lid, "audio");
+      if (audioOk === "AUTH" || audioOk === "PAYWALL") return;
       if (audioOk) {
         navigate(`/practice/audio?lessonId=${encodeURIComponent(lessonId)}`);
         return;

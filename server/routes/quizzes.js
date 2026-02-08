@@ -198,6 +198,12 @@ router.get("/by-lesson/:lessonId", authMiddleware, async (req, res) => {
       return res.status(400).json({ ok: false, message: "lessonId invalid" });
     }
 
+    console.log("[by-lesson] auth", {
+      hasAuthHeader: !!req.headers.authorization,
+      hasCookieToken: !!(req.cookies?.fj_token || req.cookies?.token),
+      userId: req.user?.id || null,
+    });
+
     const mode = String(req.query.mode || "typing").toLowerCase();
 
     // ✅ IMPORTANT: define diff BEFORE using it

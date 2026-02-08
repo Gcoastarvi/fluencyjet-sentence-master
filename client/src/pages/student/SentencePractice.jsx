@@ -711,35 +711,50 @@ export default function SentencePractice() {
 
       setLessonExercises(normalized);
       setCurrentIndex(0);
-    } catch (e) {
-      const status = e?.response?.status ?? e?.status ?? null;
-      const code = e?.response?.data?.code ?? e?.data?.code ?? null;
-      const msg =
-        e?.response?.data?.message ??
-        e?.response?.data?.error ??
-        e?.data?.message ??
-        e?.message ??
-        "";
+  } catch (e) {
+    const status = e?.response?.status ?? e?.status ?? null;
 
-      setLessonExercises([]);
-      setCurrentIndex(0);
+    // try to read backend payload (axios vs fetch style)
+    const data = e?.response?.data ?? e?.data ?? null;
+    const code = data?.code ?? null;
 
-      // ✅ PAYWALL redirect from HTTP error response
-      if (
-        status === 403 &&
-        (code === "PAYWALL" || String(msg).toLowerCase().includes("locked"))
-      ) {
-        navigate(`/lesson/${lessonIdNum}`, { replace: true });
+    const msg =
+      data?.message ??
+      data?.error ??
+      e?.message ??
+      "";
+
+    // ✅ PAYWALL redirect from HTTP error response
+    if (
+      status === 403 &&
+      (code === "PAYWALL" || String(msg).toLowerCase().includes("locked"))
+    ) {
+      const action = data?.nextAction || null;
+      const from = action?.from || `lesson_${lessonIdNum}`;
+
+      // If backend provided a redirect target, follow it
+      if (action?.url) {
+        const sep = String(action.url).includes("?") ? "&" : "?";
+        const target = `${action.url}${sep}from=${encodeURIComponent(from)}`;
+
+        // support external links too
+        if (/^https?:\/\//i.test(target)) {
+          window.location.href = target;
+        } else {
+          navigate(target, { replace: true });
+        }
         return;
       }
 
-      console.error("[Practice] loadLessonBatch failed", e);
-      setLoadError(
-        status === 500 ? "Server error" : "Failed to load lesson exercises.",
-      );
-    } finally {
-      setLoading(false);
+      // fallback: go to lesson hub (which can show paywall button)
+      navigate(`/lesson/${lessonIdNum}`, { replace: true });
+      return;
     }
+
+    console.error("[Practice] loadLessonBatch failed", e);
+    setLoadError(
+      status === 500 ? "Server error" : "Failed to load lesson exercises.",
+    );
   }
 
   async function loadRandomOne() {
