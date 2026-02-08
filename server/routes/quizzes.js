@@ -191,7 +191,7 @@ router.get("/random", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
-router.get("/by-lesson/:lessonId", async (req, res) => {
+router.get("/by-lesson/:lessonId", authMiddleware, async (req, res) => {
   try {
     const lessonIdNum = Number(req.params.lessonId);
     if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
