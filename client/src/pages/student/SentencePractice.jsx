@@ -810,13 +810,6 @@ export default function SentencePractice() {
     setLoading(false);
   }
 
-  setShowCompleteModal(false);
-  setIsComplete(false);
-  setCurrentIndex(0);
-  setStatus("idle");
-  resetAudioGate();
-  initQuiz();
-
   function initQuiz() {
     setAttempts(0);
     setStatus("idle");
@@ -833,6 +826,31 @@ export default function SentencePractice() {
       setTiles([]);
       setAnswer([]);
     }
+  }
+
+  function hardResetAndRestart() {
+    setShowCompleteModal(false);
+    setIsComplete(false);
+    setCompletionXp(0);
+
+    setCurrentIndex(0);
+    setStatus("idle");
+    setFeedback("");
+    setShowHint(false);
+    setTypedAnswer("");
+    setWrongIndexes([]);
+    setRevealEnglish(false);
+    setEarnedXP(0);
+    setShowXPToast(false);
+    setAnswer([]);
+    setTiles([]);
+
+    setAudioSubmitting(false);
+    audioSubmitRef.current = new Set();
+    stopTTS();
+    resetAudioGate();
+
+    loadLessonBatch();
   }
 
   function loadNextQuestion() {
