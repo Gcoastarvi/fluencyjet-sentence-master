@@ -196,13 +196,6 @@ export default function SentencePractice() {
 
   const nextIndex = currentIndex + 1;
 
-  if (nextIndex >= lessonExercises.length) {
-    setIsComplete(true);
-    return;
-  }
-
-  setCurrentIndex(nextIndex);
-
   // ✅ Derived (must be AFTER useState declarations)
   const current =
     Array.isArray(lessonExercises) && typeof currentIndex === "number"
@@ -823,40 +816,6 @@ export default function SentencePractice() {
   }
 
   function loadNextQuestion() {
-    const nextIndex = currentIndex + 1;
-
-    // ✅ if lesson finished → save "done" session + show completion screen
-    if (nextIndex >= lessonExercises.length) {
-      try {
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId: Number(lessonIdNum),
-            mode: fetchMode, // typing/reorder/audio
-            index: lessonExercises.length, // marks completion
-            updatedAt: Date.now(),
-          }),
-        );
-      } catch {}
-
-      setIsComplete(true);
-      return;
-    }
-
-    // ✅ Save last session progress for normal next step
-    try {
-      localStorage.setItem(
-        "fj_last_session",
-        JSON.stringify({
-          lessonId: Number(lessonIdNum),
-          mode: fetchMode,
-          index: nextIndex,
-          updatedAt: Date.now(),
-        }),
-      );
-    } catch {}
-
-    // reset transient UI for next question
     setEarnedXP(0);
     setShowXPToast(false);
     setStatus("idle");
@@ -866,12 +825,45 @@ export default function SentencePractice() {
     setWrongIndexes([]);
     setRevealEnglish(false);
 
-    // mode-specific resets
     setAnswer([]);
     setTiles([]);
 
-    // go next
-    setCurrentIndex(nextIndex);
+    setCurrentIndex((prev) => {
+      const nextIndex = prev + 1;
+
+      // ✅ finished
+      if (nextIndex >= lessonExercises.length) {
+        try {
+          localStorage.setItem(
+            "fj_last_session",
+            JSON.stringify({
+              lessonId: Number(lessonIdNum),
+              mode: fetchMode,
+              index: lessonExercises.length, // done marker
+              updatedAt: Date.now(),
+            }),
+          );
+        } catch {}
+
+        setIsComplete(true);
+        return prev; // keep index stable
+      }
+
+      // ✅ save progress
+      try {
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId: Number(lessonIdNum),
+            mode: fetchMode,
+            index: nextIndex,
+            updatedAt: Date.now(),
+          }),
+        );
+      } catch {}
+
+      return nextIndex;
+    });
   }
 
   function addToAnswer(word) {
@@ -1711,7 +1703,7 @@ export default function SentencePractice() {
       {/* Hint */}
       {showHint && status !== "correct" && (
         <div className="bg-purple-100 text-purple-800 p-3 rounded mb-4">
-            �� Hint: Subject → Verb → Action
+          �� Hint: Subject → Verb → Action
         </div>
       )}
 
