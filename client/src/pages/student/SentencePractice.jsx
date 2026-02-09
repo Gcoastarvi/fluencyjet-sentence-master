@@ -1262,7 +1262,13 @@ export default function SentencePractice() {
                 ? "audio"
                 : "typing",
             );
-            setShowCompleteModal(true);
+            // Don't show old modal if session-complete screen is about to show
+            const willHitSessionComplete =
+              totalQuestions > 0 && currentIndex + 1 >= totalQuestions;
+
+            if (!willHitSessionComplete) {
+              setShowCompleteModal(true);
+            }
           } catch (err) {
             console.error("[XP] completion bonus failed", err);
           }
@@ -1429,7 +1435,13 @@ export default function SentencePractice() {
           const bonus = await awardCompletionBonus("reorder");
           setCompletionXp(Number(bonus?.awarded ?? 300) || 300);
           setCompletionMode("reorder");
-          setShowCompleteModal(true);
+          // Don't show old modal if session-complete screen is about to show
+          const willHitSessionComplete =
+            totalQuestions > 0 && currentIndex + 1 >= totalQuestions;
+
+          if (!willHitSessionComplete) {
+            setShowCompleteModal(true);
+          }
         }
       } catch (err) {
         console.error("[XP] reorder awardXPEvent/completion failed", err);
@@ -2213,50 +2225,52 @@ export default function SentencePractice() {
       )}
 
       {/* ✅ Lesson completion modal */}
-      {!isComplete && showCompleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <div className="text-xl font-semibold">✅ Lesson Completed!</div>
-            <div className="mt-2 text-sm text-gray-600">
-              You earned <span className="font-semibold">+{completionXp}</span>{" "}
-              XP bonus.
-            </div>
+      {!isComplete &&
+        !(totalQuestions > 0 && currentIndex >= totalQuestions) &&
+        showCompleteModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+              <div className="text-xl font-semibold">✅ Lesson Completed!</div>
+              <div className="mt-2 text-sm text-gray-600">
+                You earned{" "}
+                <span className="font-semibold">+{completionXp}</span> XP bonus.
+              </div>
 
-            <div className="mt-5 grid gap-2">
-              <button
-                className="w-full rounded-xl bg-black px-4 py-2 text-white"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  const next = Number(lessonId) + 1;
-                  navigate(`/lesson/${next}`, { replace: true });
-                }}
-              >
-                Next Lesson →
-              </button>
+              <div className="mt-5 grid gap-2">
+                <button
+                  className="w-full rounded-xl bg-black px-4 py-2 text-white"
+                  onClick={() => {
+                    setShowCompleteModal(false);
+                    const next = Number(lessonId) + 1;
+                    navigate(`/lesson/${next}`, { replace: true });
+                  }}
+                >
+                  Next Lesson →
+                </button>
 
-              <button
-                className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  navigate("/student/leaderboard");
-                }}
-              >
-                View Leaderboard
-              </button>
+                <button
+                  className="w-full rounded-xl border border-gray-300 px-4 py-2"
+                  onClick={() => {
+                    setShowCompleteModal(false);
+                    navigate("/student/leaderboard");
+                  }}
+                >
+                  View Leaderboard
+                </button>
 
-              <button
-                className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                onClick={() => {
-                  setShowCompleteModal(false);
-                  initQuiz();
-                }}
-              >
-                Repeat Lesson
-              </button>
+                <button
+                  className="w-full rounded-xl border border-gray-300 px-4 py-2"
+                  onClick={() => {
+                    setShowCompleteModal(false);
+                    initQuiz();
+                  }}
+                >
+                  Repeat Lesson
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* ✅ Correct banner (Typing + Reorder) — bottom floating */}
       {status === "correct" && Number(earnedXP || 0) > 0 && (
