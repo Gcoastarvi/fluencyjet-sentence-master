@@ -228,15 +228,26 @@ export default function LessonDetail() {
     ? `Continue • ${modeLabel(normalizedSession.mode)} • Q${qNum}`
     : "Continue";
 
-  const continueHref = normalizedSession
-    ? `/practice/${normalizedSession.mode}?lessonId=${encodeURIComponent(
-        lessonId,
-      )}&q=${encodeURIComponent(normalizedSession.questionIndex)}${
-        normalizedSession.mode === "audio" && normalizedSession.variant
-          ? `&variant=${encodeURIComponent(normalizedSession.variant)}`
-          : ""
-      }`
-    : null;
+  // ✅ If last session is "done", don't show Continue
+  const isSessionDone =
+    normalizedSession &&
+    (normalizedSession.index === "done" ||
+      normalizedSession.questionIndex === "done" ||
+      (typeof normalizedSession.index === "number" &&
+        typeof normalizedSession.total === "number" &&
+        normalizedSession.total > 0 &&
+        normalizedSession.index >= normalizedSession.total));
+
+  const continueHref =
+    normalizedSession && !isSessionDone
+      ? `/practice/${normalizedSession.mode}?lessonId=${encodeURIComponent(
+          lessonId,
+        )}&q=${encodeURIComponent(normalizedSession.questionIndex)}${
+          normalizedSession.mode === "audio" && normalizedSession.variant
+            ? `&variant=${encodeURIComponent(normalizedSession.variant)}`
+            : ""
+        }`
+      : null;
 
   function goPaywall() {
     navigate(`/paywall?plan=BEGINNER&from=lesson_${lessonIdNum || ""}`);
@@ -268,7 +279,7 @@ export default function LessonDetail() {
       return exercises.length > 0;
     } catch (e) {
       const status = e?.response?.status ?? null;
-      const data = e?.response?.data ?? null;      
+      const data = e?.response?.data ?? null;
 
       // Unauthorized → go login and come back
       if (status === 401) {
