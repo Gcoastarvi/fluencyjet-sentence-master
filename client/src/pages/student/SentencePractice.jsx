@@ -839,29 +839,16 @@ export default function SentencePractice() {
     setWrongIndexes([]);
     setRevealEnglish(false);
 
-    // mode-specific resets
     setAnswer([]);
     setTiles([]);
 
     setCurrentIndex((prev) => {
       const next = prev + 1;
 
-      // ✅ write last session progress (per question)
-      try {
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId: Number(lessonIdNum),
-            mode: fetchMode, // typing/reorder/audio
-            index: next,
-            updatedAt: Date.now(),
-          }),
-        );
-      } catch {}
+      const total = Math.min(lessonExercises?.length || 0, sessionTarget);
 
       // ✅ completion trigger
-      if (next >= (lessonExercises?.length || 0)) {
-        // mark completion in last session
+      if (total > 0 && next >= total) {
         try {
           localStorage.setItem(
             "fj_last_session",
@@ -875,8 +862,23 @@ export default function SentencePractice() {
         } catch {}
 
         setIsComplete(true);
-        return prev; // keep index stable once complete
+
+        // ✅ return next (don’t freeze), UI will render completion safely
+        return next;
       }
+
+      // ✅ normal progress
+      try {
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId: Number(lessonIdNum),
+            mode: fetchMode,
+            index: next,
+            updatedAt: Date.now(),
+          }),
+        );
+      } catch {}
 
       return next;
     });
@@ -1474,7 +1476,7 @@ export default function SentencePractice() {
   // completion
   // -------------------
   // ✅ SESSION COMPLETE (10 questions) — engagement loop
-  if (totalQuestions > 0 && currentIndex >= totalQuestions) {
+  if (isComplete || (totalQuestions > 0 && currentIndex >= totalQuestions)) {
     const search = new URLSearchParams(location.search);
     const lid = Number(search.get("lessonId") || 0);
     const nextLessonId = lid ? lid + 1 : null;
