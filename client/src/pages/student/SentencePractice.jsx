@@ -1473,35 +1473,60 @@ export default function SentencePractice() {
   // -------------------
   // completion
   // -------------------
+  // ✅ SESSION COMPLETE (10 questions) — engagement loop
   if (totalQuestions > 0 && currentIndex >= totalQuestions) {
+    const search = new URLSearchParams(location.search);
+    const lid = Number(search.get("lessonId") || 0);
+    const nextLessonId = lid ? lid + 1 : null;
+
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">🎉 Session Complete!</h1>
-        <p className="mb-4">Great job! You finished today’s practice.</p>
+        <h1 className="text-2xl font-bold mb-3">🎉 Session Complete!</h1>
+        <p className="mb-4 text-gray-700">
+          Great job! You finished today’s practice.
+        </p>
 
-        <div className="mb-4 text-sm text-gray-600">
-          Mode: {String(fetchMode || "").toUpperCase()}
+        <div className="mb-6 text-sm text-gray-600">
+          Mode:{" "}
+          <span className="font-semibold">
+            {String(fetchMode || "").toUpperCase()}
+          </span>
         </div>
 
-        <button
-          className="bg-purple-600 text-white px-6 py-3 rounded-lg"
-          onClick={() => {
-            setCurrentIndex(0);
-            setStatus("idle");
-            loadLessonBatch(); // reload for another run
-          }}
-        >
-          Practice Again
-        </button>
-      </div>
-    );
-  }
+        <div className="space-y-3">
+          {/* Primary CTA: Next Lesson */}
+          {nextLessonId ? (
+            <button
+              className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
+              onClick={() =>
+                navigate(`/lesson/${nextLessonId}`, { replace: true })
+              }
+            >
+              Continue to Lesson {nextLessonId} →
+            </button>
+          ) : null}
 
-  if (loading) {
-    return (
-      <div className="max-w-3xl mx-auto p-6 text-center">
-        <div className="text-lg font-semibold">Loading practice…</div>
-        <div className="text-sm text-slate-500 mt-2">Fetching exercises</div>
+          {/* Secondary: Practice Again */}
+          <button
+            className="w-full rounded-2xl bg-purple-600 px-6 py-4 text-white font-semibold hover:opacity-95"
+            onClick={() => {
+              setCurrentIndex(0);
+              setStatus("idle");
+              setIsComplete(false); // safety if lesson-complete was set
+              loadLessonBatch(); // reload for another run
+            }}
+          >
+            Practice Again
+          </button>
+
+          {/* Tertiary: Back to Lessons */}
+          <button
+            className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
+            onClick={() => navigate("/lessons", { replace: true })}
+          >
+            Back to Lessons
+          </button>
+        </div>
       </div>
     );
   }
