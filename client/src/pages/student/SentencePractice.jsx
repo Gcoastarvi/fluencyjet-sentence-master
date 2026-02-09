@@ -405,19 +405,68 @@ export default function SentencePractice() {
   }, [lessonId, safeMode]);
 
   useEffect(() => {
+    // ✅ do not overwrite "done"
+    if (isComplete) return;
+    if (totalQuestions > 0 && currentIndex >= totalQuestions) return;
+
     try {
       const session = {
-        lessonId: String(lessonId),
-        mode: String(safeMode),
+        lessonId: Number(lessonId),
+        mode: String(fetchMode || safeMode || ""),
         questionIndex: Number(currentIndex) || 0,
         updatedAt: Date.now(),
-        ...(safeMode === "audio" ? { variant: audioVariant } : {}),
+        ...(String(fetchMode || safeMode) === "audio"
+          ? { variant: audioVariant }
+          : {}),
       };
       localStorage.setItem("fj_last_session", JSON.stringify(session));
     } catch {
       // ignore
     }
-  }, [lessonId, safeMode, currentIndex, audioVariant]);
+  }, [
+    lessonId,
+    fetchMode,
+    safeMode,
+    currentIndex,
+    audioVariant,
+    isComplete,
+    totalQuestions,
+  ]);
+
+  useEffect(() => {
+    const done =
+      isComplete || (totalQuestions > 0 && currentIndex >= totalQuestions);
+    if (!done) return;
+
+    try {
+      const total = totalQuestions || lessonExercises?.length || 0;
+
+      const session = {
+        lessonId: Number(lessonId),
+        mode: String(fetchMode || safeMode || ""),
+        index: "done",
+        questionIndex: total, // helps UI show Q# correctly if needed
+        total,
+        updatedAt: Date.now(),
+        ...(String(fetchMode || safeMode) === "audio"
+          ? { variant: audioVariant }
+          : {}),
+      };
+
+      localStorage.setItem("fj_last_session", JSON.stringify(session));
+    } catch {
+      // ignore
+    }
+  }, [
+    lessonId,
+    fetchMode,
+    safeMode,
+    audioVariant,
+    isComplete,
+    totalQuestions,
+    currentIndex,
+    lessonExercises?.length,
+  ]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -872,38 +921,9 @@ export default function SentencePractice() {
 
       const total = Math.min(lessonExercises?.length || 0, sessionTarget);
 
-      // ✅ completion trigger
       if (total > 0 && next >= total) {
-        try {
-          localStorage.setItem(
-            "fj_last_session",
-            JSON.stringify({
-              lessonId: Number(lessonIdNum),
-              mode: fetchMode,
-              index: "done",
-              updatedAt: Date.now(),
-            }),
-          );
-        } catch {}
-
         setIsComplete(true);
-
-        // ✅ return next (don’t freeze), UI will render completion safely
-        return next;
       }
-
-      // ✅ normal progress
-      try {
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId: Number(lessonIdNum),
-            mode: fetchMode,
-            index: next,
-            updatedAt: Date.now(),
-          }),
-        );
-      } catch {}
 
       return next;
     });
@@ -1235,15 +1255,6 @@ export default function SentencePractice() {
           });
         }
 
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId,
-            mode: "typing",
-            questionIndex: currentIndex + 1,
-            timestamp: Date.now(),
-          }),
-        );
         // ✅ Completion bonus (ONLY once, only on last question)
         const isLastQuestion =
           currentIndex >= (lessonExercises?.length || 0) - 1;
@@ -1363,17 +1374,6 @@ export default function SentencePractice() {
           updatedAt: Date.now(),
         });
 
-        // ✅ Save session (Cloze) — resume next question
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId,
-            mode: "cloze",
-            questionIndex: currentIndex + 1,
-            timestamp: Date.now(),
-          }),
-        );
-
         setTimeout(() => {
           loadNextQuestion(); // loadNextQuestion will handle resets
         }, 900);
@@ -1461,18 +1461,6 @@ export default function SentencePractice() {
           updatedAt: Date.now(),
         });
       }
-
-      localStorage.setItem(
-        "fj_last_session",
-        JSON.stringify({
-          lessonId,
-          mode: "reorder",
-          questionIndex: currentIndex + 1,
-          timestamp: Date.now(),
-        }),
-      );
-
-      return;
     }
 
     // WRONG
@@ -1512,7 +1500,7 @@ export default function SentencePractice() {
   // -------------------
   // completion
   // -------------------
-  // ✅ SESSION COMPLETE (10 questions) — engagement loop
+  //   � SESSION COMPLETE (10 questions) — engagement loop
   if (isComplete || (totalQuestions > 0 && currentIndex >= totalQuestions)) {
     const search = new URLSearchParams(location.search);
     const lid = Number(search.get("lessonId") || 0);
