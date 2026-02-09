@@ -90,6 +90,18 @@ export default function SentencePractice() {
 
   const navigate = useNavigate();
 
+  const lessonIdNumSafe = lessonId || 1;
+  const nextLessonId = lessonIdNumSafe + 1;
+
+  function goLessons() {
+    navigate("/lessons", { replace: true });
+  }
+
+  function goNextLesson() {
+    if (!nextLessonId) return goLessons();
+    navigate(`/lesson/${nextLessonId}`, { replace: true });
+  }
+
   const asArr = (v) => (Array.isArray(v) ? v : []);
   const norm = (s) =>
     String(s || "")
@@ -817,6 +829,7 @@ export default function SentencePractice() {
   }
 
   function loadNextQuestion() {
+    // reset transient UI for next question
     setEarnedXP(0);
     setShowXPToast(false);
     setStatus("idle");
@@ -826,44 +839,46 @@ export default function SentencePractice() {
     setWrongIndexes([]);
     setRevealEnglish(false);
 
+    // mode-specific resets
     setAnswer([]);
     setTiles([]);
 
     setCurrentIndex((prev) => {
-      const nextIndex = prev + 1;
+      const next = prev + 1;
 
-      // ✅ finished
-      if (nextIndex >= lessonExercises.length) {
+      // ✅ write last session progress (per question)
+      try {
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId: Number(lessonIdNum),
+            mode: fetchMode, // typing/reorder/audio
+            index: next,
+            updatedAt: Date.now(),
+          }),
+        );
+      } catch {}
+
+      // ✅ completion trigger
+      if (next >= (lessonExercises?.length || 0)) {
+        // mark completion in last session
         try {
           localStorage.setItem(
             "fj_last_session",
             JSON.stringify({
               lessonId: Number(lessonIdNum),
               mode: fetchMode,
-              index: lessonExercises.length, // done marker
+              index: "done",
               updatedAt: Date.now(),
             }),
           );
         } catch {}
 
         setIsComplete(true);
-        return prev; // keep index stable
+        return prev; // keep index stable once complete
       }
 
-      // ✅ save progress
-      try {
-        localStorage.setItem(
-          "fj_last_session",
-          JSON.stringify({
-            lessonId: Number(lessonIdNum),
-            mode: fetchMode,
-            index: nextIndex,
-            updatedAt: Date.now(),
-          }),
-        );
-      } catch {}
-
-      return nextIndex;
+      return next;
     });
   }
 
@@ -1464,6 +1479,10 @@ export default function SentencePractice() {
         <h1 className="text-2xl font-bold mb-4">🎉 Session Complete!</h1>
         <p className="mb-4">Great job! You finished today’s practice.</p>
 
+        <div className="mb-4 text-sm text-gray-600">
+          Mode: {String(fetchMode || "").toUpperCase()}
+        </div>
+
         <button
           className="bg-purple-600 text-white px-6 py-3 rounded-lg"
           onClick={() => {
@@ -1644,7 +1663,9 @@ export default function SentencePractice() {
           <div className="mt-6 space-y-3">
             {/* Primary CTA */}
             <button
-              onClick={() => navigate(`/lesson/${nextLessonId}`)}
+              onClick={() =>
+                navigate(`/lesson/${nextLessonId}`, { replace: true })
+              }
               className="w-full rounded-2xl bg-black px-4 py-5 text-white hover:opacity-90"
             >
               Continue to Lesson {nextLessonId} →
@@ -1663,7 +1684,7 @@ export default function SentencePractice() {
             </button>
 
             <button
-              onClick={() => navigate("/lessons")}
+              onClick={() => navigate("/lessons", { replace: true })}
               className="w-full rounded-2xl border bg-white px-4 py-4 hover:bg-gray-50"
             >
               Back to Lessons
