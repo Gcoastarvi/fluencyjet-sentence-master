@@ -236,8 +236,6 @@ export default function SentencePractice() {
   const audioSubmitRef = useRef(new Set()); // per-question "already submitted"
   const [audioSubmitting, setAudioSubmitting] = useState(false); // UX: disable button while saving
 
-  const englishFull = String(expectedAnswer || current?.expected || "").trim();
-
   const nextIndex = currentIndex + 1;
 
   // ✅ Derived (must be AFTER useState declarations)
@@ -254,6 +252,9 @@ export default function SentencePractice() {
   const expectedAnswer = String(
     expected.answer ?? expected.correct ?? expected.expected ?? "",
   ).trim();
+
+  // ✅ NOW it's safe (expectedAnswer + current exist)
+  const englishFull = String(expectedAnswer || current?.expected || "").trim();
 
   // For reorder: correctOrder (array) OR fallback to words OR split expectedAnswer
   const correctOrderArr =
