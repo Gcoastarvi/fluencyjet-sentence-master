@@ -222,32 +222,36 @@ export default function LessonDetail() {
     return { mode: m, questionIndex: idx, total, variant: session?.variant };
   })();
 
-  const qNum = normalizedSession ? normalizedSession.questionIndex + 1 : null;
+  const qNum =
+    normalizedSession && typeof normalizedSession.questionIndex === "number"
+      ? normalizedSession.questionIndex + 1
+      : null;
 
-  const continueText = normalizedSession
-    ? `Continue • ${modeLabel(normalizedSession.mode)} • Q${qNum}`
-    : "Continue";
+  const continueText =
+    normalizedSession && qNum
+      ? `Continue • ${modeLabel(normalizedSession.mode)} • Q${qNum}`
+      : "Continue";
 
   // ✅ If last session is "done", don't show Continue
   const isSessionDone =
-    normalizedSession &&
-    (normalizedSession.index === "done" ||
-      normalizedSession.questionIndex === "done" ||
-      (typeof normalizedSession.index === "number" &&
-        typeof normalizedSession.total === "number" &&
-        normalizedSession.total > 0 &&
-        normalizedSession.index >= normalizedSession.total));
+    normalizedSession?.index === "done" ||
+    normalizedSession?.questionIndex === "done";
 
-  const continueHref =
-    normalizedSession && !isSessionDone
-      ? `/practice/${normalizedSession.mode}?lessonId=${encodeURIComponent(
-          lessonId,
-        )}&q=${encodeURIComponent(normalizedSession.questionIndex)}${
-          normalizedSession.mode === "audio" && normalizedSession.variant
-            ? `&variant=${encodeURIComponent(normalizedSession.variant)}`
-            : ""
-        }`
-      : null;
+  const canContinue =
+    normalizedSession &&
+    !isSessionDone &&
+    typeof normalizedSession.questionIndex === "number" &&
+    Number.isFinite(normalizedSession.questionIndex);
+
+  const continueHref = canContinue
+    ? `/practice/${normalizedSession.mode}?lessonId=${encodeURIComponent(
+        lessonId,
+      )}&q=${encodeURIComponent(normalizedSession.questionIndex)}${
+        normalizedSession.mode === "audio" && normalizedSession.variant
+          ? `&variant=${encodeURIComponent(normalizedSession.variant)}`
+          : ""
+      }`
+    : null;
 
   function goPaywall() {
     navigate(`/paywall?plan=BEGINNER&from=lesson_${lessonIdNum || ""}`);

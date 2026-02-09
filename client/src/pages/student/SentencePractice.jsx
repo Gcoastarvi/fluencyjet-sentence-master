@@ -1512,10 +1512,30 @@ export default function SentencePractice() {
           <button
             className="w-full rounded-2xl bg-purple-600 px-6 py-4 text-white font-semibold hover:opacity-95"
             onClick={() => {
+              // reset completion + modal states
+              setIsComplete(false);
+              setShowCompleteModal(false);
+              setCompletionXp(0);
+
+              // reset practice state
               setCurrentIndex(0);
               setStatus("idle");
-              setIsComplete(false); // safety if lesson-complete was set
-              loadLessonBatch(); // reload for another run
+              setFeedback("");
+              setShowHint(false);
+              setTypedAnswer("");
+              setWrongIndexes([]);
+              setRevealEnglish(false);
+              setEarnedXP(0);
+              setShowXPToast(false);
+              setAnswer([]);
+              setTiles([]);
+
+              // audio-specific safety
+              setAudioSubmitting(false);
+              resetAudioGate?.(); // if resetAudioGate is in scope; otherwise skip
+
+              // reload
+              loadLessonBatch();
             }}
           >
             Practice Again
@@ -2166,7 +2186,7 @@ export default function SentencePractice() {
       )}
 
       {/* ✅ Lesson completion modal */}
-      {showCompleteModal && (
+      {!isComplete && showCompleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
             <div className="text-xl font-semibold">✅ Lesson Completed!</div>
@@ -2181,7 +2201,7 @@ export default function SentencePractice() {
                 onClick={() => {
                   setShowCompleteModal(false);
                   const next = Number(lessonId) + 1;
-                  window.location.href = `/practice/${completionMode}?lessonId=${next}`;
+                  navigate(`/lesson/${next}`, { replace: true });
                 }}
               >
                 Next Lesson →
