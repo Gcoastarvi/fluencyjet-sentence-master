@@ -810,6 +810,13 @@ export default function SentencePractice() {
     setLoading(false);
   }
 
+  setShowCompleteModal(false);
+  setIsComplete(false);
+  setCurrentIndex(0);
+  setStatus("idle");
+  resetAudioGate();
+  initQuiz();
+
   function initQuiz() {
     setAttempts(0);
     setStatus("idle");
@@ -1532,7 +1539,9 @@ export default function SentencePractice() {
 
               // audio-specific safety
               setAudioSubmitting(false);
-              resetAudioGate?.(); // if resetAudioGate is in scope; otherwise skip
+              audioSubmitRef.current = new Set(); // ✅ add
+              stopTTS(); // ✅ add
+              resetAudioGate(); // ✅ call directly (no optional chaining needed)
 
               // reload
               loadLessonBatch();
@@ -2211,7 +2220,7 @@ export default function SentencePractice() {
                 className="w-full rounded-xl border border-gray-300 px-4 py-2"
                 onClick={() => {
                   setShowCompleteModal(false);
-                  window.location.href = "/student/leaderboard";
+                  navigate("/student/leaderboard");
                 }}
               >
                 View Leaderboard
