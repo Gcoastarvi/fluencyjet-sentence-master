@@ -194,6 +194,50 @@ export default function SentencePractice() {
 
   const [isComplete, setIsComplete] = useState(false);
 
+  const [loadError, setLoadError] = useState("");
+  const [sessionTarget] = useState(10); // MVP: 10 questions per session
+
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completionXp, setCompletionXp] = useState(0);
+  const [completionMode, setCompletionMode] = useState("typing");
+
+  // typing/cloze shared input state
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [typedAnswer, setTypedAnswer] = useState("");
+
+  // server-driven UI
+  const [earnedXP, setEarnedXP] = useState(0);
+  const [showXPToast, setShowXPToast] = useState(false);
+  const [streak, setStreak] = useState(0);
+  const [feedback, setFeedback] = useState("");
+
+  const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
+
+  // 🔊 Audio (TTS)
+  const [revealEnglish, setRevealEnglish] = useState(false);
+  const [ttsRate, setTtsRate] = useState(1.0);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const ttsRateRef = useRef(ttsRate);
+  const ttsLangRef = useRef(ttsLang);
+
+  const [audioVariant, setAudioVariant] = useState("repeat"); // "repeat" | "dictation"
+
+  const [audioGateOpen, setAudioGateOpen] = useState(false);
+  const audioGateTimerRef = useRef(null);
+
+  const location = useLocation();
+  const lessonIdFromQuery = Number(
+    new URLSearchParams(location.search).get("lessonId"),
+  );
+
+  const xpInFlightRef = useRef(false);
+
+  const audioSubmitRef = useRef(new Set()); // per-question "already submitted"
+  const [audioSubmitting, setAudioSubmitting] = useState(false); // UX: disable button while saving
+
+  const englishFull = String(expectedAnswer || current?.expected || "").trim();
+
   const nextIndex = currentIndex + 1;
 
   // ✅ Derived (must be AFTER useState declarations)
@@ -243,23 +287,6 @@ export default function SentencePractice() {
   console.log("[DBG] expectedAnswer", expectedAnswer);
   console.log("[DBG] correctOrderArr", correctOrderArr);
 
-  const [loadError, setLoadError] = useState("");
-  const [sessionTarget] = useState(10); // MVP: 10 questions per session
-
-  const [showCompleteModal, setShowCompleteModal] = useState(false);
-  const [completionXp, setCompletionXp] = useState(0);
-  const [completionMode, setCompletionMode] = useState("typing");
-
-  // typing/cloze shared input state
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [typedAnswer, setTypedAnswer] = useState("");
-
-  // server-driven UI
-  const [earnedXP, setEarnedXP] = useState(0);
-  const [showXPToast, setShowXPToast] = useState(false);
-  const [streak, setStreak] = useState(0);
-  const [feedback, setFeedback] = useState("");
-
   // ✅ Auto-hide XP toast + reset earnedXP
   useEffect(() => {
     if (!showXPToast) return;
@@ -270,33 +297,6 @@ export default function SentencePractice() {
 
     return () => clearTimeout(t);
   }, [showXPToast]);
-
-  const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
-
-  // 🔊 Audio (TTS)
-  const [revealEnglish, setRevealEnglish] = useState(false);
-  const [ttsRate, setTtsRate] = useState(1.0);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-
-  const ttsRateRef = useRef(ttsRate);
-  const ttsLangRef = useRef(ttsLang);
-
-  const [audioVariant, setAudioVariant] = useState("repeat"); // "repeat" | "dictation"
-
-  const [audioGateOpen, setAudioGateOpen] = useState(false);
-  const audioGateTimerRef = useRef(null);
-
-  const location = useLocation();
-  const lessonIdFromQuery = Number(
-    new URLSearchParams(location.search).get("lessonId"),
-  );
-
-  const xpInFlightRef = useRef(false);
-
-  const audioSubmitRef = useRef(new Set()); // per-question "already submitted"
-  const [audioSubmitting, setAudioSubmitting] = useState(false); // UX: disable button while saving
-
-  const englishFull = String(expectedAnswer || current?.expected || "").trim();
 
   function openAudioGateAfter(ms = 1800) {
     setAudioGateOpen(false);
