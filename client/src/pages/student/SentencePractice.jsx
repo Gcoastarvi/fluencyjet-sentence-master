@@ -192,6 +192,17 @@ export default function SentencePractice() {
   const [lessonExercises, setLessonExercises] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [isComplete, setIsComplete] = useState(false);
+
+  const nextIndex = currentIndex + 1;
+
+  if (nextIndex >= lessonExercises.length) {
+    setIsComplete(true);
+    return;
+  }
+
+  setCurrentIndex(nextIndex);
+
   // ✅ Derived (must be AFTER useState declarations)
   const current =
     Array.isArray(lessonExercises) && typeof currentIndex === "number"
@@ -467,13 +478,15 @@ export default function SentencePractice() {
 
   // AUTO NEXT after correct/reveal
   useEffect(() => {
+    if (isComplete) return;
+
     if (status === "correct" || status === "reveal") {
       const timer = setTimeout(() => {
         loadNextQuestion();
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [status, loadNextQuestion]);
+  }, [status, isComplete]); // (loadNextQuestion is stable enough here)
 
   useEffect(() => {
     xpInFlightRef.current = false;
@@ -717,11 +730,7 @@ export default function SentencePractice() {
       const data = e?.response?.data ?? e?.data ?? null;
       const code = data?.code ?? null;
 
-      const msg =
-        data?.message ??
-        data?.error ??
-        e?.message ??
-        "";
+      const msg = data?.message ?? data?.error ?? e?.message ?? "";
 
       if (
         status === 403 &&
@@ -753,9 +762,9 @@ export default function SentencePractice() {
     } finally {
       setLoading(false);
     }
-    }
+  }
 
-    async function loadRandomOne() {
+  async function loadRandomOne() {
     setLoading(true);
     setLoadError("");
     try {
@@ -814,6 +823,39 @@ export default function SentencePractice() {
   }
 
   function loadNextQuestion() {
+    const nextIndex = currentIndex + 1;
+
+    // ✅ if lesson finished → save "done" session + show completion screen
+    if (nextIndex >= lessonExercises.length) {
+      try {
+        localStorage.setItem(
+          "fj_last_session",
+          JSON.stringify({
+            lessonId: Number(lessonIdNum),
+            mode: fetchMode, // typing/reorder/audio
+            index: lessonExercises.length, // marks completion
+            updatedAt: Date.now(),
+          }),
+        );
+      } catch {}
+
+      setIsComplete(true);
+      return;
+    }
+
+    // ✅ Save last session progress for normal next step
+    try {
+      localStorage.setItem(
+        "fj_last_session",
+        JSON.stringify({
+          lessonId: Number(lessonIdNum),
+          mode: fetchMode,
+          index: nextIndex,
+          updatedAt: Date.now(),
+        }),
+      );
+    } catch {}
+
     // reset transient UI for next question
     setEarnedXP(0);
     setShowXPToast(false);
@@ -829,7 +871,7 @@ export default function SentencePractice() {
     setTiles([]);
 
     // go next
-    setCurrentIndex((prev) => prev + 1);
+    setCurrentIndex(nextIndex);
   }
 
   function addToAnswer(word) {
@@ -1595,6 +1637,50 @@ export default function SentencePractice() {
     );
   }
 
+  if (isComplete) {
+    const nextLessonId = Number(lessonIdNum) + 1;
+
+    return (
+      <div className="mx-auto max-w-3xl p-4">
+        <div className="rounded-2xl border bg-white p-6">
+          <div className="text-2xl font-bold">Lesson complete 🎉</div>
+          <div className="mt-2 text-sm text-gray-600">
+            You finished this practice set.
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {/* Primary CTA */}
+            <button
+              onClick={() => navigate(`/lesson/${nextLessonId}`)}
+              className="w-full rounded-2xl bg-black px-4 py-5 text-white hover:opacity-90"
+            >
+              Continue to Lesson {nextLessonId} →
+            </button>
+
+            {/* Secondary */}
+            <button
+              onClick={() => {
+                setIsComplete(false);
+                setCurrentIndex(0);
+                // optional: reshuffle or reload if you have random
+              }}
+              className="w-full rounded-2xl border bg-white px-4 py-4 hover:bg-gray-50"
+            >
+              Practice again (same lesson)
+            </button>
+
+            <button
+              onClick={() => navigate("/lessons")}
+              className="w-full rounded-2xl border bg-white px-4 py-4 hover:bg-gray-50"
+            >
+              Back to Lessons
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // -------------------
   // UI
   // -------------------
@@ -1625,7 +1711,7 @@ export default function SentencePractice() {
       {/* Hint */}
       {showHint && status !== "correct" && (
         <div className="bg-purple-100 text-purple-800 p-3 rounded mb-4">
-          💡 Hint: Subject → Verb → Action
+            �� Hint: Subject → Verb → Action
         </div>
       )}
 

@@ -145,10 +145,11 @@ export async function loginUser(email, password) {
 
 export async function signupUser(payload) {
   const res = await api.post("/auth/signup", payload);
-  if (res.ok && res.data?.token) {
-    setToken(res.data.token);
-  }
-  return res;
+
+  const token = res.data?.token;
+  if (token) setToken(token);
+
+  return res.data;
 }
 
 export async function getMe() {
