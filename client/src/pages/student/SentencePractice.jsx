@@ -99,7 +99,7 @@ export default function SentencePractice() {
 
   function goNextLesson() {
     if (!nextLessonId) return goLessons();
-    navigate(`/lesson/${nextLessonId}`, { replace: true });
+    navigate(`/lesson/${nextLessonId}?autostart=1`, { replace: true });
   }
 
   const asArr = (v) => (Array.isArray(v) ? v : []);
@@ -419,7 +419,6 @@ export default function SentencePractice() {
           ? { variant: audioVariant }
           : {}),
       };
-      localStorage.setItem("fj_last_session", JSON.stringify(session));
     } catch {
       // ignore
     }
@@ -1497,6 +1496,56 @@ export default function SentencePractice() {
     );
   }
 
+  function safeStopAudioAndUnlock() {
+    // Audio safety no-ops if not in audio mode
+    try {
+      setAudioSubmitting(false);
+    } catch {}
+    try {
+      if (audioSubmitRef?.current) audioSubmitRef.current = new Set();
+    } catch {}
+    try {
+      stopTTS?.();
+    } catch {}
+    try {
+      resetAudioGate?.();
+    } catch {}
+  }
+
+  function hardResetThenNavigate(nextMode, nextVariant) {
+    // Minimal safe resets before leaving completion screen
+    try {
+      setIsComplete(false);
+    } catch {}
+    try {
+      setShowCompleteModal(false);
+    } catch {}
+    try {
+      setCompletionXp(0);
+    } catch {}
+
+    safeStopAudioAndUnlock();
+
+    const sp = new URLSearchParams(location.search);
+    const lid = sp.get("lessonId"); // SOURCE OF TRUTH
+    if (!lid) return;
+
+    const mode = String(nextMode || "").toLowerCase();
+    if (!mode) return;
+
+    if (mode === "audio") {
+      const qs = new URLSearchParams();
+      qs.set("lessonId", String(lid));
+      qs.set("variant", nextVariant || "repeat");
+      navigate(`/practice/audio?${qs.toString()}`, { replace: true });
+      return;
+    }
+
+    navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lid)}`, {
+      replace: true,
+    });
+  }
+
   // -------------------
   // completion
   // -------------------
@@ -1526,9 +1575,7 @@ export default function SentencePractice() {
             <button
               className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
               onClick={() =>
-                navigate(`/lesson/${nextLessonId}?autostart=1`, {
-                  replace: true,
-                })
+                navigate(`/lesson/${nextLessonId}`, { replace: true })
               }
             >
               Continue to Lesson {nextLessonId} →
@@ -1580,6 +1627,181 @@ export default function SentencePractice() {
         </div>
       </div>
     );
+  }
+
+  {
+    /* Try another mode (engagement nudge) */
+  }
+  {
+    (() => {
+      const lidStr = String(lid || "");
+      if (!lidStr) return null;
+
+      // read progress (safe, no state writes)
+      const tp = readProgress(lidStr, "typing");
+      const rp = readProgress(lidStr, "reorder");
+      const ap = readProgress(lidStr, "audio");
+
+      const current = String(safeMode || "").toLowerCase();
+
+      const canTyping = tp?.total > 0 && !tp?.completed && current !== "typing";
+      const canReorder =
+        rp?.total > 0 && !rp?.completed && current !== "reorder";
+      const canAudio = ap?.total > 0 && !ap?.completed && current !== "audio";
+
+      if (!canTyping && !canReorder && !canAudio) return null;
+
+      return (
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
+          <div className="text-sm font-semibold text-slate-900">
+            Try another mode (2 minutes)
+          </div>
+          <div className="mt-1 text-sm text-slate-600">
+            Different modes train different skills. Pick one more to boost
+            fluency.
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {canReorder ? (
+              <button
+                type="button"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                onClick={() => hardResetThenNavigate("reorder")}
+              >
+                Reorder (speed)
+              </button>
+            ) : null}
+
+            {canTyping ? (
+              <button
+                type="button"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                onClick={() => hardResetThenNavigate("typing")}
+              >
+                Typing (accuracy)
+              </button>
+            ) : null}
+
+            {canAudio ? (
+              <>
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                  onClick={() => hardResetThenNavigate("audio", "repeat")}
+                >
+                  Audio Repeat (listening)
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                  onClick={() => hardResetThenNavigate("audio", "dictation")}
+                >
+                  Audio Dictation
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      );
+    })();
+  }
+
+  {
+    /* Try another mode (engagement nudge) */
+  }
+  {
+    (() => {
+      // Keep all logic read-only, no setState here
+      const sp = new URLSearchParams(location.search);
+      const lid = sp.get("lessonId");
+      if (!lid) return null;
+
+      const modeList = ["typing", "reorder", "audio"];
+
+      // helper: read stored progress, decide if mode is already complete
+      const getProg = (m) => {
+        try {
+          return readProgress(String(lid), m); // you already have readProgress()
+        } catch {
+          return null;
+        }
+      };
+
+      const current = String(safeMode || "").toLowerCase();
+
+      const candidates = modeList
+        .filter((m) => m !== current) // nudge “other modes”
+        .map((m) => {
+          const p = getProg(m);
+          const total = Number(p?.total || 0);
+          const completed = !!p?.completed;
+
+          // Show button only if:
+          // - We know total>0 OR we don't know yet (p is null), and
+          // - Not already completed
+          //
+          // This avoids showing modes explicitly known to have 0 items.
+          const show = (!p || total > 0) && !completed;
+
+          return { mode: m, show };
+        })
+        .filter((x) => x.show);
+
+      if (candidates.length === 0) return null;
+
+      return (
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="text-sm font-semibold text-slate-900">
+            Try another mode (2 minutes)
+          </div>
+          <div className="mt-1 text-sm text-slate-600">
+            Different modes train different skills. Pick one more to boost
+            fluency.
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {candidates.some((c) => c.mode === "reorder") ? (
+              <button
+                type="button"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                onClick={() => hardResetThenNavigate("reorder")}
+              >
+                Reorder (speed)
+              </button>
+            ) : null}
+
+            {candidates.some((c) => c.mode === "typing") ? (
+              <button
+                type="button"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                onClick={() => hardResetThenNavigate("typing")}
+              >
+                Typing (accuracy)
+              </button>
+            ) : null}
+
+            {candidates.some((c) => c.mode === "audio") ? (
+              <>
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                  onClick={() => hardResetThenNavigate("audio", "repeat")}
+                >
+                  Audio Repeat (listening)
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                  onClick={() => hardResetThenNavigate("audio", "dictation")}
+                >
+                  Audio Dictation
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      );
+    })();
   }
 
   // -------------------
@@ -1740,17 +1962,9 @@ export default function SentencePractice() {
             {/* Primary CTA */}
             <button
               onClick={() => {
-                try {
-                  localStorage.setItem(
-                    "fj_prev_lesson_prompt",
-                    JSON.stringify({
-                      fromLessonId: lid, // current lesson id (the one they just finished a session in)
-                      toLessonId: nextLessonId, // next lesson id
-                      ts: Date.now(),
-                    }),
-                  );
-                } catch {}
-                navigate(`/lesson/${nextLessonId}`, { replace: true });
+                navigate(`/lesson/${nextLessonId}?autostart=1`, {
+                  replace: true,
+                });
               }}
               className="w-full rounded-2xl bg-black px-4 py-5 text-white hover:opacity-90"
             >
