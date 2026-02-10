@@ -416,6 +416,22 @@ export default function LessonDetail() {
     }
   }
 
+  useEffect(() => {
+    const sp = new URLSearchParams(location.search);
+    if (sp.get("autostart") !== "1") return;
+
+    // remove the flag so refresh/back doesn't autostart again
+    sp.delete("autostart");
+    navigate(
+      `${location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`,
+      { replace: true },
+    );
+
+    // now run smart start
+    smartStart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="mx-auto max-w-3xl p-4">
       <div className="rounded-2xl border bg-white p-5 shadow-sm">

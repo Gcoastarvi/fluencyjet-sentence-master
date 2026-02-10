@@ -1526,7 +1526,9 @@ export default function SentencePractice() {
             <button
               className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
               onClick={() =>
-                navigate(`/lesson/${nextLessonId}`, { replace: true })
+                navigate(`/lesson/${nextLessonId}?autostart=1`, {
+                  replace: true,
+                })
               }
             >
               Continue to Lesson {nextLessonId} →
