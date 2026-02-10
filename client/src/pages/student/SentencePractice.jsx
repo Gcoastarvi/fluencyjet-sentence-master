@@ -1638,18 +1638,27 @@ export default function SentencePractice() {
       const lidStr = String(sp.get("lessonId") || "");
       if (!lidStr) return null;
 
-      // read progress (safe, no state writes)
-      const tp = readProgress(lidStr, "typing");
-      const rp = readProgress(lidStr, "reorder");
-      const ap = readProgress(lidStr, "audio");
+      const tp = readProgress(lidStr, "typing"); // may be null
+      const rp = readProgress(lidStr, "reorder"); // may be null
+      const ap = readProgress(lidStr, "audio"); // may be null
 
       const current = String(safeMode || "").toLowerCase();
 
-      const canTyping = tp?.total > 0 && !tp?.completed && current !== "typing";
-      const canReorder =
-        rp?.total > 0 && !rp?.completed && current !== "reorder";
-      const canAudio = ap?.total > 0 && !ap?.completed && current !== "audio";
+      // If progress is missing => we treat as "unknown, probably available" and SHOW the button.
+      // If progress exists and total===0 => definitely no items => HIDE.
+      // If completed===true => HIDE (already done).
+      const showMode = (p, mode) => {
+        if (current === mode) return false;
+        if (p?.completed) return false;
+        if (p && Number(p.total || 0) === 0) return false; // known empty
+        return true; // unknown or has items
+      };
 
+      const canTyping = showMode(tp, "typing");
+      const canReorder = showMode(rp, "reorder");
+      const canAudio = showMode(ap, "audio");
+
+      // Don't show the card if nothing to offer
       if (!canTyping && !canReorder && !canAudio) return null;
 
       return (
