@@ -158,6 +158,62 @@ export default function LessonDetail() {
     !modeAvail.audio &&
     !modeAvail.cloze;
 
+  useEffect(() => {
+    const lid = Number(lessonIdNum);
+    if (!lid || lid <= 1) {
+      setMissedBanner(null);
+      return;
+    }
+
+    const prev = lid - 1;
+
+    // Optional: respect dismissal for this current lesson for 7 days
+    const dismissKey = `fj_dismiss_missed:${lid}`;
+    const dismissedAt = Number(localStorage.getItem(dismissKey) || "0");
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    if (dismissedAt && Date.now() - dismissedAt < sevenDays) {
+      setMissedBanner(null);
+      return;
+    }
+
+    const modes = ["typing", "reorder", "audio"];
+    const missing = [];
+    let anyProgressFound = false;
+
+    for (const m of modes) {
+      const key = `fj_progress:${prev}:${m}`;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
+      anyProgressFound = true;
+
+      try {
+        const obj = JSON.parse(raw);
+        if (!obj?.completed) missing.push(m);
+      } catch {
+        // corrupted JSON shouldn't crash UI
+        missing.push(m);
+      }
+    }
+
+    // If user never touched the previous lesson, don't nudge.
+    if (!anyProgressFound || missing.length === 0) {
+      setMissedBanner(null);
+      return;
+    }
+
+    const label = missing
+      .map((m) => (m === "audio" ? "Audio" : m[0].toUpperCase() + m.slice(1)))
+      .join(", ");
+
+    setMissedBanner({
+      prevLessonId: prev,
+      missingModes: missing,
+      missingModesLabel: label,
+      dismissKey,
+    });
+  }, [lessonIdNum]);
+
   // Continue session (supports typing/reorder, and audio later)
   const session = useMemo(() => {
     if (!lessonId) return null;
@@ -275,6 +331,17 @@ export default function LessonDetail() {
     if (mode === "cloze" && !ENABLE_CLOZE) return;
 
     navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lessonId)}`);
+  }
+
+  function dismissMissedBanner() {
+    if (!missedBanner?.dismissKey) return;
+    localStorage.setItem(missedBanner.dismissKey, String(Date.now()));
+    setMissedBanner(null);
+  }
+
+  function goToPrevLessonHub() {
+    if (!missedBanner?.prevLessonId) return;
+    navigate(`/lesson/${missedBanner.prevLessonId}`);
   }
 
   async function hasExercises(lessonIdNum, mode) {
@@ -667,62 +734,36 @@ export default function LessonDetail() {
         </div>
 
         {missedBanner ? (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <div className="font-semibold text-amber-900">
-              Quick win left in Lesson {missedBanner.fromLessonId}
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <div className="text-sm font-semibold text-amber-900">
+              Quick win: finish your missed practice
             </div>
+
             <div className="mt-1 text-sm text-amber-800">
-              You skipped:{" "}
+              You skipped{" "}
               <span className="font-semibold">
-                {missedBanner.missing.map((m) => m.toUpperCase()).join(" + ")}
-              </span>
-              . Finish anytime to boost fluency + earn XP.
+                {missedBanner.missingModesLabel}
+              </span>{" "}
+              in Lesson{" "}
+              <span className="font-semibold">{missedBanner.prevLessonId}</span>
+              .
             </div>
 
             <div className="mt-3 flex gap-2">
               <button
-                className="rounded-xl bg-black px-4 py-2 text-white hover:opacity-90"
-                onClick={() => {
-                  const from = missedBanner.fromLessonId;
-                  const first = missedBanner.missing[0]; // take first missing mode
-
-                  // Send them directly to the missing mode (fastest engagement)
-                  if (first === "audio") {
-                    navigate(
-                      `/practice/audio?lessonId=${encodeURIComponent(from)}&variant=repeat`,
-                      {
-                        replace: true,
-                      },
-                    );
-                  } else {
-                    navigate(
-                      `/practice/${first}?lessonId=${encodeURIComponent(from)}`,
-                      {
-                        replace: true,
-                      },
-                    );
-                  }
-                }}
+                type="button"
+                className="px-3 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold"
+                onClick={goToPrevLessonHub}
               >
-                Finish Lesson {missedBanner.fromLessonId}
+                Finish Lesson {missedBanner.prevLessonId}
               </button>
 
               <button
-                className="rounded-xl border border-amber-300 bg-white px-4 py-2 text-amber-900 hover:bg-amber-100"
-                onClick={() => {
-                  const from = missedBanner.fromLessonId;
-                  const to = Number(lessonIdNum);
-                  const dismissKey = `fj_missed_banner_dismiss:${from}->${to}`;
-
-                  try {
-                    localStorage.setItem(dismissKey, String(Date.now()));
-                    localStorage.removeItem("fj_prev_lesson_prompt"); // prevent repeat this visit
-                  } catch {}
-
-                  setMissedBanner(null);
-                }}
+                type="button"
+                className="px-3 py-2 rounded-lg border border-amber-300 text-amber-900 text-sm font-semibold"
+                onClick={dismissMissedBanner}
               >
-                Later
+                Dismiss
               </button>
             </div>
           </div>
