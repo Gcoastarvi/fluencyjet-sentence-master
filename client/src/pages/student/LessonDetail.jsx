@@ -2,9 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/apiClient";
 
-const [missedBanner, setMissedBanner] = useState(null);
-// missedBanner shape: { fromLessonId: number, missing: string[] }
-
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -75,6 +72,7 @@ function modeLabel(m) {
 }
 
 export default function LessonDetail() {
+  const [missedBanner, setMissedBanner] = useState(null);
   const { lessonId: lessonIdParam } = useParams(); // App.jsx uses :lessonId
   const lessonIdNum = Number(lessonIdParam);
   const lessonId = lessonIdParam; // keep as string for URL encoding
