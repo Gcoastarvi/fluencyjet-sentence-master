@@ -552,18 +552,20 @@ export default function LessonDetail() {
     setMissedBanner({ fromLessonId, missing });
   }, [lessonIdNum]); // keep deps tight
 
+  const didAutostartRef = useRef(false);
+
   useEffect(() => {
+    if (didAutostartRef.current) return;
     const sp = new URLSearchParams(location.search);
     if (sp.get("autostart") !== "1") return;
+    didAutostartRef.current = true;
 
-    // remove the flag so refresh/back doesn't autostart again
     sp.delete("autostart");
     navigate(
       `${location.pathname}${sp.toString() ? `?${sp.toString()}` : ""}`,
       { replace: true },
     );
 
-    // now run smart start
     smartStart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
