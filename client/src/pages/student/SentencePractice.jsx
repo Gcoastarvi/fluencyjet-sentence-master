@@ -1739,9 +1739,19 @@ export default function SentencePractice() {
           <div className="mt-6 space-y-3">
             {/* Primary CTA */}
             <button
-              onClick={() =>
-                navigate(`/lesson/${nextLessonId}`, { replace: true })
-              }
+              onClick={() => {
+                try {
+                  localStorage.setItem(
+                    "fj_prev_lesson_prompt",
+                    JSON.stringify({
+                      fromLessonId: lid, // current lesson id (the one they just finished a session in)
+                      toLessonId: nextLessonId, // next lesson id
+                      ts: Date.now(),
+                    }),
+                  );
+                } catch {}
+                navigate(`/lesson/${nextLessonId}`, { replace: true });
+              }}
               className="w-full rounded-2xl bg-black px-4 py-5 text-white hover:opacity-90"
             >
               Continue to Lesson {nextLessonId} →

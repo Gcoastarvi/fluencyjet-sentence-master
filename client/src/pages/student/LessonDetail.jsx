@@ -2,6 +2,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/apiClient";
 
+const [missedBanner, setMissedBanner] = useState(null);
+// missedBanner shape: { fromLessonId: number, missing: string[] }
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -192,6 +195,14 @@ export default function LessonDetail() {
     () => (lessonId ? readProgress(lessonId, "audio") : null),
     [lessonId],
   );
+
+  function isIncomplete(prog) {
+    if (!prog) return false;
+    const total = Number(prog.total || 0);
+    const completed = Number(prog.completed || 0);
+    if (total <= 0) return false; // if no items, don’t nag
+    return completed < total;
+  }
 
   // --- Safe Continue (guards stale session + adds q=) ---
   const totalsByMode = {
@@ -417,6 +428,66 @@ export default function LessonDetail() {
   }
 
   useEffect(() => {
+    let marker = null;
+
+    try {
+      marker = JSON.parse(
+        localStorage.getItem("fj_prev_lesson_prompt") || "null",
+      );
+    } catch {
+      marker = null;
+    }
+
+    // No marker → no banner
+    if (!marker) return;
+
+    const toLessonId = Number(marker.toLessonId || 0);
+    const fromLessonId = Number(marker.fromLessonId || 0);
+    const ts = Number(marker.ts || 0);
+
+    // Only show on the intended destination lesson
+    if (!toLessonId || !fromLessonId) return;
+    if (Number(lessonIdNum) !== toLessonId) return;
+
+    // Expire marker after 10 minutes (prevents random nags later)
+    if (ts && Date.now() - ts > 10 * 60 * 1000) {
+      try {
+        localStorage.removeItem("fj_prev_lesson_prompt");
+      } catch {}
+      return;
+    }
+
+    // Dismissed recently?
+    const dismissKey = `fj_missed_banner_dismiss:${fromLessonId}->${toLessonId}`;
+    try {
+      const dismissedAt = Number(localStorage.getItem(dismissKey) || 0);
+      if (dismissedAt && Date.now() - dismissedAt < 24 * 60 * 60 * 1000) return;
+    } catch {}
+
+    // NOTE: this banner is only meant to nudge the PREVIOUS lesson’s missing modes.
+    // We can’t read previous lesson progress if you only compute progress for current lesson.
+    // So we derive it from localStorage keys directly:
+    const prevTyping = readProgress(fromLessonId, "typing");
+    const prevReorder = readProgress(fromLessonId, "reorder");
+    const prevAudio = readProgress(fromLessonId, "audio");
+
+    const missing = [];
+    if (isIncomplete(prevTyping)) missing.push("typing");
+    if (isIncomplete(prevReorder)) missing.push("reorder");
+    if (isIncomplete(prevAudio)) missing.push("audio");
+
+    if (missing.length === 0) {
+      // Nothing missing → clear marker so it doesn’t keep checking
+      try {
+        localStorage.removeItem("fj_prev_lesson_prompt");
+      } catch {}
+      return;
+    }
+
+    setMissedBanner({ fromLessonId, missing });
+  }, [lessonIdNum]); // keep deps tight
+
+  useEffect(() => {
     const sp = new URLSearchParams(location.search);
     if (sp.get("autostart") !== "1") return;
 
@@ -596,6 +667,68 @@ export default function LessonDetail() {
             )}
           </div>
         </div>
+
+        {missedBanner ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div className="font-semibold text-amber-900">
+              Quick win left in Lesson {missedBanner.fromLessonId}
+            </div>
+            <div className="mt-1 text-sm text-amber-800">
+              You skipped:{" "}
+              <span className="font-semibold">
+                {missedBanner.missing.map((m) => m.toUpperCase()).join(" + ")}
+              </span>
+              . Finish anytime to boost fluency + earn XP.
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <button
+                className="rounded-xl bg-black px-4 py-2 text-white hover:opacity-90"
+                onClick={() => {
+                  const from = missedBanner.fromLessonId;
+                  const first = missedBanner.missing[0]; // take first missing mode
+
+                  // Send them directly to the missing mode (fastest engagement)
+                  if (first === "audio") {
+                    navigate(
+                      `/practice/audio?lessonId=${encodeURIComponent(from)}&variant=repeat`,
+                      {
+                        replace: true,
+                      },
+                    );
+                  } else {
+                    navigate(
+                      `/practice/${first}?lessonId=${encodeURIComponent(from)}`,
+                      {
+                        replace: true,
+                      },
+                    );
+                  }
+                }}
+              >
+                Finish Lesson {missedBanner.fromLessonId}
+              </button>
+
+              <button
+                className="rounded-xl border border-amber-300 bg-white px-4 py-2 text-amber-900 hover:bg-amber-100"
+                onClick={() => {
+                  const from = missedBanner.fromLessonId;
+                  const to = Number(lessonIdNum);
+                  const dismissKey = `fj_missed_banner_dismiss:${from}->${to}`;
+
+                  try {
+                    localStorage.setItem(dismissKey, String(Date.now()));
+                    localStorage.removeItem("fj_prev_lesson_prompt"); // prevent repeat this visit
+                  } catch {}
+
+                  setMissedBanner(null);
+                }}
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {/* Actions */}
         <div className="mt-5 space-y-3">
