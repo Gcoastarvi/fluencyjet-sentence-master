@@ -1624,203 +1624,105 @@ export default function SentencePractice() {
           >
             Back to Lessons
           </button>
+          {/* Try another mode (engagement nudge) */}
+          {(() => {
+            const lidStr = String(lid || "");
+            if (!lidStr) return null;
+
+            const key = (m) => `fj_progress:${lidStr}:${m}`;
+            const rawReorder = localStorage.getItem(key("reorder"));
+            const rawAudio = localStorage.getItem(key("audio"));
+
+            const parse = (raw) => {
+              if (!raw) return null;
+              try {
+                return JSON.parse(raw);
+              } catch {
+                return null;
+              }
+            };
+
+            const rp = parse(rawReorder);
+            const ap = parse(rawAudio);
+
+            const current = String(safeMode || "").toLowerCase();
+
+            const isDone = (p) =>
+              p?.completed === true ||
+              (Number(p?.total || 0) > 0 &&
+                Number(p?.completed || 0) >= Number(p?.total || 0));
+
+            const canReorder =
+              current !== "reorder" &&
+              !isDone(rp) &&
+              !(rawReorder && Number(rp?.total || 0) === 0);
+            const canAudio =
+              current !== "audio" &&
+              !isDone(ap) &&
+              !(rawAudio && Number(ap?.total || 0) === 0);
+
+            const audioEnabled =
+              typeof ENABLE_AUDIO === "undefined" ? true : !!ENABLE_AUDIO;
+
+            console.log("[TRY MODE CARD]", {
+              lidStr,
+              rawReorder,
+              rawAudio,
+              canReorder,
+              canAudio,
+              audioEnabled,
+            });
+
+            if (!canReorder && !(canAudio && audioEnabled)) return null;
+
+            return (
+              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
+                <div className="text-sm font-semibold text-slate-900">
+                  Try another mode (2 minutes)
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  Different modes train different skills. Pick one more to boost
+                  fluency.
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {canReorder ? (
+                    <button
+                      type="button"
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                      onClick={() => hardResetThenNavigate("reorder")}
+                    >
+                      Reorder (speed)
+                    </button>
+                  ) : null}
+
+                  {canAudio && audioEnabled ? (
+                    <>
+                      <button
+                        type="button"
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                        onClick={() => hardResetThenNavigate("audio", "repeat")}
+                      >
+                        Audio Repeat (listening)
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                        onClick={() =>
+                          hardResetThenNavigate("audio", "dictation")
+                        }
+                      >
+                        Audio Dictation
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     );
-  }
-
-  {
-    /* Try another mode (engagement nudge) */
-  }
-  {
-    (() => {
-      const sp = new URLSearchParams(location.search);
-      const lidStr = String(sp.get("lessonId") || "");
-      if (!lidStr) return null;
-
-      const tp = readProgress(lidStr, "typing"); // may be null
-      const rp = readProgress(lidStr, "reorder"); // may be null
-      const ap = readProgress(lidStr, "audio"); // may be null
-
-      const current = String(safeMode || "").toLowerCase();
-
-      // If progress is missing => we treat as "unknown, probably available" and SHOW the button.
-      // If progress exists and total===0 => definitely no items => HIDE.
-      // If completed===true => HIDE (already done).
-      const showMode = (p, mode) => {
-        if (current === mode) return false;
-        if (p?.completed) return false;
-        if (p && Number(p.total || 0) === 0) return false; // known empty
-        return true; // unknown or has items
-      };
-
-      const canTyping = showMode(tp, "typing");
-      const canReorder = showMode(rp, "reorder");
-      const canAudio = showMode(ap, "audio");
-
-      // Don't show the card if nothing to offer
-      if (!canTyping && !canReorder && !canAudio) return null;
-
-      return (
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
-          <div className="text-sm font-semibold text-slate-900">
-            Try another mode (2 minutes)
-          </div>
-          <div className="mt-1 text-sm text-slate-600">
-            Different modes train different skills. Pick one more to boost
-            fluency.
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            {canReorder ? (
-              <button
-                type="button"
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                onClick={() => hardResetThenNavigate("reorder")}
-              >
-                Reorder (speed)
-              </button>
-            ) : null}
-
-            {canTyping ? (
-              <button
-                type="button"
-                className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                onClick={() => hardResetThenNavigate("typing")}
-              >
-                Typing (accuracy)
-              </button>
-            ) : null}
-
-            {canAudio ? (
-              <>
-                <button
-                  type="button"
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                  onClick={() => hardResetThenNavigate("audio", "repeat")}
-                >
-                  Audio Repeat (listening)
-                </button>
-                <button
-                  type="button"
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                  onClick={() => hardResetThenNavigate("audio", "dictation")}
-                >
-                  Audio Dictation
-                </button>
-              </>
-            ) : null}
-          </div>
-        </div>
-      );
-    })();
-  }
-
-  {
-    /* Try another mode (engagement nudge) */
-  }
-  {
-    {
-      (() => {
-        const sp = new URLSearchParams(location.search);
-        const lidStr = String(sp.get("lessonId") || "");
-        if (!lidStr) return null;
-
-        const key = (m) => `fj_progress:${lidStr}:${m}`;
-        const rawTyping = localStorage.getItem(key("typing"));
-        const rawReorder = localStorage.getItem(key("reorder"));
-        const rawAudio = localStorage.getItem(key("audio"));
-
-        const parse = (raw) => {
-          if (!raw) return null; // IMPORTANT: truly missing
-          try {
-            return JSON.parse(raw);
-          } catch {
-            return null;
-          }
-        };
-
-        const tp = parse(rawTyping);
-        const rp = parse(rawReorder);
-        const ap = parse(rawAudio);
-
-        const current = String(safeMode || "").toLowerCase();
-
-        // if key is missing => SHOW (unknown / not started)
-        // if key exists and total === 0 => HIDE (known empty)
-        // if completed => HIDE
-        const showMode = (raw, p, mode) => {
-          if (current === mode) return false;
-          if (p?.completed) return false;
-          if (raw && Number(p?.total || 0) === 0) return false; // known empty
-          return true; // missing key OR has items
-        };
-
-        const canTyping = showMode(rawTyping, tp, "typing");
-        const canReorder = showMode(rawReorder, rp, "reorder");
-        const canAudio = showMode(rawAudio, ap, "audio");
-
-        // Optional: if audio feature flag exists, respect it
-        if (typeof ENABLE_AUDIO !== "undefined" && !ENABLE_AUDIO) {
-          // keep canAudio false if audio disabled
-        }
-
-        if (!canTyping && !canReorder && !canAudio) return null;
-
-        return (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
-            <div className="text-sm font-semibold text-slate-900">
-              Try another mode (2 minutes)
-            </div>
-            <div className="mt-1 text-sm text-slate-600">
-              Different modes train different skills. Pick one more to boost
-              fluency.
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {canReorder ? (
-                <button
-                  type="button"
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                  onClick={() => hardResetThenNavigate("reorder")}
-                >
-                  Reorder (speed)
-                </button>
-              ) : null}
-
-              {canTyping ? (
-                <button
-                  type="button"
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                  onClick={() => hardResetThenNavigate("typing")}
-                >
-                  Typing (accuracy)
-                </button>
-              ) : null}
-
-              {canAudio ? (
-                <>
-                  <button
-                    type="button"
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                    onClick={() => hardResetThenNavigate("audio", "repeat")}
-                  >
-                    Audio Repeat (listening)
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                    onClick={() => hardResetThenNavigate("audio", "dictation")}
-                  >
-                    Audio Dictation
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </div>
-        );
-      })();
-    }
   }
 
   // -------------------
