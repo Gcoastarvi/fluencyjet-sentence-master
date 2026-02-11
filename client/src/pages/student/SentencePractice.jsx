@@ -238,6 +238,11 @@ export default function SentencePractice() {
   const [audioGateOpen, setAudioGateOpen] = useState(false);
   const audioGateTimerRef = useRef(null);
 
+  const [completeModeAvail, setCompleteModeAvail] = useState({
+    reorder: false,
+    audio: false,
+  });
+
   const location = useLocation();
   const lessonIdFromQuery = Number(
     new URLSearchParams(location.search).get("lessonId"),
@@ -1546,6 +1551,36 @@ export default function SentencePractice() {
     });
   }
 
+  useEffect(() => {
+    if (!isComplete) return;
+
+    const search = new URLSearchParams(location.search);
+    const lid = Number(search.get("lessonId") || 0);
+    if (!lid) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const reorderOk = await hasExercises(lid, "reorder");
+        const audioOk = await hasExercises(lid, "audio");
+
+        if (cancelled) return;
+
+        setCompleteModeAvail({
+          reorder: reorderOk === true,
+          audio: audioOk === true,
+        });
+      } catch {
+        // keep false
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isComplete, location.search]);
+
   // -------------------
   // completion
   // -------------------
@@ -1624,15 +1659,16 @@ export default function SentencePractice() {
           >
             Back to Lessons
           </button>
-          {/* Try another mode (engagement nudge) */}
+          {/* Try another mode (2 minutes) */}
           {(() => {
             const lidStr = String(lid || "");
             if (!lidStr) return null;
 
-            const key = (m) => `fj_progress:${lidStr}:${m}`;
-            const rawReorder = localStorage.getItem(key("reorder"));
-            const rawAudio = localStorage.getItem(key("audio"));
+            // only show modes that truly have items (prevents "No quizzes uploaded yet" flash)
+            const canShowReorder = !!completeModeAvail?.reorder;
+            const canShowAudio = !!completeModeAvail?.audio;
 
+            // read progress
             const parse = (raw) => {
               if (!raw) return null;
               try {
@@ -1642,29 +1678,31 @@ export default function SentencePractice() {
               }
             };
 
-            const rp = parse(rawReorder);
-            const ap = parse(rawAudio);
-
-            const current = String(safeMode || "").toLowerCase();
+            const rp = parse(
+              localStorage.getItem(`fj_progress:${lidStr}:reorder`),
+            );
+            const ap = parse(
+              localStorage.getItem(`fj_progress:${lidStr}:audio`),
+            );
 
             const isDone = (p) =>
-              p?.completed === true ||
-              (Number(p?.total || 0) > 0 &&
-                Number(p?.completed || 0) >= Number(p?.total || 0));
+              Number(p?.total || 0) > 0 &&
+              Number(p?.completed || 0) >= Number(p?.total || 0);
 
-            const canReorder =
-              current !== "reorder" &&
+            const showReorderBtn =
+              canShowReorder &&
               !isDone(rp) &&
-              !(rawReorder && Number(rp?.total || 0) === 0);
-            const canAudio =
-              current !== "audio" &&
-              !isDone(ap) &&
-              !(rawAudio && Number(ap?.total || 0) === 0);
+              String(safeMode).toLowerCase() !== "reorder";
 
             const audioEnabled =
               typeof ENABLE_AUDIO === "undefined" ? true : !!ENABLE_AUDIO;
+            const showAudioBtns =
+              audioEnabled &&
+              canShowAudio &&
+              !isDone(ap) &&
+              String(safeMode).toLowerCase() !== "audio";
 
-            if (!canReorder && !(canAudio && audioEnabled)) return null;
+            if (!showReorderBtn && !showAudioBtns) return null;
 
             return (
               <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
@@ -1677,7 +1715,7 @@ export default function SentencePractice() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {canReorder ? (
+                  {showReorderBtn ? (
                     <button
                       type="button"
                       className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
@@ -1687,7 +1725,7 @@ export default function SentencePractice() {
                     </button>
                   ) : null}
 
-                  {canAudio && audioEnabled ? (
+                  {showAudioBtns ? (
                     <>
                       <button
                         type="button"
