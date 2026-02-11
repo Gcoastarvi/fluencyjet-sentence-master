@@ -1726,27 +1726,45 @@ export default function SentencePractice() {
         const lidStr = String(sp.get("lessonId") || "");
         if (!lidStr) return null;
 
-        const tp = readProgress(lidStr, "typing"); // may be null
-        const rp = readProgress(lidStr, "reorder"); // may be null
-        const ap = readProgress(lidStr, "audio"); // may be null
+        const key = (m) => `fj_progress:${lidStr}:${m}`;
+        const rawTyping = localStorage.getItem(key("typing"));
+        const rawReorder = localStorage.getItem(key("reorder"));
+        const rawAudio = localStorage.getItem(key("audio"));
+
+        const parse = (raw) => {
+          if (!raw) return null; // IMPORTANT: truly missing
+          try {
+            return JSON.parse(raw);
+          } catch {
+            return null;
+          }
+        };
+
+        const tp = parse(rawTyping);
+        const rp = parse(rawReorder);
+        const ap = parse(rawAudio);
 
         const current = String(safeMode || "").toLowerCase();
 
-        // If progress is missing => we treat as "unknown, probably available" and SHOW the button.
-        // If progress exists and total===0 => definitely no items => HIDE.
-        // If completed===true => HIDE (already done).
-        const showMode = (p, mode) => {
+        // if key is missing => SHOW (unknown / not started)
+        // if key exists and total === 0 => HIDE (known empty)
+        // if completed => HIDE
+        const showMode = (raw, p, mode) => {
           if (current === mode) return false;
           if (p?.completed) return false;
-          if (p && Number(p.total || 0) === 0) return false; // known empty
-          return true; // unknown or has items
+          if (raw && Number(p?.total || 0) === 0) return false; // known empty
+          return true; // missing key OR has items
         };
 
-        const canTyping = showMode(tp, "typing");
-        const canReorder = showMode(rp, "reorder");
-        const canAudio = showMode(ap, "audio");
+        const canTyping = showMode(rawTyping, tp, "typing");
+        const canReorder = showMode(rawReorder, rp, "reorder");
+        const canAudio = showMode(rawAudio, ap, "audio");
 
-        // Don't show the card if nothing to offer
+        // Optional: if audio feature flag exists, respect it
+        if (typeof ENABLE_AUDIO !== "undefined" && !ENABLE_AUDIO) {
+          // keep canAudio false if audio disabled
+        }
+
         if (!canTyping && !canReorder && !canAudio) return null;
 
         return (
