@@ -510,6 +510,32 @@ export default function SentencePractice() {
   }, [isSessionDone, location.search]);
 
   useEffect(() => {
+    if (!isSessionDone) return;
+
+    const search = new URLSearchParams(location.search);
+    const lid = String(search.get("lessonId") || "");
+    if (!lid) return;
+
+    const mode = String(fetchMode || safeMode || "").toLowerCase();
+    if (!mode) return;
+
+    // Only track the modes we care about in the hub
+    const allowed = ["typing", "reorder", "audio", "cloze"];
+    if (!allowed.includes(mode)) return;
+
+    // When session is done, mark THIS mode complete (numbers)
+    try {
+      writeProgress(lid, mode, {
+        completed: Number(totalQuestions || 0),
+        total: Number(totalQuestions || 0),
+        updatedAt: Date.now(),
+      });
+    } catch {
+      // ignore
+    }
+  }, [isSessionDone, location.search, fetchMode, safeMode, totalQuestions]);
+
+  useEffect(() => {
     setCurrentIndex(0);
     setLessonExercises([]);
     loadLessonBatch();
