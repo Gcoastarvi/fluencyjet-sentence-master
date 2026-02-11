@@ -239,8 +239,8 @@ export default function SentencePractice() {
   const audioGateTimerRef = useRef(null);
 
   const [completeModeAvail, setCompleteModeAvail] = useState({
-    reorder: false,
-    audio: false,
+    reorder: undefined,
+    audio: undefined,
   });
 
   const location = useLocation();
@@ -1551,8 +1551,11 @@ export default function SentencePractice() {
     });
   }
 
+  const isSessionDone =
+    isComplete || (totalQuestions > 0 && currentIndex >= totalQuestions);
+
   useEffect(() => {
-    if (!isComplete) return;
+    if (!isSessionDone) return;
 
     const search = new URLSearchParams(location.search);
     const lid = Number(search.get("lessonId") || 0);
@@ -1568,18 +1571,22 @@ export default function SentencePractice() {
         if (cancelled) return;
 
         setCompleteModeAvail({
-          reorder: reorderOk === true,
-          audio: audioOk === true,
+          reorder:
+            reorderOk === true ||
+            reorderOk === "AUTH" ||
+            reorderOk === "PAYWALL",
+          audio:
+            audioOk === true || audioOk === "AUTH" || audioOk === "PAYWALL",
         });
       } catch {
-        // keep false
+        if (!cancelled) setCompleteModeAvail({ reorder: true, audio: true });
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [isComplete, location.search]);
+  }, [isSessionDone, location.search]);
 
   // -------------------
   // completion
@@ -1665,8 +1672,8 @@ export default function SentencePractice() {
             if (!lidStr) return null;
 
             // only show modes that truly have items (prevents "No quizzes uploaded yet" flash)
-            const canShowReorder = !!completeModeAvail?.reorder;
-            const canShowAudio = !!completeModeAvail?.audio;
+            const canShowReorder = completeModeAvail?.reorder !== false; // undefined => show
+            const canShowAudio = completeModeAvail?.audio !== false; // undefined => show
 
             // read progress
             const parse = (raw) => {
