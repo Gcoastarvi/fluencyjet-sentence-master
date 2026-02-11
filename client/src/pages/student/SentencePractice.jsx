@@ -1664,15 +1664,6 @@ export default function SentencePractice() {
             const audioEnabled =
               typeof ENABLE_AUDIO === "undefined" ? true : !!ENABLE_AUDIO;
 
-            console.log("[TRY MODE CARD]", {
-              lidStr,
-              rawReorder,
-              rawAudio,
-              canReorder,
-              canAudio,
-              audioEnabled,
-            });
-
             if (!canReorder && !(canAudio && audioEnabled)) return null;
 
             return (
@@ -1864,54 +1855,6 @@ export default function SentencePractice() {
         >
           Retry
         </button>
-      </div>
-    );
-  }
-
-  if (isComplete) {
-    const nextLessonId = Number(lessonIdNum) + 1;
-
-    return (
-      <div className="mx-auto max-w-3xl p-4">
-        <div className="rounded-2xl border bg-white p-6">
-          <div className="text-2xl font-bold">Lesson complete 🎉</div>
-          <div className="mt-2 text-sm text-gray-600">
-            You finished this practice set.
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {/* Primary CTA */}
-            <button
-              onClick={() => {
-                navigate(`/lesson/${nextLessonId}?autostart=1`, {
-                  replace: true,
-                });
-              }}
-              className="w-full rounded-2xl bg-black px-4 py-5 text-white hover:opacity-90"
-            >
-              Continue to Lesson {nextLessonId} →
-            </button>
-
-            {/* Secondary */}
-            <button
-              onClick={() => {
-                setIsComplete(false);
-                setCurrentIndex(0);
-                // optional: reshuffle or reload if you have random
-              }}
-              className="w-full rounded-2xl border bg-white px-4 py-4 hover:bg-gray-50"
-            >
-              Practice again (same lesson)
-            </button>
-
-            <button
-              onClick={() => navigate("/lessons", { replace: true })}
-              className="w-full rounded-2xl border bg-white px-4 py-4 hover:bg-gray-50"
-            >
-              Back to Lessons
-            </button>
-          </div>
-        </div>
       </div>
     );
   }
