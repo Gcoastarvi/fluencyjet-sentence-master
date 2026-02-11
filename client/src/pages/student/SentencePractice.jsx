@@ -472,6 +472,43 @@ export default function SentencePractice() {
     lessonExercises?.length,
   ]);
 
+  const isSessionDone =
+    isComplete || (totalQuestions > 0 && currentIndex >= totalQuestions);
+
+  useEffect(() => {
+    if (!isSessionDone) return;
+
+    const search = new URLSearchParams(location.search);
+    const lid = Number(search.get("lessonId") || 0);
+    if (!lid) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const reorderOk = await hasExercises(lid, "reorder");
+        const audioOk = await hasExercises(lid, "audio");
+
+        if (cancelled) return;
+
+        setCompleteModeAvail({
+          reorder:
+            reorderOk === true ||
+            reorderOk === "AUTH" ||
+            reorderOk === "PAYWALL",
+          audio:
+            audioOk === true || audioOk === "AUTH" || audioOk === "PAYWALL",
+        });
+      } catch {
+        if (!cancelled) setCompleteModeAvail({ reorder: true, audio: true });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSessionDone, location.search]);
+
   useEffect(() => {
     setCurrentIndex(0);
     setLessonExercises([]);
@@ -1550,43 +1587,6 @@ export default function SentencePractice() {
       replace: true,
     });
   }
-
-  const isSessionDone =
-    isComplete || (totalQuestions > 0 && currentIndex >= totalQuestions);
-
-  useEffect(() => {
-    if (!isSessionDone) return;
-
-    const search = new URLSearchParams(location.search);
-    const lid = Number(search.get("lessonId") || 0);
-    if (!lid) return;
-
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const reorderOk = await hasExercises(lid, "reorder");
-        const audioOk = await hasExercises(lid, "audio");
-
-        if (cancelled) return;
-
-        setCompleteModeAvail({
-          reorder:
-            reorderOk === true ||
-            reorderOk === "AUTH" ||
-            reorderOk === "PAYWALL",
-          audio:
-            audioOk === true || audioOk === "AUTH" || audioOk === "PAYWALL",
-        });
-      } catch {
-        if (!cancelled) setCompleteModeAvail({ reorder: true, audio: true });
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isSessionDone, location.search]);
 
   // -------------------
   // completion
