@@ -1733,24 +1733,13 @@ export default function SentencePractice() {
                   ) : null}
 
                   {showAudioBtns ? (
-                    <>
-                      <button
-                        type="button"
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                        onClick={() => hardResetThenNavigate("audio", "repeat")}
-                      >
-                        Audio Repeat (listening)
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                        onClick={() =>
-                          hardResetThenNavigate("audio", "dictation")
-                        }
-                      >
-                        Audio Dictation
-                      </button>
-                    </>
+                    <button
+                      type="button"
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                      onClick={() => hardResetThenNavigate("audio", "repeat")}
+                    >
+                      Audio (listening)
+                    </button>
                   ) : null}
                 </div>
               </div>
