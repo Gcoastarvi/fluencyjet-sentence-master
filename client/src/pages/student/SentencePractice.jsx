@@ -1722,46 +1722,35 @@ export default function SentencePractice() {
   {
     {
       (() => {
-        // Keep all logic read-only, no setState here
         const sp = new URLSearchParams(location.search);
-        const lid = sp.get("lessonId");
-        if (!lid) return null;
+        const lidStr = String(sp.get("lessonId") || "");
+        if (!lidStr) return null;
 
-        const modeList = ["typing", "reorder", "audio"];
-
-        // helper: read stored progress, decide if mode is already complete
-        const getProg = (m) => {
-          try {
-            return readProgress(String(lid), m); // you already have readProgress()
-          } catch {
-            return null;
-          }
-        };
+        const tp = readProgress(lidStr, "typing"); // may be null
+        const rp = readProgress(lidStr, "reorder"); // may be null
+        const ap = readProgress(lidStr, "audio"); // may be null
 
         const current = String(safeMode || "").toLowerCase();
 
-        const candidates = modeList
-          .filter((m) => m !== current) // nudge “other modes”
-          .map((m) => {
-            const p = getProg(m);
-            const total = Number(p?.total || 0);
-            const completed = !!p?.completed;
+        // If progress is missing => we treat as "unknown, probably available" and SHOW the button.
+        // If progress exists and total===0 => definitely no items => HIDE.
+        // If completed===true => HIDE (already done).
+        const showMode = (p, mode) => {
+          if (current === mode) return false;
+          if (p?.completed) return false;
+          if (p && Number(p.total || 0) === 0) return false; // known empty
+          return true; // unknown or has items
+        };
 
-            // Show button only if:
-            // - We know total>0 OR we don't know yet (p is null), and
-            // - Not already completed
-            //
-            // This avoids showing modes explicitly known to have 0 items.
-            const show = (!p || total > 0) && !completed;
+        const canTyping = showMode(tp, "typing");
+        const canReorder = showMode(rp, "reorder");
+        const canAudio = showMode(ap, "audio");
 
-            return { mode: m, show };
-          })
-          .filter((x) => x.show);
-
-        if (candidates.length === 0) return null;
+        // Don't show the card if nothing to offer
+        if (!canTyping && !canReorder && !canAudio) return null;
 
         return (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4">
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
             <div className="text-sm font-semibold text-slate-900">
               Try another mode (2 minutes)
             </div>
@@ -1771,7 +1760,7 @@ export default function SentencePractice() {
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2">
-              {candidates.some((c) => c.mode === "reorder") ? (
+              {canReorder ? (
                 <button
                   type="button"
                   className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
@@ -1781,7 +1770,7 @@ export default function SentencePractice() {
                 </button>
               ) : null}
 
-              {candidates.some((c) => c.mode === "typing") ? (
+              {canTyping ? (
                 <button
                   type="button"
                   className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
@@ -1791,7 +1780,7 @@ export default function SentencePractice() {
                 </button>
               ) : null}
 
-              {candidates.some((c) => c.mode === "audio") ? (
+              {canAudio ? (
                 <>
                   <button
                     type="button"
