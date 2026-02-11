@@ -30,20 +30,64 @@ function shuffle(array) {
   return array;
 }
 
-function paywallResponse({ lessonId, freeLessons }) {
+function paywallResponse({ lessonId, freeLessons, plan = "BEGINNER" }) {
+  const PLAN = String(plan || "BEGINNER").toUpperCase();
+
   return {
     ok: false,
     code: "PAYWALL",
     message: `Locked. Upgrade required to access Lesson ${lessonId}.`,
     freeLessons,
 
-    // marketing-flex redirect (optional)
     nextAction: {
       type: process.env.LOCK_REDIRECT_TYPE || "PAYWALL",
-      url: process.env.LOCK_REDIRECT_URL || "/paywall?plan=BEGINNER",
+      url:
+        process.env.LOCK_REDIRECT_URL ||
+        `/paywall?plan=${encodeURIComponent(PLAN)}`,
       from: `lesson_${lessonId}`,
     },
   };
+}
+
+function parseCsvIds(csv) {
+  return String(csv || "")
+    .split(",")
+    .map((x) => Number(String(x).trim()))
+    .filter((n) => Number.isFinite(n) && n > 0);
+}
+
+// Decide user's FREE track.
+// 1) DB field if present (recommended)
+// 2) fallback to requested difficulty (temporary safety)
+// 3) default BEGINNER
+function getUserTrack(userRow, diff) {
+  const dbVal = String(
+    userRow?.placement_level || userRow?.track || userRow?.level || "",
+  ).toUpperCase();
+
+  if (dbVal === "INTERMEDIATE") return "INTERMEDIATE";
+  if (dbVal === "BEGINNER") return "BEGINNER";
+
+  const d = String(diff || "").toLowerCase();
+  if (d === "intermediate") return "INTERMEDIATE";
+  return "BEGINNER";
+}
+
+function freeAllowsLesson(track, lessonIdNum) {
+  const beginnerMax = Number(process.env.FREE_BEGINNER_MAX || 3);
+  const interIds = parseCsvIds(process.env.FREE_INTERMEDIATE_IDS || "13,14,15");
+
+  if (String(track).toUpperCase() === "INTERMEDIATE") {
+    return interIds.includes(Number(lessonIdNum));
+  }
+  // default BEGINNER
+  return Number(lessonIdNum) <= beginnerMax;
+}
+
+function planForTrack(track) {
+  return String(track).toUpperCase() === "INTERMEDIATE"
+    ? "INTERMEDIATE"
+    : "BEGINNER";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -99,13 +143,27 @@ router.get("/random", authRequired, async (req, res) => {
       plan === "paid";
 
     // ✅ Hard rule: free users only get first N lessons
-    if (!proActive && lessonIdNum > FREE_LESSONS) {
-      return res
-        .status(403)
-        .json(
-          paywallResponse({ lessonId: lessonIdNum, freeLessons: FREE_LESSONS }),
-        );
+    const track = getUserTrack(userRow, diff);
+    const planForPaywall = planForTrack(track);
+
+    // For response UX: show what free includes (beginner max or intermediate ids)
+    const beginnerMax = Number(process.env.FREE_BEGINNER_MAX || 3);
+    const interIds = parseCsvIds(
+      process.env.FREE_INTERMEDIATE_IDS || "13,14,15",
+    );
+    const freeLessons = track === "INTERMEDIATE" ? interIds : beginnerMax;
+
+    // ✅ Track-aware free access
+    if (!proActive && !freeAllowsLesson(track, lessonIdNum)) {
+      return res.status(403).json(
+        paywallResponse({
+          lessonId: lessonIdNum,
+          freeLessons,
+          plan: planForPaywall,
+        }),
+      );
     }
+
     // ---- END PAYWALL HARD BLOCK ----
 
     // ✅ PracticeDay lookup (this is what your seeding created)
@@ -238,12 +296,25 @@ router.get("/by-lesson/:lessonId", authMiddleware, async (req, res) => {
       plan === "pro" ||
       plan === "paid";
 
-    if (!proActive && lessonIdNum > FREE_LESSONS) {
-      return res
-        .status(403)
-        .json(
-          paywallResponse({ lessonId: lessonIdNum, freeLessons: FREE_LESSONS }),
-        );
+    const track = getUserTrack(userRow, diff);
+    const planForPaywall = planForTrack(track);
+
+    // For response UX: show what free includes (beginner max or intermediate ids)
+    const beginnerMax = Number(process.env.FREE_BEGINNER_MAX || 3);
+    const interIds = parseCsvIds(
+      process.env.FREE_INTERMEDIATE_IDS || "13,14,15",
+    );
+    const freeLessons = track === "INTERMEDIATE" ? interIds : beginnerMax;
+
+    // ✅ Track-aware free access
+    if (!proActive && !freeAllowsLesson(track, lessonIdNum)) {
+      return res.status(403).json(
+        paywallResponse({
+          lessonId: lessonIdNum,
+          freeLessons,
+          plan: planForPaywall,
+        }),
+      );
     }
     // ---- END PAYWALL ----
 
