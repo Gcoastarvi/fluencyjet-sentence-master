@@ -306,6 +306,20 @@ router.get("/by-lesson/:lessonId", authMiddleware, async (req, res) => {
     );
     const freeLessons = track === "INTERMEDIATE" ? interIds : beginnerMax;
 
+    console.log("[PAYWALL DEBUG]", {
+      lessonIdNum,
+      mode,
+      diff,
+      userId: userRow?.id,
+      userPlan: userRow?.plan,
+      userTier: userRow?.tier_level,
+      proActive,
+      track,
+      planForPaywall,
+      freeLessons,
+      query: req.query,
+    });
+
     // ✅ Track-aware free access
     if (!proActive && !freeAllowsLesson(track, lessonIdNum)) {
       return res.status(403).json(
