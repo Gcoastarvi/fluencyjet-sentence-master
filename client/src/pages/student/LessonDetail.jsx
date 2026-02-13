@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { api } from "../../api/apiClient";
+import { useSearchParams } from "react-router-dom";
 
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
@@ -8,8 +9,6 @@ const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 
 const PREF_KEY_SHOW_TA = "fj_pref_show_ta"; // "1" or "0"
 const LAST_SESSION_KEY = "fj_last_session";
-
-const [searchParams] = useSearchParams();
 
 const lessonDifficulty = (getDifficultyFromLesson(lesson) || "").toLowerCase();
 const urlDifficulty = (searchParams.get("difficulty") || "").toLowerCase();
@@ -125,6 +124,7 @@ export default function LessonDetail() {
   const { lessonId: lessonIdParam } = useParams(); // App.jsx uses :lessonId
   const lessonIdNum = Number(lessonIdParam);
   const lessonId = lessonIdParam; // keep as string for URL encoding
+  const [searchParams] = useSearchParams();
 
   const location = useLocation();
   const navigate = useNavigate();
