@@ -123,36 +123,28 @@ export default function LessonDetail() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { lessonId: lessonIdParam } = useParams(); // route param = Lesson.id (DB id)
-  const lessonIdNum = Number(lessonIdParam);
-  const lessonId = lessonIdParam; // keep as string for URL encoding
+  const { lessonId: lessonIdParam } = useParams(); // this is dayNumber in MVP routing
+  const dayNumber = Number(lessonIdParam); // ✅ always numeric dayNumber
+  const dayNumberStr = String(lessonIdParam || ""); // for url encoding if needed
 
   const [searchParams] = useSearchParams();
 
   // If Lessons page passes state: { lesson }, we use it. If not, we still render safely.
   const [lesson, setLesson] = useState(location.state?.lesson || null);
 
-  // ✅ compute difficulties AFTER lesson exists (lesson can be null)
+  // Difficulty: URL wins, else lesson metadata, else beginner
   const lessonDifficulty = (
     getDifficultyFromLesson(lesson) || ""
   ).toLowerCase();
   const urlDifficulty = (searchParams.get("difficulty") || "").toLowerCase();
-
-  // URL wins if present, else lesson wins, else beginner
   const difficulty = urlDifficulty || lessonDifficulty || "beginner";
 
-  // ✅ derive dayNumber from lesson (only works once lesson loaded)
-  const dayNumber = getDayNumberFromLesson(lesson);
-
   const [showMoreModes, setShowMoreModes] = useState(false);
-
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
 
-  // Lock rule (MVP-safe): first 3 lessons free.
-  // Later you can replace isLocked with entitlements check.
-  const isFree = Number(lessonIdNum) <= 3;
-  const isLocked = !isFree;
+  // ✅ Use backend + lesson metadata for lock UI. Do NOT use "first 3 only" anymore.
+  const isLocked = Boolean(lesson?.isLocked ?? lesson?.is_locked ?? false);
 
   // Preference toggle (Show Tamil help)
   //const [showTa, setShowTa] = useState(() => {

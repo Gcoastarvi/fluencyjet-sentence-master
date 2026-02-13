@@ -40,7 +40,7 @@ function getDayNumber(lesson, index) {
     return Number(direct);
 
   // ✅ Parse trailing number in slug (intermediate-13, basic-2)
-  const slug = String(lesson?.slug || "");
+  const slug = String(lesson?.slug || lesson?.lessonSlug || "");
   const m = slug.match(/(\d+)(?!.*\d)/);
   if (m) return Number(m[1]);
 
@@ -217,7 +217,7 @@ export default function Lessons() {
               return;
             }
             navigate(
-            `/lesson/${lesson.id}?difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
+              `/lesson/${lesson.id}?difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
             );
           };
 
