@@ -21,6 +21,33 @@ function pct(p) {
   return Math.max(0, Math.min(100, Math.round((c / t) * 100)));
 }
 
+function deriveDayNumber(lesson) {
+  const slug = String(lesson?.slug || "").toLowerCase();
+  if (slug === "english-diagnostic") return 1;
+  const m = slug.match(/(?:basic|inter|intermediate)-(\d+)/);
+  return m ? Number(m[1]) : Number(lesson?.id) || null;
+}
+
+function getDayNumber(lesson, index) {
+  // ✅ Prefer explicit dayNumber-like fields if present
+  const direct =
+    lesson?.dayNumber ??
+    lesson?.day_number ??
+    lesson?.practiceDayNumber ??
+    lesson?.practice_day_number;
+
+  if (Number.isFinite(Number(direct)) && Number(direct) > 0)
+    return Number(direct);
+
+  // ✅ Parse trailing number in slug (intermediate-13, basic-2)
+  const slug = String(lesson?.slug || "");
+  const m = slug.match(/(\d+)(?!.*\d)/);
+  if (m) return Number(m[1]);
+
+  // fallback: index-based legacy behavior
+  return index + 1;
+}
+
 export default function Lessons() {
   const navigate = useNavigate();
 
@@ -183,10 +210,15 @@ export default function Lessons() {
 
           const goPrimary = () => {
             if (!isUnlocked) {
-              navigate(`/paywall?plan=BEGINNER&from=lesson_${dayNumber}`);
+              navigate(
+                `/paywall?plan=BEGINNER&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
+              );
+
               return;
             }
-            navigate(`/lesson/${dayNumber}`);
+            navigate(
+              `/lesson/${dayNumber}?difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
+            );
           };
 
           return (

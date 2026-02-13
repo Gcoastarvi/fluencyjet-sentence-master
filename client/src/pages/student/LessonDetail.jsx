@@ -9,6 +9,55 @@ const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 const PREF_KEY_SHOW_TA = "fj_pref_show_ta"; // "1" or "0"
 const LAST_SESSION_KEY = "fj_last_session";
 
+const [searchParams] = useSearchParams();
+
+const lessonDifficulty = (getDifficultyFromLesson(lesson) || "").toLowerCase();
+const urlDifficulty = (searchParams.get("difficulty") || "").toLowerCase();
+
+// URL wins if present, else lesson wins, else beginner
+const difficulty = urlDifficulty || lessonDifficulty || "beginner";
+
+const dayNumber = getDayNumberFromLesson(lesson);
+
+function getDayNumberFromLesson(lesson) {
+  // Prefer explicit dayNumber if it exists
+  const direct =
+    lesson?.dayNumber ?? lesson?.day_number ?? lesson?.practiceDayNumber;
+  if (Number.isFinite(Number(direct)) && Number(direct) > 0)
+    return Number(direct);
+
+  // Fallback: parse last number in slug like "intermediate-13", "basic-2"
+  const slug = String(lesson?.slug || lesson?.lessonSlug || "");
+  const m = slug.match(/(\d+)(?!.*\d)/);
+  if (m) return Number(m[1]);
+
+  // Last resort: try from title
+  const title = String(lesson?.title || lesson?.lessonTitle || "");
+  const t = title.match(/(\d+)(?!.*\d)/);
+  if (t) return Number(t[1]);
+
+  return null;
+}
+
+function getDifficultyFromLesson(lesson) {
+  // Prefer API field
+  const raw = String(
+    lesson?.difficulty ||
+      lesson?.level ||
+      lesson?.lessonLevel ||
+      lesson?.lesson_level ||
+      "",
+  ).toLowerCase();
+
+  // Normalize
+  if (raw.includes("intermediate")) return "intermediate";
+
+  // Treat "basic" as beginner track (MVP choice)
+  if (raw.includes("basic")) return "beginner";
+
+  return "beginner";
+}
+
 function safeJsonParse(s) {
   try {
     return JSON.parse(s);
@@ -308,15 +357,14 @@ export default function LessonDetail() {
     typeof normalizedSession.questionIndex === "number" &&
     Number.isFinite(normalizedSession.questionIndex);
 
-  const continueHref = canContinue
-    ? `/practice/${normalizedSession.mode}?lessonId=${encodeURIComponent(
-        lessonId,
-      )}&q=${encodeURIComponent(normalizedSession.questionIndex)}${
-        normalizedSession.mode === "audio" && normalizedSession.variant
-          ? `&variant=${encodeURIComponent(normalizedSession.variant)}`
-          : ""
-      }`
-    : null;
+  const continueHref =
+    canContinue && dayNumber
+      ? `/practice/${normalizedSession.mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}&q=${encodeURIComponent(normalizedSession.questionIndex)}${
+          normalizedSession.mode === "audio" && normalizedSession.variant
+            ? `&variant=${encodeURIComponent(normalizedSession.variant)}`
+            : ""
+        }`
+      : null;
 
   function goPaywall() {
     navigate(`/paywall?plan=BEGINNER&from=lesson_${lessonIdNum || ""}`);
@@ -330,7 +378,10 @@ export default function LessonDetail() {
     if (mode === "audio" && !ENABLE_AUDIO) return;
     if (mode === "cloze" && !ENABLE_CLOZE) return;
 
-    navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lessonId)}`);
+    if (!dayNumber) return; // safety
+    navigate(
+      `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+    );
   }
 
   function dismissMissedBanner() {
@@ -341,13 +392,15 @@ export default function LessonDetail() {
 
   function goToPrevLessonHub() {
     if (!missedBanner?.prevLessonId) return;
-    navigate(`/lesson/${missedBanner.prevLessonId}`);
+    navigate(
+      `/lesson/${missedBanner.prevLessonId}?difficulty=${encodeURIComponent(difficulty)}`,
+    );
   }
 
-  async function hasExercises(lessonIdNum, mode) {
+  async function hasExercises(lessonIdNum, mode, difficulty) {
     try {
       const res = await api.get(`/quizzes/by-lesson/${lessonIdNum}`, {
-        params: { mode, difficulty: "beginner" },
+        params: { mode, difficulty }, // ✅ use passed difficulty
         withCredentials: true,
       });
 
@@ -363,7 +416,7 @@ export default function LessonDetail() {
 
       // Unauthorized → go login and come back
       if (status === 401) {
-        const next = `/lesson/${lessonIdNum}`;
+        const next = `/lesson/${lessonId}`; // LessonDetail route id, not dayNumber
         navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
         return "AUTH";
       }
@@ -465,24 +518,33 @@ export default function LessonDetail() {
 
     try {
       // Prefer Typing (fluency), fallback Reorder, then Audio
-      const typingOk = await hasExercises(lid, "typing");
+      const typingOk = await hasExercises(dayNumber, "typing", difficulty);
       if (typingOk === "AUTH" || typingOk === "PAYWALL") return;
       if (typingOk) {
-        navigate(`/practice/typing?lessonId=${encodeURIComponent(lessonId)}`);
+        if (!dayNumber) return; // safety
+        navigate(
+          `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+        );
         return;
       }
 
       const reorderOk = await hasExercises(lid, "reorder");
       if (reorderOk === "AUTH" || reorderOk === "PAYWALL") return;
       if (reorderOk) {
-        navigate(`/practice/reorder?lessonId=${encodeURIComponent(lessonId)}`);
+        if (!dayNumber) return; // safety
+        navigate(
+          `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+        );
         return;
       }
 
       const audioOk = await hasExercises(lid, "audio");
       if (audioOk === "AUTH" || audioOk === "PAYWALL") return;
       if (audioOk) {
-        navigate(`/practice/audio?lessonId=${encodeURIComponent(lessonId)}`);
+        if (!dayNumber) return; // safety
+        navigate(
+          `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+        );
         return;
       }
 
