@@ -217,7 +217,7 @@ export default function Lessons() {
               return;
             }
             navigate(
-              `/lesson/${dayNumber}?difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
+            `/lesson/${lesson.id}?difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
             );
           };
 

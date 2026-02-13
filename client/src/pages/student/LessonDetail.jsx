@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+
 import { api } from "../../api/apiClient";
-import { useSearchParams } from "react-router-dom";
 
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
@@ -117,7 +123,7 @@ export default function LessonDetail() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { lessonId: lessonIdParam } = useParams(); // App.jsx uses :lessonId
+  const { lessonId: lessonIdParam } = useParams(); // route param = Lesson.id (DB id)
   const lessonIdNum = Number(lessonIdParam);
   const lessonId = lessonIdParam; // keep as string for URL encoding
 
