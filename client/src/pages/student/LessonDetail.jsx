@@ -10,14 +10,6 @@ const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 const PREF_KEY_SHOW_TA = "fj_pref_show_ta"; // "1" or "0"
 const LAST_SESSION_KEY = "fj_last_session";
 
-const lessonDifficulty = (getDifficultyFromLesson(lesson) || "").toLowerCase();
-const urlDifficulty = (searchParams.get("difficulty") || "").toLowerCase();
-
-// URL wins if present, else lesson wins, else beginner
-const difficulty = urlDifficulty || lessonDifficulty || "beginner";
-
-const dayNumber = getDayNumberFromLesson(lesson);
-
 function getDayNumberFromLesson(lesson) {
   // Prefer explicit dayNumber if it exists
   const direct =
@@ -125,6 +117,13 @@ export default function LessonDetail() {
   const lessonIdNum = Number(lessonIdParam);
   const lessonId = lessonIdParam; // keep as string for URL encoding
   const [searchParams] = useSearchParams();
+  const difficulty = urlDifficulty || lessonDifficulty || "beginner";
+  const dayNumber = getDayNumberFromLesson(lesson);
+
+  const lessonDifficulty = (
+    getDifficultyFromLesson(lesson) || ""
+  ).toLowerCase();
+  const urlDifficulty = (searchParams.get("difficulty") || "").toLowerCase();
 
   const location = useLocation();
   const navigate = useNavigate();
