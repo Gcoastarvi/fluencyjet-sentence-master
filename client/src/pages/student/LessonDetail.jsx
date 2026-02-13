@@ -124,8 +124,13 @@ export default function LessonDetail() {
   const navigate = useNavigate();
 
   const { lessonId: lessonIdParam } = useParams(); // this is dayNumber in MVP routing
-  const dayNumber = Number(lessonIdParam); // ✅ always numeric dayNumber
-  const dayNumberStr = String(lessonIdParam || ""); // for url encoding if needed
+
+  const dayNumber = Number(lessonIdParam); // numeric dayNumber
+  const dayNumberStr = String(lessonIdParam || ""); // string for storage / url encoding
+
+  // ✅ compatibility: many parts of this file still expect `lessonId`
+  const lessonId = dayNumberStr;
+  const lessonIdNum = dayNumber; // optional alias if older code uses lessonIdNum
 
   const [searchParams] = useSearchParams();
 
@@ -710,9 +715,7 @@ export default function LessonDetail() {
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="rounded-xl bg-white p-3">
                 <div className="text-xs text-gray-500">Lesson</div>
-                <div className="text-sm font-semibold">
-                  {dayNumber || "—"}
-                </div>
+                <div className="text-sm font-semibold">{dayNumber || "—"}</div>
               </div>
 
               <div className="rounded-xl bg-white p-3">
