@@ -102,6 +102,14 @@ function planForTrack(track) {
 router.get("/random", authRequired, async (req, res) => {
   try {
     const lessonIdRaw = req.query.lessonId;
+    const lessonIdNum = lessonIdRaw ? Number(lessonIdRaw) : null;
+
+    if (lessonIdRaw && (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0)) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "lessonId must be a number" });
+    }
+
     const diff = String(req.query.difficulty || "beginner").toLowerCase();
     const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 10));
 
@@ -124,9 +132,7 @@ router.get("/random", authRequired, async (req, res) => {
       whereDay.dayNumber = lessonId;
     }
 
-    // ---- PAYWALL HARD BLOCK (Lesson-based = PracticeDay.dayNumber) ----
-    const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
-
+    // ---- PAYWALL HARD BLOCK (Lesson-based = PracticeDay.dayNumber) ----    
     const userRow = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { has_access: true, tier_level: true, plan: true },
@@ -135,12 +141,17 @@ router.get("/random", authRequired, async (req, res) => {
     const tier = String(userRow?.tier_level || "").toLowerCase();
     const plan = String(userRow?.plan || "").toLowerCase();
 
-    const proActive =
+    // full access (admin/pro/all)
+    const isProAll =
       !!userRow?.has_access ||
       tier === "pro" ||
       tier === "all" ||
       plan === "pro" ||
       plan === "paid";
+
+    // paid but segregated tiers
+    const isPaidBeginner = plan === "beginner";
+    const isPaidIntermediate = plan === "intermediate";
 
     // ✅ Hard rule: free users only get first N lessons
     const track = getUserTrack(userRow, diff);
@@ -153,17 +164,44 @@ router.get("/random", authRequired, async (req, res) => {
     );
     const freeLessons = track === "INTERMEDIATE" ? interIds : beginnerMax;
 
-    // ✅ Track-aware free access
-    if (!proActive && !freeAllowsLesson(track, lessonIdNum)) {
-      return res.status(403).json(
-        paywallResponse({
-          lessonId: lessonIdNum,
-          freeLessons,
-          plan: planForPaywall,
-        }),
-      );
-    }
+    // ✅ Tier-aware access rules (RANDOM)
+    if (!isProAll) {
+      // Paid beginner can ONLY access beginner track
+      if (isPaidBeginner && track !== "BEGINNER") {
+        return res.status(403).json(
+          paywallResponse({
+            lessonId: lessonIdNum || 0,
+            freeLessons,
+            plan: "INTERMEDIATE",
+          }),
+        );
+      }
 
+      // Paid intermediate can ONLY access intermediate track
+      if (isPaidIntermediate && track !== "INTERMEDIATE") {
+        return res.status(403).json(
+          paywallResponse({
+            lessonId: lessonIdNum || 0,
+            freeLessons,
+            plan: "BEGINNER",
+          }),
+        );
+      }
+
+      // Free users only: apply free-tier rules
+      const isFree = !isPaidBeginner && !isPaidIntermediate;
+
+      // If no lessonId was provided, allow random sampling within the free catalogue (or you can block—your call)
+      if (isFree && lessonIdNum && !freeAllowsLesson(track, lessonIdNum)) {
+        return res.status(403).json(
+          paywallResponse({
+            lessonId: lessonIdNum,
+            freeLessons,
+            plan: planForPaywall,
+          }),
+        );
+      }
+    }
     // ---- END PAYWALL HARD BLOCK ----
 
     // ✅ PracticeDay lookup (this is what your seeding created)
@@ -249,7 +287,7 @@ router.get("/random", authRequired, async (req, res) => {
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
-router.get("/by-lesson/:lessonId", authMiddleware, async (req, res) => {
+router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
   try {
     const lessonIdNum = Number(req.params.lessonId);
     if (!Number.isFinite(lessonIdNum) || lessonIdNum <= 0) {
@@ -275,8 +313,6 @@ router.get("/by-lesson/:lessonId", authMiddleware, async (req, res) => {
           : "BEGINNER";
 
     // ---- PAYWALL HARD BLOCK (lessonId = PracticeDay.dayNumber) ----
-    const FREE_LESSONS = Number(process.env.FREE_LESSONS || 3);
-
     const userId = req.user?.id || null;
 
     const userRow = userId
@@ -289,12 +325,17 @@ router.get("/by-lesson/:lessonId", authMiddleware, async (req, res) => {
     const tier = String(userRow?.tier_level || "").toLowerCase();
     const plan = String(userRow?.plan || "").toLowerCase();
 
-    const proActive =
+    // full access (admin/pro/all)
+    const isProAll =
       !!userRow?.has_access ||
       tier === "pro" ||
       tier === "all" ||
       plan === "pro" ||
       plan === "paid";
+
+    // paid but segregated tiers
+    const isPaidBeginner = plan === "beginner";
+    const isPaidIntermediate = plan === "intermediate";
 
     const track = getUserTrack(userRow, diff);
     const planForPaywall = planForTrack(track);
@@ -313,23 +354,52 @@ router.get("/by-lesson/:lessonId", authMiddleware, async (req, res) => {
       userId: userRow?.id,
       userPlan: userRow?.plan,
       userTier: userRow?.tier_level,
-      proActive,
+      isProAll,
+      isPaidBeginner,
+      isPaidIntermediate,
       track,
       planForPaywall,
       freeLessons,
       query: req.query,
     });
 
-    // ✅ Track-aware free access
-    if (!proActive && !freeAllowsLesson(track, lessonIdNum)) {
-      return res.status(403).json(
-        paywallResponse({
-          lessonId: lessonIdNum,
-          freeLessons,
-          plan: planForPaywall,
-        }),
-      );
+    // ✅ Tier-aware access rules
+    if (!isProAll) {
+      // Paid beginner can ONLY access beginner track (no caps)
+      if (isPaidBeginner && track !== "BEGINNER") {
+        return res.status(403).json(
+          paywallResponse({
+            lessonId: lessonIdNum,
+            freeLessons,
+            plan: "INTERMEDIATE",
+          }),
+        );
+      }
+
+      // Paid intermediate can ONLY access intermediate track (no caps)
+      if (isPaidIntermediate && track !== "INTERMEDIATE") {
+        return res.status(403).json(
+          paywallResponse({
+            lessonId: lessonIdNum,
+            freeLessons,
+            plan: "BEGINNER",
+          }),
+        );
+      }
+
+      // FREE users only: apply free-tier rules
+      const isFree = !isPaidBeginner && !isPaidIntermediate;
+      if (isFree && !freeAllowsLesson(track, lessonIdNum)) {
+        return res.status(403).json(
+          paywallResponse({
+            lessonId: lessonIdNum,
+            freeLessons,
+            plan: planForPaywall,
+          }),
+        );
+      }
     }
+
     // ---- END PAYWALL ----
 
     const day = await prisma.practiceDay.findFirst({
