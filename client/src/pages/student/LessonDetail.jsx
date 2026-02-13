@@ -63,17 +63,17 @@ function safeJsonParse(s) {
   }
 }
 
-function getShowTaDefault(lessonIdNum) {
+function getShowTaDefault(dayNumber) {
   // simple default: beginner lessons show Tamil help
-  if (!lessonIdNum) return true;
-  return lessonIdNum <= 3;
+  if (!dayNumber) return true;
+  return dayNumber <= 3;
 }
 
-function readPrefShowTa(lessonIdNum) {
+function readPrefShowTa(dayNumber) {
   const raw = localStorage.getItem(PREF_KEY_SHOW_TA);
   if (raw === "1") return true;
   if (raw === "0") return false;
-  return getShowTaDefault(lessonIdNum);
+  return getShowTaDefault(dayNumber);
 }
 
 function writePrefShowTa(v) {
@@ -150,7 +150,7 @@ export default function LessonDetail() {
   //const [showTa, setShowTa] = useState(() => {
   // Avoid SSR issues (not relevant here) and keep predictable default
   //if (typeof window === "undefined") return true;
-  //return readPrefShowTa(lessonIdNum);
+  //return readPrefShowTa(dayNumber);
   //});
 
   // Tamil toggle disabled for MVP (no showTa state)
@@ -174,8 +174,18 @@ export default function LessonDetail() {
             : [];
 
         const found =
-          list.find((l) => String(l?.id) === String(lessonIdNum)) ||
-          list.find((l) => String(l?.dayNumber) === String(lessonIdNum)) ||
+          // ✅ preferred: dayNumber-like fields
+          list.find((l) => String(l?.dayNumber) === String(dayNumber)) ||
+          list.find((l) => String(l?.day_number) === String(dayNumber)) ||
+          list.find(
+            (l) => String(l?.practiceDayNumber) === String(dayNumber),
+          ) ||
+          // ✅ fallback: parse trailing number from slug like intermediate-13
+          list.find((l) => {
+            const slug = String(l?.slug || l?.lessonSlug || "");
+            const m = slug.match(/(\d+)(?!.*\d)/);
+            return m ? Number(m[1]) === Number(dayNumber) : false;
+          }) ||
           null;
 
         if (!cancelled) setLesson(found);
@@ -188,13 +198,13 @@ export default function LessonDetail() {
     return () => {
       cancelled = true;
     };
-  }, [lesson, lessonIdNum]);
+  }, [lesson, dayNumber]);
 
   const title =
     lesson?.lessonTitle ||
     lesson?.title ||
     lesson?.name ||
-    `Lesson ${lessonIdNum || ""}`;
+    `Lesson ${dayNumber || ""}`;
 
   const [modeAvail, setModeAvail] = useState({
     typing: false,
@@ -212,7 +222,7 @@ export default function LessonDetail() {
     !modeAvail.cloze;
 
   useEffect(() => {
-    const lid = Number(lessonIdNum);
+    const lid = Number(dayNumber);
     if (!lid || lid <= 1) {
       setMissedBanner(null);
       return;
@@ -265,7 +275,7 @@ export default function LessonDetail() {
       missingModesLabel: label,
       dismissKey,
     });
-  }, [lessonIdNum]);
+  }, [dayNumber]);
 
   // Continue session (supports typing/reorder, and audio later)
   const session = useMemo(() => {
@@ -371,7 +381,7 @@ export default function LessonDetail() {
       : null;
 
   function goPaywall() {
-    navigate(`/paywall?plan=BEGINNER&from=lesson_${lessonIdNum || ""}`);
+    navigate(`/paywall?plan=BEGINNER&from=lesson_${dayNumber || ""}`);
   }
 
   function startMode(mode) {
@@ -401,9 +411,9 @@ export default function LessonDetail() {
     );
   }
 
-  async function hasExercises(lessonIdNum, mode, difficulty) {
+  async function hasExercises(dayNumber, mode, difficulty) {
     try {
-      const res = await api.get(`/quizzes/by-lesson/${lessonIdNum}`, {
+      const res = await api.get(`/quizzes/by-lesson/${dayNumber}`, {
         params: { mode, difficulty }, // ✅ use passed difficulty
         withCredentials: true,
       });
@@ -428,7 +438,7 @@ export default function LessonDetail() {
       // Paywall → follow backend nextAction if present
       if (status === 403 && data?.code === "PAYWALL") {
         const action = data?.nextAction || null;
-        const from = action?.from || `lesson_${lessonIdNum}`;
+        const from = action?.from || `lesson_${dayNumber}`;
         const base = action?.url || `/paywall?plan=BEGINNER`;
         const sep = String(base).includes("?") ? "&" : "?";
         const target = `${base}${sep}from=${encodeURIComponent(from)}`;
@@ -444,7 +454,7 @@ export default function LessonDetail() {
     let alive = true;
 
     async function check() {
-      const lid = Number(lessonIdNum);
+      const lid = Number(dayNumber);
 
       // If no valid lessonId -> reset and stop
       if (!lid) {
@@ -502,7 +512,7 @@ export default function LessonDetail() {
     return () => {
       alive = false;
     };
-  }, [lessonIdNum]); // keep minimal deps
+  }, [dayNumber]); // keep minimal deps
 
   async function smartStart() {
     if (!lessonId) return;
@@ -514,7 +524,7 @@ export default function LessonDetail() {
       return;
     }
 
-    const lid = Number(lessonIdNum);
+    const lid = Number(dayNumber);
     if (!lid) return;
 
     setSmartStarting(true);
@@ -578,7 +588,7 @@ export default function LessonDetail() {
 
     // Only show on the intended destination lesson
     if (!toLessonId || !fromLessonId) return;
-    if (Number(lessonIdNum) !== toLessonId) return;
+    if (Number(dayNumber) !== toLessonId) return;
 
     // Expire marker after 10 minutes (prevents random nags later)
     if (ts && Date.now() - ts > 10 * 60 * 1000) {
@@ -616,7 +626,7 @@ export default function LessonDetail() {
     }
 
     setMissedBanner({ fromLessonId, missing });
-  }, [lessonIdNum]); // keep deps tight
+  }, [dayNumber]); // keep deps tight
 
   const didAutostartRef = useRef(false);
 
@@ -701,7 +711,7 @@ export default function LessonDetail() {
               <div className="rounded-xl bg-white p-3">
                 <div className="text-xs text-gray-500">Lesson</div>
                 <div className="text-sm font-semibold">
-                  {lessonIdNum || "—"}
+                  {dayNumber || "—"}
                 </div>
               </div>
 

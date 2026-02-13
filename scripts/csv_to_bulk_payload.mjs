@@ -89,8 +89,8 @@ import path from "path";
     process.exit(1);
   }
 
-  const validLevels = new Set(["basic", "intermediate"]);
-  const validModes = new Set(["typing", "reorder"]);
+  const validLevels = new Set(["beginner", "intermediate", "advanced"]);
+  const validModes = new Set(["typing", "reorder", "audio"]);
 
   const groups = new Map(); // key: slug|mode -> { slug, title, level, mode, items[] }
   const errors = [];
@@ -101,8 +101,16 @@ import path from "path";
 
     const lessonSlug = String(row[col.lessonSlug] || "").trim();
     const lessonTitle = String(row[col.lessonTitle] || "").trim();
-    const lessonLevel = String(row[col.lessonLevel] || "").trim().toLowerCase();
-    const mode = String(row[col.mode] || "").trim().toLowerCase();
+    const lessonLevel = String(row[col.lessonLevel] || "")
+      .replace(/\r/g, "")
+      .trim()
+      .toLowerCase();
+
+    const mode = String(row[col.mode] || "")
+      .replace(/\r/g, "")
+      .trim()
+      .toLowerCase();
+
     const orderIndex = Number(String(row[col.orderIndex] || "").trim());
     const promptTa = String(row[col.promptTa] || "").trim();
     const answer = String(row[col.answer] || "").trim();
