@@ -113,28 +113,35 @@ function modeLabel(m) {
 
 export default function LessonDetail() {
   const [missedBanner, setMissedBanner] = useState(null);
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const { lessonId: lessonIdParam } = useParams(); // App.jsx uses :lessonId
   const lessonIdNum = Number(lessonIdParam);
   const lessonId = lessonIdParam; // keep as string for URL encoding
-  const [searchParams] = useSearchParams();
-  const difficulty = urlDifficulty || lessonDifficulty || "beginner";
-  const dayNumber = getDayNumberFromLesson(lesson);
 
+  const [searchParams] = useSearchParams();
+
+  // If Lessons page passes state: { lesson }, we use it. If not, we still render safely.
+  const [lesson, setLesson] = useState(location.state?.lesson || null);
+
+  // ✅ compute difficulties AFTER lesson exists (lesson can be null)
   const lessonDifficulty = (
     getDifficultyFromLesson(lesson) || ""
   ).toLowerCase();
   const urlDifficulty = (searchParams.get("difficulty") || "").toLowerCase();
 
-  const location = useLocation();
-  const navigate = useNavigate();
+  // URL wins if present, else lesson wins, else beginner
+  const difficulty = urlDifficulty || lessonDifficulty || "beginner";
+
+  // ✅ derive dayNumber from lesson (only works once lesson loaded)
+  const dayNumber = getDayNumberFromLesson(lesson);
 
   const [showMoreModes, setShowMoreModes] = useState(false);
 
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
-
-  // If Lessons page passes state: { lesson }, we use it. If not, we still render safely.
-  const [lesson, setLesson] = useState(location.state?.lesson || null);
 
   // Lock rule (MVP-safe): first 3 lessons free.
   // Later you can replace isLocked with entitlements check.
