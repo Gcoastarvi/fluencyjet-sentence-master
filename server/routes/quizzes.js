@@ -132,18 +132,31 @@ router.get("/random", authRequired, async (req, res) => {
       whereDay.dayNumber = lessonId;
     }
 
-    // ---- PAYWALL HARD BLOCK (Lesson-based = PracticeDay.dayNumber) ----    
+    // ---- PAYWALL HARD BLOCK (Lesson-based = PracticeDay.dayNumber) ----
     const userRow = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { has_access: true, tier_level: true, plan: true },
+      // ✅ include email + id so ADMIN_EMAIL bypass works + logs are truthful
+      select: {
+        id: true,
+        email: true,
+        has_access: true,
+        tier_level: true,
+        plan: true,
+      },
     });
 
     const tier = String(userRow?.tier_level || "").toLowerCase();
     const plan = String(userRow?.plan || "").toLowerCase();
 
+    // ✅ ADMIN BYPASS (fastest unblocker for MVP testing)
+    const adminEmail = String(process.env.ADMIN_EMAIL || "").toLowerCase();
+    const isAdminByEmail =
+      adminEmail && String(userRow?.email || "").toLowerCase() === adminEmail;
+
     // full access (admin/pro/all)
     const isProAll =
       !!userRow?.has_access ||
+      isAdminByEmail ||
       tier === "pro" ||
       tier === "all" ||
       plan === "pro" ||
@@ -318,16 +331,29 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     const userRow = userId
       ? await prisma.user.findUnique({
           where: { id: userId },
-          select: { has_access: true, tier_level: true, plan: true },
+          // ✅ include email + id so we can debug + do ADMIN_EMAIL bypass
+          select: {
+            id: true,
+            email: true,
+            has_access: true,
+            tier_level: true,
+            plan: true,
+          },
         })
       : null;
 
     const tier = String(userRow?.tier_level || "").toLowerCase();
     const plan = String(userRow?.plan || "").toLowerCase();
 
+    // ✅ ADMIN BYPASS (fastest unblocker for MVP testing)
+    const adminEmail = String(process.env.ADMIN_EMAIL || "").toLowerCase();
+    const isAdminByEmail =
+      adminEmail && String(userRow?.email || "").toLowerCase() === adminEmail;
+
     // full access (admin/pro/all)
     const isProAll =
       !!userRow?.has_access ||
+      isAdminByEmail ||
       tier === "pro" ||
       tier === "all" ||
       plan === "pro" ||
@@ -352,7 +378,9 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       mode,
       diff,
       userId: userRow?.id,
+      userEmail: userRow?.email,
       userPlan: userRow?.plan,
+      isAdminByEmail,
       userTier: userRow?.tier_level,
       isProAll,
       isPaidBeginner,
