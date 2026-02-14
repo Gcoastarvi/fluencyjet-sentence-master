@@ -185,6 +185,9 @@ export default function LessonDetail() {
           list.find(
             (l) => String(l?.practiceDayNumber) === String(dayNumber),
           ) ||
+          list.find(
+            (l) => String(l?.practice_day_number) === String(dayNumber),
+          ) ||
           // ✅ fallback: parse trailing number from slug like intermediate-13
           list.find((l) => {
             const slug = String(l?.slug || l?.lessonSlug || "");
@@ -386,7 +389,9 @@ export default function LessonDetail() {
       : null;
 
   function goPaywall() {
-    navigate(`/paywall?plan=BEGINNER&from=lesson_${dayNumber || ""}`);
+    navigate(
+      `/paywall?plan=BEGINNER&from=lesson_${dayNumber || ""}&difficulty=${encodeURIComponent(difficulty)}`,
+    );
   }
 
   function startMode(mode) {
@@ -435,7 +440,7 @@ export default function LessonDetail() {
 
       // Unauthorized → go login and come back
       if (status === 401) {
-        const next = `/lesson/${lessonId}`; // LessonDetail route id, not dayNumber
+        const next = `/lesson/${encodeURIComponent(dayNumber)}?difficulty=${encodeURIComponent(difficulty)}`;
         navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
         return "AUTH";
       }
@@ -478,10 +483,12 @@ export default function LessonDetail() {
 
       try {
         const [typingOk, reorderOk, audioOk, clozeOk] = await Promise.all([
-          hasExercises(lid, "typing"),
-          hasExercises(lid, "reorder"),
-          hasExercises(lid, "audio"),
-          ENABLE_CLOZE ? hasExercises(lid, "cloze") : Promise.resolve(false),
+          hasExercises(lid, "typing", difficulty),
+          hasExercises(lid, "reorder", difficulty),
+          hasExercises(lid, "audio", difficulty),
+          ENABLE_CLOZE
+            ? hasExercises(lid, "cloze", difficulty)
+            : Promise.resolve(false),
         ]);
 
         // If auth/paywall happened during checks, stop (navigation already triggered)
@@ -537,32 +544,26 @@ export default function LessonDetail() {
 
     try {
       // Prefer Typing (fluency), fallback Reorder, then Audio
-      const typingOk = await hasExercises(dayNumber, "typing", difficulty);
-      if (typingOk === "AUTH" || typingOk === "PAYWALL") return;
       if (typingOk) {
-        if (!dayNumber) return; // safety
         navigate(
-          `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+          `/practice/typing?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
         );
         return;
       }
 
-      const reorderOk = await hasExercises(lid, "reorder");
-      if (reorderOk === "AUTH" || reorderOk === "PAYWALL") return;
       if (reorderOk) {
-        if (!dayNumber) return; // safety
         navigate(
-          `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+          `/practice/reorder?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
         );
         return;
       }
 
-      const audioOk = await hasExercises(lid, "audio");
+      const audioOk = await hasExercises(lid, "audio", difficulty);
       if (audioOk === "AUTH" || audioOk === "PAYWALL") return;
+
       if (audioOk) {
-        if (!dayNumber) return; // safety
         navigate(
-          `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+          `/practice/audio?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
         );
         return;
       }

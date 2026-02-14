@@ -93,6 +93,10 @@ export default function SentencePractice() {
   const lessonIdNumSafe = lessonId || 1;
   const nextLessonId = lessonIdNumSafe + 1;
 
+  const difficulty = (
+    searchParams.get("difficulty") || "beginner"
+  ).toLowerCase();
+
   function goLessons() {
     navigate("/lessons", { replace: true });
   }
@@ -790,7 +794,7 @@ export default function SentencePractice() {
 
     try {
       const res = await api.get(
-        `/quizzes/by-lesson/${lessonIdNum}?mode=${encodeURIComponent(fetchMode)}&difficulty=beginner`,
+        `/quizzes/by-lesson/${lessonIdNum}?mode=${encodeURIComponent(fetchMode)}&difficulty=${encodeURIComponent(difficulty || "beginner")}`,
       );
 
       const data = res?.data ?? res;
