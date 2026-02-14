@@ -544,6 +544,8 @@ export default function LessonDetail() {
 
     try {
       // Prefer Typing (fluency), fallback Reorder, then Audio
+      const typingOk = await hasExercises(lid, "typing", difficulty);
+      if (typingOk === "AUTH" || typingOk === "PAYWALL") return;
       if (typingOk) {
         navigate(
           `/practice/typing?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
@@ -551,6 +553,8 @@ export default function LessonDetail() {
         return;
       }
 
+      const reorderOk = await hasExercises(lid, "reorder", difficulty);
+      if (reorderOk === "AUTH" || reorderOk === "PAYWALL") return;
       if (reorderOk) {
         navigate(
           `/practice/reorder?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
@@ -560,7 +564,6 @@ export default function LessonDetail() {
 
       const audioOk = await hasExercises(lid, "audio", difficulty);
       if (audioOk === "AUTH" || audioOk === "PAYWALL") return;
-
       if (audioOk) {
         navigate(
           `/practice/audio?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
