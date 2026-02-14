@@ -56,15 +56,6 @@ export default function Lessons() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const getDayNumber = (lesson, index) =>
-    Number(
-      lesson?.dayNumber ??
-        lesson?.day_number ??
-        lesson?.orderIndex ??
-        lesson?.order_index ??
-        index + 1,
-    );
-
   const getTileProgress = (dayNumber) => {
     const typingProg = readProgress(dayNumber, "typing");
     const reorderProg = readProgress(dayNumber, "reorder");
@@ -217,7 +208,7 @@ export default function Lessons() {
               return;
             }
             navigate(
-              `/lesson/${lesson.id}?difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
+              `/lesson/${dayNumber}?difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
             );
           };
 
