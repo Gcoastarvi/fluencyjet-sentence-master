@@ -421,34 +421,37 @@ export default function LessonDetail() {
     );
   }
 
-  async function hasExercises(dayNumber, mode, difficulty) {
+  async function hasExercises(lid, mode, diff) {
     try {
-      const res = await api.get(`/quizzes/by-lesson/${dayNumber}`, {
-        params: { mode, difficulty }, // ✅ use passed difficulty
-        withCredentials: true,
-      });
+      const res = await api.get(
+        `/quizzes/by-lesson/${lid}?mode=${encodeURIComponent(
+          mode,
+        )}&difficulty=${encodeURIComponent(diff || "beginner")}`,
+        { credentials: "include" },
+      );
 
-      const data = res?.data ?? null;
+      // ✅ apiClient returns JSON directly (not axios response)
+      const data = res?.data ?? res;
 
       if (!data || data.ok !== true) return false;
 
       const exercises = Array.isArray(data.exercises) ? data.exercises : [];
       return exercises.length > 0;
     } catch (e) {
-      const status = e?.response?.status ?? null;
-      const data = e?.response?.data ?? null;
+      const status = e?.response?.status ?? e?.status ?? null;
+      const data = e?.response?.data ?? e?.data ?? null;
 
-      // Unauthorized → go login and come back
       if (status === 401) {
-        const next = `/lesson/${encodeURIComponent(dayNumber)}?difficulty=${encodeURIComponent(difficulty)}`;
+        const next = `/lesson/${encodeURIComponent(lid)}?difficulty=${encodeURIComponent(
+          diff || "beginner",
+        )}`;
         navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
         return "AUTH";
       }
 
-      // Paywall → follow backend nextAction if present
       if (status === 403 && data?.code === "PAYWALL") {
         const action = data?.nextAction || null;
-        const from = action?.from || `lesson_${dayNumber}`;
+        const from = action?.from || `lesson_${lid}`;
         const base = action?.url || `/paywall?plan=BEGINNER`;
         const sep = String(base).includes("?") ? "&" : "?";
         const target = `${base}${sep}from=${encodeURIComponent(from)}`;
@@ -544,29 +547,35 @@ export default function LessonDetail() {
 
     try {
       // Prefer Typing (fluency), fallback Reorder, then Audio
-      const typingOk = await hasExercises(lid, "typing", difficulty);
+      const typingOk = await hasExercises(dayNumber, "typing", difficulty);
       if (typingOk === "AUTH" || typingOk === "PAYWALL") return;
       if (typingOk) {
         navigate(
-          `/practice/typing?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+          `/practice/typing?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(
+            difficulty,
+          )}`,
         );
         return;
       }
 
-      const reorderOk = await hasExercises(lid, "reorder", difficulty);
+      const reorderOk = await hasExercises(dayNumber, "reorder", difficulty);
       if (reorderOk === "AUTH" || reorderOk === "PAYWALL") return;
       if (reorderOk) {
         navigate(
-          `/practice/reorder?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+          `/practice/reorder?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(
+            difficulty,
+          )}`,
         );
         return;
       }
 
-      const audioOk = await hasExercises(lid, "audio", difficulty);
+      const audioOk = await hasExercises(dayNumber, "audio", difficulty);
       if (audioOk === "AUTH" || audioOk === "PAYWALL") return;
       if (audioOk) {
         navigate(
-          `/practice/audio?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+          `/practice/audio?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(
+            difficulty,
+          )}`,
         );
         return;
       }

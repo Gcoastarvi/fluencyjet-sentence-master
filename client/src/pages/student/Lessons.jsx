@@ -201,8 +201,15 @@ export default function Lessons() {
 
           const goPrimary = () => {
             if (!isUnlocked) {
+              const diff =
+                String(
+                  lesson?.difficulty || lesson?.lessonLevel || "beginner",
+                ).toLowerCase() === "intermediate"
+                  ? "intermediate"
+                  : "beginner";
+
               navigate(
-                `/paywall?plan=BEGINNER&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
+                `/lesson/${dayNumber}?difficulty=${encodeURIComponent(diff)}`,
               );
 
               return;

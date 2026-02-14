@@ -8,3 +8,6 @@ tmp_lesson1.txt
 payload_reorder.json
 *.old.jsx
 project-brain/
+
+content.csv
+out/
