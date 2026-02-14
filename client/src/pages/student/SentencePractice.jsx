@@ -93,8 +93,8 @@ export default function SentencePractice() {
   const lessonIdNumSafe = lessonId || 1;
   const nextLessonId = lessonIdNumSafe + 1;
 
-  const difficulty = (
-    searchParams.get("difficulty") || "beginner"
+  const difficulty = String(
+    search.get("difficulty") || "beginner",
   ).toLowerCase();
 
   function goLessons() {
@@ -103,7 +103,10 @@ export default function SentencePractice() {
 
   function goNextLesson() {
     if (!nextLessonId) return goLessons();
-    navigate(`/lesson/${nextLessonId}?autostart=1`, { replace: true });
+    navigate(
+      `/lesson/${nextLessonId}?difficulty=${encodeURIComponent(difficulty)}&autostart=1`,
+      { replace: true },
+    );
   }
 
   const asArr = (v) => (Array.isArray(v) ? v : []);
@@ -114,10 +117,9 @@ export default function SentencePractice() {
       .toLowerCase();
 
   function goAudio(variant) {
-    const lid = Number(new URLSearchParams(location.search).get("lessonId"));
-    if (!lid) return;
+    if (!lessonIdNumSafe) return;
     navigate(
-      `/practice/audio?lessonId=${lid}&variant=${encodeURIComponent(variant)}`,
+      `/practice/audio?lessonId=${encodeURIComponent(lessonIdNumSafe)}&difficulty=${encodeURIComponent(difficulty)}&variant=${encodeURIComponent(variant)}`,
     );
   }
 
