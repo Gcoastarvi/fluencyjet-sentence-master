@@ -131,7 +131,7 @@ export default function LevelCheck() {
     const token = getToken();
 
     if (!token) {
-      navigate(`/login?next=${encodeURIComponent(target)}`, { replace: true });
+      navigate(`/signup?next=${encodeURIComponent(target)}`, { replace: true });
       return;
     }
 
