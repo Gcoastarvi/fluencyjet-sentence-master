@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { getToken } from "@/utils/tokenStore";
+
 const TRACK_KEY = "fj_track";
 
 const QUESTIONS = [
@@ -115,6 +117,22 @@ export default function LevelCheck() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({}); // { [questionId]: optionIndex }
   const [result, setResult] = useState(null); // { score, track }
+
+  function goToTrack(track) {
+    try {
+      localStorage.setItem(TRACK_KEY, track);
+    } catch {}
+
+    const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
+    const token = getToken();
+
+    if (!token) {
+      navigate(`/login?next=${encodeURIComponent(target)}`, { replace: true });
+      return;
+    }
+
+    navigate(target, { replace: true });
+  }
 
   function choose(track) {
     try {

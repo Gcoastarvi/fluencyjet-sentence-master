@@ -1,4 +1,3 @@
-import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -283,6 +282,54 @@ export default function App() {
                 <ProtectedAdminRoute>
                   <AdminAnalytics />
                 </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/b/lessons"
+              element={
+                <ProtectedRoute>
+                  <BeginnerLessons />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/i/lessons"
+              element={
+                <ProtectedRoute>
+                  <IntermediateLessons />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/b/lesson/:lessonId"
+              element={
+                <ProtectedRoute>
+                  <LessonDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/i/lesson/:lessonId"
+              element={
+                <ProtectedRoute>
+                  <LessonDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/:mode"
+              element={
+                <ProtectedRoute>
+                  <SentencePractice />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/practice/audio"
+              element={
+                <ProtectedRoute>
+                  <SentencePractice />
+                </ProtectedRoute>
               }
             />
             {/* Fallback */}
