@@ -48,7 +48,7 @@ function getDayNumber(lesson, index) {
   return index + 1;
 }
 
-export default function Lessons() {
+export default function Lessons({ track = "beginner" }) {
   const navigate = useNavigate();
 
   const [lessons, setLessons] = useState([]);
@@ -121,20 +121,27 @@ export default function Lessons() {
 
   const orderedLessons = useMemo(() => {
     const arr = Array.isArray(lessons) ? [...lessons] : [];
-    return arr.sort((a, b) => {
+
+    // ✅ Filter by track (beginner vs intermediate)
+    const filtered = arr.filter((l) => {
+      const diff = String(
+        l?.difficulty || l?.lessonLevel || "beginner",
+      ).toLowerCase();
+      const isInter = diff === "intermediate";
+      return track === "intermediate" ? isInter : !isInter;
+    });
+
+    return filtered.sort((a, b) => {
       const aDay = getDayNumber(a, 0);
       const bDay = getDayNumber(b, 0);
 
       const aUnlocked = unlocked.includes(a?.id);
       const bUnlocked = unlocked.includes(b?.id);
 
-      // unlocked first
       if (aUnlocked !== bUnlocked) return aUnlocked ? -1 : 1;
-
-      // then by dayNumber ascending
       return aDay - bDay;
     });
-  }, [lessons, unlocked]);
+  }, [lessons, unlocked, track]);
 
   const recommendedLessonId = useMemo(() => {
     // rule: first unlocked lesson with lowest progress %
@@ -178,7 +185,7 @@ export default function Lessons() {
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6 mt-6">
       <h1 className="text-3xl font-bold text-indigo-700 text-center">
-        Lessons
+        {track === "intermediate" ? "Intermediate Lessons" : "Beginner Lessons"}
       </h1>
 
       <div className="space-y-4">
@@ -199,23 +206,21 @@ export default function Lessons() {
               ? "Continue"
               : "Start";
 
+          const base = track === "intermediate" ? "/i" : "/b";
+          const diff = track === "intermediate" ? "intermediate" : "beginner";
+
           const goPrimary = () => {
             if (!isUnlocked) {
-              const diff =
-                String(
-                  lesson?.difficulty || lesson?.lessonLevel || "beginner",
-                ).toLowerCase() === "intermediate"
-                  ? "intermediate"
-                  : "beginner";
-
               navigate(
-                `/lesson/${dayNumber}?difficulty=${encodeURIComponent(diff)}`,
+                `/paywall?plan=${
+                  track === "intermediate" ? "INTERMEDIATE" : "BEGINNER"
+                }&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(diff)}`,
               );
-
               return;
             }
+
             navigate(
-              `/lesson/${dayNumber}?difficulty=${encodeURIComponent(lesson.difficulty || "beginner")}`,
+              `${base}/lesson/${dayNumber}?difficulty=${encodeURIComponent(diff)}`,
             );
           };
 

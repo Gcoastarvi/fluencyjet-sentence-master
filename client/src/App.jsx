@@ -5,6 +5,7 @@ import {
   Route,
   Navigate,
   Outlet,
+  useParams,
 } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
@@ -26,6 +27,8 @@ import Paywall from "./pages/student/Paywall.jsx";
 import Checkout from "./pages/student/Checkout.jsx";
 import DiagnosticStart from "./pages/student/DiagnosticStart";
 import DiagnosticResult from "./pages/student/DiagnosticResult";
+import BeginnerLessons from "./pages/student/BeginnerLessons";
+import IntermediateLessons from "./pages/student/IntermediateLessons";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
@@ -56,6 +59,46 @@ function MainLayout() {
   );
 }
 
+function LessonsRedirect() {
+  const userRaw =
+    typeof window !== "undefined" ? localStorage.getItem("user") : null;
+
+  let track = "beginner";
+  try {
+    const u = userRaw ? JSON.parse(userRaw) : null;
+    const plan = String(u?.plan || "").toLowerCase();
+    // if you store track elsewhere, adjust this logic
+    if (plan.includes("inter")) track = "intermediate";
+  } catch {}
+
+  const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
+  return <Navigate to={target} replace />;
+}
+
+function LessonRedirect() {
+  const { lessonId } = useParams();
+
+  const userRaw =
+    typeof window !== "undefined" ? localStorage.getItem("user") : null;
+
+  let track = "beginner";
+  try {
+    const u = userRaw ? JSON.parse(userRaw) : null;
+    const plan = String(u?.plan || "").toLowerCase();
+    if (plan.includes("inter")) track = "intermediate";
+  } catch {}
+
+  const base = track === "intermediate" ? "/i" : "/b";
+  const diff = track === "intermediate" ? "intermediate" : "beginner";
+
+  return (
+    <Navigate
+      to={`${base}/lesson/${encodeURIComponent(lessonId)}?difficulty=${encodeURIComponent(diff)}`}
+      replace
+    />
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -74,33 +117,28 @@ export default function App() {
             <Route path="/diagnostic" element={<DiagnosticStart />} />
             <Route path="/diagnostic/result" element={<DiagnosticResult />} />
             <Route path="/practice/audio" element={<SentencePractice />} />
-            <Route path="/lessons" element={<Lessons />} />
-            <Route path="/lesson/:lessonId" element={<LessonDetail />} />
+            <Route path="/lessons" element={<LessonsRedirect />} />            
             <Route path="/login" element={<Login />} />
 
             <Route path="/practice/:mode" element={<SentencePractice />} />
+
+            <Route path="/b/lessons" element={<BeginnerLessons />} />
+            <Route path="/i/lessons" element={<IntermediateLessons />} />
+
+            <Route path="/b/lesson/:dayNumber" element={<LessonDetail />} />
+            <Route path="/i/lesson/:dayNumber" element={<LessonDetail />} />
 
             <Route
               path="/practice"
               element={<Navigate to="/practice/reorder" replace />}
             />
-            <Route path="/lesson/:lessonId" element={<LessonDetail />} />
-
+            
             {/* Student-protected */}
             <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/lessons"
-              element={
-                <ProtectedRoute>
-                  <Lessons /> {/* Launch mode: no PlanGate */}
                 </ProtectedRoute>
               }
             />
