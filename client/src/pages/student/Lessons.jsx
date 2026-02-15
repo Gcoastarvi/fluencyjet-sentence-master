@@ -206,9 +206,6 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
               ? "Continue"
               : "Start";
 
-          const base = track === "intermediate" ? "/i" : "/b";
-          const diff = track === "intermediate" ? "intermediate" : "beginner";
-
           const goPrimary = () => {
             const diff =
               String(
