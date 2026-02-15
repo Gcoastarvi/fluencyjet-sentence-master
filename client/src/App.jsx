@@ -25,10 +25,9 @@ import TypingQuiz from "./pages/student/TypingQuiz.jsx";
 import SentencePractice from "./pages/student/SentencePractice.jsx";
 import Paywall from "./pages/student/Paywall.jsx";
 import Checkout from "./pages/student/Checkout.jsx";
-import DiagnosticStart from "./pages/student/DiagnosticStart";
-import DiagnosticResult from "./pages/student/DiagnosticResult";
 import BeginnerLessons from "./pages/student/BeginnerLessons";
 import IntermediateLessons from "./pages/student/IntermediateLessons";
+import LevelCheck from "./pages/student/LevelCheck";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
@@ -114,25 +113,41 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/paywall" element={<Paywall />} />
-            <Route path="/diagnostic" element={<DiagnosticStart />} />
-            <Route path="/diagnostic/result" element={<DiagnosticResult />} />
-            <Route path="/practice/audio" element={<SentencePractice />} />
+            <Route path="/level-check" element={<LevelCheck />} />
+            // keep diagnostic as alias → level-check
+            <Route
+              path="/diagnostic"
+              element={<Navigate to="/level-check" replace />}
+            />
+            <Route
+              path="/diagnostic/result"
+              element={<Navigate to="/level-check" replace />}
+            />
+
+            // lessons redirect based on fj_track
             <Route path="/lessons" element={<LessonsRedirect />} />
-            <Route path="/login" element={<Login />} />
 
-            <Route path="/practice/:mode" element={<SentencePractice />} />
-
+            // track lesson lists
             <Route path="/b/lessons" element={<BeginnerLessons />} />
             <Route path="/i/lessons" element={<IntermediateLessons />} />
 
+            // namespaced lesson hubs
             <Route path="/b/lesson/:lessonId" element={<LessonDetail />} />
             <Route path="/i/lesson/:lessonId" element={<LessonDetail />} />
 
+            // legacy route (IMPORTANT)
+            <Route path="/lesson/:lessonId" element={<LessonRedirect />} />
+
+            // practice
+            <Route path="/practice/:mode" element={<SentencePractice />} />
+            <Route path="/practice" element={<Navigate to="/practice/reorder" replace />} />
+            
+            <Route path="/practice/audio" element={<SentencePractice />} />               
+            
             <Route
               path="/practice"
               element={<Navigate to="/practice/reorder" replace />}
             />
-
             {/* Student-protected */}
             <Route
               path="/dashboard"
@@ -142,7 +157,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/quiz/:lessonId"
               element={
@@ -151,7 +165,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/leaderboard"
               element={
@@ -160,7 +173,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/practice"
               element={
@@ -169,7 +181,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/typing-quiz"
               element={
@@ -178,7 +189,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/checkout"
               element={
@@ -187,7 +197,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-
             {/* Admin-protected (unchanged) */}
             <Route
               path="/admin"
@@ -197,7 +206,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/dashboard"
               element={
@@ -206,7 +214,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/lessons"
               element={
@@ -215,7 +222,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/lessons/new"
               element={
@@ -224,7 +230,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/lessons/:lessonId"
               element={
@@ -233,7 +238,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/quizzes"
               element={
@@ -242,7 +246,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/users"
               element={
@@ -251,7 +254,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/users/:userId"
               element={
@@ -260,7 +262,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/xp"
               element={
@@ -269,7 +270,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             <Route
               path="/admin/analytics"
               element={
@@ -278,7 +278,6 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
-
             {/* Fallback */}
             <Route path="*" element={<Home />} />
           </Route>
