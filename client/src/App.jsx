@@ -135,12 +135,7 @@ export default function App() {
             />
             // lessons redirect based on fj_track
             <Route path="/lessons" element={<LessonsRedirect />} />
-            // track lesson lists
-            <Route path="/b/lessons" element={<BeginnerLessons />} />
-            <Route path="/i/lessons" element={<IntermediateLessons />} />
-            // namespaced lesson hubs
-            <Route path="/b/lesson/:lessonId" element={<LessonDetail />} />
-            <Route path="/i/lesson/:lessonId" element={<LessonDetail />} />
+            
             // legacy route (IMPORTANT)
             <Route path="/lesson/:lessonId" element={<LessonRedirect />} />
             // practice
