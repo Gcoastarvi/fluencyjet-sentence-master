@@ -117,7 +117,7 @@ export default function App() {
             <Route path="/diagnostic" element={<DiagnosticStart />} />
             <Route path="/diagnostic/result" element={<DiagnosticResult />} />
             <Route path="/practice/audio" element={<SentencePractice />} />
-            <Route path="/lessons" element={<LessonsRedirect />} />            
+            <Route path="/lessons" element={<LessonsRedirect />} />
             <Route path="/login" element={<Login />} />
 
             <Route path="/practice/:mode" element={<SentencePractice />} />
@@ -125,14 +125,14 @@ export default function App() {
             <Route path="/b/lessons" element={<BeginnerLessons />} />
             <Route path="/i/lessons" element={<IntermediateLessons />} />
 
-            <Route path="/b/lesson/:dayNumber" element={<LessonDetail />} />
-            <Route path="/i/lesson/:dayNumber" element={<LessonDetail />} />
+            <Route path="/b/lesson/:lessonId" element={<LessonDetail />} />
+            <Route path="/i/lesson/:lessonId" element={<LessonDetail />} />
 
             <Route
               path="/practice"
               element={<Navigate to="/practice/reorder" replace />}
             />
-            
+
             {/* Student-protected */}
             <Route
               path="/dashboard"

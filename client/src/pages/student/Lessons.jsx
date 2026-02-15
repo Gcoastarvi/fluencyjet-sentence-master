@@ -48,7 +48,7 @@ function getDayNumber(lesson, index) {
   return index + 1;
 }
 
-export default function Lessons({ track = "beginner" }) {
+export default function Lessons({ track = "beginner", basePath = "" }) {
   const navigate = useNavigate();
 
   const [lessons, setLessons] = useState([]);
@@ -210,17 +210,29 @@ export default function Lessons({ track = "beginner" }) {
           const diff = track === "intermediate" ? "intermediate" : "beginner";
 
           const goPrimary = () => {
+            const diff =
+              String(
+                lesson?.difficulty ||
+                  lesson?.lessonLevel ||
+                  track ||
+                  "beginner",
+              ).toLowerCase() === "intermediate"
+                ? "intermediate"
+                : "beginner";
+
+            // If locked, send to paywall (track-aware)
             if (!isUnlocked) {
               navigate(
                 `/paywall?plan=${
-                  track === "intermediate" ? "INTERMEDIATE" : "BEGINNER"
+                  diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER"
                 }&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(diff)}`,
               );
               return;
             }
 
+            // Open practice hub (track namespace)
             navigate(
-              `${base}/lesson/${dayNumber}?difficulty=${encodeURIComponent(diff)}`,
+              `${basePath}/lesson/${dayNumber}?difficulty=${encodeURIComponent(diff)}`,
             );
           };
 

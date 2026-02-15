@@ -1,5 +1,4 @@
 import Lessons from "./Lessons";
-
 export default function BeginnerLessons() {
-  return <Lessons track="beginner" />;
+  return <Lessons track="beginner" basePath="/b" />;
 }
