@@ -58,18 +58,36 @@ function MainLayout() {
   );
 }
 
-function LessonsRedirect() {
-  const userRaw =
-    typeof window !== "undefined" ? localStorage.getItem("user") : null;
+const TRACK_KEY = "fj_track";
 
-  let track = "beginner";
+function readTrackFromStorage() {
+  // 1) Primary: fj_track set by /level-check
   try {
-    const u = userRaw ? JSON.parse(userRaw) : null;
-    const plan = String(u?.plan || "").toLowerCase();
-    // if you store track elsewhere, adjust this logic
-    if (plan.includes("inter")) track = "intermediate";
+    const t = localStorage.getItem(TRACK_KEY);
+    if (t === "intermediate" || t === "beginner") return t;
   } catch {}
 
+  // 2) Secondary: user.track (if you store it)
+  try {
+    const raw = localStorage.getItem("user");
+    const u = raw ? JSON.parse(raw) : null;
+    const t = String(u?.track || "").toLowerCase();
+    if (t === "intermediate" || t === "beginner") return t;
+  } catch {}
+
+  // 3) Fallback: old plan logic
+  try {
+    const raw = localStorage.getItem("user");
+    const u = raw ? JSON.parse(raw) : null;
+    const plan = String(u?.plan || "").toLowerCase();
+    if (plan.includes("inter")) return "intermediate";
+  } catch {}
+
+  return "beginner";
+}
+
+function LessonsRedirect() {
+  const track = readTrackFromStorage();
   const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
   return <Navigate to={target} replace />;
 }
@@ -77,22 +95,15 @@ function LessonsRedirect() {
 function LessonRedirect() {
   const { lessonId } = useParams();
 
-  const userRaw =
-    typeof window !== "undefined" ? localStorage.getItem("user") : null;
-
-  let track = "beginner";
-  try {
-    const u = userRaw ? JSON.parse(userRaw) : null;
-    const plan = String(u?.plan || "").toLowerCase();
-    if (plan.includes("inter")) track = "intermediate";
-  } catch {}
-
+  const track = readTrackFromStorage();
   const base = track === "intermediate" ? "/i" : "/b";
   const diff = track === "intermediate" ? "intermediate" : "beginner";
 
   return (
     <Navigate
-      to={`${base}/lesson/${encodeURIComponent(lessonId)}?difficulty=${encodeURIComponent(diff)}`}
+      to={`${base}/lesson/${encodeURIComponent(
+        lessonId,
+      )}?difficulty=${encodeURIComponent(diff)}`}
       replace
     />
   );
@@ -123,27 +134,23 @@ export default function App() {
               path="/diagnostic/result"
               element={<Navigate to="/level-check" replace />}
             />
-
             // lessons redirect based on fj_track
             <Route path="/lessons" element={<LessonsRedirect />} />
-
             // track lesson lists
             <Route path="/b/lessons" element={<BeginnerLessons />} />
             <Route path="/i/lessons" element={<IntermediateLessons />} />
-
             // namespaced lesson hubs
             <Route path="/b/lesson/:lessonId" element={<LessonDetail />} />
             <Route path="/i/lesson/:lessonId" element={<LessonDetail />} />
-
             // legacy route (IMPORTANT)
             <Route path="/lesson/:lessonId" element={<LessonRedirect />} />
-
             // practice
             <Route path="/practice/:mode" element={<SentencePractice />} />
-            <Route path="/practice" element={<Navigate to="/practice/reorder" replace />} />
-            
-            <Route path="/practice/audio" element={<SentencePractice />} />               
-            
+            <Route
+              path="/practice"
+              element={<Navigate to="/practice/reorder" replace />}
+            />
+            <Route path="/practice/audio" element={<SentencePractice />} />
             <Route
               path="/practice"
               element={<Navigate to="/practice/reorder" replace />}
