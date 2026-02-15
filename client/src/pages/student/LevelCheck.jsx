@@ -336,7 +336,7 @@ export default function LevelCheck() {
             <div className="mt-5 flex gap-3">
               <button
                 type="button"
-                onClick={() => choose(result.track)}
+                onClick={() => goToTrack(result.track)}
                 className="rounded-xl bg-indigo-600 px-5 py-2.5 text-white font-semibold hover:opacity-95"
               >
                 Start free lessons →

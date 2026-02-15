@@ -4,10 +4,10 @@ import { getToken } from "@/utils/tokenStore";
 
 export default function ProtectedRoute({ children }) {
   const location = useLocation();
-  const token = getToken();
+  const token = getToken(); // ✅ use same token logic as apiClient
 
   if (!token) {
-    const next = `${location.pathname}${location.search || ""}`;
+    const next = location.pathname + location.search;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
 
