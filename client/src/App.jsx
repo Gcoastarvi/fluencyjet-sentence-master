@@ -124,6 +124,7 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/level-check" element={<LevelCheck />} />
+            <Route path="/signin" element={<Login />} />
             // keep diagnostic as alias → level-check
             <Route
               path="/diagnostic"
@@ -135,7 +136,6 @@ export default function App() {
             />
             // lessons redirect based on fj_track
             <Route path="/lessons" element={<LessonsRedirect />} />
-            
             // legacy route (IMPORTANT)
             <Route path="/lesson/:lessonId" element={<LessonRedirect />} />
             // practice

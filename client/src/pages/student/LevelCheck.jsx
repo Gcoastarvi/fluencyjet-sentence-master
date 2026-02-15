@@ -121,6 +121,10 @@ export default function LevelCheck() {
   function goToTrack(track) {
     try {
       localStorage.setItem(TRACK_KEY, track);
+
+      const raw = localStorage.getItem("user");
+      const u = raw ? JSON.parse(raw) : {};
+      localStorage.setItem("user", JSON.stringify({ ...u, track }));
     } catch {}
 
     const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
@@ -132,21 +136,6 @@ export default function LevelCheck() {
     }
 
     navigate(target, { replace: true });
-  }
-
-  function choose(track) {
-    try {
-      localStorage.setItem(TRACK_KEY, track);
-
-      // Optional: also update your existing user object so redirects work everywhere
-      const raw = localStorage.getItem("user");
-      const u = raw ? JSON.parse(raw) : {};
-      localStorage.setItem("user", JSON.stringify({ ...u, track }));
-    } catch {}
-
-    navigate(track === "intermediate" ? "/i/lessons" : "/b/lessons", {
-      replace: true,
-    });
   }
 
   const current = QUESTIONS[idx];
@@ -181,7 +170,7 @@ export default function LevelCheck() {
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => choose("beginner")}
+                onClick={() => goToTrack("beginner")}
                 className="rounded-2xl border p-5 text-left hover:bg-gray-50"
               >
                 <div className="text-lg font-semibold">Beginner</div>
@@ -195,7 +184,7 @@ export default function LevelCheck() {
 
               <button
                 type="button"
-                onClick={() => choose("intermediate")}
+                onClick={() => goToTrack("intermediate")}
                 className="rounded-2xl border p-5 text-left hover:bg-gray-50"
               >
                 <div className="text-lg font-semibold">Intermediate</div>
