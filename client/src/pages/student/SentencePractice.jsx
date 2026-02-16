@@ -1629,6 +1629,10 @@ export default function SentencePractice() {
     const lid = Number(search.get("lessonId") || 0);
     const nextLessonId = lid ? lid + 1 : null;
 
+    const diffRaw = String(search.get("difficulty") || "").toLowerCase();
+    const difficulty = diffRaw === "intermediate" ? "intermediate" : "beginner";
+    const base = difficulty === "intermediate" ? "/i" : "/b";
+
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
         <h1 className="text-2xl font-bold mb-3">🎉 Session Complete!</h1>
@@ -1649,7 +1653,12 @@ export default function SentencePractice() {
             <button
               className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
               onClick={() =>
-                navigate(`/lesson/${nextLessonId}`, { replace: true })
+                navigate(
+                  `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
+                    difficulty,
+                  )}`,
+                  { replace: true },
+                )
               }
             >
               Continue to Lesson {nextLessonId} →
@@ -1694,7 +1703,7 @@ export default function SentencePractice() {
           {/* Tertiary: Back to Lessons */}
           <button
             className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
-            onClick={() => navigate("/lessons", { replace: true })}
+            onClick={() => navigate(`${base}/lessons`, { replace: true })}
           >
             Back to Lessons
           </button>
