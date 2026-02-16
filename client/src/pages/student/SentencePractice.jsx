@@ -1655,7 +1655,7 @@ export default function SentencePractice() {
         </div>
 
         <div className="space-y-3">
-          {/* Primary CTA: Next Lesson */}          
+          {/* Primary CTA: Next Lesson */}
           {nextLessonId ? (
             <>
               <button
@@ -1739,6 +1739,7 @@ export default function SentencePractice() {
             // only show modes that truly have items (prevents "No quizzes uploaded yet" flash)
             const canShowReorder = completeModeAvail?.reorder !== false; // undefined => show
             const canShowAudio = completeModeAvail?.audio !== false; // undefined => show
+            const canShowTyping = completeModeAvail?.typing !== false; // undefined => show
 
             // read progress
             const parse = (raw) => {
@@ -1756,6 +1757,9 @@ export default function SentencePractice() {
             const ap = parse(
               localStorage.getItem(`fj_progress:${lidStr}:audio`),
             );
+            const tp = parse(
+              localStorage.getItem(`fj_progress:${lidStr}:typing`),
+            );
 
             const isDone = (p) =>
               Number(p?.total || 0) > 0 &&
@@ -1766,6 +1770,11 @@ export default function SentencePractice() {
               !isDone(rp) &&
               String(safeMode).toLowerCase() !== "reorder";
 
+            const showTypingBtn =
+              canShowTyping &&
+              !isDone(tp) &&
+              String(safeMode).toLowerCase() !== "typing";
+
             const audioEnabled =
               typeof ENABLE_AUDIO === "undefined" ? true : !!ENABLE_AUDIO;
             const showAudioBtns =
@@ -1774,7 +1783,8 @@ export default function SentencePractice() {
               !isDone(ap) &&
               String(safeMode).toLowerCase() !== "audio";
 
-            if (!showReorderBtn && !showAudioBtns) return null;
+            if (!showTypingBtn && !showReorderBtn && !showAudioBtns)
+              return null;
 
             return (
               <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
@@ -1787,6 +1797,16 @@ export default function SentencePractice() {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
+                  {showTypingBtn ? (
+                    <button
+                      type="button"
+                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                      onClick={() => hardResetThenNavigate("typing")}
+                    >
+                      Typing (accuracy)
+                    </button>
+                  ) : null}
+
                   {showReorderBtn ? (
                     <button
                       type="button"
