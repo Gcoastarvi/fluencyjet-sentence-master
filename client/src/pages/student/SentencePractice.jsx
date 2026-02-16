@@ -1587,44 +1587,49 @@ export default function SentencePractice() {
   }
 
   function hardResetThenNavigate(nextMode, nextVariant) {
-    // Minimal safe resets before leaving completion screen
-    try {
-      setIsComplete(false);
-    } catch {}
-    try {
-      setShowCompleteModal(false);
-    } catch {}
-    try {
-      setCompletionXp(0);
-    } catch {}
-
-    safeStopAudioAndUnlock();
-
     const sp = new URLSearchParams(location.search);
-
     const lid = sp.get("lessonId"); // SOURCE OF TRUTH
     if (!lid) return;
 
-    // preserve difficulty for track correctness + quiz fetching
     const diffRaw = String(sp.get("difficulty") || "").toLowerCase();
     const difficulty = diffRaw === "intermediate" ? "intermediate" : "beginner";
 
     const mode = String(nextMode || "").toLowerCase();
     if (!mode) return;
 
-    // Build query
-    const qs = new URLSearchParams();
-    qs.set("lessonId", String(lid));
-    qs.set("difficulty", difficulty);
+    // Build target URL FIRST
+    let target = "";
 
-    // audio needs variant
     if (mode === "audio") {
+      const qs = new URLSearchParams();
+      qs.set("lessonId", String(lid));
+      qs.set("difficulty", difficulty);
       qs.set("variant", nextVariant || "repeat");
+      target = `/practice/audio?${qs.toString()}`;
+    } else {
+      const qs = new URLSearchParams();
+      qs.set("lessonId", String(lid));
+      qs.set("difficulty", difficulty);
+      target = `/practice/${mode}?${qs.toString()}`;
     }
 
-    navigate(`/practice/${encodeURIComponent(mode)}?${qs.toString()}`, {
-      replace: true,
-    });
+    // Navigate FIRST (so button doesn't disappear without redirect)
+    navigate(target, { replace: true });
+
+    // Then reset state on next tick (prevents stale modal / audio lock)
+    setTimeout(() => {
+      try {
+        setIsComplete(false);
+      } catch {}
+      try {
+        setShowCompleteModal(false);
+      } catch {}
+      try {
+        setCompletionXp(0);
+      } catch {}
+
+      safeStopAudioAndUnlock();
+    }, 0);
   }
 
   // -------------------
