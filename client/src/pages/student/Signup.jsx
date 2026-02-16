@@ -1,10 +1,18 @@
 // client/src/pages/student/Signup.jsx
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { signupUser } from "../../api/apiClient";
 
 export default function Signup() {
   const navigate = useNavigate();
+
+  const [searchParams] = useSearchParams();
+
+  const rawNext = searchParams.get("next") || "/dashboard";
+  const next =
+    typeof rawNext === "string" && rawNext.startsWith("/")
+      ? rawNext
+      : "/dashboard";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,7 +40,7 @@ export default function Signup() {
         return;
       }
 
-      navigate("/login");
+      navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
     } catch (err) {
       console.error("Signup error:", err);
       setError("Something went wrong. Please try again.");

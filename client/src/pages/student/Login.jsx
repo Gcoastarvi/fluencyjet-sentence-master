@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const params = new URLSearchParams(window.location.search);
-  const next = params.get("next") || "/dashboard";
+  const [searchParams] = useSearchParams();
+
+  const rawNext = searchParams.get("next") || "/dashboard";
+  const next =
+    typeof rawNext === "string" && rawNext.startsWith("/") ? rawNext : "/dashboard";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
