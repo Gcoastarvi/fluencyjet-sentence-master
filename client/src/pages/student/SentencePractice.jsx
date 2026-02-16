@@ -1672,6 +1672,39 @@ export default function SentencePractice() {
             </button>
           ) : null}
 
+          {nextLessonId ? (
+            <>
+              <button
+                className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
+                onClick={() =>
+                  navigate(
+                    `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
+                      difficulty,
+                    )}`,
+                    { replace: true },
+                  )
+                }
+              >
+                Continue to Lesson {nextLessonId} →
+              </button>
+
+              {/* NEW: Start next lesson practice immediately (highest ROI) */}
+              <button
+                className="w-full rounded-2xl bg-indigo-600 px-6 py-4 text-white font-semibold hover:opacity-95"
+                onClick={() =>
+                  navigate(
+                    `/practice/reorder?lessonId=${encodeURIComponent(
+                      nextLessonId,
+                    )}&difficulty=${encodeURIComponent(difficulty)}`,
+                    { replace: true },
+                  )
+                }
+              >
+                Start Lesson {nextLessonId} Practice (Reorder) →
+              </button>
+            </>
+          ) : null}
+
           {/* Secondary: Practice Again */}
           <button
             className="w-full rounded-2xl bg-purple-600 px-6 py-4 text-white font-semibold hover:opacity-95"
@@ -1950,10 +1983,12 @@ export default function SentencePractice() {
         Build the sentence
       </h1>
 
-      <div className="text-center text-xs text-slate-400 mb-3">
-        urlMode: <b>{String(urlMode)}</b> | activeMode: <b>{activeMode}</b> |
-        safeMode: <b>{safeMode}</b> | lessonId: <b>{lessonId}</b>
-      </div>
+      {import.meta.env.DEV ? (
+        <div className="text-center text-xs text-slate-400 mb-3">
+          urlMode: <b>{String(urlMode)}</b> | activeMode: <b>{activeMode}</b> |
+          safeMode: <b>{safeMode}</b> | lessonId: <b>{lessonId}</b>
+        </div>
+      ) : null}
 
       <div className="text-center text-sm text-gray-500 mb-3">
         Question {currentIndex + 1} / {totalQuestions}
