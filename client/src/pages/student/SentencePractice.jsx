@@ -1601,21 +1601,28 @@ export default function SentencePractice() {
     safeStopAudioAndUnlock();
 
     const sp = new URLSearchParams(location.search);
+
     const lid = sp.get("lessonId"); // SOURCE OF TRUTH
     if (!lid) return;
+
+    // preserve difficulty for track correctness + quiz fetching
+    const diffRaw = String(sp.get("difficulty") || "").toLowerCase();
+    const difficulty = diffRaw === "intermediate" ? "intermediate" : "beginner";
 
     const mode = String(nextMode || "").toLowerCase();
     if (!mode) return;
 
+    // Build query
+    const qs = new URLSearchParams();
+    qs.set("lessonId", String(lid));
+    qs.set("difficulty", difficulty);
+
+    // audio needs variant
     if (mode === "audio") {
-      const qs = new URLSearchParams();
-      qs.set("lessonId", String(lid));
       qs.set("variant", nextVariant || "repeat");
-      navigate(`/practice/audio?${qs.toString()}`, { replace: true });
-      return;
     }
 
-    navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lid)}`, {
+    navigate(`/practice/${encodeURIComponent(mode)}?${qs.toString()}`, {
       replace: true,
     });
   }
