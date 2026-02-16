@@ -118,7 +118,7 @@ export default function LevelCheck() {
   const [answers, setAnswers] = useState({}); // { [questionId]: optionIndex }
   const [result, setResult] = useState(null); // { score, track }
 
-  function goToTrack(track) {
+  function goToTrack(track, opts = {}) {
     try {
       localStorage.setItem(TRACK_KEY, track);
 
@@ -127,8 +127,28 @@ export default function LevelCheck() {
       localStorage.setItem("user", JSON.stringify({ ...u, track }));
     } catch {}
 
-    const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
     const token = getToken();
+
+    // If we want to start practice immediately (highest ROI CTA)
+    if (opts?.startLesson1) {
+      const diff = track === "intermediate" ? "intermediate" : "beginner";
+      const practiceUrl = `/practice/reorder?lessonId=1&difficulty=${encodeURIComponent(
+        diff,
+      )}`;
+
+      if (!token) {
+        navigate(`/signup?next=${encodeURIComponent(practiceUrl)}`, {
+          replace: true,
+        });
+        return;
+      }
+
+      navigate(practiceUrl, { replace: true });
+      return;
+    }
+
+    // Default behavior: go to lessons list
+    const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
 
     if (!token) {
       navigate(`/signup?next=${encodeURIComponent(target)}`, { replace: true });
@@ -322,13 +342,21 @@ export default function LevelCheck() {
               Don’t worry — you can switch later anytime.
             </div>
 
-            <div className="mt-5 flex gap-3">
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => goToTrack(result.track, { startLesson1: true })}
+                className="rounded-xl bg-indigo-600 px-5 py-2.5 text-white font-semibold hover:opacity-95"
+              >
+                Start Lesson 1 now (Free) →
+              </button>
+
               <button
                 type="button"
                 onClick={() => goToTrack(result.track)}
-                className="rounded-xl bg-indigo-600 px-5 py-2.5 text-white font-semibold hover:opacity-95"
+                className="rounded-xl border px-5 py-2.5 font-semibold hover:bg-gray-50"
               >
-                Start free lessons →
+                See all lessons
               </button>
 
               <button
@@ -343,6 +371,10 @@ export default function LevelCheck() {
               >
                 Retake
               </button>
+            </div>
+
+            <div className="mt-2 text-xs text-gray-500">
+              Takes ~2 minutes • Earn XP instantly
             </div>
           </div>
         )}
