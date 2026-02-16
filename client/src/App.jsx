@@ -5,7 +5,10 @@ import {
   Navigate,
   Outlet,
   useParams,
+  useLocation,
 } from "react-router-dom";
+
+import { useEffect } from "react";
 
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
@@ -13,7 +16,6 @@ import { AuthProvider } from "./context/AuthContext";
 // Student pages
 import Home from "./pages/student/Home.jsx";
 import Dashboard from "./pages/student/Dashboard.jsx";
-import Lessons from "./pages/student/Lessons.jsx";
 import LessonDetail from "./pages/student/LessonDetail.jsx";
 import LessonQuiz from "./pages/student/LessonQuiz.jsx";
 import Leaderboard from "./pages/student/Leaderboard.jsx";
@@ -44,7 +46,6 @@ import AdminAnalytics from "./pages/admin/AdminAnalytics.jsx";
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
-import PlanGate from "./components/PlanGate.jsx";
 
 function MainLayout() {
   return (
@@ -58,6 +59,31 @@ function MainLayout() {
 }
 
 const TRACK_KEY = "fj_track";
+
+function inferTrackFromPath(pathname) {
+  if (pathname.startsWith("/b/")) return "beginner";
+  if (pathname.startsWith("/i/")) return "intermediate";
+  return null;
+}
+
+function writeTrackToStorage(track) {
+  try {
+    if (track === "beginner" || track === "intermediate") {
+      localStorage.setItem(TRACK_KEY, track);
+    }
+  } catch {}
+}
+
+function TrackSync() {
+  const location = useLocation();
+
+  useEffect(() => {
+    const inferred = inferTrackFromPath(location.pathname);
+    if (inferred) writeTrackToStorage(inferred);
+  }, [location.pathname]);
+
+  return null;
+}
 
 function readTrackFromStorage() {
   // 1) Primary: fj_track set by /level-check
@@ -121,11 +147,12 @@ export default function App() {
             {/* Public */}
             <Route index element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/signin" element={<Navigate to="/login" replace />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/level-check" element={<LevelCheck />} />
-            <Route path="/signin" element={<Login />} />
-            // keep diagnostic as alias → level-check
+
+            {/* keep diagnostic as alias → level-check */}
             <Route
               path="/diagnostic"
               element={<Navigate to="/level-check" replace />}
@@ -134,21 +161,19 @@ export default function App() {
               path="/diagnostic/result"
               element={<Navigate to="/level-check" replace />}
             />
-            // lessons redirect based on fj_track
+
+            {/* lessons redirect based on fj_track */}
             <Route path="/lessons" element={<LessonsRedirect />} />
-            // legacy route (IMPORTANT)
+
+            {/* legacy route (IMPORTANT) */}
             <Route path="/lesson/:lessonId" element={<LessonRedirect />} />
-            // practice
-            <Route path="/practice/:mode" element={<SentencePractice />} />
+
+            {/* practice entry (redirect only). Actual practice is protected below */}
             <Route
               path="/practice"
               element={<Navigate to="/practice/reorder" replace />}
             />
-            <Route path="/practice/audio" element={<SentencePractice />} />
-            <Route
-              path="/practice"
-              element={<Navigate to="/practice/reorder" replace />}
-            />
+
             {/* Student-protected */}
             <Route
               path="/dashboard"
