@@ -344,14 +344,6 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/practice/audio"
-              element={
-                <ProtectedRoute>
-                  <SentencePractice />
-                </ProtectedRoute>
-              }
-            />
             {/* Fallback */}
             <Route path="*" element={<Home />} />
           </Route>
