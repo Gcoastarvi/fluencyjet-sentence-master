@@ -1655,23 +1655,7 @@ export default function SentencePractice() {
         </div>
 
         <div className="space-y-3">
-          {/* Primary CTA: Next Lesson */}
-          {nextLessonId ? (
-            <button
-              className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
-              onClick={() =>
-                navigate(
-                  `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
-                    difficulty,
-                  )}`,
-                  { replace: true },
-                )
-              }
-            >
-              Continue to Lesson {nextLessonId} →
-            </button>
-          ) : null}
-
+          {/* Primary CTA: Next Lesson */}          
           {nextLessonId ? (
             <>
               <button
