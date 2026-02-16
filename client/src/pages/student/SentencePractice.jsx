@@ -1704,8 +1704,6 @@ export default function SentencePractice() {
                 </>
               );
             })()}
-          </div>
-
 
           {/* Secondary: Practice Again */}
           <button
