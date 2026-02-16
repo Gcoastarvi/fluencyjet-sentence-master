@@ -1,6 +1,6 @@
 lessonSlug,lessonTitle,lessonLevel,mode,orderIndex,promptTa,answer,xp
 basic-1,Basic Lesson 1,basic,reorder,1,"கண்டிப்பா இல்ல","Definitely not",150
-basic-1,Basic Lesson 1,basic,reorder,2,"சரி, ஓகே","Alright, okay",150
+basic-1,Basic Lesson 1,basic,reorder,2,"சரி,ஓகே","Alright,okay",150
 basic-1,Basic Lesson 1,basic,reorder,3,"எனக்கு தெரியல","I don't know",150
 basic-1,Basic Lesson 1,basic,reorder,4,"யோசிச்சுப் பார்க்கிறேன்","I will think about it",150
 basic-1,Basic Lesson 1,basic,reorder,5,"அது நல்ல ஐடியா","That's a good idea",150
@@ -11,6 +11,6 @@ basic-1,Basic Lesson 1,basic,reorder,9,"நல்லா இருக்கு","
 basic-1,Basic Lesson 1,basic,reorder,10,"இது எனக்கு ஒரு சவால்","This is a challenge for me",150
 basic-1,Basic Lesson 1,basic,typing,1,"அதுவும் சரிதான்","That's true too",150
 basic-1,Basic Lesson 1,basic,typing,2,"அதுக்கு நான் ரெடி","I'm ready for that",150
-basic-1,Basic Lesson 1,basic,typing,3,"சரி, ஒத்துக்கிறேன்","Okay, I agree",150
+basic-1,Basic Lesson 1,basic,typing,3,"சரி,ஒத்துக்கிறேன்","Okay,I agree",150
 basic-1,Basic Lesson 1,basic,typing,4,"அதுக்காக நான் காத்திருந்தேன்","I was waiting for that",150
 basic-1,Basic Lesson 1,basic,typing,5,"ஒன்னும் ப்ரொப்ளம் இல்ல","No problem at all",150

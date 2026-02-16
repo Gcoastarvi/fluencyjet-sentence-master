@@ -1659,40 +1659,53 @@ export default function SentencePractice() {
           </span>
         </div>
 
-        <div className="space-y-3">
-          {/* Primary CTA: Next Lesson */}
-          {nextLessonId ? (
-            <>
-              <button
-                className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
-                onClick={() =>
-                  navigate(
-                    `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
-                      difficulty,
-                    )}`,
-                    { replace: true },
-                  )
-                }
-              >
-                Continue to Lesson {nextLessonId} →
-              </button>
+          <div className="space-y-3">
+            {(() => {
+              const search = new URLSearchParams(location.search);
+              const lid = Number(search.get("lessonId") || 0) || 1;
 
-              {/* NEW: Start next lesson practice immediately (highest ROI) */}
-              <button
-                className="w-full rounded-2xl bg-indigo-600 px-6 py-4 text-white font-semibold hover:opacity-95"
-                onClick={() =>
-                  navigate(
-                    `/practice/reorder?lessonId=${encodeURIComponent(
-                      nextLessonId,
-                    )}&difficulty=${encodeURIComponent(difficulty)}`,
-                    { replace: true },
-                  )
-                }
-              >
-                Start Lesson {nextLessonId} Practice (Reorder) →
-              </button>
-            </>
-          ) : null}
+              const diffRaw = String(search.get("difficulty") || "").toLowerCase();
+              const difficulty = diffRaw === "intermediate" ? "intermediate" : "beginner";
+              const base = difficulty === "intermediate" ? "/i" : "/b";
+
+              return (
+                <>
+                  {/* CTA 1: Back to current lesson hub */}
+                  <button
+                    type="button"
+                    className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
+                    onClick={() =>
+                      navigate(
+                        `${base}/lesson/${lid}?difficulty=${encodeURIComponent(difficulty)}`,
+                        { replace: true },
+                      )
+                    }
+                  >
+                    Back to Lesson {lid}
+                  </button>
+
+                  {/* CTA 2: Continue to next lesson hub */}
+                  {nextLessonId ? (
+                    <button
+                      type="button"
+                      className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
+                      onClick={() =>
+                        navigate(
+                          `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
+                            difficulty,
+                          )}`,
+                          { replace: true },
+                        )
+                      }
+                    >
+                      Continue to Lesson {nextLessonId} →
+                    </button>
+                  ) : null}
+                </>
+              );
+            })()}
+          </div>
+
 
           {/* Secondary: Practice Again */}
           <button

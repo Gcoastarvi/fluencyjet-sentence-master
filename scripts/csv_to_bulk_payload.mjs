@@ -89,7 +89,15 @@ import path from "path";
     process.exit(1);
   }
 
-  const validLevels = new Set(["beginner", "intermediate", "advanced"]);
+  const validLevels = new Set(["beginner", "intermediate", "advanced", "basic"]);
+
+  // Normalize CSV lessonLevel → API level
+  function normalizeLevel(v) {
+    const x = String(v || "").trim().toLowerCase();
+    if (x === "basic") return "beginner"; // ✅ MVP rule: basic == beginner track
+    return x;
+  }
+
   const validModes = new Set(["typing", "reorder", "audio"]);
 
   const groups = new Map(); // key: slug|mode -> { slug, title, level, mode, items[] }
@@ -101,10 +109,12 @@ import path from "path";
 
     const lessonSlug = String(row[col.lessonSlug] || "").trim();
     const lessonTitle = String(row[col.lessonTitle] || "").trim();
-    const lessonLevel = String(row[col.lessonLevel] || "")
+    let lessonLevel = String(row[col.lessonLevel] || "")
       .replace(/\r/g, "")
       .trim()
       .toLowerCase();
+
+    lessonLevel = normalizeLevel(lessonLevel); // ✅ basic -> beginner
 
     const mode = String(row[col.mode] || "")
       .replace(/\r/g, "")

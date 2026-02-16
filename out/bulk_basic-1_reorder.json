@@ -1,7 +1,7 @@
 {
   "lessonSlug": "basic-1",
   "lessonTitle": "Basic Lesson 1",
-  "lessonLevel": "basic",
+  "lessonLevel": "beginner",
   "mode": "reorder",
   "xp": 150,
   "items": [
@@ -13,8 +13,8 @@
     },
     {
       "orderIndex": 2,
-      "promptTa": "சரி, ஓகே",
-      "answer": "Alright, okay",
+      "promptTa": "சரி,ஓகே",
+      "answer": "Alright,okay",
       "xp": 150
     },
     {

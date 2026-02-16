@@ -129,26 +129,29 @@ export default function LevelCheck() {
 
     const token = getToken();
 
-    // If we want to start practice immediately (highest ROI CTA)
-    if (opts?.startLesson1) {
-      const diff = track === "intermediate" ? "intermediate" : "beginner";
-      const practiceUrl = `/practice/reorder?lessonId=1&difficulty=${encodeURIComponent(
-        diff,
+    // If we want to start Lesson 1 (teach first → then practice)
+    if (opts && opts.startLesson1) {
+      const difficulty = track === "intermediate" ? "intermediate" : "beginner";
+      const base = track === "intermediate" ? "/i" : "/b";
+      const lessonHubUrl = `${base}/lesson/1?difficulty=${encodeURIComponent(
+        difficulty,
       )}`;
 
       if (!token) {
-        navigate(`/signup?next=${encodeURIComponent(practiceUrl)}`, {
+        navigate(`/signup?next=${encodeURIComponent(lessonHubUrl)}`, {
           replace: true,
         });
         return;
       }
 
-      navigate(practiceUrl, { replace: true });
+      navigate(lessonHubUrl, { replace: true });
       return;
     }
 
-    // Default behavior: go to lessons list
-    const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
+    // Default behavior: go to Lesson 1 hub (teach first → then practice)
+    const difficulty = track === "intermediate" ? "intermediate" : "beginner";
+    const base = track === "intermediate" ? "/i" : "/b";
+    const target = `${base}/lesson/1?difficulty=${encodeURIComponent(difficulty)}`;
 
     if (!token) {
       navigate(`/signup?next=${encodeURIComponent(target)}`, { replace: true });
@@ -190,7 +193,7 @@ export default function LevelCheck() {
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <button
                 type="button"
-                onClick={() => goToTrack("beginner")}
+                onClick={() => goToTrack("beginner", { startLesson1: true })}
                 className="rounded-2xl border p-5 text-left hover:bg-gray-50"
               >
                 <div className="text-lg font-semibold">Beginner</div>
@@ -204,7 +207,9 @@ export default function LevelCheck() {
 
               <button
                 type="button"
-                onClick={() => goToTrack("intermediate")}
+                onClick={() =>
+                  goToTrack("intermediate", { startLesson1: true })
+                }
                 className="rounded-2xl border p-5 text-left hover:bg-gray-50"
               >
                 <div className="text-lg font-semibold">Intermediate</div>
