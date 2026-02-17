@@ -1241,8 +1241,7 @@ export default function LessonDetail() {
                   {ENABLE_CLOZE ? "Fill the missing word" : "Coming soon"}
                 </div>
               </button>
-            </div>
-          )}
+            </div>    
         </div>
       </div>
     </div>
