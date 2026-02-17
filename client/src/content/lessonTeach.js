@@ -1,5 +1,4 @@
 // client/src/content/lessonTeach.js
-
 export const LESSON_TEACH = {
   1: {
     title: "Simple Present",
@@ -7,7 +6,12 @@ export const LESSON_TEACH = {
     patterns: ["I/You/We/They + verb", "He/She/It + verb+s/es"],
     examples: ["I go to work daily.", "She goes to school daily."],
     ta: "Simple present = பழக்கம் / உண்மை. He/She/It வந்தா verb-க்கு s/es சேர்க்கணும்.",
-    video: { provider: "youtube", id: "4txGVvWMVpc" },
+    video: {
+      provider: "youtube",
+      id: "4txGVvWMVpc",
+      kind: "short",
+      ratio: "9:16",
+    },
   },
 
   9: {
@@ -16,6 +20,11 @@ export const LESSON_TEACH = {
     patterns: ["enjoy + V-ing", "good at + V-ing", "avoid + V-ing"],
     examples: ["I enjoy reading.", "He is good at swimming."],
     ta: "Gerund = verb + ing. இது noun மாதிரி use ஆகும் (reading, swimming).",
-    video: { provider: "youtube", id: "uiqOAJgN5bY" },
+    video: {
+      provider: "youtube",
+      id: "uiqOAJgN5bY",
+      kind: "short",
+      ratio: "9:16",
+    },
   },
 };

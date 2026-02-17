@@ -343,7 +343,6 @@ export default function LessonDetail() {
     }
   }, [typingProg, reorderProg, audioProg, clozeProg]);
 
-
   function isIncomplete(prog) {
     if (!prog) return false;
     const total = Number(prog.total || 0);
@@ -774,18 +773,35 @@ export default function LessonDetail() {
                   Video
                 </div>
 
-                <div className="mt-2 aspect-video w-full overflow-hidden rounded-xl border bg-black">
-                  <iframe
-                    title={`Lesson ${lessonId} video`}
-                    className="h-full w-full"
-                    src={
-                      teach.video.provider === "vimeo"
-                        ? `https://player.vimeo.com/video/${teach.video.id}`
-                        : `https://www.youtube.com/embed/${teach.video.id}`
-                    }
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                <div
+                  className={`mt-2 overflow-hidden rounded-2xl border bg-black ${
+                    teach.video.kind === "short" ? "mx-auto max-w-sm" : ""
+                  }`}
+                >
+                  <div
+                    className="relative w-full"
+                    style={{
+                      paddingTop:
+                        teach.video.ratio === "9:16" ? "177.7778%" : "56.25%",
+                      maxHeight: teach.video.kind === "short" ? 560 : undefined,
+                    }}
+                  >
+                    <iframe
+                      title={`Lesson ${lessonId} video`}
+                      className="absolute inset-0 h-full w-full"
+                      src={
+                        teach.video.provider === "vimeo"
+                          ? `https://player.vimeo.com/video/${encodeURIComponent(
+                              teach.video.id,
+                            )}`
+                          : `https://www.youtube-nocookie.com/embed/${encodeURIComponent(
+                              teach.video.id,
+                            )}?rel=0&modestbranding=1`
+                      }
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  </div>
                 </div>
 
                 <div className="mt-2 text-xs text-slate-500">
