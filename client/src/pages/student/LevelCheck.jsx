@@ -133,9 +133,7 @@ export default function LevelCheck() {
     if (opts && opts.startLesson1) {
       const difficulty = track === "intermediate" ? "intermediate" : "beginner";
       const base = track === "intermediate" ? "/i" : "/b";
-      const lessonHubUrl = `${base}/lesson/1?difficulty=${encodeURIComponent(
-        difficulty,
-      )}`;
+      const lessonHubUrl = `${base}/lesson/1?difficulty=${encodeURIComponent(difficulty)}`;
 
       if (!token) {
         navigate(`/signup?next=${encodeURIComponent(lessonHubUrl)}`, {

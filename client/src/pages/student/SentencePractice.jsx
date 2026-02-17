@@ -1660,192 +1660,39 @@ export default function SentencePractice() {
         </div>
 
           <div className="space-y-3">
-            {(() => {
-              const search = new URLSearchParams(location.search);
-              const lid = Number(search.get("lessonId") || 0) || 1;
-
-              const diffRaw = String(search.get("difficulty") || "").toLowerCase();
-              const difficulty = diffRaw === "intermediate" ? "intermediate" : "beginner";
-              const base = difficulty === "intermediate" ? "/i" : "/b";
-
-              return (
-                <>
-                  {/* CTA 1: Back to current lesson hub */}
-                  <button
-                    type="button"
-                    className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
-                    onClick={() =>
-                      navigate(
-                        `${base}/lesson/${lid}?difficulty=${encodeURIComponent(difficulty)}`,
-                        { replace: true },
-                      )
-                    }
-                  >
-                    Back to Lesson {lid}
-                  </button>
-
-                  {/* CTA 2: Continue to next lesson hub */}
-                  {nextLessonId ? (
-                    <button
-                      type="button"
-                      className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
-                      onClick={() =>
-                        navigate(
-                          `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
-                            difficulty,
-                          )}`,
-                          { replace: true },
-                        )
-                      }
-                    >
-                      Continue to Lesson {nextLessonId} →
-                    </button>
-                  ) : null}
-                </>
-              );
-            })()}
-
-          {/* Secondary: Practice Again */}
-          <button
-            className="w-full rounded-2xl bg-purple-600 px-6 py-4 text-white font-semibold hover:opacity-95"
-            onClick={() => {
-              // reset completion + modal states
-              setIsComplete(false);
-              setShowCompleteModal(false);
-              setCompletionXp(0);
-
-              // reset practice state
-              setCurrentIndex(0);
-              setStatus("idle");
-              setFeedback("");
-              setShowHint(false);
-              setTypedAnswer("");
-              setWrongIndexes([]);
-              setRevealEnglish(false);
-              setEarnedXP(0);
-              setShowXPToast(false);
-              setAnswer([]);
-              setTiles([]);
-
-              // audio-specific safety
-              setAudioSubmitting(false);
-              audioSubmitRef.current = new Set(); // ✅ add
-              stopTTS(); // ✅ add
-              resetAudioGate(); // ✅ call directly (no optional chaining needed)
-
-              // reload
-              loadLessonBatch();
-            }}
-          >
-            Practice Again
-          </button>
-
-          {/* Tertiary: Back to Lessons */}
-          <button
-            className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
-            onClick={() => navigate(`${base}/lessons`, { replace: true })}
-          >
-            Back to Lessons
-          </button>
-          {/* Try another mode (2 minutes) */}
-          {(() => {
-            const lidStr = String(lid || "");
-            if (!lidStr) return null;
-
-            // only show modes that truly have items (prevents "No quizzes uploaded yet" flash)
-            const canShowReorder = completeModeAvail?.reorder !== false; // undefined => show
-            const canShowAudio = completeModeAvail?.audio !== false; // undefined => show
-            const canShowTyping = completeModeAvail?.typing !== false; // undefined => show
-
-            // read progress
-            const parse = (raw) => {
-              if (!raw) return null;
-              try {
-                return JSON.parse(raw);
-              } catch {
-                return null;
+            {/* CTA 1: Back to current lesson hub */}
+            <button
+              type="button"
+              className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
+              onClick={() =>
+                navigate(
+                  `${base}/lesson/${lid || 1}?difficulty=${encodeURIComponent(
+                    difficulty,
+                  )}`,
+                  { replace: true },
+                )
               }
-            };
+            >
+              Back to Lesson {lid || 1}
+            </button>
 
-            const rp = parse(
-              localStorage.getItem(`fj_progress:${lidStr}:reorder`),
-            );
-            const ap = parse(
-              localStorage.getItem(`fj_progress:${lidStr}:audio`),
-            );
-            const tp = parse(
-              localStorage.getItem(`fj_progress:${lidStr}:typing`),
-            );
-
-            const isDone = (p) =>
-              Number(p?.total || 0) > 0 &&
-              Number(p?.completed || 0) >= Number(p?.total || 0);
-
-            const showReorderBtn =
-              canShowReorder &&
-              !isDone(rp) &&
-              String(safeMode).toLowerCase() !== "reorder";
-
-            const showTypingBtn =
-              canShowTyping &&
-              !isDone(tp) &&
-              String(safeMode).toLowerCase() !== "typing";
-
-            const audioEnabled =
-              typeof ENABLE_AUDIO === "undefined" ? true : !!ENABLE_AUDIO;
-            const showAudioBtns =
-              audioEnabled &&
-              canShowAudio &&
-              !isDone(ap) &&
-              String(safeMode).toLowerCase() !== "audio";
-
-            if (!showTypingBtn && !showReorderBtn && !showAudioBtns)
-              return null;
-
-            return (
-              <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 text-left">
-                <div className="text-sm font-semibold text-slate-900">
-                  Try another mode (2 minutes)
-                </div>
-                <div className="mt-1 text-sm text-slate-600">
-                  Different modes train different skills. Pick one more to boost
-                  fluency.
-                </div>
-
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {showTypingBtn ? (
-                    <button
-                      type="button"
-                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                      onClick={() => hardResetThenNavigate("typing")}
-                    >
-                      Typing (accuracy)
-                    </button>
-                  ) : null}
-
-                  {showReorderBtn ? (
-                    <button
-                      type="button"
-                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                      onClick={() => hardResetThenNavigate("reorder")}
-                    >
-                      Reorder (speed)
-                    </button>
-                  ) : null}
-
-                  {showAudioBtns ? (
-                    <button
-                      type="button"
-                      className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
-                      onClick={() => hardResetThenNavigate("audio", "repeat")}
-                    >
-                      Audio (listening)
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })()}
+            {/* CTA 2: Continue to next lesson hub */}
+            {nextLessonId ? (
+              <button
+                type="button"
+                className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
+                onClick={() =>
+                  navigate(
+                    `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
+                      difficulty,
+                    )}`,
+                    { replace: true },
+                  )
+                }
+              >
+                Continue to Lesson {nextLessonId} →
+              </button>
+            ) : null}         
         </div>
       </div>
     );
