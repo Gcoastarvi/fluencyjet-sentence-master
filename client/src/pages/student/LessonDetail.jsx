@@ -725,11 +725,11 @@ export default function LessonDetail() {
         ) : null}
 
         {teach ? (
-          <div className="mt-4 rounded-2xl border bg-white p-4 text-left">
+          <div className="mt-4 rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-5 text-left shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-slate-900">
-                  Learn (1 min): {teach.title}
+                  Learn (60 sec): {teach.title}
                 </div>
                 <div className="mt-1 text-sm text-slate-700">
                   <span className="font-semibold">Rule:</span> {teach.rule}
@@ -768,48 +768,80 @@ export default function LessonDetail() {
             </div>
 
             {teach?.video?.id ? (
-              <div className="mt-4">
-                <div className="text-xs font-semibold text-slate-600">
-                  Video
+            <div className="mt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-6 items-center rounded-full border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700">
+                    ▶ Video
+                  </span>
+                  <span className="text-xs text-slate-500">60–90 sec</span>
                 </div>
 
+                <a
+                  className="text-xs font-semibold text-slate-600 underline-offset-4 hover:underline"
+                  href={
+                    teach.video.provider === "vimeo"
+                      ? `https://vimeo.com/${encodeURIComponent(teach.video.id)}`
+                      : `https://www.youtube.com/watch?v=${encodeURIComponent(teach.video.id)}`
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open ↗
+                </a>
+              </div>
+
+              <div
+                className={`mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-sm ${
+                  teach.video.ratio === "9:16" || teach.video.kind === "short"
+                    ? "mx-auto max-w-sm"
+                    : ""
+                }`}
+              >
                 <div
-                  className={`mt-2 overflow-hidden rounded-2xl border bg-black ${
+                  className={`relative w-full ${
                     teach.video.ratio === "9:16" || teach.video.kind === "short"
-                      ? "mx-auto max-w-sm"
-                      : ""
+                      ? "aspect-[9/16] max-h-[460px]"
+                      : "aspect-video"
                   }`}
                 >
-                  <div
-                    className={`relative w-full ${
-                      teach.video.ratio === "9:16" ||
-                      teach.video.kind === "short"
-                        ? "aspect-[9/16] max-h-[520px]"
-                        : "aspect-video"
-                    }`}
-                  >
-                    <iframe
-                      title={`Lesson ${lessonId} video`}
-                      className="absolute inset-0 h-full w-full"
-                      src={
-                        teach.video.provider === "vimeo"
-                          ? `https://player.vimeo.com/video/${encodeURIComponent(
-                              teach.video.id,
-                            )}`
-                          : `https://www.youtube-nocookie.com/embed/${encodeURIComponent(
-                              teach.video.id,
-                            )}?rel=0&modestbranding=1`
-                      }
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-2 text-xs text-slate-500">
-                  Watch 60–90 seconds, then hit Start practice.
+                  <iframe
+                    title={`Lesson ${lessonId} video`}
+                    className="absolute inset-0 h-full w-full"
+                    src={
+                      teach.video.provider === "vimeo"
+                        ? `https://player.vimeo.com/video/${encodeURIComponent(
+                            teach.video.id,
+                          )}`
+                        : `https://www.youtube-nocookie.com/embed/${encodeURIComponent(
+                            teach.video.id,
+                          )}?rel=0&modestbranding=1`
+                    }
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
                 </div>
               </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-3">
+                <div className="text-xs text-slate-600">
+                  ✅ Watch, then jump into practice for instant recall.
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
+                    onClick={() =>
+                      document
+                        .getElementById("practice-actions")
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
+                  >
+                    Jump to practice ↓
+                  </button>
+                </div>
+              </div>
+            </div>
             ) : null}
 
             {showTamilHelp ? (
@@ -983,66 +1015,180 @@ export default function LessonDetail() {
           </div>
         ) : null}
 
-        {/* Actions */}
-        <div id="practice-actions" className="mt-5 space-y-3">
-          {/* PRIMARY: Continue if available, otherwise Start Practice */}
-          {continueHref ? (
-            <Link
-              to={continueHref}
-              className="block rounded-2xl bg-black px-4 py-5 text-center text-white hover:opacity-90"
-            >
-              <div className="text-lg font-semibold">{continueText}</div>
-              <div className="mt-1 text-xs text-gray-200">
-                Resume exactly where you left off
-              </div>
-            </Link>
-          ) : (
-            <button
-              onClick={smartStart}
-              disabled={smartStarting}
-              className={`w-full rounded-2xl px-4 py-5 text-center text-white ${
-                smartStarting
-                  ? "bg-purple-400 cursor-not-allowed"
-                  : "bg-purple-600 hover:opacity-95"
-              }`}
-            >
-              <div className="text-lg font-semibold">
-                {smartStarting ? "Starting..." : "Start practice"}
-              </div>
-              <div className="mt-1 text-xs text-purple-100">
-                Auto-picks the best mode for you
-              </div>
-            </button>
-          )}
+              {/* Actions */}
+              <div id="practice-actions" className="mt-6 space-y-4">
+                {/* HERO CTA */}
+                <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-purple-600 to-indigo-600 p-4 text-white shadow-sm">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="text-sm font-semibold text-white/90">
+                        {continueHref ? "Continue" : "Start now"}
+                      </div>
+                      <div className="mt-1 text-lg font-semibold">
+                        {continueHref ? continueText : "Start practice"}
+                      </div>
+                      <div className="mt-1 text-xs text-white/80">
+                        {continueHref
+                          ? "Resume exactly where you left off"
+                          : "Auto-picks the best mode for you"}
+                      </div>
+                    </div>
 
-          {/* SECONDARY: More modes toggle */}
-          <button
-            type="button"
-            onClick={() => setShowMoreModes((v) => !v)}
-            className="w-full rounded-2xl border bg-white px-4 py-4 text-center hover:bg-gray-50"
-          >
-            <div className="text-base font-semibold">
-              {showMoreModes ? "Hide modes" : "More modes"}
-            </div>
-            <div className="mt-1 text-xs text-gray-500">
-              Choose Typing, Reorder, Audio
-            </div>
-          </button>
+                    {continueHref ? (
+                      <Link
+                        to={continueHref}
+                        className="inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:opacity-95"
+                      >
+                        Continue →
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={smartStart}
+                        disabled={smartStarting}
+                        className={`inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold ${
+                          smartStarting
+                            ? "bg-white/40 text-white/90 cursor-not-allowed"
+                            : "bg-white text-slate-900 hover:opacity-95"
+                        }`}
+                      >
+                        {smartStarting ? "Starting..." : "Start →"}
+                      </button>
+                    )}
+                  </div>
 
-          {/* Optional Smart Start message */}
-          {smartStartMsg ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              {smartStartMsg}
-            </div>
-          ) : null}
-
-          {/* COLLAPSIBLE MODES */}
-          {showMoreModes && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {noModes && (
-                <div className="sm:col-span-2 rounded-xl border bg-gray-50 p-3 text-sm text-gray-600">
-                  No modes available yet for this lesson.
+                  {/* micro reassurance row */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-white/85">
+                    <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
+                      ⚡ Fast sessions
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
+                      🎯 Fluency-focused
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
+                      🏆 XP + streak
+                    </span>
+                  </div>
                 </div>
+
+                {/* Optional Smart Start message */}
+                {smartStartMsg ? (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    {smartStartMsg}
+                  </div>
+                ) : null}
+
+                {/* QUICK MODE PICKER (always visible) */}
+                <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-slate-900">Choose a mode</div>
+                    <button
+                      type="button"
+                      onClick={() => setShowMoreModes((v) => !v)}
+                      className="text-xs font-semibold text-slate-600 underline-offset-4 hover:underline"
+                    >
+                      {showMoreModes ? "Hide details" : "View details"}
+                    </button>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    {/* Typing */}
+                    <button
+                      disabled={!modeAvail.typing}
+                      onClick={() => startMode("typing")}
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        modeAvail.typing
+                          ? "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
+                          : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold">Typing</div>
+                          <div className="mt-1 text-xs text-slate-500">Fast fluency builder</div>
+                        </div>
+                        <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
+                          {pct(typingProg)}%
+                        </span>
+                      </div>
+                      <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
+                        <div
+                          className="h-2 rounded-full bg-slate-900"
+                          style={{ width: `${pct(typingProg)}%` }}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Reorder */}
+                    <button
+                      disabled={!modeAvail.reorder}
+                      onClick={() => startMode("reorder")}
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        modeAvail.reorder
+                          ? "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
+                          : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold">Reorder</div>
+                          <div className="mt-1 text-xs text-slate-500">
+                            Fix word order instantly
+                          </div>
+                        </div>
+                        <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
+                          {pct(reorderProg)}%
+                        </span>
+                      </div>
+                      <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
+                        <div
+                          className="h-2 rounded-full bg-slate-900"
+                          style={{ width: `${pct(reorderProg)}%` }}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Audio (kept premium even if disabled) */}
+                    <button
+                      disabled={!modeAvail.audio}
+                      onClick={() => startMode("audio")}
+                      className={`rounded-2xl border p-4 text-left transition ${
+                        modeAvail.audio
+                          ? "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
+                          : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-semibold">Audio</div>
+                          <div className="mt-1 text-xs text-slate-500">Repeat + Dictation</div>
+                        </div>
+                        <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
+                          {pct(audioProg)}%
+                        </span>
+                      </div>
+                      <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
+                        <div
+                          className="h-2 rounded-full bg-slate-900"
+                          style={{ width: `${pct(audioProg)}%` }}
+                        />
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* DETAILS DRAWER (optional) */}
+                  {showMoreModes && (
+                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                      <div className="font-semibold">What each mode does</div>
+                      <ul className="mt-2 list-disc pl-5 text-sm text-slate-600">
+                        <li><span className="font-semibold">Typing:</span> build speed + sentence flow</li>
+                        <li><span className="font-semibold">Reorder:</span> fix grammar + word order</li>
+                        <li><span className="font-semibold">Audio:</span> pronunciation + listening</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               )}
 
               {/* Typing */}
