@@ -1185,10 +1185,6 @@ export default function LessonDetail() {
                         <li><span className="font-semibold">Audio:</span> pronunciation + listening</li>
                       </ul>
                     </div>
-                  )}
-                </div>
-              </div>
-
               )}
 
               {/* Typing */}
