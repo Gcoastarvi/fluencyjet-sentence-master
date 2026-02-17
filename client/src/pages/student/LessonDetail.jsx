@@ -9,6 +9,8 @@ import {
 
 import { api } from "../../api/apiClient";
 
+import { LESSON_TEACH } from "../../content/lessonTeach";
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -666,23 +668,6 @@ export default function LessonDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const LESSON_TEACH = {
-    1: {
-      title: "Simple Present",
-      rule: "Use the base verb for habits, facts, and routines.",
-      patterns: ["I/You/We/They + verb", "He/She/It + verb+s/es"],
-      examples: ["I go to work daily.", "She goes to school daily."],
-      ta: "Simple present = பழக்கம் / உண்மை. He/She/It வந்தா verb-க்கு s/es சேர்க்கணும்.",
-    },
-    9: {
-      title: "Gerunds",
-      rule: "Gerund = verb + ing used like a noun.",
-      patterns: ["enjoy + V-ing", "good at + V-ing", "avoid + V-ing"],
-      examples: ["I enjoy reading.", "He is good at swimming."],
-      ta: "Gerund = verb + ing. இது noun மாதிரி use ஆகும் (reading, swimming).",
-    },
-  };
-
   const teach = LESSON_TEACH[Number(lessonId)] || null;
 
   return (
@@ -743,7 +728,9 @@ export default function LessonDetail() {
             </div>
 
             <div className="mt-3">
-              <div className="text-xs font-semibold text-slate-600">Patterns</div>
+              <div className="text-xs font-semibold text-slate-600">
+                Patterns
+              </div>
               <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
                 {teach.patterns.map((p) => (
                   <li key={p}>{p}</li>
@@ -752,7 +739,9 @@ export default function LessonDetail() {
             </div>
 
             <div className="mt-3">
-              <div className="text-xs font-semibold text-slate-600">Examples</div>
+              <div className="text-xs font-semibold text-slate-600">
+                Examples
+              </div>
               <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
                 {teach.examples.map((e) => (
                   <li key={e}>{e}</li>
@@ -761,12 +750,31 @@ export default function LessonDetail() {
             </div>
 
             {showTamilHelp ? (
-              <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
+              <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-800">
+                <div className="mb-1 text-xs font-semibold text-slate-600">
+                  Tamil help
+                </div>
                 {teach.ta}
               </div>
             ) : null}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                onClick={() => {
+                  document
+                    .getElementById("practice-actions")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                Start practice →
+              </button>
+              <div className="text-xs text-slate-500">
+                1 minute learn → 2 minutes practice
+              </div>
+            </div>
           </div>
-        ) : null}         
+        ) : null}
 
         {/* Progress summary */}
         <div className="mt-5 rounded-2xl bg-gray-50 p-4">
@@ -913,7 +921,7 @@ export default function LessonDetail() {
         ) : null}
 
         {/* Actions */}
-        <div className="mt-5 space-y-3">
+        <div id="practice-actions" className="mt-5 space-y-3">
           {/* PRIMARY: Continue if available, otherwise Start Practice */}
           {continueHref ? (
             <Link
