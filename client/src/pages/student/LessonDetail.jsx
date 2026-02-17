@@ -15,7 +15,6 @@ import { LESSON_TEACH } from "../../content/lessonTeach";
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 
-const PREF_KEY_SHOW_TA = "fj_pref_show_ta"; // "1" or "0"
 const LAST_SESSION_KEY = "fj_last_session";
 
 function getDayNumberFromLesson(lesson) {
@@ -147,6 +146,7 @@ export default function LessonDetail() {
   const difficulty = urlDifficulty || lessonDifficulty || "beginner";
 
   const [showMoreModes, setShowMoreModes] = useState(false);
+
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
 
@@ -324,6 +324,25 @@ export default function LessonDetail() {
     () => (lessonId ? readProgress(lessonId, "audio") : null),
     [lessonId],
   );
+
+  // Auto-open modes once user has any progress (prevents overwhelm for brand-new users)
+  const didAutoOpenModesRef = useRef(false);
+
+  useEffect(() => {
+    if (didAutoOpenModesRef.current) return;
+
+    const hasProgress =
+      Number(typingProg?.completed || 0) > 0 ||
+      Number(reorderProg?.completed || 0) > 0 ||
+      Number(audioProg?.completed || 0) > 0 ||
+      Number(clozeProg?.completed || 0) > 0;
+
+    if (hasProgress) {
+      didAutoOpenModesRef.current = true;
+      setShowMoreModes(true);
+    }
+  }, [typingProg, reorderProg, audioProg, clozeProg]);
+
 
   function isIncomplete(prog) {
     if (!prog) return false;
@@ -668,7 +687,7 @@ export default function LessonDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const teach = LESSON_TEACH[Number(lessonId)] || null;  
+  const teach = LESSON_TEACH[Number(lessonId)] || null;
 
   return (
     <div className="mx-auto max-w-3xl p-4">
@@ -1064,12 +1083,6 @@ export default function LessonDetail() {
               </button>
             </div>
           )}
-        </div>
-
-        {/* Tiny note for devs */}
-        <div className="mt-4 text-xs text-gray-400">
-          Preference saved:{" "}
-          <span className="font-mono">{PREF_KEY_SHOW_TA}</span>
         </div>
       </div>
     </div>
