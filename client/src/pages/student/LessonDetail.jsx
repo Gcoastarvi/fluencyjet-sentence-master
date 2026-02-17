@@ -775,16 +775,18 @@ export default function LessonDetail() {
 
                 <div
                   className={`mt-2 overflow-hidden rounded-2xl border bg-black ${
-                    teach.video.kind === "short" ? "mx-auto max-w-sm" : ""
+                    teach.video.ratio === "9:16" || teach.video.kind === "short"
+                      ? "mx-auto max-w-sm"
+                      : ""
                   }`}
                 >
                   <div
-                    className="relative w-full"
-                    style={{
-                      paddingTop:
-                        teach.video.ratio === "9:16" ? "177.7778%" : "56.25%",
-                      maxHeight: teach.video.kind === "short" ? 560 : undefined,
-                    }}
+                    className={`relative w-full ${
+                      teach.video.ratio === "9:16" ||
+                      teach.video.kind === "short"
+                        ? "aspect-[9/16] max-h-[520px]"
+                        : "aspect-video"
+                    }`}
                   >
                     <iframe
                       title={`Lesson ${lessonId} video`}
