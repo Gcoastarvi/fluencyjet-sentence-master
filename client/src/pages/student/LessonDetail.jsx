@@ -148,6 +148,8 @@ export default function LessonDetail() {
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
 
+  const [showTamilHelp, setShowTamilHelp] = useState(false);
+
   // ✅ Use backend + lesson metadata for lock UI. Do NOT use "first 3 only" anymore.
   const isLocked = Boolean(lesson?.isLocked ?? lesson?.is_locked ?? false);
 
@@ -664,6 +666,25 @@ export default function LessonDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const LESSON_TEACH = {
+    1: {
+      title: "Simple Present",
+      rule: "Use the base verb for habits, facts, and routines.",
+      patterns: ["I/You/We/They + verb", "He/She/It + verb+s/es"],
+      examples: ["I go to work daily.", "She goes to school daily."],
+      ta: "Simple present = பழக்கம் / உண்மை. He/She/It வந்தா verb-க்கு s/es சேர்க்கணும்.",
+    },
+    9: {
+      title: "Gerunds",
+      rule: "Gerund = verb + ing used like a noun.",
+      patterns: ["enjoy + V-ing", "good at + V-ing", "avoid + V-ing"],
+      examples: ["I enjoy reading.", "He is good at swimming."],
+      ta: "Gerund = verb + ing. இது noun மாதிரி use ஆகும் (reading, swimming).",
+    },
+  };
+
+  const teach = LESSON_TEACH[Number(lessonId)] || null;
+
   return (
     <div className="mx-auto max-w-3xl p-4">
       <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -700,24 +721,52 @@ export default function LessonDetail() {
           </div>
         ) : null}
 
-        {/* Preference toggle */}
-        {/*<div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gray-50 p-4">
-          <div>
-            <div className="text-sm font-semibold">Language help</div>
-            <div className="text-xs text-gray-600">
-              Turn Tamil hints on/off across the app.
-            </div>
-          </div>
+        {teach ? (
+          <div className="mt-4 rounded-2xl border bg-white p-4 text-left">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-slate-900">
+                  Learn (1 min): {teach.title}
+                </div>
+                <div className="mt-1 text-sm text-slate-700">
+                  <span className="font-semibold">Rule:</span> {teach.rule}
+                </div>
+              </div>
 
-          <button
-            type="button"
-            onClick={() => setShowTa((v) => !v)}
-            className="rounded-xl border bg-white px-4 py-2 text-sm hover:bg-gray-50"
-            title="Saved for future sessions"
-          >
-            {showTa ? "Tamil help: ON" : "Tamil help: OFF"}
-          </button>
-        </div>
+              <button
+                type="button"
+                className="rounded-xl border bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                onClick={() => setShowTamilHelp((v) => !v)}
+              >
+                {showTamilHelp ? "Hide Tamil" : "Tamil help"}
+              </button>
+            </div>
+
+            <div className="mt-3">
+              <div className="text-xs font-semibold text-slate-600">Patterns</div>
+              <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
+                {teach.patterns.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-3">
+              <div className="text-xs font-semibold text-slate-600">Examples</div>
+              <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
+                {teach.examples.map((e) => (
+                  <li key={e}>{e}</li>
+                ))}
+              </ul>
+            </div>
+
+            {showTamilHelp ? (
+              <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-700">
+                {teach.ta}
+              </div>
+            ) : null}
+          </div>
+        ) : null}         
 
         {/* Progress summary */}
         <div className="mt-5 rounded-2xl bg-gray-50 p-4">
