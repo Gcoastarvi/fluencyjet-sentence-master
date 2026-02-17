@@ -668,7 +668,7 @@ export default function LessonDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const teach = LESSON_TEACH[Number(lessonId)] || null;
+  const teach = LESSON_TEACH[Number(lessonId)] || null;  
 
   return (
     <div className="mx-auto max-w-3xl p-4">
@@ -748,6 +748,32 @@ export default function LessonDetail() {
                 ))}
               </ul>
             </div>
+
+            {teach?.video?.id ? (
+              <div className="mt-4">
+                <div className="text-xs font-semibold text-slate-600">
+                  Video
+                </div>
+
+                <div className="mt-2 aspect-video w-full overflow-hidden rounded-xl border bg-black">
+                  <iframe
+                    title={`Lesson ${lessonId} video`}
+                    className="h-full w-full"
+                    src={
+                      teach.video.provider === "vimeo"
+                        ? `https://player.vimeo.com/video/${teach.video.id}`
+                        : `https://www.youtube.com/embed/${teach.video.id}`
+                    }
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+
+                <div className="mt-2 text-xs text-slate-500">
+                  Watch 60–90 seconds, then hit Start practice.
+                </div>
+              </div>
+            ) : null}
 
             {showTamilHelp ? (
               <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-800">
