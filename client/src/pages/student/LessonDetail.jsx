@@ -424,10 +424,12 @@ export default function LessonDetail() {
     if (mode === "audio" && !ENABLE_AUDIO) return;
     if (mode === "cloze" && !ENABLE_CLOZE) return;
 
-    if (!dayNumber) return; // safety
-    navigate(
-      `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
-    );
+    const lid = String(lessonId); // IMPORTANT: use actual lessonId, not dayNumber
+    const diff = difficulty
+      ? `&difficulty=${encodeURIComponent(String(difficulty))}`
+      : "";
+
+    navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lid)}${diff}`);
   }
 
   function dismissMissedBanner() {
@@ -749,7 +751,11 @@ export default function LessonDetail() {
                         : "typing";
 
                   const nextLabel =
-                    nextMode === "typing" ? "Typing" : nextMode === "reorder" ? "Reorder" : "Audio";
+                    nextMode === "typing"
+                      ? "Typing"
+                      : nextMode === "reorder"
+                        ? "Reorder"
+                        : "Audio";
 
                   const coachText = continueHref
                     ? `Continue ${modeLabel(session?.mode)} — you were at Q# ${Number(session?.questionIndex || 0) + 1}.`
@@ -759,7 +765,9 @@ export default function LessonDetail() {
                         ? "Recommended: Reorder next to lock correct word order."
                         : "Recommended: Audio next to improve pronunciation + listening.";
 
-                  const ctaText = continueHref ? "Continue →" : `Start ${nextLabel} →`;
+                  const ctaText = continueHref
+                    ? "Continue →"
+                    : `Start ${nextLabel} →`;
 
                   const onCta = () => {
                     if (continueHref) return; // Link handles it below
