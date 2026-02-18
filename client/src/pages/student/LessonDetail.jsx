@@ -734,11 +734,27 @@ export default function LessonDetail() {
                 <div className="mt-1 text-sm text-slate-700">
                   <span className="font-semibold">Rule:</span> {teach.rule}
                 </div>
+                <div className="mt-2 inline-flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-xs text-slate-700">
+                  <span className="font-semibold">Coach:</span>
+                  <span>
+                    {continueHref
+                      ? `Continue ${modeLabel(session?.mode)} — you were at Q# ${Number(session?.questionIndex || 0) + 1}.`
+                      : isIncomplete(reorderProg)
+                        ? "Do Reorder next to lock correct word order."
+                        : isIncomplete(typingProg)
+                          ? "Do Typing next to build speed and flow."
+                          : "Start Typing → then Reorder for accuracy."}
+                  </span>
+                </div>
               </div>
 
               <button
                 type="button"
-                className="rounded-xl border bg-slate-50 px-3 py-2 text-sm font-semibold hover:bg-slate-100"
+                className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
+                  showTamilHelp
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
                 onClick={() => setShowTamilHelp((v) => !v)}
               >
                 {showTamilHelp ? "Hide Tamil" : "Tamil help"}
@@ -749,22 +765,32 @@ export default function LessonDetail() {
               <div className="text-xs font-semibold text-slate-600">
                 Patterns
               </div>
-              <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
-                {teach.patterns.map((p) => (
-                  <li key={p}>{p}</li>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(teach?.patterns ?? []).map((p, idx) => (
+                  <span
+                    key={`${p}-${idx}`}
+                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-800"
+                  >
+                    {p}
+                  </span>
                 ))}
-              </ul>
+              </div>
             </div>
 
             <div className="mt-3">
               <div className="text-xs font-semibold text-slate-600">
                 Examples
               </div>
-              <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
-                {teach.examples.map((e) => (
-                  <li key={e}>{e}</li>
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {(teach?.examples ?? []).map((e, idx) => (
+                  <div
+                    key={`${e}-${idx}`}
+                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
+                  >
+                    {e}
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
 
             {teach?.video?.id ? (
