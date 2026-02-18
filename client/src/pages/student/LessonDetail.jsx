@@ -424,12 +424,14 @@ export default function LessonDetail() {
     if (mode === "audio" && !ENABLE_AUDIO) return;
     if (mode === "cloze" && !ENABLE_CLOZE) return;
 
-    const lid = String(lessonId); // IMPORTANT: use actual lessonId, not dayNumber
-    const diff = difficulty
-      ? `&difficulty=${encodeURIComponent(String(difficulty))}`
-      : "";
+    // ✅ SOURCE OF TRUTH: lessonId from the route (/lesson/:lessonId)
+    const lid = Number(lessonId);
 
-    navigate(`/practice/${mode}?lessonId=${encodeURIComponent(lid)}${diff}`);
+    navigate(
+      `/practice/${mode}?lessonId=${encodeURIComponent(lid)}&difficulty=${encodeURIComponent(
+        difficulty,
+      )}`,
+    );
   }
 
   function dismissMissedBanner() {
@@ -738,17 +740,36 @@ export default function LessonDetail() {
                 </div>
                 {/* Coach / Recommendation row */}
                 {(() => {
-                  // Priority:
-                  // 1) If there's a resumable session -> continue
-                  // 2) Otherwise recommend the next incomplete mode (Typing -> Reorder -> Audio)
-                  // (You can change this order anytime.)
-                  const nextMode = isIncomplete(typingProg)
-                    ? "typing"
-                    : isIncomplete(reorderProg)
-                      ? "reorder"
-                      : isIncomplete(audioProg)
-                        ? "audio"
-                        : "typing";
+                  // Recommendation order (lowest friction first):
+                  // Reorder -> Typing -> Audio
+                  const ordered = ["reorder", "typing", "audio"];
+
+                  // Only recommend modes that are available + actually have items
+                  const canUse = (m) => {
+                    if (m === "typing") return !!modeAvail.typing;
+                    if (m === "reorder") return !!modeAvail.reorder;
+                    if (m === "audio") return !!modeAvail.audio && ENABLE_AUDIO;
+                    return false;
+                  };
+
+                  const firstIncomplete = ordered.find(
+                    (m) =>
+                      canUse(m) &&
+                      (m === "typing"
+                        ? isIncomplete(typingProg)
+                        : m === "reorder"
+                          ? isIncomplete(reorderProg)
+                          : isIncomplete(audioProg)),
+                  );
+
+                  const nextMode = continueHref
+                    ? null
+                    : firstIncomplete ||
+                      (canUse("reorder")
+                        ? "reorder"
+                        : canUse("typing")
+                          ? "typing"
+                          : "audio");
 
                   const nextLabel =
                     nextMode === "typing"
@@ -759,20 +780,11 @@ export default function LessonDetail() {
 
                   const coachText = continueHref
                     ? `Continue ${modeLabel(session?.mode)} — you were at Q# ${Number(session?.questionIndex || 0) + 1}.`
-                    : nextMode === "typing"
-                      ? "Recommended: Typing first to build speed and sentence flow."
-                      : nextMode === "reorder"
-                        ? "Recommended: Reorder next to lock correct word order."
+                    : nextMode === "reorder"
+                      ? "Recommended: Reorder first for a quick win (instant grammar + word order)."
+                      : nextMode === "typing"
+                        ? "Recommended: Typing next to build speed and sentence flow."
                         : "Recommended: Audio next to improve pronunciation + listening.";
-
-                  const ctaText = continueHref
-                    ? "Continue →"
-                    : `Start ${nextLabel} →`;
-
-                  const onCta = () => {
-                    if (continueHref) return; // Link handles it below
-                    startMode(nextMode);
-                  };
 
                   return (
                     <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -783,22 +795,24 @@ export default function LessonDetail() {
                         <span>{coachText}</span>
                       </div>
 
-                      {continueHref ? (
-                        <Link
-                          to={continueHref}
-                          className="inline-flex items-center justify-center rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
-                        >
-                          {ctaText}
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={onCta}
-                          className="inline-flex items-center justify-center rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
-                        >
-                          {ctaText}
-                        </button>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {continueHref ? (
+                          <Link
+                            to={continueHref}
+                            className="inline-flex items-center justify-center rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
+                          >
+                            Continue →
+                          </Link>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startMode(nextMode)}
+                            className="inline-flex items-center justify-center rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
+                          >
+                            Start {nextLabel} →
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })()}
