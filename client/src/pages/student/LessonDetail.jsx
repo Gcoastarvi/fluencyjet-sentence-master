@@ -460,7 +460,7 @@ export default function LessonDetail() {
     if (modeAvail?.reorder) return "reorder";
     if (modeAvail?.typing) return "typing";
     if (modeAvail?.audio) return "audio";
-    return "typing";
+    return null;
   }
 
   const recommendedMode = getNextRecommendedMode();
@@ -473,7 +473,8 @@ export default function LessonDetail() {
           ? "Typing"
           : "—";
 
-  const isRec = (m) => !continueHref && recommendedMode === m;
+  const isRec = (m) =>
+    !continueHref && !!recommendedMode && recommendedMode === m;
 
   async function hasExercises(lid, mode, diff) {
     try {
@@ -1174,18 +1175,73 @@ export default function LessonDetail() {
             </div>
 
             {/* micro reassurance row */}
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/85">
-              <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
-                ⚡ Fast sessions
-              </span>
-              <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
-                🎯 Fluency-focused
-              </span>
-              <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
-                🏆 XP + streak
-              </span>
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/85">
+                <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
+                  ⚡ Fast sessions
+                </span>
+                <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
+                  🎯 Fluency-focused
+                </span>
+                <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
+                  🏆 XP + streak
+                </span>
 
-              <span className="ml-auto inline-flex items-center rounded-full bg-black/20 px-2 py-1">
+                {/* Premium: time + XP estimate (based on recommended mode) */}
+                <span className="ml-auto inline-flex items-center rounded-full bg-black/20 px-2 py-1">
+                  {(() => {
+                    if (continueHref) return "~2 min • keep streak";
+
+                    const rm = recommendedMode;
+                    if (!rm) return "~2 min • +XP";
+
+                    const est =
+                      rm === "reorder"
+                        ? "~90 sec"
+                        : rm === "typing"
+                          ? "~2 min"
+                          : rm === "audio"
+                            ? "~2–3 min"
+                            : "~2 min";
+
+                    const xp =
+                      rm === "reorder"
+                        ? "+300–450 XP"
+                        : rm === "typing"
+                          ? "+450–600 XP"
+                          : rm === "audio"
+                            ? "+350–550 XP"
+                            : "+XP";
+
+                    return `${est} • ${xp}`;
+                  })()}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (continueHref) return; // Continue CTA already exists
+                  if (!recommendedMode) return;
+                  startMode(recommendedMode);
+                }}
+                disabled={!!continueHref || !recommendedMode}
+                title={
+                  continueHref
+                    ? `Continue ${modeLabel(session?.mode)}`
+                    : !recommendedMode
+                      ? "No recommended mode available yet"
+                      : recommendedMode === "reorder"
+                        ? "Recommended because it's the easiest quick win (word order)"
+                        : recommendedMode === "typing"
+                          ? "Recommended to build speed + sentence flow"
+                          : "Recommended for pronunciation + listening"
+                }
+                className={`ml-auto inline-flex items-center rounded-full px-2 py-1 text-xs ${
+                  continueHref || !recommendedMode
+                    ? "cursor-not-allowed bg-black/10 text-white/60"
+                    : "bg-black/20 text-white hover:bg-black/30"
+                }`}
+              >
                 {(() => {
                   if (continueHref) return `Next: ${modeLabel(session?.mode)}`;
 
@@ -1205,7 +1261,7 @@ export default function LessonDetail() {
 
                   return `Next: ${label}`;
                 })()}
-              </span>
+              </button>
             </div>
           </div>
 
