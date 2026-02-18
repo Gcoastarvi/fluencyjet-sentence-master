@@ -844,9 +844,16 @@ export default function SentencePractice() {
 
       if (!normalized.length) {
         setLessonExercises([]);
+
+        const prettyMode = safeMode.charAt(0).toUpperCase() + safeMode.slice(1);
+
+        // Premium, actionable empty-state (no mysterious redirects)
+        const fallbackMode = safeMode === "reorder" ? "typing" : "reorder";
+
         setLoadError(
-          `No exercises found. mode=${fetchMode} lessonId=${lessonIdNum}`,
+          `No ${prettyMode} items for this lesson yet. Try ${fallbackMode} to keep your streak going.`,
         );
+
         return;
       }
 
@@ -1659,40 +1666,40 @@ export default function SentencePractice() {
           </span>
         </div>
 
-          <div className="space-y-3">
-            {/* CTA 1: Back to current lesson hub */}
+        <div className="space-y-3">
+          {/* CTA 1: Back to current lesson hub */}
+          <button
+            type="button"
+            className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
+            onClick={() =>
+              navigate(
+                `${base}/lesson/${lid || 1}?difficulty=${encodeURIComponent(
+                  difficulty,
+                )}`,
+                { replace: true },
+              )
+            }
+          >
+            Back to Lesson {lid || 1}
+          </button>
+
+          {/* CTA 2: Continue to next lesson hub */}
+          {nextLessonId ? (
             <button
               type="button"
-              className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
+              className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
               onClick={() =>
                 navigate(
-                  `${base}/lesson/${lid || 1}?difficulty=${encodeURIComponent(
+                  `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
                     difficulty,
                   )}`,
                   { replace: true },
                 )
               }
             >
-              Back to Lesson {lid || 1}
+              Continue to Lesson {nextLessonId} →
             </button>
-
-            {/* CTA 2: Continue to next lesson hub */}
-            {nextLessonId ? (
-              <button
-                type="button"
-                className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
-                onClick={() =>
-                  navigate(
-                    `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
-                      difficulty,
-                    )}`,
-                    { replace: true },
-                  )
-                }
-              >
-                Continue to Lesson {nextLessonId} →
-              </button>
-            ) : null}         
+          ) : null}
         </div>
       </div>
     );
@@ -1733,14 +1740,20 @@ export default function SentencePractice() {
 
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                const sp = new URLSearchParams(window.location.search);
+                const lid = sp.get("lessonId") || String(lessonId);
+                const diff = sp.get("difficulty") || difficulty || "beginner";
+
+                const nextMode = fetchMode === "reorder" ? "typing" : "reorder";
+
                 navigate(
-                  `/practice/${fetchMode === "reorder" ? "typing" : "reorder"}?lessonId=${encodeURIComponent(
+                  `/practice/${nextMode}?lessonId=${encodeURIComponent(
                     lid,
-                  )}`,
+                  )}&difficulty=${encodeURIComponent(diff)}`,
                   { replace: true },
-                )
-              }
+                );
+              }}
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
             >
               Try other mode
@@ -1807,14 +1820,20 @@ export default function SentencePractice() {
             </button>
             <button
               type="button"
-              onClick={() =>
+              onClick={() => {
+                const sp = new URLSearchParams(window.location.search);
+                const lid = sp.get("lessonId") || String(lessonId);
+                const diff = sp.get("difficulty") || difficulty || "beginner";
+
+                const nextMode = fetchMode === "reorder" ? "typing" : "reorder";
+
                 navigate(
-                  `/practice/${fetchMode === "reorder" ? "typing" : "reorder"}?lessonId=${encodeURIComponent(
+                  `/practice/${nextMode}?lessonId=${encodeURIComponent(
                     lid,
-                  )}`,
+                  )}&difficulty=${encodeURIComponent(diff)}`,
                   { replace: true },
-                )
-              }
+                );
+              }}
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
             >
               Try other mode
