@@ -469,7 +469,11 @@ export default function LessonDetail() {
       ? "Reorder"
       : recommendedMode === "audio"
         ? "Audio"
-        : "Typing";
+        : recommendedMode === "typing"
+          ? "Typing"
+          : "—";
+
+  const isRec = (m) => !continueHref && recommendedMode === m;
 
   async function hasExercises(lid, mode, diff) {
     try {
@@ -1240,7 +1244,9 @@ export default function LessonDetail() {
                 onClick={() => startMode("typing")}
                 className={`rounded-2xl border p-4 text-left transition ${
                   modeAvail.typing
-                    ? "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
+                    ? isRec("typing")
+                      ? "border-black bg-white shadow-sm ring-2 ring-black/10"
+                      : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
                     : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
                 }`}
               >
@@ -1251,9 +1257,16 @@ export default function LessonDetail() {
                       Fast fluency builder
                     </div>
                   </div>
-                  <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
-                    {pct(typingProg)}%
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
+                      {pct(typingProg)}%
+                    </span>
+                    {isRec("typing") ? (
+                      <span className="rounded-full border border-black/10 bg-black px-2 py-0.5 text-[10px] font-semibold text-white">
+                        Recommended
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
                   <div
@@ -1269,7 +1282,9 @@ export default function LessonDetail() {
                 onClick={() => startMode("reorder")}
                 className={`rounded-2xl border p-4 text-left transition ${
                   modeAvail.reorder
-                    ? "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
+                    ? isRec("reorder")
+                      ? "border-black bg-white shadow-sm ring-2 ring-black/10"
+                      : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
                     : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
                 }`}
               >
@@ -1280,9 +1295,17 @@ export default function LessonDetail() {
                       Fix word order instantly
                     </div>
                   </div>
-                  <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
-                    {pct(reorderProg)}%
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
+                      {pct(reorderProg)}%
+                    </span>
+
+                    {isRec("reorder") ? (
+                      <span className="rounded-full border border-black/10 bg-black px-2 py-0.5 text-[10px] font-semibold text-white">
+                        Recommended
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
                   <div
@@ -1298,7 +1321,9 @@ export default function LessonDetail() {
                 onClick={() => startMode("audio")}
                 className={`rounded-2xl border p-4 text-left transition ${
                   modeAvail.audio
-                    ? "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
+                    ? isRec("audio")
+                      ? "border-black bg-white shadow-sm ring-2 ring-black/10"
+                      : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
                     : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
                 }`}
               >
@@ -1309,9 +1334,17 @@ export default function LessonDetail() {
                       Repeat + Dictation
                     </div>
                   </div>
-                  <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
-                    {pct(audioProg)}%
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
+                      {pct(audioProg)}%
+                    </span>
+
+                    {isRec("audio") ? (
+                      <span className="rounded-full border border-black/10 bg-black px-2 py-0.5 text-[10px] font-semibold text-white">
+                        Recommended
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
                   <div
