@@ -447,6 +447,30 @@ export default function LessonDetail() {
     );
   }
 
+  function getNextRecommendedMode() {
+    // If Continue exists, we don't recommend a "next" (Continue wins)
+    if (continueHref) return null;
+
+    // Reorder-first = lowest friction quick win
+    if (modeAvail?.reorder && isIncomplete(reorderProg)) return "reorder";
+    if (modeAvail?.typing && isIncomplete(typingProg)) return "typing";
+    if (modeAvail?.audio && isIncomplete(audioProg)) return "audio";
+
+    // Fallback: first available
+    if (modeAvail?.reorder) return "reorder";
+    if (modeAvail?.typing) return "typing";
+    if (modeAvail?.audio) return "audio";
+    return "typing";
+  }
+
+  const recommendedMode = getNextRecommendedMode();
+  const recommendedLabel =
+    recommendedMode === "reorder"
+      ? "Reorder"
+      : recommendedMode === "audio"
+        ? "Audio"
+        : "Typing";
+
   async function hasExercises(lid, mode, diff) {
     try {
       const res = await api.get(
@@ -572,38 +596,28 @@ export default function LessonDetail() {
     setSmartStartMsg("");
 
     try {
-      // Prefer Typing (fluency), fallback Reorder, then Audio
-      const typingOk = await hasExercises(dayNumber, "typing", difficulty);
-      if (typingOk === "AUTH" || typingOk === "PAYWALL") return;
-      if (typingOk) {
-        navigate(
-          `/practice/typing?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(
-            difficulty,
-          )}`,
-        );
-        return;
-      }
+      // Try recommended first, then fall back in this order
+      const baseOrder = ["reorder", "typing", "audio"];
+      const order = recommendedMode
+        ? [recommendedMode, ...baseOrder.filter((m) => m !== recommendedMode)]
+        : baseOrder;
 
-      const reorderOk = await hasExercises(dayNumber, "reorder", difficulty);
-      if (reorderOk === "AUTH" || reorderOk === "PAYWALL") return;
-      if (reorderOk) {
-        navigate(
-          `/practice/reorder?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(
-            difficulty,
-          )}`,
-        );
-        return;
-      }
+      for (const mode of order) {
+        // Skip disabled modes
+        if (mode === "audio" && !ENABLE_AUDIO) continue;
+        if (mode === "cloze" && !ENABLE_CLOZE) continue;
 
-      const audioOk = await hasExercises(dayNumber, "audio", difficulty);
-      if (audioOk === "AUTH" || audioOk === "PAYWALL") return;
-      if (audioOk) {
-        navigate(
-          `/practice/audio?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(
-            difficulty,
-          )}`,
-        );
-        return;
+        const ok = await hasExercises(dayNumber, mode, difficulty);
+        if (ok === "AUTH" || ok === "PAYWALL") return;
+
+        if (ok) {
+          navigate(
+            `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(
+              difficulty,
+            )}`,
+          );
+          return;
+        }
       }
 
       setSmartStartMsg("No practice items yet for this lesson.");
@@ -769,7 +783,11 @@ export default function LessonDetail() {
                         ? "reorder"
                         : canUse("typing")
                           ? "typing"
-                          : "audio");
+                          : canUse("audio")
+                            ? "audio"
+                            : canUse("cloze")
+                              ? "cloze"
+                              : "reorder");
 
                   const nextLabel =
                     nextMode === "typing"
@@ -806,7 +824,11 @@ export default function LessonDetail() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => startMode(nextMode)}
+                            onClick={() =>
+                              startMode(
+                                recommendedMode || nextMode || "reorder",
+                              )
+                            }
                             className="inline-flex items-center justify-center rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
                           >
                             Start {nextLabel} →
@@ -1161,20 +1183,23 @@ export default function LessonDetail() {
 
               <span className="ml-auto inline-flex items-center rounded-full bg-black/20 px-2 py-1">
                 {(() => {
-                  const candidates = [
-                    modeAvail.typing
-                      ? { m: "Typing", v: pct(typingProg) }
-                      : null,
-                    modeAvail.reorder
-                      ? { m: "Reorder", v: pct(reorderProg) }
-                      : null,
-                    modeAvail.audio ? { m: "Audio", v: pct(audioProg) } : null,
-                    modeAvail.cloze ? { m: "Cloze", v: pct(clozeProg) } : null,
-                  ].filter(Boolean);
+                  if (continueHref) return `Next: ${modeLabel(session?.mode)}`;
 
-                  if (!candidates.length) return "Next: —";
-                  candidates.sort((a, b) => a.v - b.v);
-                  return `Next: ${candidates[0].m}`;
+                  const rm = recommendedMode;
+                  if (!rm) return "Next: —";
+
+                  const label =
+                    rm === "typing"
+                      ? "Typing"
+                      : rm === "reorder"
+                        ? "Reorder"
+                        : rm === "audio"
+                          ? "Audio"
+                          : rm === "cloze"
+                            ? "Cloze"
+                            : "—";
+
+                  return `Next: ${label}`;
                 })()}
               </span>
             </div>
