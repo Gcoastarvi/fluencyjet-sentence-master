@@ -734,18 +734,66 @@ export default function LessonDetail() {
                 <div className="mt-1 text-sm text-slate-700">
                   <span className="font-semibold">Rule:</span> {teach.rule}
                 </div>
-                <div className="mt-2 inline-flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white/70 px-3 py-2 text-xs text-slate-700">
-                  <span className="font-semibold">Coach:</span>
-                  <span>
-                    {continueHref
-                      ? `Continue ${modeLabel(session?.mode)} — you were at Q# ${Number(session?.questionIndex || 0) + 1}.`
-                      : isIncomplete(reorderProg)
-                        ? "Do Reorder next to lock correct word order."
-                        : isIncomplete(typingProg)
-                          ? "Do Typing next to build speed and flow."
-                          : "Start Typing → then Reorder for accuracy."}
-                  </span>
-                </div>
+                {/* Coach / Recommendation row */}
+                {(() => {
+                  // Priority:
+                  // 1) If there's a resumable session -> continue
+                  // 2) Otherwise recommend the next incomplete mode (Typing -> Reorder -> Audio)
+                  // (You can change this order anytime.)
+                  const nextMode = isIncomplete(typingProg)
+                    ? "typing"
+                    : isIncomplete(reorderProg)
+                      ? "reorder"
+                      : isIncomplete(audioProg)
+                        ? "audio"
+                        : "typing";
+
+                  const nextLabel =
+                    nextMode === "typing" ? "Typing" : nextMode === "reorder" ? "Reorder" : "Audio";
+
+                  const coachText = continueHref
+                    ? `Continue ${modeLabel(session?.mode)} — you were at Q# ${Number(session?.questionIndex || 0) + 1}.`
+                    : nextMode === "typing"
+                      ? "Recommended: Typing first to build speed and sentence flow."
+                      : nextMode === "reorder"
+                        ? "Recommended: Reorder next to lock correct word order."
+                        : "Recommended: Audio next to improve pronunciation + listening.";
+
+                  const ctaText = continueHref ? "Continue →" : `Start ${nextLabel} →`;
+
+                  const onCta = () => {
+                    if (continueHref) return; // Link handles it below
+                    startMode(nextMode);
+                  };
+
+                  return (
+                    <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="inline-flex flex-wrap items-center gap-2 text-xs text-slate-700">
+                        <span className="inline-flex items-center rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
+                          Coach
+                        </span>
+                        <span>{coachText}</span>
+                      </div>
+
+                      {continueHref ? (
+                        <Link
+                          to={continueHref}
+                          className="inline-flex items-center justify-center rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
+                        >
+                          {ctaText}
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={onCta}
+                          className="inline-flex items-center justify-center rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
+                        >
+                          {ctaText}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <button
