@@ -887,8 +887,7 @@ export default function LessonDetail() {
                     {e}
                   </div>
                 ))}
-              </div>
-            </div>
+              </div>            
 
             {teach?.video?.id ? (
               <div className="mt-4">
