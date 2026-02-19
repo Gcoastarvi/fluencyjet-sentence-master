@@ -311,7 +311,7 @@ export default function SentencePractice() {
   console.log("[DBG] current", current);
   console.log("[DBG] expectedWords", expectedWords);
   console.log("[DBG] expectedAnswer", expectedAnswer);
-  console.log("[DBG] correctOrderArr", correctOrderArr); 
+  console.log("[DBG] correctOrderArr", correctOrderArr);
 
   // ✅ Auto-hide XP toast + reset earnedXP
   useEffect(() => {
@@ -850,7 +850,14 @@ export default function SentencePractice() {
         const prettyMode = safeMode.charAt(0).toUpperCase() + safeMode.slice(1);
 
         // Premium, actionable empty-state (no mysterious redirects)
-        const fallbackMode = safeMode === "reorder" ? "typing" : "reorder";
+        const NEXT_MODE = {
+          reorder: "typing",
+          typing: "audio",
+          audio: "reorder",
+          cloze: "reorder",
+        };
+
+        const fallbackMode = NEXT_MODE[safeMode] || "reorder";
 
         setLoadError(
           `No ${prettyMode} items for this lesson yet. Try ${fallbackMode} to keep your streak going.`,
@@ -1709,7 +1716,7 @@ export default function SentencePractice() {
               onClick={() =>
                 navigate(
                   `${base}/practice/${
-                    safeMode === "reorder" ? "typing" : "reorder"
+                    fallbackMode
                   }?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(
                     difficulty,
                   )}`,
@@ -1717,7 +1724,7 @@ export default function SentencePractice() {
                 )
               }
             >
-              Try {uiFor(safeMode === "reorder" ? "typing" : "reorder").title} →
+              Try {uiFor(fallbackMode).title} →
             </button>
 
             <button
@@ -1780,7 +1787,7 @@ export default function SentencePractice() {
                 const lid = sp.get("lessonId") || String(lessonId);
                 const diff = sp.get("difficulty") || difficulty || "beginner";
 
-                const nextMode = safeMode === "reorder" ? "typing" : "reorder";
+                const nextMode = fallbackMode;
 
                 navigate(
                   `/practice/${nextMode}?lessonId=${encodeURIComponent(
@@ -1860,7 +1867,7 @@ export default function SentencePractice() {
                 const lid = sp.get("lessonId") || String(lessonId);
                 const diff = sp.get("difficulty") || difficulty || "beginner";
 
-                const nextMode = safeMode === "reorder" ? "typing" : "reorder";
+                const nextMode = NEXT_MODE[safeMode] || "reorder";
 
                 navigate(
                   `/practice/${nextMode}?lessonId=${encodeURIComponent(
