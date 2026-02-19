@@ -11,6 +11,8 @@ import { api } from "../../api/apiClient";
 
 import { LESSON_TEACH } from "../../content/lessonTeach";
 
+import { MODE_UI, uiFor } from "../../lib/modeUi";
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises

@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { api } from "@/api/apiClient";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { uiFor } from "@/lib/modeUi";
+
 // ===== helpers (reorder/typing normalization) =====
 const norm = (v) =>
   String(v ?? "")
@@ -309,29 +311,7 @@ export default function SentencePractice() {
   console.log("[DBG] current", current);
   console.log("[DBG] expectedWords", expectedWords);
   console.log("[DBG] expectedAnswer", expectedAnswer);
-  console.log("[DBG] correctOrderArr", correctOrderArr);
-
-  // Outcome-first labels (UI only). Routes/modes stay the same internally.
-  const MODE_UI = {
-    reorder: {
-      title: "Instant Accuracy",
-      sub: "Fix grammar + word order",
-    },
-    typing: {
-      title: "Speed Builder",
-      sub: "Build fluency + sentence flow",
-    },
-    audio: {
-      title: "Pronunciation Booster",
-      sub: "Repeat + dictation",
-    },
-    cloze: {
-      title: "Cloze",
-      sub: "Fill missing words",
-    },
-  };
-
-  const uiFor = (m) => MODE_UI[m] || { title: "Practice", sub: "" };
+  console.log("[DBG] correctOrderArr", correctOrderArr); 
 
   // ✅ Auto-hide XP toast + reset earnedXP
   useEffect(() => {
