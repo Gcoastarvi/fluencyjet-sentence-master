@@ -88,9 +88,8 @@ export default function SentencePractice() {
 
   const fallbackMode = NEXT_MODE[safeMode] || "reorder";
 
-  // Fetch mode (what we load from DB)
-  // Cloze + Audio reuse Typing exercises for MVP
-  const fetchMode = safeMode === "reorder" ? "reorder" : "typing";
+  // API fetch mode: supports reorder/typing/audio. Cloze is experimental → fall back to reorder.
+  const fetchMode = safeMode === "cloze" ? "reorder" : safeMode;
 
   // XP mode (what we send to backend XP pipeline)
   // Backend currently supports only typing/reorder
@@ -229,6 +228,20 @@ export default function SentencePractice() {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completionXp, setCompletionXp] = useState(0);
   const [completionMode, setCompletionMode] = useState("typing");
+
+  // Reset practice UI when switching modes/lesson/difficulty (React Router does not remount)
+  useEffect(() => {
+    setIsComplete(false);
+    setShowCompleteModal(false);
+    // If you have a status state, reset it to loading/idle so practice can render again.
+    // If your app uses "loading" as initial state, keep it:
+    setStatus("loading");
+    // Reset index so the next mode starts from the beginning
+    setCurrentIndex(0);
+    // Clear any load error if present
+    setLoadError(null);
+  }, [safeMode, lessonId, difficulty]);
+
 
   // typing/cloze shared input state
   const [selectedOption, setSelectedOption] = useState(null);
