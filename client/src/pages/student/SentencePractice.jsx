@@ -1716,11 +1716,7 @@ export default function SentencePractice() {
               className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
               onClick={() =>
                 navigate(
-                  `${base}/practice/${
-                    fallbackMode
-                  }?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(
-                    difficulty,
-                  )}`,
+                  `/b/practice/${fallbackMode}?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(difficulty)}`,
                   { replace: true },
                 )
               }
@@ -1733,9 +1729,7 @@ export default function SentencePractice() {
               className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
               onClick={() =>
                 navigate(
-                  `${base}/practice/audio?lessonId=${encodeURIComponent(
-                    lid || 1,
-                  )}&difficulty=${encodeURIComponent(difficulty)}`,
+                  `/b/practice/audio?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(difficulty)}`,
                   { replace: true },
                 )
               }
