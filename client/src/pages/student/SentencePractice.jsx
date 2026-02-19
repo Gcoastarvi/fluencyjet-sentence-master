@@ -1870,15 +1870,13 @@ export default function SentencePractice() {
                 const nextMode = NEXT_MODE[safeMode] || "reorder";
 
                 navigate(
-                  `/practice/${nextMode}?lessonId=${encodeURIComponent(
-                    lid,
-                  )}&difficulty=${encodeURIComponent(diff)}`,
+                  `/b/practice/${nextMode}?lessonId=${encodeURIComponent(lid)}&difficulty=${encodeURIComponent(diff)}`,
                   { replace: true },
                 );
               }}
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
             >
-              Try other mode
+              Try {uiFor(nextMode).title} →
             </button>
           </div>
         </div>
