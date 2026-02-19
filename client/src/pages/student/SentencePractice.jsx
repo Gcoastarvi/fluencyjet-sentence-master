@@ -311,6 +311,28 @@ export default function SentencePractice() {
   console.log("[DBG] expectedAnswer", expectedAnswer);
   console.log("[DBG] correctOrderArr", correctOrderArr);
 
+  // Outcome-first labels (UI only). Routes/modes stay the same internally.
+  const MODE_UI = {
+    reorder: {
+      title: "Instant Accuracy",
+      sub: "Fix grammar + word order",
+    },
+    typing: {
+      title: "Speed Builder",
+      sub: "Build fluency + sentence flow",
+    },
+    audio: {
+      title: "Pronunciation Booster",
+      sub: "Repeat + dictation",
+    },
+    cloze: {
+      title: "Cloze",
+      sub: "Fill missing words",
+    },
+  };
+
+  const uiFor = (m) => MODE_UI[m] || { title: "Practice", sub: "" };
+
   // ✅ Auto-hide XP toast + reset earnedXP
   useEffect(() => {
     if (!showXPToast) return;
@@ -1568,10 +1590,12 @@ export default function SentencePractice() {
   ) {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-2">Practice mode: {safeMode}</h1>
+        <h1 className="text-2xl font-bold mb-2">
+          Practice: {uiFor(safeMode).title}
+        </h1>
         <p className="text-gray-600">
-          This mode is coming next. For now, use <b>/practice/reorder</b> or{" "}
-          <b>/practice/typing</b>.
+          This mode is coming next. For now, use <b>{uiFor("reorder").title}</b>{" "}
+          or <b>{uiFor("typing").title}</b>.
         </p>
       </div>
     );
@@ -1660,10 +1684,7 @@ export default function SentencePractice() {
         </p>
 
         <div className="mb-6 text-sm text-gray-600">
-          Mode:{" "}
-          <span className="font-semibold">
-            {String(fetchMode || "").toUpperCase()}
-          </span>
+          Mode: <span className="font-semibold">{uiFor(safeMode).title}</span>
         </div>
 
         <div className="space-y-3">
@@ -1697,9 +1718,43 @@ export default function SentencePractice() {
                 )
               }
             >
-              Continue to Lesson {nextLessonId} →
+              Continue to Lesson {nextLessonId} → (keep going)
             </button>
           ) : null}
+          {/* CTA 3: Try another mode (engagement loop) */}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
+              onClick={() =>
+                navigate(
+                  `${base}/practice/${
+                    safeMode === "reorder" ? "typing" : "reorder"
+                  }?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(
+                    difficulty,
+                  )}`,
+                  { replace: true },
+                )
+              }
+            >
+              Try {uiFor(safeMode === "reorder" ? "typing" : "reorder").title} →
+            </button>
+
+            <button
+              type="button"
+              className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
+              onClick={() =>
+                navigate(
+                  `${base}/practice/audio?lessonId=${encodeURIComponent(
+                    lid || 1,
+                  )}&difficulty=${encodeURIComponent(difficulty)}`,
+                  { replace: true },
+                )
+              }
+            >
+              Try {uiFor("audio").title} →
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1745,7 +1800,7 @@ export default function SentencePractice() {
                 const lid = sp.get("lessonId") || String(lessonId);
                 const diff = sp.get("difficulty") || difficulty || "beginner";
 
-                const nextMode = fetchMode === "reorder" ? "typing" : "reorder";
+                const nextMode = safeMode === "reorder" ? "typing" : "reorder";
 
                 navigate(
                   `/practice/${nextMode}?lessonId=${encodeURIComponent(
@@ -1825,7 +1880,7 @@ export default function SentencePractice() {
                 const lid = sp.get("lessonId") || String(lessonId);
                 const diff = sp.get("difficulty") || difficulty || "beginner";
 
-                const nextMode = fetchMode === "reorder" ? "typing" : "reorder";
+                const nextMode = safeMode === "reorder" ? "typing" : "reorder";
 
                 navigate(
                   `/practice/${nextMode}?lessonId=${encodeURIComponent(

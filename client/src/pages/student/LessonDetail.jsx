@@ -1191,8 +1191,8 @@ export default function LessonDetail() {
                 </div>
                 {!continueHref ? (
                   <div className="mt-1 text-xs text-white/80">
-                    Path: {MODE_UI.reorder.title} → {MODE_UI.typing.title} →{" "}
-                    {MODE_UI.audio.title}
+                    Path: {uiFor(recommendedMode || "reorder").title} →{" "}
+                    {MODE_UI.typing.title} → {MODE_UI.audio.title}
                   </div>
                 ) : null}
               </div>
