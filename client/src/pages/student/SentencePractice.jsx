@@ -79,6 +79,15 @@ export default function SentencePractice() {
     ? activeMode
     : DEFAULT_PRACTICE_MODE;
 
+  const NEXT_MODE = {
+    reorder: "typing",
+    typing: "audio",
+    audio: "reorder",
+    cloze: "reorder",
+  };
+
+  const fallbackMode = NEXT_MODE[safeMode] || "reorder";
+
   // Fetch mode (what we load from DB)
   // Cloze + Audio reuse Typing exercises for MVP
   const fetchMode = safeMode === "reorder" ? "reorder" : "typing";
@@ -850,14 +859,6 @@ export default function SentencePractice() {
         const prettyMode = safeMode.charAt(0).toUpperCase() + safeMode.slice(1);
 
         // Premium, actionable empty-state (no mysterious redirects)
-        const NEXT_MODE = {
-          reorder: "typing",
-          typing: "audio",
-          audio: "reorder",
-          cloze: "reorder",
-        };
-
-        const fallbackMode = NEXT_MODE[safeMode] || "reorder";
 
         setLoadError(
           `No ${prettyMode} items for this lesson yet. Try ${fallbackMode} to keep your streak going.`,
@@ -1867,7 +1868,7 @@ export default function SentencePractice() {
                 const lid = sp.get("lessonId") || String(lessonId);
                 const diff = sp.get("difficulty") || difficulty || "beginner";
 
-                const nextMode = NEXT_MODE[safeMode] || "reorder";
+                const nextMode = fallbackMode;
 
                 navigate(
                   `/b/practice/${nextMode}?lessonId=${encodeURIComponent(lid)}&difficulty=${encodeURIComponent(diff)}`,
