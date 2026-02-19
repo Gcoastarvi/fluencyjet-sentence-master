@@ -463,8 +463,6 @@ export default function LessonDetail() {
     return null;
   }
 
-  const recommendedMode = getNextRecommendedMode();
-
   // Outcome-first labels (UI only). Routes/modes stay the same internally.
   const MODE_UI = {
     reorder: {
@@ -509,8 +507,7 @@ export default function LessonDetail() {
       xp: "+XP",
     };
 
-  const recommendedUI = recommendedMode ? uiFor(recommendedMode) : null;
-  const recommendedLabel = recommendedUI ? recommendedUI.title : "—";
+  const recommendedMode = getNextRecommendedMode();
 
   const isRec = (m) =>
     !continueHref && !!recommendedMode && recommendedMode === m;
@@ -840,14 +837,11 @@ export default function LessonDetail() {
                         ? "Reorder"
                         : "Audio";
 
+                  const chosenMode = recommendedMode || nextMode || "reorder";
                   const coachText = continueHref
                     ? `Continue ${modeLabel(session?.mode)} — you were at Q# ${Number(session?.questionIndex || 0) + 1}.`
-                    : recommendedUI?.coach ||
-                      (nextMode === "reorder"
-                        ? "Recommended: Reorder first for a quick win (instant grammar + word order)."
-                        : nextMode === "typing"
-                          ? "Recommended: Typing next to build speed and sentence flow."
-                          : "Recommended: Audio next to improve pronunciation + listening.");
+                    : uiFor(chosenMode).coach ||
+                      `Recommended: Start ${uiFor(chosenMode).title} now.`;
 
                   return (
                     <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
@@ -876,7 +870,12 @@ export default function LessonDetail() {
                             }
                             className="inline-flex items-center justify-center rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
                           >
-                            Start {recommendedUI?.title || nextLabel} →
+                            Start{" "}
+                            {
+                              uiFor(recommendedMode || nextMode || "reorder")
+                                .title
+                            }{" "}
+                            →
                           </button>
                         )}
                       </div>
@@ -1192,8 +1191,8 @@ export default function LessonDetail() {
                 </div>
                 {!continueHref ? (
                   <div className="mt-1 text-xs text-white/80">
-                    Path: {recommendedUI?.title || MODE_UI.reorder.title} →{" "}
-                    {MODE_UI.typing.title} → {MODE_UI.audio.title}
+                    Path: {MODE_UI.reorder.title} → {MODE_UI.typing.title} →{" "}
+                    {MODE_UI.audio.title}
                   </div>
                 ) : null}
               </div>
@@ -1235,13 +1234,12 @@ export default function LessonDetail() {
               {/* Premium: time + XP estimate (based on recommended mode) */}
               <span className="ml-auto inline-flex items-center rounded-full bg-black/20 px-2 py-1">
                 {(() => {
-                  if (continueHref) return "~2 min • keep streak";
+                  if (continueHref) return `Next: ${modeLabel(session?.mode)}`;
 
                   const rm = recommendedMode;
-                  if (!rm) return "~2 min • +XP";
+                  if (!rm) return "Next: —";
 
-                  const u = uiFor(rm);
-                  return `${u.est} • ${u.xp}`;
+                  return `Next: ${uiFor(rm).title}`;
                 })()}
               </span>
             </div>
@@ -1269,19 +1267,6 @@ export default function LessonDetail() {
 
                 const rm = recommendedMode;
                 if (!rm) return "Next: —";
-
-                const label =
-                  rm === "typing"
-                    ? "Typing"
-                    : rm === "reorder"
-                      ? "Reorder"
-                      : rm === "audio"
-                        ? "Audio"
-                        : rm === "cloze"
-                          ? "Cloze"
-                          : "—";
-
-                return `Next: ${label}`;
               })()}
             </span>
           </div>
