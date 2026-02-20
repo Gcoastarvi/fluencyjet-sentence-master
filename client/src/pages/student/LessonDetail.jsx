@@ -113,10 +113,12 @@ function formatLast(ms) {
 function modeLabel(m) {
   if (!m) return "";
   const x = String(m).toLowerCase();
-  if (x === "typing") return "Typing";
-  if (x === "reorder") return "Reorder";
-  if (x === "cloze") return "Cloze";
-  if (x === "audio") return "Audio";
+
+  // Use single source of truth for known practice modes
+  const ui = uiFor(x);
+  if (ui && ui.title) return ui.title;
+
+  // Fallback for unexpected strings
   return x.charAt(0).toUpperCase() + x.slice(1);
 }
 
