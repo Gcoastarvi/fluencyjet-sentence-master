@@ -580,7 +580,7 @@ export default function SentencePractice() {
 
     // Clear any prior error
     setLoadError(null);
-  }, [safeMode, lid, difficulty]);
+  }, [safeMode, lessonId, difficulty]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -1747,7 +1747,7 @@ export default function SentencePractice() {
               onClick={() =>
                 navigate(
                   `/practice/${fallbackMode}?lessonId=${encodeURIComponent(
-                    lid || 1,
+                    lessonId || 1,
                   )}&difficulty=${encodeURIComponent(difficulty)}`,
                 )
               }
@@ -1761,7 +1761,7 @@ export default function SentencePractice() {
               onClick={() =>
                 navigate(
                   `/practice/audio?lessonId=${encodeURIComponent(
-                    lid || 1,
+                    lessonId || 1,
                   )}&difficulty=${encodeURIComponent(difficulty)}`,
                 )
               }
