@@ -293,6 +293,23 @@ export default function LessonDetail() {
     });
   }, [dayNumber]);
 
+  useEffect(() => {
+    const a = searchParams.get("autostart");
+    if (a !== "1") return;
+
+    // prevent loops if user hits back/refresh
+    searchParams.delete("autostart");
+    setSearchParams(searchParams, { replace: true });
+
+    // start recommended mode
+    const rm = getNextRecommendedMode();
+    if (!rm) return;
+    navigate(
+      `/practice/${rm}?lessonId=${encodeURIComponent(lessonIdNum)}&difficulty=${encodeURIComponent(difficulty)}`,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Continue session (supports typing/reorder, and audio later)
   const session = useMemo(() => {
     if (!lessonId) return null;
