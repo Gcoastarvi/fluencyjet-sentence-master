@@ -463,7 +463,7 @@ export default function LessonDetail() {
     if (modeAvail?.typing) return "typing";
     if (modeAvail?.audio) return "audio";
     return null;
-  }  
+  }
 
   const recommendedMode = getNextRecommendedMode();
 
@@ -1053,15 +1053,23 @@ export default function LessonDetail() {
           {/* Mode chips */}
           <div className="mt-4 flex flex-wrap gap-2">
             {[
-              { label: "Typing", p: typingProg, show: modeAvail.typing },
-              { label: "Reorder", p: reorderProg, show: modeAvail.reorder },
               {
-                label: "Audio",
+                label: uiFor("typing").title,
+                p: typingProg,
+                show: modeAvail.typing,
+              },
+              {
+                label: uiFor("reorder").title,
+                p: reorderProg,
+                show: modeAvail.reorder,
+              },
+              {
+                label: uiFor("audio").title,
                 p: audioProg,
                 show: ENABLE_AUDIO && modeAvail.audio,
               },
               {
-                label: "Cloze",
+                label: uiFor("cloze").title,
                 p: clozeProg,
                 show: ENABLE_CLOZE && modeAvail.cloze,
               },
@@ -1387,16 +1395,22 @@ export default function LessonDetail() {
                 <div className="font-semibold">What each mode does</div>
                 <ul className="mt-2 list-disc pl-5 text-sm text-slate-600">
                   <li>
-                    <span className="font-semibold">Typing:</span> build speed +
-                    sentence flow
+                    <span className="font-semibold">
+                      {uiFor("typing").title}:
+                    </span>
+                    build speed + sentence flow
                   </li>
                   <li>
-                    <span className="font-semibold">Reorder:</span> fix grammar
-                    + word order
+                    <span className="font-semibold">
+                      {uiFor("reorder").title}:
+                    </span>{" "}
+                    fix grammar + word order
                   </li>
                   <li>
-                    <span className="font-semibold">Audio:</span> pronunciation
-                    + listening
+                    <span className="font-semibold">
+                      {uiFor("audio").title}:
+                    </span>{" "}
+                    pronunciation + listening
                   </li>
                 </ul>
 
