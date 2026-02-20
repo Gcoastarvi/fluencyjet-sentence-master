@@ -1731,7 +1731,7 @@ export default function SentencePractice() {
                 navigate(
                   `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
                     difficulty,
-                  )}`,
+                  )}&autostart=1`,
                   { replace: true },
                 )
               }
@@ -1777,7 +1777,7 @@ export default function SentencePractice() {
   // -------------------
   // empty state (no exercises)
   // -------------------
-  if (!loading && (loadError || !(lessonExercises?.length > 0))) {
+  if (status !== "loading" && (loadError || !(lessonExercises?.length > 0))) {
     const lid = lessonIdFromQuery || lessonId;
 
     return (

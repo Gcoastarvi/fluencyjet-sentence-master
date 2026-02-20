@@ -151,6 +151,10 @@ export default function LessonDetail() {
 
   const [showMoreModes, setShowMoreModes] = useState(false);
 
+  useEffect(() => {
+    setShowMoreModes(false);
+  }, [lessonIdNum, difficulty]);
+
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
 
@@ -1430,7 +1434,7 @@ export default function LessonDetail() {
                   <li>
                     <span className="font-semibold">
                       {uiFor("typing").title}:
-                    </span>
+                    </span>{" "}
                     build speed + sentence flow
                   </li>
                   <li>
