@@ -242,7 +242,6 @@ export default function SentencePractice() {
     setLoadError(null);
   }, [safeMode, lessonId, difficulty]);
 
-
   // typing/cloze shared input state
   const [selectedOption, setSelectedOption] = useState(null);
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -564,6 +563,24 @@ export default function SentencePractice() {
       // ignore
     }
   }, [isSessionDone, location.search, fetchMode, safeMode, totalQuestions]);
+
+  useEffect(() => {
+    // Mode/lesson changed → reset completion + cursor so UI leaves Session Complete
+    setIsComplete(false);
+    setShowCompleteModal(false);
+
+    // Reset the question cursor so completion condition can't stay true
+    setCurrentIndex(0);
+
+    // Force practice UI to re-load
+    setStatus("loading");
+
+    // Drop old exercises so derived totals recompute cleanly
+    setLessonExercises([]);
+
+    // Clear any prior error
+    setLoadError(null);
+  }, [safeMode, lid, difficulty]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -1732,7 +1749,6 @@ export default function SentencePractice() {
                   `/practice/${fallbackMode}?lessonId=${encodeURIComponent(
                     lid || 1,
                   )}&difficulty=${encodeURIComponent(difficulty)}`,
-                  { replace: true },
                 )
               }
             >
@@ -1747,7 +1763,6 @@ export default function SentencePractice() {
                   `/practice/audio?lessonId=${encodeURIComponent(
                     lid || 1,
                   )}&difficulty=${encodeURIComponent(difficulty)}`,
-                  { replace: true },
                 )
               }
             >
