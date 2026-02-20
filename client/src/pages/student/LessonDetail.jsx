@@ -645,6 +645,20 @@ export default function LessonDetail() {
   }
 
   useEffect(() => {
+    const a = searchParams.get("autostart");
+    if (a !== "1") return;
+
+    // Remove autostart so refresh/back doesn't auto-start again
+    const sp = new URLSearchParams(searchParams);
+    sp.delete("autostart");
+    setSearchParams(sp, { replace: true });
+
+    // Fire the same logic as the Start button
+    smartStart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     let marker = null;
 
     try {
@@ -1177,7 +1191,7 @@ export default function LessonDetail() {
                 {!continueHref ? (
                   <div className="mt-1 text-xs text-white/80">
                     Path: {uiFor(recommendedMode || "reorder").title} →{" "}
-                    {MODE_UI.typing.title} → {MODE_UI.audio.title}
+                    {uiFor("typing").title} → {uiFor("audio").title}
                   </div>
                 ) : null}
               </div>
