@@ -240,7 +240,7 @@ export default function SentencePractice() {
     setCurrentIndex(0);
     // Clear any load error if present
     setLoadError(null);
-  }, [safeMode, lessonId, difficulty]);
+  }, [safeMode, lid, difficulty]);
 
   // typing/cloze shared input state
   const [selectedOption, setSelectedOption] = useState(null);
@@ -276,6 +276,8 @@ export default function SentencePractice() {
   const lessonIdFromQuery = Number(
     new URLSearchParams(location.search).get("lessonId"),
   );
+
+  const lid = Number(lessonIdFromQuery ?? lessonId ?? 0);
 
   const xpInFlightRef = useRef(false);
 
@@ -390,7 +392,7 @@ export default function SentencePractice() {
         setHasLoadedOnce(true);
       }
     })();
-  }, [safeMode, lessonId, difficulty]);
+  }, [safeMode, lid, difficulty]);
 
   useEffect(() => {
     if (safeMode !== "audio") return;
@@ -602,7 +604,7 @@ export default function SentencePractice() {
 
     // Clear any prior error
     setLoadError(null);
-  }, [safeMode, lessonId, difficulty]);
+  }, [safeMode, lid, difficulty]);
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -1241,7 +1243,7 @@ export default function SentencePractice() {
         attemptNo: attemptNumber,
         xp: 150,
         event: "exercise_correct",
-        lessonId: Number(lessonIdFromQuery || lessonId) || 0,
+        lessonId: lid || 0,
         mode: "audio",
         practiceType: "audio",
         exerciseId: current.id,
@@ -1768,9 +1770,7 @@ export default function SentencePractice() {
               className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
               onClick={() =>
                 navigate(
-                  `/practice/${fallbackMode}?lessonId=${encodeURIComponent(
-                    lessonId || 1,
-                  )}&difficulty=${encodeURIComponent(difficulty)}`,
+                  `/practice/${fallbackMode}?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(difficulty)}`,
                 )
               }
             >
@@ -1782,9 +1782,7 @@ export default function SentencePractice() {
               className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
               onClick={() =>
                 navigate(
-                  `/practice/audio?lessonId=${encodeURIComponent(
-                    lessonId || 1,
-                  )}&difficulty=${encodeURIComponent(difficulty)}`,
+                  `/practice/audio?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(difficulty)}`,
                 )
               }
             >
@@ -1810,8 +1808,6 @@ export default function SentencePractice() {
   // empty state (no exercises)
   // -------------------
   if (hasLoadedOnce && !loading && (loadError || exLen === 0)) {
-    const lid = lessonIdFromQuery || lessonId;
-
     return (
       <div className="max-w-3xl mx-auto p-6">
         <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -1869,7 +1865,6 @@ export default function SentencePractice() {
   // empty / error / no current (single source of truth)
   // -------------------
   if (loadError) {
-    const lid = lessonIdFromQuery || lessonId;
     return (
       <div className="max-w-3xl mx-auto p-6">
         <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -1900,7 +1895,6 @@ export default function SentencePractice() {
     !loading &&
     (loadError || lessonExercises.length === 0)
   ) {
-    const lid = lessonIdFromQuery || lessonId;
     return (
       <div className="max-w-3xl mx-auto p-6">
         <div className="rounded-2xl border bg-white p-5 shadow-sm">
