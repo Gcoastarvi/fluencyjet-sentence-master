@@ -233,13 +233,8 @@ export default function SentencePractice() {
   useEffect(() => {
     setIsComplete(false);
     setShowCompleteModal(false);
-    // If you have a status state, reset it to loading/idle so practice can render again.
-    // If your app uses "loading" as initial state, keep it:
-    setStatus("loading");
-    // Reset index so the next mode starts from the beginning
     setCurrentIndex(0);
-    // Clear any load error if present
-    setLoadError(null);
+    setLoadError("");
   }, [safeMode, lid, difficulty]);
 
   // typing/cloze shared input state
@@ -595,7 +590,7 @@ export default function SentencePractice() {
 
   // Keep total question count stored for LessonDetail progress summary
   useEffect(() => {
-    if (!lessonId) return;
+    if (!lid) return;
     if (!lessonExercises || lessonExercises.length === 0) return;
 
     // store total for both supported modes (typing/reorder)
@@ -604,7 +599,7 @@ export default function SentencePractice() {
       updatedAt: Date.now(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lessonId, safeMode, lessonExercises?.length]);
+  }, [lid, safeMode, lessonExercises?.length]);
 
   useEffect(() => {
     initQuiz();
