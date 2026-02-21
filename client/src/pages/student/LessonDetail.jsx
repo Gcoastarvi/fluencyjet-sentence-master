@@ -17,6 +17,14 @@ import { MODE_UI, uiFor } from "../../lib/modeUi";
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 
+const modeEnabled = (mode, modeAvail) => {
+  if (mode === "audio") return ENABLE_AUDIO && modeAvail.audio;
+  if (mode === "cloze") return ENABLE_CLOZE && modeAvail.cloze;
+  if (mode === "typing") return modeAvail.typing;
+  if (mode === "reorder") return modeAvail.reorder;
+  return false;
+};
+
 const LAST_SESSION_KEY = "fj_last_session";
 
 function getDayNumberFromLesson(lesson) {
@@ -154,6 +162,12 @@ export default function LessonDetail() {
   useEffect(() => {
     setShowMoreModes(false);
   }, [lessonIdNum, difficulty]);
+
+  useEffect(() => {
+    setShowMoreModes(false);
+  }, [dayNumber, difficulty]);
+
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
@@ -1305,10 +1319,12 @@ export default function LessonDetail() {
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
               {/* Typing */}
               <button
-                disabled={!modeAvail.typing}
-                onClick={() => startMode("typing")}
+                disabled={!modeEnabled("typing", modeAvail)}
+                onClick={() =>
+                  modeEnabled("typing", modeAvail) && startMode("typing")
+                }
                 className={`rounded-2xl border p-4 text-left transition ${
-                  modeAvail.typing
+                  modeEnabled("typing", modeAvail)
                     ? isRec("typing")
                       ? "border-black bg-white shadow-sm ring-2 ring-black/10"
                       : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
@@ -1321,7 +1337,9 @@ export default function LessonDetail() {
                       {uiFor("typing").title}
                     </div>
                     <div className="mt-1 text-xs text-slate-500">
-                      {uiFor("typing").sub}
+                      {modeEnabled("typing", modeAvail)
+                        ? uiFor("typing").sub
+                        : "Coming soon"}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -1348,7 +1366,7 @@ export default function LessonDetail() {
                 disabled={!modeAvail.reorder}
                 onClick={() => startMode("reorder")}
                 className={`rounded-2xl border p-4 text-left transition ${
-                  modeAvail.reorder
+                  modeEnabled("reorder", modeAvail)
                     ? isRec("reorder")
                       ? "border-black bg-white shadow-sm ring-2 ring-black/10"
                       : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
@@ -1361,7 +1379,9 @@ export default function LessonDetail() {
                       {uiFor("reorder").title}
                     </div>
                     <div className="mt-1 text-xs text-slate-500">
-                      {uiFor("reorder").sub}
+                      {modeEnabled("reorder", modeAvail)
+                        ? uiFor("reorder").sub
+                        : "Coming soon"}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
@@ -1389,7 +1409,7 @@ export default function LessonDetail() {
                 disabled={!modeAvail.audio}
                 onClick={() => startMode("audio")}
                 className={`rounded-2xl border p-4 text-left transition ${
-                  modeAvail.audio
+                  modeEnabled("audio", modeAvail)
                     ? isRec("audio")
                       ? "border-black bg-white shadow-sm ring-2 ring-black/10"
                       : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
@@ -1402,7 +1422,9 @@ export default function LessonDetail() {
                       {uiFor("audio").title}
                     </div>
                     <div className="mt-1 text-xs text-slate-500">
-                      {uiFor("audio").sub}
+                      {modeEnabled("audio", modeAvail)
+                        ? uiFor("audio").sub
+                        : "Coming soon"}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1">

@@ -302,6 +302,8 @@ export default function SentencePractice() {
   // ✅ NOW it's safe (expectedAnswer + current exist)
   const englishFull = String(expectedAnswer || current?.expected || "").trim();
 
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
   // For reorder: correctOrder (array) OR fallback to words OR split expectedAnswer
   const correctOrderArr =
     Array.isArray(expected.correctOrder) && expected.correctOrder.length
@@ -369,6 +371,26 @@ export default function SentencePractice() {
   useEffect(() => {
     ttsLangRef.current = ttsLang;
   }, [ttsLang]);
+
+  useEffect(() => {
+    setHasLoadedOnce(false);
+    setLoading(true);
+    setLoadError("");
+    setLessonExercises([]);
+
+    (async () => {
+      try {
+        const res = await api.get(/* YOUR EXISTING URL HERE */);
+        // If your api client returns { data }, use res.data
+        setLessonExercises(res?.data || res || []);
+      } catch (e) {
+        setLoadError("No Questions Uploaded Yet");
+      } finally {
+        setHasLoadedOnce(true);
+        setLoading(false);
+      }
+    })();
+  }, [safeMode, lessonId, difficulty]);
 
   useEffect(() => {
     if (safeMode !== "audio") return;
@@ -1863,7 +1885,11 @@ export default function SentencePractice() {
     );
   }
 
-  if (!loading && !(lessonExercises?.length > 0)) {
+  if (
+    hasLoadedOnce &&
+    !loading &&
+    (loadError || !(lessonExercises?.length > 0))
+  ) {
     const lid = lessonIdFromQuery || lessonId;
     return (
       <div className="max-w-3xl mx-auto p-6">
