@@ -375,26 +375,6 @@ export default function SentencePractice() {
   }, [ttsLang]);
 
   useEffect(() => {
-    setHasLoadedOnce(false);
-    setLoading(true);
-    setLoadError("");
-    setLessonExercises([]);
-
-    (async () => {
-      try {
-        const res = await api.get(/* YOUR EXISTING URL HERE */);
-        // If your api client returns { data }, use res.data
-        setLessonExercises(res?.data || res || []);
-      } catch (e) {
-        setLoadError("No Questions Uploaded Yet");
-      } finally {
-        setLoading(false);
-        setHasLoadedOnce(true);
-      }
-    })();
-  }, [safeMode, lid, difficulty]);
-
-  useEffect(() => {
     if (safeMode !== "audio") return;
     const v = new URLSearchParams(location.search).get("variant");
     if (v === "repeat" || v === "dictation") setAudioVariant(v);
@@ -611,7 +591,7 @@ export default function SentencePractice() {
     setLessonExercises([]);
     loadLessonBatch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchMode, lessonId]);
+  }, [safeMode, lid, difficulty]);
 
   // Keep total question count stored for LessonDetail progress summary
   useEffect(() => {
@@ -857,7 +837,7 @@ export default function SentencePractice() {
     setLoading(true);
     setLoadError("");
 
-    const lessonIdNum = Number(lessonIdFromQuery);
+    const lessonIdNum = lid;
 
     try {
       const res = await api.get(
