@@ -386,8 +386,8 @@ export default function SentencePractice() {
       } catch (e) {
         setLoadError("No Questions Uploaded Yet");
       } finally {
-        setHasLoadedOnce(true);
         setLoading(false);
+        setHasLoadedOnce(true);
       }
     })();
   }, [safeMode, lessonId, difficulty]);
@@ -1796,10 +1796,20 @@ export default function SentencePractice() {
     );
   }
 
+  const exLen = Array.isArray(lessonExercises) ? lessonExercises.length : 0;
+
+  console.log("[DBG] empty-check", {
+    hasLoadedOnce,
+    loading,
+    loadError,
+    exLen,
+    status: typeof status === "undefined" ? "(no status var)" : status,
+  });
+
   // -------------------
   // empty state (no exercises)
   // -------------------
-  if (status !== "loading" && (loadError || !(lessonExercises?.length > 0))) {
+  if (hasLoadedOnce && !loading && (loadError || exLen === 0)) {
     const lid = lessonIdFromQuery || lessonId;
 
     return (
@@ -1888,7 +1898,7 @@ export default function SentencePractice() {
   if (
     hasLoadedOnce &&
     !loading &&
-    (loadError || !(lessonExercises?.length > 0))
+    (loadError || lessonExercises.length === 0)
   ) {
     const lid = lessonIdFromQuery || lessonId;
     return (
