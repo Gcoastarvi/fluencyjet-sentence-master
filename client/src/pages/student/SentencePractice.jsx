@@ -229,14 +229,6 @@ export default function SentencePractice() {
   const [completionXp, setCompletionXp] = useState(0);
   const [completionMode, setCompletionMode] = useState("typing");
 
-  // Reset practice UI when switching modes/lesson/difficulty (React Router does not remount)
-  useEffect(() => {
-    setIsComplete(false);
-    setShowCompleteModal(false);
-    setCurrentIndex(0);
-    setLoadError("");
-  }, [safeMode, lid, difficulty]);
-
   // typing/cloze shared input state
   const [selectedOption, setSelectedOption] = useState(null);
   const [typedAnswer, setTypedAnswer] = useState("");
@@ -273,6 +265,14 @@ export default function SentencePractice() {
   );
 
   const lid = Number(lessonIdFromQuery ?? lessonId ?? 0);
+
+  // Reset practice UI when switching modes/lesson/difficulty (React Router does not remount)
+  useEffect(() => {
+    setIsComplete(false);
+    setShowCompleteModal(false);
+    setCurrentIndex(0);
+    setLoadError("");
+  }, [safeMode, lid, difficulty]);
 
   const xpInFlightRef = useRef(false);
 
@@ -507,7 +507,6 @@ export default function SentencePractice() {
     if (!isSessionDone) return;
 
     const search = new URLSearchParams(location.search);
-    const lid = Number(search.get("lessonId") || 0);
     if (!lid) return;
 
     let cancelled = false;
@@ -541,7 +540,6 @@ export default function SentencePractice() {
     if (!isSessionDone) return;
 
     const search = new URLSearchParams(location.search);
-    const lid = String(search.get("lessonId") || "");
     if (!lid) return;
 
     const mode = String(fetchMode || safeMode || "").toLowerCase();
