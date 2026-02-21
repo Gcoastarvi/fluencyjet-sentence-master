@@ -241,6 +241,8 @@ export default function SentencePractice() {
 
   const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
 
+  const [suppressEmpty, setSuppressEmpty] = useState(false);
+
   // 🔊 Audio (TTS)
   const [revealEnglish, setRevealEnglish] = useState(false);
   const [ttsRate, setTtsRate] = useState(1.0);
@@ -829,6 +831,8 @@ export default function SentencePractice() {
   async function loadLessonBatch() {
     setLoading(true);
     setLoadError("");
+    setSuppressEmpty(true);
+    setTimeout(() => setSuppressEmpty(false), 800);
 
     const lessonIdNum = lid;
 
@@ -1780,7 +1784,12 @@ export default function SentencePractice() {
   // -------------------
   // empty state (no exercises)
   // -------------------
-  if (hasLoadedOnce && !loading && (loadError || exLen === 0)) {
+  if (
+    !suppressEmpty &&
+    hasLoadedOnce &&
+    !loading &&
+    (loadError || exLen === 0)
+  ) {
     return (
       <div className="max-w-3xl mx-auto p-6">
         <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -1794,7 +1803,11 @@ export default function SentencePractice() {
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => navigate(`/lesson/${lid}`)}
+              onClick={() =>
+                navigate(
+                  `/b/lesson/${lid}?difficulty=${encodeURIComponent(difficulty)}`,
+                )
+              }
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
             >
               Back to Lesson
@@ -1845,7 +1858,11 @@ export default function SentencePractice() {
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => navigate(`/lesson/${lid}`)}
+              onClick={() =>
+                navigate(
+                  `/b/lesson/${lid}?difficulty=${encodeURIComponent(difficulty)}`,
+                )
+              }
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
             >
               Back to Lesson
@@ -1878,7 +1895,11 @@ export default function SentencePractice() {
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => navigate(`/lesson/${lid}`)}
+              onClick={() =>
+                navigate(
+                  `/b/lesson/${lid}?difficulty=${encodeURIComponent(difficulty)}`,
+                )
+              }
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
             >
               Back to Lesson
@@ -1914,7 +1935,7 @@ export default function SentencePractice() {
     );
   }
 
-  if (!current) {
+  if (!suppressEmpty && hasLoadedOnce && !loading && !current) {
     return (
       <div className="max-w-3xl mx-auto p-6 text-center">
         <h1 className="text-2xl font-bold mb-2">No question loaded yet</h1>
