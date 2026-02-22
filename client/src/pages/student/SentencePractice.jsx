@@ -272,7 +272,6 @@ export default function SentencePractice() {
   useEffect(() => {
     setIsComplete(false);
     setShowCompleteModal(false);
-    setCurrentIndex(0);
     setLoadError("");
   }, [safeMode, lid, difficulty]);
 
@@ -609,6 +608,48 @@ export default function SentencePractice() {
     initQuiz();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex, safeMode, lessonExercises]);
+
+  useEffect(() => {
+    // 1) If URL has q=, it always wins
+    const qRaw = search.get("q");
+    if (qRaw != null) {
+      const qNum = Number(qRaw);
+      if (Number.isFinite(qNum) && qNum >= 0) {
+        setCurrentIndex(qNum);
+        return;
+      }
+    }
+
+    // 2) Else, try last session
+    try {
+      const last = JSON.parse(
+        localStorage.getItem("fj_last_session") || "null",
+      );
+      if (!last) {
+        setCurrentIndex(0);
+        return;
+      }
+
+      const sameLesson = Number(last.lessonId) === Number(lid);
+      const sameDiff =
+        String(last.difficulty || "beginner") ===
+        String(difficulty || "beginner");
+      const sameMode =
+        String(last.mode || "").toLowerCase() ===
+        String(fetchMode || safeMode || "").toLowerCase();
+
+      if (sameLesson && sameDiff && sameMode) {
+        const idx = Number(last.questionIndex);
+        setCurrentIndex(Number.isFinite(idx) && idx >= 0 ? idx : 0);
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
+    // 3) Default fresh start
+    setCurrentIndex(0);
+  }, [lid, difficulty, safeMode, fetchMode]);
 
   // 🔊 Initialize sounds once
   useEffect(() => {
