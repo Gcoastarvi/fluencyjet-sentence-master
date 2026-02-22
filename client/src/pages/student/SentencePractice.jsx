@@ -446,7 +446,8 @@ export default function SentencePractice() {
 
     try {
       const session = {
-        lessonId: Number(lessonId),
+        lessonId: Number(lid) || 0,
+        difficulty: String(difficulty || "beginner"),
         mode: String(fetchMode || safeMode || ""),
         questionIndex: Number(currentIndex) || 0,
         updatedAt: Date.now(),
@@ -458,7 +459,8 @@ export default function SentencePractice() {
       // ignore
     }
   }, [
-    lessonId,
+    lid,
+    difficulty,
     fetchMode,
     safeMode,
     currentIndex,
@@ -476,10 +478,11 @@ export default function SentencePractice() {
       const total = totalQuestions || lessonExercises?.length || 0;
 
       const session = {
-        lessonId: Number(lessonId),
+        lessonId: Number(lid) || 0,
+        difficulty: String(difficulty || "beginner"),
         mode: String(fetchMode || safeMode || ""),
         index: "done",
-        questionIndex: total, // helps UI show Q# correctly if needed
+        questionIndex: total,
         total,
         updatedAt: Date.now(),
         ...(String(fetchMode || safeMode) === "audio"
@@ -492,7 +495,8 @@ export default function SentencePractice() {
       // ignore
     }
   }, [
-    lessonId,
+    lid,
+    difficulty,
     fetchMode,
     safeMode,
     audioVariant,
