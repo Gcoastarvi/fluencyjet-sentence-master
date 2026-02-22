@@ -5,6 +5,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { uiFor } from "@/lib/modeUi";
 
+import { track } from "@/lib/track";
+
 // ===== helpers (reorder/typing normalization) =====
 const norm = (v) =>
   String(v ?? "")
@@ -725,6 +727,27 @@ export default function SentencePractice() {
       }
     } catch {}
   }, [lid, difficulty, fetchMode, safeMode]);
+
+  useEffect(() => {
+    track("practice_view", {
+      lessonId: Number(lid) || 0,
+      difficulty,
+      mode: safeMode,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lid, difficulty, safeMode]);
+
+  useEffect(() => {
+    if (!isComplete) return;
+    track("session_complete", {
+      lessonId: Number(lid) || 0,
+      difficulty,
+      mode: safeMode,
+      answered: Number(currentIndex) + 1,
+      total: Number(totalQuestions || lessonExercises?.length || 0),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isComplete]);
 
   // 🔊 Initialize sounds once
   useEffect(() => {
@@ -1851,14 +1874,19 @@ export default function SentencePractice() {
           <button
             type="button"
             className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
-            onClick={() =>
+            onClick={() => {
+              track("practice_cta_clicked", {
+                lessonId: Number(lid) || 0,
+                difficulty,
+                mode: safeMode,
+                cta: "back_to_lesson",
+              });
+
               navigate(
-                `${base}/lesson/${lid || 1}?difficulty=${encodeURIComponent(
-                  difficulty,
-                )}`,
+                `${base}/lesson/${lid || 1}?difficulty=${encodeURIComponent(difficulty)}`,
                 { replace: true },
-              )
-            }
+              );
+            }}
           >
             Back to Lesson {lid || 1}
           </button>
@@ -1868,14 +1896,22 @@ export default function SentencePractice() {
             <button
               type="button"
               className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
-              onClick={() =>
+              onClick={() => {
+                track("practice_cta_clicked", {
+                  lessonId: Number(lid) || 0,
+                  difficulty,
+                  mode: safeMode,
+                  cta: "continue_next_lesson",
+                  nextLessonId,
+                });
+
                 navigate(
                   `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
                     difficulty,
                   )}&autostart=1`,
                   { replace: true },
-                )
-              }
+                );
+              }}
             >
               Continue to Lesson {nextLessonId} → (keep going)
             </button>
@@ -1885,23 +1921,42 @@ export default function SentencePractice() {
             <button
               type="button"
               className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
-              onClick={() =>
+              onClick={() => {
+                track("mode_switched", {
+                  lessonId: Number(lid) || 0,
+                  difficulty,
+                  fromMode: safeMode,
+                  toMode: fallbackMode,
+                  source: "session_complete",
+                });
+
                 navigate(
-                  `/practice/${fallbackMode}?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(difficulty)}`,
-                )
-              }
+                  `/practice/${fallbackMode}?lessonId=${encodeURIComponent(
+                    lid || 1,
+                  )}&difficulty=${encodeURIComponent(difficulty)}`,
+                );
+              }}
             >
               Try {uiFor(fallbackMode).title} →
             </button>
 
             <button
               type="button"
-              className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
-              onClick={() =>
+              onClick={() => {
+                track("mode_switched", {
+                  lessonId: Number(lid) || 0,
+                  difficulty,
+                  fromMode: safeMode,
+                  toMode: "audio",
+                  source: "session_complete",
+                });
+
                 navigate(
-                  `/practice/audio?lessonId=${encodeURIComponent(lid || 1)}&difficulty=${encodeURIComponent(difficulty)}`,
-                )
-              }
+                  `/practice/audio?lessonId=${encodeURIComponent(
+                    lid || 1,
+                  )}&difficulty=${encodeURIComponent(difficulty)}`,
+                );
+              }}
             >
               Try {uiFor("audio").title} →
             </button>
