@@ -147,7 +147,7 @@ export default function LessonDetail() {
   const lessonId = dayNumberStr;
   const lessonIdNum = dayNumber; // optional alias if older code uses lessonIdNum
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // If Lessons page passes state: { lesson }, we use it. If not, we still render safely.
   const [lesson, setLesson] = useState(location.state?.lesson || null);
