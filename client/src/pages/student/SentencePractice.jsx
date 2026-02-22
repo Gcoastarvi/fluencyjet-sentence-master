@@ -2150,45 +2150,49 @@ export default function SentencePractice() {
   // UI
   // -------------------
   return (
-    <div className="max-w-3xl mx-auto p-6">
-      <h1 className="text-2xl font-bold text-center mb-6">
-        Build the sentence
-      </h1>
+    <div className="min-h-screen bg-slate-50">
+      <PracticeHeader
+        lid={lid}
+        difficulty={difficulty}
+        mode={safeMode}
+        currentIndex={currentIndex}
+        total={totalQuestions || lessonExercises?.length || 0}
+        streakText={`${Number(streak || 0)}-day streak`}
+        onBack={() =>
+          navigate(
+            `/b/lesson/${lid || 1}?difficulty=${encodeURIComponent(
+              difficulty || "beginner",
+            )}`,
+          )
+        }
+      />
 
       {import.meta.env.DEV ? (
-        <div className="text-center text-xs text-slate-400 mb-3">
+        <div className="mx-auto max-w-3xl px-4 pt-3 text-center text-xs text-slate-400">
           urlMode: <b>{String(urlMode)}</b> | activeMode: <b>{activeMode}</b> |
-          safeMode: <b>{safeMode}</b> | lessonId: <b>{lessonId}</b>
+          safeMode: <b>{safeMode}</b> | lid: <b>{String(lid)}</b>
         </div>
       ) : null}
 
-      <div className="text-center text-sm text-gray-500 mb-3">
-        Question {currentIndex + 1} / {totalQuestions}
-      </div>
-
-      <div className="flex justify-center items-center gap-2 mb-4 text-orange-600 font-semibold">
-        🔥 {streak}-day streak
-      </div>
-
-      {/* Tamil Prompt */}
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6 text-lg">
-        {current?.promptTa}
-      </div>
+      <PromptCard tamil={current?.promptTa || "—"} />
 
       {/* Hint */}
       {showHint && status !== "correct" && (
-        <div className="bg-purple-100 text-purple-800 p-3 rounded mb-4">
-          �� Hint: Subject → Verb → Action
+        <div className="mx-auto max-w-3xl px-4 pt-3">
+          <div className="rounded-xl border border-purple-200 bg-purple-50 p-3 text-sm font-semibold text-purple-800">
+            Hint: Subject → Verb → Action
+          </div>
         </div>
       )}
 
+      {/* Main content wrapper (DO NOT close this here) */}
+      <div className="mx-auto max-w-3xl px-4 pb-10 pt-4">
+
       {/* 🧩 CLOZE UI */}
       {safeMode === "cloze" && (
-        <div className="bg-white shadow-lg rounded-xl p-5 border border-indigo-200">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold text-indigo-700">
-              Cloze Practice
-            </h2>
+            <h2 className="text-lg font-bold text-slate-900">Cloze Practice</h2>
 
             <button
               onClick={() => setTypedAnswer("")}
@@ -2249,12 +2253,12 @@ export default function SentencePractice() {
       {/* ⌨️ TYPING UI */}
       {(safeMode === "typing" ||
         (safeMode === "audio" && audioVariant === "dictation")) && (
-        <div className="bg-white shadow-lg rounded-xl p-5 border border-purple-200">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold text-purple-700">
+            <h2 className="text-lg font-bold text-slate-900">
               {safeMode === "audio" && audioVariant === "dictation"
                 ? "Audio Dictation"
-                : "Typing Practice"}
+                : uiFor("typing").title}
             </h2>
 
             <button
@@ -2289,11 +2293,9 @@ export default function SentencePractice() {
           )}
 
           {/* Tamil prompt (what they should convert to English) */}
-          <div className="bg-purple-50 border border-purple-100 rounded-lg p-3 mb-3">
-            <div className="text-xs font-semibold text-purple-700 mb-1">
-              Tamil prompt
-            </div>
-            <div className="text-sm text-slate-800">{current?.promptTa}</div>
+          <div className="bg-purple-50 ...">
+            <div className="text-xs ...">Tamil prompt</div>
+            <div className="text-sm ...">{current?.promptTa}</div>
           </div>
 
           {/* Word Bank (hint only — not clickable) */}
@@ -2308,7 +2310,7 @@ export default function SentencePractice() {
                 {(typingWordBank || []).map((w, idx) => (
                   <span
                     key={`${w}_${idx}`}
-                    className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-sm"
+                    className="px-3 py-1 rounded-full border border-slate-200 bg-white text-sm text-slate-700"
                   >
                     {w}
                   </span>
@@ -2322,7 +2324,7 @@ export default function SentencePractice() {
             value={typedAnswer}
             onChange={(e) => setTypedAnswer(e.target.value)}
             placeholder="Type the full English sentence here..."
-            className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+            className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
             rows={3}
             disabled={status === "correct" || status === "reveal"}
           />
@@ -2330,7 +2332,7 @@ export default function SentencePractice() {
           <div className="flex items-center gap-3 mt-3">
             <button
               onClick={checkAnswer}
-              className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
+              className="px-4 py-2 rounded-xl bg-slate-900 text-white hover:opacity-90"
               disabled={status === "correct" || status === "reveal"}
             >
               Submit
@@ -2338,7 +2340,7 @@ export default function SentencePractice() {
 
             <button
               onClick={() => setStatus("reveal")}
-              className="px-4 py-2 rounded bg-yellow-500 text-white hover:bg-yellow-600"
+              className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
               disabled={status === "correct" || status === "reveal"}
             >
               Show Answer
@@ -2348,44 +2350,43 @@ export default function SentencePractice() {
       )}
 
       {/* 🔊 AUDIO UI */}
-      <div className="mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            if (safeMode === "audio") setAudioVariant("repeat");
-            else goAudio("repeat");
-          }}
-          className={`px-3 py-2 rounded-lg border text-sm ${
-            audioVariant === "repeat"
-              ? "bg-black text-white"
-              : "bg-white hover:bg-gray-50"
-          }`}
-        >
-          Repeat
-        </button>
+      {safeMode === "audio" && (
+        <div className="mb-3 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAudioVariant("repeat")}
+            className={`rounded-xl px-3 py-2 text-sm font-semibold ${
+              audioVariant === "repeat"
+                ? "bg-slate-900 text-white"
+                : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            Repeat
+          </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            if (safeMode === "audio") setAudioVariant("dictation");
-            else goAudio("dictation");
-          }}
-          className={`px-3 py-2 rounded-lg border text-sm ${
-            audioVariant === "dictation"
-              ? "bg-black text-white"
-              : "bg-white hover:bg-gray-50"
-          }`}
-        >
-          Dictation
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setAudioVariant("dictation")}
+            className={`rounded-xl px-3 py-2 text-sm font-semibold ${
+              audioVariant === "dictation"
+                ? "bg-slate-900 text-white"
+                : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            Dictation
+          </button>
+        </div>
+      )}
 
       {safeMode === "audio" && audioVariant === "repeat" && (
-        <div className="bg-white shadow-lg rounded-xl p-5 border border-emerald-200">
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold text-emerald-700">
-              Audio Practice
+            <h2 className="text-lg font-bold text-slate-900">
+              {uiFor("audio").title}
             </h2>
+            <div className="mt-1 text-xs text-slate-500">
+              Listen and repeat. Then mark it done.
+            </div>
 
             <button
               type="button"
@@ -2397,10 +2398,6 @@ export default function SentencePractice() {
             >
               Reset
             </button>
-          </div>
-
-          <div className="text-sm text-gray-600 mb-2">
-            Listen and repeat. Then mark it done.
           </div>
 
           <div className="rounded-xl border bg-white p-4">
@@ -2489,7 +2486,7 @@ export default function SentencePractice() {
                 <button
                   type="button"
                   onClick={handleAudioRepeated}
-                  className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                  className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
                   disabled={
                     !current ||
                     status === "correct" ||
@@ -2507,16 +2504,35 @@ export default function SentencePractice() {
 
       {/* REORDER UI */}
       {safeMode === "reorder" && (
-        <>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900">
+              {uiFor("reorder").title}
+            </h2>
+            <button
+              type="button"
+              onClick={handleTryAgain}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              disabled={status === "correct" || status === "reveal"}
+            >
+              Reset
+            </button>
+          </div>
+          <div className="mt-1 text-xs text-slate-500">
+            {uiFor("reorder").sub}
+          </div>
+
           {/* Answer Area */}
-          <div className="border-2 border-dashed rounded-lg p-4 min-h-[70px] mb-4 flex flex-wrap gap-2">
+          <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 min-h-[72px] flex flex-wrap gap-2">
             {answer.map((word, index) => {
               const isWrong = wrongIndexes.includes(index);
               return (
                 <span
                   key={`${word}-${index}`}
-                  className={`px-4 py-2 rounded-full text-white transition ${
-                    isWrong ? "bg-red-500" : "bg-blue-600"
+                  className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                    isWrong
+                      ? "bg-rose-100 text-rose-800 border border-rose-200"
+                      : "bg-slate-900 text-white"
                   }`}
                 >
                   {word}
@@ -2526,31 +2542,31 @@ export default function SentencePractice() {
           </div>
 
           {/* Tile Bank */}
-          <div className="border-2 border-dashed rounded-lg p-4 mb-6 flex flex-wrap gap-2">
+          <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 flex flex-wrap gap-2">
             {tiles.map((word, index) => (
               <button
                 key={`${word}-${index}`}
                 type="button"
                 onClick={() => addToAnswer(word)}
                 disabled={status === "correct" || status === "reveal"}
-                className="px-4 py-2 rounded-full bg-blue-600 text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-full border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {word}
               </button>
             ))}
           </div>
 
-          {/* Check Answer button (REORDER only) */}
+          {/* Check Answer */}
           {status === "idle" && (
             <button
               type="button"
               onClick={checkReorderAnswer}
-              className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+              className="mt-4 w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:opacity-90"
             >
               Check Answer
             </button>
           )}
-        </>
+        </div>
       )}
 
       {/* Wrong */}
@@ -2561,7 +2577,7 @@ export default function SentencePractice() {
           </div>
           <button
             onClick={handleTryAgain}
-            className="w-full bg-purple-600 text-white py-3 rounded-lg text-lg"
+            className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:opacity-90"
           >
             Try again
           </button>
@@ -2608,8 +2624,13 @@ export default function SentencePractice() {
                   className="w-full rounded-xl bg-black px-4 py-2 text-white"
                   onClick={() => {
                     setShowCompleteModal(false);
-                    const next = Number(lessonId) + 1;
-                    navigate(`/lesson/${next}`, { replace: true });
+                    const next = Number(lid) + 1;
+                    navigate(
+                      `/b/lesson/${next}?difficulty=${encodeURIComponent(difficulty)}`,
+                      {
+                        replace: true,
+                      },
+                    );
                   }}
                 >
                   Next Lesson →
