@@ -282,6 +282,8 @@ export default function SentencePractice() {
 
   const nextIndex = currentIndex + 1;
 
+  const resumeIndexRef = useRef(null);
+
   // ✅ Derived (must be AFTER useState declarations)
   const current =
     Array.isArray(lessonExercises) && typeof currentIndex === "number"
@@ -589,10 +591,8 @@ export default function SentencePractice() {
   }, [safeMode, lid, difficulty]);
 
   useEffect(() => {
-    setCurrentIndex(0);
     setLessonExercises([]);
     loadLessonBatch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [safeMode, lid, difficulty]);
 
   // Keep total question count stored for LessonDetail progress summary
@@ -680,6 +680,43 @@ export default function SentencePractice() {
     } catch (e) {
       console.log("[DBG] restore failed", e);
     }
+  }, [lid, difficulty, fetchMode, safeMode]);
+
+  useEffect(() => {
+    resumeIndexRef.current = null;
+
+    // URL q= wins
+    const qRaw = search.get("q");
+    if (qRaw != null) {
+      const qNum = Number(qRaw);
+      if (Number.isFinite(qNum) && qNum >= 0) {
+        resumeIndexRef.current = qNum;
+        return;
+      }
+    }
+
+    // Else last session
+    try {
+      const last = JSON.parse(
+        localStorage.getItem("fj_last_session") || "null",
+      );
+      if (!last) return;
+
+      const sameLesson = Number(last.lessonId) === Number(lid);
+      const sameDiff =
+        String(last.difficulty || "beginner") ===
+        String(difficulty || "beginner");
+      const sameMode =
+        String(last.mode || "").toLowerCase() ===
+        String(fetchMode || safeMode || "").toLowerCase();
+
+      if (!sameLesson || !sameDiff || !sameMode) return;
+
+      const idx = Number(last.questionIndex);
+      if (Number.isFinite(idx) && idx >= 0) {
+        resumeIndexRef.current = idx;
+      }
+    } catch {}
   }, [lid, difficulty, fetchMode, safeMode]);
 
   // 🔊 Initialize sounds once
@@ -1015,6 +1052,21 @@ export default function SentencePractice() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!Array.isArray(lessonExercises) || lessonExercises.length === 0) return;
+    if (resumeIndexRef.current == null) return;
+
+    const idx = Number(resumeIndexRef.current);
+    const max = lessonExercises.length - 1;
+    const clamped = Math.max(0, Math.min(idx, max));
+
+    setCurrentIndex(clamped);
+    console.log("[DBG] applied resume index after load", clamped);
+
+    // consume it so it won’t fight future navigation
+    resumeIndexRef.current = null;
+  }, [lessonExercises]);
 
   async function loadRandomOne() {
     setLoading(true);
