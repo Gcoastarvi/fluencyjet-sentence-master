@@ -454,6 +454,9 @@ export default function SentencePractice() {
           ? { variant: audioVariant }
           : {}),
       };
+
+      localStorage.setItem("fj_last_session", JSON.stringify(session));
+      console.log("[DBG] saved fj_last_session (progress)", session);
     } catch {
       // ignore
     }
