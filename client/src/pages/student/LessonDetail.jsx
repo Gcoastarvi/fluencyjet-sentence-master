@@ -163,10 +163,6 @@ export default function LessonDetail() {
     setShowMoreModes(false);
   }, [lessonIdNum, difficulty]);
 
-  useEffect(() => {
-    setShowMoreModes(false);
-  }, [dayNumber, difficulty]);
-
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   const [smartStarting, setSmartStarting] = useState(false);
@@ -311,23 +307,6 @@ export default function LessonDetail() {
     });
   }, [dayNumber]);
 
-  useEffect(() => {
-    const a = searchParams.get("autostart");
-    if (a !== "1") return;
-
-    // prevent loops if user hits back/refresh
-    searchParams.delete("autostart");
-    setSearchParams(searchParams, { replace: true });
-
-    // start recommended mode
-    const rm = getNextRecommendedMode();
-    if (!rm) return;
-    navigate(
-      `/practice/${rm}?lessonId=${encodeURIComponent(lessonIdNum)}&difficulty=${encodeURIComponent(difficulty)}`,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Continue session (supports typing/reorder, and audio later)
   const session = useMemo(() => {
     if (!lessonId) return null;
@@ -338,8 +317,13 @@ export default function LessonDetail() {
     const allowed = ["typing", "reorder", "cloze", "audio"];
     if (!allowed.includes(m)) return null;
 
-    const sameLesson = String(s.lessonId) === String(lessonId);
+    const sameLesson = Number(s.lessonId) === Number(dayNumber);
     if (!sameLesson) return null;
+
+    const sameDiff =
+      String(s.difficulty || "").toLowerCase() ===
+      String(difficulty).toLowerCase();
+    if (!sameDiff) return null;
 
     if (m === "audio" && !ENABLE_AUDIO) return null;
     if (m === "cloze" && !ENABLE_CLOZE) return null;
@@ -413,8 +397,8 @@ export default function LessonDetail() {
     if (!Number.isFinite(idx) || idx < 0) return null;
 
     const total = Number(totalsByMode[m] || 0);
-    if (total <= 0) return null; // nothing to resume
-    if (idx >= total) return null; // stale/out-of-range session
+    // If we know total, enforce bounds; if we don't, still allow resume.
+    if (total > 0 && idx >= total) return null;
 
     return { mode: m, questionIndex: idx, total, variant: session?.variant };
   })();
@@ -429,16 +413,11 @@ export default function LessonDetail() {
       ? `Continue • ${modeLabel(normalizedSession.mode)} • Q${qNum}`
       : "Continue";
 
-  // ✅ If last session is "done", don't show Continue
-  const isSessionDone =
-    normalizedSession?.index === "done" ||
-    normalizedSession?.questionIndex === "done";
-
   const canContinue =
     normalizedSession &&
-    !isSessionDone &&
     typeof normalizedSession.questionIndex === "number" &&
-    Number.isFinite(normalizedSession.questionIndex);
+    Number.isFinite(normalizedSession.questionIndex) &&
+    normalizedSession.questionIndex >= 0;
 
   const continueHref =
     canContinue && dayNumber
@@ -464,7 +443,7 @@ export default function LessonDetail() {
     if (mode === "cloze" && !ENABLE_CLOZE) return;
 
     // ✅ SOURCE OF TRUTH: lessonId from the route (/lesson/:lessonId)
-    const lid = Number(lessonId);
+    const lid = Number(dayNumber);
 
     navigate(
       `/practice/${mode}?lessonId=${encodeURIComponent(lid)}&difficulty=${encodeURIComponent(
@@ -482,7 +461,7 @@ export default function LessonDetail() {
   function goToPrevLessonHub() {
     if (!missedBanner?.prevLessonId) return;
     navigate(
-      `/lesson/${missedBanner.prevLessonId}?difficulty=${encodeURIComponent(difficulty)}`,
+      `/b/lesson/${missedBanner.prevLessonId}?difficulty=${encodeURIComponent(difficulty)}`,
     );
   }
 
