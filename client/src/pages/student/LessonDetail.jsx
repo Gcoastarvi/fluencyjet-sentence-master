@@ -13,6 +13,8 @@ import { LESSON_TEACH } from "../../content/lessonTeach";
 
 import { MODE_UI, uiFor } from "../../lib/modeUi";
 
+import { track } from "../../lib/track";
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -181,6 +183,11 @@ export default function LessonDetail() {
   //});
 
   // Tamil toggle disabled for MVP (no showTa state)
+
+  useEffect(() => {
+    track("lesson_hub_view", { lessonId: Number(dayNumber) || 0, difficulty });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayNumber, difficulty]);
 
   // Fallback: if page is hard-refreshed and no state.lesson, try to fetch lesson list and locate this lesson
   useEffect(() => {
@@ -448,7 +455,12 @@ export default function LessonDetail() {
     if (mode === "audio" && !ENABLE_AUDIO) return;
     if (mode === "cloze" && !ENABLE_CLOZE) return;
 
-    // ✅ SOURCE OF TRUTH: lessonId from the route (/lesson/:lessonId)
+    track("mode_card_clicked", {
+      lessonId: Number(dayNumber) || 0,
+      difficulty,
+      mode,
+    });
+
     const lid = Number(dayNumber);
 
     navigate(
@@ -604,8 +616,21 @@ export default function LessonDetail() {
     if (!lessonId) return;
     if (isLocked) return goPaywall();
 
+    track("start_practice_clicked", {
+      lessonId: Number(dayNumber) || 0,
+      difficulty,
+      recommendedMode,
+      hasContinue: Boolean(continueHref),
+    });
+
     // If Continue exists, always honor it first
     if (continueHref) {
+      track("continue_clicked", {
+        lessonId: Number(dayNumber) || 0,
+        difficulty,
+        mode: normalizedSession?.mode || session?.mode || null,
+        q: normalizedSession?.questionIndex ?? session?.questionIndex ?? null,
+      });
       navigate(continueHref);
       return;
     }
@@ -1202,6 +1227,18 @@ export default function LessonDetail() {
               {continueHref ? (
                 <Link
                   to={continueHref}
+                  onClick={() =>
+                    track("continue_clicked", {
+                      lessonId: Number(dayNumber) || 0,
+                      difficulty,
+                      mode: normalizedSession?.mode || session?.mode || null,
+                      q:
+                        normalizedSession?.questionIndex ??
+                        session?.questionIndex ??
+                        null,
+                      source: "hero",
+                    })
+                  }
                   className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 hover:opacity-95"
                 >
                   Continue →
@@ -1294,7 +1331,17 @@ export default function LessonDetail() {
 
               <button
                 type="button"
-                onClick={() => setShowMoreModes((v) => !v)}
+                onClick={() =>
+                  setShowMoreModes((v) => {
+                    const next = !v;
+                    track("view_details_toggled", {
+                      lessonId: Number(dayNumber) || 0,
+                      difficulty,
+                      open: next,
+                    });
+                    return next;
+                  })
+                }
                 className="text-xs font-semibold text-slate-600 underline-offset-4 hover:underline"
               >
                 {showMoreModes ? "Hide details" : "View details"}
