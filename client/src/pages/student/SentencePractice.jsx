@@ -7,6 +7,9 @@ import { uiFor } from "@/lib/modeUi";
 
 import { track } from "@/lib/track";
 
+import PracticeHeader from "@/components/student/PracticeHeader";
+import PromptCard from "@/components/student/PromptCard";
+
 // ===== helpers (reorder/typing normalization) =====
 const norm = (v) =>
   String(v ?? "")
