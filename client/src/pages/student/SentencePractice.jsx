@@ -284,6 +284,8 @@ export default function SentencePractice() {
 
   const resumeIndexRef = useRef(null);
 
+  const resumeAppliedRef = useRef(false);
+
   // ✅ Derived (must be AFTER useState declarations)
   const current =
     Array.isArray(lessonExercises) && typeof currentIndex === "number"
@@ -404,6 +406,13 @@ export default function SentencePractice() {
     return () => clearTimeout(t);
   }, [showXPToast]);
 
+  useEffect(() => {
+    // If there's no pending resume index, allow progress saves normally
+    if (resumeIndexRef.current == null) {
+      resumeAppliedRef.current = true;
+    }
+  }, [lid, difficulty, fetchMode, safeMode]);
+
   // -------------------
   // effects
   // -------------------
@@ -441,7 +450,8 @@ export default function SentencePractice() {
   }, [lessonId, safeMode]);
 
   useEffect(() => {
-    // ✅ do not overwrite "done"
+    if (!resumeAppliedRef.current) return;
+
     if (isComplete) return;
     if (totalQuestions > 0 && currentIndex >= totalQuestions) return;
 
@@ -459,9 +469,7 @@ export default function SentencePractice() {
 
       localStorage.setItem("fj_last_session", JSON.stringify(session));
       console.log("[DBG] saved fj_last_session (progress)", session);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [
     lid,
     difficulty,
@@ -1062,9 +1070,8 @@ export default function SentencePractice() {
     const clamped = Math.max(0, Math.min(idx, max));
 
     setCurrentIndex(clamped);
+    resumeAppliedRef.current = true;
     console.log("[DBG] applied resume index after load", clamped);
-
-    // consume it so it won’t fight future navigation
     resumeIndexRef.current = null;
   }, [lessonExercises]);
 
