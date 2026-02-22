@@ -286,6 +286,8 @@ export default function SentencePractice() {
 
   const resumeAppliedRef = useRef(false);
 
+  const resumeWantedRef = useRef(false);
+
   // ✅ Derived (must be AFTER useState declarations)
   const current =
     Array.isArray(lessonExercises) && typeof currentIndex === "number"
@@ -405,13 +407,6 @@ export default function SentencePractice() {
 
     return () => clearTimeout(t);
   }, [showXPToast]);
-
-  useEffect(() => {
-    // If there's no pending resume index, allow progress saves normally
-    if (resumeIndexRef.current == null) {
-      resumeAppliedRef.current = true;
-    }
-  }, [lid, difficulty, fetchMode, safeMode]);
 
   // -------------------
   // effects
@@ -691,19 +686,22 @@ export default function SentencePractice() {
   }, [lid, difficulty, fetchMode, safeMode]);
 
   useEffect(() => {
+    // reset
     resumeIndexRef.current = null;
+    resumeWantedRef.current = false;
 
-    // URL q= wins
+    // 1) URL q= wins
     const qRaw = search.get("q");
     if (qRaw != null) {
       const qNum = Number(qRaw);
       if (Number.isFinite(qNum) && qNum >= 0) {
         resumeIndexRef.current = qNum;
+        resumeWantedRef.current = true;
         return;
       }
     }
 
-    // Else last session
+    // 2) Else use last session (if it matches this lesson/difficulty/mode)
     try {
       const last = JSON.parse(
         localStorage.getItem("fj_last_session") || "null",
@@ -723,6 +721,7 @@ export default function SentencePractice() {
       const idx = Number(last.questionIndex);
       if (Number.isFinite(idx) && idx >= 0) {
         resumeIndexRef.current = idx;
+        resumeWantedRef.current = true;
       }
     } catch {}
   }, [lid, difficulty, fetchMode, safeMode]);
@@ -1063,16 +1062,22 @@ export default function SentencePractice() {
 
   useEffect(() => {
     if (!Array.isArray(lessonExercises) || lessonExercises.length === 0) return;
-    if (resumeIndexRef.current == null) return;
 
-    const idx = Number(resumeIndexRef.current);
-    const max = lessonExercises.length - 1;
-    const clamped = Math.max(0, Math.min(idx, max));
+    // If we wanted a resume and have an index, apply it once
+    if (resumeWantedRef.current && resumeIndexRef.current != null) {
+      const idx = Number(resumeIndexRef.current);
+      const max = lessonExercises.length - 1;
+      const clamped = Math.max(0, Math.min(idx, max));
 
-    setCurrentIndex(clamped);
+      setCurrentIndex(clamped);
+      console.log("[DBG] applied resume index after load", clamped);
+
+      resumeIndexRef.current = null;
+      resumeWantedRef.current = false;
+    }
+
+    // Now it's safe to start saving progress (prevents index 0 overwrite on refresh)
     resumeAppliedRef.current = true;
-    console.log("[DBG] applied resume index after load", clamped);
-    resumeIndexRef.current = null;
   }, [lessonExercises]);
 
   async function loadRandomOne() {
