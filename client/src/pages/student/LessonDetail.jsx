@@ -393,11 +393,17 @@ export default function LessonDetail() {
     if (m === "audio" && !ENABLE_AUDIO) return null;
     if (m === "cloze" && !ENABLE_CLOZE) return null;
 
+    // difficulty gate
+    const sameDiff =
+      String(session?.difficulty || "").toLowerCase() ===
+      String(difficulty).toLowerCase();
+    if (!sameDiff) return null;
+
     // index gate
     if (!Number.isFinite(idx) || idx < 0) return null;
 
+    // If we know total, enforce bounds. If we don't, still allow resume.
     const total = Number(totalsByMode[m] || 0);
-    // If we know total, enforce bounds; if we don't, still allow resume.
     if (total > 0 && idx >= total) return null;
 
     return { mode: m, questionIndex: idx, total, variant: session?.variant };
