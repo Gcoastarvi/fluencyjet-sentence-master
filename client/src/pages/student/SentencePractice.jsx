@@ -490,6 +490,7 @@ export default function SentencePractice() {
       };
 
       localStorage.setItem("fj_last_session", JSON.stringify(session));
+      console.log("[DBG] saved fj_last_session", session);
     } catch {
       // ignore
     }
@@ -650,6 +651,33 @@ export default function SentencePractice() {
     // 3) Default fresh start
     setCurrentIndex(0);
   }, [lid, difficulty, safeMode, fetchMode]);
+
+  useEffect(() => {
+    try {
+      const last = JSON.parse(
+        localStorage.getItem("fj_last_session") || "null",
+      );
+      if (!last) return;
+
+      const sameLesson = Number(last.lessonId) === Number(lid);
+      const sameDiff =
+        String(last.difficulty || "beginner") ===
+        String(difficulty || "beginner");
+      const sameMode =
+        String(last.mode || "").toLowerCase() ===
+        String(fetchMode || safeMode || "").toLowerCase();
+
+      if (!sameLesson || !sameDiff || !sameMode) return;
+
+      const idx = Number(last.questionIndex);
+      if (Number.isFinite(idx) && idx >= 0) {
+        setCurrentIndex(idx);
+        console.log("[DBG] restored index", idx, last);
+      }
+    } catch (e) {
+      console.log("[DBG] restore failed", e);
+    }
+  }, [lid, difficulty, fetchMode, safeMode]);
 
   // 🔊 Initialize sounds once
   useEffect(() => {
@@ -990,7 +1018,7 @@ export default function SentencePractice() {
     setLoadError("");
     try {
       const res = await api.get("/quizzes/random", {
-        params: { mode: fetchMode, lessonId },
+        params: { mode: fetchMode, lessonId: lid },
       });
       const data = res?.data ?? res;
       const ex = normalizeExercise(data);
