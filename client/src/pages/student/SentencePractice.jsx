@@ -2623,10 +2623,9 @@ export default function SentencePractice() {
             )}
 
             {/* Word Bank (hint only — not clickable) */}
-            {(safeMode === "typing" ||
-              (safeMode === "audio" && audioVariant === "dictation")) && (
+            {safeMode === "typing" && (
               <div className="mb-3">
-                <div className="text-xs font-semibold text-slate-600 mb-2">
+                <div className="mb-2 text-xs font-semibold text-slate-600">
                   Word Bank (hint only)
                 </div>
 
@@ -2634,7 +2633,7 @@ export default function SentencePractice() {
                   {(typingWordBank || []).map((w, idx) => (
                     <span
                       key={`${w}_${idx}`}
-                      className="px-3 py-1 rounded-full border border-slate-200 bg-white text-sm text-slate-700 shadow-sm"
+                      className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 shadow-sm"
                     >
                       {w}
                     </span>
