@@ -2178,6 +2178,7 @@ export default function SentencePractice() {
       </div>
     );
   }
+
   // -------------------
   // UI
   // -------------------
