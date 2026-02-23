@@ -2149,12 +2149,12 @@ export default function SentencePractice() {
     );
   }
 
-  function AudioVariantToggle({ audioVariant, setAudioVariant }) {
+  function AudioVariantToggle({ audioVariant, onGoVariant }) {
     return (
       <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1">
         <button
           type="button"
-          onClick={() => setAudioVariant("repeat")}
+          onClick={() => onGoVariant("repeat")}
           className={`rounded-lg px-3 py-2 text-xs font-semibold ${
             audioVariant === "repeat"
               ? "bg-slate-900 text-white"
@@ -2163,9 +2163,10 @@ export default function SentencePractice() {
         >
           Repeat
         </button>
+
         <button
           type="button"
-          onClick={() => setAudioVariant("dictation")}
+          onClick={() => onGoVariant("dictation")}
           className={`rounded-lg px-3 py-2 text-xs font-semibold ${
             audioVariant === "dictation"
               ? "bg-slate-900 text-white"
@@ -2177,7 +2178,6 @@ export default function SentencePractice() {
       </div>
     );
   }
-
   // -------------------
   // UI
   // -------------------
@@ -2308,7 +2308,7 @@ export default function SentencePractice() {
                 {safeMode === "audio" && audioVariant === "dictation" ? (
                   <AudioVariantToggle
                     audioVariant={audioVariant}
-                    setAudioVariant={setAudioVariant}
+                    onGoVariant={(v) => hardResetThenNavigate("audio", v)}
                   />
                 ) : null}
 
@@ -2412,7 +2412,7 @@ export default function SentencePractice() {
                 {/* Repeat / Dictation toggle */}
                 <AudioVariantToggle
                   audioVariant={audioVariant}
-                  setAudioVariant={setAudioVariant}
+                  onGoVariant={(v) => hardResetThenNavigate("audio", v)}
                 />
 
                 {/* Reset */}
