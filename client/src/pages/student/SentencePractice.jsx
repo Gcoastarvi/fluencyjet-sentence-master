@@ -2151,13 +2151,13 @@ export default function SentencePractice() {
 
   function AudioVariantToggle({ audioVariant, onGoVariant }) {
     return (
-      <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1">
+      <div className="inline-flex items-center rounded-2xl border border-slate-200 bg-white/80 p-1 shadow-sm">
         <button
           type="button"
           onClick={() => onGoVariant("repeat")}
-          className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+          className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
             audioVariant === "repeat"
-              ? "bg-slate-900 text-white"
+              ? "bg-slate-900 text-white shadow-sm"
               : "text-slate-700 hover:bg-slate-50"
           }`}
         >
@@ -2167,9 +2167,9 @@ export default function SentencePractice() {
         <button
           type="button"
           onClick={() => onGoVariant("dictation")}
-          className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+          className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
             audioVariant === "dictation"
-              ? "bg-slate-900 text-white"
+              ? "bg-slate-900 text-white shadow-sm"
               : "text-slate-700 hover:bg-slate-50"
           }`}
         >
@@ -2431,6 +2431,12 @@ export default function SentencePractice() {
     onResetAudio: resetAudioSafe,
   });
 
+  const setAudioVariantInUrl = (v) => {
+    const sp = new URLSearchParams(location.search);
+    sp.set("variant", v);
+    navigate(`${location.pathname}?${sp.toString()}`, { replace: true });
+  };
+
   // -------------------
   // UI
   // -------------------
@@ -2582,23 +2588,37 @@ export default function SentencePractice() {
 
             {/* 🔊 Audio Dictation Controls (only when audio + dictation) */}
             {safeMode === "audio" && audioVariant === "dictation" && (
-              <div className="mb-3 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => speakTTS(englishFull)}
-                  className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
-                  disabled={!englishFull}
-                >
-                  {isSpeaking ? "Speaking..." : "▶ Play Audio"}
-                </button>
+              <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-600">
+                      Dictation controls
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      Tap play once. Then type what you heard.
+                    </div>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => stopTTS()}
-                  className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
-                >
-                  Stop
-                </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => speakTTS(englishFull)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                      disabled={!englishFull}
+                    >
+                      <span className="text-base">▶</span>
+                      {isSpeaking ? "Playing…" : "Play"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => stopTTS()}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Stop
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -2614,7 +2634,7 @@ export default function SentencePractice() {
                   {(typingWordBank || []).map((w, idx) => (
                     <span
                       key={`${w}_${idx}`}
-                      className="px-3 py-1 rounded-full border border-slate-200 bg-white text-sm text-slate-700"
+                      className="px-3 py-1 rounded-full border border-slate-200 bg-white text-sm text-slate-700 shadow-sm"
                     >
                       {w}
                     </span>
@@ -2622,7 +2642,6 @@ export default function SentencePractice() {
                 </div>
               </div>
             )}
-
             {/* Input */}
             <textarea
               value={typedAnswer}
@@ -2632,7 +2651,6 @@ export default function SentencePractice() {
               rows={3}
               disabled={status === "correct" || status === "reveal"}
             />
-
             <div className="flex items-center gap-3 mt-3">
               {!stickyCfg.show && (
                 <button
@@ -2671,7 +2689,7 @@ export default function SentencePractice() {
                 {/* Repeat / Dictation toggle */}
                 <AudioVariantToggle
                   audioVariant={audioVariant}
-                  onGoVariant={(v) => hardResetThenNavigate("audio", v)}
+                  onGoVariant={(v) => setAudioVariantInUrl(v)}
                 />
 
                 {/* Reset */}
