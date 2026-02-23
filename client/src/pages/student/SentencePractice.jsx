@@ -2347,36 +2347,7 @@ export default function SentencePractice() {
               </button>
             </div>
           </div>
-        )}
-
-        {/* 🔊 AUDIO UI */}
-        {safeMode === "audio" && (
-          <div className="mb-3 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setAudioVariant("repeat")}
-              className={`rounded-xl px-3 py-2 text-sm font-semibold ${
-                audioVariant === "repeat"
-                  ? "bg-slate-900 text-white"
-                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              Repeat
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAudioVariant("dictation")}
-              className={`rounded-xl px-3 py-2 text-sm font-semibold ${
-                audioVariant === "dictation"
-                  ? "bg-slate-900 text-white"
-                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              Dictation
-            </button>
-          </div>
-        )}
+        )}        
 
         {safeMode === "audio" && audioVariant === "repeat" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -2390,16 +2361,45 @@ export default function SentencePractice() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  stopTTS();
-                  setRevealEnglish(false);
-                }}
-                className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Reset
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Repeat / Dictation toggle */}
+                <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1">
+                  <button
+                    type="button"
+                    onClick={() => setAudioVariant("repeat")}
+                    className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+                      audioVariant === "repeat"
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    Repeat
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAudioVariant("dictation")}
+                    className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+                      audioVariant === "dictation"
+                        ? "bg-slate-900 text-white"
+                        : "text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    Dictation
+                  </button>
+                </div>
+
+                {/* Reset */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    stopTTS();
+                    setRevealEnglish(false);
+                  }}
+                  className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
 
             <div className="rounded-xl border bg-white p-4">
