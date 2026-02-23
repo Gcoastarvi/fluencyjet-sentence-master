@@ -2179,6 +2179,258 @@ export default function SentencePractice() {
     );
   }
 
+  // ===============================
+  // Sticky Bottom CTA (MVP-safe)
+  // ===============================
+  const BTN_PRIMARY =
+    "w-full rounded-2xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50";
+  const BTN_SECONDARY =
+    "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+
+  function StickyCTABar({ cfg }) {
+    if (!cfg?.show) return null;
+
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto max-w-3xl px-4 pt-3 pb-[env(safe-area-inset-bottom)]">
+          {cfg.hintText ? (
+            <div className="mb-2 text-xs font-semibold text-slate-500">
+              {cfg.hintText}
+            </div>
+          ) : null}
+
+          <div className="flex items-center gap-2">
+            {cfg.secondary?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {cfg.secondary.map((s, idx) => (
+                  <button
+                    key={`${s.label}-${idx}`}
+                    type="button"
+                    onClick={s.onClick}
+                    className={BTN_SECONDARY}
+                    disabled={!!s.disabled}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div />
+            )}
+
+            <div className="ml-auto w-full max-w-[260px]">
+              <button
+                type="button"
+                onClick={cfg.primary.onClick}
+                className={BTN_PRIMARY}
+                disabled={!!cfg.primary.disabled}
+              >
+                {cfg.primary.label}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function getStickyCtaConfig({
+    show,
+    lid,
+    difficulty,
+    safeMode,
+    status,
+    audioVariant,
+    audioGateOpen,
+    typedAnswer,
+    reorderAnswerLen,
+    track,
+
+    onCheckReorder,
+    onTryAgain,
+    onNext,
+    onSubmit,
+    onReveal,
+    onClearTyping,
+    onAudioRepeated,
+    onPlayAudio,
+    onResetAudio,
+  }) {
+    if (!show) return { show: false, primary: null, secondary: [] };
+
+    const basePayload = {
+      lid,
+      difficulty,
+      mode: safeMode,
+      variant: safeMode === "audio" ? audioVariant : undefined,
+      status,
+    };
+
+    const firePrimary = (label, fn) => () => {
+      try {
+        track?.("sticky_primary_click", { ...basePayload, label });
+      } catch {}
+      fn?.();
+    };
+
+    const fireSecondary = (label, fn) => () => {
+      try {
+        track?.("sticky_secondary_click", { ...basePayload, label });
+      } catch {}
+      fn?.();
+    };
+
+    // ===== REORDER =====
+    if (safeMode === "reorder") {
+      if (status === "idle") {
+        return {
+          show: true,
+          primary: {
+            label: "Check Answer",
+            onClick: firePrimary("Check Answer", onCheckReorder),
+            disabled: !(reorderAnswerLen > 0),
+          },
+          secondary: [
+            { label: "Reset", onClick: fireSecondary("Reset", onTryAgain) },
+          ],
+        };
+      }
+      if (status === "wrong") {
+        return {
+          show: true,
+          primary: {
+            label: "Try again",
+            onClick: firePrimary("Try again", onTryAgain),
+          },
+          secondary: [],
+        };
+      }
+      return {
+        show: true,
+        primary: { label: "Next", onClick: firePrimary("Next", onNext) },
+        secondary: [],
+      };
+    }
+
+    // ===== TYPING + AUDIO DICTATION =====
+    const isTypingLike =
+      safeMode === "typing" ||
+      (safeMode === "audio" && audioVariant === "dictation");
+
+    if (isTypingLike) {
+      const trimmed = String(typedAnswer || "").trim();
+      const canSubmit = trimmed.length > 0;
+
+      if (status === "reveal" || status === "correct") {
+        return {
+          show: true,
+          primary: { label: "Next", onClick: firePrimary("Next", onNext) },
+          secondary: [],
+        };
+      }
+
+      return {
+        show: true,
+        primary: {
+          label: "Submit",
+          onClick: firePrimary("Submit", onSubmit),
+          disabled: !canSubmit,
+        },
+        secondary: [
+          {
+            label: "Show Answer",
+            onClick: fireSecondary("Show Answer", onReveal),
+          },
+          {
+            label: "Clear",
+            onClick: fireSecondary("Clear", onClearTyping),
+            disabled: !trimmed.length,
+          },
+          ...(safeMode === "audio" && audioVariant === "dictation"
+            ? [
+                {
+                  label: "Play Audio",
+                  onClick: fireSecondary("Play Audio", onPlayAudio),
+                },
+              ]
+            : []),
+        ],
+      };
+    }
+
+    // ===== AUDIO REPEAT =====
+    if (safeMode === "audio" && audioVariant === "repeat") {
+      return {
+        show: true,
+        primary: {
+          label: "I repeated it ✅",
+          onClick: firePrimary("I repeated it ✅", onAudioRepeated),
+          disabled: !audioGateOpen,
+        },
+        secondary: [
+          { label: "Reset", onClick: fireSecondary("Reset", onResetAudio) },
+          { label: "Play", onClick: fireSecondary("Play", onPlayAudio) },
+        ],
+        hintText: audioGateOpen ? undefined : "Tap Play first to unlock ✅",
+      };
+    }
+
+    return { show: false, primary: null, secondary: [] };
+  }
+
+  // ===== Sticky CTA visibility (ACTIVE question only) =====
+  const stickyShow = !!current && !loading && !loadError && !showCompleteModal;
+
+  // Safe audio play/reset wrappers (do not crash if functions are absent)
+  const playAudioSafe = () => {
+    const text =
+      expected?.englishFull ||
+      expected?.english ||
+      expected?.en ||
+      expected?.answerEn ||
+      "";
+    try {
+      if (typeof speakTTS === "function") speakTTS(text);
+      else if (typeof speak === "function") speak(text);
+    } catch {}
+  };
+
+  const resetAudioSafe = () => {
+    try {
+      if (typeof stopTTS === "function") stopTTS();
+      else if (typeof stop === "function") stop();
+    } catch {}
+    try {
+      setRevealEnglish(false);
+    } catch {}
+    try {
+      if (typeof resetAudioGate === "function") resetAudioGate();
+    } catch {}
+  };
+
+  const stickyCfg = getStickyCtaConfig({
+    show: !!stickyShow,
+    lid,
+    difficulty,
+    safeMode,
+    status,
+    audioVariant,
+    audioGateOpen: !!audioGateOpen,
+    typedAnswer,
+    reorderAnswerLen: Array.isArray(answer) ? answer.length : 0,
+    track,
+
+    onCheckReorder: checkReorderAnswer,
+    onTryAgain: handleTryAgain,
+    onNext: loadNextQuestion,
+    onSubmit: checkAnswer,
+    onReveal: () => setStatus("reveal"),
+    onClearTyping: () => setTypedAnswer(""),
+    onAudioRepeated: handleAudioRepeated,
+    onPlayAudio: playAudioSafe,
+    onResetAudio: resetAudioSafe,
+  });
+
   // -------------------
   // UI
   // -------------------
@@ -2219,7 +2471,9 @@ export default function SentencePractice() {
       )}
 
       {/* Main content wrapper (DO NOT close this here) */}
-      <div className="mx-auto max-w-3xl px-4 pb-10 pt-4">
+      <div
+        className={`mx-auto max-w-3xl px-4 pt-4 ${stickyCfg.show ? "pb-28" : "pb-10"}`}
+      >
         {/* 🧩 CLOZE UI */}
         {safeMode === "cloze" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -2257,15 +2511,17 @@ export default function SentencePractice() {
               </div>
 
               <div className="flex items-center gap-3 mt-3">
-                <button
-                  onClick={checkAnswer}
-                  className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
-                  disabled={
-                    status === "correct" || status === "reveal" || !cloze
-                  }
-                >
-                  Submit
-                </button>
+                {!stickyCfg.show && (
+                  <button
+                    onClick={checkAnswer}
+                    className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                    disabled={
+                      status === "correct" || status === "reveal" || !cloze
+                    }
+                  >
+                    Submit
+                  </button>
+                )}
 
                 <button
                   onClick={() => setStatus("reveal")}
@@ -2378,13 +2634,15 @@ export default function SentencePractice() {
             />
 
             <div className="flex items-center gap-3 mt-3">
-              <button
-                onClick={checkAnswer}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-white hover:opacity-90"
-                disabled={status === "correct" || status === "reveal"}
-              >
-                Submit
-              </button>
+              {!stickyCfg.show && (
+                <button
+                  onClick={checkAnswer}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white hover:opacity-90"
+                  disabled={status === "correct" || status === "reveal"}
+                >
+                  Submit
+                </button>
+              )}
 
               <button
                 onClick={() => setStatus("reveal")}
@@ -2514,19 +2772,21 @@ export default function SentencePractice() {
                 </label>
 
                 <div className="flex items-end">
-                  <button
-                    type="button"
-                    onClick={handleAudioRepeated}
-                    className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-                    disabled={
-                      !current ||
-                      status === "correct" ||
-                      !audioGateOpen ||
-                      audioSubmitting
-                    }
-                  >
-                    {audioSubmitting ? "⏳ Saving..." : "I repeated it ✅"}
-                  </button>
+                  {!stickyCfg.show && (
+                    <button
+                      type="button"
+                      onClick={handleAudioRepeated}
+                      className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                      disabled={
+                        !current ||
+                        status === "correct" ||
+                        !audioGateOpen ||
+                        audioSubmitting
+                      }
+                    >
+                      {audioSubmitting ? "⏳ Saving..." : "I repeated it ✅"}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -2588,7 +2848,7 @@ export default function SentencePractice() {
             </div>
 
             {/* Check Answer */}
-            {status === "idle" && (
+            {!stickyCfg.show && status === "idle" && (
               <button
                 type="button"
                 onClick={checkReorderAnswer}
@@ -2638,6 +2898,8 @@ export default function SentencePractice() {
           </div>
         )}
       </div>
+
+      <StickyCTABar cfg={stickyCfg} />
 
       {/* ✅ Lesson completion modal */}
       {!isComplete &&
