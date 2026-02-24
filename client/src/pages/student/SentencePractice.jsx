@@ -2593,13 +2593,31 @@ export default function SentencePractice() {
                     Listen once. Type what you hear.
                   </div>
                 ) : null}
+                {/* Status pills */}
+                {status === "wrong" && (
+                  <div className="mt-3 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                    Try again
+                  </div>
+                )}
+                {status === "reveal" && (
+                  <div
+                    className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${A.border} ${A.soft} ${A.text}`}
+                  >
+                    Answer shown
+                  </div>
+                )}
+                {status === "correct" && (
+                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    Nice! ✅
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {safeMode === "audio" && audioVariant === "dictation" ? (
                   <AudioVariantToggle
                     audioVariant={audioVariant}
-                    onGoVariant={(v) => hardResetThenNavigate("audio", v)}
+                    onGoVariant={(v) => setAudioVariantInUrl(v)}
                   />
                 ) : null}
 
@@ -2711,6 +2729,19 @@ export default function SentencePractice() {
                 <div className="mt-1 text-xs text-slate-500">
                   Listen and repeat. Then mark it done.
                 </div>
+                {/* Status pills */}
+                {!audioGateOpen && (
+                  <div
+                    className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${A.border} ${A.soft} ${A.text}`}
+                  >
+                    Tap Play first to unlock ✅
+                  </div>
+                )}
+                {status === "correct" && (
+                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    Done ✅
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center justify-end gap-2">
@@ -2870,6 +2901,25 @@ export default function SentencePractice() {
             <div className="mt-1 text-xs text-slate-500">
               {uiFor("reorder").sub}
             </div>
+
+            {/* Status pills */}
+            {status === "wrong" && (
+              <div className="mt-3 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                Not quite — try again
+              </div>
+            )}
+            {status === "reveal" && (
+              <div
+                className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${A.border} ${A.soft} ${A.text}`}
+              >
+                Answer shown
+              </div>
+            )}
+            {status === "correct" && (
+              <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                Correct ✅
+              </div>
+            )}
 
             {/* Answer Area */}
             <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 min-h-[72px] flex flex-wrap gap-2">
