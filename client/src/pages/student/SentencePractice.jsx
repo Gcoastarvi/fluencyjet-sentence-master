@@ -2708,59 +2708,71 @@ export default function SentencePractice() {
 
             <div className="rounded-xl border bg-white p-4">
               {/* Tamil prompt */}
-              <div className="text-xs font-semibold text-slate-500">
-                Repeat this sentence
-              </div>
-
-              <div className="mt-3 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setRevealEnglish((v) => !v)}
-                  className="px-3 py-2 rounded-lg border hover:bg-gray-50 text-sm"
-                  disabled={!current}
-                >
-                  {revealEnglish ? "Hide English" : "Reveal English"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    openAudioGateAfter(1800);
-                    speakTTS(englishFull);
-                  }}
-                  className="px-3 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 text-sm"
-                  disabled={!englishFull}
-                >
-                  {isSpeaking ? "Speaking..." : "▶ Play"}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    stopTTS();
-                    resetAudioGate();
-                  }}
-                  className="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm"
-                >
-                  Stop
-                </button>
-              </div>
-
-              {revealEnglish && (
-                <div className="mt-3 rounded-lg bg-emerald-50 border border-emerald-200 p-3">
-                  <div className="text-xs text-emerald-700 font-semibold mb-1">
-                    English
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-xs font-semibold text-slate-600">
+                      Repeat this sentence
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      Tap Play → repeat aloud → mark it done.
+                    </div>
                   </div>
-                  <div className="text-base font-semibold text-emerald-900">
-                    {englishFull || "—"}
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRevealEnglish((v) => !v)}
+                      className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                        revealEnglish
+                          ? "border-indigo-200 bg-indigo-50 text-indigo-800"
+                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                      disabled={!current}
+                    >
+                      {revealEnglish ? "Hide English" : "Reveal English"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openAudioGateAfter(1800);
+                        speakTTS(englishFull);
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                      disabled={!englishFull}
+                    >
+                      <span className="text-base">▶</span>
+                      {isSpeaking ? "Playing…" : "Play"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        stopTTS();
+                        resetAudioGate();
+                      }}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Stop
+                    </button>
                   </div>
                 </div>
-              )}
+
+                {revealEnglish && (
+                  <div className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4">
+                    <div className="text-xs font-semibold text-indigo-700">English</div>
+                    <div className="mt-2 text-lg font-bold text-slate-900">
+                      {englishFull || "—"}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Controls */}
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <label className="text-sm">
-                  <div className="text-xs text-gray-500 mb-1">Rate</div>
+                <label className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                  <div className="text-xs text-slate-500 mb-1">Rate</div>
                   <input
                     type="range"
                     min="0.6"
@@ -2770,13 +2782,13 @@ export default function SentencePractice() {
                     onChange={(e) => setTtsRate(Number(e.target.value))}
                     className="w-full"
                   />
-                  <div className="text-xs text-gray-600 mt-1">
+                  <div className="text-xs text-slate-700 font-semibold mt-1">
                     {ttsRate.toFixed(2)}
                   </div>
                 </label>
 
-                <label className="text-sm">
-                  <div className="text-xs text-gray-500 mb-1">Accent</div>
+                <label className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                  <div className="text-xs text-slate-500 mb-1">Accent</div>
                   <select
                     value={ttsLang}
                     onChange={(e) => setTtsLang(e.target.value)}
