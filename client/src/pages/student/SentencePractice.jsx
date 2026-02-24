@@ -2903,7 +2903,10 @@ export default function SentencePractice() {
             </div>
 
             {/* Status pills */}
-            {status === "wrong" && (
+            {(status === "wrong" ||
+              (typeof wrongIndexes !== "undefined" &&
+                Array.isArray(wrongIndexes) &&
+                wrongIndexes.length > 0)) && (
               <div className="mt-3 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
                 Not quite — try again
               </div>
@@ -3006,10 +3009,7 @@ export default function SentencePractice() {
                 "";
               const words = Array.isArray(text)
                 ? text
-                : String(text)
-                    .trim()
-                    .split(/\s+/)
-                    .filter(Boolean);
+                : String(text).trim().split(/\s+/).filter(Boolean);
 
               if (!words.length) {
                 return (
@@ -3034,6 +3034,7 @@ export default function SentencePractice() {
             })()}
           </div>
         )}
+      </div>
 
       <StickyCTABar cfg={stickyCfg} />
 
