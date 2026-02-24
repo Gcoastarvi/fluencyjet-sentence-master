@@ -1848,6 +1848,33 @@ export default function SentencePractice() {
     }, 0);
   }
 
+  const MODE_ACCENT = {
+    reorder: {
+      bar: "bg-indigo-500",
+      soft: "bg-indigo-50",
+      border: "border-indigo-200",
+      text: "text-indigo-700",
+    },
+    typing: {
+      bar: "bg-amber-500",
+      soft: "bg-amber-50",
+      border: "border-amber-200",
+      text: "text-amber-700",
+    },
+    audio: {
+      bar: "bg-emerald-500",
+      soft: "bg-emerald-50",
+      border: "border-emerald-200",
+      text: "text-emerald-700",
+    },
+  };
+  const A = MODE_ACCENT[safeMode] || {
+    bar: "bg-slate-500",
+    soft: "bg-slate-50",
+    border: "border-slate-200",
+    text: "text-slate-700",
+  };
+
   // -------------------
   // completion
   // -------------------
@@ -2552,6 +2579,7 @@ export default function SentencePractice() {
         {(safeMode === "typing" ||
           (safeMode === "audio" && audioVariant === "dictation")) && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className={`h-1 w-full rounded-t-2xl ${A.bar}`} />
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
@@ -2674,6 +2702,7 @@ export default function SentencePractice() {
 
         {safeMode === "audio" && audioVariant === "repeat" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className={`h-1 w-full rounded-t-2xl ${A.bar}`} />
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">
@@ -2706,116 +2735,116 @@ export default function SentencePractice() {
               </div>
             </div>
 
-            
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-600">
-                      Repeat this sentence
-                    </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      Tap Play → repeat aloud → mark it done.
-                    </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-xs font-semibold text-slate-600">
+                    Repeat this sentence
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setRevealEnglish((v) => !v)}
-                      className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
-                        revealEnglish
-                          ? "border-indigo-200 bg-indigo-50 text-indigo-800"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                      }`}
-                      disabled={!current}
-                    >
-                      {revealEnglish ? "Hide English" : "Reveal English"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        openAudioGateAfter(1800);
-                        speakTTS(englishFull);
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
-                      disabled={!englishFull}
-                    >
-                      <span className="text-base">▶</span>
-                      {isSpeaking ? "Playing…" : "Play"}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        stopTTS();
-                        resetAudioGate();
-                      }}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                    >
-                      Stop
-                    </button>
+                  <div className="mt-1 text-xs text-slate-500">
+                    Tap Play → repeat aloud → mark it done.
                   </div>
                 </div>
 
-                {revealEnglish && (
-                  <div className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4">
-                    <div className="text-xs font-semibold text-indigo-700">English</div>
-                    <div className="mt-2 text-lg font-bold text-slate-900">
-                      {englishFull || "—"}
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRevealEnglish((v) => !v)}
+                    className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                      revealEnglish
+                        ? "border-indigo-200 bg-indigo-50 text-indigo-800"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                    disabled={!current}
+                  >
+                    {revealEnglish ? "Hide English" : "Reveal English"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openAudioGateAfter(1800);
+                      speakTTS(englishFull);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                    disabled={!englishFull}
+                  >
+                    <span className="text-base">▶</span>
+                    {isSpeaking ? "Playing…" : "Play"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopTTS();
+                      resetAudioGate();
+                    }}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Stop
+                  </button>
+                </div>
               </div>
 
-              {/* Controls */}
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <label className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-                  <div className="text-xs text-slate-500 mb-1">Rate</div>
-                  <input
-                    type="range"
-                    min="0.6"
-                    max="1.8"
-                    step="0.1"
-                    value={ttsRate}
-                    onChange={(e) => setTtsRate(Number(e.target.value))}
-                    className="w-full"
-                  />
-                  <div className="text-xs text-slate-700 font-semibold mt-1">
-                    {ttsRate.toFixed(2)}
+              {revealEnglish && (
+                <div className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4">
+                  <div className="text-xs font-semibold text-indigo-700">
+                    English
                   </div>
-                </label>
-
-                <label className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-                  <div className="text-xs text-slate-500 mb-1">Accent</div>
-                  <select
-                    value={ttsLang}
-                    onChange={(e) => setTtsLang(e.target.value)}
-                    className="w-full rounded-lg border px-2 py-2 text-sm"
-                  >
-                    <option value="en-US">US</option>
-                    <option value="en-GB">UK</option>
-                    <option value="en-IN">India</option>
-                  </select>
-                </label>
-
-                <div className="flex items-end">
-                  {!stickyCfg.show && (
-                    <button
-                      type="button"
-                      onClick={handleAudioRepeated}
-                      className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-                      disabled={
-                        !current ||
-                        status === "correct" ||
-                        !audioGateOpen ||
-                        audioSubmitting
-                      }
-                    >
-                      {audioSubmitting ? "⏳ Saving..." : "I repeated it ✅"}
-                    </button>
-                  )}
+                  <div className="mt-2 text-lg font-bold text-slate-900">
+                    {englishFull || "—"}
+                  </div>
                 </div>
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                <div className="text-xs text-slate-500 mb-1">Rate</div>
+                <input
+                  type="range"
+                  min="0.6"
+                  max="1.8"
+                  step="0.1"
+                  value={ttsRate}
+                  onChange={(e) => setTtsRate(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="text-xs text-slate-700 font-semibold mt-1">
+                  {ttsRate.toFixed(2)}
+                </div>
+              </label>
+
+              <label className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
+                <div className="text-xs text-slate-500 mb-1">Accent</div>
+                <select
+                  value={ttsLang}
+                  onChange={(e) => setTtsLang(e.target.value)}
+                  className="w-full rounded-lg border px-2 py-2 text-sm"
+                >
+                  <option value="en-US">US</option>
+                  <option value="en-GB">UK</option>
+                  <option value="en-IN">India</option>
+                </select>
+              </label>
+
+              <div className="flex items-end">
+                {!stickyCfg.show && (
+                  <button
+                    type="button"
+                    onClick={handleAudioRepeated}
+                    className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                    disabled={
+                      !current ||
+                      status === "correct" ||
+                      !audioGateOpen ||
+                      audioSubmitting
+                    }
+                  >
+                    {audioSubmitting ? "⏳ Saving..." : "I repeated it ✅"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -2824,6 +2853,7 @@ export default function SentencePractice() {
         {/* REORDER UI */}
         {safeMode === "reorder" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className={`h-1 w-full rounded-t-2xl ${A.bar}`} />
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">
                 {uiFor("reorder").title}
