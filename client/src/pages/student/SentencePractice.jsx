@@ -2706,7 +2706,7 @@ export default function SentencePractice() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {(typingHintWords || []).map((w, idx) => (
+                  {(typingWordBank || []).map((w, idx) => (
                     <span
                       key={`${w}_${idx}`}
                       className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 shadow-sm"
