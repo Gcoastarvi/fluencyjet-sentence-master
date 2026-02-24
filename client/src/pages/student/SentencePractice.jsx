@@ -199,6 +199,30 @@ export default function SentencePractice() {
     }
   }
 
+  function seededShuffle(arr, seedStr) {
+    const a = [...arr];
+    // Simple deterministic hash
+    let seed = 0;
+    const s = String(seedStr ?? "0");
+    for (let i = 0; i < s.length; i++)
+      seed = (seed * 31 + s.charCodeAt(i)) >>> 0;
+
+    // Deterministic “random” generator
+    let x = seed || 123456789;
+    const rand = () => {
+      x ^= x << 13;
+      x ^= x >>> 17;
+      x ^= x << 5;
+      return ((x >>> 0) % 1000000) / 1000000;
+    };
+
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
   // -------------------
   // refs
   // -------------------
@@ -323,15 +347,21 @@ export default function SentencePractice() {
           ? expectedAnswer.split(/\s+/)
           : [];
 
-  // Typing hint-only word bank (from backend)
-  const typingWordBank =
+  // Typing hint-only word bank (SCRAMBLED, stable per question)
+  const typingWordBankBase =
     Array.isArray(expectedWords) && expectedWords.length
       ? expectedWords
-      : Array.isArray(correctOrderArr) && correctOrderArr.length
-        ? correctOrderArr
-        : expectedAnswer
-          ? expectedAnswer.split(/\s+/)
-          : [];
+      : expectedAnswer
+        ? expectedAnswer.split(/\s+/)
+        : [];
+
+  const typingWordBank =
+    safeMode === "typing"
+      ? seededShuffle(
+          typingWordBankBase,
+          current?.id ?? `${lid}:${currentIndex}`,
+        )
+      : typingWordBankBase;
 
   console.log(
     "[DBG] currentIndex =",
@@ -2676,7 +2706,7 @@ export default function SentencePractice() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {(typingWordBank || []).map((w, idx) => (
+                  {(typingHintWords || []).map((w, idx) => (
                     <span
                       key={`${w}_${idx}`}
                       className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-700 shadow-sm"
