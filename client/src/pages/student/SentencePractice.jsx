@@ -2992,20 +2992,48 @@ export default function SentencePractice() {
 
         {/* Reveal */}
         {status === "reveal" && (
-          <div className="bg-yellow-100 p-4 rounded mt-6">
-            📘 <strong>Good attempt! Here is the correct sentence:</strong>
-            <div className="mt-3">
-              <div className="flex flex-wrap gap-2">
-                {correctOrder.map((word, index) => (
-                  <span key={index} className="px-3 py-1 bg-green-200 rounded">
-                    {word}
-                  </span>
-                ))}
-              </div>
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="text-sm font-semibold text-slate-900">
+              📘 Good attempt! Here is the correct sentence:
             </div>
+
+            {(() => {
+              const text =
+                expected?.englishFull ||
+                expected?.english ||
+                expected?.en ||
+                expected?.answerEn ||
+                "";
+              const words = Array.isArray(text)
+                ? text
+                : String(text)
+                    .trim()
+                    .split(/\s+/)
+                    .filter(Boolean);
+
+              if (!words.length) {
+                return (
+                  <div className="mt-2 text-sm text-slate-600">
+                    (No answer available for this item.)
+                  </div>
+                );
+              }
+
+              return (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {words.map((word, index) => (
+                    <span
+                      key={`${word}-${index}`}
+                      className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800"
+                    >
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
-      </div>
 
       <StickyCTABar cfg={stickyCfg} />
 
