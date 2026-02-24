@@ -2706,8 +2706,7 @@ export default function SentencePractice() {
               </div>
             </div>
 
-            <div className="rounded-xl border bg-white p-4">
-              {/* Tamil prompt */}
+            
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
