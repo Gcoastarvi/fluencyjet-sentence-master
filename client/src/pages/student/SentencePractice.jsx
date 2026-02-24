@@ -1919,107 +1919,171 @@ export default function SentencePractice() {
     const base = difficulty === "intermediate" ? "/i" : "/b";
 
     return (
-      <div className="max-w-3xl mx-auto p-6 text-center">
-        <h1 className="text-2xl font-bold mb-3">🎉 Session Complete!</h1>
-        <p className="mb-4 text-gray-700">
-          Great job! You finished today’s practice.
-        </p>
+      <div className="min-h-screen bg-slate-50 px-4 py-8">
+        <div className="mx-auto max-w-3xl">
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            {/* Accent bar (mode-based) */}
+            <div className={`h-2 w-full ${A?.bar || "bg-slate-500"}`} />
 
-        <div className="mb-6 text-sm text-gray-600">
-          Mode: <span className="font-semibold">{uiFor(safeMode).title}</span>
-        </div>
+            <div className="p-6 sm:p-8">
+              <div className="text-center">
+                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Session complete
+                </div>
+                <h1 className="mt-2 text-3xl font-extrabold text-slate-900">
+                  🎉 Great job!
+                </h1>
+                <p className="mt-2 text-sm text-slate-600">
+                  You finished today’s practice. Keep the streak alive by doing 10 minutes daily.
+                </p>
+              </div>
 
-        <div className="space-y-3">
-          {/* CTA 1: Back to current lesson hub */}
-          <button
-            type="button"
-            className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
-            onClick={() => {
-              track("practice_cta_clicked", {
-                lessonId: Number(lid) || 0,
-                difficulty,
-                mode: safeMode,
-                cta: "back_to_lesson",
-              });
+              {/* Quick stats */}
+              <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
+                  <div className="text-xs font-semibold text-slate-500">Mode</div>
+                  <div className="mt-1 text-sm font-bold text-slate-900">
+                    {uiFor(safeMode).title}
+                  </div>
+                </div>
 
-              navigate(
-                `${base}/lesson/${lid || 1}?difficulty=${encodeURIComponent(difficulty)}`,
-                { replace: true },
-              );
-            }}
-          >
-            Back to Lesson {lid || 1}
-          </button>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
+                  <div className="text-xs font-semibold text-slate-500">Bonus XP</div>
+                  <div className="mt-1 text-sm font-bold text-slate-900">
+                    +{Number(completionXp || 0)} XP
+                  </div>
+                </div>
 
-          {/* CTA 2: Continue to next lesson hub */}
-          {nextLessonId ? (
-            <button
-              type="button"
-              className="w-full rounded-2xl bg-black px-6 py-4 text-white font-semibold hover:opacity-90"
-              onClick={() => {
-                track("practice_cta_clicked", {
-                  lessonId: Number(lid) || 0,
-                  difficulty,
-                  mode: safeMode,
-                  cta: "continue_next_lesson",
-                  nextLessonId,
-                });
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
+                  <div className="text-xs font-semibold text-slate-500">Streak</div>
+                  <div className="mt-1 text-sm font-bold text-slate-900">
+                    🔥 {Number(streak || 0)}-day
+                  </div>
+                </div>
+              </div>
 
-                navigate(
-                  `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
-                    difficulty,
-                  )}&autostart=1`,
-                  { replace: true },
-                );
-              }}
-            >
-              Continue to Lesson {nextLessonId} → (keep going)
-            </button>
-          ) : null}
-          {/* CTA 3: Try another mode (engagement loop) */}
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              className="w-full rounded-2xl border bg-white px-6 py-4 font-semibold hover:bg-gray-50"
-              onClick={() => {
-                track("mode_switched", {
-                  lessonId: Number(lid) || 0,
-                  difficulty,
-                  fromMode: safeMode,
-                  toMode: fallbackMode,
-                  source: "session_complete",
-                });
+              {/* CTAs */}
+              <div className="mt-7 grid gap-3">
+                {/* Primary: Continue */}
+                {nextLessonId ? (
+                  <button
+                    type="button"
+                    className="w-full rounded-2xl bg-slate-900 px-6 py-4 text-base font-semibold text-white shadow-sm hover:opacity-90"
+                    onClick={() => {
+                      track("practice_cta_clicked", {
+                        lessonId: Number(lid) || 0,
+                        difficulty,
+                        mode: safeMode,
+                        cta: "continue_next_lesson",
+                        nextLessonId,
+                      });
 
-                navigate(
-                  `/practice/${fallbackMode}?lessonId=${encodeURIComponent(
-                    lid || 1,
-                  )}&difficulty=${encodeURIComponent(difficulty)}`,
-                );
-              }}
-            >
-              Try {uiFor(fallbackMode).title} →
-            </button>
+                      navigate(
+                        `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
+                          difficulty,
+                        )}&autostart=1`,
+                        { replace: true },
+                      );
+                    }}
+                  >
+                    Continue to Lesson {nextLessonId} →
+                  </button>
+                ) : null}
 
-            <button
-              type="button"
-              onClick={() => {
-                track("mode_switched", {
-                  lessonId: Number(lid) || 0,
-                  difficulty,
-                  fromMode: safeMode,
-                  toMode: "audio",
-                  source: "session_complete",
-                });
+                {/* Secondary: Back */}
+                <button
+                  type="button"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-base font-semibold text-slate-900 hover:bg-slate-50"
+                  onClick={() => {
+                    track("practice_cta_clicked", {
+                      lessonId: Number(lid) || 0,
+                      difficulty,
+                      mode: safeMode,
+                      cta: "back_to_lesson",
+                    });
 
-                navigate(
-                  `/practice/audio?lessonId=${encodeURIComponent(
-                    lid || 1,
-                  )}&difficulty=${encodeURIComponent(difficulty)}`,
-                );
-              }}
-            >
-              Try {uiFor("audio").title} →
-            </button>
+                    navigate(
+                      `${base}/lesson/${lid || 1}?difficulty=${encodeURIComponent(difficulty)}`,
+                      { replace: true },
+                    );
+                  }}
+                >
+                  Back to Lesson {lid || 1}
+                </button>
+
+                {/* Engagement loop */}
+                <div className="mt-2">
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Try another mode
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-left hover:bg-slate-50"
+                      onClick={() => {
+                        track("mode_switched", {
+                          lessonId: Number(lid) || 0,
+                          difficulty,
+                          fromMode: safeMode,
+                          toMode: fallbackMode,
+                          source: "session_complete",
+                        });
+
+                        navigate(
+                          `/practice/${fallbackMode}?lessonId=${encodeURIComponent(
+                            lid || 1,
+                          )}&difficulty=${encodeURIComponent(difficulty)}`,
+                        );
+                      }}
+                    >
+                      <div className="text-sm font-bold text-slate-900">
+                        {uiFor(fallbackMode).title}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-600">
+                        Quick 2-minute boost →
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-left hover:bg-slate-50"
+                      onClick={() => {
+                        track("mode_switched", {
+                          lessonId: Number(lid) || 0,
+                          difficulty,
+                          fromMode: safeMode,
+                          toMode: "audio",
+                          source: "session_complete",
+                        });
+
+                        navigate(
+                          `/practice/audio?lessonId=${encodeURIComponent(
+                            lid || 1,
+                          )}&difficulty=${encodeURIComponent(difficulty)}`,
+                        );
+                      }}
+                    >
+                      <div className="text-sm font-bold text-slate-900">
+                        {uiFor("audio").title}
+                      </div>
+                      <div className="mt-1 text-xs text-slate-600">
+                        Improve pronunciation →
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Optional: leaderboard (kept as tertiary) */}
+                <button
+                  type="button"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  onClick={() => navigate("/student/leaderboard")}
+                >
+                  View leaderboard
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3068,49 +3132,86 @@ export default function SentencePractice() {
         !(totalQuestions > 0 && currentIndex >= totalQuestions) &&
         showCompleteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-              <div className="text-xl font-semibold">✅ Lesson Completed!</div>
-              <div className="mt-2 text-sm text-gray-600">
-                You earned{" "}
-                <span className="font-semibold">+{completionXp}</span> XP bonus.
-              </div>
+            <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+              {/* Top accent */}
+              <div className="h-1.5 w-full bg-emerald-500" />
 
-              <div className="mt-5 grid gap-2">
-                <button
-                  className="w-full rounded-xl bg-black px-4 py-2 text-white"
-                  onClick={() => {
-                    setShowCompleteModal(false);
-                    const next = Number(lid) + 1;
-                    navigate(
-                      `/b/lesson/${next}?difficulty=${encodeURIComponent(difficulty)}`,
-                      {
-                        replace: true,
-                      },
-                    );
-                  }}
-                >
-                  Next Lesson →
-                </button>
+              <div className="p-6">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Lesson complete
+                    </div>
+                    <div className="mt-1 text-2xl font-extrabold text-slate-900">
+                      🎉 Great job!
+                    </div>
+                    <div className="mt-2 text-sm text-slate-600">
+                      You earned{" "}
+                      <span className="font-bold text-slate-900">
+                        +{completionXp}
+                      </span>{" "}
+                      XP bonus.
+                    </div>
+                  </div>
 
-                <button
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                  onClick={() => {
-                    setShowCompleteModal(false);
-                    navigate("/student/leaderboard");
-                  }}
-                >
-                  View Leaderboard
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowCompleteModal(false)}
+                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Close
+                  </button>
+                </div>
 
-                <button
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2"
-                  onClick={() => {
-                    setShowCompleteModal(false);
-                    initQuiz();
-                  }}
-                >
-                  Repeat Lesson
-                </button>
+                <div className="mt-5 grid gap-3">
+                  {/* Primary */}
+                  <button
+                    className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                    onClick={() => {
+                      setShowCompleteModal(false);
+                      const next = Number(lid) + 1;
+                      navigate(
+                        `${base}/lesson/${next}?difficulty=${encodeURIComponent(difficulty)}`,
+                        { replace: true },
+                      );
+                    }}
+                  >
+                    Continue to next lesson →
+                  </button>
+
+                  {/* Secondary row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                      onClick={() => {
+                        setShowCompleteModal(false);
+                        initQuiz();
+                      }}
+                    >
+                      Repeat lesson
+                    </button>
+
+                    <button
+                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                      onClick={() => {
+                        setShowCompleteModal(false);
+                        navigate("/student/leaderboard");
+                      }}
+                    >
+                      View leaderboard
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="text-xs font-semibold text-slate-600">
+                    Keep your streak going
+                  </div>
+                  <div className="mt-1 text-sm text-slate-700">
+                    Practice 10 minutes daily for faster automatic sentence
+                    formation.
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -3119,7 +3220,7 @@ export default function SentencePractice() {
       {/* ✅ Correct banner (Typing + Reorder) — bottom floating */}
       {status === "correct" && Number(earnedXP || 0) > 0 && (
         <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50">
-          <div className="rounded-xl bg-green-100 border border-green-300 px-5 py-3 text-center shadow-lg">
+          <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-3 text-center shadow-lg">
             <div className="font-semibold text-green-800">
               ✅ Correct! Well done
             </div>
