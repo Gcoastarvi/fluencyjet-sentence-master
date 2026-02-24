@@ -3001,12 +3001,7 @@ export default function SentencePractice() {
             </div>
 
             {(() => {
-              const text =
-                expected?.englishFull ||
-                expected?.english ||
-                expected?.en ||
-                expected?.answerEn ||
-                "";
+              const text = String(expectedAnswer || englishFull || "").trim();
               const words = Array.isArray(text)
                 ? text
                 : String(text).trim().split(/\s+/).filter(Boolean);
