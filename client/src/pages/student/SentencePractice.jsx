@@ -794,7 +794,7 @@ export default function SentencePractice() {
   useEffect(() => {
     if (isComplete) return;
 
-    if (status === "correct" || status === "reveal") {
+    if (status === "correct") {
       const timer = setTimeout(() => {
         loadNextQuestion();
       }, 1500);
