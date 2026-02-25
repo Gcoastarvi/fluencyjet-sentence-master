@@ -3089,15 +3089,18 @@ export default function SentencePractice() {
         {/* Wrong */}
         {status === "wrong" && (
           <div className="mt-6">
-            <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
+            <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
               ❌ Not correct. Try again. ({attempts}/{MAX_ATTEMPTS})
             </div>
-            <button
-              onClick={handleTryAgain}
-              className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:opacity-90"
-            >
-              Try again
-            </button>
+
+            {!stickyCfg.show && (
+              <button
+                onClick={handleTryAgain}
+                className="w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:opacity-90"
+              >
+                Try again
+              </button>
+            )}
           </div>
         )}
 
