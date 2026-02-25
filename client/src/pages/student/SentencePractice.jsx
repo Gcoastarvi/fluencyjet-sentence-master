@@ -3049,7 +3049,7 @@ export default function SentencePractice() {
                     className={`px-4 py-2 rounded-full text-sm font-semibold ${
                       isWrong
                         ? "bg-rose-100 text-rose-800 border border-rose-200"
-                        : "bg-slate-900 text-white"
+                        : "bg-slate-900 text-white ring-2 ring-indigo-200"
                     }`}
                   >
                     {word}
@@ -3066,7 +3066,7 @@ export default function SentencePractice() {
                   type="button"
                   onClick={() => addToAnswer(word)}
                   disabled={status === "correct" || status === "reveal"}
-                  className="px-4 py-2 rounded-full border border-slate-200 bg-white text-slate-800 transition hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="px-4 py-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-900 shadow-sm transition hover:bg-indigo-100 hover:shadow active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {word}
                 </button>
