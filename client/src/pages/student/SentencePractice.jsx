@@ -3036,6 +3036,11 @@ export default function SentencePractice() {
 
             {/* Answer Area */}
             <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 min-h-[72px] flex flex-wrap gap-2">
+              {Array.isArray(answer) && answer.length === 0 && (
+                <div className="w-full text-sm font-semibold text-slate-400">
+                  Tap the words below to build the sentence
+                </div>
+              )}
               {answer.map((word, index) => {
                 const isWrong = wrongIndexes.includes(index);
                 return (
@@ -3061,7 +3066,7 @@ export default function SentencePractice() {
                   type="button"
                   onClick={() => addToAnswer(word)}
                   disabled={status === "correct" || status === "reveal"}
-                  className="px-4 py-2 rounded-full border border-slate-200 bg-white text-slate-800 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-full border border-slate-200 bg-white text-slate-800 transition hover:bg-slate-50 hover:shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {word}
                 </button>
