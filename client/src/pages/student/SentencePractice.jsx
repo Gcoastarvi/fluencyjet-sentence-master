@@ -2471,6 +2471,22 @@ export default function SentencePractice() {
         };
       }
 
+      const secondaryRaw = [
+        {
+          label: "Show Answer",
+          onClick: fireSecondary("Show Answer", onReveal),
+        },
+        ...(safeMode === "audio" && audioVariant === "dictation"
+          ? [
+              {
+                label: "Play Audio",
+                onClick: fireSecondary("Play Audio", onPlayAudio),
+              },
+            ]
+          : []),
+      ];
+
+      // Typing & Dictation: keep sticky clean (Clear stays in the card header)
       return {
         show: true,
         primary: {
@@ -2478,25 +2494,7 @@ export default function SentencePractice() {
           onClick: firePrimary("Submit", onSubmit),
           disabled: !canSubmit,
         },
-        secondary: [
-          {
-            label: "Show Answer",
-            onClick: fireSecondary("Show Answer", onReveal),
-          },
-          {
-            label: "Clear",
-            onClick: fireSecondary("Clear", onClearTyping),
-            disabled: !trimmed.length,
-          },
-          ...(safeMode === "audio" && audioVariant === "dictation"
-            ? [
-                {
-                  label: "Play Audio",
-                  onClick: fireSecondary("Play Audio", onPlayAudio),
-                },
-              ]
-            : []),
-        ],
+        secondary: secondaryRaw,
       };
     }
 
@@ -2525,12 +2523,7 @@ export default function SentencePractice() {
 
   // Safe audio play/reset wrappers (do not crash if functions are absent)
   const playAudioSafe = () => {
-    const text =
-      expected?.englishFull ||
-      expected?.english ||
-      expected?.en ||
-      expected?.answerEn ||
-      "";
+    const text = String(expectedAnswer || englishFull || "").trim();
     try {
       if (typeof speakTTS === "function") speakTTS(text);
       else if (typeof speak === "function") speak(text);
