@@ -2324,16 +2324,26 @@ export default function SentencePractice() {
   // ===============================
   // Sticky Bottom CTA (MVP-safe)
   // ===============================
-  const BTN_PRIMARY =
-    "w-full rounded-2xl bg-slate-900 px-4 py-3 text-base font-semibold text-white shadow-sm active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50";
   const BTN_SECONDARY =
     "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+
+  const BTN_PRIMARY_BASE =
+    "w-full rounded-2xl px-4 py-3 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50";
+
+  const BTN_PRIMARY_MODE_BG =
+    safeMode === "reorder"
+      ? "bg-indigo-600 hover:bg-indigo-700"
+      : safeMode === "typing"
+        ? "bg-amber-600 hover:bg-amber-700"
+        : safeMode === "audio"
+          ? "bg-emerald-600 hover:bg-emerald-700"
+          : "bg-slate-900 hover:bg-slate-950";
 
   function StickyCTABar({ cfg }) {
     if (!cfg?.show) return null;
 
     return (
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/90 backdrop-blur">
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/85 backdrop-blur shadow-[0_-8px_30px_rgba(15,23,42,0.08)]">
         <div className="mx-auto max-w-3xl px-4 pt-3 pb-[env(safe-area-inset-bottom)]">
           {cfg.hintText ? (
             <div className="mb-2 text-xs font-semibold text-slate-500">
@@ -2364,7 +2374,7 @@ export default function SentencePractice() {
               <button
                 type="button"
                 onClick={cfg.primary.onClick}
-                className={BTN_PRIMARY}
+                className={`${BTN_PRIMARY_BASE} ${BTN_PRIMARY_MODE_BG}`}
                 disabled={!!cfg.primary.disabled}
               >
                 {cfg.primary.label}
