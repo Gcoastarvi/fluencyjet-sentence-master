@@ -1923,7 +1923,9 @@ export default function SentencePractice() {
         <div className="mx-auto max-w-3xl">
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             {/* Accent bar (mode-based) */}
-            <div className={`h-2 w-full ${A?.bar || "bg-slate-500"}`} />
+            <div
+              className={`h-2 w-full ${MODE_ACCENT?.[safeMode]?.bar || "bg-slate-500"}`}
+            />
 
             <div className="p-6 sm:p-8">
               <div className="text-center">
@@ -1934,28 +1936,35 @@ export default function SentencePractice() {
                   🎉 Great job!
                 </h1>
                 <p className="mt-2 text-sm text-slate-600">
-                  You finished today’s practice. Keep the streak alive by doing 10 minutes daily.
+                  You finished today’s practice. Keep the streak alive by doing
+                  10 minutes daily.
                 </p>
               </div>
 
               {/* Quick stats */}
               <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
-                  <div className="text-xs font-semibold text-slate-500">Mode</div>
+                  <div className="text-xs font-semibold text-slate-500">
+                    Mode
+                  </div>
                   <div className="mt-1 text-sm font-bold text-slate-900">
                     {uiFor(safeMode).title}
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
-                  <div className="text-xs font-semibold text-slate-500">Bonus XP</div>
+                  <div className="text-xs font-semibold text-slate-500">
+                    Bonus XP
+                  </div>
                   <div className="mt-1 text-sm font-bold text-slate-900">
                     +{Number(completionXp || 0)} XP
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
-                  <div className="text-xs font-semibold text-slate-500">Streak</div>
+                  <div className="text-xs font-semibold text-slate-500">
+                    Streak
+                  </div>
                   <div className="mt-1 text-sm font-bold text-slate-900">
                     🔥 {Number(streak || 0)}-day
                   </div>
@@ -2020,7 +2029,7 @@ export default function SentencePractice() {
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-left hover:bg-slate-50"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-left hover:bg-slate-100"
                       onClick={() => {
                         track("mode_switched", {
                           lessonId: Number(lid) || 0,
@@ -2037,8 +2046,15 @@ export default function SentencePractice() {
                         );
                       }}
                     >
-                      <div className="text-sm font-bold text-slate-900">
-                        {uiFor(fallbackMode).title}
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            MODE_ACCENT?.[fallbackMode]?.bar || "bg-slate-500"
+                          }`}
+                        />
+                        <div className="text-sm font-bold text-slate-900">
+                          {uiFor(fallbackMode).title}
+                        </div>
                       </div>
                       <div className="mt-1 text-xs text-slate-600">
                         Quick 2-minute boost →
@@ -2047,7 +2063,7 @@ export default function SentencePractice() {
 
                     <button
                       type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-left hover:bg-slate-50"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-left hover:bg-slate-100"
                       onClick={() => {
                         track("mode_switched", {
                           lessonId: Number(lid) || 0,
@@ -2060,12 +2076,17 @@ export default function SentencePractice() {
                         navigate(
                           `/practice/audio?lessonId=${encodeURIComponent(
                             lid || 1,
-                          )}&difficulty=${encodeURIComponent(difficulty)}`,
+                          )}&difficulty=${encodeURIComponent(difficulty)}&variant=repeat`,
                         );
                       }}
                     >
-                      <div className="text-sm font-bold text-slate-900">
-                        {uiFor("audio").title}
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`h-2 w-2 rounded-full ${MODE_ACCENT?.audio?.bar || "bg-slate-500"}`}
+                        />
+                        <div className="text-sm font-bold text-slate-900">
+                          {uiFor("audio").title}
+                        </div>
                       </div>
                       <div className="mt-1 text-xs text-slate-600">
                         Improve pronunciation →
@@ -3221,11 +3242,9 @@ export default function SentencePractice() {
       {status === "correct" && Number(earnedXP || 0) > 0 && (
         <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50">
           <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-3 text-center shadow-lg">
-            <div className="font-semibold text-green-800">
-              ✅ Correct! Well done
-            </div>
-            <div className="text-green-800 font-bold">
-              +{Number(earnedXP || 0)} XP earned
+            <div className="font-semibold text-emerald-800">Correct ✅</div>
+            <div className="text-emerald-900 font-extrabold">
+              +{Number(earnedXP || 0)} XP
             </div>
           </div>
         </div>
