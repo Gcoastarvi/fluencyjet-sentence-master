@@ -2822,13 +2822,15 @@ export default function SentencePractice() {
                 </button>
               )}
 
-              <button
-                onClick={() => setStatus("reveal")}
-                className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                disabled={status === "correct" || status === "reveal"}
-              >
-                Show Answer
-              </button>
+              {!stickyCfg.show && (
+                <button
+                  onClick={() => setStatus("reveal")}
+                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  disabled={status === "correct" || status === "reveal"}
+                >
+                  Show Answer
+                </button>
+              )}
             </div>
           </div>
         )}
