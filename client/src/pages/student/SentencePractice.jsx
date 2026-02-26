@@ -2879,8 +2879,8 @@ export default function SentencePractice() {
         {safeMode === "audio" && audioVariant === "repeat" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className={`h-1 w-full rounded-t-2xl ${A.bar}`} />
-            <div className="flex items-start justify-between gap-3">
-              <div>
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="min-w-0">
                 <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
                   {uiFor("audio").title}
                 </h2>
@@ -2891,14 +2891,12 @@ export default function SentencePractice() {
 
                 {/* Status pills */}
                 {!audioGateOpen && (
-                  <div
-                    className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${A.border} ${A.soft} ${A.text}`}
-                  >
+                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
                     Tap Play first to unlock ✅
                   </div>
                 )}
                 {status === "correct" && (
-                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
                     Done ✅
                   </div>
                 )}
@@ -3102,7 +3100,7 @@ export default function SentencePractice() {
                     className={`px-4 py-2 rounded-full text-sm font-semibold ${
                       isWrong
                         ? "bg-rose-100 text-rose-800 border border-rose-200"
-                        : `${A.border} ${A.soft} ${A.text} shadow-sm`
+                        : `${A.border} ${A.soft} ${A.text} shadow-sm transition-transform active:scale-[0.98]`
                     }`}
                   >
                     {word}
@@ -3161,24 +3159,22 @@ export default function SentencePractice() {
         {showXPToast && (
           <div
             className={[
-              "fixed top-24 right-6 z-50",
+              "fixed top-20 right-5 z-50",
               "rounded-2xl border border-slate-200 bg-white/90 backdrop-blur",
-              "px-4 py-2 shadow-lg",
-              "transition-all duration-300 ease-out",
+              "px-4 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.18)]",
+              "transition-all duration-300",
               xpToastPhase === "enter"
-                ? "opacity-0 translate-y-2 scale-[0.98]"
-                : xpToastPhase === "exit"
-                  ? "opacity-0 translate-y-2 scale-[0.98]"
-                  : "opacity-100 translate-y-0 scale-100",
+                ? "translate-y-0 opacity-100"
+                : "translate-y-2 opacity-0",
             ].join(" ")}
           >
             <div className="flex items-center gap-2">
-              <span className="inline-flex h-7 items-center rounded-full bg-purple-600 px-2.5 text-xs font-bold text-white">
+              <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                ✨
+              </div>
+              <div className="text-sm font-semibold text-slate-900">
                 +{Number(earnedXP || 0)} XP
-              </span>
-              <span className="text-xs font-semibold text-slate-600">
-                Nice! ✨
-              </span>
+              </div>
             </div>
           </div>
         )}
