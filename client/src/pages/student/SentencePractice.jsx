@@ -2324,13 +2324,25 @@ export default function SentencePractice() {
   // ===============================
   // Sticky Bottom CTA (MVP-safe)
   // ===============================
-  const BTN_SECONDARY =
-    "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
-
   const BTN_PRIMARY_BASE =
     "w-full rounded-2xl px-4 py-3 text-base font-semibold text-white shadow-sm transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50";
 
+  const STICKY_PRIMARY_BG = {
+    reorder: "bg-indigo-600 hover:bg-indigo-700",
+    typing: "bg-amber-600 hover:bg-amber-700",
+    audio: "bg-emerald-600 hover:bg-emerald-700",
+  };
+
   const BTN_PRIMARY_MODE_BG =
+    safeMode === "reorder"
+      ? "bg-indigo-600 hover:bg-indigo-700"
+      : safeMode === "typing"
+        ? "bg-amber-600 hover:bg-amber-700"
+        : safeMode === "audio"
+          ? "bg-emerald-600 hover:bg-emerald-700"
+          : "bg-slate-900 hover:bg-slate-950";
+
+  const stickyPrimaryBg =
     safeMode === "reorder"
       ? "bg-indigo-600 hover:bg-indigo-700"
       : safeMode === "typing"
@@ -2374,7 +2386,10 @@ export default function SentencePractice() {
               <button
                 type="button"
                 onClick={cfg.primary.onClick}
-                className={`${BTN_PRIMARY_BASE} ${BTN_PRIMARY_MODE_BG}`}
+                className={`${BTN_PRIMARY_BASE} ${
+                  STICKY_PRIMARY_BG?.[safeMode] ||
+                  "bg-slate-900 hover:bg-slate-950"
+                }`}
                 disabled={!!cfg.primary.disabled}
               >
                 {cfg.primary.label}
