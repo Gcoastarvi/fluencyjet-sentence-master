@@ -2351,6 +2351,9 @@ export default function SentencePractice() {
           ? "bg-emerald-600 hover:bg-emerald-700"
           : "bg-slate-900 hover:bg-slate-950";
 
+  const BTN_SECONDARY =
+    "rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50";
+
   function StickyCTABar({ cfg }) {
     if (!cfg?.show) return null;
 
