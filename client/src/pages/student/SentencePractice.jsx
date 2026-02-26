@@ -268,6 +268,8 @@ export default function SentencePractice() {
   const [streak, setStreak] = useState(0);
   const [feedback, setFeedback] = useState("");
 
+  const [xpToastPhase, setXpToastPhase] = useState("hidden"); // hidden | enter | shown | exit
+
   const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
 
   const [suppressEmpty, setSuppressEmpty] = useState(false);
@@ -398,6 +400,25 @@ export default function SentencePractice() {
     setAudioGateOpen(false);
     if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
     audioGateTimerRef.current = null;
+  }
+
+  function triggerXPToast(xp) {
+    const n = Number(xp || 0);
+    if (!n) return;
+
+    triggerXPToast(n);
+
+    // allow first paint, then animate in
+    requestAnimationFrame(() => setXpToastPhase("shown"));
+
+    // hold, then animate out
+    setTimeout(() => setXpToastPhase("exit"), 1400);
+
+    // after exit animation completes, unmount
+    setTimeout(() => {
+      setShowXPToast(false);
+      setXpToastPhase("hidden");
+    }, 1700);
   }
 
   useEffect(() => {
@@ -1322,8 +1343,7 @@ export default function SentencePractice() {
         const awarded = Number(result?.awarded ?? 0) || 0;
 
         if (result?.ok && awarded > 0) {
-          setEarnedXP(awarded);
-          setShowXPToast(true);
+          triggerXPToast(awarded);
         } else {
           console.error("[XP] reorder: XP not awarded", result);
         }
@@ -1437,8 +1457,7 @@ export default function SentencePractice() {
       setStatus("correct");
 
       if (result?.ok && awarded > 0) {
-        setEarnedXP(awarded);
-        setShowXPToast(true);
+        triggerXPToast(awarded);
         playCorrectSound?.();
         setFeedback(`✅ Great! +${awarded} XP`);
       } else if (result?.ok && awarded === 0) {
@@ -1550,8 +1569,7 @@ export default function SentencePractice() {
         const awarded = Number(result?.awarded ?? 0) || 0;
 
         if (result?.ok && awarded > 0) {
-          setEarnedXP(awarded);
-          setShowXPToast(true);
+          triggerXPToast(awarded);
           correctSoundRef.current?.play?.(); // play only after award success
         } else {
           console.error("[XP] typing: XP not awarded", result);
@@ -1678,8 +1696,7 @@ export default function SentencePractice() {
         const awarded = Number(result?.awarded ?? 0) || 0;
 
         if (result?.ok && awarded > 0) {
-          setEarnedXP(awarded);
-          setShowXPToast(true);
+          triggerXPToast(awarded);
         } else {
           console.error("[XP] cloze: XP not awarded", result);
         }
@@ -1737,8 +1754,7 @@ export default function SentencePractice() {
         const awarded = Number(result?.awarded ?? 0) || 0;
 
         if (result?.ok && awarded > 0) {
-          setEarnedXP(awarded);
-          setShowXPToast(true);
+          triggerXPToast(awarded);
           playCorrectSound?.();
           setFeedback("✅ Correct!");
         } else {
@@ -2099,7 +2115,7 @@ export default function SentencePractice() {
                 <button
                   type="button"
                   className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  onClick={() => navigate("/student/leaderboard")}
+                  onClick={() => navigate("/leaderboard")}
                 >
                   View leaderboard
                 </button>
@@ -3143,19 +3159,26 @@ export default function SentencePractice() {
 
         {/* XP Toast */}
         {showXPToast && (
-          <div className="fixed top-20 right-4 z-50 pointer-events-none">
-            <div
-              className={`inline-flex items-center gap-2 rounded-2xl border bg-white/85 px-4 py-2 text-sm font-semibold shadow-[0_10px_30px_rgba(15,23,42,0.12)] backdrop-blur ${
-                A?.border || "border-slate-200"
-              }`}
-            >
-              <span
-                className={`h-2.5 w-2.5 rounded-full ${A?.bar || "bg-slate-500"}`}
-              />
-              <span className="text-slate-900">
+          <div
+            className={[
+              "fixed top-24 right-6 z-50",
+              "rounded-2xl border border-slate-200 bg-white/90 backdrop-blur",
+              "px-4 py-2 shadow-lg",
+              "transition-all duration-300 ease-out",
+              xpToastPhase === "enter"
+                ? "opacity-0 translate-y-2 scale-[0.98]"
+                : xpToastPhase === "exit"
+                  ? "opacity-0 translate-y-2 scale-[0.98]"
+                  : "opacity-100 translate-y-0 scale-100",
+            ].join(" ")}
+          >
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-7 items-center rounded-full bg-purple-600 px-2.5 text-xs font-bold text-white">
                 +{Number(earnedXP || 0)} XP
               </span>
-              <span className="text-slate-500">✨</span>
+              <span className="text-xs font-semibold text-slate-600">
+                Nice! ✨
+              </span>
             </div>
           </div>
         )}
@@ -3268,7 +3291,7 @@ export default function SentencePractice() {
                       className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                       onClick={() => {
                         setShowCompleteModal(false);
-                        navigate("/student/leaderboard");
+                        navigate("/leaderboard");
                       }}
                     >
                       View leaderboard
