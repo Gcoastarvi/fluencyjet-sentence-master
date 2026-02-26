@@ -2835,7 +2835,7 @@ export default function SentencePractice() {
                   {(typingWordBank || []).map((w, idx) => (
                     <span
                       key={`${w}_${idx}`}
-                      className="rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-sm font-semibold text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)]"
+                      className="select-none rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600 shadow-sm opacity-90"
                     >
                       {w}
                     </span>
@@ -3159,9 +3159,9 @@ export default function SentencePractice() {
         {showXPToast && (
           <div
             className={[
-              "fixed top-20 right-5 z-50",
+              "fixed right-6 top-24 z-50",
               "rounded-2xl border border-slate-200 bg-white/90 backdrop-blur",
-              "px-4 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.18)]",
+              "px-4 py-2 shadow-lg",
               "transition-all duration-300",
               xpToastPhase === "enter"
                 ? "translate-y-0 opacity-100"
@@ -3169,12 +3169,10 @@ export default function SentencePractice() {
             ].join(" ")}
           >
             <div className="flex items-center gap-2">
-              <div className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                ✨
+              <div className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                +{earnedXP} XP
               </div>
-              <div className="text-sm font-semibold text-slate-900">
-                +{Number(earnedXP || 0)} XP
-              </div>
+              <div className="text-sm font-semibold text-slate-900">Nice!</div>
             </div>
           </div>
         )}
