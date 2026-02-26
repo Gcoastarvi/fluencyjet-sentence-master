@@ -2359,6 +2359,9 @@ export default function SentencePractice() {
 
     return (
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/85 backdrop-blur shadow-[0_-8px_30px_rgba(15,23,42,0.08)]">
+        <div
+          className={`h-[3px] w-full ${MODE_ACCENT?.[safeMode]?.bar || "bg-slate-500"}`}
+        />
         <div className="mx-auto max-w-3xl px-4 pt-3 pb-[env(safe-area-inset-bottom)]">
           {cfg.hintText ? (
             <div className="mb-2 text-xs font-semibold text-slate-500">
@@ -3077,7 +3080,7 @@ export default function SentencePractice() {
                     className={`px-4 py-2 rounded-full text-sm font-semibold ${
                       isWrong
                         ? "bg-rose-100 text-rose-800 border border-rose-200"
-                        : "bg-slate-900 text-white ring-2 ring-indigo-200"
+                        : `${A.border} ${A.soft} ${A.text} shadow-sm`
                     }`}
                   >
                     {word}
@@ -3094,7 +3097,7 @@ export default function SentencePractice() {
                   type="button"
                   onClick={() => addToAnswer(word)}
                   disabled={status === "correct" || status === "reveal"}
-                  className="px-4 py-2 rounded-full border border-indigo-200 bg-indigo-50 text-indigo-900 shadow-sm transition hover:bg-indigo-100 hover:shadow active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                  className={`px-4 py-2 rounded-full border ${A.border} ${A.soft} ${A.text} shadow-sm transition hover:brightness-[0.98] hover:shadow active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
                 >
                   {word}
                 </button>
