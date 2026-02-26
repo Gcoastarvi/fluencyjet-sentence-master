@@ -3143,8 +3143,20 @@ export default function SentencePractice() {
 
         {/* XP Toast */}
         {showXPToast && (
-          <div className="fixed top-24 right-6 bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg animate-bounce z-50">
-            +{earnedXP} XP ✨
+          <div className="fixed top-20 right-4 z-50 pointer-events-none">
+            <div
+              className={`inline-flex items-center gap-2 rounded-2xl border bg-white/85 px-4 py-2 text-sm font-semibold shadow-[0_10px_30px_rgba(15,23,42,0.12)] backdrop-blur ${
+                A?.border || "border-slate-200"
+              }`}
+            >
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${A?.bar || "bg-slate-500"}`}
+              />
+              <span className="text-slate-900">
+                +{Number(earnedXP || 0)} XP
+              </span>
+              <span className="text-slate-500">✨</span>
+            </div>
           </div>
         )}
 
