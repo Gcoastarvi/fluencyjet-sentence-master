@@ -406,9 +406,12 @@ export default function SentencePractice() {
     const n = Number(xp || 0);
     if (!n) return;
 
-    triggerXPToast(n);
+    // ✅ drive both: green banner + toast
+    setEarnedXP(n);
+    setShowXPToast(true);
+    setXpToastPhase("enter");
 
-    // allow first paint, then animate in
+    // allow first paint, then mark shown
     requestAnimationFrame(() => setXpToastPhase("shown"));
 
     // hold, then animate out
