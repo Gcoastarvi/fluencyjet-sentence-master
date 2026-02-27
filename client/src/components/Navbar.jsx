@@ -27,55 +27,61 @@ export default function Navbar() {
     navigate("/", { replace: true });
   }
 
-  return (
-    <nav className="flex items-center justify-between px-6 py-4 shadow-sm bg-white">
-      {/* Logo */}
-      <Link to="/" className="text-2xl font-bold text-purple-700">
-        FluencyJet <span className="font-normal">Sentence Master</span>
-      </Link>
+return (
+  <nav className="w-full bg-white shadow-sm overflow-x-hidden">
+    <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Logo */}
+        <Link
+          to="/"
+          className="text-xl sm:text-2xl font-bold text-purple-700 leading-tight"
+        >
+          FluencyJet <span className="font-normal">Sentence Master</span>
+        </Link>
 
-      {/* Navigation */}
-      <div className="flex gap-6 text-lg items-center">
-        {!isAuthenticated && (
-          <>
-            <Link to="/practice" className="hover:text-purple-600">
-              Free Quiz
-            </Link>
-            <button
-              onClick={handleLoginClick}
-              className="px-4 py-2 bg-purple-600 text-white rounded-full shadow"
-            >
-              Login
-            </button>
-          </>
-        )}
+        {/* Navigation */}
+        <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 sm:pb-0">
+          {!isAuthenticated && (
+            <>
+              <Link to="/practice" className="text-sm sm:text-base hover:text-purple-600">
+                Free Quiz
+              </Link>
+              <button
+                onClick={handleLoginClick}
+                className="shrink-0 px-4 py-2 bg-purple-600 text-white rounded-full shadow text-sm sm:text-base"
+              >
+                Login
+              </button>
+            </>
+          )}
 
-        {isAuthenticated && (
-          <>
-            <Link to="/dashboard">Dashboard</Link>
-            <Link to="/lessons">Lessons</Link>
-            <Link to="/practice">Practice</Link>
-            <Link to="/leaderboard">Leaderboard</Link>
+          {isAuthenticated && (
+            <>
+              <Link className="text-sm sm:text-base" to="/dashboard">Dashboard</Link>
+              <Link className="text-sm sm:text-base" to="/lessons">Lessons</Link>
+              <Link className="text-sm sm:text-base" to="/practice">Practice</Link>
+              <Link className="text-sm sm:text-base" to="/leaderboard">Leaderboard</Link>
 
-            {/* Upgrade CTA (launch-safe even if paywall is removed) */}
-            <Link
-              to="/paywall"
-              className="px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold"
-            >
-              Upgrade
-            </Link>
+              <Link
+                to="/paywall"
+                className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"
+              >
+                Upgrade
+              </Link>
 
-            {isAdmin && <Link to="/admin">Admin</Link>}
+              {isAdmin && <Link className="text-sm sm:text-base" to="/admin">Admin</Link>}
 
-            <button
-              onClick={handleLogoutClick}
-              className="px-4 py-2 bg-gray-800 text-white rounded-full shadow"
-            >
-              Logout
-            </button>
-          </>
-        )}
+              <button
+                onClick={handleLogoutClick}
+                className="shrink-0 px-4 py-2 bg-gray-800 text-white rounded-full shadow text-sm sm:text-base"
+              >
+                Logout
+              </button>
+            </>
+          )}
+        </div>
       </div>
-    </nav>
-  );
-}
+    </div>
+  </nav>
+);
+} 

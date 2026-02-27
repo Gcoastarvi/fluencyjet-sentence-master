@@ -1315,6 +1315,7 @@ export default function SentencePractice() {
         if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
       }
       setWrongIndexes(wrong);
+      setStatus("wrong"); // ✅ add this line
     } else {
       setWrongIndexes([]);
     }
