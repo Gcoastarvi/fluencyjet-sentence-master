@@ -1586,6 +1586,7 @@ export default function SentencePractice() {
       if (normalize(user) === normalize(target)) {
         setStatus("correct");
         setWrongIndexes([]);
+        playSfx("correct"); // ✅ always play on correct, regardless of XP award
 
         const xpDelta = Number(current?.xp ?? 150) || 150;
 
@@ -1614,7 +1615,6 @@ export default function SentencePractice() {
 
         if (result?.ok && awarded > 0) {
           triggerXPToast(awarded);
-          playSfx("correct"); // ✅ consistent correct sound everywhere
         } else {
           console.error("[XP] typing: XP not awarded", result);
         }
