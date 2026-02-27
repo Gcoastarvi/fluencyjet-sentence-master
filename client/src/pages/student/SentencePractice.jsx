@@ -1247,6 +1247,7 @@ export default function SentencePractice() {
     setStatus("idle");
     setFeedback("");
     setShowHint(false);
+    setAttempts(0);
     setTypedAnswer("");
     setWrongIndexes([]);
     setRevealEnglish(false);
@@ -1254,10 +1255,21 @@ export default function SentencePractice() {
     setAnswer([]);
     setTiles([]);
 
+    const total = Math.min(lessonExercises?.length || 0, sessionTarget);
+    const nextIndex = currentIndex + 1;
+
+    // ✅ if this Next will finish the session, compute + store completion bonus now
+    if (total > 0 && nextIndex >= total) {
+      // guard: don't spam-set if already set
+      if (Number(completionXp || 0) === 0) {
+        Promise.resolve(awardCompletionBonus?.(safeMode))
+          .then((bonus) => setCompletionXp(Number(bonus || 0)))
+          .catch(() => {});
+      }
+    }
+
     setCurrentIndex((prev) => {
       const next = prev + 1;
-
-      const total = Math.min(lessonExercises?.length || 0, sessionTarget);
 
       if (total > 0 && next >= total) {
         setIsComplete(true);
@@ -1308,6 +1320,7 @@ export default function SentencePractice() {
     const isCorrect = arraysEqualStrict(userArr, correctArr);
 
     // highlight wrong positions (only when wrong)
+    // highlight wrong positions (only when wrong)
     if (!isCorrect) {
       const wrong = [];
       const L = Math.max(userArr.length, correctArr.length);
@@ -1315,9 +1328,26 @@ export default function SentencePractice() {
         if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
       }
       setWrongIndexes(wrong);
-      setStatus("wrong"); // ✅ add this line
+      setShowHint(true);
+
+      // ✅ attempts-driven wrong → reveal flow (same as typing)
+      setAttempts((a) => {
+        const next = a + 1;
+
+        if (next >= MAX_ATTEMPTS) {
+          setStatus("reveal");
+          setWrongIndexes([]); // optional: stop highlighting when revealing
+        } else {
+          setStatus("wrong");
+        }
+
+        return next;
+      });
     } else {
       setWrongIndexes([]);
+      setShowHint(false);
+      setAttempts(0); // reset attempts after correct
+      setStatus("correct");
     }
 
     console.log("[DBG] REORDER userArr   =", userArr);
@@ -3160,21 +3190,16 @@ export default function SentencePractice() {
         {showXPToast && (
           <div
             className={[
-              "fixed right-6 top-24 z-50",
-              "rounded-2xl border border-slate-200 bg-white/90 backdrop-blur",
-              "px-4 py-2 shadow-lg",
-              "transition-all duration-300",
+              "fixed top-24 right-6 z-50 rounded-xl px-4 py-2 text-white shadow-lg",
+              "transition-all duration-200 ease-out",
               xpToastPhase === "enter"
-                ? "translate-y-0 opacity-100"
-                : "translate-y-2 opacity-0",
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-2",
+              // optional: match your brand purple
+              "bg-purple-600",
             ].join(" ")}
           >
-            <div className="flex items-center gap-2">
-              <div className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
-                +{earnedXP} XP
-              </div>
-              <div className="text-sm font-semibold text-slate-900">Nice!</div>
-            </div>
+            +{earnedXP} XP ✨
           </div>
         )}
 
