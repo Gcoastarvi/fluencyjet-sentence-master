@@ -415,7 +415,7 @@ export default function SentencePractice() {
     requestAnimationFrame(() => setXpToastPhase("shown"));
 
     // hold, then animate out
-    setTimeout(() => setXpToastPhase("exit"), 1400);
+    setTimeout(() => setXpToastPhase("exit"), 2200);
 
     // after exit animation completes, unmount
     setTimeout(() => {
@@ -851,7 +851,7 @@ export default function SentencePractice() {
     if (status === "correct") {
       const timer = setTimeout(() => {
         loadNextQuestion();
-      }, 1500);
+      }, 1800);
       return () => clearTimeout(timer);
     }
   }, [status, isComplete]); // (loadNextQuestion is stable enough here)
@@ -1311,6 +1311,14 @@ export default function SentencePractice() {
     }
   }
 
+  function playSfx(name) {
+    try {
+      const audio = new Audio(`/sounds/${name}.mp3`);
+      audio.volume = 0.7;
+      audio.play().catch(() => {});
+    } catch {}
+  }
+
   // ===== REORDER: check correctness =====
   const checkReorderAnswer = async () => {
     if (!current) return;
@@ -1331,6 +1339,7 @@ export default function SentencePractice() {
         if ((userArr[i] ?? "") !== (correctArr[i] ?? "")) wrong.push(i);
       }
       setWrongIndexes(wrong);
+      playSfx("wrong");
       setShowHint(true);
 
       // ✅ attempts-driven wrong → reveal flow (same as typing)
@@ -1361,7 +1370,7 @@ export default function SentencePractice() {
       const xp = Number(current?.xp ?? 150) || 150;
 
       // 1) UI feedback immediately
-      playCorrectSound?.();
+      playSfx("correct");
       setStatus("correct");
 
       // 2) Commit XP to backend using universal pipeline
@@ -1492,7 +1501,7 @@ export default function SentencePractice() {
 
       if (result?.ok && awarded > 0) {
         triggerXPToast(awarded);
-        playCorrectSound?.();
+        playSfx("correct");
         setFeedback(`✅ Great! +${awarded} XP`);
       } else if (result?.ok && awarded === 0) {
         // Deduped / already awarded / or server chose 0 — don't punish the user
@@ -1563,6 +1572,7 @@ export default function SentencePractice() {
       if (!normalize(user)) {
         setStatus("wrong");
         setShowHint(true);
+        playSfx("wrong");
         return;
       }
 
@@ -1604,7 +1614,7 @@ export default function SentencePractice() {
 
         if (result?.ok && awarded > 0) {
           triggerXPToast(awarded);
-          correctSoundRef.current?.play?.(); // play only after award success
+          playSfx("correct"); // ✅ consistent correct sound everywhere
         } else {
           console.error("[XP] typing: XP not awarded", result);
         }
@@ -1789,7 +1799,7 @@ export default function SentencePractice() {
 
         if (result?.ok && awarded > 0) {
           triggerXPToast(awarded);
-          playCorrectSound?.();
+          playSfx("correct");
           setFeedback("✅ Correct!");
         } else {
           console.error("[XP] reorder: XP not awarded", result);
