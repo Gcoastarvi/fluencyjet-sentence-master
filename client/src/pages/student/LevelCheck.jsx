@@ -178,52 +178,57 @@ export default function LevelCheck() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6 mt-8">
-      <div className="rounded-2xl border bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-gray-900">Level Check</h1>
-        <p className="mt-2 text-gray-600">
-          Pick your starting level or take a 2-minute test. You can switch
-          later.
+    <div className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-white via-slate-50 to-violet-50/40 py-10">
+      <div className="mx-auto max-w-4xl px-4">
+      <div className="rounded-3xl border border-slate-200 bg-white/75 p-6 shadow-sm backdrop-blur">
+        <h1 className="text-2xl font-semibold text-slate-900">Level Test</h1>
+        <p className="mt-2 text-slate-600">
+          Find your English level in 2 minutes.
         </p>
 
         {mode === "pick" && (
-          <>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => goToTrack("beginner", { startLesson1: true })}
-                className="rounded-2xl border p-5 text-left hover:bg-gray-50"
-              >
-                <div className="text-lg font-semibold">Beginner</div>
-                <div className="mt-1 text-sm text-gray-600">
-                  Start from basics and build fluency step-by-step.
-                </div>
-                <div className="mt-3 inline-flex items-center text-sm font-semibold text-indigo-600">
-                  Start Beginner →
-                </div>
-              </button>
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            {/* Left: Coach-guided mini panel */}
+            <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur">
+              <div className="flex items-start gap-4">
+                <img
+                  src="/coach.jpg"
+                  alt="Coach"
+                  className="h-14 w-14 rounded-full border border-slate-200 object-cover"
+                />
 
-              <button
-                type="button"
-                onClick={() =>
-                  goToTrack("intermediate", { startLesson1: true })
-                }
-                className="rounded-2xl border p-5 text-left hover:bg-gray-50"
-              >
-                <div className="text-lg font-semibold">Intermediate</div>
-                <div className="mt-1 text-sm text-gray-600">
-                  If you can form basic sentences already, start here.
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900">
+                    Aravind • English Coach
+                  </div>
+
+                  {/* One-line “assistant style” bubble, minimal */}
+                  <div className="mt-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white">
+                    I will find your level. Just answer 10 questions.
+                  </div>
+
+                  <div className="mt-3 text-xs text-slate-500">
+                    Takes 2 minutes
+                  </div>
+
+                  {/* Preview progress strip */}
+                  <div className="mt-3 h-2 w-full rounded-full bg-slate-100">
+                    <div className="h-2 w-[18%] rounded-full bg-violet-500/80" />
+                  </div>
                 </div>
-                <div className="mt-3 inline-flex items-center text-sm font-semibold text-indigo-600">
-                  Start Intermediate →
-                </div>
-              </button>
+              </div>
             </div>
 
-            <div className="mt-6 flex items-center justify-between gap-3">
-              <div className="text-xs text-gray-500">
-                Tip: If you’re unsure, take the test.
+            {/* Right: Simple action card */}
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="text-xl font-semibold text-slate-900">
+                Find Your English Level
               </div>
+
+              <div className="mt-2 text-sm text-slate-600">
+                10 questions • 2 minutes
+              </div>
+
               <button
                 type="button"
                 onClick={() => {
@@ -232,30 +237,44 @@ export default function LevelCheck() {
                   setResult(null);
                   setMode("quiz");
                 }}
-                className="rounded-xl bg-indigo-600 px-4 py-2 text-white font-semibold hover:opacity-95"
+                className="group mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-violet-600 px-5 py-4 text-base font-semibold text-white shadow-sm transition
+                           hover:bg-violet-700 hover:shadow-md active:scale-[0.99]"
               >
-                Take 2-minute test →
-              </button>
+                Start Level Test
+                <span className="ml-2 transition-transform group-hover:translate-x-0.5">
+                  →
+                </span>
+              </button>              
             </div>
-          </>
+          </div>
         )}
 
         {mode === "quiz" && (
           <div className="mt-6">
-            <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center justify-between text-sm text-slate-600">
               <div>
-                Question <span className="font-semibold">{idx + 1}</span> /{" "}
+                Question <span className="font-semibold">{idx + 1}</span> of{" "}
                 {QUESTIONS.length}
               </div>
               <div className="text-xs">
-                Score so far: <span className="font-semibold">{score}</span>
+                Score: <span className="font-semibold">{score}</span>
               </div>
             </div>
 
-            <div className="mt-4 rounded-2xl border p-5">
-              <div className="text-lg font-semibold text-gray-900">
-                {current.q}
+            <div className="mt-3 h-2 w-full rounded-full bg-slate-100">
+              <div
+                className="h-2 rounded-full bg-violet-500/80 transition-all"
+                style={{
+                  width: `${Math.round(((idx + 1) / QUESTIONS.length) * 100)}%`,
+                }}
+              />
+            </div>
+
+            <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="text-lg font-semibold text-slate-900">
+                Select the correct sentence
               </div>
+              <div className="mt-2 text-sm text-slate-600">{current.q}</div>
 
               <div className="mt-4 grid gap-3">
                 {current.options.map((opt, optIdx) => {
@@ -267,9 +286,10 @@ export default function LevelCheck() {
                       onClick={() =>
                         setAnswers((a) => ({ ...a, [current.id]: optIdx }))
                       }
-                      className={`rounded-xl border p-4 text-left hover:bg-gray-50 ${
-                        selected ? "border-indigo-600 bg-indigo-50" : ""
-                      }`}
+                      className={`rounded-2xl border border-slate-200 p-4 text-left transition
+                        hover:-translate-y-[1px] hover:border-violet-200 hover:bg-violet-50/40
+                        ${selected ? "border-violet-600 bg-violet-50 ring-2 ring-violet-200" : ""}
+                      `}
                     >
                       {opt}
                     </button>
@@ -302,7 +322,10 @@ export default function LevelCheck() {
                       onClick={() =>
                         setIdx((n) => Math.min(QUESTIONS.length - 1, n + 1))
                       }
-                      className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
+                      disabled={answers[current.id] == null}
+                      className="rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition
+                         hover:bg-violet-700 hover:shadow-sm active:scale-[0.99]
+                         disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Next →
                     </button>
@@ -341,8 +364,8 @@ export default function LevelCheck() {
               </span>
             </div>
 
-            <div className="mt-2 text-sm text-gray-600">
-              Don’t worry — you can switch later anytime.
+            <div className="mt-2 text-sm text-slate-600">
+              You can switch later anytime.
             </div>
 
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -376,9 +399,7 @@ export default function LevelCheck() {
               </button>
             </div>
 
-            <div className="mt-2 text-xs text-gray-500">
-              Takes ~2 minutes • Earn XP instantly
-            </div>
+            <div className="mt-2 text-xs text-slate-500">Takes 2 minutes</div>
           </div>
         )}
       </div>
