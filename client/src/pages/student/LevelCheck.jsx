@@ -205,22 +205,44 @@ export default function LevelCheck() {
                       Aravind • English Coach
                     </div>
 
-                    {/* One-line “assistant style” bubble, minimal */}
-                    <div className="mt-2 rounded-2xl bg-slate-900 px-4 py-3 text-sm text-white">
-                      I will find your level. Just answer 10 questions.
-                    </div>
+                    {/* Conversational "Coach" Bubble */}
+                    <div className="relative mt-2">
+                      {/* The Speech Bubble Tail */}
+                      <div className="absolute -top-1 left-4 h-3 w-3 rotate-45 border-l border-t border-violet-100 bg-violet-50" />
 
-                    <div className="mt-3 text-xs text-slate-500">
-                      Takes 2 minutes
-                    </div>
+                      <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-4 shadow-sm backdrop-blur-sm">
+                        <p className="text-[15px] leading-relaxed text-violet-900">
+                          "I’ll help you find your current level. It’s just <span className="font-bold underline decoration-violet-300 underline-offset-4">10 quick questions</span>."
+                        </p>
 
-                    {/* Preview progress strip */}
-                    <div className="mt-3 h-2 w-full rounded-full bg-slate-100">
-                      <div className="h-2 w-[18%] rounded-full bg-violet-500/80" />
+                        <div className="mt-4 flex items-center justify-between border-t border-violet-100/50 pt-3">
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-violet-600/70">
+                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Takes 2 minutes
+                          </div>
+
+                          {/* Visual Dot Progress Preview */}
+                          <div className="flex gap-1">
+                            {[...Array(5)].map((_, i) => (
+                              <div key={i} className={`h-1 w-1 rounded-full ${i === 0 ? 'bg-violet-400' : 'bg-slate-200'}`} />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Refined Progress Strip */}
+                      <div className="mt-5 px-1">
+                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
+                          <span>Initial Assessment</span>
+                          <span>Step 1 of 10</span>
+                        </div>
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full w-[12%] animate-pulse rounded-full bg-gradient-to-r from-violet-400 to-violet-600" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
 
               {/* Right: Simple action card */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
