@@ -394,7 +394,28 @@ export default function LevelCheck() {
                 </button>
               </div>
 
-              <div className="mt-2 text-xs text-slate-500">Takes 2 minutes</div>
+              {/* Improved Footer Info */}
+              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-slate-400">
+                <div className="flex items-center gap-2 text-xs">
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>Test complete • 2 min session</span>
+                </div>
+                <span className="text-[10px] font-medium uppercase tracking-widest opacity-60">
+                  FluencyJet Engine v1.0
+                </span>
+              </div>
             </div>
           )}
         </div>
