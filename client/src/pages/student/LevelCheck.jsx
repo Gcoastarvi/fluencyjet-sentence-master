@@ -181,286 +181,180 @@ export default function LevelCheck() {
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-white via-slate-50 to-violet-50/40 py-10">
       <div className="mx-auto max-w-4xl px-4">
         <div className="rounded-3xl border border-slate-200 bg-white/75 p-6 shadow-sm backdrop-blur">
-          <h1 className="text-2xl font-semibold text-slate-900">Level Test</h1>
-          <p className="mt-2 text-slate-600">
-            Find your English level in 2 minutes.
-          </p>
-
           {mode === "pick" && (
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-              {/* Left: Coach-guided mini panel */}
-              <div className="rounded-3xl border border-slate-200 bg-white/70 p-6 shadow-sm backdrop-blur">
-                <div className="flex items-start gap-4">
+            <div className="grid gap-8 md:grid-cols-2">
+              {/* Left: Coach Info */}
+              <div className="flex flex-col items-center text-center md:items-start md:text-left">
+                <div className="flex items-center gap-3">
                   <img
-                    src="/coach.jpg"
-                    alt="Aravind - English Coach"
-                    className="h-14 w-14 rounded-full border border-slate-200 object-cover bg-slate-100"
-                    onError={(e) => {
-                      e.currentTarget.src = "/avatar-fallback.png";
-                    }}
+                    src="/coach-aravind.png"
+                    alt="Aravind"
+                    className="h-14 w-14 rounded-full border-2 border-violet-100 object-cover"
                   />
-
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">
+                  <div>
+                    <div className="font-bold text-slate-900">
                       Aravind • English Coach
                     </div>
+                    <div className="text-xs text-slate-500">
+                      FluencyJet Expert
+                    </div>
+                  </div>
+                </div>
 
-                    {/* Conversational "Coach" Bubble */}
-                    <div className="relative mt-2">
-                      {/* The Speech Bubble Tail */}
-                      <div className="absolute -top-1 left-4 h-3 w-3 rotate-45 border-l border-t border-violet-100 bg-violet-50" />
-
-                      <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-4 shadow-sm backdrop-blur-sm">
-                        <p className="text-[15px] leading-relaxed text-violet-900">
-                          "I’ll help you find your current level. It’s just <span className="font-bold underline decoration-violet-300 underline-offset-4">10 quick questions</span>."
-                        </p>
-
-                        <div className="mt-4 flex items-center justify-between border-t border-violet-100/50 pt-3">
-                          <div className="flex items-center gap-1.5 text-xs font-medium text-violet-600/70">
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Takes 2 minutes
-                          </div>
-
-                          {/* Visual Dot Progress Preview */}
-                          <div className="flex gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <div key={i} className={`h-1 w-1 rounded-full ${i === 0 ? 'bg-violet-400' : 'bg-slate-200'}`} />
-                            ))}
-                          </div>
-                        </div>
+                {/* Conversational "Coach" Bubble */}
+                <div className="relative mt-6 w-full">
+                  <div className="absolute -top-1 left-6 h-3 w-3 rotate-45 border-l border-t border-violet-100 bg-violet-50" />
+                  <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-5 shadow-sm backdrop-blur-sm">
+                    <p className="text-[15px] leading-relaxed text-violet-900">
+                      "I’ll help you find your current level. It’s just{" "}
+                      <span className="font-bold underline decoration-violet-300 underline-offset-4">
+                        10 quick questions
+                      </span>
+                      ."
+                    </p>
+                    <div className="mt-4 flex items-center justify-between border-t border-violet-100/50 pt-3">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-violet-600/70">
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Takes 2 minutes
                       </div>
-
-                      {/* Refined Progress Strip */}
-                      <div className="mt-5 px-1">
-                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1.5">
-                          <span>Initial Assessment</span>
-                          <span>Step 1 of 10</span>
-                        </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                          <div className="h-full w-[12%] animate-pulse rounded-full bg-gradient-to-r from-violet-400 to-violet-600" />
-                        </div>
+                      <div className="flex gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`h-1 w-1 rounded-full ${i === 0 ? "bg-violet-400" : "bg-slate-200"}`}
+                          />
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Right: Simple action card */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="mt-2 text-sm text-slate-600">
-                  10 questions • 2 minutes
+              {/* Right: Start Action */}
+              <div className="flex flex-col justify-center rounded-2xl bg-slate-50 p-8 text-center border border-slate-100">
+                <div className="mb-4 text-sm font-medium text-slate-500">
+                  Ready to start?
                 </div>
-
                 <button
                   type="button"
-                  onClick={() => {
-                    setAnswers({});
-                    setIdx(0);
-                    setResult(null);
-                    setMode("quiz");
-                  }}
-                  className="group mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-violet-600 px-5 py-4 text-base font-semibold text-white shadow-sm transition
-                           hover:bg-violet-700 hover:shadow-md active:scale-[0.99]"
+                  onClick={() => setMode("quiz")}
+                  className="group flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-violet-200 transition-all hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
                 >
                   Start Level Test
-                  <span className="ml-2 transition-transform group-hover:translate-x-0.5">
+                  <span className="transition-transform group-hover:translate-x-1">
                     →
                   </span>
                 </button>
+                <div className="mt-6 flex justify-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  <span>10 Questions</span>
+                  <span>•</span>
+                  <span>Instant Result</span>
+                </div>
               </div>
             </div>
           )}
 
           {mode === "quiz" && (
-            <div className="mt-6">
-              <div className="flex items-center justify-between text-sm text-slate-600">
-                <div>
-                  Question <span className="font-semibold">{idx + 1}</span> of{" "}
-                  {QUESTIONS.length}
+            <div className="max-w-2xl mx-auto">
+              {/* Quiz Content Logic (Your lines 272-337 would stay inside here) */}
+              <div className="mb-8">
+                <div className="flex justify-between items-end mb-2">
+                  <span className="text-xs font-bold text-violet-600 uppercase tracking-widest">
+                    Question {idx + 1} of {QUESTIONS.length}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    Initial Assessment
+                  </span>
                 </div>
-                <div className="text-xs">
-                  Score: <span className="font-semibold">{score}</span>
+                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-violet-500 transition-all duration-300"
+                    style={{
+                      width: `${((idx + 1) / QUESTIONS.length) * 100}%`,
+                    }}
+                  />
                 </div>
               </div>
 
-              <div className="mt-3 h-2 w-full rounded-full bg-slate-100">
-                <div
-                  className="h-2 rounded-full bg-violet-500/80 transition-all"
-                  style={{
-                    width: `${Math.round(((idx + 1) / QUESTIONS.length) * 100)}%`,
-                  }}
-                />
+              <div className="text-xl font-bold text-slate-900 mb-6">
+                {QUESTIONS[idx].q}
               </div>
 
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="text-lg font-semibold text-slate-900">
-                  Select the correct sentence
-                </div>
-                <div className="mt-2 text-sm text-slate-600">{current.q}</div>
+              <div className="grid gap-3">
+                {QUESTIONS[idx].options.map((opt, optIdx) => (
+                  <button
+                    key={opt}
+                    onClick={() =>
+                      setAnswers((a) => ({ ...a, [QUESTIONS[idx].id]: optIdx }))
+                    }
+                    className={`p-4 text-left rounded-xl border-2 transition-all ${
+                      answers[QUESTIONS[idx].id] === optIdx
+                        ? "border-violet-600 bg-violet-50"
+                        : "border-slate-100 hover:border-violet-200"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
 
-                <div className="mt-4 grid gap-3">
-                  {current.options.map((opt, optIdx) => {
-                    const selected = answers[current.id] === optIdx;
-                    return (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() =>
-                          setAnswers((a) => ({ ...a, [current.id]: optIdx }))
-                        }
-                        className={`group relative flex items-center gap-4 rounded-2xl border-2 p-5 text-left transition-all duration-200 
-                          ${
-                            selected
-                              ? "border-violet-600 bg-violet-50/50 shadow-md translate-x-1"
-                              : "border-slate-100 hover:border-violet-200 hover:bg-slate-50/50 hover:-translate-y-1"
-                          }`}
-                      >
-                        {/* The "Letter" Indicator */}
-                        <div
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 font-bold transition-colors
-                          ${
-                            selected
-                              ? "border-violet-600 bg-violet-600 text-white"
-                              : "border-slate-200 bg-white text-slate-400 group-hover:border-violet-300 group-hover:text-violet-600"
-                          }`}
-                        >
-                          {String.fromCharCode(65 + optIdx)}
-                        </div>
-
-                        <span
-                          className={`text-lg font-medium ${selected ? "text-violet-900" : "text-slate-700"}`}
-                        >
-                          {opt}
-                        </span>
-
-                        {/* Selection Glow */}
-                        {selected && (
-                          <div className="absolute right-4 h-3 w-3 rounded-full bg-violet-600 animate-pulse" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-5 flex items-center justify-end">
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setIdx((n) => Math.max(0, n - 1))}
-                      disabled={idx === 0}
-                      className="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-gray-50 disabled:opacity-40"
-                    >
-                      Prev
-                    </button>
-
-                    {idx < QUESTIONS.length - 1 ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setIdx((n) => Math.min(QUESTIONS.length - 1, n + 1))
-                        }
-                        disabled={answers[current.id] == null}
-                        className="rounded-2xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition
-                         hover:bg-violet-700 hover:shadow-sm active:scale-[0.99]
-                         disabled:opacity-40 disabled:cursor-not-allowed"
-                      >
-                        Next →
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={finishQuiz}
-                        className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-95"
-                      >
-                        See result →
-                      </button>
-                    )}
-                  </div>
-                </div>
+              <div className="mt-8 flex justify-between">
+                <button
+                  onClick={() => setIdx((i) => Math.max(0, i - 1))}
+                  className="text-slate-500 font-medium"
+                >
+                  Back
+                </button>
+                {idx < QUESTIONS.length - 1 ? (
+                  <button
+                    onClick={() => setIdx((i) => i + 1)}
+                    disabled={answers[QUESTIONS[idx].id] === undefined}
+                    className="bg-slate-900 text-white px-6 py-2 rounded-lg disabled:opacity-50"
+                  >
+                    Next Question
+                  </button>
+                ) : (
+                  <button
+                    onClick={finishQuiz}
+                    className="bg-violet-600 text-white px-6 py-2 rounded-lg font-bold"
+                  >
+                    See My Result
+                  </button>
+                )}
               </div>
             </div>
           )}
 
-          {mode === "result" && result && (
-            <div className="mt-6 rounded-2xl border p-6">
-              <div className="text-sm text-gray-600">Your score</div>
-              <div className="text-3xl font-bold text-gray-900">
-                {result.score} / {QUESTIONS.length}
-              </div>
+          {mode === "result" && (
+            <div className="text-center py-10">
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                Your Level: {result?.track}
+              </h2>
+              <p className="text-slate-600 mb-8">
+                Great job completing the assessment!
+              </p>
+              <button
+                onClick={() => goToTrack(result.track)}
+                className="bg-violet-600 text-white px-10 py-4 rounded-xl font-bold shadow-lg"
+              >
+                Start Learning Now
+              </button>
 
-              <div className="mt-4 text-lg font-semibold">
-                Recommended:{" "}
-                <span
-                  className={
-                    result.track === "intermediate"
-                      ? "text-indigo-700"
-                      : "text-emerald-700"
-                  }
-                >
-                  {result.track === "intermediate"
-                    ? "Intermediate"
-                    : "Beginner"}
-                </span>
-              </div>
-
-              <div className="mt-2 text-sm text-slate-600">
-                You can switch later anytime.
-              </div>
-
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() =>
-                    goToTrack(result.track, { startLesson1: true })
-                  }
-                  className="rounded-xl bg-indigo-600 px-5 py-2.5 text-white font-semibold hover:opacity-95"
-                >
-                  Start Lesson 1 now (Free) →
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => goToTrack(result.track)}
-                  className="rounded-xl border px-5 py-2.5 font-semibold hover:bg-gray-50"
-                >
-                  See all lessons
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAnswers({});
-                    setIdx(0);
-                    setResult(null);
-                    setMode("quiz");
-                  }}
-                  className="rounded-xl border px-5 py-2.5 font-semibold hover:bg-gray-50"
-                >
-                  Retake
-                </button>
-              </div>
-
-              {/* Improved Footer Info */}
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-slate-400">
-                <div className="flex items-center gap-2 text-xs">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>Test complete • 2 min session</span>
-                </div>
-                <span className="text-[10px] font-medium uppercase tracking-widest opacity-60">
+              <div className="mt-12 pt-6 border-t border-slate-100 flex justify-between items-center text-slate-400 text-xs">
+                <span>Test complete • 2 min session</span>
+                <span className="font-medium uppercase tracking-widest opacity-60">
                   FluencyJet Engine v1.0
                 </span>
               </div>
