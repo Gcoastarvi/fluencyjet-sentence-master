@@ -243,6 +243,9 @@ export default function LevelCheck() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
 
               {/* Right: Simple action card */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
