@@ -194,7 +194,7 @@ export default function LevelCheck() {
                   <img
                     src="/coach.jpg"
                     alt="Aravind - English Coach"
-                    className="h-14 w-14 rounded-full border border-slate-200 object-cover"
+                    className="h-14 w-14 rounded-full border border-slate-200 object-cover bg-slate-100"
                     onError={(e) => {
                       e.currentTarget.src = "/avatar-fallback.png";
                     }}
@@ -223,8 +223,7 @@ export default function LevelCheck() {
               </div>
 
               {/* Right: Simple action card */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">                
-
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="mt-2 text-sm text-slate-600">
                   10 questions • 2 minutes
                 </div>
