@@ -223,10 +223,7 @@ export default function LevelCheck() {
               </div>
 
               {/* Right: Simple action card */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="text-xl font-semibold text-slate-900">
-                  10 Qs
-                </div>
+              <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">                
 
                 <div className="mt-2 text-sm text-slate-600">
                   10 questions • 2 minutes
