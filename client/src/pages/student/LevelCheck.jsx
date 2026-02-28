@@ -193,8 +193,11 @@ export default function LevelCheck() {
                 <div className="flex items-start gap-4">
                   <img
                     src="/coach.jpg"
-                    alt="Coach"
+                    alt="Aravind - English Coach"
                     className="h-14 w-14 rounded-full border border-slate-200 object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/avatar-fallback.png";
+                    }}
                   />
 
                   <div className="min-w-0">
