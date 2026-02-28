@@ -285,12 +285,35 @@ export default function LevelCheck() {
                         onClick={() =>
                           setAnswers((a) => ({ ...a, [current.id]: optIdx }))
                         }
-                        className={`rounded-2xl border border-slate-200 p-4 text-left transition
-                        hover:-translate-y-[1px] hover:border-violet-200 hover:bg-violet-50/40
-                        ${selected ? "border-violet-600 bg-violet-50 ring-2 ring-violet-200" : ""}
-                      `}
+                        className={`group relative flex items-center gap-4 rounded-2xl border-2 p-5 text-left transition-all duration-200 
+                          ${
+                            selected
+                              ? "border-violet-600 bg-violet-50/50 shadow-md translate-x-1"
+                              : "border-slate-100 hover:border-violet-200 hover:bg-slate-50/50 hover:-translate-y-1"
+                          }`}
                       >
-                        {opt}
+                        {/* The "Letter" Indicator */}
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 font-bold transition-colors
+                          ${
+                            selected
+                              ? "border-violet-600 bg-violet-600 text-white"
+                              : "border-slate-200 bg-white text-slate-400 group-hover:border-violet-300 group-hover:text-violet-600"
+                          }`}
+                        >
+                          {String.fromCharCode(65 + optIdx)}
+                        </div>
+
+                        <span
+                          className={`text-lg font-medium ${selected ? "text-violet-900" : "text-slate-700"}`}
+                        >
+                          {opt}
+                        </span>
+
+                        {/* Selection Glow */}
+                        {selected && (
+                          <div className="absolute right-4 h-3 w-3 rounded-full bg-violet-600 animate-pulse" />
+                        )}
                       </button>
                     );
                   })}
