@@ -225,7 +225,7 @@ export default function LevelCheck() {
               {/* Right: Simple action card */}
               <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="text-xl font-semibold text-slate-900">
-                  Find Your English Level
+                  10 Qs
                 </div>
 
                 <div className="mt-2 text-sm text-slate-600">
@@ -300,15 +300,7 @@ export default function LevelCheck() {
                   })}
                 </div>
 
-                <div className="mt-5 flex items-center justify-between">
-                  <button
-                    type="button"
-                    onClick={() => setMode("pick")}
-                    className="rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-gray-50"
-                  >
-                    ← Back
-                  </button>
-
+                <div className="mt-5 flex items-center justify-end">
                   <div className="flex gap-2">
                     <button
                       type="button"
