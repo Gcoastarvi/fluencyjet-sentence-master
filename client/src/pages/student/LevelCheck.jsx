@@ -202,6 +202,10 @@ export default function LevelCheck() {
     if (finalScore >= 8) track = "advanced";
     else if (finalScore >= 5) track = "intermediate";
 
+    const levelUpSound = new Audio("/sounds/levelup.mp3");
+    levelUpSound.volume = 0.5;
+    levelUpSound.play();
+
     setResult({ score: finalScore, track });
     setMode("result");
 
@@ -379,6 +383,7 @@ export default function LevelCheck() {
               </div>
 
               {/* Option Grid */}
+              {/* 386: Option Grid with Sound Feedback */}
               <div className="grid gap-3 w-full max-w-sm">
                 {QUESTIONS[idx].options.map((opt, optIdx) => {
                   const isSelected = answers[QUESTIONS[idx].id] === optIdx;
@@ -386,12 +391,17 @@ export default function LevelCheck() {
                     <button
                       key={opt}
                       type="button"
-                      onClick={() =>
+                      onClick={() => {
+                        // Audio Feedback
+                        const clickSound = new Audio("/sounds/correct.mp3");
+                        clickSound.volume = 0.4;
+                        clickSound.play().catch(() => {}); // Catch prevents console errors if user hasn't interacted yet
+
                         setAnswers((a) => ({
                           ...a,
                           [QUESTIONS[idx].id]: optIdx,
-                        }))
-                      }
+                        }));
+                      }}
                       className={`group relative flex items-center gap-4 p-5 text-left rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] ${
                         isSelected
                           ? "border-violet-600 bg-violet-50 shadow-md translate-x-1"
