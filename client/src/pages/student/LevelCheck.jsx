@@ -7,6 +7,30 @@ import confetti from "canvas-confetti";
 
 const TRACK_KEY = "fj_track";
 
+const TRACK_METADATA = {
+  beginner: {
+    title: "Solid Foundations",
+    description:
+      "Great start! You have a clear grasp of basic sentence structures. We'll focus on building your core vocabulary and daily conversational confidence.",
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+  },
+  intermediate: {
+    title: "Natural Flow",
+    description:
+      "Impressive work! You're navigating complex word orders well. Now, let's polish your nuances and master those tricky advanced tenses.",
+    color: "text-violet-600",
+    bg: "bg-violet-50",
+  },
+  advanced: {
+    title: "Fluent Mastery",
+    description:
+      "Exceptional! Your structural accuracy is top-tier. We will focus on idiomatic expressions and high-level professional communication to reach native-like fluency.",
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+  },
+};
+
 const QUESTIONS = [
   // Beginner-ish (1–5)
   {
@@ -451,8 +475,8 @@ export default function LevelCheck() {
                 </div>
               </div>
 
-              {/* Score Breakdown Tiles */}
-              <div className="max-w-md mx-auto grid grid-cols-2 gap-4 mb-10">
+              {/* 478: Score Breakdown Tiles */}
+              <div className="max-w-md mx-auto grid grid-cols-2 gap-4 mb-8">
                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
                   <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
                     Accuracy
@@ -467,6 +491,21 @@ export default function LevelCheck() {
                 </div>
               </div>
 
+              {/* Personalized Level Feedback */}
+              <div
+                className={`mb-10 p-6 rounded-3xl border ${TRACK_METADATA[result.track].bg} border-opacity-50 inline-block max-w-sm mx-auto shadow-sm`}
+              >
+                <h3
+                  className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${TRACK_METADATA[result.track].color}`}
+                >
+                  {TRACK_METADATA[result.track].title}
+                </h3>
+                <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                  {TRACK_METADATA[result.track].description}
+                </p>
+              </div>
+
+              {/* Primary Actions */}
               <div className="flex flex-col gap-4 max-w-sm mx-auto">
                 <button
                   onClick={() => goToTrack(result.track)}
