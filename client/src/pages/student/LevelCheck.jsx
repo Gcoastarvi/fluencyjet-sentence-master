@@ -198,25 +198,42 @@ export default function LevelCheck() {
     return s;
   }, [answers]);
 
-  function finishQuiz() {
+  // 173: Async function to sync results with Railway DB
+  async function finishQuiz() {
     const finalScore = score;
     let track = "beginner";
     if (finalScore >= 8) track = "advanced";
     else if (finalScore >= 5) track = "intermediate";
 
+    // Set local state first for immediate UI feedback
+    setResult({ score: finalScore, track });
+
+    try {
+      // 🚀 Trigger the Backend Sync
+      const response = await api.post("/quizzes/sync-placement", {
+        track: track,
+      });
+
+      if (response.data?.ok) {
+        console.log("[SYNC] Profile successfully updated to:", track);
+      }
+    } catch (err) {
+      console.error("❌ Placement sync failed:", err);
+      // We don't block the user if sync fails; they still see their results
+    }
+
+    // Trigger the premium celebration effects
     const levelUpSound = new Audio("/sounds/levelup.mp3");
     levelUpSound.volume = 0.5;
-    levelUpSound.play();
+    levelUpSound.play().catch(() => {});
 
-    setResult({ score: finalScore, track });
     setMode("result");
 
-    // World-Class Celebration Trigger
     confetti({
       particleCount: 150,
       spread: 70,
       origin: { y: 0.6 },
-      colors: ["#8b5cf6", "#a78bfa", "#c4b5fd"], // FluencyJet Purple Palette
+      colors: ["#8b5cf6", "#a78bfa", "#c4b5fd"],
     });
   }
 
