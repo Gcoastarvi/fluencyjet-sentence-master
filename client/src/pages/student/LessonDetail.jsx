@@ -785,6 +785,8 @@ export default function LessonDetail() {
 
   const teach = LESSON_TEACH[Number(lessonId)] || null;
 
+  const streak = userProfile?.daily_streak || 0;
+
   return (
     <div className="mx-auto max-w-xl p-4">
       <div className="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm overflow-hidden relative">
