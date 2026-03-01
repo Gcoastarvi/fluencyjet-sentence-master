@@ -333,7 +333,7 @@ export default function LevelCheck() {
 
           {/* 290: Refined Quiz Interface */}
           {mode === "quiz" && (
-            <div className="max-w-xl mx-auto py-8 flex flex-col min-h-[500px] justify-center">
+            <div className="max-w-md mx-auto py-8 flex flex-col items-center">
               {/* Top Progress Header */}
               <div className="mb-12">
                 <div className="flex justify-between items-end mb-3">
@@ -379,7 +379,7 @@ export default function LevelCheck() {
               </div>
 
               {/* Option Grid */}
-              <div className="grid gap-4">
+              <div className="grid gap-3 w-full max-w-sm">
                 {QUESTIONS[idx].options.map((opt, optIdx) => {
                   const isSelected = answers[QUESTIONS[idx].id] === optIdx;
                   return (
