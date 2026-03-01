@@ -333,9 +333,9 @@ export default function LevelCheck() {
 
           {/* 290: Refined Quiz Interface */}
           {mode === "quiz" && (
-            <div className="max-w-2xl mx-auto py-4">
+            <div className="max-w-xl mx-auto py-8 flex flex-col min-h-[500px] justify-center">
               {/* Top Progress Header */}
-              <div className="mb-10">
+              <div className="mb-12">
                 <div className="flex justify-between items-end mb-3">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-violet-500 uppercase tracking-[0.2em] mb-1">
@@ -368,11 +368,12 @@ export default function LevelCheck() {
               </div>
 
               {/* Question Text */}
-              <div className="mb-8">
-                <div className="inline-block px-3 py-1 rounded-md bg-violet-50 text-violet-700 text-[10px] font-bold uppercase tracking-wider mb-4">
+              {/* Tightened Question Text */}
+              <div className="mb-6 text-center">
+                <div className="inline-block px-3 py-1 rounded-md bg-violet-50 text-violet-700 text-[10px] font-bold uppercase tracking-widest mb-4">
                   Grammar & Structure
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 leading-tight">
+                <h3 className="text-2xl font-black text-slate-800 leading-tight px-4">
                   {QUESTIONS[idx].q}
                 </h3>
               </div>
@@ -417,16 +418,17 @@ export default function LevelCheck() {
               </div>
 
               {/* 382: Refined Navigation - Forward Only */}
-              <div className="mt-12 flex justify-center pt-6 border-t border-slate-100">
+              {/* 421: Compact & Polished Navigation */}
+              <div className="mt-8 flex justify-center pt-6 border-t border-slate-100/60">
                 {idx < QUESTIONS.length - 1 ? (
                   <button
                     onClick={() => setIdx((i) => i + 1)}
                     disabled={answers[QUESTIONS[idx].id] === undefined}
-                    className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-slate-800 disabled:opacity-30 transition-all"
+                    className="group flex items-center gap-3 bg-slate-900 text-white px-10 py-4 rounded-xl font-bold shadow-lg hover:bg-slate-800 disabled:opacity-30 transition-all active:scale-95"
                   >
                     Next Question
                     <svg
-                      className="h-4 w-4"
+                      className="h-5 w-5 transition-transform group-hover:translate-x-1"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -435,7 +437,7 @@ export default function LevelCheck() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth="2.5"
-                        d="M9 5l7 7-7 7"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
                       />
                     </svg>
                   </button>
@@ -443,9 +445,9 @@ export default function LevelCheck() {
                   <button
                     onClick={finishQuiz}
                     disabled={answers[QUESTIONS[idx].id] === undefined}
-                    className="bg-violet-600 text-white px-10 py-3.5 rounded-xl font-black text-lg shadow-xl shadow-violet-200 hover:bg-violet-700 hover:-translate-y-1 transition-all disabled:opacity-50"
+                    className="bg-violet-600 text-white px-12 py-4 rounded-2xl font-black text-lg shadow-xl shadow-violet-200 hover:bg-violet-700 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50"
                   >
-                    Reveal My Results
+                    Calculate Level
                   </button>
                 )}
               </div>
