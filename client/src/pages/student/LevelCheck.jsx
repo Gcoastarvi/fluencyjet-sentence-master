@@ -182,20 +182,26 @@ export default function LevelCheck() {
       <div className="mx-auto max-w-4xl px-4">
         <div className="rounded-3xl border border-slate-200 bg-white/75 p-6 shadow-sm backdrop-blur">
           {mode === "pick" && (
-            <div className="grid gap-8 md:grid-cols-2">
+            <div className="grid gap-8 md:grid-cols-2 mt-8">
               {/* Left: Coach Info */}
               <div className="flex flex-col items-center text-center md:items-start md:text-left">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/coach-aravind.png"
-                    alt="Aravind"
-                    className="h-14 w-14 rounded-full border-2 border-violet-100 object-cover"
-                  />
-                  <div>
-                    <div className="font-bold text-slate-900">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <img
+                      src="/coach.jpg"
+                      alt="Coach Aravind"
+                      className="h-16 w-16 rounded-full border-2 border-violet-100 object-cover shadow-sm bg-slate-100"
+                      onError={(e) => {
+                        e.currentTarget.src = "/avatar-fallback.png";
+                      }}
+                    />
+                    <div className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500"></div>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-slate-900 leading-tight">
                       Aravind • English Coach
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs font-medium text-violet-600">
                       FluencyJet Expert
                     </div>
                   </div>
@@ -213,7 +219,7 @@ export default function LevelCheck() {
                       ."
                     </p>
                     <div className="mt-4 flex items-center justify-between border-t border-violet-100/50 pt-3">
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-violet-600/70">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-500">
                         <svg
                           className="h-3.5 w-3.5"
                           fill="none"
@@ -229,11 +235,11 @@ export default function LevelCheck() {
                         </svg>
                         Takes 2 minutes
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1.5">
                         {[...Array(5)].map((_, i) => (
                           <div
                             key={i}
-                            className={`h-1 w-1 rounded-full ${i === 0 ? "bg-violet-400" : "bg-slate-200"}`}
+                            className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-violet-400" : "bg-slate-200"}`}
                           />
                         ))}
                       </div>
