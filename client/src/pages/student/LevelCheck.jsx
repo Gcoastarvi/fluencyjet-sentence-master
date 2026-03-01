@@ -249,59 +249,80 @@ export default function LevelCheck() {
               </div>
 
               {/* 251: Right Column - Finalized Start Action */}
-                  <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-8 text-center border border-slate-100 shadow-inner">
-                    {/* Decorative Background Element */}
-                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-violet-100/30 blur-2xl" />
+              <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-8 text-center border border-slate-100 shadow-inner">
+                {/* Decorative Background Element */}
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-violet-100/30 blur-2xl" />
 
-                    <div className="relative">
-                      <div className="mb-6 text-sm font-semibold uppercase tracking-widest text-slate-400">
-                        Ready to start?
-                      </div>
+                <div className="relative">
+                  <div className="mb-6 text-sm font-semibold uppercase tracking-widest text-slate-400">
+                    Ready to start?
+                  </div>
 
-                      <button
-                        type="button"
-                        onClick={() => setMode("quiz")}
-                        className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-8 py-5 text-xl font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
-                      >
-                        <span>Start Level Test</span>
-                        <svg 
-                          className="h-6 w-6 transition-transform group-hover:translate-x-2" 
-                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                      </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("quiz")}
+                    className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-8 py-5 text-xl font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
+                  >
+                    <span>Start Level Test</span>
+                    <svg
+                      className="h-6 w-6 transition-transform group-hover:translate-x-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2.5"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </button>
 
-                      <div className="mt-8 flex items-center justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-                          10 Questions
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                          Instant Result
-                        </div>
-                      </div>
+                  <div className="mt-8 flex items-center justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                      10 Questions
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      Instant Result
                     </div>
                   </div>
-                </div> 
-              )} 
-
-          {mode === "quiz" && (
-            <div className="max-w-2xl mx-auto">
-              {/* Quiz Content Logic (Your lines 272-337 would stay inside here) */}
-              <div className="mb-8">
-                <div className="flex justify-between items-end mb-2">
-                  <span className="text-xs font-bold text-violet-600 uppercase tracking-widest">
-                    Question {idx + 1} of {QUESTIONS.length}
-                  </span>
-                  <span className="text-xs text-slate-400">
-                    Initial Assessment
-                  </span>
                 </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+              </div>
+            </div>
+          )}
+
+          {/* 290: Refined Quiz Interface */}
+          {mode === "quiz" && (
+            <div className="max-w-2xl mx-auto py-4">
+              {/* Top Progress Header */}
+              <div className="mb-10">
+                <div className="flex justify-between items-end mb-3">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-violet-500 uppercase tracking-[0.2em] mb-1">
+                      Assessment in Progress
+                    </span>
+                    <h2 className="text-xl font-extrabold text-slate-900">
+                      Question {idx + 1}{" "}
+                      <span className="text-slate-400 font-medium">
+                        / {QUESTIONS.length}
+                      </span>
+                    </h2>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+                      Live Analysis
+                    </span>
+                  </div>
+                </div>
+
+                {/* Smooth Progress Bar */}
+                <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
                   <div
-                    className="h-full bg-violet-500 transition-all duration-300"
+                    className="h-full bg-gradient-to-r from-violet-400 to-violet-600 transition-all duration-500 ease-out rounded-full"
                     style={{
                       width: `${((idx + 1) / QUESTIONS.length) * 100}%`,
                     }}
@@ -309,49 +330,106 @@ export default function LevelCheck() {
                 </div>
               </div>
 
-              <div className="text-xl font-bold text-slate-900 mb-6">
-                {QUESTIONS[idx].q}
+              {/* Question Text */}
+              <div className="mb-8">
+                <div className="inline-block px-3 py-1 rounded-md bg-violet-50 text-violet-700 text-[10px] font-bold uppercase tracking-wider mb-4">
+                  Grammar & Structure
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 leading-tight">
+                  {QUESTIONS[idx].q}
+                </h3>
               </div>
 
-              <div className="grid gap-3">
-                {QUESTIONS[idx].options.map((opt, optIdx) => (
-                  <button
-                    key={opt}
-                    onClick={() =>
-                      setAnswers((a) => ({ ...a, [QUESTIONS[idx].id]: optIdx }))
-                    }
-                    className={`p-4 text-left rounded-xl border-2 transition-all ${
-                      answers[QUESTIONS[idx].id] === optIdx
-                        ? "border-violet-600 bg-violet-50"
-                        : "border-slate-100 hover:border-violet-200"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
+              {/* Option Grid */}
+              <div className="grid gap-4">
+                {QUESTIONS[idx].options.map((opt, optIdx) => {
+                  const isSelected = answers[QUESTIONS[idx].id] === optIdx;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() =>
+                        setAnswers((a) => ({
+                          ...a,
+                          [QUESTIONS[idx].id]: optIdx,
+                        }))
+                      }
+                      className={`group relative flex items-center gap-4 p-5 text-left rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] ${
+                        isSelected
+                          ? "border-violet-600 bg-violet-50 shadow-md translate-x-1"
+                          : "border-slate-100 bg-white hover:border-violet-200 hover:bg-slate-50/50 hover:-translate-y-0.5"
+                      }`}
+                    >
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 font-bold transition-all ${
+                          isSelected
+                            ? "border-violet-600 bg-violet-600 text-white shadow-lg shadow-violet-200"
+                            : "border-slate-100 bg-slate-50 text-slate-400 group-hover:border-violet-200 group-hover:text-violet-600"
+                        }`}
+                      >
+                        {String.fromCharCode(65 + optIdx)}
+                      </div>
+                      <span
+                        className={`text-lg font-medium ${isSelected ? "text-violet-900" : "text-slate-700"}`}
+                      >
+                        {opt}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <div className="mt-8 flex justify-between">
+              {/* Navigation Actions */}
+              <div className="mt-12 flex items-center justify-between pt-6 border-t border-slate-100">
                 <button
                   onClick={() => setIdx((i) => Math.max(0, i - 1))}
-                  className="text-slate-500 font-medium"
+                  disabled={idx === 0}
+                  className="flex items-center gap-2 text-slate-400 font-bold text-sm hover:text-slate-600 disabled:opacity-0 transition-all"
                 >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2.5"
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
                   Back
                 </button>
+
                 {idx < QUESTIONS.length - 1 ? (
                   <button
                     onClick={() => setIdx((i) => i + 1)}
                     disabled={answers[QUESTIONS[idx].id] === undefined}
-                    className="bg-slate-900 text-white px-6 py-2 rounded-lg disabled:opacity-50"
+                    className="flex items-center gap-2 bg-slate-900 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-slate-800 disabled:opacity-30 transition-all"
                   >
                     Next Question
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2.5"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
                   </button>
                 ) : (
                   <button
                     onClick={finishQuiz}
-                    className="bg-violet-600 text-white px-6 py-2 rounded-lg font-bold"
+                    disabled={answers[QUESTIONS[idx].id] === undefined}
+                    className="bg-violet-600 text-white px-10 py-3.5 rounded-xl font-black text-lg shadow-xl shadow-violet-200 hover:bg-violet-700 hover:-translate-y-1 transition-all disabled:opacity-50"
                   >
-                    See My Result
+                    Reveal My Results
                   </button>
                 )}
               </div>
