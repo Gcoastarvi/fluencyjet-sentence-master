@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getToken } from "@/utils/tokenStore";
+import { api } from "@/api/apiClient";
 
 import confetti from "canvas-confetti";
 
@@ -211,7 +212,7 @@ export default function LevelCheck() {
     try {
       // 🚀 Trigger the Backend Sync
       const response = await api.post("/quizzes/sync-placement", {
-        track: track,
+        track: track.toUpperCase(),
       });
 
       if (response.data?.ok) {
