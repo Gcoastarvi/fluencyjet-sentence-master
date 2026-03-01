@@ -190,13 +190,6 @@ export default function LevelCheck() {
     });
   }
 
-  function finishQuiz() {
-    const finalScore = score;
-    const track = finalScore >= 6 ? "intermediate" : "beginner";
-    setResult({ score: finalScore, track });
-    setMode("result");
-  }
-
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-white via-slate-50 to-violet-50/40 py-10">
       <div className="mx-auto max-w-4xl px-4">
