@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import { getToken } from "@/utils/tokenStore";
 
+import confetti from "canvas-confetti";
+
 const TRACK_KEY = "fj_track";
 
 const QUESTIONS = [
@@ -169,6 +171,24 @@ export default function LevelCheck() {
     }
     return s;
   }, [answers]);
+
+  function finishQuiz() {
+    const finalScore = score;
+    let track = "beginner";
+    if (finalScore >= 8) track = "advanced";
+    else if (finalScore >= 5) track = "intermediate";
+
+    setResult({ score: finalScore, track });
+    setMode("result");
+
+    // World-Class Celebration Trigger
+    confetti({
+      particleCount: 150,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ["#8b5cf6", "#a78bfa", "#c4b5fd"], // FluencyJet Purple Palette
+    });
+  }
 
   function finishQuiz() {
     const finalScore = score;
