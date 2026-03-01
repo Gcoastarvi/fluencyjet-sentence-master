@@ -631,6 +631,34 @@ export default function LessonDetail() {
     };
   }, [dayNumber]); // keep minimal deps
 
+  // Trigger Mastery Celebration
+  useEffect(() => {
+    // 1. Calculate the same overallAvg used in your UI
+    const pts = [
+      modeAvail.typing ? pct(typingProg) : null,
+      modeAvail.reorder ? pct(reorderProg) : null,
+      ENABLE_AUDIO && modeAvail.audio ? pct(audioProg) : null,
+    ].filter((x) => typeof x === "number");
+
+    const overallAvg = pts.length
+      ? Math.round(pts.reduce((a, b) => a + b, 0) / pts.length)
+      : 0;
+
+    // 2. Trigger if 100% and it hasn't rained yet in this session
+    if (overallAvg === 100 && hasLoadedOnce) {
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.7 },
+        colors: ["#f97316", "#fbbf24", "#ffffff"], // Orange/Gold for Streak Mastery
+      });
+
+      const sound = new Audio("/sounds/levelup.mp3");
+      sound.volume = 0.4;
+      sound.play().catch(() => {});
+    }
+  }, [typingProg, reorderProg, audioProg, modeAvail, hasLoadedOnce]);
+
   async function smartStart() {
     if (!lessonId) return;
     if (isLocked) return goPaywall();
@@ -995,83 +1023,43 @@ export default function LessonDetail() {
               </div>
             </div>
 
+            {/* 998: Cinematic Video Wrapper with Glassmorphism */}
             {teach?.video?.id ? (
-              <div className="mt-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-6 items-center rounded-full border border-slate-200 bg-white px-2 text-[11px] font-semibold text-slate-700">
-                      ▶ Video
-                    </span>
-                    <span className="text-xs text-slate-500">60–90 sec</span>
-                  </div>
-
-                  <a
-                    className="text-xs font-semibold text-slate-600 underline-offset-4 hover:underline"
-                    href={
-                      teach.video.provider === "vimeo"
-                        ? `https://vimeo.com/${encodeURIComponent(teach.video.id)}`
-                        : `https://www.youtube.com/watch?v=${encodeURIComponent(teach.video.id)}`
-                    }
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open ↗
-                  </a>
-                </div>
+              <div className="mt-8 group relative overflow-hidden rounded-[2.5rem] border-4 border-white shadow-2xl bg-slate-900 transition-all duration-500 hover:shadow-indigo-100">
+                {/* Subtle Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent z-10 opacity-60 pointer-events-none" />
 
                 <div
-                  className={`mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-black shadow-sm ${
-                    teach.video.ratio === "9:16" || teach.video.kind === "short"
-                      ? "mx-auto max-w-sm"
-                      : ""
-                  }`}
+                  className={`relative z-0 w-full ${teach.video.ratio === "9:16" ? "aspect-[9/16] max-h-[500px]" : "aspect-video"}`}
                 >
-                  <div
-                    className={`relative w-full ${
-                      teach.video.ratio === "9:16" ||
-                      teach.video.kind === "short"
-                        ? "aspect-[9/16] max-h-[460px]"
-                        : "aspect-video"
-                    }`}
-                  >
-                    <iframe
-                      title={`Lesson ${lessonId} video`}
-                      className="absolute inset-0 h-full w-full"
-                      src={
-                        teach.video.provider === "vimeo"
-                          ? `https://player.vimeo.com/video/${encodeURIComponent(
-                              teach.video.id,
-                            )}`
-                          : `https://www.youtube-nocookie.com/embed/${encodeURIComponent(
-                              teach.video.id,
-                            )}?rel=0&modestbranding=1`
-                      }
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  </div>
+                  <iframe
+                    title={`Lesson ${lessonId} video`}
+                    className="absolute inset-0 h-full w-full"
+                    src={
+                      teach.video.provider === "vimeo"
+                        ? `https://player.vimeo.com/video/${teach.video.id}`
+                        : `https://www.youtube-nocookie.com/embed/${teach.video.id}?rel=0&modestbranding=1`
+                    }
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-3">
-                  <div className="text-xs text-slate-600">
-                    ✅ Watch, then jump into practice for instant recall.
+                {/* Floating interaction bar using glassmorphism */}
+                <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between">
+                  <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
+                    Visual Guide
                   </div>
-                  <div className="ml-auto flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
-                      onClick={() =>
-                        document
-                          .getElementById("practice-actions")
-                          ?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "start",
-                          })
-                      }
-                    >
-                      Jump to practice ↓
-                    </button>
-                  </div>
+                  <button
+                    onClick={() =>
+                      document
+                        .getElementById("practice-actions")
+                        ?.scrollIntoView({ behavior: "smooth" })
+                    }
+                    className="bg-white text-slate-900 px-6 py-2 rounded-full font-bold text-xs shadow-lg hover:scale-105 active:scale-95 transition-all"
+                  >
+                    Practice Now ↓
+                  </button>
                 </div>
               </div>
             ) : null}
@@ -1103,61 +1091,98 @@ export default function LessonDetail() {
           </div>
         ) : null}
 
-        {/* Progress summary */}
-        <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-slate-900">
-                Your dashboard
-              </div>
-              <div className="mt-1 text-xs text-slate-500">
-                Track your progress and pick the next best practice.
+        {/* 1106: World-Class Dashboard with Progress Ring */}
+        {(() => {
+          const pts = [
+            modeAvail.typing ? pct(typingProg) : null,
+            modeAvail.reorder ? pct(reorderProg) : null,
+            ENABLE_AUDIO && modeAvail.audio ? pct(audioProg) : null,
+          ].filter((x) => typeof x === "number");
+          const overallAvg = pts.length
+            ? Math.round(pts.reduce((a, b) => a + b, 0) / pts.length)
+            : 0;
+
+          return (
+            <div className="mt-8 rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm relative overflow-hidden">
+              <div className="flex flex-col items-center text-center">
+                <div className="relative h-32 w-32 mb-4">
+                  <svg className="h-full w-full" viewBox="0 0 100 100">
+                    <circle
+                      className="text-slate-100 stroke-current"
+                      strokeWidth="8"
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="transparent"
+                    />
+                    <circle
+                      className="text-orange-500 stroke-current transition-all duration-1000 ease-out"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="transparent"
+                      strokeDasharray="251.2"
+                      strokeDashoffset={251.2 - 251.2 * (overallAvg / 100)}
+                      transform="rotate(-90 50 50)"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-3xl">🔥</span>
+                    <span className="text-xl font-black text-slate-900">
+                      {streak || 0}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 🤖 Dynamic Lesson Coach Integration */}
+                <h2 className="text-lg font-bold text-slate-900">
+                  {overallAvg === 100
+                    ? "Mastery Achieved! 🎉"
+                    : overallAvg > 50
+                      ? "Almost there! 💪"
+                      : "Great start! 🚀"}
+                </h2>
+                <p className="text-sm text-slate-500 mb-6">
+                  {overallAvg === 100
+                    ? "You've crushed every mode in this lesson."
+                    : `You've mastered ${overallAvg}% of this lesson.`}
+                </p>
+
+                <div className="grid grid-cols-3 gap-4 w-full">
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Status
+                    </div>
+                    <div className="text-xs font-black text-slate-800">
+                      {session ? "In Progress" : "New"}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Pace
+                    </div>
+                    <div className="text-xs font-black text-slate-800">
+                      Swift
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      Focus
+                    </div>
+                    <div className="text-xs font-black text-slate-800">
+                      Daily
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+          );
+        })()}
 
-            <div className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700">
-              Lesson {dayNumber || "—"}
-            </div>
-          </div>
-
-          {/* Top stats */}
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-              <div className="text-xs text-slate-500">Continue</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">
-                {session
-                  ? `Mode: ${modeLabel(session.mode)}`
-                  : "No session yet"}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-              <div className="text-xs text-slate-500">Last position</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">
-                {session ? `Q# ${Number(session.questionIndex) + 1}` : "—"}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
-              <div className="text-xs text-slate-500">Overall</div>
-              <div className="mt-1 text-sm font-semibold text-slate-900">
-                {(() => {
-                  const pts = [
-                    modeAvail.typing ? pct(typingProg) : null,
-                    modeAvail.reorder ? pct(reorderProg) : null,
-                    ENABLE_AUDIO && modeAvail.audio ? pct(audioProg) : null,
-                    ENABLE_CLOZE && modeAvail.cloze ? pct(clozeProg) : null,
-                  ].filter((x) => typeof x === "number");
-                  if (!pts.length) return "—";
-                  const avg = Math.round(
-                    pts.reduce((a, b) => a + b, 0) / pts.length,
-                  );
-                  return `${avg}%`;
-                })()}
-              </div>
-            </div>
-          </div>
-
+        {/* 1162: Mode chips start here */}
+        <div className="mt-6 flex flex-wrap gap-2">
           {/* Mode chips */}
           <div className="mt-4 flex flex-wrap gap-2">
             {[
