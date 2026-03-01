@@ -248,29 +248,44 @@ export default function LevelCheck() {
                 </div>
               </div>
 
-              {/* Right: Start Action */}
-              <div className="flex flex-col justify-center rounded-2xl bg-slate-50 p-8 text-center border border-slate-100">
-                <div className="mb-4 text-sm font-medium text-slate-500">
-                  Ready to start?
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMode("quiz")}
-                  className="group flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-violet-200 transition-all hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
-                >
-                  Start Level Test
-                  <span className="transition-transform group-hover:translate-x-1">
-                    →
-                  </span>
-                </button>
-                <div className="mt-6 flex justify-center gap-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  <span>10 Questions</span>
-                  <span>•</span>
-                  <span>Instant Result</span>
-                </div>
-              </div>
-            </div>
-          )}
+              {/* 251: Right Column - Finalized Start Action */}
+                  <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-8 text-center border border-slate-100 shadow-inner">
+                    {/* Decorative Background Element */}
+                    <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-violet-100/30 blur-2xl" />
+
+                    <div className="relative">
+                      <div className="mb-6 text-sm font-semibold uppercase tracking-widest text-slate-400">
+                        Ready to start?
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setMode("quiz")}
+                        className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-8 py-5 text-xl font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
+                      >
+                        <span>Start Level Test</span>
+                        <svg 
+                          className="h-6 w-6 transition-transform group-hover:translate-x-2" 
+                          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </button>
+
+                      <div className="mt-8 flex items-center justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                          10 Questions
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                          Instant Result
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div> 
+              )} 
 
           {mode === "quiz" && (
             <div className="max-w-2xl mx-auto">
