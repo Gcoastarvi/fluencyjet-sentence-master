@@ -379,29 +379,8 @@ export default function LevelCheck() {
                 })}
               </div>
 
-              {/* Navigation Actions */}
-              <div className="mt-12 flex items-center justify-between pt-6 border-t border-slate-100">
-                <button
-                  onClick={() => setIdx((i) => Math.max(0, i - 1))}
-                  disabled={idx === 0}
-                  className="flex items-center gap-2 text-slate-400 font-bold text-sm hover:text-slate-600 disabled:opacity-0 transition-all"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                  Back
-                </button>
-
+              {/* 382: Refined Navigation - Forward Only */}
+              <div className="mt-12 flex justify-center pt-6 border-t border-slate-100">
                 {idx < QUESTIONS.length - 1 ? (
                   <button
                     onClick={() => setIdx((i) => i + 1)}
@@ -436,25 +415,68 @@ export default function LevelCheck() {
             </div>
           )}
 
+          {/* 439: Shareable Result Card */}
           {mode === "result" && (
-            <div className="text-center py-10">
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                Your Level: {result?.track}
-              </h2>
-              <p className="text-slate-600 mb-8">
-                Great job completing the assessment!
-              </p>
-              <button
-                onClick={() => goToTrack(result.track)}
-                className="bg-violet-600 text-white px-10 py-4 rounded-xl font-bold shadow-lg"
-              >
-                Start Learning Now
-              </button>
+            <div className="py-6 text-center">
+              {/* Badge Header */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold uppercase tracking-widest mb-6 border border-emerald-100">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                Assessment Verified
+              </div>
 
-              <div className="mt-12 pt-6 border-t border-slate-100 flex justify-between items-center text-slate-400 text-xs">
-                <span>Test complete • 2 min session</span>
-                <span className="font-medium uppercase tracking-widest opacity-60">
-                  FluencyJet Engine v1.0
+              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.3em] mb-2">
+                Proficiency Level
+              </h2>
+
+              {/* Dynamic Result Visual */}
+              <div className="relative inline-block mb-10">
+                <div className="absolute inset-0 bg-violet-400 blur-3xl opacity-20 animate-pulse" />
+                <div className="relative bg-white border-2 border-violet-100 rounded-3xl px-12 py-8 shadow-2xl shadow-violet-100">
+                  <h1 className="text-6xl font-black text-violet-600 capitalize leading-none tracking-tight">
+                    {result?.track}
+                  </h1>
+                </div>
+              </div>
+
+              {/* Score Breakdown Tiles */}
+              <div className="max-w-md mx-auto grid grid-cols-2 gap-4 mb-10">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Accuracy
+                  </div>
+                  <div className="text-xl font-bold text-slate-800">High</div>
+                </div>
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Pace
+                  </div>
+                  <div className="text-xl font-bold text-slate-800">Fast</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4 max-w-sm mx-auto">
+                <button
+                  onClick={() => goToTrack(result.track)}
+                  className="w-full bg-violet-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-violet-200 hover:bg-violet-700 hover:-translate-y-1 active:scale-95 transition-all"
+                >
+                  Start {result?.track} Journey
+                </button>
+
+                <button
+                  onClick={() => window.location.reload()}
+                  className="text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors"
+                >
+                  Retake Assessment
+                </button>
+              </div>
+
+              {/* Shareable Footer */}
+              <div className="mt-16 pt-8 border-t border-slate-100 flex justify-between items-center text-slate-300">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+                  Verified by FluencyJet AI
+                </div>
+                <span className="text-[9px] font-medium uppercase tracking-[0.2em] opacity-60">
+                  FJ-ENGINE V1.0
                 </span>
               </div>
             </div>
