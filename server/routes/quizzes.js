@@ -297,6 +297,44 @@ router.get("/random", authRequired, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/quizzes/sync-placement
+ * Updates the user's permanent track based on Level Check results.
+ */
+router.post("/sync-placement", authRequired, async (req, res) => {
+  try {
+    const { track } = req.body;
+    const userId = req.user.id;
+
+    if (!track || !VALID_DIFFICULTIES.has(track.toLowerCase())) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Invalid track provided" });
+    }
+
+    // Update the placement_level in the User model
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        placement_level: track.toUpperCase(),
+        // Also update the 'plan' field if you want to unlock lessons immediately
+        plan: track.toUpperCase(),
+      },
+    });
+
+    console.log(`[PLACEMENT] User ${userId} synced to ${track.toUpperCase()}`);
+
+    return res.json({
+      ok: true,
+      message: `Profile updated to ${track} level`,
+      track: updatedUser.placement_level,
+    });
+  } catch (err) {
+    console.error("❌ Placement sync failed:", err);
+    return res.status(500).json({ ok: false, message: "Database sync failed" });
+  }
+});
+
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */

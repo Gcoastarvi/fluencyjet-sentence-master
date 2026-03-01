@@ -2685,7 +2685,7 @@ export default function SentencePractice() {
       />
 
       {import.meta.env.DEV ? (
-        <div className="mx-auto max-w-3xl px-4 pt-3 text-center text-xs text-slate-400">
+        <div className="mx-auto max-w-xl px-4 pt-3 text-center text-xs text-slate-400">
           urlMode: <b>{String(urlMode)}</b> | activeMode: <b>{activeMode}</b> |
           safeMode: <b>{safeMode}</b> | lid: <b>{String(lid)}</b>
         </div>
@@ -2704,7 +2704,7 @@ export default function SentencePractice() {
 
       {/* Main content wrapper (DO NOT close this here) */}
       <div
-        className={`mx-auto max-w-3xl px-4 pt-4 ${stickyCfg.show ? "pb-28" : "pb-10"}`}
+        className={`mx-auto max-w-xl px-4 pt-4 ${stickyCfg.show ? "pb-28" : "pb-10"}`}
       >
         {/* 🧩 CLOZE UI */}
         {safeMode === "cloze" && (

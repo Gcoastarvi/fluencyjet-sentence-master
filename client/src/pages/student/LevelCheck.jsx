@@ -5,6 +5,8 @@ import { getToken } from "@/utils/tokenStore";
 
 import confetti from "canvas-confetti";
 
+import SentenceBuilder from "@/components/quiz/SentenceBuilder";
+
 const TRACK_KEY = "fj_track";
 
 const TRACK_METADATA = {
@@ -384,47 +386,63 @@ export default function LevelCheck() {
 
               {/* Option Grid */}
               {/* 386: Option Grid with Sound Feedback */}
-              <div className="grid gap-3 w-full max-w-sm">
-                {QUESTIONS[idx].options.map((opt, optIdx) => {
-                  const isSelected = answers[QUESTIONS[idx].id] === optIdx;
-                  return (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() => {
-                        // Audio Feedback
-                        const clickSound = new Audio("/sounds/correct.mp3");
-                        clickSound.volume = 0.4;
-                        clickSound.play().catch(() => {}); // Catch prevents console errors if user hasn't interacted yet
-
-                        setAnswers((a) => ({
-                          ...a,
-                          [QUESTIONS[idx].id]: optIdx,
-                        }));
-                      }}
-                      className={`group relative flex items-center gap-4 p-5 text-left rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] ${
-                        isSelected
-                          ? "border-violet-600 bg-violet-50 shadow-md translate-x-1"
-                          : "border-slate-100 bg-white hover:border-violet-200 hover:bg-slate-50/50 hover:-translate-y-0.5"
-                      }`}
-                    >
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 font-bold transition-all ${
-                          isSelected
-                            ? "border-violet-600 bg-violet-600 text-white shadow-lg shadow-violet-200"
-                            : "border-slate-100 bg-slate-50 text-slate-400 group-hover:border-violet-200 group-hover:text-violet-600"
-                        }`}
-                      >
-                        {String.fromCharCode(65 + optIdx)}
-                      </div>
-                      <span
-                        className={`text-lg font-medium ${isSelected ? "text-violet-900" : "text-slate-700"}`}
-                      >
-                        {opt}
-                      </span>
-                    </button>
-                  );
-                })}
+              {/* 389: Smart Question Content Switcher */}
+              <div className="w-full">
+                {QUESTIONS[idx].type === "reorder" ? (
+                  <SentenceBuilder
+                    key={QUESTIONS[idx].id}
+                    correctSentence={QUESTIONS[idx].correctAnswer}
+                    onCorrect={() => {
+                      const audio = new Audio("/sounds/correct.mp3");
+                      audio.play().catch(() => {});
+                      // Set the answer in state to enable the "Next" button
+                      setAnswers((a) => ({ ...a, [QUESTIONS[idx].id]: true }));
+                    }}
+                    accentColor="violet"
+                  />
+                ) : (
+                  /* Standard Multiple Choice Grid */
+                  <div className="grid gap-3 w-full max-w-sm mx-auto">
+                    {QUESTIONS[idx].options.map((opt, optIdx) => {
+                      const isSelected = answers[QUESTIONS[idx].id] === optIdx;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            const clickSound = new Audio("/sounds/correct.mp3");
+                            clickSound.volume = 0.4;
+                            clickSound.play().catch(() => {});
+                            setAnswers((a) => ({
+                              ...a,
+                              [QUESTIONS[idx].id]: optIdx,
+                            }));
+                          }}
+                          className={`group relative flex items-center gap-4 p-5 text-left rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] ${
+                            isSelected
+                              ? "border-violet-600 bg-violet-50 shadow-md translate-x-1"
+                              : "border-slate-100 bg-white hover:border-violet-200 hover:bg-slate-50/50 hover:-translate-y-0.5"
+                          }`}
+                        >
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 font-bold transition-all ${
+                              isSelected
+                                ? "border-violet-600 bg-violet-600 text-white shadow-lg shadow-violet-200"
+                                : "border-slate-100 bg-slate-50 text-slate-400 group-hover:border-violet-200 group-hover:text-violet-600"
+                            }`}
+                          >
+                            {String.fromCharCode(65 + optIdx)}
+                          </div>
+                          <span
+                            className={`text-lg font-medium ${isSelected ? "text-violet-900" : "text-slate-700"}`}
+                          >
+                            {opt}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* 382: Refined Navigation - Forward Only */}
