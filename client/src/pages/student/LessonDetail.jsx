@@ -15,6 +15,9 @@ import { MODE_UI, uiFor } from "../../lib/modeUi";
 
 import { track } from "../../lib/track";
 
+import { toPng } from "html-to-image";
+import AchievementCard from "@/components/student/AchievementCard";
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -255,6 +258,27 @@ export default function LessonDetail() {
       cancelled = true;
     };
   }, [lesson, dayNumber]);
+
+  const handleShare = async (overallAvg) => {
+    const node = document.getElementById("achievement-canvas");
+    if (!node) return;
+
+    try {
+      // 1. Generate the Image Data
+      const dataUrl = await toPng(node, {
+        quality: 1.0,
+        pixelRatio: 2, // High Definition
+      });
+
+      // 2. Create a "Ghost Link" to trigger the download
+      const link = document.createElement("a");
+      link.download = `FluencyJet-Achievement-${lessonId}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Oops, share failed!", err);
+    }
+  };
 
   const title =
     lesson?.lessonTitle ||
@@ -1136,6 +1160,15 @@ export default function LessonDetail() {
                   </div>
                 </div>
 
+                {/* 📤 Premium Share Button */}
+                <button
+                  onClick={() => handleShare(overallAvg)}
+                  className="mb-4 flex items-center gap-2 px-6 py-2 rounded-full bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 active:scale-95 transition-all shadow-lg shadow-slate-200"
+                >
+                  <span className="text-sm">📤</span>
+                  Share Mastery
+                </button>
+
                 {/* 🤖 Dynamic Lesson Coach Integration */}
                 <h2 className="text-lg font-bold text-slate-900">
                   {overallAvg === 100
@@ -1173,6 +1206,21 @@ export default function LessonDetail() {
                     </div>
                     <div className="text-xs font-black text-slate-800">
                       Daily
+                      {/* Hidden Achievement Card for Capture (Off-screen) */}
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "-10000px",
+                          left: "-10000px",
+                        }}
+                      >
+                        <AchievementCard
+                          lessonTitle={title}
+                          streak={streak}
+                          overallAvg={overallAvg}
+                          difficulty={difficulty}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
