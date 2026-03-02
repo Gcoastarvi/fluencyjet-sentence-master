@@ -16,7 +16,9 @@ import { MODE_UI, uiFor } from "../../lib/modeUi";
 import { track } from "../../lib/track";
 
 import { toPng } from "html-to-image";
+
 import AchievementCard from "@/components/student/AchievementCard";
+import Certificate from "@/components/student/Certificate";
 
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
@@ -152,6 +154,38 @@ export default function LessonDetail() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // 150: Image Generation Handlers
+  const handleShare = async (avg) => {
+    const node = document.getElementById("achievement-canvas");
+    if (!node || isSharing) return;
+    setIsSharing(true);
+    try {
+      const dataUrl = await toPng(node, { quality: 1.0, pixelRatio: 2 });
+      const link = document.createElement("a");
+      link.download = `FluencyJet-Mastery-Lesson-${dayNumber}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Share failed:", err);
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const handleDownloadCertificate = async () => {
+    const node = document.getElementById("certificate-canvas");
+    if (!node) return;
+    try {
+      const dataUrl = await toPng(node, { quality: 1.0, pixelRatio: 3 });
+      const link = document.createElement("a");
+      link.download = `FluencyJet-Certificate-${userProfile?.name || "Student"}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Certificate generation failed:", err);
+    }
+  };
+
   // If Lessons page passes state: { lesson }, we use it. If not, we still render safely.
   const [lesson, setLesson] = useState(location.state?.lesson || null);
 
@@ -260,38 +294,6 @@ export default function LessonDetail() {
       cancelled = true;
     };
   }, [lesson, dayNumber]);
-
-  const handleShare = async (avg) => {
-    const node = document.getElementById("achievement-canvas");
-    if (!node || isSharing) return;
-
-    setIsSharing(true); // 🔄 Start Spinner
-
-    try {
-      // Small delay to ensure the DOM is ready for capture
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      const dataUrl = await toPng(node, {
-        quality: 1.0,
-        pixelRatio: 2,
-        cacheBust: true,
-      });
-
-      const link = document.createElement("a");
-      link.download = `FluencyJet-Achievement-Lesson-${dayNumber}.png`;
-      link.href = dataUrl;
-      link.click();
-
-      // 🎉 Celebration sound on successful share
-      const sound = new Audio("/sounds/xp.mp3");
-      sound.volume = 0.3;
-      sound.play().catch(() => {});
-    } catch (err) {
-      console.error("Share failed:", err);
-    } finally {
-      setIsSharing(false); // ✅ Stop Spinner
-    }
-  };
 
   const title =
     lesson?.lessonTitle ||
@@ -1149,14 +1151,14 @@ export default function LessonDetail() {
           </div>
         ) : null}
 
-        {/* 1106: World-Class Dashboard with Progress Ring */}
+        {/* 1171: World-Class Dashboard */}
         {(() => {
           const pts = [
             modeAvail.typing ? pct(typingProg) : null,
             modeAvail.reorder ? pct(reorderProg) : null,
             ENABLE_AUDIO && modeAvail.audio ? pct(audioProg) : null,
           ].filter((x) => typeof x === "number");
-          const overallAvg = pts.length
+          const dashboardAvg = pts.length
             ? Math.round(pts.reduce((a, b) => a + b, 0) / pts.length)
             : 0;
 
@@ -1182,7 +1184,7 @@ export default function LessonDetail() {
                       r="40"
                       fill="transparent"
                       strokeDasharray="251.2"
-                      strokeDashoffset={251.2 - 251.2 * (overallAvg / 100)}
+                      strokeDashoffset={251.2 - 251.2 * (dashboardAvg / 100)}
                       transform="rotate(-90 50 50)"
                     />
                   </svg>
@@ -1194,104 +1196,75 @@ export default function LessonDetail() {
                   </div>
                 </div>
 
-                {/* 📤 Premium Share Button with Loading Spinner */}
                 <button
-                  onClick={() => handleShare(overallAvg)}
+                  onClick={() => handleShare(dashboardAvg)}
                   disabled={isSharing}
-                  className={`mb-4 flex items-center gap-2 px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all shadow-lg ${
+                  className={`mb-4 flex items-center gap-2 px-6 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all shadow-lg ${
                     isSharing
-                      ? "bg-slate-400 cursor-not-allowed"
-                      : "bg-slate-900 text-white hover:bg-slate-800 active:scale-95 shadow-slate-200"
+                      ? "bg-slate-400"
+                      : "bg-slate-900 text-white hover:bg-slate-800"
                   }`}
                 >
-                  {isSharing ? (
-                    <>
-                      <svg
-                        className="animate-spin h-3 w-3 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      <span>Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-sm">📤</span>
-                      <span>Share Mastery</span>
-                    </>
-                  )}
+                  {isSharing ? "Generating..." : "Share Mastery"}
                 </button>
 
-                {/* 🤖 Dynamic Lesson Coach Integration */}
                 <h2 className="text-lg font-bold text-slate-900">
-                  {overallAvg === 100
-                    ? "Mastery Achieved!  ���"
-                    : overallAvg > 50
-                      ? "Almost there! 💪"
-                      : "Great start! 🚀"}
+                  {dashboardAvg === 100
+                    ? "Mastery Achieved! 🎉"
+                    : "Great start! 🚀"}
                 </h2>
-                <p className="text-sm text-slate-500 mb-6">
-                  {overallAvg === 100
-                    ? "You've crushed every mode in this lesson."
-                    : `You've mastered ${overallAvg}% of this lesson.`}
-                </p>
+              </div>
 
-                <div className="grid grid-cols-3 gap-4 w-full">
-                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      Status
-                    </div>
-                    <div className="text-xs font-black text-slate-800">
-                      {session ? "In Progress" : "New"}
-                    </div>
+              <div className="mt-6 grid grid-cols-3 gap-4 w-full">
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Status
                   </div>
-                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      Pace
-                    </div>
-                    <div className="text-xs font-black text-slate-800">
-                      Swift
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      Focus
-                    </div>
-                    <div className="text-xs font-black text-slate-800">
-                      Daily
-                      {/* Hidden Achievement Card for Capture (Off-screen) */}
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "-10000px",
-                          left: "-10000px",
-                        }}
-                      >
-                        <AchievementCard
-                          lessonTitle={title}
-                          streak={streak}
-                          overallAvg={overallAvg}
-                          difficulty={difficulty}
-                        />
-                      </div>
-                    </div>
+                  <div className="text-xs font-black text-slate-800">
+                    {session ? "In Progress" : "New"}
                   </div>
                 </div>
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Pace
+                  </div>
+                  <div className="text-xs font-black text-slate-800">Swift</div>
+                </div>
+                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    Focus
+                  </div>
+                  <div className="text-xs font-black text-slate-800">Daily</div>
+                </div>
               </div>
+
+              {/* 🎓 Certificate Banner */}
+              {dashboardAvg === 100 && (
+                <div className="mt-8 p-6 rounded-[2rem] bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xl relative overflow-hidden group animate-fade-in">
+                  <div className="absolute -right-4 -bottom-4 text-8xl opacity-10 rotate-12">
+                    🎓
+                  </div>
+                  <div className="flex flex-col sm:flex-row items-center gap-5 relative z-10">
+                    <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl">
+                      🏆
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                      <h3 className="font-black text-lg leading-tight">
+                        Course Achievement!
+                      </h3>
+                      <p className="text-emerald-50/80 text-[10px] mt-1 uppercase font-bold tracking-widest">
+                        Mastery Level Reached
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDownloadCertificate()}
+                      className="px-6 py-2.5 rounded-xl bg-white text-emerald-700 font-black text-[11px] uppercase tracking-widest hover:scale-105 transition-transform"
+                    >
+                      Claim Certificate
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()}
@@ -1709,6 +1682,22 @@ export default function LessonDetail() {
                   </button>
                 </div>
               </div>
+      {/* 1684: Hidden elements for Image Generation (Off-screen) */}
+      <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', pointerEvents: 'none', visibility: 'hidden' }}>
+        <AchievementCard 
+          lessonTitle={title}
+          streak={streak}
+          overallAvg={overallAvg}
+          difficulty={difficulty}
+        />
+        <div id="certificate-canvas-wrapper">
+           <Certificate 
+             userName={userProfile?.name || userProfile?.email || 'Student'}
+             trackName={difficulty.toUpperCase()}
+             date={new Date().toLocaleDateString()}
+           />
+        </div>
+      </div>
             )}
           </div>
         </div>

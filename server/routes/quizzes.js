@@ -335,6 +335,46 @@ router.post("/sync-placement", authRequired, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/quizzes/track-progress
+ * Calculates the total completion percentage for the user's current level.
+ */
+router.get("/track-progress", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { placement_level: true },
+    });
+
+    if (!user?.placement_level) {
+      return res.status(400).json({ ok: false, message: "No level assigned" });
+    }
+
+    // 1. Get all lessons for this level
+    const lessons = await prisma.practiceDay.findMany({
+      where: { level: user.placement_level },
+      select: { dayNumber: true },
+    });
+
+    const lessonIds = lessons.map((l) => l.dayNumber);
+
+    // 2. In a real production app, you would store progress in the DB.
+    // Since you are currently using localStorage for per-mode progress,
+    // we will return the list of lesson IDs so the frontend can check them.
+
+    return res.json({
+      ok: true,
+      track: user.placement_level,
+      totalLessons: lessonIds.length,
+      lessonIds: lessonIds,
+    });
+  } catch (err) {
+    console.error("❌ Track progress failed:", err);
+    return res.status(500).json({ ok: false, message: "Server error" });
+  }
+});
+
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
