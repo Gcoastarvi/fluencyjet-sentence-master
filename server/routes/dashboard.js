@@ -98,6 +98,22 @@ router.get("/summary", authRequired, async (req, res) => {
 
     const monthlyXP = await sumXpForRange({ userId, gte: monthStart });
 
+    // --- Weekly Goal Math ---
+    const goalXP = 150; // Points representing a "Goal Met"
+    const weeklyEvents = await prisma.xpEvent.findMany({
+      where: {
+        user_id: userId,
+        created_at: { gte: weekStart },
+      },
+      select: { created_at: true },
+    });
+
+    // Count unique days with activity this week
+    const uniqueDays = new Set(
+      weeklyEvents.map((e) => e.created_at.toDateString()),
+    ).size;
+    const daysRemaining = 7 - uniqueDays;
+
     // --- Level math (1000 XP per level) ---
     const levelSize = 1000;
     const level = Math.floor(totalXP / levelSize) + 1;
@@ -132,6 +148,7 @@ router.get("/summary", authRequired, async (req, res) => {
       level,
       xpToNextLevel,
       streak,
+      uniqueDays,
       nextBadge: null,
       pendingLessons: [],
       recentActivity,

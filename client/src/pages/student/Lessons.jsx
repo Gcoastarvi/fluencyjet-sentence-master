@@ -56,6 +56,8 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [masteryNote, setMasteryNote] = useState(null);
+
   const getTileProgress = (dayNumber) => {
     const typingProg = readProgress(dayNumber, "typing");
     const reorderProg = readProgress(dayNumber, "reorder");
@@ -86,6 +88,14 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
       audioPct,
     };
   };
+
+  useEffect(() => {
+    const masteredDay = localStorage.getItem("fj_show_mastery_popup");
+    if (masteredDay) {
+      setMasteryNote(masteredDay);
+      localStorage.removeItem("fj_show_mastery_popup"); // 🧹 Clear it so it only shows once
+    }
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -184,6 +194,39 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6 mt-6">
+      {/* 🏆 Mastery Celebration Popup */}
+      {masteryNote && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-[3rem] p-8 max-w-sm w-full text-center shadow-2xl animate-bounce-in">
+            <div className="text-6xl mb-4">🎖️</div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              Mastery Unlocked!
+            </h2>
+            <p className="text-slate-500 mt-2 text-sm leading-relaxed">
+              Congratulations! You've officially conquered every mode in{" "}
+              <span className="font-bold text-indigo-600">
+                Lesson {masteryNote}
+              </span>
+              .
+            </p>
+
+            <div className="mt-8 space-y-3">
+              <button
+                onClick={() => navigate(`/b/hall-of-fame`)}
+                className="w-full py-3 rounded-2xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-100"
+              >
+                View in Hall of Fame
+              </button>
+              <button
+                onClick={() => setMasteryNote(null)}
+                className="w-full py-3 rounded-2xl bg-slate-100 text-slate-600 font-bold text-xs uppercase tracking-widest hover:bg-slate-200"
+              >
+                Keep Learning
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <h1 className="text-3xl font-black text-indigo-700 text-center tracking-tight">
         {track === "intermediate" ? "Intermediate Lessons" : "Beginner Lessons"}
       </h1>

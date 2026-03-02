@@ -329,7 +329,52 @@ export default function Dashboard() {
           </div>
 
           {/* Pending + Snapshot */}
+          {/* 332: Premium Dashboard Grid */}
           <div className="fj-grid fj-grid-2">
+            {/* 🏆 New: Weekly Goal Progress Card */}
+            <div className="rounded-[2.5rem] bg-white p-8 border border-slate-100 shadow-sm col-span-full mb-4">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                  Weekly Goal
+                </h3>
+                <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-widest">
+                  10 min daily
+                </span>
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                {[...Array(7)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                      i < (summary.uniqueDays || 0)
+                        ? "bg-orange-500 shadow-sm shadow-orange-100"
+                        : "bg-slate-100"
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-end justify-between">
+                <div>
+                  <div className="text-3xl font-black text-slate-900">
+                    {summary.uniqueDays || 0}/7
+                  </div>
+                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
+                    Days Mastered
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-bold text-slate-800">
+                    {summary.uniqueDays >= 7
+                      ? "Goal Smashed! 🎉"
+                      : `${7 - (summary.uniqueDays || 0)} days to go`}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Existing Pending Lessons Card */}
             <div className="fj-card">
               <h2 className="fj-section-title">Pending Lessons</h2>
               {summary.pendingLessons?.length ? (

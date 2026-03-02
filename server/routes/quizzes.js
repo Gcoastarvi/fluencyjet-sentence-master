@@ -415,30 +415,48 @@ router.get("/hall-of-fame", authRequired, async (req, res) => {
  */
 router.post("/sync-mastery", authRequired, async (req, res) => {
   try {
-    const { lessonId, level } = req.body;
+    const { lessonId, level, xpDelta = 150 } = req.body;
     const userId = req.user.id;
 
-    // Use a transaction to ensure both user progress and event logs are saved
     await prisma.$transaction([
-      prisma.userProgress.upsert({
-        where: { userId_lessonId: { userId, lessonId: Number(lessonId) } },
-        update: { mastery_achieved: true, updatedAt: new Date() },
-        create: {
-          userId,
-          lessonId: Number(lessonId),
-          mastery_achieved: true,
-          level: level.toUpperCase(),
+      // 1. Update total XP in User table
+      prisma.user.update({
+        where: { id: userId },
+        data: { xpTotal: { increment: xpDelta } },
+      }),
+      // 2. Log the XP Event (This restores Dashboard/Leaderboard)
+      prisma.xpEvent.create({
+        data: {
+          user_id: userId,
+          xp_delta: xpDelta,
+          type: `MASTERY_LESSON_${lessonId}`,
+          created_at: new Date(),
         },
       }),
-      // Log an achievement event for the Hall of Fame
-      prisma.achievement.create({
-        data: { userId, type: "LESSON_MASTERY", referenceId: String(lessonId) },
+      // 3. Update lesson completion
+      prisma.userDayProgress.upsert({
+        where: {
+          userId_level_dayNumber: { userId, level, dayNumber: lessonId },
+        },
+        update: {
+          completed: true,
+          xpEarned: { increment: xpDelta },
+          completedAt: new Date(),
+        },
+        create: {
+          userId,
+          level,
+          dayNumber: lessonId,
+          completed: true,
+          xpEarned: xpDelta,
+          completedAt: new Date(),
+        },
       }),
     ]);
 
-    return res.json({ ok: true, message: "Mastery synced to cloud" });
+    return res.json({ ok: true });
   } catch (err) {
-    console.error("❌ Cloud sync failed:", err);
+    console.error("❌ Sync failed:", err);
     return res.status(500).json({ ok: false });
   }
 });

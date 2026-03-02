@@ -717,15 +717,21 @@ export default function LessonDetail() {
       sound.play().catch(() => {});
 
       // 2. 🚀 Push Mastery Event to Railway
+      // 2. 🚀 Push Mastery Event to Railway
       api
         .post("/quizzes/sync-mastery", {
           lessonId: Number(dayNumber),
           level: difficulty.toUpperCase(),
+          xpDelta: 150, // 👈 Explicitly passing XP for the event log
         })
-        .then(() =>
-          console.log("[CLOUD] Mastery achievement synced to PostgreSQL"),
-        )
-        .catch((err) => console.error("[CLOUD] Mastery sync failed:", err));
+        .then(() => {
+          console.log("[CLOUD] Mastery achievement synced to PostgreSQL");
+          // 🚩 3. Set the trigger for the Lessons list popup
+          localStorage.setItem("fj_show_mastery_popup", dayNumber);
+        })
+        .catch((err) => {
+          console.error("[CLOUD] Mastery sync failed:", err);
+        });
     }
   }, [
     typingProg,
