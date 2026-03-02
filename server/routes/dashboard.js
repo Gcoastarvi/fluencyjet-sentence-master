@@ -161,4 +161,14 @@ router.get("/summary", authRequired, async (req, res) => {
   }
 });
 
+router.get("/global-feed", authRequired, async (req, res) => {
+  const recentMasteries = await prisma.xpEvent.findMany({
+    where: { type: { startsWith: "MASTERY_LESSON_" } },
+    take: 5,
+    orderBy: { created_at: "desc" },
+    include: { user: { select: { name: true, avatar_url: true } } },
+  });
+  res.json({ ok: true, feed: recentMasteries });
+});
+
 export default router;

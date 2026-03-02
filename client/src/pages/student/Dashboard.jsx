@@ -85,6 +85,8 @@ export default function Dashboard() {
     () => getDisplayName?.() || "Learner",
   );
 
+  const [globalFeed, setGlobalFeed] = useState([]);
+
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -118,25 +120,74 @@ export default function Dashboard() {
     }
   }, []);
 
+  // 129: Corrected loadMe with async wrapper
   const loadMe = useCallback(async () => {
-    // NOTE: apiClient may return JSON directly OR {ok, data}. Handle both.
-    const res = await api.get("/auth/me");
-    const data = res?.data ?? res;
+    try {
+      const res = await api.get("/auth/me");
+      const data = res?.data ?? res;
 
-    if (!data?.ok) {
-      throw new Error(data?.error || "Failed to load user");
+      if (!data?.ok && !data?.user) {
+        throw new Error(data?.error || "Failed to load user");
+      }
+
+      const name =
+        data?.user?.name ||
+        data?.user?.displayName ||
+        data?.user?.email ||
+        data?.email ||
+        "Learner";
+
+      setUserName(name);
+      return data;
+    } catch (err) {
+      console.error("loadMe error:", err);
+      return null;
+    }
+  }, [api]);
+
+  // 156: Unified & Safe Async Effect for Dashboard Data
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAllDashboardData() {
+      try {
+        // Fetch everything in parallel for speed
+        const [summaryRes, feedRes] = await Promise.all([
+          api.get("/dashboard/summary"),
+          api.get("/dashboard/global-feed"),
+        ]);
+
+        if (!isMounted) return;
+
+        // Handle Summary Data
+        const sData = summaryRes?.data ?? summaryRes;
+        if (sData) {
+          setSummary((prev) => ({
+            ...prev,
+            ...sData,
+            uniqueDays: sData.uniqueDays || 0,
+          }));
+        }
+
+        // Handle Global Feed Data
+        const fData = feedRes?.data ?? feedRes;
+        if (fData?.feed) {
+          setGlobalFeed(fData.feed);
+        }
+      } catch (err) {
+        console.error("Dashboard Sync Error:", err);
+        if (isMounted) setError("Failed to sync your latest progress.");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     }
 
-    const name =
-      data?.user?.name ||
-      data?.user?.displayName ||
-      data?.user?.email ||
-      data?.email ||
-      "Learner";
+    loadAllDashboardData();
 
-    setUserName(name);
-    return data;
-  }, []);
+    return () => {
+      isMounted = false;
+    };
+  }, [api]);
 
   const loadSummary = useCallback(async () => {
     // IMPORTANT: always control the spinner here
@@ -331,8 +382,8 @@ export default function Dashboard() {
           {/* Pending + Snapshot */}
           {/* 332: Premium Dashboard Grid */}
           <div className="fj-grid fj-grid-2">
-            {/* 🏆 New: Weekly Goal Progress Card */}
-            <div className="rounded-[2.5rem] bg-white p-8 border border-slate-100 shadow-sm col-span-full mb-4">
+            {/* 🏆 Column 1: Weekly Goal Progress */}
+            <div className="rounded-[2.5rem] bg-white p-8 border border-slate-100 shadow-sm mb-4">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight">
                   Weekly Goal
@@ -348,11 +399,62 @@ export default function Dashboard() {
                     key={i}
                     className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
                       i < (summary.uniqueDays || 0)
-                        ? "bg-orange-500 shadow-sm shadow-orange-100"
+                        ? "bg-orange-500"
                         : "bg-slate-100"
                     }`}
                   />
                 ))}
+              </div>
+
+              <div className="flex items-end justify-between">
+                <div>
+                  <div className="text-3xl font-black text-slate-900">
+                    {summary.uniqueDays || 0}/7
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                    Days Mastered
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ⚡ Column 2: Global Activity Feed */}
+            <div className="rounded-[2.5rem] bg-slate-900 p-8 text-white shadow-xl mb-4 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-6 opacity-5 text-6xl italic font-black pointer-events-none">
+                LIVE
+              </div>
+
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 mb-6 flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </span>
+                Activity Feed
+              </h3>
+
+              <div className="space-y-4">
+                {globalFeed.length > 0 ? (
+                  globalFeed.map((event, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-3 animate-fade-in"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-500 to-fuchsia-500 flex-shrink-0 border border-white/10" />
+                      <div className="text-[11px] leading-tight">
+                        <span className="font-bold text-white block">
+                          {event.user?.name || "A Learner"}
+                        </span>
+                        <span className="text-slate-400 font-medium italic">
+                          Just earned Mastery!
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-[11px] text-slate-500 italic">
+                    Waiting for fresh achievements...
+                  </p>
+                )}
               </div>
 
               <div className="flex items-end justify-between">

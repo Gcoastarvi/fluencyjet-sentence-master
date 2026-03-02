@@ -273,14 +273,19 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
             >
               <div className="max-w-xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-100/80">
-                  Top performers · {periodLabel.toLowerCase()}
-                </p>
-                <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black leading-tight">
-                  {entry.name} is leading the board!
-                </h2>
-                <p className="mt-3 text-sm sm:text-base text-indigo-50/90">
-                  Rank #{entry.rank ?? idx + 1} · {kFormat(entry.xp)} XP earned{" "}
-                  {periodLabel.toLowerCase()}.
+                  {/* 276: Premium Spotlight Header */}
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-2">
+                    Top performers · {periodLabel.toLowerCase()}
+                  </div>
+                  <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black leading-tight tracking-tighter">
+                    {entry.name === userName ? "You are" : `${entry.name} is`}{" "}
+                    leading the board!
+                  </h2>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold">
+                      Rank #1 · {entry.xpThisPeriod.toLocaleString()} XP
+                    </span>
+                  </div>
                 </p>
               </div>
 

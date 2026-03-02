@@ -87,6 +87,44 @@ async function aggregateXP(period) {
   return ranked;
 }
 
+router.get("/this-week", authRequired, async (req, res) => {
+  try {
+    const weekStart = startOfWeekMonday(new Date());
+
+    // 1. Fetch all XP events from this week
+    const events = await prisma.xpEvent.findMany({
+      where: { created_at: { gte: weekStart } },
+      include: {
+        user: { select: { name: true, email: true, avatar_url: true } },
+      },
+    });
+
+    // 2. Group by User (Manually aggregate to handle the new Mastery types)
+    const userMap = {};
+    events.forEach((e) => {
+      if (!userMap[e.user_id]) {
+        userMap[e.user_id] = {
+          id: e.user_id,
+          name: e.user?.name || e.user?.email.split("@")[0],
+          avatar: e.user?.avatar_url,
+          xpThisPeriod: 0,
+        };
+      }
+      userMap[e.user_id].xpThisPeriod += e.xp_delta;
+    });
+
+    // 3. Convert to array and sort by XP
+    const leaders = Object.values(userMap)
+      .sort((a, b) => b.xpThisPeriod - a.xpThisPeriod)
+      .slice(0, 10);
+
+    return res.json({ ok: true, leaders });
+  } catch (err) {
+    console.error("Leaderboard Error:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
 // GET /api/leaderboard?period=today|weekly|monthly|all
 router.get("/", authRequired, async (req, res) => {
   try {
