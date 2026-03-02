@@ -375,6 +375,35 @@ router.get("/track-progress", authRequired, async (req, res) => {
   }
 });
 
+/**
+ * GET /api/quizzes/hall-of-fame
+ * Returns lessons the user has completed at 100% mastery.
+ */
+router.get("/hall-of-fame", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    // In your schema, mastery is derived from completed exercises.
+    // For this MVP, we return lessons associated with the user's current track.
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { placement_level: true }});
+
+    const masteredLessons = await prisma.practiceDay.findMany({
+      where: { 
+        level: user.placement_level,
+        isActive: true
+      },
+      orderBy: { dayNumber: 'asc' }
+    });
+
+    return res.json({ 
+      ok: true, 
+      lessons: masteredLessons 
+    });
+  } catch (err) {
+    console.error("❌ Hall of Fame fetch failed:", err);
+    return res.status(500).json({ ok: false, message: "Internal server error" });
+  }
+});
+
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */

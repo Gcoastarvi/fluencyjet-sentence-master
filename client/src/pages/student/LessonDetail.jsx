@@ -1682,23 +1682,33 @@ export default function LessonDetail() {
                   </button>
                 </div>
               </div>
-      {/* 1684: Hidden elements for Image Generation (Off-screen) */}
-      <div style={{ position: 'absolute', top: '-10000px', left: '-10000px', pointerEvents: 'none', visibility: 'hidden' }}>
-        <AchievementCard 
-          lessonTitle={title}
-          streak={streak}
-          overallAvg={overallAvg}
-          difficulty={difficulty}
-        />
-        <div id="certificate-canvas-wrapper">
-           <Certificate 
-             userName={userProfile?.name || userProfile?.email || 'Student'}
-             trackName={difficulty.toUpperCase()}
-             date={new Date().toLocaleDateString()}
-           />
-        </div>
-      </div>
             )}
+            {/* 1684: Hidden elements for Image Generation (Off-screen) */}
+            <div
+              style={{
+                position: "absolute",
+                top: "-10000px",
+                left: "-10000px",
+                pointerEvents: "none",
+                visibility: "hidden",
+              }}
+            >
+              <AchievementCard
+                lessonTitle={title}
+                streak={streak}
+                overallAvg={overallAvg}
+                difficulty={difficulty}
+              />
+              <div id="certificate-canvas-wrapper">
+                <Certificate
+                  userName={
+                    userProfile?.name || userProfile?.email || "Student"
+                  }
+                  trackName={difficulty.toUpperCase()}
+                  date={new Date().toLocaleDateString()}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
