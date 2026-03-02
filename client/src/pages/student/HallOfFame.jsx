@@ -1,37 +1,53 @@
 import React, { useEffect, useState } from "react";
 import { api } from "@/api/apiClient";
-import PracticeHeader from "@/components/layout/PracticeHeader";
+import Certificate from "@/components/student/Certificate";
+import { toPng } from "html-to-image";
 
 export default function HallOfFame() {
-  const [completedLessons, setCompletedLessons] = useState([]);
+  const [mastered, setMastered] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    async function fetchHallOfFame() {
+    async function loadData() {
       try {
-        const res = await api.get("/quizzes/hall-of-fame");
-        if (res.ok) setCompletedLessons(res.lessons || []);
+        const [meRes, hallRes] = await Promise.all([
+          api.get("/auth/me"),
+          api.get("/quizzes/hall-of-fame"),
+        ]);
+        if (meRes.ok) setUser(meRes.data?.user || meRes.user);
+        if (hallRes.ok) setMastered(hallRes.lessons || []);
       } catch (err) {
-        console.error("Failed to load Hall of Fame", err);
+        console.error("Hall of Fame load error:", err);
       } finally {
         setLoading(false);
       }
     }
-    fetchHallOfFame();
+    loadData();
   }, []);
 
+  const downloadCert = async (dayNumber) => {
+    const node = document.getElementById(`cert-${dayNumber}`);
+    if (!node) return;
+    const dataUrl = await toPng(node, { quality: 1.0, pixelRatio: 2 });
+    const link = document.createElement("a");
+    link.download = `FluencyJet-Certificate-Lesson-${dayNumber}.png`;
+    link.href = dataUrl;
+    link.click();
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <div className="mx-auto max-w-xl p-4">
-        <header className="mb-8 text-center pt-8">
+    <div className="min-h-screen bg-slate-50 p-6 pb-20">
+      <div className="max-w-xl mx-auto">
+        <header className="mb-10 text-center pt-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-[10px] font-black uppercase tracking-widest mb-4">
-            <span className="text-sm">🏆</span> Hall of Fame
+            🏆 Hall of Fame
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
             Your Mastery Wall
           </h1>
           <p className="text-slate-500 text-sm mt-2 font-medium">
-            Every lesson you've crushed is recorded here.
+            Download your earned certificates below.
           </p>
         </header>
 
@@ -39,9 +55,8 @@ export default function HallOfFame() {
           <div className="flex justify-center p-20">
             <div className="animate-spin h-8 w-8 border-4 border-violet-500 border-t-transparent rounded-full" />
           </div>
-        ) : completedLessons.length === 0 ? (
+        ) : mastered.length === 0 ? (
           <div className="bg-white rounded-[2.5rem] p-12 text-center border border-slate-200 shadow-sm">
-            <div className="text-5xl mb-4">🧗</div>
             <h2 className="text-lg font-bold text-slate-800">
               The wall is empty... for now
             </h2>
@@ -51,22 +66,44 @@ export default function HallOfFame() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {completedLessons.map((lesson) => (
+            {mastered.map((lesson) => (
               <div
                 key={lesson.id}
-                className="group relative bg-white rounded-3xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all"
+                className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center justify-between group"
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-lg">
-                      Lesson {lesson.dayNumber}
-                    </h3>
-                    <div className="text-xs font-bold text-emerald-600 uppercase tracking-tight flex items-center gap-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />{" "}
-                      Verified Mastery
-                    </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    Lesson {lesson.dayNumber}
+                  </h3>
+                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest mt-1">
+                    Verified Mastery
+                  </p>
+                </div>
+                <button
+                  onClick={() => downloadCert(lesson.dayNumber)}
+                  className="bg-slate-900 text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-slate-800 transition-all shadow-lg"
+                >
+                  Get Certificate
+                </button>
+
+                {/* Hidden Canvas for Certificate Generation */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "-10000px",
+                    left: "-10000px",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <div id={`cert-${lesson.dayNumber}`}>
+                    <Certificate
+                      userName={user?.name || user?.email || "Student"}
+                      trackName={`${lesson.level} Track - Lesson ${lesson.dayNumber}`}
+                      date={new Date(
+                        lesson.createdAt || Date.now(),
+                      ).toLocaleDateString()}
+                    />
                   </div>
-                  <div className="text-4xl">📜</div>
                 </div>
               </div>
             ))}

@@ -184,20 +184,40 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6 mt-6">
-      <h1 className="text-3xl font-bold text-indigo-700 text-center">
+      <h1 className="text-3xl font-black text-indigo-700 text-center tracking-tight">
         {track === "intermediate" ? "Intermediate Lessons" : "Beginner Lessons"}
       </h1>
 
+      <div className="flex justify-center mb-4">
+        <button
+          onClick={() => navigate("/b/hall-of-fame")}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+        >
+          <span>🏆</span> View Hall of Fame
+        </button>
+      </div>
+
+      {/* 🏆 Navigation to Hall of Fame */}
+      <div className="flex justify-center mb-4">
+        <button
+          onClick={() => navigate(`${basePath}/hall-of-fame`)}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm"
+        >
+          <span>🏆</span> View Hall of Fame
+        </button>
+      </div>
+
       <div className="space-y-4">
-        {/* 192: Lesson Card Mapping with Mastery Logic */}
         {orderedLessons.map((lesson, index) => {
           const isUnlocked = unlocked.includes(lesson.id);
           const dayNumber = getDayNumber(lesson, index);
 
-          // 🎀 Calculate Mastery for this specific card
-          const isMastered = (() => {
-            if (!isUnlocked) return false;
+          // 🎀 Unified Mastery & Progress Calculation
+          const { isMastered, bestPct, hasStarted } = (() => {
             const modes = ["typing", "reorder", "audio"];
+            let maxP = 0;
+            let started = false;
+
             const stats = modes
               .map((m) => {
                 const raw = localStorage.getItem(
@@ -208,21 +228,24 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
                   const p = JSON.parse(raw);
                   const total = Number(p.total || 0);
                   const completed = Number(p.completed || 0);
-                  return total > 0
-                    ? Math.round((completed / total) * 100)
-                    : null;
+                  const pctValue =
+                    total > 0 ? Math.round((completed / total) * 100) : 0;
+                  if (pctValue > 0) started = true;
+                  if (pctValue > maxP) maxP = pctValue;
+                  return pctValue;
                 } catch {
                   return null;
                 }
               })
               .filter((s) => s !== null);
 
-            // Mastered only if they've finished at least one mode and all started modes are 100%
-            return stats.length > 0 && stats.every((s) => s === 100);
+            return {
+              isMastered: stats.length > 0 && stats.every((s) => s === 100),
+              bestPct: maxP,
+              hasStarted: started,
+            };
           })();
 
-          const t = getTileProgress(dayNumber);
-          const hasStarted = t.hasStarted;
           const isRecommended = isUnlocked && recommendedLessonId === lesson.id;
 
           const goPrimary = () => {
@@ -250,93 +273,40 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
                   : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-md"
               }`}
             >
-              {/* 🎀 Emerald Ribbon Component */}
+              {/* 🎀 Mastery Ribbon Component */}
               {isMastered && <MasteryRibbon />}
 
-              {/* Lock badge */}
-              {!isUnlocked && (
+              {/* Status Badges (Lock & Progress) */}
+              {!isUnlocked ? (
                 <div className="absolute right-4 top-4 rounded-full bg-slate-900 px-3 py-1 text-[10px] font-bold text-white uppercase tracking-widest">
                   🔒 Locked
                 </div>
-              )}
-
-              {/* Progress badge */}
-              {isUnlocked && (
-                <div className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-800 border">
+              ) : hasStarted && !isMastered ? (
+                <div className="absolute right-3 top-3 rounded-full bg-violet-600 px-3 py-1 text-[10px] font-bold text-white uppercase tracking-tight">
                   {bestPct}% done
                 </div>
-              )}
-
-              {!isUnlocked && (
-                <div className="absolute inset-0 bg-white/70 backdrop-blur-sm rounded-xl flex items-center justify-center text-3xl text-gray-600">
-                  🔒
-                </div>
-              )}
+              ) : null}
 
               {isRecommended && (
-                <div className="absolute left-3 top-3 rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white">
+                <div className="absolute left-3 -top-3 rounded-full bg-amber-400 px-3 py-1 text-[10px] font-black text-amber-900 uppercase tracking-widest shadow-sm">
                   ⭐ Recommended next
                 </div>
               )}
 
-              <div className={isUnlocked ? "" : "opacity-40"}>
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  Lesson {dayNumber}: {lesson.title}
-                  {isCompleted && (
-                    <span className="text-green-600 text-lg font-bold">✓</span>
-                  )}
-                </h2>
-
-                <p className="text-gray-500 mt-1">{lesson.description}</p>
-
-                <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  {/* Progress chips */}
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { label: "Typing", p: t.typingProg },
-                      { label: "Reorder", p: t.reorderProg },
-                      { label: "Audio", p: t.audioProg },
-                    ].map(({ label, p }) => (
-                      <span
-                        key={label}
-                        className="rounded-full border bg-white px-3 py-1 text-xs text-gray-700"
-                        title={`${label}: ${Number(p?.completed || 0)}/${Number(p?.total || 0)}`}
-                      >
-                        <span className="font-semibold">{label}</span>
-                        <span className="text-gray-500"> • </span>
-                        <span>{pct(p)}%</span>
-                      </span>
-                    ))}
+              <div className="flex items-center justify-between">
+                <div className={isUnlocked ? "" : "opacity-40"}>
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">
+                    Lesson {dayNumber}
                   </div>
-
-                  {/* Primary CTA (single, clear) */}
-                  <button
-                    type="button"
-                    onClick={goPrimary}
-                    className={`px-5 py-2.5 rounded-full transition inline-flex items-center gap-2 ${
-                      isUnlocked
-                        ? "bg-indigo-600 text-white hover:scale-105"
-                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
-                  >
-                    <span className="font-semibold">
-                      {!isUnlocked
-                        ? "Locked"
-                        : hasStarted
-                          ? "Continue"
-                          : "Start"}
-                    </span>
-                    <span aria-hidden>→</span>
-                  </button>
-
-                  {/* Small helper text under CTA (optional but makes it feel premium) */}
-                  <div className="text-xs text-gray-500 sm:text-right">
-                    {!isUnlocked
-                      ? `Unlock to access`
-                      : hasStarted
-                        ? `Resume where you left off`
-                        : `Open Practice Hub`}
-                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">
+                    {lesson.title || `Mastery Session ${dayNumber}`}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {lesson.description}
+                  </p>
+                </div>
+                <div className="text-2xl text-slate-300 group-hover:text-indigo-500 transition-colors">
+                  {isUnlocked ? "→" : "🔒"}
                 </div>
               </div>
             </div>
