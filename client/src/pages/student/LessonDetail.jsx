@@ -178,6 +178,8 @@ export default function LessonDetail() {
   // ✅ Use backend + lesson metadata for lock UI. Do NOT use "first 3 only" anymore.
   const isLocked = Boolean(lesson?.isLocked ?? lesson?.is_locked ?? false);
 
+  const [isSharing, setIsSharing] = useState(false);
+
   // Preference toggle (Show Tamil help)
   //const [showTa, setShowTa] = useState(() => {
   // Avoid SSR issues (not relevant here) and keep predictable default
@@ -259,24 +261,35 @@ export default function LessonDetail() {
     };
   }, [lesson, dayNumber]);
 
-  const handleShare = async (overallAvg) => {
+  const handleShare = async (avg) => {
     const node = document.getElementById("achievement-canvas");
-    if (!node) return;
+    if (!node || isSharing) return;
+
+    setIsSharing(true); // 🔄 Start Spinner
 
     try {
-      // 1. Generate the Image Data
+      // Small delay to ensure the DOM is ready for capture
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       const dataUrl = await toPng(node, {
         quality: 1.0,
-        pixelRatio: 2, // High Definition
+        pixelRatio: 2,
+        cacheBust: true,
       });
 
-      // 2. Create a "Ghost Link" to trigger the download
       const link = document.createElement("a");
-      link.download = `FluencyJet-Achievement-${lessonId}.png`;
+      link.download = `FluencyJet-Achievement-Lesson-${dayNumber}.png`;
       link.href = dataUrl;
       link.click();
+
+      // 🎉 Celebration sound on successful share
+      const sound = new Audio("/sounds/xp.mp3");
+      sound.volume = 0.3;
+      sound.play().catch(() => {});
     } catch (err) {
-      console.error("Oops, share failed!", err);
+      console.error("Share failed:", err);
+    } finally {
+      setIsSharing(false); // ✅ Stop Spinner
     }
   };
 
@@ -1181,13 +1194,46 @@ export default function LessonDetail() {
                   </div>
                 </div>
 
-                {/* 📤 Premium Share Button */}
+                {/* 📤 Premium Share Button with Loading Spinner */}
                 <button
                   onClick={() => handleShare(overallAvg)}
-                  className="mb-4 flex items-center gap-2 px-6 py-2 rounded-full bg-slate-900 text-white text-[11px] font-bold uppercase tracking-widest hover:bg-slate-800 active:scale-95 transition-all shadow-lg shadow-slate-200"
+                  disabled={isSharing}
+                  className={`mb-4 flex items-center gap-2 px-6 py-2.5 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all shadow-lg ${
+                    isSharing
+                      ? "bg-slate-400 cursor-not-allowed"
+                      : "bg-slate-900 text-white hover:bg-slate-800 active:scale-95 shadow-slate-200"
+                  }`}
                 >
-                  <span className="text-sm">📤</span>
-                  Share Mastery
+                  {isSharing ? (
+                    <>
+                      <svg
+                        className="animate-spin h-3 w-3 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      <span>Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm">📤</span>
+                      <span>Share Mastery</span>
+                    </>
+                  )}
                 </button>
 
                 {/* 🤖 Dynamic Lesson Coach Integration */}
