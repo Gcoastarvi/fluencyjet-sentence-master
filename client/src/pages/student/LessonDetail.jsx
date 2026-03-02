@@ -691,9 +691,8 @@ export default function LessonDetail() {
     };
   }, [dayNumber]); // keep minimal deps
 
-  // Trigger Mastery Celebration
+  // 695: Trigger Mastery Celebration & Cloud Push
   useEffect(() => {
-    // 1. Calculate the same overallAvg used in your UI
     const pts = [
       modeAvail.typing ? pct(typingProg) : null,
       modeAvail.reorder ? pct(reorderProg) : null,
@@ -704,20 +703,39 @@ export default function LessonDetail() {
       ? Math.round(pts.reduce((a, b) => a + b, 0) / pts.length)
       : 0;
 
-    // 2. Trigger if 100% and it hasn't rained yet in this session
     if (overallAvg === 100 && hasLoadedOnce) {
+      // 1. Visual Celebration
       confetti({
         particleCount: 150,
         spread: 100,
         origin: { y: 0.7 },
-        colors: ["#f97316", "#fbbf24", "#ffffff"], // Orange/Gold for Streak Mastery
+        colors: ["#f97316", "#fbbf24", "#ffffff"],
       });
 
       const sound = new Audio("/sounds/levelup.mp3");
       sound.volume = 0.4;
       sound.play().catch(() => {});
+
+      // 2. 🚀 Push Mastery Event to Railway
+      api
+        .post("/quizzes/sync-mastery", {
+          lessonId: Number(dayNumber),
+          level: difficulty.toUpperCase(),
+        })
+        .then(() =>
+          console.log("[CLOUD] Mastery achievement synced to PostgreSQL"),
+        )
+        .catch((err) => console.error("[CLOUD] Mastery sync failed:", err));
     }
-  }, [typingProg, reorderProg, audioProg, modeAvail, hasLoadedOnce]);
+  }, [
+    typingProg,
+    reorderProg,
+    audioProg,
+    modeAvail,
+    hasLoadedOnce,
+    dayNumber,
+    difficulty,
+  ]);
 
   async function smartStart() {
     if (!lessonId) return;

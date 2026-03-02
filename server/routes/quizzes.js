@@ -384,23 +384,62 @@ router.get("/hall-of-fame", authRequired, async (req, res) => {
     const userId = req.user.id;
     // In your schema, mastery is derived from completed exercises.
     // For this MVP, we return lessons associated with the user's current track.
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { placement_level: true }});
-
-    const masteredLessons = await prisma.practiceDay.findMany({
-      where: { 
-        level: user.placement_level,
-        isActive: true
-      },
-      orderBy: { dayNumber: 'asc' }
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { placement_level: true },
     });
 
-    return res.json({ 
-      ok: true, 
-      lessons: masteredLessons 
+    const masteredLessons = await prisma.practiceDay.findMany({
+      where: {
+        level: user.placement_level,
+        isActive: true,
+      },
+      orderBy: { dayNumber: "asc" },
+    });
+
+    return res.json({
+      ok: true,
+      lessons: masteredLessons,
     });
   } catch (err) {
     console.error("❌ Hall of Fame fetch failed:", err);
-    return res.status(500).json({ ok: false, message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ ok: false, message: "Internal server error" });
+  }
+});
+
+/**
+ * POST /api/quizzes/sync-mastery
+ * Permanently records 100% mastery for a specific lesson.
+ */
+router.post("/sync-mastery", authRequired, async (req, res) => {
+  try {
+    const { lessonId, level } = req.body;
+    const userId = req.user.id;
+
+    // Use a transaction to ensure both user progress and event logs are saved
+    await prisma.$transaction([
+      prisma.userProgress.upsert({
+        where: { userId_lessonId: { userId, lessonId: Number(lessonId) } },
+        update: { mastery_achieved: true, updatedAt: new Date() },
+        create: {
+          userId,
+          lessonId: Number(lessonId),
+          mastery_achieved: true,
+          level: level.toUpperCase(),
+        },
+      }),
+      // Log an achievement event for the Hall of Fame
+      prisma.achievement.create({
+        data: { userId, type: "LESSON_MASTERY", referenceId: String(lessonId) },
+      }),
+    ]);
+
+    return res.json({ ok: true, message: "Mastery synced to cloud" });
+  } catch (err) {
+    console.error("❌ Cloud sync failed:", err);
+    return res.status(500).json({ ok: false });
   }
 });
 

@@ -189,45 +189,52 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
       </h1>
 
       <div className="space-y-4">
+        {/* 192: Lesson Card Mapping with Mastery Logic */}
         {orderedLessons.map((lesson, index) => {
           const isUnlocked = unlocked.includes(lesson.id);
-          const isCompleted = Boolean(lesson.completed);
           const dayNumber = getDayNumber(lesson, index);
 
-          const t = getTileProgress(dayNumber);
-          const bestPct = t.bestPct;
-          const hasStarted = t.hasStarted;
+          // 🎀 Calculate Mastery for this specific card
+          const isMastered = (() => {
+            if (!isUnlocked) return false;
+            const modes = ["typing", "reorder", "audio"];
+            const stats = modes
+              .map((m) => {
+                const raw = localStorage.getItem(
+                  `fj_progress:${dayNumber}:${m}`,
+                );
+                if (!raw) return null;
+                try {
+                  const p = JSON.parse(raw);
+                  const total = Number(p.total || 0);
+                  const completed = Number(p.completed || 0);
+                  return total > 0
+                    ? Math.round((completed / total) * 100)
+                    : null;
+                } catch {
+                  return null;
+                }
+              })
+              .filter((s) => s !== null);
 
+            // Mastered only if they've finished at least one mode and all started modes are 100%
+            return stats.length > 0 && stats.every((s) => s === 100);
+          })();
+
+          const t = getTileProgress(dayNumber);
+          const hasStarted = t.hasStarted;
           const isRecommended = isUnlocked && recommendedLessonId === lesson.id;
 
-          const primaryLabel = !isUnlocked
-            ? "Locked"
-            : hasStarted
-              ? "Continue"
-              : "Start";
-
           const goPrimary = () => {
-            const diff =
-              String(
-                lesson?.difficulty ||
-                  lesson?.lessonLevel ||
-                  track ||
-                  "beginner",
-              ).toLowerCase() === "intermediate"
-                ? "intermediate"
-                : "beginner";
-
-            // If locked, send to paywall (track-aware)
+            const diff = String(
+              lesson?.difficulty || lesson?.lessonLevel || track || "beginner",
+            ).toLowerCase();
             if (!isUnlocked) {
               navigate(
-                `/paywall?plan=${
-                  diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER"
-                }&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(diff)}`,
+                `/paywall?plan=${diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER"}&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(diff)}`,
               );
               return;
             }
-
-            // Open practice hub (track namespace)
             navigate(
               `${basePath}/lesson/${dayNumber}?difficulty=${encodeURIComponent(diff)}`,
             );
@@ -236,11 +243,19 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
           return (
             <div
               key={lesson.id ?? `${lesson.slug ?? "lesson"}_${index}`}
-              className="relative p-5 bg-white rounded-xl shadow hover:shadow-lg transition"
+              onClick={goPrimary}
+              className={`relative p-6 cursor-pointer rounded-[2rem] border-2 transition-all duration-300 ${
+                isMastered
+                  ? "border-emerald-100 bg-emerald-50/20 shadow-sm"
+                  : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-md"
+              }`}
             >
+              {/* 🎀 Emerald Ribbon Component */}
+              {isMastered && <MasteryRibbon />}
+
               {/* Lock badge */}
               {!isUnlocked && (
-                <div className="absolute right-3 top-3 rounded-full bg-gray-900/90 px-3 py-1 text-xs font-semibold text-white">
+                <div className="absolute right-4 top-4 rounded-full bg-slate-900 px-3 py-1 text-[10px] font-bold text-white uppercase tracking-widest">
                   🔒 Locked
                 </div>
               )}
