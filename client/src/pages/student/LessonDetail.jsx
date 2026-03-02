@@ -178,27 +178,6 @@ export default function LessonDetail() {
   // ✅ Use backend + lesson metadata for lock UI. Do NOT use "first 3 only" anymore.
   const isLocked = Boolean(lesson?.isLocked ?? lesson?.is_locked ?? false);
 
-  // 🏆 World-Class Achievement Math (Global Scope within component)
-  const overallAvg = useMemo(() => {
-    const pts = [
-      modeAvail.typing ? pct(typingProg) : null,
-      modeAvail.reorder ? pct(reorderProg) : null,
-      ENABLE_AUDIO && modeAvail.audio ? pct(audioProg) : null,
-    ].filter((x) => typeof x === "number");
-    return pts.length
-      ? Math.round(pts.reduce((a, b) => a + b, 0) / pts.length)
-      : 0;
-  }, [typingProg, reorderProg, audioProg, modeAvail]);
-
-  const totalXP = useMemo(() => {
-    // Basic math: 150XP per completed mode
-    let count = 0;
-    if (pct(typingProg) === 100) count += 150;
-    if (pct(reorderProg) === 100) count += 150;
-    if (pct(audioProg) === 100) count += 150;
-    return count;
-  }, [typingProg, reorderProg, audioProg]);
-
   // Preference toggle (Show Tamil help)
   //const [showTa, setShowTa] = useState(() => {
   // Avoid SSR issues (not relevant here) and keep predictable default
@@ -418,6 +397,27 @@ export default function LessonDetail() {
     () => (lessonId ? readProgress(lessonId, "audio") : null),
     [lessonId],
   );
+
+  // 🏆 World-Class Achievement Math (Global Scope within component)
+  const overallAvg = useMemo(() => {
+    const pts = [
+      modeAvail.typing ? pct(typingProg) : null,
+      modeAvail.reorder ? pct(reorderProg) : null,
+      ENABLE_AUDIO && modeAvail.audio ? pct(audioProg) : null,
+    ].filter((x) => typeof x === "number");
+    return pts.length
+      ? Math.round(pts.reduce((a, b) => a + b, 0) / pts.length)
+      : 0;
+  }, [typingProg, reorderProg, audioProg, modeAvail]);
+
+  const totalXP = useMemo(() => {
+    // Basic math: 150XP per completed mode
+    let count = 0;
+    if (pct(typingProg) === 100) count += 150;
+    if (pct(reorderProg) === 100) count += 150;
+    if (pct(audioProg) === 100) count += 150;
+    return count;
+  }, [typingProg, reorderProg, audioProg]);
 
   // Auto-open modes once user has any progress (prevents overwhelm for brand-new users)
   const didAutoOpenModesRef = useRef(false);
