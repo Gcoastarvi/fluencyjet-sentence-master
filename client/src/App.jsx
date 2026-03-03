@@ -29,6 +29,7 @@ import Checkout from "./pages/student/Checkout.jsx";
 import BeginnerLessons from "./pages/student/BeginnerLessons";
 import IntermediateLessons from "./pages/student/IntermediateLessons";
 import LevelCheck from "./pages/student/LevelCheck";
+import Upgrade from "./pages/student/Upgrade";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
