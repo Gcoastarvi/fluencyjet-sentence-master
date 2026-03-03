@@ -73,15 +73,15 @@ model UserWeeklyTotals {
 // ------------------------------------------------------
 // 🧠 USER PROGRESS
 // ------------------------------------------------------
+// Inside model UserProgress
 model UserProgress {
-  id         Int      @id @default(autoincrement())
-  user_id    Int      @unique
-  xp         Int      @default(0)
-  streak     Int      @default(0)
-  badges     String[] @default([])
-  updated_at DateTime @default(now())
-
-  user User @relation(fields: [user_id], references: [id])
+  id              Int      @id @default(autoincrement())
+  user_id         Int      @unique
+  xp              Int      @default(0)
+  streak          Int      @default(0)
+  streak_freezes  Int      @default(0) // 🧊 Add this line
+  updated_at      DateTime @default(now())
+  user            User     @relation(fields: [user_id], references: [id])
 }
 
 // ------------------------------------------------------

@@ -227,6 +227,18 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
           </div>
         </div>
       )}
+      {/* 🔥 Daily Streak Visual */}
+      <div className="flex flex-col items-center mb-8 animate-bounce-subtle">
+        <div className="relative">
+          <span className="text-5xl">🔥</span>
+          <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-[12px] font-bold text-white shadow-lg border-2 border-white">
+            {streak || 0}
+          </div>
+        </div>
+        <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-orange-600">
+          Day Streak
+        </div>
+      </div>
       <h1 className="text-3xl font-black text-indigo-700 text-center tracking-tight">
         {track === "intermediate" ? "Intermediate Lessons" : "Beginner Lessons"}
       </h1>

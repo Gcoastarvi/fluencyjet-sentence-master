@@ -1,4 +1,3 @@
-// server/routes/dashboard.js
 import express from "express";
 import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
@@ -13,8 +12,8 @@ function startOfDay(d = new Date()) {
 
 function startOfWeekMonday(d = new Date()) {
   const x = startOfDay(d);
-  const day = x.getDay(); // 0=Sun
-  const diff = (day + 6) % 7; // Mon=0 ... Sun=6
+  const day = x.getDay();
+  const diff = (day + 6) % 7;
   x.setDate(x.getDate() - diff);
   return x;
 }
@@ -30,51 +29,32 @@ async function sumXpForRange({ userId, gte, lt }) {
     if (gte) where.created_at.gte = gte;
     if (lt) where.created_at.lt = lt;
   }
-
   const agg = await prisma.xpEvent.aggregate({
     where,
     _sum: { xp_delta: true },
   });
-
   return Number(agg?._sum?.xp_delta ?? 0);
 }
 
 router.get("/summary", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
-
     const todayStart = startOfDay();
     const yesterdayStart = new Date(todayStart);
     yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-
     const weekStart = startOfWeekMonday();
     const lastWeekStart = new Date(weekStart);
     lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-
     const monthStart = startOfMonth();
 
-    // --- progress (safe) ---
-    let progress = null;
-    try {
-      progress = await prisma.userProgress.findUnique({
-        where: { user_id: userId },
-      });
-    } catch {
-      // ignore if table/field differs
-    }
+    const progress = await prisma.userProgress.findUnique({
+      where: { user_id: userId },
+    });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, xpTotal: true },
+    });
 
-    // --- user (safe) ---
-    let user = null;
-    try {
-      user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, name: true, email: true, xpTotal: true },
-      });
-    } catch {
-      // ignore
-    }
-
-    // --- XP totals (authoritative: XpEvent) ---
     const computedTotal = await sumXpForRange({ userId });
     const storedTotal = Number(user?.xpTotal ?? progress?.xp ?? 0);
     const totalXP = Math.max(
@@ -88,66 +68,43 @@ router.get("/summary", authRequired, async (req, res) => {
       gte: yesterdayStart,
       lt: todayStart,
     });
-
     const weeklyXP = await sumXpForRange({ userId, gte: weekStart });
     const lastWeekXP = await sumXpForRange({
       userId,
       gte: lastWeekStart,
       lt: weekStart,
     });
-
     const monthlyXP = await sumXpForRange({ userId, gte: monthStart });
 
-    // --- Weekly Goal Math ---
-    const goalXP = 150; // Points representing a "Goal Met"
     const weeklyEvents = await prisma.xpEvent.findMany({
-      where: {
-        user_id: userId,
-        created_at: { gte: weekStart },
-      },
+      where: { user_id: userId, created_at: { gte: weekStart } },
       select: { created_at: true },
     });
-
-    // Count unique days with activity this week
     const uniqueDays = new Set(
       weeklyEvents.map((e) => e.created_at.toDateString()),
     ).size;
-    const daysRemaining = 7 - uniqueDays;
 
-    // --- Level math (1000 XP per level) ---
     const levelSize = 1000;
     const level = Math.floor(totalXP / levelSize) + 1;
-    const xpIntoLevel = totalXP % levelSize;
-    const xpToNextLevel = levelSize - xpIntoLevel;
-
+    const xpToNextLevel = levelSize - (totalXP % levelSize);
     const streak = Number(progress?.streak ?? 0);
+    const streakFreezes = Number(progress?.streak_freezes ?? 0);
 
-    // --- Recent activity (match Dashboard.jsx expects snake_case keys) ---
     const events = await prisma.xpEvent.findMany({
       where: { user_id: userId },
       orderBy: { created_at: "desc" },
       take: 8,
     });
-
     const recentActivity = (events || []).map((e) => ({
-      event_type: e.type_key ?? e.event_type ?? e.type ?? "XP",
+      event_type: e.type ?? "XP",
       xp_delta: Number(e.xp_delta ?? 0),
       created_at: e.created_at ?? new Date(),
     }));
 
-    // --- Fetch Earned Badges ---
     const earnedBadges = await prisma.userBadge.findMany({
       where: { user_id: userId },
       orderBy: { earned_at: "desc" },
     });
-
-    return res.json({
-      ok: true,
-      // ... other existing fields
-      earnedBadges, // 🏅 Add this to the response
-    });
-
-    // IMPORTANT: Do NOT call prisma.badge.* here (it crashes if model doesn't exist)
 
     return res.json({
       ok: true,
@@ -161,26 +118,14 @@ router.get("/summary", authRequired, async (req, res) => {
       xpToNextLevel,
       streak,
       uniqueDays,
-      nextBadge: null,
-      pendingLessons: [],
+      streakFreezes,
+      earnedBadges,
       recentActivity,
     });
   } catch (err) {
-    console.error("❌ /api/dashboard/summary error:", err);
-    return res
-      .status(500)
-      .json({ ok: false, error: "Failed to load dashboard summary" });
+    console.error("❌ Dashboard Error:", err);
+    res.status(500).json({ ok: false });
   }
-});
-
-router.get("/global-feed", authRequired, async (req, res) => {
-  const recentMasteries = await prisma.xpEvent.findMany({
-    where: { type: { startsWith: "MASTERY_LESSON_" } },
-    take: 5,
-    orderBy: { created_at: "desc" },
-    include: { user: { select: { name: true, avatar_url: true } } },
-  });
-  res.json({ ok: true, feed: recentMasteries });
 });
 
 export default router;

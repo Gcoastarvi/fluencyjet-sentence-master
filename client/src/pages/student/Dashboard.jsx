@@ -538,8 +538,8 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-
-            {/* "My Badges" Component */}
+            
+            {/* 542: Unified "My Badges" Component */}
             <section className="fj-dashboard-section mt-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-black text-slate-900 tracking-tight">
@@ -551,11 +551,11 @@ export default function Dashboard() {
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {summary.earnedBadges?.length > 0 ? (
+                {summary.earnedBadges && summary.earnedBadges.length > 0 ? (
                   summary.earnedBadges.map((badge, i) => (
                     <div
                       key={i}
-                      className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col items-center text-center group hover:border-indigo-200 transition-all"
+                      className="group relative bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col items-center text-center group hover:border-indigo-200 transition-all"
                     >
                       <div className="text-4xl mb-3 transition-transform group-hover:scale-110 duration-300">
                         {badge.badge_name === "Weekly Warrior" ? "🛡️" : "🏅"}
@@ -566,6 +566,14 @@ export default function Dashboard() {
                       <div className="text-[8px] font-bold text-slate-400 mt-1 uppercase">
                         {new Date(badge.earned_at).toLocaleDateString()}
                       </div>
+
+                      {/* 590: Share Button integrated into the main card */}
+                      <button
+                        onClick={() => shareBadge(badge.badge_name)}
+                        className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-600 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest"
+                      >
+                        Share Badge
+                      </button>
                     </div>
                   ))
                 ) : (
@@ -576,25 +584,6 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
-              {summary.earnedBadges.map((badge, i) => (
-                <div
-                  key={i}
-                  className="group relative bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col items-center"
-                >
-                  <div className="text-4xl mb-3">🛡️</div>
-                  <div className="text-[10px] font-black text-slate-900 uppercase">
-                    {badge.badge_name}
-                  </div>
-
-                  {/* Hidden Share Trigger */}
-                  <button
-                    onClick={() => shareBadge(badge.badge_name)}
-                    className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-600 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest"
-                  >
-                    Share Badge
-                  </button>
-                </div>
-              ))}
             </section>
 
             {/* Existing Pending Lessons Card */}

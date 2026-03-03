@@ -503,6 +503,44 @@ router.post("/claim-weekly-bonus", authRequired, async (req, res) => {
   }
 });
 
+router.post("/purchase-streak-freeze", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const price = 200;
+
+    // 1. Get current user XP
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.xpTotal < price) {
+      return res.status(400).json({ ok: false, message: "Not enough XP" });
+    }
+
+    // 2. Atomic Transaction: Subtract XP, Add Freeze, Log Event
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { xpTotal: { decrement: price } },
+      }),
+      prisma.userProgress.update({
+        where: { user_id: userId },
+        data: { streak_freezes: { increment: 1 } },
+      }),
+      prisma.xpEvent.create({
+        data: {
+          user_id: userId,
+          xp_delta: -price,
+          type: "PURCHASE_STREAK_FREEZE",
+          created_at: new Date(),
+        },
+      }),
+    ]);
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Purchase error:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
