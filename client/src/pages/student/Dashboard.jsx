@@ -5,6 +5,7 @@ import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import { getDisplayName } from "@/utils/displayName";
 import { getToken } from "@/utils/tokenStore";
+import { toPng } from "html-to-image";
 
 const LEVELS = [
   { level: 1, xp: 0 },
@@ -163,6 +164,17 @@ export default function Dashboard() {
       console.error("Failed to claim bonus", err);
       setShowMilestoneModal(false);
     }
+  };
+
+  const shareBadge = async (badgeName) => {
+    const node = document.getElementById("badge-share-card");
+    if (!node) return;
+
+    const dataUrl = await toPng(node, { pixelRatio: 2 });
+    const link = document.createElement("a");
+    link.download = `FluencyJet-${badgeName}-Badge.png`;
+    link.href = dataUrl;
+    link.click();
   };
 
   // 156: Unified & Safe Async Effect for Dashboard Data
@@ -564,6 +576,25 @@ export default function Dashboard() {
                   </div>
                 )}
               </div>
+              {summary.earnedBadges.map((badge, i) => (
+                <div
+                  key={i}
+                  className="group relative bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col items-center"
+                >
+                  <div className="text-4xl mb-3">🛡️</div>
+                  <div className="text-[10px] font-black text-slate-900 uppercase">
+                    {badge.badge_name}
+                  </div>
+
+                  {/* Hidden Share Trigger */}
+                  <button
+                    onClick={() => shareBadge(badge.badge_name)}
+                    className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-600 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest"
+                  >
+                    Share Badge
+                  </button>
+                </div>
+              ))}
             </section>
 
             {/* Existing Pending Lessons Card */}
