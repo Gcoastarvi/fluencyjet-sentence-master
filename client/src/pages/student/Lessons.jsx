@@ -408,11 +408,21 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
                   {isUnlocked ? "→" : "🔒"}
                 </div>
               </div>
-              {/* 🎀 Mastery Ribbon Component */}
               {isMastered && <MasteryRibbon />}
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+// 🎀 Mastery Ribbon Component (Placed outside the main Lessons component)
+function MasteryRibbon() {
+  return (
+    <div className="absolute -top-2 -left-2 z-10 animate-pop-in">
+      <div className="relative flex items-center justify-center">
+        <span className="text-3xl drop-shadow-md">🎀</span>
+        <div className="absolute inset-0 bg-emerald-400/20 blur-lg rounded-full" />
       </div>
     </div>
   );

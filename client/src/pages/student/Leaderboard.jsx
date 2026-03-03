@@ -105,6 +105,30 @@ function Leaderboard() {
         </div>
       </header>
 
+      {/* 🏆 Leaderboard Sort Toggle */}
+      <div className="flex justify-center gap-2 mb-8 bg-slate-100 p-1 rounded-2xl w-fit mx-auto">
+        <button
+          onClick={() => setSortBy("xp")}
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            sortBy === "xp"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500"
+          }`}
+        >
+          By XP
+        </button>
+        <button
+          onClick={() => setSortBy("streak")}
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+            sortBy === "streak"
+              ? "bg-white text-slate-900 shadow-sm"
+              : "text-slate-500"
+          }`}
+        >
+          By Streak 🔥
+        </button>
+      </div>
+
       {/* Error banner */}
       {error && (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

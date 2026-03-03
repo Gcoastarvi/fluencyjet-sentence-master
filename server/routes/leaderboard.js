@@ -131,18 +131,40 @@ router.get("/", authRequired, async (req, res) => {
     const allowed = new Set(["today", "weekly", "monthly", "all"]);
     const period = allowed.has(req.query.period) ? req.query.period : "weekly";
 
-    const rows = await aggregateXP(period);
-    const totalLearners = rows.length;
+    // 🚩 Add this: Detect if we are sorting by streak
+    const sortBy = req.query.sortBy === "streak" ? "streak" : "xp";
 
+    let rows;
+    if (sortBy === "streak") {
+      // Fetch users ordered by their current streak
+      const usersWithProgress = await prisma.user.findMany({
+        include: { progress: true },
+        take: 50,
+      });
+
+      rows = usersWithProgress
+        .map((u, index) => ({
+          user_id: u.id,
+          name: u.name,
+          xp: u.progress?.streak || 0, // In "streak mode", 'xp' field represents streak count
+          rank: index + 1,
+        }))
+        .sort((a, b) => b.xp - a.xp);
+    } else {
+      // Existing XP aggregation logic
+      rows = await aggregateXP(period);
+    }
+
+    const totalLearners = rows.length;
     const top = rows.slice(0, 3);
     const meId = req.user.id;
-
     const meRow = rows.find((r) => r.user_id === meId);
+
     const you = meRow
       ? { rank: meRow.rank, xp: meRow.xp, name: meRow.name }
       : { rank: null, xp: 0, name: "You" };
 
-    res.json({ ok: true, period, totalLearners, rows, top, you });
+    res.json({ ok: true, period, sortBy, totalLearners, rows, top, you });
   } catch (err) {
     console.error("Leaderboard error:", err);
     res.status(500).json({ ok: false, message: "Failed to load leaderboard" });

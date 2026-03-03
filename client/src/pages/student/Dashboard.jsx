@@ -166,6 +166,37 @@ export default function Dashboard() {
     }
   };
 
+  // Use Framer Motion for that "Prestige" feel
+  const PromotionModal = ({ league, onComplete }) => {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="text-center p-8 bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-yellow-400 rounded-3xl shadow-[0_0_50px_rgba(250,204,21,0.3)]"
+        >
+          <h2 className="text-4xl font-black text-white mb-4">
+            LEAGUE PROMOTED!
+          </h2>
+          <div
+            className={`avatar-frame-${league.toLowerCase()} mx-auto w-32 h-32 mb-6`}
+          />
+          <p className="text-xl text-slate-300">
+            You've ascended to the{" "}
+            <span className="text-yellow-400 font-bold">{league}</span>{" "}
+            Division.
+          </p>
+          <button
+            onClick={onComplete}
+            className="mt-8 px-8 py-3 bg-yellow-400 text-black font-bold rounded-full hover:scale-105 transition-transform"
+          >
+            COLLECT REWARDS
+          </button>
+        </motion.div>
+      </div>
+    );
+  };
+
   const shareBadge = async (badgeName) => {
     const node = document.getElementById("badge-share-card");
     if (!node) return;
@@ -538,7 +569,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             {/* 542: Unified "My Badges" Component */}
             <section className="fj-dashboard-section mt-8">
               <div className="flex items-center justify-between mb-6">
