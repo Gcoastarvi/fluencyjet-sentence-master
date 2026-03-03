@@ -468,42 +468,37 @@ router.post("/sync-mastery", authRequired, async (req, res) => {
 router.post("/claim-weekly-bonus", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
-    const weekKey = new Date().toISOString().split("T")[0]; // Simple week identifier
+    const weekKey = new Date().toISOString().split("T")[0];
     const bonusType = `WEEKLY_WARRIOR_${weekKey}`;
 
-    // Check if they already claimed it this week to prevent double-dipping
     const existing = await prisma.xpEvent.findUnique({
       where: { user_id_type: { user_id: userId, type: bonusType } },
     });
 
-    if (existing) {
-      return res
-        .status(400)
-        .json({ ok: false, message: "Already claimed this week" });
-    }
-
-    const bonusAmount = 500;
+    if (existing)
+      return res.status(400).json({ ok: false, message: "Already claimed" });
 
     await prisma.$transaction([
-      // 1. Update User Total
       prisma.user.update({
         where: { id: userId },
-        data: { xpTotal: { increment: bonusAmount } },
+        data: { xpTotal: { increment: 500 } },
       }),
-      // 2. Create the Event Log (for Dashboard/Leaderboard sync)
       prisma.xpEvent.create({
+        data: { user_id: userId, xp_delta: 500, type: bonusType },
+      }),
+      // 🏅 NEW: Add the permanent badge to the UserBadge table
+      prisma.userBadge.create({
         data: {
           user_id: userId,
-          xp_delta: bonusAmount,
-          type: bonusType,
-          created_at: new Date(),
+          badge_name: "Weekly Warrior",
+          earned_at: new Date(),
         },
       }),
     ]);
 
-    return res.json({ ok: true, bonusEarned: bonusAmount });
+    return res.json({ ok: true });
   } catch (err) {
-    console.error("❌ Bonus claim failed:", err);
+    console.error("Bonus sync failed:", err);
     return res.status(500).json({ ok: false });
   }
 });

@@ -87,6 +87,8 @@ export default function Dashboard() {
 
   const [globalFeed, setGlobalFeed] = useState([]);
 
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -610,7 +612,7 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* 🏆 Milestone Modal UI - Placed safely at the bottom of the main div */}
+      {/* 🏆 614: Milestone Modal UI */}
       {showMilestoneModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-indigo-950/80 backdrop-blur-xl animate-fade-in">
           <div className="bg-white rounded-[3.5rem] p-10 max-w-md w-full text-center shadow-2xl relative overflow-hidden border-4 border-indigo-100">
