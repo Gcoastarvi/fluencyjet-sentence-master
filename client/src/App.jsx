@@ -151,6 +151,7 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/level-check" element={<LevelCheck />} />
+            <Route path="/upgrade" element={<Upgrade />} />
 
             {/* keep diagnostic as alias → level-check */}
             <Route

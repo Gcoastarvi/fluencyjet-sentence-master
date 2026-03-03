@@ -268,6 +268,35 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
         </button>
       </div>
 
+      {/* 🔥 Daily Streak + 🛡️ Protection Shield */}
+      <div className="flex flex-col items-center mb-8 animate-bounce-subtle">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <span className="text-5xl">🔥</span>
+            <div className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-[12px] font-bold text-white shadow-lg border-2 border-white">
+              {streak || 0}
+            </div>
+          </div>
+
+          {/* 🧊 NEW: Streak Freeze Active Indicator */}
+          {summary.streakFreezes > 0 && (
+            <div
+              className="relative group cursor-help"
+              title="Streak Freeze Active"
+            >
+              <span className="text-4xl">🛡️</span>
+              <div className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-[10px] font-black text-white shadow-md border-2 border-white">
+                {summary.streakFreezes}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-orange-600">
+          Current Progress
+        </div>
+      </div>
+
       {/* 🏆 Navigation to Hall of Fame */}
       <div className="flex justify-center mb-4">
         <button
