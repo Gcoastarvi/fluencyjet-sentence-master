@@ -31,17 +31,21 @@ export default function Upgrade() {
     loadStoreData();
   }, []);
 
-  const handleBuyFreeze = async () => {
-    if (userXp < 200)
-      return alert("Not enough XP! Keep practicing to earn more.");
-    if (!window.confirm("🧊 Spend 200 XP to protect your streak?")) return;
+  const handleBuyBundle = async () => {
+    if (userXp < 500) return alert("You need 500 XP for this special bundle!");
+    if (
+      !window.confirm(
+        "🧊 Special Offer: Get 3 Streak Freezes for 500 XP? (Save 100 XP!)",
+      )
+    )
+      return;
 
     try {
-      const res = await api.post("/quizzes/purchase-streak-freeze");
+      const res = await api.post("/quizzes/purchase-freeze-bundle");
       if (res.ok) {
-        setUserXp((prev) => prev - 200);
-        setFreezes((prev) => prev + 1);
-        alert("Streak Freeze Activated! 🧊 Your streak is now protected.");
+        setUserXp((prev) => prev - 500);
+        setFreezes((prev) => prev + 3);
+        alert("Bundle claimed! Your streak is now ultra-protected. 🛡️");
       }
     } catch (err) {
       alert("Purchase failed. Please try again.");
@@ -108,6 +112,34 @@ export default function Upgrade() {
             >
               200 XP
             </button>
+          </div>
+
+          {/* 🔥 Special Bundle Offer */}
+          <div className="relative mt-10 p-8 rounded-[2.5rem] bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xl overflow-hidden group">
+            <div className="absolute -top-4 -right-4 bg-white/20 px-6 py-2 rotate-12 font-black text-[10px] uppercase tracking-widest">
+              Best Value
+            </div>
+            <div className="relative z-10 flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-black leading-tight">
+                  Warrior Bundle
+                </h3>
+                <p className="text-orange-100 text-xs font-medium mt-1">
+                  3x Streak Freezes · Save 100 XP
+                </p>
+                <div className="flex gap-2 mt-4">
+                  <span className="text-3xl">🧊</span>
+                  <span className="text-3xl">🧊</span>
+                  <span className="text-3xl">🧊</span>
+                </div>
+              </div>
+              <button
+                onClick={handleBuyBundle}
+                className="bg-white text-orange-600 px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-lg"
+              >
+                500 XP
+              </button>
+            </div>
           </div>
 
           {/* Locked Premium Item Placeholder */}

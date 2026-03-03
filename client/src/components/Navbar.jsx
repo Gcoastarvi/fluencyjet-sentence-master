@@ -72,7 +72,7 @@ export default function Navbar() {
                 <Link className="text-sm sm:text-base" to="/leaderboard">
                   Leaderboard
                 </Link>
-                // 65: Updated Upgrade Link
+
                 <Link
                   to="/upgrade"
                   className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"

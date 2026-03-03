@@ -541,6 +541,46 @@ router.post("/purchase-streak-freeze", authRequired, async (req, res) => {
   }
 });
 
+// 📦 POST /api/quizzes/purchase-freeze-bundle
+router.post("/purchase-freeze-bundle", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const bundlePrice = 500; // Discounted price (Save 100 XP)
+    const bundleAmount = 3;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.xpTotal < bundlePrice) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Insufficient XP for bundle" });
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { xpTotal: { decrement: bundlePrice } },
+      }),
+      prisma.userProgress.update({
+        where: { user_id: userId },
+        data: { streak_freezes: { increment: bundleAmount } },
+      }),
+      prisma.xpEvent.create({
+        data: {
+          user_id: userId,
+          xp_delta: -bundlePrice,
+          type: "BUNDLE_PURCHASE_3X_FREEZE",
+          created_at: new Date(),
+        },
+      }),
+    ]);
+
+    return res.json({ ok: true, message: "Bundle added! 🧊🧊🧊" });
+  } catch (err) {
+    console.error("Bundle purchase error:", err);
+    res.status(500).json({ ok: false });
+  }
+});
+
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */
