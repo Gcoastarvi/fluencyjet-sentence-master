@@ -7,7 +7,9 @@ export default function Upgrade() {
   const [userXp, setUserXp] = useState(0);
   const [freezes, setFreezes] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
 
+  // Update your existing useEffect to fetch history
   useEffect(() => {
     async function loadStoreData() {
       try {
@@ -15,11 +17,15 @@ export default function Upgrade() {
         if (res.ok) {
           setUserXp(res.totalXP || 0);
           setFreezes(res.streakFreezes || 0);
+
+          // Filter recentActivity for purchases (negative XP)
+          const purchases = (res.recentActivity || []).filter(
+            (item) => item.xp_delta < 0,
+          );
+          setHistory(purchases);
         }
       } catch (err) {
-        console.error("Store load failed:", err);
-      } finally {
-        setLoading(false);
+        console.error(err);
       }
     }
     loadStoreData();
@@ -122,6 +128,36 @@ export default function Upgrade() {
             <div className="bg-slate-200 text-slate-400 px-6 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest">
               Locked
             </div>
+          </div>
+        </div>
+
+        <div className="mt-12 pt-8 border-t border-slate-200">
+          <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">
+            Purchase History
+          </h2>
+          <div className="space-y-3">
+            {history.length > 0 ? (
+              history.map((item, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between p-4 bg-slate-100 rounded-2xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">📦</span>
+                    <span className="text-xs font-bold text-slate-700">
+                      {item.event_type}
+                    </span>
+                  </div>
+                  <span className="text-xs font-black text-red-500">
+                    {item.xp_delta} XP
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs italic text-slate-400">
+                No transactions yet.
+              </p>
+            )}
           </div>
         </div>
 

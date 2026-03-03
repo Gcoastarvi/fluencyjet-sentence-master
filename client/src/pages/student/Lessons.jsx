@@ -57,6 +57,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
   const [error, setError] = useState("");
 
   const [streak, setStreak] = useState(0);
+  const [summary, setSummary] = useState({ streakFreezes: 0 });
   const [masteryNote, setMasteryNote] = useState(null);
 
   const getTileProgress = (dayNumber) => {
@@ -129,7 +130,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
       alive = false;
     };
   }, []);
-
+  
   useEffect(() => {
     async function fetchStreak() {
       try {
@@ -137,9 +138,10 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
         const data = res?.data ?? res;
         if (data?.ok) {
           setStreak(data.streak || 0);
+          setSummary(data); // 👈 Add this line to store the full data
         }
       } catch (err) {
-        console.error("Failed to fetch streak for Lessons page:", err);
+        console.error("Failed to fetch summary for Lessons page:", err);
       }
     }
     fetchStreak();
