@@ -130,7 +130,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
       alive = false;
     };
   }, []);
-  
+
   useEffect(() => {
     async function fetchStreak() {
       try {
@@ -375,9 +375,6 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
                   : "border-slate-100 bg-white hover:border-slate-200 hover:shadow-md"
               }`}
             >
-              {/* 🎀 Mastery Ribbon Component */}
-              {isMastered && <MasteryRibbon />}
-
               {/* Status Badges (Lock & Progress) */}
               {!isUnlocked ? (
                 <div className="absolute right-4 top-4 rounded-full bg-slate-900 px-3 py-1 text-[10px] font-bold text-white uppercase tracking-widest">
@@ -411,6 +408,8 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
                   {isUnlocked ? "→" : "🔒"}
                 </div>
               </div>
+              {/* 🎀 Mastery Ribbon Component */}
+              {isMastered && <MasteryRibbon />}
             </div>
           );
         })}
