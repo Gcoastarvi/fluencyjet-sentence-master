@@ -135,6 +135,18 @@ router.get("/summary", authRequired, async (req, res) => {
       created_at: e.created_at ?? new Date(),
     }));
 
+    // --- Fetch Earned Badges ---
+    const earnedBadges = await prisma.userBadge.findMany({
+      where: { user_id: userId },
+      orderBy: { earned_at: "desc" },
+    });
+
+    return res.json({
+      ok: true,
+      // ... other existing fields
+      earnedBadges, // 🏅 Add this to the response
+    });
+
     // IMPORTANT: Do NOT call prisma.badge.* here (it crashes if model doesn't exist)
 
     return res.json({

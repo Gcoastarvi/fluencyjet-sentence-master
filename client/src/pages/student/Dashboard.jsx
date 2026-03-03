@@ -100,6 +100,7 @@ export default function Dashboard() {
     xpToNextLevel: 0,
     streak: 0,
     nextBadge: null,
+    earnedBadges: [],
     pendingLessons: [],
     recentActivity: [],
   });
@@ -525,6 +526,45 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+
+            {/* "My Badges" Component */}
+            <section className="fj-dashboard-section mt-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                  My Badges
+                </h2>
+                <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                  {summary.earnedBadges?.length || 0} Unlocked
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {summary.earnedBadges?.length > 0 ? (
+                  summary.earnedBadges.map((badge, i) => (
+                    <div
+                      key={i}
+                      className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col items-center text-center group hover:border-indigo-200 transition-all"
+                    >
+                      <div className="text-4xl mb-3 transition-transform group-hover:scale-110 duration-300">
+                        {badge.badge_name === "Weekly Warrior" ? "🛡️" : "🏅"}
+                      </div>
+                      <div className="text-[10px] font-black text-slate-900 uppercase tracking-tighter leading-tight">
+                        {badge.badge_name}
+                      </div>
+                      <div className="text-[8px] font-bold text-slate-400 mt-1 uppercase">
+                        {new Date(badge.earned_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full bg-slate-50 rounded-[2rem] p-8 text-center border-2 border-dashed border-slate-200">
+                    <p className="text-sm font-medium text-slate-500">
+                      No badges yet. Complete a weekly goal to earn your first!
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
 
             {/* Existing Pending Lessons Card */}
             <div className="fj-card">
