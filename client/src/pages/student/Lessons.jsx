@@ -6,8 +6,6 @@ import { api } from "@/api/apiClient";
 // --- local progress helpers (same storage keys used by SentencePractice) ---
 const progressKey = (lid, mode) => `fj_progress:${lid}:${mode}`;
 
-const [streak, setStreak] = useState(0);
-
 function readProgress(lid, mode) {
   try {
     return JSON.parse(localStorage.getItem(progressKey(lid, mode)) || "null");
@@ -58,6 +56,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [streak, setStreak] = useState(0);
   const [masteryNote, setMasteryNote] = useState(null);
 
   const getTileProgress = (dayNumber) => {
