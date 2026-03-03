@@ -36,6 +36,38 @@ async function sumXpForRange({ userId, gte, lt }) {
   return Number(agg?._sum?.xp_delta ?? 0);
 }
 
+// Logical pseudo-code for your streak calculation
+async function calculateStreak(userId) {
+  const progress = await prisma.userProgress.findUnique({
+    where: { user_id: userId },
+  });
+  const lastActive = new Date(progress.updated_at);
+  const today = new Date();
+
+  // Difference in days
+  const diffTime = Math.abs(today - lastActive);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays > 1) {
+    // 🧊 CHECK FOR FREEZE
+    if (progress.streak_freezes > 0) {
+      await prisma.userProgress.update({
+        where: { user_id: userId },
+        data: {
+          streak_freezes: { decrement: 1 },
+          updated_at: new Date(), // Reset the "last active" clock to today
+        },
+      });
+      console.log("Streak protected by Freeze! 🧊");
+      return progress.streak;
+    } else {
+      // No freeze? Reset to 0
+      return 0;
+    }
+  }
+  return progress.streak;
+}
+
 router.get("/summary", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;

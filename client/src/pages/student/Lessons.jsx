@@ -6,6 +6,8 @@ import { api } from "@/api/apiClient";
 // --- local progress helpers (same storage keys used by SentencePractice) ---
 const progressKey = (lid, mode) => `fj_progress:${lid}:${mode}`;
 
+const [streak, setStreak] = useState(0);
+
 function readProgress(lid, mode) {
   try {
     return JSON.parse(localStorage.getItem(progressKey(lid, mode)) || "null");
@@ -128,6 +130,21 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
       alive = false;
     };
   }, []);
+
+  useEffect(() => {
+    async function fetchStreak() {
+      try {
+        const res = await api.get("/dashboard/summary");
+        const data = res?.data ?? res;
+        if (data?.ok) {
+          setStreak(data.streak || 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch streak for Lessons page:", err);
+      }
+    }
+    fetchStreak();
+  }, [api]);
 
   const orderedLessons = useMemo(() => {
     const arr = Array.isArray(lessons) ? [...lessons] : [];
