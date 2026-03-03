@@ -461,6 +461,53 @@ router.post("/sync-mastery", authRequired, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/quizzes/claim-weekly-bonus
+ * Awards 500 XP for hitting the 7/7 mastery milestone.
+ */
+router.post("/claim-weekly-bonus", authRequired, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const weekKey = new Date().toISOString().split("T")[0]; // Simple week identifier
+    const bonusType = `WEEKLY_WARRIOR_${weekKey}`;
+
+    // Check if they already claimed it this week to prevent double-dipping
+    const existing = await prisma.xpEvent.findUnique({
+      where: { user_id_type: { user_id: userId, type: bonusType } },
+    });
+
+    if (existing) {
+      return res
+        .status(400)
+        .json({ ok: false, message: "Already claimed this week" });
+    }
+
+    const bonusAmount = 500;
+
+    await prisma.$transaction([
+      // 1. Update User Total
+      prisma.user.update({
+        where: { id: userId },
+        data: { xpTotal: { increment: bonusAmount } },
+      }),
+      // 2. Create the Event Log (for Dashboard/Leaderboard sync)
+      prisma.xpEvent.create({
+        data: {
+          user_id: userId,
+          xp_delta: bonusAmount,
+          type: bonusType,
+          created_at: new Date(),
+        },
+      }),
+    ]);
+
+    return res.json({ ok: true, bonusEarned: bonusAmount });
+  } catch (err) {
+    console.error("❌ Bonus claim failed:", err);
+    return res.status(500).json({ ok: false });
+  }
+});
+
 /* -------------------------------------------------------------------------- */
 /*                 GET /api/quizzes/by-lesson/:lessonId                       */
 /* -------------------------------------------------------------------------- */

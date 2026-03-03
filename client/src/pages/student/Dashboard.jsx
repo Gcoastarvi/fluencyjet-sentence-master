@@ -145,6 +145,23 @@ export default function Dashboard() {
     }
   }, [api]);
 
+  const handleClaimBonusXP = async () => {
+    try {
+      const res = await api.post("/quizzes/claim-weekly-bonus");
+      if (res.ok) {
+        // Refresh the summary to show the new totalXP and weekly total
+        const update = await api.get("/dashboard/summary");
+        if (update.ok) setSummary((prev) => ({ ...prev, ...update }));
+
+        setShowMilestoneModal(false);
+        alert("500 Bonus XP Added! 🚀");
+      }
+    } catch (err) {
+      console.error("Failed to claim bonus", err);
+      setShowMilestoneModal(false);
+    }
+  };
+
   // 156: Unified & Safe Async Effect for Dashboard Data
   useEffect(() => {
     let isMounted = true;
@@ -296,6 +313,37 @@ export default function Dashboard() {
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [bootstrap]);
+
+  useEffect(() => {
+    // 🏆 Trigger 7/7 Mastery Milestone
+    if (
+      summary.uniqueDays === 7 &&
+      !localStorage.getItem("fj_week_celebrated")
+    ) {
+      // 1. Grand Confetti
+      const duration = 5 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: Math.random(), y: Math.random() - 0.2 },
+        });
+      }, 250);
+
+      // 2. Set a flag so it only happens once per week
+      localStorage.setItem("fj_week_celebrated", "true");
+
+      // 3. Optional: Open a "Milestone" Modal
+      setShowMilestoneModal(true);
+    }
+  }, [summary.uniqueDays]);
 
   return (
     <div className="fj-dashboard">
@@ -524,7 +572,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Recent Activity */}
+          {/* 575: Recent Activity Section */}
           <section className="fj-dashboard-section">
             <div className="fj-card">
               <h2 className="fj-section-title">Recent Activity</h2>
@@ -560,6 +608,37 @@ export default function Dashboard() {
             </div>
           </section>
         </>
+      )}
+
+      {/* 🏆 Milestone Modal UI - Placed safely at the bottom of the main div */}
+      {showMilestoneModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-indigo-950/80 backdrop-blur-xl animate-fade-in">
+          <div className="bg-white rounded-[3.5rem] p-10 max-w-md w-full text-center shadow-2xl relative overflow-hidden border-4 border-indigo-100">
+            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+              ✨
+            </div>
+            <div className="text-7xl mb-6 scale-110">👑</div>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter leading-tight">
+              Perfect Week!
+            </h2>
+            <p className="text-slate-500 mt-4 text-sm font-medium leading-relaxed">
+              You've mastered 7 days in a row. Your discipline is unmatched!
+              You've earned the{" "}
+              <span className="text-indigo-600 font-bold">
+                "Weekly Warrior"
+              </span>{" "}
+              status.
+            </p>
+            <div className="mt-10">
+              <button
+                onClick={handleClaimBonusXP}
+                className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95"
+              >
+                Collect 500 Bonus XP
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
