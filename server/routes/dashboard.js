@@ -108,13 +108,22 @@ router.get("/summary", authRequired, async (req, res) => {
     });
     const monthlyXP = await sumXpForRange({ userId, gte: monthStart });
 
-    const weeklyEvents = await prisma.xpEvent.findMany({
-      where: { user_id: userId, created_at: { gte: weekStart } },
+    // --- Updated Weekly Goal Math (Mastery-Only) ---
+    const weeklyMasteryEvents = await prisma.xpEvent.findMany({
+      where: {
+        user_id: userId,
+        created_at: { gte: weekStart },
+        xp_delta: 150, // 🎯 Only count Mastery sessions
+      },
       select: { created_at: true },
     });
+
+    // Count unique days where Mastery was achieved
     const uniqueDays = new Set(
-      weeklyEvents.map((e) => e.created_at.toDateString()),
+      weeklyMasteryEvents.map((e) => e.created_at.toDateString()),
     ).size;
+
+    // Update your response object to include this new 'uniqueDays' count
 
     const levelSize = 1000;
     const level = Math.floor(totalXP / levelSize) + 1;

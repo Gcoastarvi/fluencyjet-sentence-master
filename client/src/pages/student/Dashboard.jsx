@@ -7,6 +7,8 @@ import { getDisplayName } from "@/utils/displayName";
 import { getToken } from "@/utils/tokenStore";
 import { toPng } from "html-to-image";
 
+import AvatarFrame from "../../components/student/AvatarFrame";
+
 const LEVELS = [
   { level: 1, xp: 0 },
   { level: 2, xp: 1000 },
