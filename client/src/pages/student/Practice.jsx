@@ -182,16 +182,17 @@ function Practice() {
       if (!token) return;
 
       if (earnedXP > 0) {
-        await api.post("/xp/award", {
-          amount: earnedXP,
-          event: "QUIZ_COMPLETED",
-          meta: {
+        // client/src/pages/student/Practice.jsx (Inside handleFinishQuiz)
+
+        if (earnedXP > 0) {
+          // 🚩 Change the endpoint and the payload structure
+          await api.post("/quizzes/sync-mastery", {
             lessonId: Number(lessonId),
-            totalQuestions,
-            correctCount: finalCorrectCount,
-            mode: "typing",
-          },
-        });
+            level: "BEGINNER", // or pull from your state
+            xpDelta: earnedXP,
+            sessionType: "INSTANT_ACCURACY", // 🎯 Triggers the Daily Mission
+          });
+        }
       }
     } catch (err) {
       console.error("Failed to award XP:", err);

@@ -413,30 +413,41 @@ router.get("/hall-of-fame", authRequired, async (req, res) => {
  * POST /api/quizzes/sync-mastery
  * Permanently records 100% mastery for a specific lesson.
  */
+// server/routes/quizzes.js (Lines 416-462)
+
 router.post("/sync-mastery", authRequired, async (req, res) => {
   try {
-    const { lessonId, level, xpDelta = 150 } = req.body;
+    const {
+      lessonId,
+      level,
+      xpDelta = 150,
+      sessionType = "INSTANT_ACCURACY",
+    } = req.body;
     const userId = req.user.id;
 
     await prisma.$transaction([
-      // 1. Update total XP in User table
+      // 1. Update total XP in User table (Stops stagnation)
       prisma.user.update({
         where: { id: userId },
         data: { xpTotal: { increment: xpDelta } },
       }),
-      // 2. Log the XP Event (This restores Dashboard/Leaderboard)
+      // 2. Log the XP Event (Crucial for Dashboard 0/7 and Mission tracking)
       prisma.xpEvent.create({
         data: {
           user_id: userId,
           xp_delta: xpDelta,
-          type: `MASTERY_LESSON_${lessonId}`,
+          type: sessionType, // 🎯 Standardized to trigger missions/goals
           created_at: new Date(),
         },
       }),
-      // 3. Update lesson completion
+      // 3. Update lesson completion status
       prisma.userDayProgress.upsert({
         where: {
-          userId_level_dayNumber: { userId, level, dayNumber: lessonId },
+          userId_level_dayNumber: {
+            userId,
+            level: level || "BEGINNER",
+            dayNumber: Number(lessonId),
+          },
         },
         update: {
           completed: true,
@@ -445,8 +456,8 @@ router.post("/sync-mastery", authRequired, async (req, res) => {
         },
         create: {
           userId,
-          level,
-          dayNumber: lessonId,
+          level: level || "BEGINNER",
+          dayNumber: Number(lessonId),
           completed: true,
           xpEarned: xpDelta,
           completedAt: new Date(),
