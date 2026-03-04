@@ -230,14 +230,11 @@ export default function Dashboard() {
 
     async function loadAllDashboardData() {
       try {
-        // Fetch everything in parallel for speed
-        const [summaryRes, feedRes] = await Promise.all([
-          api.get("/dashboard/summary"),
-        ]);
+        // 🚀 Single call to summary (which includes activity feed now)
+        const summaryRes = await api.get("/dashboard/summary");
 
         if (!isMounted) return;
 
-        // Handle Summary Data
         const sData = summaryRes?.data ?? summaryRes;
         if (sData) {
           setSummary((prev) => ({
@@ -245,12 +242,11 @@ export default function Dashboard() {
             ...sData,
             uniqueDays: sData.uniqueDays || 0,
           }));
-        }
 
-        // Handle Global Feed Data
-        const fData = feedRes?.data ?? feedRes;
-        if (fData?.feed) {
-          setGlobalFeed(fData.feed);
+          // 🎯 Handle Global Feed Data from the same summary object
+          if (sData.recentActivity) {
+            setGlobalFeed(sData.recentActivity);
+          }
         }
       } catch (err) {
         console.error("Dashboard Sync Error:", err);

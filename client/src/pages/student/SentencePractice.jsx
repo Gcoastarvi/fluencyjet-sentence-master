@@ -921,11 +921,16 @@ export default function SentencePractice() {
           isCorrect === undefined ? event === "exercise_correct" : !!isCorrect,
       };
 
-      // client/src/pages/student/SentencePractice.jsx
-      const res = await api.post("/progress/update", {
-        ...payload,
-        sessionType: "INSTANT_ACCURACY", // 🎯 This triggers the Daily Mission
-      });
+      const res = await api.post("/progress/update", payload);
+      const data = res?.data ?? res;
+
+      if (!data || data.ok !== true) {
+        console.error("[XP] /progress/update not ok", {
+          payload,
+          response: data,
+        });
+        return { ok: false, awarded: 0, data };
+      }
 
       const serverAwarded =
         Number(
@@ -950,7 +955,7 @@ export default function SentencePractice() {
         questionId,
       });
     }
-  }
+  } // <--- 🎯 This was the missing closing brace for awardXPEvent
 
   async function awardCompletionBonus(mode) {
     return awardXPEvent({
