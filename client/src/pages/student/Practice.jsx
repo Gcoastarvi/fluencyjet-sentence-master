@@ -177,25 +177,25 @@ function Practice() {
     setTimeout(() => setShowConfetti(false), 2500);
 
     // Award XP to backend
+    // 🚩 AWARD XP TO BACKEND (Corrected for Sync-Mastery)
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
 
       if (earnedXP > 0) {
-        // client/src/pages/student/Practice.jsx (Inside handleFinishQuiz)
+        // Use the specific sync-mastery route to trigger Dashboard & Missions
+        await api.post("/quizzes/sync-mastery", {
+          lessonId: Number(lessonId),
+          level: "BEGINNER",
+          xpDelta: earnedXP,
+          sessionType: "INSTANT_ACCURACY", // 🎯 Triggers Daily Mission progress
+        });
 
-        if (earnedXP > 0) {
-          // 🚩 Change the endpoint and the payload structure
-          await api.post("/quizzes/sync-mastery", {
-            lessonId: Number(lessonId),
-            level: "BEGINNER", // or pull from your state
-            xpDelta: earnedXP,
-            sessionType: "INSTANT_ACCURACY", // 🎯 Triggers the Daily Mission
-          });
-        }
+        // Force a small delay to ensure DB transaction finishes before navigation
+        setTimeout(() => navigate("/dashboard"), 500);
       }
     } catch (err) {
-      console.error("Failed to award XP:", err);
+      console.error("❌ Failed to sync Mastery XP:", err);
     }
   };
 
