@@ -73,6 +73,24 @@ function Leaderboard() {
       {/* Page title + subtitle */}
       <header className="mb-6 pt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
+          {/* 🎖️ Division Header */}
+          <div className="text-center mb-10 animate-fade-in">
+            <div className="inline-block relative">
+              <div className="text-6xl mb-2">
+                {league === "BRONZE" && "🥉"}
+                {league === "SILVER" && "🥈"}
+                {league === "GOLD" && "🥇"}
+                {league === "DIAMOND" && "💎"}
+              </div>
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-[0.2em] shadow-xl">
+                {league} LEAGUE
+              </div>
+            </div>
+            <p className="text-slate-400 text-[11px] font-bold mt-6 uppercase tracking-widest">
+              Top 3 players promote to{" "}
+              {league === "BRONZE" ? "SILVER" : "the next tier"} at end of week
+            </p>
+          </div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
             FluencyJet Leaderboard
           </h1>

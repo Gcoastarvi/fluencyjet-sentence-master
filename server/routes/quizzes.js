@@ -541,6 +541,48 @@ router.post("/purchase-streak-freeze", authRequired, async (req, res) => {
   }
 });
 
+// 🧊 Individual Purchase
+router.post("/purchase-streak-freeze", authRequired, async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (user.xpTotal < 200)
+    return res.status(400).json({ ok: false, message: "Need 200 XP" });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: req.user.id },
+      data: { xpTotal: { decrement: 200 } },
+    }),
+    prisma.userProgress.update({
+      where: { user_id: req.user.id },
+      data: { streak_freezes: { increment: 1 } },
+    }),
+    prisma.xpEvent.create({
+      data: { user_id: req.user.id, xp_delta: -200, type: "PURCHASE_FREEZE" },
+    }),
+  ]);
+  res.json({ ok: true });
+});
+
+// 📦 Bulk Purchase (3 for 500 XP)
+router.post("/purchase-freeze-bundle", authRequired, async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+  if (user.xpTotal < 500)
+    return res.status(400).json({ ok: false, message: "Need 500 XP" });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: req.user.id },
+      data: { xpTotal: { decrement: 500 } },
+    }),
+    prisma.userProgress.update({
+      where: { user_id: req.user.id },
+      data: { streak_freezes: { increment: 3 } },
+    }),
+    prisma.xpEvent.create({
+      data: { user_id: req.user.id, xp_delta: -500, type: "BUNDLE_FREEZE" },
+    }),
+  ]);
+  res.json({ ok: true });
+});
+
 // 📦 POST /api/quizzes/purchase-freeze-bundle
 router.post("/purchase-freeze-bundle", authRequired, async (req, res) => {
   try {

@@ -393,19 +393,32 @@ export default function Dashboard() {
 
   return (
     <div className="fj-dashboard">
-      <header className="fj-dashboard-header">
-        <div>
-          <h1 className="fj-title">Your Dashboard</h1>
-          <p className="fj-subtitle">
-            Welcome back, <strong>{userName}</strong>
+      {/* 396: Refined Header with Avatar Frame */}
+      <header className="flex items-center gap-6 mb-8 pt-10">
+        <AvatarFrame
+          src={auth?.user?.avatar_url}
+          league={summary.league || "BRONZE"}
+          size="lg"
+        />
+        <div className="flex-1">
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] leading-none mb-1">
+            Your Dashboard
           </p>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">
+            Welcome back, <span className="text-indigo-600">{userName}</span>
+          </h1>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500 uppercase tracking-tighter">
+              {summary.league || "BRONZE"} Division
+            </span>
+          </div>
         </div>
 
         {DEV_ONLY && (
           <button
             type="button"
             onClick={copyJwtToClipboard}
-            className="ml-auto px-3 py-1 text-xs rounded bg-slate-900 text-white"
+            className="px-3 py-1 text-xs rounded bg-slate-900 text-white self-start transition-opacity hover:opacity-80"
             title="Dev-only: copy JWT"
           >
             Copy JWT

@@ -80,6 +80,7 @@ model UserProgress {
   xp              Int      @default(0)
   streak          Int      @default(0)
   streak_freezes  Int      @default(0) // 🧊 Add this line
+  league          String   @default("BRONZE") // 🥉 Options: BRONZE, SILVER, GOLD, DIAMOND
   updated_at      DateTime @default(now())
   user            User     @relation(fields: [user_id], references: [id])
 }
