@@ -415,6 +415,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
       </div>
     </div>
   );
+}
 // 🎀 Mastery Ribbon Component (Placed outside the main Lessons component)
 function MasteryRibbon() {
   return (
