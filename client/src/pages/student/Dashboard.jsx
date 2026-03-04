@@ -233,7 +233,6 @@ export default function Dashboard() {
         // Fetch everything in parallel for speed
         const [summaryRes, feedRes] = await Promise.all([
           api.get("/dashboard/summary"),
-          api.get("/dashboard/global-feed"),
         ]);
 
         if (!isMounted) return;

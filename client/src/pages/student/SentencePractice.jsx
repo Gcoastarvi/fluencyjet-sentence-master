@@ -921,16 +921,11 @@ export default function SentencePractice() {
           isCorrect === undefined ? event === "exercise_correct" : !!isCorrect,
       };
 
-      const res = await api.post("/progress/update", payload);
-      const data = res?.data ?? res;
-
-      if (!data || data.ok !== true) {
-        console.error("[XP] /progress/update not ok", {
-          payload,
-          response: data,
-        });
-        return { ok: false, awarded: 0, data };
-      }
+      // client/src/pages/student/SentencePractice.jsx
+      const res = await api.post("/progress/update", {
+        ...payload,
+        sessionType: "INSTANT_ACCURACY", // 🎯 This triggers the Daily Mission
+      });
 
       const serverAwarded =
         Number(

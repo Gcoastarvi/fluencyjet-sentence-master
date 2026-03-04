@@ -87,8 +87,7 @@ async function ensureProgress(tx, userId) {
     create: {
       user_id: userId,
       xp: 0,
-      streak: 0,
-      badges: [],
+      streak: 0,      
       // updated_at has default(now()) in schema, so we can omit it
     },
   });
@@ -150,7 +149,7 @@ router.get("/me", authRequired, async (req, res) => {
     const progress = await prisma.userProgress.upsert({
       where: { user_id: userId },
       update: {},
-      create: { user_id: userId, xp: 0, streak: 0, badges: [] },
+      create: { user_id: userId, xp: 0, streak: 0 },
     });
 
     const weeklyTop = await prisma.userWeeklyTotals.findMany({
@@ -306,8 +305,7 @@ router.post("/save", authRequired, async (req, res) => {
         create: {
           user_id: userId,
           xp: amount,
-          streak: 0,
-          badges: [],
+          streak: 0,          
           updated_at: new Date(),
         },
         update: {
@@ -495,7 +493,6 @@ router.post("/update", authRequired, async (req, res) => {
 
       // ✅ Store ONLY a short hash in DB (prevents Prisma P2000 "too long")
       const eventKey = hashKey("xp", rawKey, 50);
-
 
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
