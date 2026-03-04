@@ -118,6 +118,33 @@ router.get("/summary", authRequired, async (req, res) => {
       select: { created_at: true },
     });
 
+    // Inside router.get("/summary", ...)
+    const dailyMissions = await prisma.xpEvent.findMany({
+      where: {
+        user_id: userId,
+        created_at: { gte: todayStart },
+        type: "INSTANT_ACCURACY", // Ensure this matches your session-end type
+      },
+    });
+
+    const missionProgress = dailyMissions.length; // e.g., 2 out of 3
+    const missionGoal = 3;
+    const missionXpReward = 50;
+    const missionCompleted = missionProgress >= missionGoal;
+
+    // Inside your mission completion logic on the backend
+    if (missionProgress === 3) {
+      const currentMissionStreak = Number(progress?.mission_streak || 0); // 🚩 Add this line
+      await prisma.userProgress.update({
+        where: { user_id: userId },
+        data: {
+          mission_streak: { increment: 1 },
+          // If they hit 5 days, add the 250 XP bonus
+          xp: { increment: (currentMissionStreak + 1) % 5 === 0 ? 250 : 0 },
+        },
+      });
+    }
+
     // Count unique days where Mastery was achieved
     const uniqueDays = new Set(
       weeklyMasteryEvents.map((e) => e.created_at.toDateString()),

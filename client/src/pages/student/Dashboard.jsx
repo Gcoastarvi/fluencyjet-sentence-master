@@ -210,9 +210,23 @@ export default function Dashboard() {
     link.click();
   };
 
-  // 156: Unified & Safe Async Effect for Dashboard Data
+  // Unified & Safe Async Effect for Dashboard Data
   useEffect(() => {
     let isMounted = true;
+
+    // 🔄 Reset Mission Celebration for the New Day
+    const lastCelebratedDate = localStorage.getItem(
+      "fj_mission_celebrated_date",
+    );
+    const todayString = new Date().toDateString();
+
+    if (lastCelebratedDate !== todayString) {
+      localStorage.removeItem("fj_mission_celebrated");
+      localStorage.setItem("fj_mission_celebrated_date", todayString);
+    }
+
+    // Existing call
+    loadSummary();
 
     async function loadAllDashboardData() {
       try {
@@ -267,6 +281,15 @@ export default function Dashboard() {
       if (!data || data.ok !== true) {
         console.error("Failed to load dashboard summary:", data);
         return;
+      }
+
+      // Inside loadSummary try/catch block
+      if (
+        data.missionProgress === 3 &&
+        !localStorage.getItem("fj_mission_celebrated")
+      ) {
+        triggerConfetti(); // Ensure you have a confetti helper function
+        localStorage.setItem("fj_mission_celebrated", "true");
       }
 
       const totalXP = Number(data.totalXP || 0);
@@ -526,6 +549,63 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Daily Mission Card inserted between Weekly Goal and Activity Feed */}
+            <section className="fj-dashboard-section mb-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden">
+              <div className="relative z-10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-400">
+                      Daily Mission
+                    </h3>
+                    {/* 🔥 Mission Streak Sidebar/Badge */}
+                    <span className="flex items-center gap-1 bg-orange-500/20 text-orange-400 text-[8px] font-black px-2 py-0.5 rounded-full border border-orange-500/30">
+                      {summary.missionStreak || 0} DAY STREAK
+                    </span>
+                  </div>
+                  {summary.missionCompleted ? (
+                    <span className="bg-emerald-500 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">
+                      Claimed
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-slate-400">
+                      +{summary.missionXpReward || 50} XP
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm font-bold mb-4">
+                  Complete 3 Instant Accuracy sessions
+                </p>
+
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-2">
+                  <div
+                    className="h-full bg-indigo-500 transition-all duration-1000"
+                    style={{
+                      width: `${((summary.missionProgress || 0) / (summary.missionGoal || 3)) * 100}%`,
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase">
+                  <span>
+                    {summary.missionProgress || 0} / {summary.missionGoal || 3}{" "}
+                    Sessions
+                  </span>
+                  <span>
+                    {Math.round(
+                      ((summary.missionProgress || 0) /
+                        (summary.missionGoal || 3)) *
+                        100,
+                    )}
+                    %
+                  </span>
+                </div>
+              </div>
+              <div className="absolute -right-2 -bottom-2 text-6xl opacity-10 rotate-12">
+                🎯
+              </div>
+            </section>
 
             {/* ⚡ Column 2: Global Activity Feed */}
             <div className="rounded-[2.5rem] bg-slate-900 p-8 text-white shadow-xl mb-4 relative overflow-hidden group">
