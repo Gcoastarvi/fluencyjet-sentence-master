@@ -31,6 +31,9 @@ function computeLevel(totalXP = 0) {
   return current;
 }
 
+const [showPromotionModal, setShowPromotionModal] = useState(false);
+const [milestoneType, setMilestoneType] = useState(""); // "FIRST_LESSON" or "BRONZE_LEAGUE"
+
 function xpToNextLevel(totalXP = 0) {
   const current = computeLevel(totalXP);
   const next = LEVELS.find((x) => x.level === current + 1);
@@ -230,9 +233,9 @@ export default function Dashboard() {
 
     async function loadAllDashboardData() {
       try {
-        // 🚀 Single call to summary (which includes activity feed now)
-        const res = await api.get("/dashboard/summary");
-        const sData = res?.data ?? res;
+        // 🚀 Single consolidated fetch (XP + Activity + Missions)
+        const summaryRes = await api.get("/dashboard/summary");
+        const sData = summaryRes?.data ?? summaryRes;
 
         if (!isMounted) return;
 
@@ -242,6 +245,23 @@ export default function Dashboard() {
             ...sData,
             uniqueDays: sData.uniqueDays || 0,
           }));
+
+          // 🏆 Achievement & Promotion Triggers
+          if (
+            sData.xpTotal >= 150 &&
+            !localStorage.getItem("fj_first_lesson_celebrated")
+          ) {
+            setMilestoneType("FIRST_LESSON");
+            setShowPromotionModal(true);
+            localStorage.setItem("fj_first_lesson_celebrated", "true");
+          } else if (
+            sData.xpTotal >= 500 &&
+            !localStorage.getItem("fj_bronze_league_celebrated")
+          ) {
+            setMilestoneType("BRONZE_LEAGUE");
+            setShowPromotionModal(true);
+            localStorage.setItem("fj_bronze_league_celebrated", "true");
+          }
 
           // 🎯 Handle Global Feed Data from the same summary object
           if (sData.recentActivity) {
@@ -601,6 +621,35 @@ export default function Dashboard() {
                 🎯
               </div>
             </section>
+
+            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm mt-6">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
+                League Standing
+              </h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-xl">
+                    🥉
+                  </div>
+                  <div>
+                    <p className="text-sm font-black text-slate-900">
+                      Bronze League
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase">
+                      {summary.xpTotal < 500
+                        ? `${500 - summary.xpTotal} XP to promote`
+                        : "In Promotion Zone!"}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-black text-indigo-600">Rank #1</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">
+                    Top 10%
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* ⚡ Column 2: Global Activity Feed */}
             <div className="rounded-[2.5rem] bg-slate-900 p-8 text-white shadow-xl mb-4 relative overflow-hidden group">
