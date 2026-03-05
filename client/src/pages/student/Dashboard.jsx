@@ -225,17 +225,20 @@ export default function Dashboard() {
     const buyStreakFreeze = async () => {
       try {
         const res = await api.post("/shop/purchase-freeze");
-        if (res.ok) {
-          // Update local state so the UI reflects the new count and lower XP
+        const data = res?.data ?? res;
+
+        if (data.ok) {
           setSummary((prev) => ({
             ...prev,
-            xpTotal: res.xpTotal,
-            streakFreezes: res.streakFreezes,
+            xpTotal: data.xpTotal,
+            streakFreezes: data.streakFreezes,
           }));
-          alert("Streak Freeze Equipped! ❄️");
+          alert("Streak Protected! ❄️");
+        } else {
+          alert(data.error || "Purchase failed");
         }
       } catch (err) {
-        console.error("Purchase failed:", err);
+        console.error("Shop Error:", err);
       }
     };
 
