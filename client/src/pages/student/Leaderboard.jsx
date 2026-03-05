@@ -328,7 +328,10 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
                     Top performers · {periodLabel.toLowerCase()}
                   </div>
                   <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black leading-tight tracking-tighter">
-                    {entry.name === userName ? "You are" : `${entry.name} is`}{" "}
+                    {/* 🎯 Use entry.name directly or compare with your own name from auth */}
+                    {entry.name === (auth?.user?.name || "Learner")
+                      ? "You are"
+                      : `${entry.name} is`}{" "}
                     leading the board!
                   </h2>
                   <div className="mt-4 flex items-center gap-2">

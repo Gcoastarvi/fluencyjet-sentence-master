@@ -224,21 +224,24 @@ export default function Dashboard() {
 
     const buyStreakFreeze = async () => {
       try {
+        // 🚀 Calls your new shop router in server/routes/shop.js
         const res = await api.post("/shop/purchase-freeze");
         const data = res?.data ?? res;
 
         if (data.ok) {
+          // ✅ Instantly updates the UI with new totals
           setSummary((prev) => ({
             ...prev,
             xpTotal: data.xpTotal,
-            streakFreezes: data.streakFreezes,
+            streak_freezes: data.streakFreezes,
           }));
           alert("Streak Protected! ❄️");
         } else {
-          alert(data.error || "Purchase failed");
+          alert(data.error || "You need more XP!");
         }
       } catch (err) {
         console.error("Shop Error:", err);
+        alert("Could not connect to the shop.");
       }
     };
 
@@ -296,25 +299,6 @@ export default function Dashboard() {
       isMounted = false;
     };
   }, [api]);
-
-  const buyStreakFreeze = async () => {
-    try {
-      const res = await api.post("/shop/purchase-freeze");
-      const data = res?.data ?? res;
-      if (data.ok) {
-        setSummary((prev) => ({
-          ...prev,
-          xpTotal: data.xpTotal,
-          streakFreezes: data.streakFreezes,
-        }));
-        alert("Streak Protected! ❄️");
-      } else {
-        alert(data.error || "Purchase failed");
-      }
-    } catch (err) {
-      console.error("Shop Error:", err);
-    }
-  };
 
   const loadSummary = useCallback(async () => {
     // IMPORTANT: always control the spinner here
@@ -638,11 +622,9 @@ export default function Dashboard() {
                     </span>
                   )}
                 </div>
-
                 <p className="text-sm font-bold mb-4">
                   Complete 3 Instant Accuracy sessions
                 </p>
-
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-2">
                   <div
                     className="h-full bg-indigo-500 transition-all duration-1000"
@@ -651,7 +633,8 @@ export default function Dashboard() {
                     }}
                   />
                 </div>
-
+                {/* 🎯 Supports both camelCase and snake_case from the server */}
+                {summary.streak_freezes ?? summary.streakFreezes ?? 0} Equipped
                 <div className="mt-4 flex items-center justify-between p-3 bg-blue-50 rounded-2xl border border-blue-100">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">❄️</span>
@@ -667,7 +650,6 @@ export default function Dashboard() {
                     BUY FOR 200 XP
                   </button>
                 </div>
-
                 <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase">
                   <span>
                     {summary.missionProgress || 0} / {summary.missionGoal || 3}{" "}

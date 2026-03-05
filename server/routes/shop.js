@@ -7,27 +7,35 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 // 🎯 Change 'authRequired' to 'authMiddleware' here:
+// server/routes/shop.js
 router.post("/purchase-freeze", authMiddleware, async (req, res) => {
   const userId = req.user.id;
   const FREEZE_COST = 200;
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      // 🎯 CRITICAL: Check both 'xpTotal' on User and 'xp' on UserProgress
       const user = await tx.user.findUnique({ where: { id: userId } });
 
-      if (!user || user.xpTotal < FREEZE_COST) {
-        throw new Error("Insufficient XP");
+      // If your XP is stored in 'xpTotal', use that:
+      const currentXP = user.xpTotal || 0;
+
+      if (currentXP < FREEZE_COST) {
+        throw new Error(
+          `Insufficient XP (Have: ${currentXP}, Need: ${FREEZE_COST})`,
+        );
       }
 
+      // 1. Deduct from User
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: { xpTotal: { decrement: FREEZE_COST } },
       });
 
-      const updatedProgress = await tx.userProgress.upsert({
+      // 2. Increment in UserProgress
+      const updatedProgress = await tx.userProgress.update({
         where: { user_id: userId },
-        update: { streak_freezes: { increment: 1 } },
-        create: { user_id: userId, streak_freezes: 1, xp: 0, streak: 0 },
+        data: { streak_freezes: { increment: 1 } },
       });
 
       return {
