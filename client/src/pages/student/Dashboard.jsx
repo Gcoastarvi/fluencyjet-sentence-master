@@ -512,7 +512,7 @@ export default function Dashboard() {
           </div>
 
           {/* Pending + Snapshot */}
-          {/* 332: Premium Dashboard Grid */}
+          {/* Premium Dashboard Grid */}
           <div className="fj-grid fj-grid-2">
             {/* 🏆 Column 1: Weekly Goal Progress */}
             <div className="rounded-[2.5rem] bg-white p-8 border border-slate-100 shadow-sm mb-4">
@@ -612,9 +612,51 @@ export default function Dashboard() {
                 League Standing
               </h3>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-xl">
-                    🥉
+                <div className="flex items-center gap-4">
+                  {/* 🎡 League Progress Ring with Promotion Preview */}
+                  <div className="group relative w-14 h-14 flex items-center justify-center">
+                    <svg className="absolute inset-0 w-full h-full -rotate-90">
+                      <circle
+                        cx="28"
+                        cy="28"
+                        r="24"
+                        fill="transparent"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        className="text-slate-100"
+                      />
+                      <circle
+                        cx="28"
+                        cy="28"
+                        r="24"
+                        fill="transparent"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeDasharray={150.8}
+                        strokeDashoffset={
+                          150.8 -
+                          Math.min((summary.xpTotal || 0) / 500, 1) * 150.8
+                        }
+                        strokeLinecap="round"
+                        className="text-orange-500 transition-all duration-1000"
+                      />
+                    </svg>
+                    <div className="text-2xl z-10">🥉</div>
+
+                    {/* 💎 Promotion Preview Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 p-3 bg-slate-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
+                      <p className="font-black mb-1 uppercase tracking-widest text-orange-400">
+                        Next Reward
+                      </p>
+                      <p className="text-slate-300 leading-tight">
+                        Reach 500 XP to unlock the{" "}
+                        <span className="text-white font-bold">
+                          Silver Frame
+                        </span>{" "}
+                        & 50 Bonus Gems!
+                      </p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
+                    </div>
                   </div>
                   <div>
                     <p className="text-sm font-black text-slate-900">
@@ -868,14 +910,14 @@ export default function Dashboard() {
         title: "FIRST STEP TO MASTERY!",
         desc: "You've earned your first 150 XP. The journey begins with a single lesson.",
         icon: "🎓",
-        color: "border-indigo-400 shadow-[0_0_50px_rgba(99,102,241,0.3)]"
+        color: "border-indigo-400 shadow-[0_0_50px_rgba(99,102,241,0.3)]",
       },
       BRONZE_LEAGUE: {
         title: "LEAGUE PROMOTED!",
-        desc: `You've ascended to the ${league || 'BRONZE'} Division.`,
+        desc: `You've ascended to the ${league || "BRONZE"} Division.`,
         icon: "🥉",
-        color: "border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.3)]"
-      }
+        color: "border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.3)]",
+      },
     };
 
     const active = content[type] || content.FIRST_LESSON;
@@ -888,17 +930,25 @@ export default function Dashboard() {
           className={`text-center p-8 bg-gradient-to-b from-slate-800 to-slate-900 border-2 rounded-3xl max-w-sm w-full ${active.color}`}
         >
           <div className="text-6xl mb-4">{active.icon}</div>
-          <h2 className="text-3xl font-black text-white mb-2">{active.title}</h2>
+          <h2 className="text-3xl font-black text-white mb-2">
+            {active.title}
+          </h2>
           <p className="text-slate-300 mb-8">{active.desc}</p>
 
-          <button 
+          <button
             onClick={onClose}
             className="w-full py-4 bg-yellow-400 text-black font-black rounded-2xl hover:scale-105 transition-transform active:scale-95"
           >
             COLLECT REWARDS
           </button>
         </motion.div>
+        <PromotionModal
+          isOpen={showPromotionModal}
+          type={milestoneType}
+          league={summary.league}
+          onClose={() => setShowPromotionModal(false)}
+        />
       </div>
     );
-  }  
+  }
 }
