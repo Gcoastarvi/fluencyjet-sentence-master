@@ -338,9 +338,6 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
                         </span>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
 
               <div className="sm:self-stretch sm:flex sm:items-center">
                 <div className="relative rounded-3xl bg-white/10 backdrop-blur-md px-6 py-5 sm:px-8 sm:py-6 shadow-lg border border-white/20">
@@ -379,8 +376,10 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
                 </div>
               </div>
             </div>
-          ))}
-        </div>      
+                );
+              })}
+        </div>
+      </div>
 
       {/* Dots */}
       <div className="mt-5 flex justify-center gap-2">
