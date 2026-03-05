@@ -310,19 +310,6 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
         }
       }}
     >
-      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-indigo-100/90">
-        <div>
-          <dt className="uppercase tracking-wide opacity-75">XP this period</dt>
-          <dd className="mt-1 text-sm font-semibold">{kFormat(entry.xp)} XP</dd>
-        </div>
-        <div>
-          <dt className="uppercase tracking-wide opacity-75">Total learners</dt>
-          <dd className="mt-1 text-sm font-semibold">
-            Top #{entry.rank ?? idx + 1}
-          </dd>
-        </div>
-      </dl>
-
       {/* Dots */}
       <div className="mt-5 flex justify-center gap-2">
         {entries.map((_, idx) => {
