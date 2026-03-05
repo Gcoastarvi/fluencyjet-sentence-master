@@ -68,12 +68,13 @@ function Leaderboard() {
     setPeriod(tabId);
   };
 
+  const { auth } = useAuth(); // 🎯 This was missing!
+
   const activePeriodLabel =
     PERIOD_TABS.find((t) => t.id === period)?.label || "This Week";
 
   const userName = auth?.user?.name || "Learner";
-
-  const league = "BRONZE"; // Static fallback to prevent crash
+  const league = "BRONZE";
 
   return (
     <div className="max-w-5xl mx-auto px-4 pb-10">

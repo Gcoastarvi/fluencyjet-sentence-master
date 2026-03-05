@@ -297,6 +297,25 @@ export default function Dashboard() {
     };
   }, [api]);
 
+  const buyStreakFreeze = async () => {
+    try {
+      const res = await api.post("/shop/purchase-freeze");
+      const data = res?.data ?? res;
+      if (data.ok) {
+        setSummary((prev) => ({
+          ...prev,
+          xpTotal: data.xpTotal,
+          streakFreezes: data.streakFreezes,
+        }));
+        alert("Streak Protected! ❄️");
+      } else {
+        alert(data.error || "Purchase failed");
+      }
+    } catch (err) {
+      console.error("Shop Error:", err);
+    }
+  };
+
   const loadSummary = useCallback(async () => {
     // IMPORTANT: always control the spinner here
     setLoading(true);
