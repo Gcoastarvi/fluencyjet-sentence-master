@@ -634,18 +634,23 @@ export default function Dashboard() {
                   />
                 </div>
                 {/* 🎯 Supports both camelCase and snake_case from the server */}
-                {summary.streak_freezes ?? summary.streakFreezes ?? 0} Equipped
-                <div className="mt-4 flex items-center justify-between p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                {/* 🎯 Streak Freeze Row */}
+                <div className="mt-4 flex items-center justify-between p-3 bg-blue-500/10 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">❄️</span>
-                    <span className="text-xs font-black text-blue-900 uppercase">
-                      {summary.streakFreezes || 0} Equipped
-                    </span>
+                    <div>
+                      <p className="text-[10px] font-black text-blue-300 uppercase leading-none">
+                        Equipped
+                      </p>
+                      <p className="text-sm font-black text-white">
+                        {summary.streak_freezes ?? summary.streakFreezes ?? 0}
+                      </p>
+                    </div>
                   </div>
                   <button
                     onClick={buyStreakFreeze}
-                    disabled={summary.xpTotal < 200}
-                    className="px-4 py-2 bg-white text-blue-600 text-[10px] font-black rounded-xl border border-blue-200 hover:bg-blue-600 hover:text-white disabled:opacity-50 transition-all"
+                    disabled={(summary.xpTotal || 0) < 200}
+                    className="px-4 py-2 bg-blue-500 text-white text-[10px] font-black rounded-xl hover:bg-blue-400 disabled:opacity-30 transition-all active:scale-95"
                   >
                     BUY FOR 200 XP
                   </button>
