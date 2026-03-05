@@ -602,8 +602,7 @@ router.post("/update", authRequired, async (req, res) => {
         create: {
           user_id: userId,
           xp: Number(xpDelta) || 0,
-          streak: newStreak,
-          badges: [],
+          streak: newStreak,          
           updated_at: now,
         },
       });

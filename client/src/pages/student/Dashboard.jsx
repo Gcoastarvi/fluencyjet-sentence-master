@@ -231,11 +231,11 @@ export default function Dashboard() {
     async function loadAllDashboardData() {
       try {
         // 🚀 Single call to summary (which includes activity feed now)
-        const summaryRes = await api.get("/dashboard/summary");
+        const res = await api.get("/dashboard/summary");
+        const sData = res?.data ?? res;
 
         if (!isMounted) return;
 
-        const sData = summaryRes?.data ?? summaryRes;
         if (sData) {
           setSummary((prev) => ({
             ...prev,

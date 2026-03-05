@@ -109,8 +109,7 @@ async function ensureProgress(tx, userId) {
       data: {
         user_id: userId,
         xp: 0,
-        streak: 0,
-        badges: [],
+        streak: 0,        
         updated_at: new Date(),
       },
     });
