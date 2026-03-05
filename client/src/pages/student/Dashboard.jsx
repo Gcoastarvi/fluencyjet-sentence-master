@@ -31,9 +31,6 @@ function computeLevel(totalXP = 0) {
   return current;
 }
 
-const [showPromotionModal, setShowPromotionModal] = useState(false);
-const [milestoneType, setMilestoneType] = useState(""); // "FIRST_LESSON" or "BRONZE_LEAGUE"
-
 function xpToNextLevel(totalXP = 0) {
   const current = computeLevel(totalXP);
   const next = LEVELS.find((x) => x.level === current + 1);
@@ -87,6 +84,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [showPromotionModal, setShowPromotionModal] = useState(false);
+  const [milestoneType, setMilestoneType] = useState(""); // "FIRST_LESSON" or "BRONZE_LEAGUE"
+
   const [userName, setUserName] = useState(
     () => getDisplayName?.() || "Learner",
   );
@@ -115,6 +115,22 @@ export default function Dashboard() {
     () => levelProgressPct(summary.totalXP),
     [summary.totalXP],
   );
+
+  const triggerCelebration = (type) => {
+    setMilestoneType(type);
+    setShowPromotionModal(true);
+
+    // 🎊 Simple CSS Confetti Trigger (if using a library like canvas-confetti)
+    // If you don't have a library yet, this is where you'd call it.
+    if (window.confetti) {
+      window.confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#6366f1", "#10b981", "#f59e0b"],
+      });
+    }
+  };
 
   const copyJwtToClipboard = useCallback(async () => {
     const token = getJwt();
@@ -169,37 +185,6 @@ export default function Dashboard() {
       console.error("Failed to claim bonus", err);
       setShowMilestoneModal(false);
     }
-  };
-
-  // Use Framer Motion for that "Prestige" feel
-  const PromotionModal = ({ league, onComplete }) => {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center p-8 bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-yellow-400 rounded-3xl shadow-[0_0_50px_rgba(250,204,21,0.3)]"
-        >
-          <h2 className="text-4xl font-black text-white mb-4">
-            LEAGUE PROMOTED!
-          </h2>
-          <div
-            className={`avatar-frame-${league.toLowerCase()} mx-auto w-32 h-32 mb-6`}
-          />
-          <p className="text-xl text-slate-300">
-            You've ascended to the{" "}
-            <span className="text-yellow-400 font-bold">{league}</span>{" "}
-            Division.
-          </p>
-          <button
-            onClick={onComplete}
-            className="mt-8 px-8 py-3 bg-yellow-400 text-black font-bold rounded-full hover:scale-105 transition-transform"
-          >
-            COLLECT REWARDS
-          </button>
-        </motion.div>
-      </div>
-    );
   };
 
   const shareBadge = async (badgeName) => {
@@ -874,4 +859,46 @@ export default function Dashboard() {
       )}
     </div>
   );
+  // 统一 Promotion Modal - Place at the very bottom of Dashboard.jsx
+  function PromotionModal({ isOpen, type, league, onClose }) {
+    if (!isOpen) return null;
+
+    const content = {
+      FIRST_LESSON: {
+        title: "FIRST STEP TO MASTERY!",
+        desc: "You've earned your first 150 XP. The journey begins with a single lesson.",
+        icon: "🎓",
+        color: "border-indigo-400 shadow-[0_0_50px_rgba(99,102,241,0.3)]"
+      },
+      BRONZE_LEAGUE: {
+        title: "LEAGUE PROMOTED!",
+        desc: `You've ascended to the ${league || 'BRONZE'} Division.`,
+        icon: "🥉",
+        color: "border-yellow-400 shadow-[0_0_50px_rgba(250,204,21,0.3)]"
+      }
+    };
+
+    const active = content[type] || content.FIRST_LESSON;
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <motion.div
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className={`text-center p-8 bg-gradient-to-b from-slate-800 to-slate-900 border-2 rounded-3xl max-w-sm w-full ${active.color}`}
+        >
+          <div className="text-6xl mb-4">{active.icon}</div>
+          <h2 className="text-3xl font-black text-white mb-2">{active.title}</h2>
+          <p className="text-slate-300 mb-8">{active.desc}</p>
+
+          <button 
+            onClick={onClose}
+            className="w-full py-4 bg-yellow-400 text-black font-black rounded-2xl hover:scale-105 transition-transform active:scale-95"
+          >
+            COLLECT REWARDS
+          </button>
+        </motion.div>
+      </div>
+    );
+  }  
 }
