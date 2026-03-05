@@ -87,6 +87,13 @@ export default function Dashboard() {
   const [showPromotionModal, setShowPromotionModal] = useState(false);
   const [milestoneType, setMilestoneType] = useState(""); // "FIRST_LESSON" or "BRONZE_LEAGUE"
 
+  const currentTime = new Date();
+  const isLate = currentTime.getHours() >= 22; // 10:00 PM or later
+  const hasNoFreezes = (summary.streakFreezes || 0) === 0;
+  const needsMastery = (summary.uniqueDays || 0) === 0;
+
+  const showEmergencyAlert = isLate && hasNoFreezes && needsMastery;
+
   const [userName, setUserName] = useState(
     () => getDisplayName?.() || "Learner",
   );
@@ -212,6 +219,23 @@ export default function Dashboard() {
       localStorage.removeItem("fj_mission_celebrated");
       localStorage.setItem("fj_mission_celebrated_date", todayString);
     }
+
+    const buyStreakFreeze = async () => {
+      try {
+        const res = await api.post("/shop/purchase-freeze");
+        if (res.ok) {
+          // Update local state so the UI reflects the new count and lower XP
+          setSummary((prev) => ({
+            ...prev,
+            xpTotal: res.xpTotal,
+            streakFreezes: res.streakFreezes,
+          }));
+          alert("Streak Freeze Equipped! ❄️");
+        }
+      } catch (err) {
+        console.error("Purchase failed:", err);
+      }
+    };
 
     // Existing call
     loadSummary();
@@ -511,6 +535,23 @@ export default function Dashboard() {
             </p>
           </div>
 
+          {showEmergencyAlert && (
+            <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 rounded-3xl animate-pulse">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🚨</span>
+                <div>
+                  <h4 className="text-sm font-black text-red-900 uppercase tracking-tighter">
+                    Streak at Risk!
+                  </h4>
+                  <p className="text-xs text-red-700 font-bold">
+                    It's past 10 PM and you have 0 freezes. Complete a lesson
+                    now to save your streak!
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Pending + Snapshot */}
           {/* Premium Dashboard Grid */}
           <div className="fj-grid fj-grid-2">
@@ -585,6 +626,22 @@ export default function Dashboard() {
                       width: `${((summary.missionProgress || 0) / (summary.missionGoal || 3)) * 100}%`,
                     }}
                   />
+                </div>
+
+                <div className="mt-4 flex items-center justify-between p-3 bg-blue-50 rounded-2xl border border-blue-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">❄️</span>
+                    <span className="text-xs font-black text-blue-900 uppercase">
+                      {summary.streakFreezes || 0} Equipped
+                    </span>
+                  </div>
+                  <button
+                    onClick={buyStreakFreeze}
+                    disabled={summary.xpTotal < 200}
+                    className="px-4 py-2 bg-white text-blue-600 text-[10px] font-black rounded-xl border border-blue-200 hover:bg-blue-600 hover:text-white disabled:opacity-50 transition-all"
+                  >
+                    BUY FOR 200 XP
+                  </button>
                 </div>
 
                 <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase">
