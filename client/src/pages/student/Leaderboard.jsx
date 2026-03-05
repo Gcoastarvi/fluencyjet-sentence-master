@@ -310,37 +310,8 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
         }
       }}
     >
-      {/* Sliding content */}
-      <div className="overflow-hidden">
-        <div
-          className="flex transition-transform duration-500 ease-out"
-          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-        >
-          // At the top of Leaderboard() function, ensure this exists: const{" "}
-          {auth} = useAuth(); // --- REPLACE YOUR ENTRIES.MAP BLOCK WITH THIS
-          ---
-          {entries.map((entry, idx) => {
-            // Define isMe inside the map so it has access to both entry and auth
-            const isMe = entry.name === (auth?.user?.name || "Learner");
-
-            return (
-              <div
-                key={entry.userId ?? entry.id ?? idx}
-                className="w-full flex-shrink-0 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="max-w-xl">
-                  <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-2 text-indigo-200">
-                    Top performers · {periodLabel?.toLowerCase() || "this week"}
-                  </div>
-                  <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black leading-tight tracking-tighter text-white">
-                    {isMe ? "You are" : `${entry.name} is`} leading the board!
-                  </h2>
-                  <div className="mt-4 flex items-center gap-2 text-white">
-                    <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold">
-                      Rank #1 · {entry.xpThisPeriod?.toLocaleString() || 0} XP
-                    </span>
-                  </div>
-                </div>
+     
+     
 
                 <div className="sm:self-stretch sm:flex sm:items-center">
                   <div className="relative rounded-3xl bg-white/10 backdrop-blur-md px-6 py-5 sm:px-8 sm:py-6 shadow-lg border border-white/20">
