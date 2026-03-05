@@ -87,13 +87,6 @@ export default function Dashboard() {
   const [showPromotionModal, setShowPromotionModal] = useState(false);
   const [milestoneType, setMilestoneType] = useState(""); // "FIRST_LESSON" or "BRONZE_LEAGUE"
 
-  const currentTime = new Date();
-  const isLate = currentTime.getHours() >= 22; // 10:00 PM or later
-  const hasNoFreezes = (summary.streakFreezes || 0) === 0;
-  const needsMastery = (summary.uniqueDays || 0) === 0;
-
-  const showEmergencyAlert = isLate && hasNoFreezes && needsMastery;
-
   const [userName, setUserName] = useState(
     () => getDisplayName?.() || "Learner",
   );
@@ -112,7 +105,9 @@ export default function Dashboard() {
     level: 1,
     xpToNextLevel: 0,
     streak: 0,
-    nextBadge: null,
+    streakFreezes: 0,
+    uniqueDays: 0,
+    xpTotal: 0 ? nextBadge : null,
     earnedBadges: [],
     pendingLessons: [],
     recentActivity: [],
@@ -122,6 +117,13 @@ export default function Dashboard() {
     () => levelProgressPct(summary.totalXP),
     [summary.totalXP],
   );
+
+  const currentTime = new Date();
+  const isLate = currentTime.getHours() >= 22;
+  const hasNoFreezes = (summary?.streakFreezes || 0) === 0; // Safe access
+  const needsMastery = (summary?.uniqueDays || 0) === 0;
+
+  const showEmergencyAlert = isLate && hasNoFreezes && needsMastery;
 
   const triggerCelebration = (type) => {
     setMilestoneType(type);
