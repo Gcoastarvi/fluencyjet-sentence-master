@@ -222,14 +222,12 @@ export default function Dashboard() {
       localStorage.setItem("fj_mission_celebrated_date", todayString);
     }
 
+    // --- PASTE THIS INSIDE Dashboard() BEFORE THE RETURN ---
     const buyStreakFreeze = async () => {
       try {
-        // 🚀 Calls your new shop router in server/routes/shop.js
         const res = await api.post("/shop/purchase-freeze");
         const data = res?.data ?? res;
-
         if (data.ok) {
-          // ✅ Instantly updates the UI with new totals
           setSummary((prev) => ({
             ...prev,
             xpTotal: data.xpTotal,
@@ -237,11 +235,10 @@ export default function Dashboard() {
           }));
           alert("Streak Protected! ❄️");
         } else {
-          alert(data.error || "You need more XP!");
+          alert(data.error || "Purchase failed");
         }
       } catch (err) {
         console.error("Shop Error:", err);
-        alert("Could not connect to the shop.");
       }
     };
 

@@ -316,68 +316,71 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${activeIndex * 100}%)` }}
         >
-              {entries.map((entry, idx) => {
-                const isMe = entry.name === (auth?.user?.name || "Learner");
+          // At the top of Leaderboard() function, ensure this exists: const{" "}
+          {auth} = useAuth(); // --- REPLACE YOUR ENTRIES.MAP BLOCK WITH THIS
+          ---
+          {entries.map((entry, idx) => {
+            // Define isMe inside the map so it has access to both entry and auth
+            const isMe = entry.name === (auth?.user?.name || "Learner");
 
-                return (
-                  <div
-                    key={entry.userId ?? entry.id ?? idx}
-                    className="w-full flex-shrink-0 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="max-w-xl">
-                      <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-2 text-indigo-200">
-                        Top performers · {periodLabel?.toLowerCase() || "this week"}
-                      </div>
-                      <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black leading-tight tracking-tighter text-white">
-                        {isMe ? "You are" : `${entry.name} is`}{" "}
-                        leading the board!
-                      </h2>
-                      <div className="mt-4 flex items-center gap-2">
-                        <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold text-white">
-                          Rank #1 · {entry.xpThisPeriod?.toLocaleString() || 0} XP
-                        </span>
-                      </div>
-                    </div>
-
-              <div className="sm:self-stretch sm:flex sm:items-center">
-                <div className="relative rounded-3xl bg-white/10 backdrop-blur-md px-6 py-5 sm:px-8 sm:py-6 shadow-lg border border-white/20">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-100/90">
-                    Spotlight
-                  </p>
-                  <div className="mt-3 flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
-                      #{entry.rank ?? idx + 1}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{entry.name}</p>
-                      <p className="text-xs text-indigo-100/80">
-                        Level {entry.level ?? 1}
-                      </p>
-                    </div>
+            return (
+              <div
+                key={entry.userId ?? entry.id ?? idx}
+                className="w-full flex-shrink-0 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="max-w-xl">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-2 text-indigo-200">
+                    Top performers · {periodLabel?.toLowerCase() || "this week"}
                   </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-indigo-100/90">
-                    <div>
-                      <dt className="uppercase tracking-wide opacity-75">
-                        XP this period
-                      </dt>
-                      <dd className="mt-1 text-sm font-semibold">
-                        {kFormat(entry.xp)} XP
-                      </dd>
+                  <h2 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-black leading-tight tracking-tighter text-white">
+                    {isMe ? "You are" : `${entry.name} is`} leading the board!
+                  </h2>
+                  <div className="mt-4 flex items-center gap-2 text-white">
+                    <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] font-bold">
+                      Rank #1 · {entry.xpThisPeriod?.toLocaleString() || 0} XP
+                    </span>
+                  </div>
+                </div>
+
+                <div className="sm:self-stretch sm:flex sm:items-center">
+                  <div className="relative rounded-3xl bg-white/10 backdrop-blur-md px-6 py-5 sm:px-8 sm:py-6 shadow-lg border border-white/20">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-100/90">
+                      Spotlight
+                    </p>
+                    <div className="mt-3 flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
+                        #{entry.rank ?? idx + 1}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{entry.name}</p>
+                        <p className="text-xs text-indigo-100/80">
+                          Level {entry.level ?? 1}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <dt className="uppercase tracking-wide opacity-75">
-                        Total learners
-                      </dt>
-                      <dd className="mt-1 text-sm font-semibold">
-                        Top #{entry.rank ?? idx + 1}
-                      </dd>
-                    </div>
-                  </dl>
+                    <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-indigo-100/90">
+                      <div>
+                        <dt className="uppercase tracking-wide opacity-75">
+                          XP this period
+                        </dt>
+                        <dd className="mt-1 text-sm font-semibold">
+                          {kFormat(entry.xp)} XP
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="uppercase tracking-wide opacity-75">
+                          Total learners
+                        </dt>
+                        <dd className="mt-1 text-sm font-semibold">
+                          Top #{entry.rank ?? idx + 1}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
                 </div>
               </div>
-            </div>
-                );
-              })}
+            );
+          })}
         </div>
       </div>
 
