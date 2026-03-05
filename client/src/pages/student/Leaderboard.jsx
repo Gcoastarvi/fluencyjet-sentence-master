@@ -68,7 +68,7 @@ function Leaderboard() {
     setPeriod(tabId);
   };
 
-  const { auth } = useAuth(); // 🎯 This was missing!
+  const auth = { user: { name: "Learner", league: "BRONZE" } };
 
   const activePeriodLabel =
     PERIOD_TABS.find((t) => t.id === period)?.label || "This Week";
