@@ -310,42 +310,18 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
         }
       }}
     >
-      <div className="sm:self-stretch sm:flex sm:items-center">
-        <div className="relative rounded-3xl bg-white/10 backdrop-blur-md px-6 py-5 sm:px-8 sm:py-6 shadow-lg border border-white/20">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-100/90">
-            Spotlight
-          </p>
-          <div className="mt-3 flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold">
-              #{entry.rank ?? idx + 1}
-            </div>
-            <div>
-              <p className="text-sm font-semibold">{entry.name}</p>
-              <p className="text-xs text-indigo-100/80">
-                Level {entry.level ?? 1}
-              </p>
-            </div>
-          </div>
-          <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-indigo-100/90">
-            <div>
-              <dt className="uppercase tracking-wide opacity-75">
-                XP this period
-              </dt>
-              <dd className="mt-1 text-sm font-semibold">
-                {kFormat(entry.xp)} XP
-              </dd>
-            </div>
-            <div>
-              <dt className="uppercase tracking-wide opacity-75">
-                Total learners
-              </dt>
-              <dd className="mt-1 text-sm font-semibold">
-                Top #{entry.rank ?? idx + 1}
-              </dd>
-            </div>
-          </dl>
+      <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-xs text-indigo-100/90">
+        <div>
+          <dt className="uppercase tracking-wide opacity-75">XP this period</dt>
+          <dd className="mt-1 text-sm font-semibold">{kFormat(entry.xp)} XP</dd>
         </div>
-      </div>
+        <div>
+          <dt className="uppercase tracking-wide opacity-75">Total learners</dt>
+          <dd className="mt-1 text-sm font-semibold">
+            Top #{entry.rank ?? idx + 1}
+          </dd>
+        </div>
+      </dl>
 
       {/* Dots */}
       <div className="mt-5 flex justify-center gap-2">
