@@ -1077,17 +1077,26 @@ export default function SentencePractice() {
       // ✅ Backend shape: { ok:true, exercises:[...] }
       const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
 
-      const normalized = exercises
+      const modeFiltered = exercises.filter((ex) => {
+        const rawMode = String(
+          ex?.mode ?? ex?.practiceType ?? ex?.practice_type ?? "",
+        )
+          .trim()
+          .toLowerCase();
+
+        return rawMode === safeMode;
+      });
+
+      const normalized = modeFiltered
         .map(normalizeExercise)
         .filter(Boolean)
-        .filter((ex) => ex?.mode === safeMode)
         .sort(
           (a, b) => Number(a?.orderIndex || 0) - Number(b?.orderIndex || 0),
         );
 
-      console.log("[Practice] data:", data);
-      console.log("[Practice] raw exercises[0]:", exercises?.[0]);
-      console.log("[Practice] normalized[0]:", normalized?.[0]);
+      console.log("[Practice] safeMode:", safeMode);
+      console.log("[Practice] exercises length:", exercises.length);
+      console.log("[Practice] modeFiltered length:", modeFiltered.length);
       console.log("[Practice] normalized length:", normalized.length);
 
       if (!normalized.length) {
