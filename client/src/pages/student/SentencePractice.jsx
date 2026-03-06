@@ -1077,7 +1077,13 @@ export default function SentencePractice() {
       // ✅ Backend shape: { ok:true, exercises:[...] }
       const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
 
-      const normalized = exercises.map(normalizeExercise).filter(Boolean);
+      const normalized = exercises
+        .map(normalizeExercise)
+        .filter(Boolean)
+        .filter((ex) => ex?.mode === safeMode)
+        .sort(
+          (a, b) => Number(a?.orderIndex || 0) - Number(b?.orderIndex || 0),
+        );
 
       console.log("[Practice] data:", data);
       console.log("[Practice] raw exercises[0]:", exercises?.[0]);
@@ -1745,7 +1751,7 @@ export default function SentencePractice() {
           console.error("[XP] cloze: XP not awarded", result);
         }
 
-        // ✅ Update progress (Cloze)
+        // i�� Update progress (Cloze)
         writeProgress(lessonId, "cloze", {
           total: lessonExercises.length,
           completed: Math.min(lessonExercises.length, currentIndex + 1),
