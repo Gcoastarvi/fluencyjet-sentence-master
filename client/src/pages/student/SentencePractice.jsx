@@ -270,7 +270,9 @@ export default function SentencePractice() {
 
   const [xpToastPhase, setXpToastPhase] = useState("hidden"); // hidden | enter | shown | exit
 
-  const totalQuestions = Math.min(lessonExercises.length || 0, sessionTarget);
+  const totalQuestions = Array.isArray(lessonExercises)
+    ? lessonExercises.length
+    : 0;
 
   const [suppressEmpty, setSuppressEmpty] = useState(false);
 
