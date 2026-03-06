@@ -1077,17 +1077,33 @@ export default function SentencePractice() {
       // ✅ Backend shape: { ok:true, exercises:[...] }
       const exercises = Array.isArray(data?.exercises) ? data.exercises : [];
 
-      const modeFiltered = exercises.filter((ex) => {
-        const rawMode = String(
-          ex?.mode ?? ex?.practiceType ?? ex?.practice_type ?? "",
-        )
-          .trim()
-          .toLowerCase();
+      const normalized = exercises
+        .filter((raw) => {
+          let expected = raw?.expected;
 
-        return rawMode === safeMode;
-      });
+          if (typeof expected === "string") {
+            try {
+              expected = JSON.parse(expected);
+            } catch {
+              expected = {};
+            }
+          }
 
-      const normalized = modeFiltered
+          expected = expected || {};
+
+          const rawMode = String(
+            expected?.mode ||
+              expected?.practiceType ||
+              raw?.mode ||
+              raw?.practiceType ||
+              raw?.practice_type ||
+              "",
+          )
+            .toLowerCase()
+            .trim();
+
+          return rawMode === safeMode;
+        })
         .map(normalizeExercise)
         .filter(Boolean)
         .sort(
@@ -1096,7 +1112,6 @@ export default function SentencePractice() {
 
       console.log("[Practice] safeMode:", safeMode);
       console.log("[Practice] exercises length:", exercises.length);
-      console.log("[Practice] modeFiltered length:", modeFiltered.length);
       console.log("[Practice] normalized length:", normalized.length);
 
       if (!normalized.length) {
