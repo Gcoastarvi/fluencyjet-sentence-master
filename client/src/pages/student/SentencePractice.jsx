@@ -1205,8 +1205,7 @@ export default function SentencePractice() {
         return;
       }
 
-      setLessonExercises([ex]); // single-item “batch”
-      setCurrentIndex(0);
+      setCurrentIndex(idx);
     } catch (e) {
       // ✅ 1) Detect PAYWALL and redirect immediately (no UI error flash)
       const status = e?.response?.status ?? e?.status ?? null;
