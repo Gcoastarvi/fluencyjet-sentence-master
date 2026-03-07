@@ -12,26 +12,22 @@ export default function LessonList({ difficulty }) {
     const fetchLessons = async () => {
       try {
         setLoading(true);
-        // 🎯 Use the axios instance directly from the api object
         const response = await api.api.get(`/lessons?difficulty=${difficulty}`);
 
-        // --- OUT OF THE BOX DEBUG ---
-        console.log("RAW API RESPONSE:", response);
-
-        // Handle different possible response shapes
-        const incomingData = response?.data?.data || response?.data || response;
+        // 🎯 Dig into the correct object property based on your console log
+        const incomingData = response?.data?.lessons || [];
 
         if (Array.isArray(incomingData) && incomingData.length > 0) {
           setLessons(incomingData);
         } else {
-          console.warn("No lessons found for:", difficulty);
+          console.warn(
+            "No lessons found in the 'lessons' array for:",
+            difficulty,
+          );
           setLessons([]);
         }
       } catch (err) {
-        console.error(
-          "Fetch failed. Backend might be down or route missing:",
-          err,
-        );
+        console.error("Fetch failed:", err);
       } finally {
         setLoading(false);
       }
