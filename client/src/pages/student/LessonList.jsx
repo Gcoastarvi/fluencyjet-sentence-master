@@ -85,22 +85,28 @@ export default function LessonList({ difficulty }) {
               <h2 className="text-2xl font-black italic">Unit {module.id}</h2>
             </div>
 
-            {/* Staggered Path */}
+            {/* 🎯 Staggered Path Block */}
             <div className="flex flex-col items-center gap-8 relative">
               <div className="absolute top-0 bottom-0 w-1 bg-slate-100 left-1/2 -translate-x-1/2 -z-10" />
-              {module.lessons.map((lesson, idx) => (
-                <div
-                  key={lesson.id}
-                  className={
-                    idx % 2 !== 0 ? "sm:translate-x-12" : "sm:-translate-x-12"
-                  }
-                >
-                  <LessonNode
-                    lesson={lesson}
-                    isLocked={idx > 2 && module.id > 1}
-                  />
-                </div>
-              ))}
+
+              {module.lessons.map((lesson, idx) => {
+                // Calculate display number: Unit 1 starts at 1, Unit 2 starts at 11
+                const displayNum = (module.id - 1) * 10 + (idx + 1);
+                return (
+                  <div
+                    key={lesson.id}
+                    className={
+                      idx % 2 !== 0 ? "sm:translate-x-12" : "sm:-translate-x-12"
+                    }
+                  >
+                    <LessonNode
+                      lesson={lesson}
+                      displayNum={displayNum}
+                      isLocked={displayNum > 3 && module.id === 1} // Example lock logic
+                    />
+                  </div>
+                );
+              })}
             </div>
           </section>
         ))}
