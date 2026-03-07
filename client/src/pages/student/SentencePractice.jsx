@@ -969,6 +969,16 @@ export default function SentencePractice() {
     });
   }
 
+  function normalizeForValidation(text) {
+    return String(text || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[’‘‛ʼ]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/[.!?]+$/g, "")
+      .replace(/\s+/g, " ");
+  }
+
   // -------------------
   // helpers
   // -------------------
@@ -1588,10 +1598,9 @@ export default function SentencePractice() {
         String(s || "")
           .trim()
           .toLowerCase()
-          // ✅ make curly apostrophes equal to normal apostrophe
           .replace(/[’‘‛ʼ]/g, "'")
-          // ✅ (optional but safe) normalize curly quotes too
           .replace(/[“”]/g, '"')
+          .replace(/[.!?]+$/g, "")
           .replace(/\s+/g, " ");
 
       const target =
