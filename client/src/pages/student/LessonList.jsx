@@ -7,13 +7,16 @@ import LessonNode from "../../components/LessonNode"; // We will create this nex
 export default function LessonList({ lessons }) {
   // 1. Logic to group 120 lessons into 12 Modules (10 each)
   const modules = useMemo(() => {
+    // 🎯 Guard: If lessons is undefined or null, return an empty array
+    if (!lessons) return [];
+
     return Array.from({ length: 12 }, (_, i) => {
       const moduleNumber = i + 1;
       const startIdx = i * 10;
       return {
         id: moduleNumber,
         title: `Unit ${moduleNumber}`,
-        // Slices the 120-lesson array into 10-lesson chunks
+        // 🎯 Safe slice: Now we know lessons exists
         lessons: lessons.slice(startIdx, startIdx + 10),
       };
     });
