@@ -30,6 +30,7 @@ import BeginnerLessons from "./pages/student/BeginnerLessons";
 import IntermediateLessons from "./pages/student/IntermediateLessons";
 import LevelCheck from "./pages/student/LevelCheck";
 import Upgrade from "./pages/student/Upgrade";
+import LessonList from "./pages/student/LessonList";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
@@ -153,6 +154,14 @@ export default function App() {
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/level-check" element={<LevelCheck />} />
             <Route path="/upgrade" element={<Upgrade />} />
+            <Route
+              path="/b/lessons"
+              element={<LessonList difficulty="basic" />}
+            />
+            <Route
+              path="/i/lessons"
+              element={<LessonList difficulty="intermediate" />}
+            />
 
             {/* keep diagnostic as alias → level-check */}
             <Route
