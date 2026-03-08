@@ -529,7 +529,8 @@ export default function LessonDetail() {
     );
   }
 
-  async function startMode(mode) { // 🎯 Added async here
+  async function startMode(mode) {
+    // 🎯 Added async here
     setShowMoreModes(false);
     if (!lessonId) return;
     if (isLocked) return goPaywall();
@@ -725,7 +726,7 @@ export default function LessonDetail() {
       const sound = new Audio("/sounds/levelup.mp3");
       sound.volume = 0.4;
       sound.play().catch(() => {});
-      
+
       // 2. 🚀 Push Mastery Event to Railway
       api
         .post("/quizzes/sync-mastery", {
@@ -740,14 +741,17 @@ export default function LessonDetail() {
           const newProgress = res.data?.newProgress || 0;
           if (newProgress >= 100) {
             // 1. Award +100 Bonus XP
-            api.post("/xp/bonus", { 
-              amount: 100, 
-              reason: "PERFECT_MASTERY",
-              lessonId: Number(dayNumber)
-            }).catch(e => console.error("Bonus failed", e));
+            api
+              .post("/xp/bonus", {
+                amount: 100,
+                reason: "PERFECT_MASTERY",
+                lessonId: Number(dayNumber),
+              })
+              .catch((e) => console.error("Bonus failed", e));
 
             // 2. Trigger the celebration
-            if (typeof triggerConfetti === "function") triggerConfetti();
+            if (typeof triggerBonusCelebration === "function")
+              triggerBonusCelebration();
             alert("PERFECT STREAK! 🏆 +100 Bonus XP awarded!");
           }
 
@@ -769,84 +773,70 @@ export default function LessonDetail() {
   ]);
 
   async function smartStart() {
+    // --- Part 1 & 2: Basic Guard & Resume Path ---
     if (!lessonId) return;
     if (isLocked) return goPaywall();
 
-    // 🎯 1. Calculate the mode with the lowest percentage
-    const modes = [
-      { id: 'reorder', progress: pReorder || 0 },
-      { id: 'typing', progress: pTyping || 0 }
-    ];
-
-    const lowest = modes.reduce((prev, curr) => 
-      (prev.progress < curr.progress) ? prev : curr
-    );
-
-    const targetMode = lowest.progress < 100 ? lowest.id : 'reorder';
-
-    // 🎯 2. Verify exercises exist before navigating
-    // This solves the 'await' error at line 830
-    const ok = await hasExercises(dayNumber, targetMode, difficulty); 
-    if (!ok) {
-      alert("Exercises for this mode are being prepared. Check back soon!");
-      return;
-    }
-
-    track("start_practice_clicked", {
-      lessonId: Number(lessonId),
-      difficulty,
-      recommendedMode: targetMode,
-      autoSelected: true
-    });
-
-    // 🎯 3. Launch the mode
-    startMode(targetMode);
-  }
-
-    // If Continue exists, always honor it first
+    // 🎯 If a "Continue" session exists, always honor it first
     if (continueHref) {
       track("continue_clicked", {
-        lessonId: Number(dayNumber) || 0,
+        lessonId: Number(dayNumber),
         difficulty,
         mode: normalizedSession?.mode || session?.mode || null,
-        q: normalizedSession?.questionIndex ?? session?.questionIndex ?? null,
       });
       navigate(continueHref);
       return;
     }
 
-    const lid = Number(dayNumber);
-    if (!lid) return;
-
+    // --- Part 3 & 4: UI State & Preferred Mode Selection ---
     setSmartStarting(true);
     setSmartStartMsg("");
 
     try {
-      // Try recommended first, then fall back in this order
-      const baseOrder = ["reorder", "typing", "audio"];
-      const order = recommendedMode
-        ? [recommendedMode, ...baseOrder.filter((m) => m !== recommendedMode)]
-        : baseOrder;
+      // 🎯 Part 5: Sequential Fallback Loop (The Brain)
+      // We prioritize the 'lowest progress' mode but fallback to others if empty
+      const modes = [
+        { id: "reorder", progress: pReorder || 0 },
+        { id: "typing", progress: pTyping || 0 },
+        { id: "audio", progress: pAudio || 0 },
+      ];
+
+      // Sort by lowest progress first
+      const order = modes
+        .sort((a, b) => a.progress - b.progress)
+        .map((m) => m.id);
 
       for (const mode of order) {
-        // Skip disabled modes
+        // Skip disabled feature flags
         if (mode === "audio" && !ENABLE_AUDIO) continue;
         if (mode === "cloze" && !ENABLE_CLOZE) continue;
 
+        // 🎯 Deep Function Audit: Check actual content availability
         const ok = await hasExercises(dayNumber, mode, difficulty);
+
+        // Handle special outcomes (Auth/Paywall)
         if (ok === "AUTH" || ok === "PAYWALL") return;
 
         if (ok) {
+          track("start_practice_clicked", {
+            lessonId: Number(lessonId),
+            difficulty,
+            mode,
+            autoSelected: true,
+          });
+
+          // 🚀 Navigate to the first valid mode and exit
           navigate(
-            `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(
-              difficulty,
-            )}`,
+            `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
           );
           return;
         }
       }
 
+      // If the loop finishes without finding any 'ok' modes
       setSmartStartMsg("No practice items yet for this lesson.");
+    } catch (err) {
+      console.error("SmartStart Error:", err);
     } finally {
       setSmartStarting(false);
     }
@@ -919,7 +909,9 @@ export default function LessonDetail() {
 
       // 🔊 Audio Dopamine (Optional)
       try {
-        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+        const audio = new Audio(
+          "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+        );
         audio.volume = 0.5;
         audio.play();
       } catch (e) {
@@ -1803,8 +1795,8 @@ export default function LessonDetail() {
               </div>
             </div>
           </div>
-        </div>        
-      </div>      
+        </div>
+      </div>
     </div>
   );
 }
