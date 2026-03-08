@@ -961,8 +961,8 @@ export default function LessonDetail() {
   const streak = userProfile?.daily_streak || 0;
 
   // 🎯 DATA NORMALIZATION: Moved here so 'lesson' is guaranteed to be available
-  const videoUrl = lesson?.videoUrl || lesson?.video_url;
-  const description = lesson?.description || lesson?.desc || lesson?.lessonDescription;
+  const videoUrl = lesson?.videoUrl || lesson?.video_url || "";
+  const description = lesson?.description || lesson?.desc || "";
 
   return (
     <div className="mx-auto max-w-xl p-4">
