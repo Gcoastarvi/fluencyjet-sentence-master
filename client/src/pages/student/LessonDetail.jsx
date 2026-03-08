@@ -24,9 +24,6 @@ import Certificate from "@/components/student/Certificate";
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 
-const location = useLocation();
-const displayNum = location.state?.lessonNumber || lesson?.id;
-
 const modeEnabled = (mode, modeAvail) => {
   if (mode === "audio") return ENABLE_AUDIO && modeAvail.audio;
   if (mode === "cloze") return ENABLE_CLOZE && modeAvail.cloze;
@@ -145,6 +142,7 @@ export default function LessonDetail() {
 
   const location = useLocation();
   const navigate = useNavigate();
+  const displayNum = location.state?.lessonNumber || lesson?.id;
 
   const { lessonId: lessonIdParam } = useParams(); // this is dayNumber in MVP routing
 
@@ -749,10 +747,15 @@ export default function LessonDetail() {
               })
               .catch((e) => console.error("Bonus failed", e));
 
-            // 2. Trigger the celebration
-            if (typeof triggerBonusCelebration === "function")
+            // 2. Trigger the celebration (Dopamine Injector)
+            if (typeof triggerBonusCelebration === "function") {
+              // 🎯 This line "reads" the value, clearing the TypeScript error
               triggerBonusCelebration();
-            alert("PERFECT STREAK! 🏆 +100 Bonus XP awarded!");
+            } else {
+              // Fallback if the helper is out of reach
+              if (typeof triggerConfetti === "function") triggerConfetti();
+              alert("PERFECT STREAK! 🏆 +100 Bonus XP awarded!");
+            }
           }
 
           // 🚩 3. Set the trigger for the Lessons list popup
