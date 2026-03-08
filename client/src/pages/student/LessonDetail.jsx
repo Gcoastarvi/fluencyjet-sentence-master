@@ -297,9 +297,9 @@ export default function LessonDetail() {
   }, [lesson, dayNumber]);
 
   // 🎯 DATA NORMALIZATION: Bridges the gap between DB naming and UI logic
-  const videoUrl = lesson?.videoUrl || lesson?.video_url;
-  const description =
-    lesson?.description || lesson?.desc || lesson?.lessonDescription;
+  // 🎯 Ensure normalization uses the exact snake_case fields from the DB
+  const videoUrl = lesson?.video_url || lesson?.videoUrl;
+  const description = lesson?.description || lesson?.desc;
 
   const title =
     lesson?.lessonTitle ||
@@ -1180,10 +1180,12 @@ export default function LessonDetail() {
               </div>
             </div>
 
-            {/* 🎥 World-Class Video Engine: Handles both hardcoded and DB-driven URLs */}
+            {/* 🎥 Cinematic Video Hub: Normalized for Platform Agnostic Playback */}
             {videoUrl || teach?.video?.id ? (
               <div className="mt-8 group relative overflow-hidden rounded-[2.5rem] border-4 border-white shadow-2xl bg-slate-900 transition-all duration-500 hover:shadow-indigo-100">
+                {/* Subtle Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent z-10 opacity-60 pointer-events-none" />
+
                 <div className="relative z-0 w-full aspect-video">
                   <iframe
                     title={`Lesson ${lessonId} video`}
@@ -1192,16 +1194,17 @@ export default function LessonDetail() {
                       videoUrl ||
                       (teach.video.provider === "vimeo"
                         ? `https://player.vimeo.com/video/${teach.video.id}`
-                        : `https://www.youtube-nocookie.com/embed/${teach.video.id}`)
+                        : `https://www.youtube-nocookie.com/embed/${teach.video.id}?rel=0&modestbranding=1`)
                     }
-                    // ... rest of your existing iframe props
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
                 </div>
+
+                {/* Floating Glassmorphism Interaction Bar */}
                 <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between">
                   <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
-                    {lesson?.videoUrl ? "Lesson Guide" : "Visual Guide"}
+                    {videoUrl ? "Lesson Guide" : "Visual Guide"}
                   </div>
                   <button
                     onClick={() =>
@@ -1216,15 +1219,15 @@ export default function LessonDetail() {
                 </div>
               </div>
             ) : (
-              /* 💡 Dynamic Card fallback if no video exists yet */
+              /* 📖 Dynamic Fallback if no video exists */
               <div className="mt-8 p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center text-center">
                 <div className="h-16 w-16 bg-white shadow-sm rounded-2xl flex items-center justify-center text-3xl mb-4">
                   📖
                 </div>
                 <h3 className="text-slate-900 font-bold">Concept Overview</h3>
                 <p className="text-sm text-slate-500 max-w-[200px] mt-2">
-                  {lesson?.description ||
-                    "Master this pattern through active practice."}
+                  {description ||
+                    "Master this sentence pattern through active practice."}
                 </p>
               </div>
             )}

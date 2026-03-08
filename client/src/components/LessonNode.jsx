@@ -20,10 +20,10 @@ export default function LessonNode({ lesson, displayNum, isLocked }) {
     const difficulty = isIntermediate ? "intermediate" : "basic";
 
     // 🎯 Pass the displayNum in the state object
+    // This is correct as it is: it tells the Hub "Load lesson 74, but tell the user it's Lesson 1"
     navigate(`${basePath}/${lesson.id}?difficulty=${difficulty}`, {
       state: { lessonNumber: displayNum },
     });
-  };
 
   return (
     <button
