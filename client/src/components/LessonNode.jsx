@@ -24,6 +24,7 @@ export default function LessonNode({ lesson, displayNum, isLocked }) {
     navigate(`${basePath}/${lesson.id}?difficulty=${difficulty}`, {
       state: { lessonNumber: displayNum },
     });
+  };
 
   return (
     <button
