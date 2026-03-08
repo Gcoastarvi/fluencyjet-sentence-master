@@ -4,9 +4,13 @@ import { useNavigate } from "react-router-dom";
 import * as api from "../../api/apiClient";
 import LessonNode from "../../components/LessonNode";
 
+import { useAuth } from "../../context/AuthContext";
+
 export default function LessonList({ difficulty }) {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const { auth } = useAuth();
 
   useEffect(() => {
     const fetchLessons = async () => {
@@ -80,7 +84,6 @@ export default function LessonList({ difficulty }) {
       <div className="max-w-2xl mx-auto px-4 py-10 space-y-16">
         {modules.map((module) => (
           <section key={module.id} className="relative">
-            {/* Unit Header */}
             <div className="mb-8 p-6 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-xl">
               <h2 className="text-2xl font-black italic">Unit {module.id}</h2>
             </div>
@@ -90,7 +93,6 @@ export default function LessonList({ difficulty }) {
               <div className="absolute top-0 bottom-0 w-1 bg-slate-100 left-1/2 -translate-x-1/2 -z-10" />
 
               {module.lessons.map((lesson, idx) => {
-                // Calculate display number: Unit 1 starts at 1, Unit 2 starts at 11
                 const displayNum = (module.id - 1) * 10 + (idx + 1);
                 return (
                   <div
@@ -102,7 +104,7 @@ export default function LessonList({ difficulty }) {
                     <LessonNode
                       lesson={lesson}
                       displayNum={displayNum}
-                      // 🎯 Respects Mango's database access instead of a hardcoded limit
+                      // 🎯 Now works because 'auth' is imported
                       isLocked={!auth?.user?.has_access && displayNum > 3}
                     />
                   </div>
