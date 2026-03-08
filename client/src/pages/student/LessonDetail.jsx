@@ -772,19 +772,25 @@ export default function LessonDetail() {
     if (!lessonId) return;
     if (isLocked) return goPaywall();
 
-    // 🎯 Calculate the mode with the lowest percentage
+    // 🎯 1. Calculate the mode with the lowest percentage
     const modes = [
       { id: 'reorder', progress: pReorder || 0 },
       { id: 'typing', progress: pTyping || 0 }
     ];
 
-    // Find the lowest one
     const lowest = modes.reduce((prev, curr) => 
       (prev.progress < curr.progress) ? prev : curr
     );
 
-    // 🎯 If everything is 100%, default to 'reorder' for review
     const targetMode = lowest.progress < 100 ? lowest.id : 'reorder';
+
+    // 🎯 2. Verify exercises exist before navigating
+    // This solves the 'await' error at line 830
+    const ok = await hasExercises(dayNumber, targetMode, difficulty); 
+    if (!ok) {
+      alert("Exercises for this mode are being prepared. Check back soon!");
+      return;
+    }
 
     track("start_practice_clicked", {
       lessonId: Number(lessonId),
@@ -793,7 +799,7 @@ export default function LessonDetail() {
       autoSelected: true
     });
 
-    // Launch the mode
+    // 🎯 3. Launch the mode
     startMode(targetMode);
   }
 
@@ -903,6 +909,23 @@ export default function LessonDetail() {
     const prevTyping = readProgress(fromLessonId, "typing");
     const prevReorder = readProgress(fromLessonId, "reorder");
     const prevAudio = readProgress(fromLessonId, "audio");
+
+    // --- 🏆 Mastery Celebration Helper ---
+    const triggerBonusCelebration = () => {
+      // 🎯 Trigger the confetti burst
+      if (typeof triggerConfetti === "function") {
+        triggerConfetti();
+      }
+
+      // 🔊 Audio Dopamine (Optional)
+      try {
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+        audio.volume = 0.5;
+        audio.play();
+      } catch (e) {
+        console.log("Audio play blocked by browser");
+      }
+    };
 
     const missing = [];
     if (isIncomplete(prevTyping)) missing.push("typing");
