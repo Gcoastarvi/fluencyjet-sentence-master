@@ -971,9 +971,13 @@ export default function LessonDetail() {
         <div className="flex items-start justify-between gap-3 relative">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-2xl font-black text-slate-900">
-                Lesson {displayNum}:{" "}
-                <span className="font-bold opacity-70">{title}</span>
+              <h1 className="text-3xl font-black text-slate-900">
+                Lesson {displayNum}
+                {title && title !== `Lesson ${lessonId}` && (
+                  <span className="text-slate-400 font-medium ml-2">
+                    | {title}
+                  </span>
+                )}
               </h1>
 
               {/* 🎖️ Verified Level Badge */}
@@ -1171,27 +1175,42 @@ export default function LessonDetail() {
               </div>
             </div>
 
-            {/* 998: Cinematic Video Wrapper with Glassmorphism */}
-            {teach?.video?.id ? (
+            {/* 🎥 Cinematic Video Wrapper: Handles DB-driven videoUrl */}
+            {lesson?.videoUrl ? (
               <div className="mt-8 group relative overflow-hidden rounded-[2.5rem] border-4 border-white shadow-2xl bg-slate-900 transition-all duration-500 hover:shadow-indigo-100">
-                {/* Subtle Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent z-10 opacity-60 pointer-events-none" />
-
-                <div
-                  className={`relative z-0 w-full ${teach.video.ratio === "9:16" ? "aspect-[9/16] max-h-[500px]" : "aspect-video"}`}
-                >
+                <div className="relative z-0 w-full aspect-video">
                   <iframe
                     title={`Lesson ${lessonId} video`}
                     className="absolute inset-0 h-full w-full"
-                    src={
-                      teach.video.provider === "vimeo"
-                        ? `https://player.vimeo.com/video/${teach.video.id}`
-                        : `https://www.youtube-nocookie.com/embed/${teach.video.id}?rel=0&modestbranding=1`
+                    src={lesson.videoUrl.includes('vimeo') 
+                      ? `https://player.vimeo.com/video/${lesson.videoUrl.split('/').pop()}`
+                      : `https://www.youtube-nocookie.com/embed/${lesson.videoUrl.includes('v=') ? lesson.videoUrl.split('v=')[1].split('&')[0] : lesson.videoUrl.split('/').pop()}?rel=0&modestbranding=1`
                     }
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
                 </div>
+                {/* Floating interaction bar */}
+                <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between">
+                  <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
+                    Video Guide
+                  </div>
+                  <button
+                    onClick={() => document.getElementById("practice-actions")?.scrollIntoView({ behavior: "smooth" })}
+                    className="bg-white text-slate-900 px-6 py-2 rounded-full font-bold text-xs shadow-lg hover:scale-105 active:scale-95 transition-all"
+                  >
+                    Practice Now ↓
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* 💡 Graceful Empty State: No Video? Show a clean placeholder or just the rule */
+              <div className="mt-8 p-8 rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center text-center">
+                <div className="h-12 w-12 bg-slate-200 rounded-full flex items-center justify-center text-xl mb-3">📖</div>
+                <p className="text-sm font-bold text-slate-500">Read the rule below to start your practice session!</p>
+              </div>
+            )}
 
                 {/* Floating interaction bar using glassmorphism */}
                 <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between">
