@@ -13,14 +13,16 @@ export default function LessonNode({ lesson, displayNum, isLocked }) {
   const handleClick = () => {
     if (isLocked) return;
 
-    // 🎯 Superior Routing: Detects track from lesson level or current URL
     const isIntermediate =
       lesson.level === "INTERMEDIATE" ||
       window.location.pathname.startsWith("/i/");
     const basePath = isIntermediate ? "/i/lesson" : "/b/lesson";
     const difficulty = isIntermediate ? "intermediate" : "basic";
 
-    navigate(`${basePath}/${lesson.id}?difficulty=${difficulty}`);
+    // 🎯 Pass the displayNum in the state object
+    navigate(`${basePath}/${lesson.id}?difficulty=${difficulty}`, {
+      state: { lessonNumber: displayNum },
+    });
   };
 
   return (
@@ -71,12 +73,15 @@ export default function LessonNode({ lesson, displayNum, isLocked }) {
 
       {/* 📝 Label */}
       <div className="mt-2 text-center">
-        <p className="text-[10px] font-black uppercase text-slate-500 tracking-tighter">
+        <p className="text-[10px] font-black uppercase text-slate-400 tracking-tighter">
           Lesson {displayNum}
         </p>
-        <p className="text-xs font-bold text-slate-800 max-w-[120px] truncate">
-          {lesson.title || `Mastery ${displayNum}`}
-        </p>
+        {/* 🎯 Only show the title if it exists, otherwise hide to avoid duplication */}
+        {lesson.title && lesson.title !== `Lesson ${displayNum}` && (
+          <p className="text-xs font-bold text-slate-800 max-w-[120px] truncate">
+            {lesson.title}
+          </p>
+        )}
       </div>
     </button>
   );

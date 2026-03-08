@@ -24,6 +24,9 @@ import Certificate from "@/components/student/Certificate";
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
 
+const location = useLocation();
+const displayNum = location.state?.lessonNumber || lesson?.id;
+
 const modeEnabled = (mode, modeAvail) => {
   if (mode === "audio") return ENABLE_AUDIO && modeAvail.audio;
   if (mode === "cloze") return ENABLE_CLOZE && modeAvail.cloze;
@@ -526,10 +529,17 @@ export default function LessonDetail() {
     );
   }
 
-  function startMode(mode) {
+  async function startMode(mode) { // 🎯 Added async here
     setShowMoreModes(false);
     if (!lessonId) return;
     if (isLocked) return goPaywall();
+
+    // Check if the mode actually has exercises before navigating
+    const ok = await hasExercises(dayNumber, mode, difficulty); // 🎯 Now await is valid
+    if (!ok) {
+      alert("This mode is coming soon for this lesson!");
+      return;
+    }
 
     if (mode === "audio" && !ENABLE_AUDIO) return;
     if (mode === "cloze" && !ENABLE_CLOZE) return;
@@ -715,8 +725,7 @@ export default function LessonDetail() {
       const sound = new Audio("/sounds/levelup.mp3");
       sound.volume = 0.4;
       sound.play().catch(() => {});
-
-      // 2. 🚀 Push Mastery Event to Railway
+      
       // 2. 🚀 Push Mastery Event to Railway
       api
         .post("/quizzes/sync-mastery", {
@@ -724,8 +733,24 @@ export default function LessonDetail() {
           level: difficulty.toUpperCase(),
           xpDelta: 150, // 👈 Explicitly passing XP for the event log
         })
-        .then(() => {
+        .then((res) => {
           console.log("[CLOUD] Mastery achievement synced to PostgreSQL");
+
+          // 🎯 PERFECT STREAK BONUS LOGIC
+          const newProgress = res.data?.newProgress || 0;
+          if (newProgress >= 100) {
+            // 1. Award +100 Bonus XP
+            api.post("/xp/bonus", { 
+              amount: 100, 
+              reason: "PERFECT_MASTERY",
+              lessonId: Number(dayNumber)
+            }).catch(e => console.error("Bonus failed", e));
+
+            // 2. Trigger the celebration
+            if (typeof triggerConfetti === "function") triggerConfetti();
+            alert("PERFECT STREAK! 🏆 +100 Bonus XP awarded!");
+          }
+
           // 🚩 3. Set the trigger for the Lessons list popup
           localStorage.setItem("fj_show_mastery_popup", dayNumber);
         })
@@ -747,12 +772,30 @@ export default function LessonDetail() {
     if (!lessonId) return;
     if (isLocked) return goPaywall();
 
+    // 🎯 Calculate the mode with the lowest percentage
+    const modes = [
+      { id: 'reorder', progress: pReorder || 0 },
+      { id: 'typing', progress: pTyping || 0 }
+    ];
+
+    // Find the lowest one
+    const lowest = modes.reduce((prev, curr) => 
+      (prev.progress < curr.progress) ? prev : curr
+    );
+
+    // 🎯 If everything is 100%, default to 'reorder' for review
+    const targetMode = lowest.progress < 100 ? lowest.id : 'reorder';
+
     track("start_practice_clicked", {
-      lessonId: Number(dayNumber) || 0,
+      lessonId: Number(lessonId),
       difficulty,
-      recommendedMode,
-      hasContinue: Boolean(continueHref),
+      recommendedMode: targetMode,
+      autoSelected: true
     });
+
+    // Launch the mode
+    startMode(targetMode);
+  }
 
     // If Continue exists, always honor it first
     if (continueHref) {
@@ -910,7 +953,10 @@ export default function LessonDetail() {
         <div className="flex items-start justify-between gap-3 relative">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+              <h1 className="text-2xl font-black text-slate-900">
+                Lesson {displayNum}:{" "}
+                <span className="font-bold opacity-70">{title}</span>
+              </h1>
 
               {/* 🎖️ Verified Level Badge */}
               {userProfile?.placement_level?.toLowerCase() ===
@@ -1734,8 +1780,8 @@ export default function LessonDetail() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </div>        
+      </div>      
     </div>
   );
 }

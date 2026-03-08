@@ -102,7 +102,8 @@ export default function LessonList({ difficulty }) {
                     <LessonNode
                       lesson={lesson}
                       displayNum={displayNum}
-                      isLocked={displayNum > 3 && module.id === 1} // Example lock logic
+                      // 🎯 Respects Mango's database access instead of a hardcoded limit
+                      isLocked={!auth?.user?.has_access && displayNum > 3}
                     />
                   </div>
                 );

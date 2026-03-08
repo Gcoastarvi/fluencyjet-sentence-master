@@ -1,16 +1,31 @@
 lessonSlug,lessonTitle,lessonLevel,mode,orderIndex,promptTa,answer,xp
-basic-1,Basic Lesson 1,basic,reorder,1,"கண்டிப்பா இல்ல","Definitely not",150
-basic-1,Basic Lesson 1,basic,reorder,2,"சரி,ஓகே","Alright,okay",150
-basic-1,Basic Lesson 1,basic,reorder,3,"எனக்கு தெரியல","I don't know",150
-basic-1,Basic Lesson 1,basic,reorder,4,"யோசிச்சுப் பார்க்கிறேன்","I will think about it",150
-basic-1,Basic Lesson 1,basic,reorder,5,"அது நல்ல ஐடியா","That's a good idea",150
-basic-1,Basic Lesson 1,basic,reorder,6,"அத மறந்துடு","Forget it",150
-basic-1,Basic Lesson 1,basic,reorder,7,"அத தான் நானும் நெனச்சேன்","That's what I thought too",150
-basic-1,Basic Lesson 1,basic,reorder,8,"சும்மா கேக்கறேன்","Just asking",150
-basic-1,Basic Lesson 1,basic,reorder,9,"நல்லா இருக்கு","Sounds good",150
-basic-1,Basic Lesson 1,basic,reorder,10,"இது எனக்கு ஒரு சவால்","This is a challenge for me",150
-basic-1,Basic Lesson 1,basic,typing,1,"அதுவும் சரிதான்","That's true too",150
-basic-1,Basic Lesson 1,basic,typing,2,"அதுக்கு நான் ரெடி","I'm ready for that",150
-basic-1,Basic Lesson 1,basic,typing,3,"சரி,ஒத்துக்கிறேன்","Okay,I agree",150
-basic-1,Basic Lesson 1,basic,typing,4,"அதுக்காக நான் காத்திருந்தேன்","I was waiting for that",150
-basic-1,Basic Lesson 1,basic,typing,5,"ஒன்னும் ப்ரொப்ளம் இல்ல","No problem at all",150
+lesson-40,Lesson 40,basic,typing,1,கார் சிவப்பு நிறத்தில் உள்ளது.,The car is red.,150
+lesson-40,Lesson 40,basic,reorder,1,கார் சிவப்பு நிறத்தில் உள்ளது.,The car is red.,150
+lesson-40,Lesson 40,basic,audio,1,கார் சிவப்பு நிறத்தில் உள்ளது.,The car is red.,150
+lesson-40,Lesson 40,basic,typing,2,அவர் என் சகோதரன்.,He is my brother.,150
+lesson-40,Lesson 40,basic,reorder,2,அவர் என் சகோதரன்.,He is my brother.,150
+lesson-40,Lesson 40,basic,audio,2,அவர் என் சகோதரன்.,He is my brother.,150
+lesson-40,Lesson 40,basic,typing,3,இந்த தேநீர் மிகவும் சூடாக இருக்கிறது.,This tea is very hot.,150
+lesson-40,Lesson 40,basic,reorder,3,இந்த தேநீர் மிகவும் சூடாக இருக்கிறது.,This tea is very hot.,150
+lesson-40,Lesson 40,basic,audio,3,இந்த தேநீர் மிகவும் சூடாக இருக்கிறது.,This tea is very hot.,150
+lesson-40,Lesson 40,basic,typing,4,நான் இன்று மகிழ்ச்சியாக இருக்கிறேன்.,I am happy today.,150
+lesson-40,Lesson 40,basic,reorder,4,நான் இன்று மகிழ்ச்சியாக இருக்கிறேன்.,I am happy today.,150
+lesson-40,Lesson 40,basic,audio,4,நான் இன்று மகிழ்ச்சியாக இருக்கிறேன்.,I am happy today.,150
+lesson-40,Lesson 40,basic,typing,5,அவளுக்கு நீண்ட கூந்தல் உள்ளது.,She has long hair.,150
+lesson-40,Lesson 40,basic,reorder,5,அவளுக்கு நீண்ட கூந்தல் உள்ளது.,She has long hair.,150
+lesson-40,Lesson 40,basic,audio,5,அவளுக்கு நீண்ட கூந்தல் உள்ளது.,She has long hair.,150
+lesson-40,Lesson 40,basic,typing,6,நாங்கள் மிக சோர்வாக இருக்கிறோம்.,We are so tired.,150
+lesson-40,Lesson 40,basic,reorder,6,நாங்கள் மிக சோர்வாக இருக்கிறோம்.,We are so tired.,150
+lesson-40,Lesson 40,basic,audio,6,நாங்கள் மிக சோர்வாக இருக்கிறோம்.,We are so tired.,150
+lesson-40,Lesson 40,basic,typing,7,நீங்கள் எப்படி இருக்கிறீர்கள்?,How are you?,150
+lesson-40,Lesson 40,basic,reorder,7,நீங்கள் எப்படி இருக்கிறீர்கள்?,How are you?,150
+lesson-40,Lesson 40,basic,audio,7,நீங்கள் எப்படி இருக்கிறீர்கள்?,How are you?,150
+lesson-40,Lesson 40,basic,typing,8,பை கனமாக இருக்கிறது.,The bag is heavy.,150
+lesson-40,Lesson 40,basic,reorder,8,பை கனமாக இருக்கிறது.,The bag is heavy.,150
+lesson-40,Lesson 40,basic,audio,8,பை கனமாக இருக்கிறது.,The bag is heavy.,150
+lesson-40,Lesson 40,basic,typing,9,அவர்கள் நட்பானவர்கள்.,They are friendly.,150
+lesson-40,Lesson 40,basic,reorder,9,அவர்கள் நட்பானவர்கள்.,They are friendly.,150
+lesson-40,Lesson 40,basic,audio,9,அவர்கள் நட்பானவர்கள்.,They are friendly.,150
+lesson-40,Lesson 40,basic,typing,10,அது ஒரு பெரிய வீடு.,It is a big house.,150
+lesson-40,Lesson 40,basic,reorder,10,அது ஒரு பெரிய வீடு.,It is a big house.,150
+lesson-40,Lesson 40,basic,audio,10,அது ஒரு பெரிய வீடு.,It is a big house.,150
