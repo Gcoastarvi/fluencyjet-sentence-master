@@ -7,6 +7,9 @@ import {
   useSearchParams,
 } from "react-router-dom";
 
+const location = useLocation();
+const navigate = useNavigate();
+
 import { api } from "../../api/apiClient";
 
 import { LESSON_TEACH } from "../../content/lessonTeach";
@@ -137,11 +140,12 @@ function modeLabel(m) {
   return x.charAt(0).toUpperCase() + x.slice(1);
 }
 
+// If Lessons page passes state: { lesson }, we use it. If not, we still render safely.
+const [lesson, setLesson] = useState(location.state?.lesson || null);
+
 export default function LessonDetail() {
   const [missedBanner, setMissedBanner] = useState(null);
 
-  const location = useLocation();
-  const navigate = useNavigate();
   const displayNum = location.state?.lessonNumber || lesson?.id;
 
   const { lessonId: lessonIdParam } = useParams(); // this is dayNumber in MVP routing
@@ -186,9 +190,6 @@ export default function LessonDetail() {
       console.error("Certificate generation failed:", err);
     }
   };
-
-  // If Lessons page passes state: { lesson }, we use it. If not, we still render safely.
-  const [lesson, setLesson] = useState(location.state?.lesson || null);
 
   // Difficulty: URL wins, else lesson metadata, else beginner
   const lessonDifficulty = (
@@ -977,9 +978,10 @@ export default function LessonDetail() {
             <div className="flex flex-wrap items-center gap-2 mb-1">
               <h1 className="text-3xl font-black text-slate-900">
                 Lesson {displayNum}
-                {title && title !== `Lesson ${lessonId}` && (
+                {/* 🎯 Only show the DB title if it's not a duplicate of the ID */}
+                {lesson?.title && !lesson.title.includes(String(lesson.id)) && (
                   <span className="text-slate-400 font-medium ml-2">
-                    | {title}
+                    | {lesson.title}
                   </span>
                 )}
               </h1>
