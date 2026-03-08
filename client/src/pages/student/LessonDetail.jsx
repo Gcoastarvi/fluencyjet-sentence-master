@@ -155,11 +155,6 @@ export default function LessonDetail() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // 🎯 DATA NORMALIZATION: Bridges the gap between DB naming and UI logic
-  const videoUrl = lesson?.videoUrl || lesson?.video_url;
-  const description =
-    lesson?.description || lesson?.desc || lesson?.lessonDescription;
-
   // 150: Image Generation Handlers
   const handleShare = async (avg) => {
     const node = document.getElementById("achievement-canvas");
@@ -300,6 +295,11 @@ export default function LessonDetail() {
       cancelled = true;
     };
   }, [lesson, dayNumber]);
+
+  // 🎯 DATA NORMALIZATION: Bridges the gap between DB naming and UI logic
+  const videoUrl = lesson?.videoUrl || lesson?.video_url;
+  const description =
+    lesson?.description || lesson?.desc || lesson?.lessonDescription;
 
   const title =
     lesson?.lessonTitle ||
