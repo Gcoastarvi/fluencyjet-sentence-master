@@ -138,9 +138,20 @@ import path from "path";
     if (!answer) { errors.push(`Row ${rowNum}: missing answer`); continue; }
     if (!Number.isFinite(xp) || xp <= 0) { errors.push(`Row ${rowNum}: invalid xp`); continue; }
 
+    const videoUrl = String(row[col.videoUrl] || "").trim();
+    const description = String(row[col.description] || "").trim();
+
     const key = `${lessonSlug}|${mode}`;
     if (!groups.has(key)) {
-      groups.set(key, { lessonSlug, lessonTitle, lessonLevel, mode, items: [] });
+      groups.set(key, {
+        lessonSlug,
+        lessonTitle,
+        lessonLevel,
+        mode,
+        videoUrl, // 🎯 Included
+        description, // 🎯 Included
+        items: []
+      });
     }
     groups.get(key).items.push({ orderIndex, promptTa, answer, xp });
   }

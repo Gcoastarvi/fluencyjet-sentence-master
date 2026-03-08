@@ -1183,9 +1183,10 @@ export default function LessonDetail() {
                   <iframe
                     title={`Lesson ${lessonId} video`}
                     className="absolute inset-0 h-full w-full"
-                    src={lesson.videoUrl.includes('vimeo') 
-                      ? `https://player.vimeo.com/video/${lesson.videoUrl.split('/').pop()}`
-                      : `https://www.youtube-nocookie.com/embed/${lesson.videoUrl.includes('v=') ? lesson.videoUrl.split('v=')[1].split('&')[0] : lesson.videoUrl.split('/').pop()}?rel=0&modestbranding=1`
+                    src={
+                      lesson.videoUrl.includes("vimeo")
+                        ? `https://player.vimeo.com/video/${lesson.videoUrl.split("/").pop()}`
+                        : `https://www.youtube-nocookie.com/embed/${lesson.videoUrl.includes("v=") ? lesson.videoUrl.split("v=")[1].split("&")[0] : lesson.videoUrl.split("/").pop()}?rel=0&modestbranding=1`
                     }
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
@@ -1195,27 +1196,6 @@ export default function LessonDetail() {
                 <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between">
                   <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
                     Video Guide
-                  </div>
-                  <button
-                    onClick={() => document.getElementById("practice-actions")?.scrollIntoView({ behavior: "smooth" })}
-                    className="bg-white text-slate-900 px-6 py-2 rounded-full font-bold text-xs shadow-lg hover:scale-105 active:scale-95 transition-all"
-                  >
-                    Practice Now ↓
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* 💡 Graceful Empty State: No Video? Show a clean placeholder or just the rule */
-              <div className="mt-8 p-8 rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center text-center">
-                <div className="h-12 w-12 bg-slate-200 rounded-full flex items-center justify-center text-xl mb-3">📖</div>
-                <p className="text-sm font-bold text-slate-500">Read the rule below to start your practice session!</p>
-              </div>
-            )}
-
-                {/* Floating interaction bar using glassmorphism */}
-                <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between">
-                  <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
-                    Visual Guide
                   </div>
                   <button
                     onClick={() =>
@@ -1229,7 +1209,19 @@ export default function LessonDetail() {
                   </button>
                 </div>
               </div>
-            ) : null}
+            ) : (
+              /* 💡 Phenomenal Fallback for missing videos */
+              <div className="mt-8 p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center text-center">
+                <div className="h-16 w-16 bg-white shadow-sm rounded-2xl flex items-center justify-center text-3xl mb-4 animate-bounce-subtle">
+                  📖
+                </div>
+                <h3 className="text-slate-900 font-bold">Ready to Practice?</h3>
+                <p className="text-sm text-slate-500 max-w-[200px] mt-2">
+                  No video for this lesson yet, but the rules and exercises are
+                  ready!
+                </p>
+              </div>
+            )}
 
             {showTamilHelp ? (
               <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-800">
