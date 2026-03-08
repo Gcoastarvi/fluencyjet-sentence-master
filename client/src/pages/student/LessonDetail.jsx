@@ -296,11 +296,6 @@ export default function LessonDetail() {
     };
   }, [lesson, dayNumber]);
 
-  // 🎯 DATA NORMALIZATION: Bridges the gap between DB naming and UI logic
-  // 🎯 Ensure normalization uses the exact snake_case fields from the DB
-  const videoUrl = lesson?.video_url || lesson?.videoUrl;
-  const description = lesson?.description || lesson?.desc;
-
   const title =
     lesson?.lessonTitle ||
     lesson?.title ||
@@ -964,6 +959,10 @@ export default function LessonDetail() {
   const teach = LESSON_TEACH[Number(lessonId)] || null;
 
   const streak = userProfile?.daily_streak || 0;
+
+  // 🎯 DATA NORMALIZATION: Moved here so 'lesson' is guaranteed to be available
+  const videoUrl = lesson?.videoUrl || lesson?.video_url;
+  const description = lesson?.description || lesson?.desc || lesson?.lessonDescription;
 
   return (
     <div className="mx-auto max-w-xl p-4">
