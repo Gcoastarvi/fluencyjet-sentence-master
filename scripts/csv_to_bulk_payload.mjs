@@ -77,6 +77,9 @@ import path from "path";
     promptTa: idx.promptta ?? idx.tamil ?? idx.ta,
     answer: idx.answer ?? idx.english ?? idx.en,
     xp: idx.xp,
+    // 🎯 Added new optional columns
+    videoUrl: idx.videourl ?? idx.video ?? idx.youtube,
+    description: idx.description ?? idx.desc
   };
 
   const required = ["lessonSlug", "lessonTitle", "lessonLevel", "mode", "orderIndex", "promptTa", "answer"];
@@ -172,6 +175,9 @@ import path from "path";
       lessonTitle: g.lessonTitle,
       lessonLevel: g.lessonLevel,
       mode: g.mode,
+      // 🎯 Injects new fields if present in CSV
+      videoUrl: String(rows[1][col.videoUrl] || "").trim(),
+      description: String(rows[1][col.description] || "").trim(),
       xp: 150,
       items: g.items,
     };
