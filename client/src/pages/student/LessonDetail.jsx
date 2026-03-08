@@ -155,6 +155,11 @@ export default function LessonDetail() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // 🎯 DATA NORMALIZATION: Bridges the gap between DB naming and UI logic
+  const videoUrl = lesson?.videoUrl || lesson?.video_url;
+  const description =
+    lesson?.description || lesson?.desc || lesson?.lessonDescription;
+
   // 150: Image Generation Handlers
   const handleShare = async (avg) => {
     const node = document.getElementById("achievement-canvas");
@@ -1176,7 +1181,7 @@ export default function LessonDetail() {
             </div>
 
             {/* 🎥 World-Class Video Engine: Handles both hardcoded and DB-driven URLs */}
-            {lesson?.videoUrl || teach?.video?.id ? (
+            {videoUrl || teach?.video?.id ? (
               <div className="mt-8 group relative overflow-hidden rounded-[2.5rem] border-4 border-white shadow-2xl bg-slate-900 transition-all duration-500 hover:shadow-indigo-100">
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent z-10 opacity-60 pointer-events-none" />
                 <div className="relative z-0 w-full aspect-video">
@@ -1184,11 +1189,12 @@ export default function LessonDetail() {
                     title={`Lesson ${lessonId} video`}
                     className="absolute inset-0 h-full w-full"
                     src={
-                      lesson?.videoUrl ||
+                      videoUrl ||
                       (teach.video.provider === "vimeo"
                         ? `https://player.vimeo.com/video/${teach.video.id}`
                         : `https://www.youtube-nocookie.com/embed/${teach.video.id}`)
                     }
+                    // ... rest of your existing iframe props
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
