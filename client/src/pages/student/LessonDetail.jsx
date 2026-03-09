@@ -7,9 +7,6 @@ import {
   useSearchParams,
 } from "react-router-dom";
 
-const location = useLocation();
-const navigate = useNavigate();
-
 import { api } from "../../api/apiClient";
 
 import { LESSON_TEACH } from "../../content/lessonTeach";
@@ -140,24 +137,25 @@ function modeLabel(m) {
   return x.charAt(0).toUpperCase() + x.slice(1);
 }
 
-// If Lessons page passes state: { lesson }, we use it. If not, we still render safely.
-const [lesson, setLesson] = useState(location.state?.lesson || null);
+  export default function LessonDetail() {
+    // 🎯 1. Initialize Hooks First
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { lessonId: lessonIdParam } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
-export default function LessonDetail() {
-  const [missedBanner, setMissedBanner] = useState(null);
+    // 🎯 2. Initialize State Second (Now 'location' is safe to use)
+    const [lesson, setLesson] = useState(location.state?.lesson || null);
+    const [missedBanner, setMissedBanner] = useState(null);
 
-  const displayNum = location.state?.lessonNumber || lesson?.id;
+    // 🎯 3. Derived Variables Third
+    const displayNum = location.state?.lessonNumber || lesson?.id;
+    const dayNumber = Number(lessonIdParam);
+    const dayNumberStr = String(lessonIdParam || "");  
 
-  const { lessonId: lessonIdParam } = useParams(); // this is dayNumber in MVP routing
-
-  const dayNumber = Number(lessonIdParam); // numeric dayNumber
-  const dayNumberStr = String(lessonIdParam || ""); // string for storage / url encoding
-
-  // ✅ compatibility: many parts of this file still expect `lessonId`
-  const lessonId = dayNumberStr;
-  const lessonIdNum = dayNumber; // optional alias if older code uses lessonIdNum
-
-  const [searchParams, setSearchParams] = useSearchParams();
+    // ✅ compatibility: many parts of this file still expect `lessonId`
+    const lessonId = dayNumberStr;
+    const lessonIdNum = dayNumber; // optional alias if older code uses lessonIdNum
 
   // 150: Image Generation Handlers
   const handleShare = async (avg) => {
