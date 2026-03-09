@@ -1,10 +1,14 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
 // 🎯 Use the asterisk (*) to grab all exports and name them 'api'
 import * as api from "../../api/apiClient";
 import LessonNode from "../../components/LessonNode";
 
 import { useAuth } from "../../context/AuthContext";
+
+// Remove the old LessonNode import and add the new LessonCard
+import LessonCard from "../../components/student/LessonCard";
 
 export default function LessonList({ difficulty }) {
   const [lessons, setLessons] = useState([]);
@@ -94,25 +98,19 @@ export default function LessonList({ difficulty }) {
 
               {module.lessons.map((lesson, idx) => {
                 const displayNum = (module.id - 1) * 10 + (idx + 1);
+                // 🎯 Premium Logic: Check both possible auth paths for Mango's access
+                const isLocked =
+                  (auth?.user?.has_access === false ||
+                    auth?.has_access === false) &&
+                  displayNum > 3;
+
                 return (
-                  <div
+                  <LessonCard
                     key={lesson.id}
-                    className={
-                      idx % 2 !== 0 ? "sm:translate-x-12" : "sm:-translate-x-12"
-                    }
-                  >
-                    <LessonNode
-                      lesson={lesson}
-                      displayNum={displayNum}
-                      // 🎯 Now works because 'auth' is imported
-                      // This checks both common auth structures to ensure it never defaults to "locked" for premium users
-                      isLocked={
-                        (auth?.user?.has_access === false ||
-                          auth?.has_access === false) &&
-                        displayNum > 3
-                      }
-                    />
-                  </div>
+                    lesson={lesson}
+                    displayNum={displayNum}
+                    isLocked={isLocked}
+                  />
                 );
               })}
             </div>

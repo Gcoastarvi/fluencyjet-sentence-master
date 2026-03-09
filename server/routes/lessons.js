@@ -15,7 +15,7 @@ router.get("/", authMiddleware, async (req, res) => {
     const userId = req.user?.id ?? null;
 
     const lessons = await prisma.lesson.findMany({
-      orderBy: [{ id: "asc" }], // ✅ order column doesn't exist; use id
+      orderBy: [{ id: "asc" }],
       select: {
         id: true,
         slug: true,
@@ -23,30 +23,39 @@ router.get("/", authMiddleware, async (req, res) => {
         description: true,
         difficulty: true,
         isLocked: true,
+        // 🎯 Include per-mode progress records
+        UserProgress: {
+          where: { userId: userId },
+          select: {
+            mode: true,
+            completed_count: true,
+            total_count: true,
+          },
+        },
       },
     });
 
-    if (!lessons.length) {
-      return res.json({ ok: true, lessons: [], unlocked: [] });
-    }
+    const lessonsOut = lessons.map((l) => {
+      // 🎯 Flatten progress array into a clean object: { typing: 100, reorder: 50 ... }
+      const progress = {};
+      if (l.UserProgress) {
+        l.UserProgress.forEach((p) => {
+          progress[p.mode.toLowerCase()] =
+            Math.round((p.completed_count / p.total_count) * 100) || 0;
+        });
+      }
 
-    // No per-lesson progress model exists in this project right now.
-    // So: unlocked = all lessons not locked; completed defaults to false.
-    const unlocked = new Set();
-    lessons.forEach((l) => {
-      if (!l.isLocked) unlocked.add(l.id);
+      return {
+        ...l,
+        progress,
+        is_locked: l.isLocked,
+      };
     });
-
-    const lessonsOut = lessons.map((l) => ({
-      ...l,
-      completed: false, // placeholder until per-lesson progress exists
-      is_locked: l.isLocked, // alias for older UI code
-    }));
 
     return res.json({
       ok: true,
       lessons: lessonsOut,
-      unlocked: Array.from(unlocked),
+      unlocked: lessonsOut.filter((l) => !l.is_locked).map((l) => l.id),
     });
   } catch (err) {
     console.error("❌ /api/lessons error:", err);
