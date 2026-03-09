@@ -2264,7 +2264,7 @@ export default function SentencePractice() {
               type="button"
               onClick={() =>
                 navigate(
-                  `/b/lesson/${lid}?difficulty=${encodeURIComponent(difficulty)}`,
+                  `/b/lesson/${lesson?.day_number || lid}?difficulty=${encodeURIComponent(difficulty)}`,
                 )
               }
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
@@ -2319,7 +2319,7 @@ export default function SentencePractice() {
               type="button"
               onClick={() =>
                 navigate(
-                  `/b/lesson/${lid}?difficulty=${encodeURIComponent(difficulty)}`,
+                  `/b/lesson/${lesson?.day_number || lid}?difficulty=${encodeURIComponent(difficulty)}`,
                 )
               }
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
@@ -2356,7 +2356,7 @@ export default function SentencePractice() {
               type="button"
               onClick={() =>
                 navigate(
-                  `/b/lesson/${lid}?difficulty=${encodeURIComponent(difficulty)}`,
+                  `/b/lesson/${lesson?.day_number || lid}?difficulty=${encodeURIComponent(difficulty)}`,
                 )
               }
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
@@ -2736,7 +2736,7 @@ export default function SentencePractice() {
         streakText={`${Number(streak || 0)}-day streak`}
         onBack={() =>
           navigate(
-            `/b/lesson/${lid || 1}?difficulty=${encodeURIComponent(
+            `/b/lesson/${lesson?.day_number || lid || 1}?difficulty=${encodeURIComponent(
               difficulty || "beginner",
             )}`,
           )

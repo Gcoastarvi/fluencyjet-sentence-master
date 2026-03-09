@@ -105,7 +105,12 @@ export default function LessonList({ difficulty }) {
                       lesson={lesson}
                       displayNum={displayNum}
                       // 🎯 Now works because 'auth' is imported
-                      isLocked={!auth?.user?.has_access && displayNum > 3}
+                      // This checks both common auth structures to ensure it never defaults to "locked" for premium users
+                      isLocked={
+                        (auth?.user?.has_access === false ||
+                          auth?.has_access === false) &&
+                        displayNum > 3
+                      }
                     />
                   </div>
                 );
