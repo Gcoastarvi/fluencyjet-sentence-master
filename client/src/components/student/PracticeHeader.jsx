@@ -66,6 +66,39 @@ export default function PracticeHeader({
           </div>
         </div>
       </div>
+      {/* 🎯 Premium Streak Flame */}
+      {auth?.user?.daily_streak > 0 && (
+        <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-3 py-1 rounded-full shadow-sm animate-fade-in">
+          <span className="text-lg leading-none">🔥</span>
+          <span className="text-xs font-black text-orange-600 uppercase tracking-tight">
+            {auth.user.daily_streak} Day Streak
+          </span>
+          {/* Subtle pulse for active streaks */}
+          <div className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse ml-1" />
+        </div>
+      )}
+      {/* 🛡️ Streak Freeze Indicator */}
+      <div className="flex items-center gap-2">
+        {/* The Flame we added previously */}
+        <div className="bg-orange-50 border border-orange-100 px-3 py-1 rounded-full flex items-center gap-1">
+          <span>🔥 {auth.user.daily_streak}</span>
+        </div>
+
+        {/* ❄️ Premium Shield: Only shows if user is a subscriber */}
+        {auth?.user?.plan === "BEGINNER" && (
+          <div className="group relative">
+            <div className="bg-blue-50 border border-blue-100 p-1.5 rounded-full shadow-sm">
+              <span title="Streak Protected" className="text-sm">
+                🛡️
+              </span>
+            </div>
+            {/* Tooltip on hover */}
+            <div className="absolute top-full right-0 mt-2 hidden group-hover:block bg-slate-900 text-white text-[10px] py-1 px-2 rounded whitespace-nowrap z-50">
+              Premium Streak Freeze Active
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

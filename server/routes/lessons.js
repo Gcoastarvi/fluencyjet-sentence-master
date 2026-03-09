@@ -36,19 +36,23 @@ router.get("/", authMiddleware, async (req, res) => {
     });
 
     const lessonsOut = lessons.map((l) => {
-      // 🎯 Flatten progress array into a clean object: { typing: 100, reorder: 50 ... }
-      const progress = {};
-      if (l.UserProgress) {
+      const progress = { typing: 0, reorder: 0, audio: 0 };
+
+      // 🎯 USE OPTIONAL CHAINING: Prevents 500 error if UserProgress is undefined
+      if (l.UserProgress && Array.isArray(l.UserProgress)) {
         l.UserProgress.forEach((p) => {
-          progress[p.mode.toLowerCase()] =
-            Math.round((p.completed_count / p.total_count) * 100) || 0;
+          if (p.mode) {
+            const modeKey = p.mode.toLowerCase();
+            progress[modeKey] =
+              Math.round((p.completed_count / p.total_count) * 100) || 0;
+          }
         });
       }
 
       return {
         ...l,
         progress,
-        is_locked: l.isLocked,
+        is_locked: l.isLocked || false,
       };
     });
 
