@@ -1,9 +1,11 @@
 // server/routes/leaderboard.js
 import express from "express";
-import prisma from "../db/client.js";
-import authRequired from "../middleware/authMiddleware.js";
+import { PrismaClient } from "@prisma/client";
+// 🎯 Use the same middleware name as your user route
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+const prisma = new PrismaClient(); // 🎯 Only define this ONCE
 
 function weekStartUTC(d = new Date()) {
   const dt = new Date(
@@ -122,6 +124,25 @@ router.get("/this-week", authRequired, async (req, res) => {
   } catch (err) {
     console.error("Leaderboard Error:", err);
     res.status(500).json({ ok: false });
+  }
+});
+
+router.get("/", async (req, res) => {
+  try {
+    // 🎯 Fetch top 10 users by XP
+    const topUsers = await prisma.user.findMany({
+      take: 10,
+      orderBy: { xp: "desc" },
+      select: {
+        id: true,
+        name: true,
+        xp: true,
+        daily_streak: true,
+      },
+    });
+    res.json(topUsers);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load leaderboard" });
   }
 });
 

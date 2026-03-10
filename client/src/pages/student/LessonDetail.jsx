@@ -728,6 +728,36 @@ export default function LessonDetail() {
     };
   }, [dayNumber]); // keep minimal deps
 
+  // --- 🏆 Mastery Celebration Helper ---
+  const triggerBonusCelebration = async () => {
+    // 1. 🎊 Trigger the confetti burst (using the global hook)
+    if (typeof triggerConfetti === "function") {
+      triggerConfetti();
+    }
+
+    // 2. 🔊 Audio Dopamine
+    try {
+      const audio = new Audio(
+        "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+      );
+      audio.volume = 0.4;
+      audio.play();
+    } catch (e) {
+      /* Browser blocked audio */
+    }
+
+    // 3. 🚀 Persistent XP Write-back
+    try {
+      await api.post("/user/award-bonus", {
+        xpAmount: 100,
+        reason: "Daily Goal Mastered",
+      });
+      console.log("🏆 Bonus XP saved to database!");
+    } catch (err) {
+      console.error("❌ XP Write-back failed:", err);
+    }
+  };
+
   // 695: Trigger Mastery Celebration & Cloud Push
   useEffect(() => {
     const pts = [
@@ -930,36 +960,6 @@ export default function LessonDetail() {
     const prevTyping = readProgress(fromLessonId, "typing");
     const prevReorder = readProgress(fromLessonId, "reorder");
     const prevAudio = readProgress(fromLessonId, "audio");
-
-    // --- 🏆 Mastery Celebration Helper ---
-    const triggerBonusCelebration = async () => {
-      // 1. 🎊 Trigger the confetti burst (using the global hook)
-      if (typeof triggerConfetti === "function") {
-        triggerConfetti();
-      }
-
-      // 2. 🔊 Audio Dopamine
-      try {
-        const audio = new Audio(
-          "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
-        );
-        audio.volume = 0.4;
-        audio.play();
-      } catch (e) {
-        /* Browser blocked audio */
-      }
-
-      // 3. 🚀 Persistent XP Write-back
-      try {
-        await api.post("/user/award-bonus", {
-          xpAmount: 100,
-          reason: "Daily Goal Mastered",
-        });
-        console.log("🏆 Bonus XP saved to database!");
-      } catch (err) {
-        console.error("❌ XP Write-back failed:", err);
-      }
-    };
 
     const missing = [];
     if (isIncomplete(prevTyping)) missing.push("typing");
