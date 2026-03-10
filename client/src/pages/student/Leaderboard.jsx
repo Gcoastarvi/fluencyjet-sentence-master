@@ -17,7 +17,7 @@ const PERIOD_TABS = [
   { id: "all", label: "All Time" },
 ];
 
-export default function Leaderboard()
+export default function Leaderboard() {
   const [period, setPeriod] = useState("weekly");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
