@@ -73,32 +73,25 @@ router.get("/", authMiddleware, async (req, res) => {
     const userId = req.user?.id;
     const { difficulty } = req.query;
 
-    // 🎯 Use 'include' instead of 'select' for relations to avoid the ValidationError
-    const lessons = await prisma.lesson.findMany({
-      where: { difficulty: difficulty?.toUpperCase() || "BEGINNER" },
-      orderBy: { id: "asc" },
-      include: {
-        // Try the common lowercase relation name first
-        userProgress: {
-          where: { userId: userId },
-        },
-        // If your schema uses the capitalized name, include it here too
-        UserProgress: {
-          where: { userId: userId },
-        },
-      },
-    });
+    // 🎯 1. Fetch lessons and progress as two independent queries
+    const [lessons, allProgress] = await Promise.all([
+      prisma.lesson.findMany({
+        where: { difficulty: difficulty?.toUpperCase() || "BEGINNER" },
+        orderBy: { id: "asc" },
+      }),
+      prisma.userProgress.findMany({
+        where: { userId: userId },
+      }),
+    ]);
 
+    // 🎯 2. Manual Join: Map progress to the correct lesson
     const lessonsOut = lessons.map((l) => {
       const progress = { typing: 0, reorder: 0, audio: 0 };
 
-      // Combine progress from whichever relation field Prisma populated
-      const combinedProgress = [
-        ...(l.userProgress || []),
-        ...(l.UserProgress || []),
-      ];
+      // Filter progress for THIS specific lesson
+      const lessonProgress = allProgress.filter((p) => p.lessonId === l.id);
 
-      combinedProgress.forEach((p) => {
+      lessonProgress.forEach((p) => {
         const modeKey = p.mode?.toLowerCase();
         if (modeKey && progress.hasOwnProperty(modeKey)) {
           progress[modeKey] =
@@ -116,7 +109,7 @@ router.get("/", authMiddleware, async (req, res) => {
     return res.json(lessonsOut);
   } catch (err) {
     console.error("❌ API CRASH:", err);
-    // Safety Fallback: Return lessons without progress so the UI doesn't break
+    // Absolute fallback: return lessons with 0 progress
     const fallback = await prisma.lesson.findMany({ orderBy: { id: "asc" } });
     return res.json(
       fallback.map((l) => ({
