@@ -27,22 +27,6 @@ export default function Navbar() {
     navigate("/", { replace: true });
   }
 
-  {
-    /* 🎯 Premium Streak Flame */
-  }
-  {
-    auth?.user?.daily_streak > 0 && (
-      <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-3 py-1 rounded-full shadow-sm animate-fade-in">
-        <span className="text-lg leading-none">🔥</span>
-        <span className="text-xs font-black text-orange-600 uppercase tracking-tight">
-          {auth.user.daily_streak} Day Streak
-        </span>
-        {/* Subtle pulse for active streaks */}
-        <div className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse ml-1" />
-      </div>
-    );
-  }
-
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
@@ -109,6 +93,17 @@ export default function Navbar() {
               </>
             )}
           </div>
+          {/* 🎯 Premium Streak Flame */}
+          {auth?.user?.daily_streak > 0 && (
+            <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-3 py-1 rounded-full shadow-sm animate-fade-in">
+              <span className="text-lg leading-none">🔥</span>
+              <span className="text-xs font-black text-orange-600 uppercase tracking-tight">
+                {auth.user.daily_streak} Day Streak
+              </span>
+              {/* Subtle pulse for active streaks */}
+              <div className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse ml-1" />
+            </div>
+          )}
         </div>
       </div>
     </nav>
