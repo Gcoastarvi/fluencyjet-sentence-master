@@ -1,3 +1,5 @@
+// 🎯 STEP 1: ADD THIS MISSING IMPORT (Vital for line 8)
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -5,7 +7,8 @@ export default function Navbar() {
   const { user, auth, logout, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  const [showStreakModal, setShowStreakModal] = React.useState(false);
+  // 🎯 STEP 2: Use the local 'useState' instead of 'React.useState' for cleaner code
+  const [showStreakModal, setShowStreakModal] = useState(false);
 
   // ✅ LOADING GUARD — THIS IS THE KEY
   if (loading) {
