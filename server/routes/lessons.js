@@ -16,21 +16,24 @@ router.get("/", authMiddleware, async (req, res) => {
     const userId = req.user?.id;
     const difficulty = req.query.difficulty?.toUpperCase() || "BASIC";
 
-    // 1. Fetch Lessons and Progress as separate, simple queries (No joins = No crashes)
+    // 1. Fetch using 'user_id' (snake_case) as identified in logs
     const [lessons, progressRecords] = await Promise.all([
       prisma.lesson.findMany({
         where: { difficulty: difficulty },
         orderBy: { id: "asc" },
       }),
       prisma.userProgress.findMany({
-        where: { userId: userId },
+        where: { user_id: userId }, // 🎯 Changed from userId to user_id
       }),
     ]);
 
-    // 2. Map data together manually in JavaScript
     const lessonsOut = lessons.map((l) => {
       const progMap = { typing: 0, reorder: 0, audio: 0 };
-      const myProg = progressRecords.filter((p) => p.lessonId === l.id);
+
+      // 🎯 Match using lesson_id (snake_case)
+      const myProg = progressRecords.filter(
+        (p) => (p.lesson_id || p.lessonId) === l.id,
+      );
 
       myProg.forEach((p) => {
         const key = p.mode?.toLowerCase();
@@ -47,11 +50,9 @@ router.get("/", authMiddleware, async (req, res) => {
       };
     });
 
-    // 3. Return the array directly to satisfy your LessonList.jsx (incomingData)
     return res.json(lessonsOut);
   } catch (err) {
     console.error("❌ CRITICAL LESSONS ERROR:", err);
-    // Ultimate safety: Return empty array so frontend doesn't crash
     return res.json([]);
   }
 });
