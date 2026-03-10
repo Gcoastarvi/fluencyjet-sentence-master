@@ -1,6 +1,8 @@
 import React from "react";
 import { uiFor } from "@/lib/modeUi";
 
+import { useAuth } from "../../context/AuthContext";
+
 export default function PracticeHeader({
   lid,
   difficulty,
@@ -14,6 +16,7 @@ export default function PracticeHeader({
   const safeTotal = Math.max(Number(total || 0), 0);
   const q = Math.min(Number(currentIndex || 0) + 1, Math.max(safeTotal, 1));
   const pct = safeTotal ? Math.round((q / safeTotal) * 100) : 0;
+  const { auth } = useAuth();
 
   return (
     <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
