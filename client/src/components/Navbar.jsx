@@ -2,8 +2,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
-  const { user, logout, loading, isAuthenticated } = useAuth();
+  const { user, auth, logout, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  const [showStreakModal, setShowStreakModal] = React.useState(false);
 
   // ✅ LOADING GUARD — THIS IS THE KEY
   if (loading) {
@@ -38,6 +40,22 @@ export default function Navbar() {
           >
             FluencyJet <span className="font-normal">Sentence Master</span>
           </Link>
+
+          {/* 🔥 Clickable Streak Flame Trigger */}
+          {user?.daily_streak > 0 && (
+            <button
+              onClick={() => setShowStreakModal(true)}
+              className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-3 py-1 rounded-full hover:scale-105 transition-transform"
+            >
+              <span>🔥 {user.daily_streak}</span>
+              {/* 🛡️ Streak Freeze Shield for Premium Users */}
+              {(user?.plan === "BEGINNER" || auth?.has_access) && (
+                <span className="text-[10px] ml-1" title="Protected">
+                  🛡️
+                </span>
+              )}
+            </button>
+          )}
 
           {/* Navigation */}
           <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 sm:pb-0">
@@ -94,14 +112,35 @@ export default function Navbar() {
             )}
           </div>
           {/* 🎯 Premium Streak Flame */}
-          {auth?.user?.daily_streak > 0 && (
-            <div className="flex items-center gap-1 bg-orange-50 border border-orange-100 px-3 py-1 rounded-full shadow-sm animate-fade-in">
-              <span className="text-lg leading-none">🔥</span>
-              <span className="text-xs font-black text-orange-600 uppercase tracking-tight">
-                {auth.user.daily_streak} Day Streak
-              </span>
-              {/* Subtle pulse for active streaks */}
-              <div className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse ml-1" />
+          {showStreakModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+              <div className="bg-white rounded-[2.5rem] p-8 max-w-sm w-full shadow-2xl relative animate-in fade-in zoom-in duration-300">
+                <button
+                  onClick={() => setShowStreakModal(false)}
+                  className="absolute top-6 right-6 text-slate-400"
+                >
+                  ✕
+                </button>
+                <div className="text-center">
+                  <div className="text-6xl mb-4">🔥</div>
+                  <h3 className="text-2xl font-black text-slate-900">
+                    {user?.daily_streak} Day Streak!
+                  </h3>
+                  <p className="text-slate-500 mt-2 text-sm font-medium">
+                    Keep practicing daily to build your fluency engine.
+                  </p>
+                  <div className="mt-6 p-4 bg-orange-50 rounded-2xl border border-orange-100 flex justify-around">
+                    {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                      <div
+                        key={i}
+                        className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-bold ${i < user?.daily_streak % 7 ? "bg-orange-500 text-white shadow-sm" : "bg-white text-slate-300"}`}
+                      >
+                        {d}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
