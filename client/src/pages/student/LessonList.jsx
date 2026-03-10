@@ -23,7 +23,7 @@ export default function LessonList({ difficulty }) {
         const response = await api.api.get(`/lessons?difficulty=${difficulty}`);
 
         // 🎯 Dig into the correct object property based on your console log
-        const incomingData = response?.data?.lessons || [];
+        const incomingData = response?.data || [];
 
         if (Array.isArray(incomingData) && incomingData.length > 0) {
           setLessons(incomingData);
