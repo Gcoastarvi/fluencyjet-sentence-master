@@ -20,6 +20,8 @@ import { toPng } from "html-to-image";
 import AchievementCard from "@/components/student/AchievementCard";
 import Certificate from "@/components/student/Certificate";
 
+import confetti from "canvas-confetti";
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -53,6 +55,12 @@ function getDayNumberFromLesson(lesson) {
 
   return null;
 }
+
+useEffect(() => {
+  if (overallDone === 100) {
+    triggerBonusCelebration();
+  }
+}, [overallDone]);
 
 function getDifficultyFromLesson(lesson) {
   // Prefer API field
@@ -137,25 +145,25 @@ function modeLabel(m) {
   return x.charAt(0).toUpperCase() + x.slice(1);
 }
 
-  export default function LessonDetail() {
-    // 🎯 1. Initialize Hooks First
-    const location = useLocation();
-    const navigate = useNavigate();
-    const { lessonId: lessonIdParam } = useParams();
-    const [searchParams, setSearchParams] = useSearchParams();
+export default function LessonDetail() {
+  // 🎯 1. Initialize Hooks First
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { lessonId: lessonIdParam } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-    // 🎯 2. Initialize State Second (Now 'location' is safe to use)
-    const [lesson, setLesson] = useState(location.state?.lesson || null);
-    const [missedBanner, setMissedBanner] = useState(null);
+  // 🎯 2. Initialize State Second (Now 'location' is safe to use)
+  const [lesson, setLesson] = useState(location.state?.lesson || null);
+  const [missedBanner, setMissedBanner] = useState(null);
 
-    // 🎯 3. Derived Variables Third
-    const displayNum = location.state?.lessonNumber || lesson?.id;
-    const dayNumber = Number(lessonIdParam);
-    const dayNumberStr = String(lessonIdParam || "");  
+  // 🎯 3. Derived Variables Third
+  const displayNum = location.state?.lessonNumber || lesson?.id;
+  const dayNumber = Number(lessonIdParam);
+  const dayNumberStr = String(lessonIdParam || "");
 
-    // ✅ compatibility: many parts of this file still expect `lessonId`
-    const lessonId = dayNumberStr;
-    const lessonIdNum = dayNumber; // optional alias if older code uses lessonIdNum
+  // ✅ compatibility: many parts of this file still expect `lessonId`
+  const lessonId = dayNumberStr;
+  const lessonIdNum = dayNumber; // optional alias if older code uses lessonIdNum
 
   // 150: Image Generation Handlers
   const handleShare = async (avg) => {
@@ -246,6 +254,27 @@ function modeLabel(m) {
     }
     fetchUser();
   }, []);
+
+  // "Daily Streak" Confetti Animation Cannon
+  useEffect(() => {
+    if (overallDone === 100) {
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: Math.random(), y: Math.random() - 0.2 },
+        });
+      }, 250);
+    }
+  }, [overallDone]);
 
   // Fallback: if page is hard-refreshed and no state.lesson, try to fetch lesson list and locate this lesson
   useEffect(() => {
@@ -903,21 +932,32 @@ function modeLabel(m) {
     const prevAudio = readProgress(fromLessonId, "audio");
 
     // --- 🏆 Mastery Celebration Helper ---
-    const triggerBonusCelebration = () => {
-      // 🎯 Trigger the confetti burst
+    const triggerBonusCelebration = async () => {
+      // 1. 🎊 Trigger the confetti burst (using the global hook)
       if (typeof triggerConfetti === "function") {
         triggerConfetti();
       }
 
-      // 🔊 Audio Dopamine (Optional)
+      // 2. 🔊 Audio Dopamine
       try {
         const audio = new Audio(
           "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
         );
-        audio.volume = 0.5;
+        audio.volume = 0.4;
         audio.play();
       } catch (e) {
-        console.log("Audio play blocked by browser");
+        /* Browser blocked audio */
+      }
+
+      // 3. 🚀 Persistent XP Write-back
+      try {
+        await api.post("/user/award-bonus", {
+          xpAmount: 100,
+          reason: "Daily Goal Mastered",
+        });
+        console.log("🏆 Bonus XP saved to database!");
+      } catch (err) {
+        console.error("❌ XP Write-back failed:", err);
       }
     };
 
@@ -1258,7 +1298,7 @@ function modeLabel(m) {
           </div>
         ) : null}
 
-        {/* 1171: World-Class Dashboard */}
+        {/* World-Class Dashboard */}
         {(() => {
           const pts = [
             modeAvail.typing ? pct(typingProg) : null,
@@ -1376,7 +1416,7 @@ function modeLabel(m) {
           );
         })()}
 
-        {/* 1162: Mode chips start here */}
+        {/* Mode chips start here */}
         <div className="mt-6 flex flex-wrap gap-2">
           {/* Mode chips */}
           <div className="mt-4 flex flex-wrap gap-2">
@@ -1536,6 +1576,42 @@ function modeLabel(m) {
               <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
                 🏆 XP + streak
               </span>
+
+              {/* 🏆 NEW: Daily Goal Tracker */}
+              <div className="bg-white rounded-[2rem] p-8 border-2 border-slate-50 shadow-xl shadow-indigo-50/50 mb-8">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">
+                      Current Progress
+                    </h4>
+                    <p className="text-2xl font-black text-slate-900">
+                      10 Min Daily Goal
+                    </p>
+                  </div>
+                  <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                </div>
+
+                {/* Progress Bar Container */}
+                <div className="relative h-6 w-full bg-slate-100 rounded-2xl overflow-hidden p-1 border border-slate-200">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl transition-all duration-1000 ease-out shadow-inner"
+                    style={{ width: `${overallDone}%` }}
+                  />
+                </div>
+
+                <div className="flex justify-between mt-4">
+                  <span className="text-[11px] font-black text-slate-400 uppercase">
+                    {overallDone}% Mastered
+                  </span>
+                  <span className="text-[11px] font-black text-indigo-600 uppercase">
+                    {overallDone === 100
+                      ? "Goal Smashed! 🏅"
+                      : "Almost there..."}
+                  </span>
+                </div>
+              </div>
 
               {/* Premium: time + XP estimate (based on recommended mode) */}
               <span className="ml-auto inline-flex items-center rounded-full bg-black/20 px-2 py-1">

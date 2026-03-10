@@ -29,6 +29,7 @@ import adminLessonsRouter from "./routes/adminLessons.js";
 import adminLessonsUpsertRouter from "./routes/adminLessonsUpsert.js";
 import meRouter from "./routes/me.js";
 import shopRouter from "./routes/shop.js";
+import userRoutes from "./routes/user.js";
 
 // Auth middleware
 import { authMiddleware } from "./middleware/authMiddleware.js";
@@ -46,6 +47,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.set("etag", false);
+
+app.use("/api/user", userRoutes);
 
 // Prevent caching for API responses (fixes 304 issues in browser)
 app.use("/api", (req, res, next) => {
