@@ -56,6 +56,22 @@ function getDayNumberFromLesson(lesson) {
   return null;
 }
 
+// 🎯 1. Calculate the overall mastery percentage
+const progress = lesson?.progress || { typing: 0, reorder: 0, audio: 0 };
+const overallDone = Math.round(
+  (Number(progress.typing || 0) +
+    Number(progress.reorder || 0) +
+    Number(progress.audio || 0)) /
+    3,
+);
+
+// Line 59: Your existing useEffect starts here...
+useEffect(() => {
+  if (overallDone === 100) {
+    triggerBonusCelebration();
+  }
+}, [overallDone]);
+
 useEffect(() => {
   if (overallDone === 100) {
     triggerBonusCelebration();
