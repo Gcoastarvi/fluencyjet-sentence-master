@@ -71,52 +71,37 @@ router.get("/", authMiddleware, async (req, res) => {
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { difficulty } = req.query;
+    // 🎯 1. Fetch Lessons ONLY (No Join = No Crash)
+    const lessons = await prisma.lesson.findMany({
+      orderBy: { id: "asc" },
+    });
 
-    // 🎯 1. Fetch lessons and progress as two independent queries
-    const [lessons, allProgress] = await Promise.all([
-      prisma.lesson.findMany({
-        where: { difficulty: difficulty?.toUpperCase() || "BEGINNER" },
-        orderBy: { id: "asc" },
-      }),
-      prisma.userProgress.findMany({
-        where: { userId: userId },
-      }),
-    ]);
+    // 🎯 2. Fetch Progress separately
+    const progressRecords = await prisma.userProgress.findMany({
+      where: { userId: userId },
+    });
 
-    // 🎯 2. Manual Join: Map progress to the correct lesson
+    // 🎯 3. Map progress to lessons manually
     const lessonsOut = lessons.map((l) => {
-      const progress = { typing: 0, reorder: 0, audio: 0 };
+      const progMap = { typing: 0, reorder: 0, audio: 0 };
+      const myProg = progressRecords.filter((p) => p.lessonId === l.id);
 
-      // Filter progress for THIS specific lesson
-      const lessonProgress = allProgress.filter((p) => p.lessonId === l.id);
-
-      lessonProgress.forEach((p) => {
-        const modeKey = p.mode?.toLowerCase();
-        if (modeKey && progress.hasOwnProperty(modeKey)) {
-          progress[modeKey] =
+      myProg.forEach((p) => {
+        const key = p.mode?.toLowerCase();
+        if (progMap.hasOwnProperty(key)) {
+          progMap[key] =
             Math.round((p.completed_count / p.total_count) * 100) || 0;
         }
       });
 
-      return {
-        ...l,
-        progress,
-        is_locked: l.isLocked || false,
-      };
+      return { ...l, progress: progMap, is_locked: !!l.isLocked };
     });
 
+    // 🎯 4. Return array directly to satisfy LessonList.jsx line 28
     return res.json(lessonsOut);
   } catch (err) {
-    console.error("❌ API CRASH:", err);
-    // Absolute fallback: return lessons with 0 progress
-    const fallback = await prisma.lesson.findMany({ orderBy: { id: "asc" } });
-    return res.json(
-      fallback.map((l) => ({
-        ...l,
-        progress: { typing: 0, reorder: 0, audio: 0 },
-      })),
-    );
+    console.error("❌ CRITICAL API ERROR:", err);
+    return res.status(500).json({ ok: false, message: "Database Sync Error" });
   }
 });
 
