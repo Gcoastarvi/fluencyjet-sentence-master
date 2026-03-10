@@ -57,7 +57,16 @@ function getDayNumberFromLesson(lesson) {
 }
 
 // 🎯 1. Calculate the overall mastery percentage
-const progress = lesson?.progress || { typing: 0, reorder: 0, audio: 0 };
+// 🎯 1. Use the correct variable name (checking for lessonData or lesson)
+const currentData =
+  typeof lessonData !== "undefined"
+    ? lessonData
+    : typeof lesson !== "undefined"
+      ? lesson
+      : null;
+
+const progress = currentData?.progress || { typing: 0, reorder: 0, audio: 0 };
+
 const overallDone = Math.round(
   (Number(progress.typing || 0) +
     Number(progress.reorder || 0) +
