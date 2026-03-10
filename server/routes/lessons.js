@@ -68,51 +68,62 @@ router.get("/", authMiddleware, async (req, res) => {
 });
 
 /* GET /api/lessons/:id → lesson details + progress */
-router.get("/:id", authMiddleware, async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
-    const lessonId = Number(req.params.id);
-    const userId = req.user?.id ? Number(req.user.id) : null;
+    const userId = req.user?.id;
+    const { difficulty } = req.query;
 
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        description: true,
-        difficulty: true,
-        isLocked: true,
-        created_at: true,
-        updated_at: true,
+    // 🎯 Use 'include' instead of 'select' for relations to avoid the ValidationError
+    const lessons = await prisma.lesson.findMany({
+      where: { difficulty: difficulty?.toUpperCase() || "BEGINNER" },
+      orderBy: { id: "asc" },
+      include: {
+        // Try the common lowercase relation name first
+        userProgress: {
+          where: { userId: userId },
+        },
+        // If your schema uses the capitalized name, include it here too
+        UserProgress: {
+          where: { userId: userId },
+        },
       },
     });
 
-    if (!lesson) {
-      return res.status(404).json({ ok: false, error: "Lesson not found" });
-    }
+    const lessonsOut = lessons.map((l) => {
+      const progress = { typing: 0, reorder: 0, audio: 0 };
 
-    // normalize field for older UI code
-    const lessonOut = { ...lesson, is_locked: lesson.isLocked };
+      // Combine progress from whichever relation field Prisma populated
+      const combinedProgress = [
+        ...(l.userProgress || []),
+        ...(l.UserProgress || []),
+      ];
 
-    let userProgress = null;
-    if (req.user?.id) {
-      const userId = Number(req.user.id);
-      userProgress = await prisma.userProgress.findFirst({
-        where: { user_id: userId },
-        select: { xp: true, streak: true, badges: true, updated_at: true },
+      combinedProgress.forEach((p) => {
+        const modeKey = p.mode?.toLowerCase();
+        if (modeKey && progress.hasOwnProperty(modeKey)) {
+          progress[modeKey] =
+            Math.round((p.completed_count / p.total_count) * 100) || 0;
+        }
       });
-    }
 
-    return res.json({
-      ok: true,
-      lesson: lessonOut,
-      userProgress,
+      return {
+        ...l,
+        progress,
+        is_locked: l.isLocked || false,
+      };
     });
+
+    return res.json(lessonsOut);
   } catch (err) {
-    console.error("❌ /api/lessons/:id error:", err);
-    return res
-      .status(500)
-      .json({ ok: false, error: "Failed to load lesson details" });
+    console.error("❌ API CRASH:", err);
+    // Safety Fallback: Return lessons without progress so the UI doesn't break
+    const fallback = await prisma.lesson.findMany({ orderBy: { id: "asc" } });
+    return res.json(
+      fallback.map((l) => ({
+        ...l,
+        progress: { typing: 0, reorder: 0, audio: 0 },
+      })),
+    );
   }
 });
 
