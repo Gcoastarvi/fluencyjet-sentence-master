@@ -89,6 +89,28 @@ async function aggregateXP(period) {
   return ranked;
 }
 
+// 🎯 Apply the middleware to the GET request
+router.get("/", authMiddleware, async (req, res) => {
+  try {
+    // We can now use req.user.id if we want to highlight the current user
+    const topUsers = await prisma.user.findMany({
+      take: 20,
+      orderBy: { xp: "desc" },
+      select: {
+        id: true,
+        name: true,
+        xp: true,
+        daily_streak: true,
+        league: true,
+      },
+    });
+    res.json(topUsers);
+  } catch (err) {
+    console.error("Leaderboard Error:", err);
+    res.status(500).json({ error: "Failed to load ranks" });
+  }
+});
+
 router.get("/this-week", authRequired, async (req, res) => {
   try {
     const weekStart = startOfWeekMonday(new Date());

@@ -108,6 +108,63 @@ export default function Leaderboard() {
           </p>
         </div>
 
+        {/* 🏆 NEW: Ranking List Integration */}
+        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-indigo-100/20 overflow-hidden">
+          {users.map((user, idx) => (
+            <div
+              key={user.id}
+              className={`flex items-center justify-between p-6 transition-all ${
+                idx < 3 ? "bg-slate-50/50" : "bg-white"
+              } ${user.id === auth?.user?.id ? "ring-2 ring-inset ring-indigo-500 bg-indigo-50/30" : ""}`}
+            >
+              <div className="flex items-center gap-6">
+                {/* Rank Number with Badge for Top 3 */}
+                <div className="w-10 flex justify-center">
+                  {idx === 0 ? (
+                    <span className="text-2xl">🥇</span>
+                  ) : idx === 1 ? (
+                    <span className="text-2xl">🥈</span>
+                  ) : idx === 2 ? (
+                    <span className="text-2xl">🥉</span>
+                  ) : (
+                    <span className="font-black text-slate-300">
+                      #{idx + 1}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-lg font-black text-slate-400">
+                    {user.name?.[0] || "U"}
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-900 flex items-center gap-2">
+                      {user.name || "FluencyJet Learner"}
+                      {user.id === auth?.user?.id && (
+                        <span className="bg-indigo-600 text-[8px] text-white px-2 py-0.5 rounded-full uppercase">
+                          You
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      🔥 {user.daily_streak || 0} Day Streak
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <p className="text-lg font-black text-indigo-600">
+                  {user.xp?.toLocaleString()} XP
+                </p>
+                <p className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">
+                  Lifetime Mastery
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Period tabs */}
         <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-sm font-medium">
           {PERIOD_TABS.map((tab) => {
@@ -474,5 +531,3 @@ function TopPerformersGrid({ top, periodLabel }) {
     </section>
   );
 }
-
-export default Leaderboard;
