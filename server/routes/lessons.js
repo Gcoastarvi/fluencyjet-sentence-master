@@ -14,23 +14,40 @@ const router = express.Router();
 router.get("/", authMiddleware, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const difficulty = req.query.difficulty?.toUpperCase() || "BASIC";
+    const diffParam = req.query.difficulty || "basic";
 
-    // 1. Fetch using 'user_id' (snake_case) as identified in logs
+    // 🎯 1. Fetch using a case-insensitive OR check to ensure we find the data
     const [lessons, progressRecords] = await Promise.all([
       prisma.lesson.findMany({
-        where: { difficulty: difficulty },
+        where: {
+          OR: [
+            { difficulty: diffParam.toLowerCase() },
+            { difficulty: diffParam.toUpperCase() },
+            {
+              difficulty:
+                diffParam.charAt(0).toUpperCase() +
+                diffParam.slice(1).toLowerCase(),
+            },
+          ],
+        },
         orderBy: { id: "asc" },
       }),
       prisma.userProgress.findMany({
-        where: { user_id: userId }, // 🎯 Changed from userId to user_id
+        where: { user_id: userId },
       }),
     ]);
 
-    const lessonsOut = lessons.map((l) => {
-      const progMap = { typing: 0, reorder: 0, audio: 0 };
+    // 🎯 2. If the filtered list is empty, fetch ALL as a safety fallback
+    let finalLessons = lessons;
+    if (lessons.length === 0) {
+      finalLessons = await prisma.lesson.findMany({
+        orderBy: { id: "asc" },
+        take: 10,
+      });
+    }
 
-      // 🎯 Match using lesson_id (snake_case)
+    const lessonsOut = finalLessons.map((l) => {
+      const progMap = { typing: 0, reorder: 0, audio: 0 };
       const myProg = progressRecords.filter(
         (p) => (p.lesson_id || p.lessonId) === l.id,
       );
@@ -43,13 +60,10 @@ router.get("/", authMiddleware, async (req, res) => {
         }
       });
 
-      return {
-        ...l,
-        progress: progMap,
-        is_locked: !!l.isLocked,
-      };
+      return { ...l, progress: progMap, is_locked: !!l.isLocked };
     });
 
+    console.log(`✅ Found ${lessonsOut.length} lessons for user ${userId}`);
     return res.json(lessonsOut);
   } catch (err) {
     console.error("❌ CRITICAL LESSONS ERROR:", err);
