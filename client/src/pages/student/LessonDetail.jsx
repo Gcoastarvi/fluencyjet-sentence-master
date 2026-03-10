@@ -57,7 +57,7 @@ function getDayNumberFromLesson(lesson) {
 }
 
 // 🎯 1. Calculate the overall mastery percentage
-// 🎯 1. Use the correct variable name (checking for lessonData or lesson)
+// 🎯 1. Consolidate the data check (Safe Naming)
 const currentData =
   typeof lessonData !== "undefined"
     ? lessonData
@@ -65,8 +65,10 @@ const currentData =
       ? lesson
       : null;
 
+// 🎯 2. Safe progress extraction
 const progress = currentData?.progress || { typing: 0, reorder: 0, audio: 0 };
 
+// 🎯 3. Calculate Mastery (Only once!)
 const overallDone = Math.round(
   (Number(progress.typing || 0) +
     Number(progress.reorder || 0) +
@@ -74,15 +76,10 @@ const overallDone = Math.round(
     3,
 );
 
-// Line 59: Your existing useEffect starts here...
+// 🎯 4. Single useEffect Celebration (Lines 78-82 in the new version)
 useEffect(() => {
-  if (overallDone === 100) {
-    triggerBonusCelebration();
-  }
-}, [overallDone]);
-
-useEffect(() => {
-  if (overallDone === 100) {
+  // Only trigger if we are exactly at 100% and the function exists
+  if (overallDone === 100 && typeof triggerBonusCelebration === "function") {
     triggerBonusCelebration();
   }
 }, [overallDone]);
