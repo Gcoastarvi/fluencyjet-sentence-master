@@ -10,7 +10,7 @@
     "start": "NODE_ENV=production node server/index.js"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^7.4.2",
     "@replit/vite-plugin-cartographer": "^0.4.4",
     "@replit/vite-plugin-dev-banner": "^0.1.1",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.4",
@@ -21,7 +21,7 @@
     "drizzle-kit": "^0.31.8",
     "html-to-image": "^1.11.13",
     "node-fetch": "^3.3.2",
-    "prisma": "^5.22.0",
+    "prisma": "^7.4.2",
     "tailwindcss": "^4.1.18",
     "tailwindcss-animate": "^1.0.7",
     "vite": "^7.2.7"

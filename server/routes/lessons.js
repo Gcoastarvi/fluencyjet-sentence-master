@@ -1,3 +1,4 @@
+// DEPLOYMENT_FORCE_REBUILD_V3 - SYNCING PRISMA CLIENT
 // server/routes/lessons.js
 import express from "express";
 import prisma from "../db/client.js";
