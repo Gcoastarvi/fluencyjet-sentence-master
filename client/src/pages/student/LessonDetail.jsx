@@ -168,20 +168,17 @@ function modeLabel(m) {
 }
 
 export default function LessonDetail() {
-  // 🎯 1. Initialize ALL Hooks first (The Foundation)
+  // 🎯 1. Hooks MUST be first
   const { lid, lessonId: lessonIdParam } = useParams();
   const { auth } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
-  // 🎯 2. Initialize State (The Data)
+  // 🎯 2. State MUST be second
+  const [lessonData, setLessonData] = useState(null);
   const [lesson, setLesson] = useState(location.state?.lesson || null);
-  const [lessonData, setLessonData] = useState(null); // Ensure this state exists
-  const [missedBanner, setMissedBanner] = useState(null);
-  const [isSharing, setIsSharing] = useState(false);
 
-  // 🎯 3. Calculated Logic (Safe because 'lesson' and 'lessonData' are now defined)
+  // 🎯 3. Calculated Variables (Safe now because State is defined)
   const currentData = lessonData || lesson || null;
   const progress = currentData?.progress || { typing: 0, reorder: 0, audio: 0 };
   const overallDone = Math.round(
