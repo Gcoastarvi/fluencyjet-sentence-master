@@ -10,6 +10,35 @@ import { useAuth } from "../../context/AuthContext";
 // Remove the old LessonNode import and add the new LessonCard
 import LessonCard from "../../components/student/LessonCard";
 
+// 🎯 1. Track which units are expanded
+const [expandedUnits, setExpandedUnits] = useState({ 1: true }); // Unit 1 open by default
+
+const toggleUnit = (unitId) => {
+  setExpandedUnits((prev) => ({
+    ...prev,
+    [unitId]: !prev[unitId],
+  }));
+};
+
+// 🎯 2. Group your 120 lessons into Units (10 lessons per unit)
+const units = Array.from({ length: 12 }, (_, i) => {
+  const unitNum = i + 1;
+  const unitLessons = lessons.filter(
+    (l) => l.id > (unitNum - 1) * 10 && l.id <= unitNum * 10,
+  );
+
+  // Calculate if the whole unit is mastered
+  const isMastered =
+    unitLessons.length > 0 &&
+    unitLessons.every(
+      (l) =>
+        (l.progress?.typing + l.progress?.reorder + l.progress?.audio) / 3 ===
+        100,
+    );
+
+  return { id: unitNum, lessons: unitLessons, isMastered };
+});
+
 export default function LessonList({ difficulty }) {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,70 +82,113 @@ export default function LessonList({ difficulty }) {
 
   if (loading) return <LessonSkeleton />;
 
+  // Add this before your 'return ('
+  const [expandedModules, setExpandedModules] = React.useState({ 1: true });
+
+  const toggleModule = (id) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
   return (
     <>
-      {/* 🏆 Sticky Unit Progress Bar */}
-      <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-100 py-4 shadow-sm">
-        <div className="max-w-2xl mx-auto px-6">
-          <div className="flex justify-between items-end mb-2">
-            <div>
-              <h3 className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
-                Current Progress
-              </h3>
-              <p className="text-sm font-bold text-slate-900">Module Mastery</p>
+      return (
+      <>
+        {/* 🏆 Sticky Unit Progress & Navigation */}
+        <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
+          <div className="max-w-2xl mx-auto px-6 pt-4 pb-2">
+            {/* Your existing progress bar logic */}
+            <div className="flex justify-between items-end mb-2">
+              <div>
+                <h3 className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
+                  Current Progress
+                </h3>
+                <p className="text-sm font-bold text-slate-900">
+                  Module Mastery
+                </p>
+              </div>
+              <span className="text-xs font-black text-indigo-600">
+                {/* Keep your existing Math.round calculation here */}
+                Overall
+              </span>
             </div>
-            <span className="text-xs font-black text-indigo-600">
-              {Math.round(
-                (lessons.filter((l) => (l.progress || 0) >= 100).length / 120) *
-                  100,
-              )}
-              % Overall
-            </span>
-          </div>
-          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-indigo-500 transition-all duration-1000 ease-out"
-              style={{
-                width: `${(lessons.filter((l) => (l.progress || 0) >= 100).length / 120) * 100}%`,
-              }}
-            />
+            {/* Progress Bar Container */}
+            <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-4">
+              <div
+                className="h-full bg-indigo-500 transition-all duration-1000"
+                style={{ width: "0%" }}
+              />
+            </div>
+
+            {/* 🎯 NEW: Quick Navigation Pill Menu */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+              {modules.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => {
+                    if (!expandedModules[m.id]) toggleModule(m.id);
+                    document
+                      .getElementById(`unit-${m.id}`)
+                      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  }}
+                  className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-tighter transition-all whitespace-nowrap border-2 ${
+                    expandedModules[m.id]
+                      ? "bg-indigo-600 border-indigo-600 text-white"
+                      : "bg-white border-slate-100 text-slate-400"
+                  }`}
+                >
+                  Unit {m.id}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 📚 Lesson Path */}
-      <div className="max-w-2xl mx-auto px-4 py-10 space-y-16">
-        {modules.map((module) => (
-          <section key={module.id} className="relative">
-            <div className="mb-8 p-6 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-xl">
-              <h2 className="text-2xl font-black italic">Unit {module.id}</h2>
-            </div>
+        {/* 📚 Lesson Path */}
+        <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
+          {modules.map((module) => (
+            <section
+              key={module.id}
+              id={`unit-${module.id}`}
+              className="relative"
+            >
+              {/* 🎯 UPDATED: Clickable Unit Header */}
+              <button
+                onClick={() => toggleModule(module.id)}
+                className="w-full mb-4 p-6 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-violet-700 text-white shadow-xl flex justify-between items-center transition-transform active:scale-95"
+              >
+                <h2 className="text-2xl font-black italic">Unit {module.id}</h2>
+                <span className="text-xl opacity-50">
+                  {expandedModules[module.id] ? "▲" : "▼"}
+                </span>
+              </button>
 
-            {/* 🎯 Staggered Path Block */}
-            <div className="flex flex-col items-center gap-8 relative">
-              <div className="absolute top-0 bottom-0 w-1 bg-slate-100 left-1/2 -translate-x-1/2 -z-10" />
-
-              {module.lessons.map((lesson, idx) => {
-                const displayNum = (module.id - 1) * 10 + (idx + 1);
-                // 🎯 Premium Logic: Check both possible auth paths for Mango's access
-                const isLocked =
-                  (auth?.user?.has_access === false ||
-                    auth?.has_access === false) &&
-                  displayNum > 3;
-
-                return (
-                  <LessonCard
-                    key={lesson.id}
-                    lesson={lesson}
-                    displayNum={displayNum}
-                    isLocked={isLocked}
-                  />
-                );
-              })}
-            </div>
-          </section>
-        ))}
-      </div>
+              {/* 🎯 Staggered Path Block - Only shows if expanded */}
+              {expandedModules[module.id] && (
+                <div className="flex flex-col items-center gap-8 relative animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="absolute top-0 bottom-0 w-1 bg-slate-100 left-1/2 -translate-x-1/2 -z-10" />
+                  {module.lessons.map((lesson, idx) => {
+                    const displayNum = (module.id - 1) * 10 + (idx + 1);
+                    const isLocked =
+                      auth?.user?.has_access === false && displayNum > 3;
+                    return (
+                      <LessonCard
+                        key={lesson.id}
+                        lesson={lesson}
+                        displayNum={displayNum}
+                        isLocked={isLocked}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
+      </>
+      );
     </>
   );
 }
