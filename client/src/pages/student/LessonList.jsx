@@ -4,11 +4,6 @@ import * as api from "../../api/apiClient";
 import { useAuth } from "../../context/AuthContext";
 import LessonCard from "../../components/student/LessonCard";
 
-const [showReward, setShowReward] = useState(false);
-
-// Logic to check if all missions are done
-const allMissionsDone = auth?.user?.daily_streak >= 3; // Add your other mission logic here
-
 export default function LessonList({ difficulty }) {
   // 🎯 1. Fundamental Hooks
   const navigate = useNavigate();
@@ -19,6 +14,11 @@ export default function LessonList({ difficulty }) {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedModules, setExpandedModules] = useState({ 1: true });
+
+  const [showReward, setShowReward] = useState(false);
+
+  // Logic to check if all missions are done
+  const allMissionsDone = auth?.user?.daily_streak >= 3; // Add your other mission logic here
 
   // 🎯 3. Toggle Logic
   const toggleModule = (id) => {
