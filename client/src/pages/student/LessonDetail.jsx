@@ -213,6 +213,8 @@ export default function LessonDetail() {
   const dayNumber = Number(lessonIdParam || lid);
   const lessonId = String(dayNumber);
 
+  const lessonIdNum = dayNumber;
+
   // 150: Image Generation Handlers
   const handleShare = async (avg) => {
     const node = document.getElementById("achievement-canvas");
