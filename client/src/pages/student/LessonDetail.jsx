@@ -167,6 +167,7 @@ export default function LessonDetail() {
   const { auth } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // 🎯 2. State MUST be second
   const [lessonData, setLessonData] = useState(null);
