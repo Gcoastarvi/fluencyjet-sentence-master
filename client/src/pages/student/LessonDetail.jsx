@@ -76,14 +76,6 @@ const overallDone = Math.round(
     3,
 );
 
-// 🎯 4. Single useEffect Celebration (Lines 78-82 in the new version)
-useEffect(() => {
-  // Only trigger if we are exactly at 100% and the function exists
-  if (overallDone === 100 && typeof triggerBonusCelebration === "function") {
-    triggerBonusCelebration();
-  }
-}, [overallDone]);
-
 function getDifficultyFromLesson(lesson) {
   // Prefer API field
   const raw = String(
