@@ -385,59 +385,6 @@ const LessonSkeleton = () => (
   </div>
 );
 
-// 🎯 Helper for the Daily Mission Sidebar (Bilingual)
-function MissionItem({ label, tamilLabel, xp, done }) {
-  return (
-    <div
-      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${done ? "bg-emerald-50 border-emerald-100 opacity-60" : "bg-slate-50 border-slate-50"}`}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${done ? "bg-emerald-500 border-emerald-500" : "border-slate-200 bg-white"}`}
-        >
-          {done && <span className="text-white text-[10px]">✓</span>}
-        </div>
-        <div>
-          <p className="text-xs font-bold text-slate-700">{label}</p>
-          <p className="text-[9px] font-bold text-slate-400 font-tamil">
-            {tamilLabel}
-          </p>
-        </div>
-      </div>
-      <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
-    </div>
-  );
-}
-
-function MissionItem({ label, tamil, xp, done }) {
-  return (
-    <div
-      className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${done ? "bg-emerald-50 border-emerald-100 opacity-60" : "bg-slate-50 border-slate-50 hover:border-indigo-100"}`}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${done ? "bg-emerald-500 border-emerald-500" : "border-slate-200 bg-white"}`}
-        >
-          {done && <span className="text-white text-xs">✓</span>}
-        </div>
-        <div>
-          <span className="block text-xs font-black text-slate-800 leading-tight">
-            {label}
-          </span>
-          <span className="block text-[9px] font-bold text-slate-400 uppercase mt-0.5">
-            {tamil}
-          </span>
-        </div>
-      </div>
-      <div className="text-right">
-        <span className="block text-[10px] font-black text-indigo-600">
-          +{xp}XP
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function MissionItem({ label, tamil, xp, done, isStreak }) {
   // 🎯 Pulse only if it's a streak mission and NOT done yet
   const shouldPulse = isStreak && !done;
