@@ -187,18 +187,103 @@ export default function LessonList({ difficulty }) {
                   const isLocked =
                     auth?.user?.has_access === false && displayNum > 3;
                   return (
-                    <LessonCard
-                      key={lesson.id}
-                      lesson={lesson}
-                      displayNum={displayNum}
-                      isLocked={isLocked}
-                    />
+                    <React.Fragment key={lesson.id}>
+                      <LessonCard
+                        lesson={lesson}
+                        displayNum={displayNum}
+                        isLocked={isLocked}
+                      />
+
+                      {/* 🎯 Cliffhanger: Shows only after the 10th lesson of Unit 1 for free users */}
+                      {module.id === 1 &&
+                        idx === 9 &&
+                        auth?.user?.has_access === false && (
+                          <div className="w-full mt-10 p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden border-4 border-amber-400/30">
+                            <div className="absolute -top-2 -right-2 opacity-10 text-8xl">
+                              💎
+                            </div>
+                            <h4 className="text-xl font-black mb-2 italic">
+                              Unit 1 Complete! 🚀
+                            </h4>
+                            <p className="text-slate-400 text-[11px] mb-6 font-bold leading-relaxed uppercase tracking-wider">
+                              You've mastered the basics. 110+ premium lessons
+                              and Tamil-to-English mastery secrets are waiting.
+                            </p>
+                            <button
+                              onClick={() => navigate("/upgrade")}
+                              className="w-full py-4 bg-amber-400 text-slate-900 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform"
+                            >
+                              Continue Your Journey
+                            </button>
+                          </div>
+                        )}
+                    </React.Fragment>
                   );
                 })}
               </div>
             )}
           </section>
         ))}
+        {/* 📚 Main Layout Grid: Lessons (Left) + Missions (Right) */}
+        <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* 🎯 Left Column: Lesson Path (8/12 space) */}
+          <div className="lg:col-span-8 space-y-16">
+            {modules.map((module) => (
+              <section
+                key={module.id}
+                id={`unit-${module.id}`}
+                className="relative"
+              >
+                {/* ... (Your existing Module Header & Staggered Path code is here) ... */}
+              </section>
+            ))}
+          </div>
+
+          {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
+          <aside className="lg:col-span-4 hidden lg:block">
+            <div className="sticky top-32 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-2xl shadow-slate-200/50">
+              <div className="flex items-center gap-3 mb-8">
+                <span className="text-2xl">🎯</span>
+                <div>
+                  <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg">
+                    Daily Missions
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-tamil">
+                    தினசரி இலக்குகள்
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <MissionItem
+                  label="Master 2 New Sentences"
+                  tamilLabel="2 புதிய வாக்கியங்களை கற்க"
+                  xp={50}
+                  done={false}
+                />
+                <MissionItem
+                  label="Maintain 3-Day Streak"
+                  tamilLabel="3 நாட்கள் தொடர் கற்றல்"
+                  xp={100}
+                  done={auth?.user?.daily_streak >= 3}
+                />
+                <MissionItem
+                  label="Finish a Unit"
+                  tamilLabel="ஒரு பாடப்பிரிவை முடிக்க"
+                  xp={150}
+                  done={false}
+                />
+              </div>
+
+              <div className="mt-10 pt-6 border-t border-slate-50">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                  Potential Rewards
+                </p>
+                <p className="text-3xl font-black text-indigo-600">+300 XP</p>
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );
@@ -219,3 +304,27 @@ const LessonSkeleton = () => (
     ))}
   </div>
 );
+
+// 🎯 Helper for the Daily Mission Sidebar (Bilingual)
+function MissionItem({ label, tamilLabel, xp, done }) {
+  return (
+    <div
+      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${done ? "bg-emerald-50 border-emerald-100 opacity-60" : "bg-slate-50 border-slate-50"}`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${done ? "bg-emerald-500 border-emerald-500" : "border-slate-200 bg-white"}`}
+        >
+          {done && <span className="text-white text-[10px]">✓</span>}
+        </div>
+        <div>
+          <p className="text-xs font-bold text-slate-700">{label}</p>
+          <p className="text-[9px] font-bold text-slate-400 font-tamil">
+            {tamilLabel}
+          </p>
+        </div>
+      </div>
+      <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
+    </div>
+  );
+}
