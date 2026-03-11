@@ -66,7 +66,7 @@ export default function LessonList({ difficulty }) {
   // 65: Standardized return (Removed the double return/fragment)
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* 🏆 Sticky Unit Progress & Navigation (Starts here) */}
+      {/* 🏆 1. Sticky Header stays fixed at top */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-6 pt-4 pb-2">
           {/* Your existing progress bar logic */}
@@ -147,108 +147,181 @@ export default function LessonList({ difficulty }) {
           </div>
         </div>
       </div>
-
-      {/* 📚 Lesson Path */}
-      <div className="max-w-2xl mx-auto px-4 py-10 space-y-8">
-        {modules.map((module) => (
-          <section
-            key={module.id}
-            id={`unit-${module.id}`}
-            className="relative"
-          >
-            {/* 🎯 UPDATED: Clickable Unit Header */}
-            <button
-              onClick={() => toggleModule(module.id)}
-              className={`w-full mb-4 p-6 rounded-[2rem] text-white shadow-xl flex justify-between items-center transition-all active:scale-95 ${
-                auth?.user?.has_access === false && module.id > 1
-                  ? "bg-slate-400 grayscale-[0.5]" // 🔒 Locked Look
-                  : "bg-gradient-to-br from-indigo-600 to-violet-700"
-              }`}
+      {/* 227: 📚 Main Layout Grid (Replaces old duplicate loops) */}
+      <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
+        {/* 🎯 Left Column: The Lesson Path (8/12 space) */}
+        <div className="lg:col-span-8 space-y-8">
+          {modules.map((module) => (
+            <section
+              key={module.id}
+              id={`unit-${module.id}`}
+              className="relative"
             >
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-black italic">Unit {module.id}</h2>
-                {auth?.user?.has_access === false && module.id > 1 && (
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest backdrop-blur-sm">
-                    Premium 👑
-                  </span>
-                )}
-              </div>
-              <span className="text-xl opacity-50">
-                {expandedModules[module.id] ? "▲" : "▼"}
-              </span>
-            </button>
-
-            {/* 🎯 Staggered Path Block - Only shows if expanded */}
-            {expandedModules[module.id] && (
-              <div className="flex flex-col items-center gap-8 relative animate-in fade-in slide-in-from-top-4 duration-300">
-                <div className="absolute top-0 bottom-0 w-1 bg-slate-100 left-1/2 -translate-x-1/2 -z-10" />
-                {module.lessons.map((lesson, idx) => {
-                  const displayNum = (module.id - 1) * 10 + (idx + 1);
-                  const isLocked =
-                    auth?.user?.has_access === false && displayNum > 3;
-                  return (
-                    <React.Fragment key={lesson.id}>
-                      <LessonCard
-                        lesson={lesson}
-                        displayNum={displayNum}
-                        isLocked={isLocked}
-                      />
-
-                      {/* 🎯 Cliffhanger: Shows only after the 10th lesson of Unit 1 for free users */}
-                      {module.id === 1 &&
-                        idx === 9 &&
-                        auth?.user?.has_access === false && (
-                          <div className="w-full mt-10 p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden border-4 border-amber-400/30">
-                            <div className="absolute -top-2 -right-2 opacity-10 text-8xl">
-                              💎
-                            </div>
-                            <h4 className="text-xl font-black mb-2 italic">
-                              Unit 1 Complete! 🚀
-                            </h4>
-                            <p className="text-slate-400 text-[11px] mb-6 font-bold leading-relaxed uppercase tracking-wider">
-                              You've mastered the basics. 110+ premium lessons
-                              and Tamil-to-English mastery secrets are waiting.
-                            </p>
-                            <button
-                              onClick={() => navigate("/upgrade")}
-                              className="w-full py-4 bg-amber-400 text-slate-900 font-black rounded-2xl uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform"
-                            >
-                              Continue Your Journey
-                            </button>
-                          </div>
-                        )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        ))}
-        {/* 📚 Main Layout Grid: Lessons (Left) + Missions (Right) */}
-        <div className="max-w-6xl mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-12">
-          {/* 🎯 Left Column: Lesson Path (8/12 space) */}
-          <div className="lg:col-span-8 space-y-16">
-            {modules.map((module) => (
-              <section
-                key={module.id}
-                id={`unit-${module.id}`}
-                className="relative"
+              {/* 🎯 Clickable Unit Header Banner */}
+              <button
+                onClick={() => toggleModule(module.id)}
+                className={`w-full mb-4 p-6 rounded-[2rem] text-white shadow-xl flex justify-between items-center transition-all active:scale-95 ${
+                  auth?.user?.has_access === false && module.id > 1
+                    ? "bg-slate-400 grayscale-[0.5]"
+                    : "bg-gradient-to-br from-indigo-600 to-violet-700"
+                }`}
               >
-                {/* ... (Your existing Module Header & Staggered Path code is here) ... */}
-              </section>
-            ))}
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-black italic">
+                    Unit {module.id}
+                  </h2>
+                  {auth?.user?.has_access === false && module.id > 1 && (
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest backdrop-blur-sm">
+                      Premium 👑
+                    </span>
+                  )}
+                </div>
+                <span className="text-xl opacity-50">
+                  {expandedModules[module.id] ? "▲" : "▼"}
+                </span>
+              </button>
+
+              {/* 🎯 Staggered Lesson Path */}
+              {expandedModules[module.id] && (
+                <div className="flex flex-col items-center gap-8 relative animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="absolute top-0 bottom-0 w-1 bg-slate-100 left-1/2 -translate-x-1/2 -z-10" />
+
+                  {module.lessons.map((lesson, idx) => {
+                    const displayNum = (module.id - 1) * 10 + (idx + 1);
+                    const isLocked =
+                      auth?.user?.has_access === false && displayNum > 3;
+
+                    return (
+                      <React.Fragment key={lesson.id}>
+                        <LessonCard
+                          lesson={lesson}
+                          displayNum={displayNum}
+                          isLocked={isLocked}
+                        />
+
+                        {/* 🎯 Unit 1 End-of-Preview Cliffhanger */}
+                        {module.id === 1 &&
+                          idx === 9 &&
+                          auth?.user?.has_access === false && (
+                            <div className="w-full mt-10 p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden border-4 border-amber-400/30">
+                              <h4 className="text-xl font-black mb-2 italic text-amber-400">
+                                Unit 1 Complete! 🚀
+                              </h4>
+                              <p className="text-slate-400 text-[11px] mb-6 font-bold uppercase tracking-wider">
+                                Unlock 110+ more professional lessons now.
+                              </p>
+                              <button
+                                onClick={() => navigate("/upgrade")}
+                                className="w-full py-4 bg-amber-400 text-slate-900 font-black rounded-2xl text-[10px] hover:scale-105 transition-transform"
+                              >
+                                Continue Your Journey
+                              </button>
+                            </div>
+                          )}
+                      </React.Fragment>
+                    );
+                  })}
+
+                  {/* 🏆 Unit Mastery Trophy (Celebrates 100% completion) */}
+                  {module.lessons.length > 0 &&
+                    module.lessons.every((l) => (l.progress || 0) >= 100) && (
+                      <div className="w-full mt-8 p-6 rounded-3xl bg-emerald-50 border-2 border-emerald-100 text-center animate-bounce">
+                        <div className="text-4xl mb-2">🏆</div>
+                        <h5 className="text-emerald-900 font-black text-sm uppercase tracking-widest">
+                          Unit {module.id} Mastered!
+                        </h5>
+                      </div>
+                    )}
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
+
+        {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
+        <aside className="lg:col-span-4 space-y-6">
+          <div className="sticky top-32 bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-2xl">🎯</span>
+              <div>
+                <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg leading-none">
+                  Daily Missions
+                </h3>
+                <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-1">
+                  தினசரி இலக்குகள்
+                </p>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <MissionItem
+                label="Master 2 New Sentences"
+                tamil="2 புதிய வாக்கியங்கள்"
+                xp={50}
+                done={false}
+              />
+              <MissionItem
+                label="Maintain 3-Day Streak"
+                tamil="3 நாள் தொடர்ச்சி"
+                xp={100}
+                isStreak={true}
+                done={auth?.user?.daily_streak >= 3}
+              />
+              <MissionItem
+                label="Check Leaderboard"
+                tamil="முன்னணிப் பட்டியல்"
+                xp={20}
+                done={true}
+              />
+            </div>
+          </div>
+        </aside>
+      </div>{" "}
+      {/* Close Grid Layout */}
+      {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
+      <aside className="lg:col-span-4 hidden lg:block">
+        <div className="sticky top-32 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-2xl shadow-slate-200/50">
+          <div className="flex items-center gap-3 mb-8">
+            <span className="text-2xl">🎯</span>
+            <div>
+              <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg">
+                Daily Missions
+              </h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-tamil">
+                தினசரி இலக்குகள்
+              </p>
+            </div>
           </div>
 
-          {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
-          <aside className="lg:col-span-4 hidden lg:block">
-            <div className="sticky top-32 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-2xl shadow-slate-200/50">
-              <div className="flex items-center gap-3 mb-8">
+          <div className="space-y-4">
+            <MissionItem
+              label="Master 2 New Sentences"
+              tamilLabel="2 புதிய வாக்கியங்களை கற்க"
+              xp={50}
+              done={false}
+            />
+            <MissionItem
+              label="Maintain 3-Day Streak"
+              tamilLabel="3 நாட்கள் தொடர் கற்றல்"
+              xp={100}
+              done={auth?.user?.daily_streak >= 3}
+            />
+            <MissionItem
+              label="Finish a Unit"
+              tamilLabel="ஒரு பாடப்பிரிவை முடிக்க"
+              xp={150}
+              done={false}
+            />
+          </div>
+
+          <aside className="lg:col-span-4 space-y-6">
+            <div className="sticky top-32 bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50">
+              <div className="flex items-center gap-3 mb-6">
                 <span className="text-2xl">🎯</span>
                 <div>
-                  <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg">
+                  <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg leading-none">
                     Daily Missions
                   </h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest font-tamil">
+                  <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-1">
                     தினசரி இலக்குகள்
                   </p>
                 </div>
@@ -257,34 +330,41 @@ export default function LessonList({ difficulty }) {
               <div className="space-y-4">
                 <MissionItem
                   label="Master 2 New Sentences"
-                  tamilLabel="2 புதிய வாக்கியங்களை கற்க"
+                  tamil="2 புதிய வாக்கியங்கள்"
                   xp={50}
                   done={false}
                 />
                 <MissionItem
                   label="Maintain 3-Day Streak"
-                  tamilLabel="3 நாட்கள் தொடர் கற்றல்"
+                  tamil="3 நாள் தொடர்ச்சி"
                   xp={100}
                   done={auth?.user?.daily_streak >= 3}
                 />
                 <MissionItem
-                  label="Finish a Unit"
-                  tamilLabel="ஒரு பாடப்பிரிவை முடிக்க"
-                  xp={150}
-                  done={false}
+                  label="Check Leaderboard"
+                  tamil="முன்னணிப் பட்டியல்"
+                  xp={20}
+                  done={true}
                 />
               </div>
 
-              <div className="mt-10 pt-6 border-t border-slate-50">
+              <div className="mt-8 pt-6 border-t border-slate-50">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                  Potential Rewards
+                  Total Daily XP
                 </p>
-                <p className="text-3xl font-black text-indigo-600">+300 XP</p>
+                <p className="text-2xl font-black text-indigo-600">+170 XP</p>
               </div>
             </div>
           </aside>
+
+          <div className="mt-10 pt-6 border-t border-slate-50">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+              Potential Rewards
+            </p>
+            <p className="text-3xl font-black text-indigo-600">+300 XP</p>
+          </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }
@@ -322,6 +402,79 @@ function MissionItem({ label, tamilLabel, xp, done }) {
           <p className="text-[9px] font-bold text-slate-400 font-tamil">
             {tamilLabel}
           </p>
+        </div>
+      </div>
+      <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
+    </div>
+  );
+}
+
+function MissionItem({ label, tamil, xp, done }) {
+  return (
+    <div
+      className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${done ? "bg-emerald-50 border-emerald-100 opacity-60" : "bg-slate-50 border-slate-50 hover:border-indigo-100"}`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${done ? "bg-emerald-500 border-emerald-500" : "border-slate-200 bg-white"}`}
+        >
+          {done && <span className="text-white text-xs">✓</span>}
+        </div>
+        <div>
+          <span className="block text-xs font-black text-slate-800 leading-tight">
+            {label}
+          </span>
+          <span className="block text-[9px] font-bold text-slate-400 uppercase mt-0.5">
+            {tamil}
+          </span>
+        </div>
+      </div>
+      <div className="text-right">
+        <span className="block text-[10px] font-black text-indigo-600">
+          +{xp}XP
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function MissionItem({ label, tamil, xp, done, isStreak }) {
+  // 🎯 Pulse only if it's a streak mission and NOT done yet
+  const shouldPulse = isStreak && !done;
+
+  return (
+    <div
+      className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-500 ${
+        done
+          ? "bg-emerald-50 border-emerald-100 opacity-60"
+          : shouldPulse
+            ? "bg-orange-50 border-orange-200 shadow-[0_0_15px_rgba(251,146,60,0.3)] animate-pulse"
+            : "bg-slate-50 border-slate-50"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${
+            done
+              ? "bg-emerald-500 border-emerald-500"
+              : "border-slate-200 bg-white"
+          }`}
+        >
+          {done ? (
+            <span className="text-white text-xs">✓</span>
+          ) : (
+            isStreak && <span className="text-[10px]">🔥</span>
+          )}
+        </div>
+        <div>
+          <span
+            className={`block text-xs font-black leading-tight ${shouldPulse ? "text-orange-700" : "text-slate-800"}`}
+          >
+            {label}
+          </span>
+          <span className="block text-[9px] font-bold text-slate-400 uppercase mt-0.5">
+            {tamil}
+          </span>
         </div>
       </div>
       <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
