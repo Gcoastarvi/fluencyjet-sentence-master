@@ -1,43 +1,24 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-
-// 🎯 Use the asterisk (*) to grab all exports and name them 'api'
+import { useNavigate, useLocation } from "react-router-dom"; // Added useLocation
 import * as api from "../../api/apiClient";
-import LessonNode from "../../components/LessonNode";
-
 import { useAuth } from "../../context/AuthContext";
-
-// Remove the old LessonNode import and add the new LessonCard
 import LessonCard from "../../components/student/LessonCard";
 
-// 🎯 1. Track which units are expanded
-const [expandedUnits, setExpandedUnits] = useState({ 1: true }); // Unit 1 open by default
+export default function LessonList() {
+  // 🎯 1. Hooks MUST be the first thing inside the function
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { auth } = useAuth();
 
-const toggleUnit = (unitId) => {
-  setExpandedUnits((prev) => ({
-    ...prev,
-    [unitId]: !prev[unitId],
-  }));
-};
+  // 🎯 2. Track which units are expanded (MOVED INSIDE)
+  const [expandedModules, setExpandedModules] = useState({ 1: true });
 
-// 🎯 2. Group your 120 lessons into Units (10 lessons per unit)
-const units = Array.from({ length: 12 }, (_, i) => {
-  const unitNum = i + 1;
-  const unitLessons = lessons.filter(
-    (l) => l.id > (unitNum - 1) * 10 && l.id <= unitNum * 10,
-  );
-
-  // Calculate if the whole unit is mastered
-  const isMastered =
-    unitLessons.length > 0 &&
-    unitLessons.every(
-      (l) =>
-        (l.progress?.typing + l.progress?.reorder + l.progress?.audio) / 3 ===
-        100,
-    );
-
-  return { id: unitNum, lessons: unitLessons, isMastered };
-});
+  const toggleModule = (id) => {
+    setExpandedModules(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };  
 
 export default function LessonList({ difficulty }) {
   const [lessons, setLessons] = useState([]);
