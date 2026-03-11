@@ -15,6 +15,11 @@ export default function LessonList({ difficulty }) {
   const [loading, setLoading] = useState(true);
   const [expandedModules, setExpandedModules] = useState({ 1: true });
 
+  const [showReward, setShowReward] = useState(false);
+
+  // Logic to check if all missions are done
+  const allMissionsDone = auth?.user?.daily_streak >= 3; // Add your other mission logic here
+
   // 🎯 3. Toggle Logic
   const toggleModule = (id) => {
     setExpandedModules((prev) => ({
@@ -239,39 +244,76 @@ export default function LessonList({ difficulty }) {
         </div>
 
         {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
+        {/* 242: 🎯 Right Column: Daily Mission Sidebar */}
         <aside className="lg:col-span-4 space-y-6">
-          <div className="sticky top-32 bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl">🎯</span>
-              <div>
-                <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg leading-none">
-                  Daily Missions
+          <div className="sticky top-32 bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
+            {/* 🏆 UNIT MASTERED CELEBRATION OVERLAY */}
+            {Object.keys(expandedModules).some((id) => {
+              const mod = modules.find((m) => m.id === Number(id));
+              return (
+                expandedModules[id] &&
+                mod?.lessons.length > 0 &&
+                mod?.lessons.every((l) => (l.progress || 0) >= 100)
+              );
+            }) ? (
+              <div className="text-center py-6 animate-in zoom-in duration-500">
+                <div className="text-6xl mb-4 animate-bounce">🏆</div>
+                <h3 className="font-black text-slate-900 text-xl leading-tight uppercase">
+                  Unit Mastered!
                 </h3>
-                <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-1">
-                  தினசரி இலக்குகள்
+                <p className="text-indigo-600 font-bold text-[10px] tracking-widest mt-2">
+                  அலகு முடிந்தது!
                 </p>
+                <div className="mt-6 p-4 bg-indigo-50 rounded-2xl border border-indigo-100">
+                  <p className="text-xs font-bold text-indigo-700">
+                    You're a Sentence Master! Keep the momentum going.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="space-y-4">
-              <MissionItem
-                label="Master 2 New Sentences"
-                tamil="2 புதிய வாக்கியங்கள்"
-                xp={50}
-                done={false}
-              />
-              <MissionItem
-                label="Maintain 3-Day Streak"
-                tamil="3 நாள் தொடர்ச்சி"
-                xp={100}
-                isStreak={true}
-                done={auth?.user?.daily_streak >= 3}
-              />
-              <MissionItem
-                label="Check Leaderboard"
-                tamil="முன்னணிப் பட்டியல்"
-                xp={20}
-                done={true}
-              />
+            ) : (
+              /* 🎯 Standard Daily Missions */
+              <>
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="text-2xl">🎯</span>
+                  <div>
+                    <h3 className="font-black text-slate-900 uppercase tracking-tighter text-lg leading-none">
+                      Daily Missions
+                    </h3>
+                    <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest mt-1">
+                      தினசரி இலக்குகள்
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <MissionItem
+                    label="Master 2 New Sentences"
+                    tamil="2 புதிய வாக்கியங்கள்"
+                    xp={50}
+                    done={false}
+                  />
+                  <MissionItem
+                    label="Maintain 3-Day Streak"
+                    tamil="3 நாள் தொடர்ச்சி"
+                    xp={100}
+                    isStreak={true}
+                    done={auth?.user?.daily_streak >= 3}
+                  />
+                  <MissionItem
+                    label="Check Leaderboard"
+                    tamil="முன்னணிப் பட்டியல்"
+                    xp={20}
+                    done={true}
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="mt-8 pt-6 border-t border-slate-50">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                Total Daily XP
+              </p>
+              <p className="text-2xl font-black text-indigo-600">+170 XP</p>
             </div>
           </div>
         </aside>
@@ -425,6 +467,32 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
         </div>
       </div>
       <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
+      {showReward && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in duration-500">
+            <div className="text-7xl mb-6">✨</div>
+            <h2 className="text-3xl font-black text-slate-900 mb-2">
+              Daily Mastery!
+            </h2>
+            <p className="text-indigo-600 font-bold uppercase tracking-widest text-xs mb-8">
+              தினசரி சாதனை!
+            </p>
+
+            <div className="bg-slate-50 rounded-3xl p-6 mb-8 border border-slate-100">
+              <span className="text-4xl font-black text-indigo-600">
+                +170 XP
+              </span>
+            </div>
+
+            <button
+              onClick={() => setShowReward(false)}
+              className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all"
+            >
+              Claim Rewards
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

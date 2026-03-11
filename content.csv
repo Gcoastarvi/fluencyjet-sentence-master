@@ -1,31 +1,31 @@
 lessonSlug,lessonTitle,lessonLevel,mode,orderIndex,promptTa,answer,xp
-lesson-95,Lesson 95,basic,typing,1,"ஆம், நான் செய்தேன்.","Yes, I did.",150
-lesson-95,Lesson 95,basic,reorder,1,"ஆம், நான் செய்தேன்.","Yes, I did.",150
-lesson-95,Lesson 95,basic,audio,1,"ஆம், நான் செய்தேன்.","Yes, I did.",150
-lesson-95,Lesson 95,basic,typing,2,"இல்லை, நான் செய்யவில்லை.","No, I didn't.",150
-lesson-95,Lesson 95,basic,reorder,2,"இல்லை, நான் செய்யவில்லை.","No, I didn't.",150
-lesson-95,Lesson 95,basic,audio,2,"இல்லை, நான் செய்யவில்லை.","No, I didn't.",150
-lesson-95,Lesson 95,basic,typing,3,"ஆம், அவர் செய்தார்.","Yes, he did.",150
-lesson-95,Lesson 95,basic,reorder,3,"ஆம், அவர் செய்தார்.","Yes, he did.",150
-lesson-95,Lesson 95,basic,audio,3,"ஆம், அவர் செய்தார்.","Yes, he did.",150
-lesson-95,Lesson 95,basic,typing,4,"இல்லை, அவள் செய்யவில்லை.","No, she didn't.",150
-lesson-95,Lesson 95,basic,reorder,4,"இல்லை, அவள் செய்யவில்லை.","No, she didn't.",150
-lesson-95,Lesson 95,basic,audio,4,"இல்லை, அவள் செய்யவில்லை.","No, she didn't.",150
-lesson-95,Lesson 95,basic,typing,5,"ஆம், நாங்கள் செய்தோம்.","Yes, we did.",150
-lesson-95,Lesson 95,basic,reorder,5,"ஆம், நாங்கள் செய்தோம்.","Yes, we did.",150
-lesson-95,Lesson 95,basic,audio,5,"ஆம், நாங்கள் செய்தோம்.","Yes, we did.",150
-lesson-95,Lesson 95,basic,typing,6,"இல்லை, அவர்கள் செய்யவில்லை.","No, they didn't.",150
-lesson-95,Lesson 95,basic,reorder,6,"இல்லை, அவர்கள் செய்யவில்லை.","No, they didn't.",150
-lesson-95,Lesson 95,basic,audio,6,"இல்லை, அவர்கள் செய்யவில்லை.","No, they didn't.",150
-lesson-95,Lesson 95,basic,typing,7,"நீ போனாயா? ஆம், நான் போனேன்.","Did you go? Yes, I did.",150
-lesson-95,Lesson 95,basic,reorder,7,"நீ போனாயா? ஆம், நான் போனேன்.","Did you go? Yes, I did.",150
-lesson-95,Lesson 95,basic,audio,7,"நீ போனாயா? ஆம், நான் போனேன்.","Did you go? Yes, I did.",150
-lesson-95,Lesson 95,basic,typing,8,"அவர் சாப்பிட்டாரா? இல்லை, அவர் சாப்பிடவில்லை.","Did he eat? No, he didn't.",150
-lesson-95,Lesson 95,basic,reorder,8,"அவர் சாப்பிட்டாரா? இல்லை, அவர் சாப்பிடவில்லை.","Did he eat? No, he didn't.",150
-lesson-95,Lesson 95,basic,audio,8,"அவர் சாப்பிட்டாரா? இல்லை, அவர் சாப்பிடவில்லை.","Did he eat? No, he didn't.",150
-lesson-95,Lesson 95,basic,typing,9,"அது வேலை செய்ததா? ஆம், அது வேலை செய்தது.","Did it work? Yes, it did.",150
-lesson-95,Lesson 95,basic,reorder,9,"அது வேலை செய்ததா? ஆம், அது வேலை செய்தது.","Did it work? Yes, it did.",150
-lesson-95,Lesson 95,basic,audio,9,"அது வேலை செய்ததா? ஆம், அது வேலை செய்தது.","Did it work? Yes, it did.",150
-lesson-95,Lesson 95,basic,typing,10,"அவள் அழைத்தாளா? இல்லை, அவள் அழைக்கவில்லை.","Did she call? No, she didn't.",150
-lesson-95,Lesson 95,basic,reorder,10,"அவள் அழைத்தாளா? இல்லை, அவள் அழைக்கவில்லை.","Did she call? No, she didn't.",150
-lesson-95,Lesson 95,basic,audio,10,"அவள் அழைத்தாளா? இல்லை, அவள் அழைக்கவில்லை.","Did she call? No, she didn't.",150
+lesson-100,Lesson 100,basic,typing,1,நான் நேற்று வேலை செய்தேன்.,I worked yesterday.,150
+lesson-100,Lesson 100,basic,reorder,1,நான் நேற்று வேலை செய்தேன்.,I worked yesterday.,150
+lesson-100,Lesson 100,basic,audio,1,நான் நேற்று வேலை செய்தேன்.,I worked yesterday.,150
+lesson-100,Lesson 100,basic,typing,2,அவர் கடைக்குச் சென்றார்.,He went to the shop.,150
+lesson-100,Lesson 100,basic,reorder,2,அவர் கடைக்குச் சென்றார்.,He went to the shop.,150
+lesson-100,Lesson 100,basic,audio,2,அவர் கடைக்குச் சென்றார்.,He went to the shop.,150
+lesson-100,Lesson 100,basic,typing,3,அவள் என்னை அழைக்கவில்லை.,She didn't call me.,150
+lesson-100,Lesson 100,basic,reorder,3,அவள் என்னை அழைக்கவில்லை.,She didn't call me.,150
+lesson-100,Lesson 100,basic,audio,3,அவள் என்னை அழைக்கவில்லை.,She didn't call me.,150
+lesson-100,Lesson 100,basic,typing,4,நீ அந்தப் படத்தைப் பார்த்தாயா?,Did you see the movie?,150
+lesson-100,Lesson 100,basic,reorder,4,நீ அந்தப் படத்தைப் பார்த்தாயா?,Did you see the movie?,150
+lesson-100,Lesson 100,basic,audio,4,நீ அந்தப் படத்தைப் பார்த்தாயா?,Did you see the movie?,150
+lesson-100,Lesson 100,basic,typing,5,நாங்கள் ஒரு பெரிய நாயைப் பார்த்தோம்.,We saw a big dog.,150
+lesson-100,Lesson 100,basic,reorder,5,நாங்கள் ஒரு பெரிய நாயைப் பார்த்தோம்.,We saw a big dog.,150
+lesson-100,Lesson 100,basic,audio,5,நாங்கள் ஒரு பெரிய நாயைப் பார்த்தோம்.,We saw a big dog.,150
+lesson-100,Lesson 100,basic,typing,6,அவர்கள் இரவு உணவு சாப்பிடவில்லை.,They didn't eat dinner.,150
+lesson-100,Lesson 100,basic,reorder,6,அவர்கள் இரவு உணவு சாப்பிடவில்லை.,They didn't eat dinner.,150
+lesson-100,Lesson 100,basic,audio,6,அவர்கள் இரவு உணவு சாப்பிடவில்லை.,They didn't eat dinner.,150
+lesson-100,Lesson 100,basic,typing,7,நான் அவரை ஒரு மணி நேரத்திற்கு முன் பார்த்தேன்.,I saw him an hour ago.,150
+lesson-100,Lesson 100,basic,reorder,7,நான் அவரை ஒரு மணி நேரத்திற்கு முன் பார்த்தேன்.,I saw him an hour ago.,150
+lesson-100,Lesson 100,basic,audio,7,நான் அவரை ஒரு மணி நேரத்திற்கு முன் பார்த்தேன்.,I saw him an hour ago.,150
+lesson-100,Lesson 100,basic,typing,8,அவள் கார் வாங்கினாளா?,Did she buy the car?,150
+lesson-100,Lesson 100,basic,reorder,8,அவள் கார் வாங்கினாளா?,Did she buy the car?,150
+lesson-100,Lesson 100,basic,audio,8,அவள் கார் வாங்கினாளா?,Did she buy the car?,150
+lesson-100,Lesson 100,basic,typing,9,"முதலில் நான் சாப்பிட்டேன், பிறகு தூங்கினேன்.","First I ate, then I slept.",150
+lesson-100,Lesson 100,basic,reorder,9,"முதலில் நான் சாப்பிட்டேன், பிறகு தூங்கினேன்.","First I ate, then I slept.",150
+lesson-100,Lesson 100,basic,audio,9,"முதலில் நான் சாப்பிட்டேன், பிறகு தூங்கினேன்.","First I ate, then I slept.",150
+lesson-100,Lesson 100,basic,typing,10,"இல்லை, நான் செய்யவில்லை.","No, I didn't.",150
+lesson-100,Lesson 100,basic,reorder,10,"இல்லை, நான் செய்யவில்லை.","No, I didn't.",150
+lesson-100,Lesson 100,basic,audio,10,"இல்லை, நான் செய்யவில்லை.","No, I didn't.",150
