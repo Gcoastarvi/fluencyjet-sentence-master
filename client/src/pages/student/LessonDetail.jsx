@@ -22,6 +22,8 @@ import Certificate from "@/components/student/Certificate";
 
 import confetti from "canvas-confetti";
 
+import { useAuth } from "../../context/AuthContext";
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
