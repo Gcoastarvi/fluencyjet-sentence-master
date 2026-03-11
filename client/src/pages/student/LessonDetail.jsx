@@ -184,6 +184,7 @@ export default function LessonDetail() {
   );
 
   const [isSharing, setIsSharing] = useState(false);
+  const [missedBanner, setMissedBanner] = useState(null);
 
   // 🎯 4. Effects (The Actions)
   useEffect(() => {
