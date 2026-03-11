@@ -77,26 +77,27 @@ export default function LessonList({ difficulty }) {
               </h3>
               <p className="text-sm font-bold text-slate-900">Module Mastery</p>
             </div>
-            <span className="text-xs font-black text-indigo-600">
-              {/* Keep your existing Math.round calculation here */}
-              Overall
-            </span>
-            {/* 👑 NEW: Smart Upgrade Button */}
-              {(auth?.user?.has_access === false || auth?.has_access === false) ? (
-                <button 
-                  onClick={() => navigate('/upgrade')}
-                  className="mb-1 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-200 hover:scale-105 transition-transform animate-pulse"
-                >
-                  Unlock All Units 👑
-                </button>
-              ) : (
-                <span className="text-xs font-black text-indigo-600">
-                  {Math.round((lessons.filter((l) => (l.progress || 0) >= 100).length / 120) * 100)}% Overall
-                </span>
-              )}
-            </div>
+
+            {/* 👑 Smart Upgrade Button or Progress % */}
+            {auth?.user?.has_access === false || auth?.has_access === false ? (
+              <button
+                onClick={() => navigate("/upgrade")}
+                className="mb-1 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-200 hover:scale-105 transition-transform animate-pulse"
+              >
+                Unlock All Units 👑
+              </button>
+            ) : (
+              <span className="text-xs font-black text-indigo-600">
+                {Math.round(
+                  (lessons.filter((l) => (l.progress || 0) >= 100).length /
+                    120) *
+                    100,
+                )}
+                % Overall
+              </span>
+            )}
           </div>
-          
+
           {/* Progress Bar Container */}
           <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-4">
             <div
