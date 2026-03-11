@@ -60,13 +60,13 @@ export default function LessonList({ difficulty }) {
     }));
   }, [lessons]);
 
+  // 63: Keep your loading check
   if (loading) return <LessonSkeleton />;
 
+  // 65: Standardized return (Removed the double return/fragment)
   return (
-    <>
-      return (
-      <>
-        {/* 🏆 Sticky Unit Progress & Navigation */}
+    <div className="min-h-screen bg-slate-50 pb-20"> 
+      {/* 🏆 Sticky Unit Progress & Navigation (Starts here) */}
         <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
           <div className="max-w-2xl mx-auto px-6 pt-4 pb-2">
             {/* Your existing progress bar logic */}
@@ -158,8 +158,6 @@ export default function LessonList({ difficulty }) {
           ))}
         </div>
       </>
-      );
-    </>
   );
 }
 
