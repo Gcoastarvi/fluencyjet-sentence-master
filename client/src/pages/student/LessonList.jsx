@@ -1,30 +1,29 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // Added useLocation
+import { useNavigate, useLocation } from "react-router-dom";
 import * as api from "../../api/apiClient";
 import { useAuth } from "../../context/AuthContext";
 import LessonCard from "../../components/student/LessonCard";
 
-export default function LessonList() {
-  // 🎯 1. Hooks MUST be the first thing inside the function
+export default function LessonList({ difficulty }) {
+  // 🎯 1. Fundamental Hooks
   const navigate = useNavigate();
   const location = useLocation();
   const { auth } = useAuth();
 
-  // 🎯 2. Track which units are expanded (MOVED INSIDE)
-  const [expandedModules, setExpandedModules] = useState({ 1: true });
-
-  const toggleModule = (id) => {
-    setExpandedModules(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };  
-
-export default function LessonList({ difficulty }) {
+  // 🎯 2. Local State
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expandedModules, setExpandedModules] = useState({ 1: true });
 
-  const { auth } = useAuth();
+  // 🎯 3. Toggle Logic
+  const toggleModule = (id) => {
+    setExpandedModules((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  // 🎯 4. Data Fetching (Starting your original useEffect)
 
   useEffect(() => {
     const fetchLessons = async () => {
@@ -62,16 +61,6 @@ export default function LessonList({ difficulty }) {
   }, [lessons]);
 
   if (loading) return <LessonSkeleton />;
-
-  // Add this before your 'return ('
-  const [expandedModules, setExpandedModules] = React.useState({ 1: true });
-
-  const toggleModule = (id) => {
-    setExpandedModules((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
 
   return (
     <>
