@@ -168,24 +168,58 @@ function modeLabel(m) {
 }
 
 export default function LessonDetail() {
-  // 🎯 1. Initialize Hooks First
+  // 🎯 1. Initialize ALL Hooks first (The Foundation)
+  const { lid, lessonId: lessonIdParam } = useParams();
+  const { auth } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const { lessonId: lessonIdParam } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // 🎯 2. Initialize State Second (Now 'location' is safe to use)
+  // 🎯 2. Initialize State (The Data)
   const [lesson, setLesson] = useState(location.state?.lesson || null);
+  const [lessonData, setLessonData] = useState(null); // Ensure this state exists
   const [missedBanner, setMissedBanner] = useState(null);
+  const [isSharing, setIsSharing] = useState(false);
 
-  // 🎯 3. Derived Variables Third
+  // 🎯 3. Calculated Logic (Safe because 'lesson' and 'lessonData' are now defined)
+  const currentData = lessonData || lesson || null;
+  const progress = currentData?.progress || { typing: 0, reorder: 0, audio: 0 };
+  const overallDone = Math.round(
+    (Number(progress.typing || 0) +
+      Number(progress.reorder || 0) +
+      Number(progress.audio || 0)) /
+      3,
+  );
+
+  // 🎯 4. Effects (The Actions)
+  useEffect(() => {
+    if (overallDone === 100) {
+      // Confetti Cannon Logic
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: Math.random(), y: Math.random() - 0.2 },
+        });
+      }, 250);
+
+      // Also trigger the Bonus XP write-back here if needed
+      if (typeof triggerBonusCelebration === "function")
+        triggerBonusCelebration();
+    }
+  }, [overallDone]);
+
+  // 🎯 5. Derived Variables
   const displayNum = location.state?.lessonNumber || lesson?.id;
-  const dayNumber = Number(lessonIdParam);
-  const dayNumberStr = String(lessonIdParam || "");
-
-  // ✅ compatibility: many parts of this file still expect `lessonId`
-  const lessonId = dayNumberStr;
-  const lessonIdNum = dayNumber; // optional alias if older code uses lessonIdNum
+  const dayNumber = Number(lessonIdParam || lid);
+  const lessonId = String(dayNumber);
 
   // 150: Image Generation Handlers
   const handleShare = async (avg) => {
@@ -242,8 +276,6 @@ export default function LessonDetail() {
   // ✅ Use backend + lesson metadata for lock UI. Do NOT use "first 3 only" anymore.
   const isLocked = Boolean(lesson?.isLocked ?? lesson?.is_locked ?? false);
 
-  const [isSharing, setIsSharing] = useState(false);
-
   // Preference toggle (Show Tamil help)
   //const [showTa, setShowTa] = useState(() => {
   // Avoid SSR issues (not relevant here) and keep predictable default
@@ -276,27 +308,6 @@ export default function LessonDetail() {
     }
     fetchUser();
   }, []);
-
-  // "Daily Streak" Confetti Animation Cannon
-  useEffect(() => {
-    if (overallDone === 100) {
-      const duration = 3 * 1000;
-      const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
-      const interval = setInterval(function () {
-        const timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) return clearInterval(interval);
-
-        const particleCount = 50 * (timeLeft / duration);
-        confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: Math.random(), y: Math.random() - 0.2 },
-        });
-      }, 250);
-    }
-  }, [overallDone]);
 
   // Fallback: if page is hard-refreshed and no state.lesson, try to fetch lesson list and locate this lesson
   useEffect(() => {
