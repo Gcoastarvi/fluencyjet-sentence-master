@@ -183,6 +183,8 @@ export default function LessonDetail() {
       3,
   );
 
+  const [isSharing, setIsSharing] = useState(false);
+
   // 🎯 4. Effects (The Actions)
   useEffect(() => {
     if (overallDone === 100) {
