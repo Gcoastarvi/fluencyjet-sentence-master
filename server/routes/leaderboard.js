@@ -98,23 +98,25 @@ router.get("/", authMiddleware, async (req, res) => {
     let rows;
     if (period === "all") {
       // Lifetime Logic
+      // 🎯 Updated to use 'xpTotal' as found in your prisma.schema
       const users = await prisma.user.findMany({
         orderBy:
-          sortBy === "streak" ? { daily_streak: "desc" } : { xp: "desc" },
+          sortBy === "streak" ? { daily_streak: "desc" } : { xpTotal: "desc" },
         take: 50,
         select: {
           id: true,
           name: true,
-          xp: true,
+          xpTotal: true, // changed from xp
           daily_streak: true,
           league: true,
         },
       });
+
       rows = users.map((u, idx) => ({
         rank: idx + 1,
         user_id: u.id,
         name: u.name,
-        xp: u.xp,
+        xp: u.xpTotal, // map the db 'xpTotal' to the frontend 'xp'
         streak: u.daily_streak,
         league: u.league,
       }));
