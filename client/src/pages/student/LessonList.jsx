@@ -54,6 +54,27 @@ export default function LessonList({ difficulty }) {
     });
   };
 
+  // 🎯 Track the 7 days of the week (0 = Sunday, 6 = Saturday)
+  const [weeklyProgress, setWeeklyProgress] = useState(() => {
+    const saved = localStorage.getItem("weekly_mastery_dots");
+    return saved
+      ? JSON.parse(saved)
+      : [false, false, false, false, false, false, false];
+  });
+
+  // 🎯 Update the dot for 'today' if missions are done
+  useEffect(() => {
+    if (isSentencesDone) {
+      const today = new Date().getDay(); // Get 0-6
+      setWeeklyProgress((prev) => {
+        const updated = [...prev];
+        updated[today] = true;
+        localStorage.setItem("weekly_mastery_dots", JSON.stringify(updated));
+        return updated;
+      });
+    }
+  }, [isSentencesDone]);
+
   // 🎯 Save whenever it changes
   useEffect(() => {
     localStorage.setItem("daily_sentences_count", sentencesMastered);
@@ -359,6 +380,43 @@ export default function LessonList({ difficulty }) {
           </div>
         </aside>
       </div>{" "}
+      {/* 📅 Weekly Streak Calendar */}
+      <div className="mt-8 pt-6 border-t border-slate-50">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Weekly Goal
+          </h4>
+          <span className="text-[10px] font-black text-emerald-500 uppercase">
+            {weeklyProgress.filter(Boolean).length}/7 Days
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center gap-1">
+          {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => {
+            const isToday = new Date().getDay() === i;
+            const isDone = weeklyProgress[i];
+
+            return (
+              <div key={i} className="flex flex-col items-center gap-2">
+                <div
+                  className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-500 ${
+                    isDone
+                      ? "bg-emerald-500 text-white shadow-lg shadow-emerald-100 scale-110"
+                      : isToday
+                        ? "border-2 border-dashed border-indigo-400 text-indigo-400 animate-pulse"
+                        : "bg-slate-100 text-slate-400"
+                  }`}
+                >
+                  {isDone ? "✓" : day}
+                </div>
+                {isToday && (
+                  <div className="h-1 w-1 rounded-full bg-indigo-400" />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
       {/* Close Grid Layout */}
       {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
       <aside className="lg:col-span-4 hidden lg:block">
