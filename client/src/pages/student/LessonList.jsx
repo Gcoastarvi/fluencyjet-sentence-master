@@ -28,6 +28,12 @@ export default function LessonList({ difficulty }) {
     }));
   };
 
+  // 🎯 Calculate Level (Level 1 = 0 XP, Level 2 = 1000 XP, etc.)
+  const userXP = auth?.user?.total_xp || 0;
+  const currentLevel = Math.floor(userXP / 1000) + 1;
+  const nextLevelXP = currentLevel * 1000;
+  const progressToNextLevel = (userXP % 1000) / 10; // 0-100% for the bar
+
   // 🎯 Load session progress from storage
   const [sentencesMastered, setSentencesMastered] = useState(() => {
     const savedDate = localStorage.getItem("last_practice_date");
@@ -181,6 +187,24 @@ export default function LessonList({ difficulty }) {
     };
     fetchTopLearners();
   }, []);
+
+  useEffect(() => {
+    const xp = auth?.user?.total_xp || 0;
+    const lastLevel = localStorage.getItem("last_celebrated_level") || 1;
+    const currentLevel = Math.floor(xp / 1000) + 1;
+
+    if (currentLevel > lastLevel) {
+      // 🎯 TRIGGER THE CELEBRATION
+      confetti({
+        particleCount: 200,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ["#6366f1", "#f59e0b", "#10b981"],
+      });
+
+      localStorage.setItem("last_celebrated_level", currentLevel);
+    }
+  }, [auth?.user?.total_xp]);
 
   useEffect(() => {
     // Trigger if streak is reached and user hasn't seen the reward yet
@@ -487,6 +511,23 @@ export default function LessonList({ difficulty }) {
           })}
         </div>
       </div>
+      {/* 🎖️ Level Progression Badge */}
+      <div className="mb-6 p-4 rounded-3xl bg-slate-900 text-white overflow-hidden relative">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+            Current Rank
+          </span>
+          <span className="text-xs font-black italic">
+            Level {Math.floor((auth?.user?.total_xp || 0) / 1000) + 1}
+          </span>
+        </div>
+        <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-indigo-500 transition-all duration-1000"
+            style={{ width: `${((auth?.user?.total_xp || 0) % 1000) / 10}%` }}
+          />
+        </div>
+      </div>
       {/* Close Grid Layout */}
       {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
       <aside className="lg:col-span-4 hidden lg:block">
@@ -591,36 +632,45 @@ export default function LessonList({ difficulty }) {
         </div>
 
         <div className="space-y-3">
-          {topLearners.map((learner, index) => (
-            <div
-              key={learner.id}
-              className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
-                learner.id === auth?.user?.id
-                  ? "bg-indigo-50 border-indigo-100"
-                  : "bg-white border-slate-50"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                    index === 0
-                      ? "bg-yellow-400 text-white"
-                      : index === 1
-                        ? "bg-slate-300 text-white"
-                        : "bg-orange-300 text-white"
-                  }`}
-                >
-                  {index + 1}
+          {/* 🛡️ Defensive Guard: Prevents 'map is not a function' crash */}
+          {Array.isArray(topLearners) && topLearners.length > 0 ? (
+            topLearners.map((learner, index) => (
+              <div
+                key={learner.id || index}
+                className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                  learner.id === auth?.user?.id
+                    ? "bg-indigo-50 border-indigo-100"
+                    : "bg-white border-slate-50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                      index === 0
+                        ? "bg-yellow-400 text-white"
+                        : index === 1
+                          ? "bg-slate-300 text-white"
+                          : "bg-orange-300 text-white"
+                    }`}
+                  >
+                    {index + 1}
+                  </div>
+                  <span className="text-xs font-bold text-slate-700 truncate max-w-[80px]">
+                    {learner.username}
+                  </span>
                 </div>
-                <span className="text-xs font-bold text-slate-700 truncate max-w-[80px]">
-                  {learner.username} {learner.id === auth?.user?.id && "(You)"}
+                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter">
+                  {learner.total_xp || 0} XP
                 </span>
               </div>
-              <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter">
-                {learner.total_xp} XP
-              </span>
+            ))
+          ) : (
+            <div className="text-center py-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest animate-pulse">
+                Finding champions...
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </div>
       {/* 👑 SUNDAY GRAND PRIZE BADGE */}
