@@ -412,42 +412,69 @@ function TopLearnersCard({ rows, loading, periodLabel }) {
       {!loading && rows && rows.length > 0 && (
         <ul className="mt-4 divide-y divide-slate-100">
           {rows.map((row, idx) => (
-            <li
-              key={row.userId ?? row.id}
-              className={`flex items-center justify-between py-4 px-4 transition-all ${
-                idx < 3
-                  ? "bg-emerald-50/50 border-l-4 border-emerald-400 mb-1 rounded-r-xl"
-                  : "border-l-4 border-transparent"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${
-                    idx === 0
-                      ? "bg-yellow-400 text-white"
-                      : idx === 1
-                        ? "bg-slate-300 text-white"
-                        : idx === 2
-                          ? "bg-orange-300 text-white"
-                          : "bg-indigo-50 text-indigo-700"
-                  }`}
+            <React.Fragment key={row.userId ?? row.id}>
+              {/* 🛡️ 414: Promotion Cutoff Line (Appears between Rank 3 and 4) */}
+              {idx === 3 && (
+                <div
+                  title="Finish the week in the Top 3 to advance to Silver League!"
+                  className="flex items-center gap-4 my-6 px-4 group cursor-help"
                 >
-                  {idx < 3
-                    ? idx === 0
-                      ? "🥇"
-                      : idx === 1
-                        ? "🥈"
-                        : "🥉"
-                    : `#${row.rank}`}
-                </span>
-                <span className="text-sm font-bold text-slate-800">
-                  {row.name} {row.userId === auth?.user?.id && "(You)"}
-                </span>
-              </div>
-              <div className="text-xs font-black text-slate-500">
-                {kFormat(row.xp)} XP
-              </div>
-            </li>
+                  <div className="h-[1px] flex-grow bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                  <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.2em] whitespace-nowrap bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-100 flex items-center gap-2 group-hover:scale-105 transition-transform">
+                    Promotion Zone Cutoff 🛡️
+                  </span>
+                  <div className="h-[1px] flex-grow bg-emerald-200 group-hover:bg-emerald-400 transition-colors"></div>
+                </div>
+              )}
+
+              <li
+                className={`flex items-center justify-between py-4 px-4 transition-all ${
+                  idx < 3
+                    ? "bg-emerald-50/50 border-l-4 border-emerald-400 mb-1 rounded-r-xl"
+                    : "border-l-4 border-transparent hover:bg-slate-50 rounded-xl"
+                } ${row.user_id === auth?.user?.id ? "ring-2 ring-indigo-500 bg-indigo-50/30" : ""}`}
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full text-[10px] font-black shadow-sm ${
+                      idx === 0
+                        ? "bg-yellow-400 text-white"
+                        : idx === 1
+                          ? "bg-slate-300 text-white"
+                          : idx === 2
+                            ? "bg-orange-300 text-white"
+                            : "bg-indigo-50 text-indigo-700"
+                    }`}
+                  >
+                    {idx < 3
+                      ? idx === 0
+                        ? "🥇"
+                        : idx === 1
+                          ? "🥈"
+                          : "🥉"
+                      : `#${row.rank}`}
+                  </span>
+                  <div>
+                    <span className="text-sm font-black text-slate-800 block">
+                      {row.name || "Learner"}
+                    </span>
+                    {row.user_id === auth?.user?.id && (
+                      <span className="text-[8px] font-black text-indigo-500 uppercase">
+                        You
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-black text-slate-900">
+                    {kFormat(row.xp)}
+                  </div>
+                  <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                    XP
+                  </div>
+                </div>
+              </li>
+            </React.Fragment>
           ))}
         </ul>
       )}

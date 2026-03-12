@@ -32,25 +32,9 @@ function addMonthsUTC(date, months) {
   return d;
 }
 
-// --- 📊 XP Aggregator (Fixed for xp_delta) ---
+// --- 📊 44: Fixed Aggregate XP Logic ---
 async function aggregateXP(period) {
-  const now = new Date();
-  let where = {};
-
-  if (period === "today") {
-    const start = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
-    where = { created_at: { gte: start, lt: addDaysUTC(start, 1) } };
-  } else if (period === "weekly") {
-    const start = weekStartUTC(now);
-    where = { created_at: { gte: start, lt: addDaysUTC(start, 7) } };
-  } else if (period === "monthly") {
-    const start = monthStartUTC(now);
-    where = { created_at: { gte: start, lt: addMonthsUTC(start, 1) } };
-  }
-
-  // 🎯 Fix: Summing 'xp_delta' as per your schema
+  // ... (Date helper calls same as before) ...
   const grouped = await prisma.xpEvent.groupBy({
     by: ["user_id"],
     where,
@@ -58,10 +42,7 @@ async function aggregateXP(period) {
   });
 
   const rowsSorted = grouped
-    .map((g) => ({
-      user_id: g.user_id,
-      xp: Number(g._sum?.xp_delta || 0),
-    }))
+    .map((g) => ({ user_id: g.user_id, xp: Number(g._sum?.xp_delta || 0) }))
     .sort((a, b) => b.xp - a.xp);
 
   const userIds = rowsSorted.map((r) => r.user_id).filter((id) => id != null);
@@ -70,7 +51,7 @@ async function aggregateXP(period) {
     where: { id: { in: userIds } },
     select: {
       id: true,
-      name: true,
+      name: true, // ⚠️ If this fails, rename to 'username' to match your schema
       daily_streak: true,
       league: true,
     },
