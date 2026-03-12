@@ -455,45 +455,97 @@ function TopLearnersCard({ rows, loading, periodLabel }) {
   );
 }
 
-function YourPositionCard({ you, loading, periodLabel, totalLearners }) {
+function YourPositionCard({ you, loading, periodLabel, totalLearners, rows }) {
+  // 🎯 Calculate Probability Logic
+  const getPromoStats = () => {
+    if (!you || !rows || rows.length < 3)
+      return { label: "Unknown", color: "text-slate-400", prob: 0 };
+
+    if (you.rank <= 3)
+      return { label: "Promoting!", color: "text-emerald-500", prob: 100 };
+
+    const thirdPlaceXP = rows[2]?.xp || 0;
+    const gap = thirdPlaceXP - (you.xp || 0);
+
+    if (gap < 200) return { label: "High", color: "text-indigo-500", prob: 80 };
+    if (gap < 500)
+      return { label: "Moderate", color: "text-amber-500", prob: 45 };
+    return { label: "Low", color: "text-slate-400", prob: 15 };
+  };
+
+  const promo = getPromoStats();
+
   return (
-    <section className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 px-5 py-5 sm:px-6 sm:py-6">
-      <h2 className="text-lg font-bold text-slate-900">Your Position</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        Track how you're progressing on the leaderboard.
-      </p>
-
-      {loading && (
-        <div className="mt-4 h-16 rounded-2xl bg-slate-100 animate-pulse" />
-      )}
-
-      {!loading && !you && (
-        <p className="mt-4 text-sm text-slate-500">
-          You're not ranked yet for this period. Complete a quiz to join the
-          leaderboard!
+    <section className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 px-5 py-5 sm:px-6 sm:py-6 h-full flex flex-col justify-between">
+      <div>
+        <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">
+          Your Position
+        </h2>
+        <p className="mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+          Leaderboard Standing
         </p>
-      )}
 
-      {!loading && you && (
-        <div className="mt-4 flex items-center justify-between rounded-2xl bg-indigo-50 px-4 py-4">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-semibold text-indigo-700">
-              #{you.rank ?? "?"}
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">{you.name}</p>
-              <p className="text-xs text-slate-600">
-                {totalLearners > 0
-                  ? `Out of ${totalLearners} learners this period.`
-                  : "Keep practising to climb higher!"}
+        {loading ? (
+          <div className="mt-6 h-16 rounded-2xl bg-slate-50 animate-pulse" />
+        ) : !you ? (
+          <div className="mt-6 p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-center">
+            <p className="text-xs font-bold text-slate-400 italic">
+              No Rank Yet
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="mt-6 flex items-center justify-between rounded-2xl bg-indigo-50/50 p-4 border border-indigo-100/50">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-[10px] font-black text-white shadow-lg">
+                  #{you.rank ?? "?"}
+                </span>
+                <div>
+                  <p className="text-sm font-black text-slate-900 leading-none">
+                    {you.name}
+                  </p>
+                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter mt-1">
+                    {totalLearners} active masters
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm font-black text-indigo-600">
+                  {kFormat(you.xp)}
+                </p>
+                <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">
+                  XP
+                </p>
+              </div>
+            </div>
+
+            {/* 📈 Promotion Probability Tracker */}
+            <div className="mt-8">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                  Promotion Prob.
+                </span>
+                <span
+                  className={`text-[10px] font-black uppercase ${promo.color}`}
+                >
+                  {promo.label}
+                </span>
+              </div>
+              <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-1000 ${promo.prob > 50 ? "bg-indigo-500" : "bg-slate-300"}`}
+                  style={{ width: `${promo.prob}%` }}
+                />
+              </div>
+              <p className="text-[9px] text-slate-400 mt-2 font-medium">
+                {you.rank <= 3
+                  ? "Maintain your spot to move up!"
+                  : `Catch #${you.rank - 1} to increase your odds.`}
               </p>
             </div>
-          </div>
-          <div className="text-xs font-semibold text-indigo-700">
-            {kFormat(you.xp)} XP {periodLabel.toLowerCase()}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </div>
     </section>
   );
 }

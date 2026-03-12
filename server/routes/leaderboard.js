@@ -97,8 +97,7 @@ router.get("/", authMiddleware, async (req, res) => {
 
     let rows;
     if (period === "all") {
-      // Lifetime Logic
-      // 🎯 101: Updated to use 'xpTotal' from your schema
+      // 🎯 Schema Alignment: Using 'xpTotal' instead of 'xp'
       const users = await prisma.user.findMany({
         orderBy:
           sortBy === "streak" ? { daily_streak: "desc" } : { xpTotal: "desc" },
@@ -106,18 +105,17 @@ router.get("/", authMiddleware, async (req, res) => {
         select: {
           id: true,
           name: true,
-          xpTotal: true, // Use xpTotal here
+          xpTotal: true, // ⬅️ Matches your schema line 22
           daily_streak: true,
           league: true,
         },
       });
 
-      // 🎯 115: Map the data so the frontend still sees the key "xp"
       rows = users.map((u, idx) => ({
         rank: idx + 1,
         user_id: u.id,
-        name: u.name || "Learner",
-        xp: u.xpTotal, // This maps xpTotal -> xp for the frontend
+        name: u.name || "Master Learner",
+        xp: u.xpTotal, // ⬅️ Maps database 'xpTotal' to frontend 'xp'
         streak: u.daily_streak,
         league: u.league,
       }));
