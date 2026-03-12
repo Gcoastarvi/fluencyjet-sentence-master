@@ -61,28 +61,29 @@ async function aggregateXP(period) {
     .sort((a, b) => b.xp - a.xp);
 
   const userIds = rowsSorted.map((r) => r.user_id).filter((v) => v != null);
-  // 🎯 101: Updated to use 'xpTotal' from your schema
   const users = await prisma.user.findMany({
-    orderBy:
-      sortBy === "streak" ? { daily_streak: "desc" } : { xpTotal: "desc" },
-    take: 50,
+    where: { id: { in: userIds } },
     select: {
       id: true,
       name: true,
-      xpTotal: true, // Use xpTotal here
+      email: true,
       daily_streak: true,
       league: true,
     },
   });
 
-  // 🎯 115: Map the data so the frontend still sees the key "xp"
-  rows = users.map((u, idx) => ({
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  return rowsSorted.map((r, idx) => ({
     rank: idx + 1,
-    user_id: u.id,
-    name: u.name || "Learner",
-    xp: u.xpTotal, // This maps xpTotal -> xp for the frontend
-    streak: u.daily_streak,
-    league: u.league,
+    user_id: r.user_id,
+    name:
+      userMap.get(r.user_id)?.name ||
+      userMap.get(r.user_id)?.email?.split("@")[0] ||
+      "Learner",
+    xp: r.xp,
+    streak: userMap.get(r.user_id)?.daily_streak || 0,
+    league: userMap.get(r.user_id)?.league || "BRONZE",
   }));
 }
 
@@ -97,7 +98,7 @@ router.get("/", authMiddleware, async (req, res) => {
     let rows;
     if (period === "all") {
       // Lifetime Logic
-      // 🎯 Updated to use 'xpTotal' as found in your prisma.schema
+      // 🎯 101: Updated to use 'xpTotal' from your schema
       const users = await prisma.user.findMany({
         orderBy:
           sortBy === "streak" ? { daily_streak: "desc" } : { xpTotal: "desc" },
@@ -105,17 +106,18 @@ router.get("/", authMiddleware, async (req, res) => {
         select: {
           id: true,
           name: true,
-          xpTotal: true, // changed from xp
+          xpTotal: true, // Use xpTotal here
           daily_streak: true,
           league: true,
         },
       });
 
+      // 🎯 115: Map the data so the frontend still sees the key "xp"
       rows = users.map((u, idx) => ({
         rank: idx + 1,
         user_id: u.id,
-        name: u.name,
-        xp: u.xpTotal, // map the db 'xpTotal' to the frontend 'xp'
+        name: u.name || "Learner",
+        xp: u.xpTotal, // This maps xpTotal -> xp for the frontend
         streak: u.daily_streak,
         league: u.league,
       }));
