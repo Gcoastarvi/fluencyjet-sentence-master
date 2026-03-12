@@ -32,7 +32,7 @@ function addMonthsUTC(date, months) {
   return d;
 }
 
-// --- 📊 XP Aggregator (Preserved logic) ---
+// --- 📊 XP Aggregator (Fixed for xp_delta) ---
 async function aggregateXP(period) {
   const now = new Date();
   let where = {};
@@ -50,6 +50,7 @@ async function aggregateXP(period) {
     where = { created_at: { gte: start, lt: addMonthsUTC(start, 1) } };
   }
 
+  // 🎯 Fix: Summing 'xp_delta' as per your schema
   const grouped = await prisma.xpEvent.groupBy({
     by: ["user_id"],
     where,
@@ -57,16 +58,19 @@ async function aggregateXP(period) {
   });
 
   const rowsSorted = grouped
-    .map((g) => ({ user_id: g.user_id, xp: Number(g._sum?.xp_delta || 0) }))
+    .map((g) => ({
+      user_id: g.user_id,
+      xp: Number(g._sum?.xp_delta || 0),
+    }))
     .sort((a, b) => b.xp - a.xp);
 
-  const userIds = rowsSorted.map((r) => r.user_id).filter((v) => v != null);
+  const userIds = rowsSorted.map((r) => r.user_id).filter((id) => id != null);
+
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     select: {
       id: true,
       name: true,
-      email: true,
       daily_streak: true,
       league: true,
     },
@@ -77,10 +81,7 @@ async function aggregateXP(period) {
   return rowsSorted.map((r, idx) => ({
     rank: idx + 1,
     user_id: r.user_id,
-    name:
-      userMap.get(r.user_id)?.name ||
-      userMap.get(r.user_id)?.email?.split("@")[0] ||
-      "Learner",
+    name: userMap.get(r.user_id)?.name || "Learner",
     xp: r.xp,
     streak: userMap.get(r.user_id)?.daily_streak || 0,
     league: userMap.get(r.user_id)?.league || "BRONZE",
