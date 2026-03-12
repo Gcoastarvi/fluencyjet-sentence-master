@@ -71,6 +71,16 @@ export default function LessonList({ difficulty }) {
       : [false, false, false, false, false, false, false];
   });
 
+  // Logic for the first mission item
+  const isSentencesDone = sentencesMastered >= 2;
+
+  const [claimedSundayReward, setClaimedSundayReward] = useState(() => {
+    return (
+      localStorage.getItem("sunday_reward_claimed") ===
+      new Date().toLocaleDateString()
+    );
+  });
+
   // 🎯 Update the dot for 'today' if missions are done
   useEffect(() => {
     if (isSentencesDone) {
@@ -88,16 +98,6 @@ export default function LessonList({ difficulty }) {
   useEffect(() => {
     localStorage.setItem("daily_sentences_count", sentencesMastered);
   }, [sentencesMastered]);
-
-  // Logic for the first mission item
-  const isSentencesDone = sentencesMastered >= 2;
-
-  const [claimedSundayReward, setClaimedSundayReward] = useState(() => {
-    return (
-      localStorage.getItem("sunday_reward_claimed") ===
-      new Date().toLocaleDateString()
-    );
-  });
 
   useEffect(() => {
     const isSunday = new Date().getDay() === 0;
