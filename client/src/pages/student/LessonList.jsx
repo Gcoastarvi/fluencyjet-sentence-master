@@ -526,9 +526,36 @@ export default function LessonList({ difficulty }) {
             className="h-full bg-indigo-500 transition-all duration-1000"
             style={{ width: `${((auth?.user?.total_xp || 0) % 1000) / 10}%` }}
           />
-        </div>
-      </div>
+        </div>        
+      </div>      
       {/* Close Grid Layout */}
+      {/* 🎖️ LEVEL UP POPUP (Pasted here) */}
+            {showLevelUp && (
+              <div className="fixed inset-0 z-[110] flex items-center justify-center bg-indigo-900/80 backdrop-blur-md animate-in fade-in duration-500">
+                <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full text-center shadow-[0_0_50px_rgba(99,102,241,0.5)] animate-in zoom-in duration-300">
+                  <div className="relative inline-block mb-6">
+                     <span className="text-8xl">🎖️</span>
+                     <div className="absolute -bottom-2 -right-2 bg-indigo-600 text-white text-xs font-black px-3 py-1 rounded-full border-4 border-white">
+                       LVL {Math.floor((auth?.user?.xpTotal || 0) / 1000) + 1}
+                     </div>
+                  </div>
+                  <h2 className="text-3xl font-black text-slate-900 mb-2">New Rank!</h2>
+                  <p className="text-indigo-600 font-bold uppercase tracking-widest text-[10px] mb-8">புதிய நிலை எட்டப்பட்டது!</p>
+                  <button 
+                    onClick={() => setShowLevelUp(false)}
+                    className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all"
+                  >
+                    Keep Exploring
+                  </button>
+                </div>
+              </div>
+            )}
+          </div> // This closes the main background div at Line 228
+        );
+      }
+      
+
+      
       {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
       <aside className="lg:col-span-4 hidden lg:block">
         <div className="sticky top-32 bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-2xl shadow-slate-200/50">
