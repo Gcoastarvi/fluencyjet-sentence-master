@@ -95,6 +95,28 @@ export default function Leaderboard() {
 
   const promo = getPromotionStats();
 
+  const [promoTime, setPromoTime] = useState("");
+
+  useEffect(() => {
+    const updateCountdown = () => {
+      // Target: Sunday, March 15, 2026 @ 11:59 PM UTC
+      const target = new Date(Date.UTC(2026, 2, 15, 23, 59, 59));
+      const diff = target - new Date();
+
+      if (diff <= 0) return "League Closed";
+
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+
+      setPromoTime(`${d}d ${h}h ${m}m remaining`);
+    };
+
+    const timer = setInterval(updateCountdown, 60000);
+    updateCountdown();
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="max-w-5xl mx-auto px-4 pb-10">
       {/* 🎯 1. League Promotion Banner (Line 81) */}
@@ -109,12 +131,12 @@ export default function Leaderboard() {
             <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">
               Bronze League
             </h2>
-            <p className="text-indigo-200 text-xs font-bold mt-2">
+            <p className="text-indigo-200 text-xs font-bold mt-2 flex items-center gap-2">
               🏆 Top 3 players promote to{" "}
-              <span className="text-white underline font-black">
-                Silver League
-              </span>{" "}
-              this Sunday!
+              <span className="text-white underline">Silver League</span> in:
+              <span className="bg-indigo-500/50 px-2 py-0.5 rounded text-white font-black animate-pulse">
+                {promoTime}
+              </span>
             </p>
           </div>
           <div className="flex -space-x-3">
