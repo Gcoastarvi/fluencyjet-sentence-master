@@ -152,6 +152,23 @@ export default function LessonList({ difficulty }) {
   }, [difficulty]);
 
   useEffect(() => {
+    const today = new Date().getDay();
+    const perfectWeek = weeklyProgress.every(Boolean);
+
+    // 🎯 If it's Sunday (0) and all dots are true
+    if (today === 0 && perfectWeek && !claimedSundayReward) {
+      // Fire the Golden Confetti Cannon!
+      confetti({
+        particleCount: 300,
+        spread: 100,
+        origin: { y: 0.5 },
+        colors: ["#FFD700", "#FFA500"],
+      });
+      setShowSundayBadge(true);
+    }
+  }, [weeklyProgress]);
+
+  useEffect(() => {
     // Trigger if streak is reached and user hasn't seen the reward yet
     if (auth?.user?.daily_streak >= 3 && !showReward) {
       setShowReward(true);
@@ -433,17 +450,17 @@ export default function LessonList({ difficulty }) {
         <div className="flex justify-between items-center gap-1">
           {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => {
             const isToday = new Date().getDay() === i;
-            const isDone = weeklyProgress[i];
+            const isDone = weeklyProgress[i]; // 🎯 This is the key boolean
 
             return (
               <div key={i} className="flex flex-col items-center gap-2">
                 <div
                   className={`h-8 w-8 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-500 ${
                     isDone
-                      ? "bg-emerald-500 text-white shadow-lg shadow-emerald-100 scale-110"
+                      ? "bg-emerald-500 text-white shadow-lg shadow-emerald-100 scale-110" // 🟢 Finished day
                       : isToday
-                        ? "border-2 border-dashed border-indigo-400 text-indigo-400 animate-pulse"
-                        : "bg-slate-100 text-slate-400"
+                        ? "border-2 border-dashed border-indigo-400 text-indigo-400 animate-pulse" // ⚡ Current day
+                        : "bg-slate-100 text-slate-400" // ⚪ Future/Missed day
                   }`}
                 >
                   {isDone ? "✓" : day}
