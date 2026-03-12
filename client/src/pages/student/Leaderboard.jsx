@@ -76,6 +76,25 @@ export default function Leaderboard() {
   const userName = auth?.user?.name || "Learner";
   const league = "BRONZE";
 
+  const getPromotionStats = () => {
+    if (!you || !rows || rows.length < 3)
+      return { label: "Unknown", color: "text-slate-400" };
+
+    if (you.rank <= 3)
+      return { label: "Promoting!", color: "text-emerald-500", prob: 100 };
+
+    const thirdPlaceXP = rows[2]?.xp || 0;
+    const gap = thirdPlaceXP - (you.xp || 0);
+
+    if (gap < 150)
+      return { label: "Very High", color: "text-indigo-500", prob: 85 };
+    if (gap < 400)
+      return { label: "Moderate", color: "text-amber-500", prob: 45 };
+    return { label: "Low", color: "text-slate-400", prob: 15 };
+  };
+
+  const promo = getPromotionStats();
+
   return (
     <div className="max-w-5xl mx-auto px-4 pb-10">
       {/* 🎯 1. League Promotion Banner (Line 81) */}

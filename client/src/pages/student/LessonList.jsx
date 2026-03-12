@@ -17,6 +17,8 @@ export default function LessonList({ difficulty }) {
 
   const [showReward, setShowReward] = useState(false);
 
+  const [showLevelUp, setShowLevelUp] = useState(false);
+
   // Logic to check if all missions are done
   const allMissionsDone = auth?.user?.daily_streak >= 3; // Add your other mission logic here
 
@@ -518,13 +520,13 @@ export default function LessonList({ difficulty }) {
             Current Rank
           </span>
           <span className="text-xs font-black italic">
-            Level {Math.floor((auth?.user?.total_xp || 0) / 1000) + 1}
+            Level {Math.floor((auth?.user?.xpTotal || 0) / 1000) + 1}
           </span>
         </div>
         <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
           <div
             className="h-full bg-indigo-500 transition-all duration-1000"
-            style={{ width: `${((auth?.user?.total_xp || 0) % 1000) / 10}%` }}
+            style={{ width: `${((auth?.user?.xpTotal || 0) % 1000) / 10}%` }}
           />
         </div>
       </div>
