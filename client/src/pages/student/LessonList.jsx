@@ -168,6 +168,20 @@ export default function LessonList({ difficulty }) {
     }
   }, [weeklyProgress]);
 
+  const [topLearners, setTopLearners] = useState([]);
+
+  useEffect(() => {
+    const fetchTopLearners = async () => {
+      try {
+        const response = await api.api.get("/leaderboard?limit=3");
+        setTopLearners(response.data || []);
+      } catch (err) {
+        console.error("Leaderboard fetch failed:", err);
+      }
+    };
+    fetchTopLearners();
+  }, []);
+
   useEffect(() => {
     // Trigger if streak is reached and user hasn't seen the reward yet
     if (auth?.user?.daily_streak >= 3 && !showReward) {
@@ -562,6 +576,53 @@ export default function LessonList({ difficulty }) {
           </div>
         </div>
       </aside>
+      {/* 🏆 XP Leaderboard Mini-Widget */}
+      <div className="mt-8 pt-6 border-t border-slate-50">
+        <div className="flex justify-between items-center mb-4">
+          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            Top Learners
+          </h4>
+          <button
+            onClick={() => navigate("/leaderboard")}
+            className="text-[9px] font-black text-indigo-500 uppercase hover:underline"
+          >
+            View All
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {topLearners.map((learner, index) => (
+            <div
+              key={learner.id}
+              className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                learner.id === auth?.user?.id
+                  ? "bg-indigo-50 border-indigo-100"
+                  : "bg-white border-slate-50"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                    index === 0
+                      ? "bg-yellow-400 text-white"
+                      : index === 1
+                        ? "bg-slate-300 text-white"
+                        : "bg-orange-300 text-white"
+                  }`}
+                >
+                  {index + 1}
+                </div>
+                <span className="text-xs font-bold text-slate-700 truncate max-w-[80px]">
+                  {learner.username} {learner.id === auth?.user?.id && "(You)"}
+                </span>
+              </div>
+              <span className="text-[10px] font-black text-indigo-600 uppercase tracking-tighter">
+                {learner.total_xp} XP
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
       {/* 👑 SUNDAY GRAND PRIZE BADGE */}
       {weeklyProgress.every(Boolean) && (
         <div className="mb-6 p-6 rounded-[2rem] bg-gradient-to-br from-amber-300 via-yellow-400 to-orange-500 shadow-lg shadow-yellow-200 animate-in slide-in-from-top-4 duration-700">
