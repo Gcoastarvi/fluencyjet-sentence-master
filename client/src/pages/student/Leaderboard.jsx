@@ -110,8 +110,8 @@ export default function Leaderboard() {
 
         {/* 🏆 NEW: Ranking List Integration */}
         <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-indigo-100/20 overflow-hidden">
-          {Array.isArray(users) && users.length > 0 ? (
-            users.map((user, idx) => (
+          {Array.isArray(rows) && rows.length > 0 ? (
+            rows.map((user, idx) => (
               <div
                 key={user.id}
                 className={`flex items-center justify-between p-6 transition-all ${
