@@ -61,29 +61,28 @@ async function aggregateXP(period) {
     .sort((a, b) => b.xp - a.xp);
 
   const userIds = rowsSorted.map((r) => r.user_id).filter((v) => v != null);
+  // 🎯 101: Updated to use 'xpTotal' from your schema
   const users = await prisma.user.findMany({
-    where: { id: { in: userIds } },
+    orderBy:
+      sortBy === "streak" ? { daily_streak: "desc" } : { xpTotal: "desc" },
+    take: 50,
     select: {
       id: true,
       name: true,
-      email: true,
+      xpTotal: true, // Use xpTotal here
       daily_streak: true,
       league: true,
     },
   });
 
-  const userMap = new Map(users.map((u) => [u.id, u]));
-
-  return rowsSorted.map((r, idx) => ({
+  // 🎯 115: Map the data so the frontend still sees the key "xp"
+  rows = users.map((u, idx) => ({
     rank: idx + 1,
-    user_id: r.user_id,
-    name:
-      userMap.get(r.user_id)?.name ||
-      userMap.get(r.user_id)?.email?.split("@")[0] ||
-      "Learner",
-    xp: r.xp,
-    streak: userMap.get(r.user_id)?.daily_streak || 0,
-    league: userMap.get(r.user_id)?.league || "BRONZE",
+    user_id: u.id,
+    name: u.name || "Learner",
+    xp: u.xpTotal, // This maps xpTotal -> xp for the frontend
+    streak: u.daily_streak,
+    league: u.league,
   }));
 }
 
@@ -125,26 +124,39 @@ router.get("/", authMiddleware, async (req, res) => {
       rows = await aggregateXP(period);
     }
 
-    {/* 📊 Rank Progress Bar */}
-    {you?.rank > 1 && (
-      <div className="mb-8 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
-        <div className="flex justify-between items-end mb-3">
-          <div>
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Next Rank Progress</p>
-            <p className="text-sm font-bold text-slate-900">Overtake #{you.rank - 1}</p>
+    {
+      /* 📊 Rank Progress Bar */
+    }
+    {
+      you?.rank > 1 && (
+        <div className="mb-8 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
+          <div className="flex justify-between items-end mb-3">
+            <div>
+              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
+                Next Rank Progress
+              </p>
+              <p className="text-sm font-bold text-slate-900">
+                Overtake #{you.rank - 1}
+              </p>
+            </div>
+            <span className="text-xs font-black text-indigo-600">
+              {Math.round(
+                (you.xp / (rows[you.rank - 2]?.xp || you.xp + 100)) * 100,
+              )}
+              %
+            </span>
           </div>
-          <span className="text-xs font-black text-indigo-600">
-            {Math.round(((you.xp) / (rows[you.rank - 2]?.xp || you.xp + 100)) * 100)}%
-          </span>
+          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-1000"
+              style={{
+                width: `${Math.min(100, (you.xp / (rows[you.rank - 2]?.xp || you.xp + 100)) * 100)}%`,
+              }}
+            />
+          </div>
         </div>
-        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-1000"
-            style={{ width: `${Math.min(100, (you.xp / (rows[you.rank - 2]?.xp || you.xp + 100)) * 100)}%` }}
-          />
-        </div>
-      </div>
-    )}
+      );
+    }
 
     const meId = req.user.id;
     const meRow = rows.find((r) => r.user_id === meId);
