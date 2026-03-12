@@ -78,98 +78,65 @@ export default function Leaderboard() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 pb-10">
-      {/* Page title + subtitle */}
-      <header className="mb-6 pt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          {/* 🎖️ Division Header */}
-          <div className="text-center mb-10 animate-fade-in">
-            <div className="inline-block relative">
-              <div className="text-6xl mb-2">
-                {league === "BRONZE" && "🥉"}
-                {league === "SILVER" && "🥈"}
-                {league === "GOLD" && "🥇"}
-                {league === "DIAMOND" && "💎"}
-              </div>
-              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-black px-4 py-1 rounded-full uppercase tracking-[0.2em] shadow-xl">
-                {league} LEAGUE
-              </div>
+      {/* 🎯 1. League Promotion Banner (Line 81) */}
+      <div className="w-full bg-gradient-to-r from-slate-900 to-indigo-900 rounded-[2.5rem] p-8 mb-10 mt-6 relative overflow-hidden shadow-xl border border-white/10">
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-0.5 rounded bg-indigo-500 text-[8px] font-black uppercase tracking-widest text-white">
+                Active League
+              </span>
             </div>
-            <p className="text-slate-400 text-[11px] font-bold mt-6 uppercase tracking-widest">
-              Top 3 players promote to{" "}
-              {league === "BRONZE" ? "SILVER" : "the next tier"} at end of week
+            <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">
+              Bronze League
+            </h2>
+            <p className="text-indigo-200 text-xs font-bold mt-2">
+              🏆 Top 3 players promote to{" "}
+              <span className="text-white underline font-black">
+                Silver League
+              </span>{" "}
+              this Sunday!
             </p>
           </div>
+          <div className="flex -space-x-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-12 w-12 rounded-full border-4 border-slate-900 bg-indigo-600 flex items-center justify-center text-xl shadow-lg ring-2 ring-indigo-400/30"
+              >
+                {i === 1 ? "🥇" : i === 2 ? "🥈" : "🥉"}
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
+      </div>
+
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-            FluencyJet Leaderboard
+            Leaderboard
           </h1>
-          <p className="mt-1 text-sm sm:text-base text-slate-600">
-            See how you stack up against other learners{" "}
-            {activePeriodLabel.toLowerCase()}.
+          <p className="mt-1 text-sm text-slate-600">
+            Ranking the top masters of {activePeriodLabel.toLowerCase()}.
           </p>
         </div>
 
-        {/* 🏆 NEW: Ranking List Integration */}
-        <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-indigo-100/20 overflow-hidden">
-          {Array.isArray(rows) && rows.length > 0 ? (
-            rows.map((user, idx) => (
-              <div
-                key={user.id}
-                className={`flex items-center justify-between p-6 transition-all ${
-                  idx < 3 ? "bg-slate-50/50" : "bg-white"
-                } ${user.id === auth?.user?.id ? "ring-2 ring-inset ring-indigo-500 bg-indigo-50/30" : ""}`}
-              >
-                <div className="flex items-center gap-6">
-                  <div className="w-10 flex justify-center">
-                    {idx === 0
-                      ? "🥇"
-                      : idx === 1
-                        ? "🥈"
-                        : idx === 2
-                          ? "🥉"
-                          : `#${idx + 1}`}
-                  </div>
-                  {/* ... user name logic ... */}
-                  <div className="text-right">
-                    <p className="text-lg font-black">
-                      {user.xpTotal?.toLocaleString() || 0}
-                    </p>
-                    <p className="text-[9px] font-bold text-slate-400">
-                      Lifetime Mastery
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            /* 🎯 This is the ':' part that was missing! */
-            <div className="p-20 text-center">
-              <p className="text-slate-400 font-bold animate-pulse">
-                Finding champions...
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Period tabs */}
-        <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-sm font-medium">
-          {PERIOD_TABS.map((tab) => {
-            const isActive = tab.id === period;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabClick(tab.id)}
-                className={[
-                  "relative px-4 py-2 rounded-full transition-colors",
-                  isActive
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900",
-                ].join(" ")}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
+        {/* Period Tabs */}
+        <div className="inline-flex items-center rounded-full bg-slate-100 p-1 text-xs font-bold">
+          {PERIOD_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabClick(tab.id)}
+              className={`px-4 py-2 rounded-full transition-all ${
+                tab.id === period
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </header>
 
@@ -177,57 +144,81 @@ export default function Leaderboard() {
       <div className="flex justify-center gap-2 mb-8 bg-slate-100 p-1 rounded-2xl w-fit mx-auto">
         <button
           onClick={() => setSortBy("xp")}
-          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            sortBy === "xp"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500"
-          }`}
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === "xp" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
         >
           By XP
         </button>
         <button
           onClick={() => setSortBy("streak")}
-          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-            sortBy === "streak"
-              ? "bg-white text-slate-900 shadow-sm"
-              : "text-slate-500"
-          }`}
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === "streak" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
         >
           By Streak 🔥
         </button>
       </div>
 
-      {/* Error banner */}
       {error && (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}
         </div>
       )}
 
-      {/* Hero – Top performers full-width carousel */}
       <HeroTopPerformers
         top={top}
         periodLabel={activePeriodLabel}
         loading={loading}
       />
 
-      {/* Main content grid */}
-      <div className="mt-8 grid gap-6 md:grid-cols-2 md:items-start">
-        <TopLearnersCard
-          loading={loading}
-          rows={rows}
-          periodLabel={activePeriodLabel}
-        />
-        <YourPositionCard
-          loading={loading}
-          you={you}
-          periodLabel={activePeriodLabel}
-          totalLearners={totalLearners}
-        />
-      </div>
+      {/* 🎯 2. Main Content Area */}
+      <div className="mt-8 space-y-8">
+        {/* 📊 Rank Progress Bar (Only shows if you are ranked but not #1) */}
+        {you?.rank > 1 && Array.isArray(rows) && rows.length > 0 && (
+          <div className="p-6 bg-white rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+            <div className="flex justify-between items-end mb-4">
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest leading-none">
+                  Next Rank Progress
+                </p>
+                <h4 className="text-sm font-black text-slate-900 mt-2 italic">
+                  Overtake #{you.rank - 1}
+                </h4>
+              </div>
+              <span className="text-xs font-black text-indigo-600">
+                {Math.round(
+                  (you.xp / (rows[you.rank - 2]?.xp || you.xp + 100)) * 100,
+                )}
+                %
+              </span>
+            </div>
+            <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 transition-all duration-1000"
+                style={{
+                  width: `${Math.min(100, (you.xp / (rows[you.rank - 2]?.xp || you.xp + 100)) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
 
-      {/* Static Top performers grid under the hero */}
-      <div className="mt-8">
+        {/* 3. The Grid: List + Position Card */}
+        <div className="grid gap-8 md:grid-cols-12 md:items-start">
+          <div className="md:col-span-8">
+            <TopLearnersCard
+              loading={loading}
+              rows={rows}
+              periodLabel={activePeriodLabel}
+            />
+          </div>
+          <div className="md:col-span-4">
+            <YourPositionCard
+              loading={loading}
+              you={you}
+              periodLabel={activePeriodLabel}
+              totalLearners={totalLearners}
+            />
+          </div>
+        </div>
+
         <TopPerformersGrid top={top} periodLabel={activePeriodLabel} />
       </div>
     </div>
@@ -401,20 +392,40 @@ function TopLearnersCard({ rows, loading, periodLabel }) {
 
       {!loading && rows && rows.length > 0 && (
         <ul className="mt-4 divide-y divide-slate-100">
-          {rows.map((row) => (
+          {rows.map((row, idx) => (
             <li
               key={row.userId ?? row.id}
-              className="flex items-center justify-between py-3"
+              className={`flex items-center justify-between py-4 px-4 transition-all ${
+                idx < 3
+                  ? "bg-emerald-50/50 border-l-4 border-emerald-400 mb-1 rounded-r-xl"
+                  : "border-l-4 border-transparent"
+              }`}
             >
               <div className="flex items-center gap-3">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-50 text-xs font-semibold text-indigo-700">
-                  #{row.rank}
+                <span
+                  className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${
+                    idx === 0
+                      ? "bg-yellow-400 text-white"
+                      : idx === 1
+                        ? "bg-slate-300 text-white"
+                        : idx === 2
+                          ? "bg-orange-300 text-white"
+                          : "bg-indigo-50 text-indigo-700"
+                  }`}
+                >
+                  {idx < 3
+                    ? idx === 0
+                      ? "🥇"
+                      : idx === 1
+                        ? "🥈"
+                        : "🥉"
+                    : `#${row.rank}`}
                 </span>
-                <span className="text-sm font-medium text-slate-800">
-                  {row.name}
+                <span className="text-sm font-bold text-slate-800">
+                  {row.name} {row.userId === auth?.user?.id && "(You)"}
                 </span>
               </div>
-              <div className="text-xs font-semibold text-slate-500">
+              <div className="text-xs font-black text-slate-500">
                 {kFormat(row.xp)} XP
               </div>
             </li>

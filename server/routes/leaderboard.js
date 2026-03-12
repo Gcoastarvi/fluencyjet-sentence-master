@@ -126,40 +126,6 @@ router.get("/", authMiddleware, async (req, res) => {
       rows = await aggregateXP(period);
     }
 
-    {
-      /* 📊 Rank Progress Bar */
-    }
-    {
-      you?.rank > 1 && (
-        <div className="mb-8 p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
-          <div className="flex justify-between items-end mb-3">
-            <div>
-              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                Next Rank Progress
-              </p>
-              <p className="text-sm font-bold text-slate-900">
-                Overtake #{you.rank - 1}
-              </p>
-            </div>
-            <span className="text-xs font-black text-indigo-600">
-              {Math.round(
-                (you.xp / (rows[you.rank - 2]?.xp || you.xp + 100)) * 100,
-              )}
-              %
-            </span>
-          </div>
-          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-1000"
-              style={{
-                width: `${Math.min(100, (you.xp / (rows[you.rank - 2]?.xp || you.xp + 100)) * 100)}%`,
-              }}
-            />
-          </div>
-        </div>
-      );
-    }
-
     const meId = req.user.id;
     const meRow = rows.find((r) => r.user_id === meId);
 
