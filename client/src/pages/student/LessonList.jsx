@@ -57,6 +57,13 @@ export default function LessonList({ difficulty }) {
     fetchLessons();
   }, [difficulty]);
 
+  useEffect(() => {
+    // Trigger if streak is reached and user hasn't seen the reward yet
+    if (auth?.user?.daily_streak >= 3 && !showReward) {
+      setShowReward(true);
+    }
+  }, [auth?.user?.daily_streak]);
+
   const modules = useMemo(() => {
     if (!lessons.length) return [];
     return Array.from({ length: 12 }, (_, i) => ({
@@ -407,6 +414,32 @@ export default function LessonList({ difficulty }) {
           </div>
         </div>
       </aside>
+      {showReward && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in duration-500">
+            <div className="text-7xl mb-6">✨</div>
+            <h2 className="text-3xl font-black text-slate-900 mb-2">
+              Daily Mastery!
+            </h2>
+            <p className="text-indigo-600 font-bold uppercase tracking-widest text-xs mb-8">
+              தினசரி சாதனை!
+            </p>
+
+            <div className="bg-slate-50 rounded-3xl p-6 mb-8 border border-slate-100">
+              <span className="text-4xl font-black text-indigo-600">
+                +170 XP
+              </span>
+            </div>
+
+            <button
+              onClick={() => setShowReward(false)}
+              className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all"
+            >
+              Claim Rewards
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -467,32 +500,6 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
         </div>
       </div>
       <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
-      {showReward && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
-          <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in duration-500">
-            <div className="text-7xl mb-6">✨</div>
-            <h2 className="text-3xl font-black text-slate-900 mb-2">
-              Daily Mastery!
-            </h2>
-            <p className="text-indigo-600 font-bold uppercase tracking-widest text-xs mb-8">
-              தினசரி சாதனை!
-            </p>
-
-            <div className="bg-slate-50 rounded-3xl p-6 mb-8 border border-slate-100">
-              <span className="text-4xl font-black text-indigo-600">
-                +170 XP
-              </span>
-            </div>
-
-            <button
-              onClick={() => setShowReward(false)}
-              className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all"
-            >
-              Claim Rewards
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
