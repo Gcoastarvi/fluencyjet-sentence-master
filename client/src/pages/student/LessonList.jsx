@@ -40,6 +40,15 @@ export default function LessonList({ difficulty }) {
       return 0;
     }
 
+    // Inside your initialization logic
+    if (new Date().getDay() === 0 && savedDate !== today) {
+      // It's a brand new Sunday morning! Reset the dots for the new week.
+      localStorage.setItem(
+        "weekly_mastery_dots",
+        JSON.stringify([false, false, false, false, false, false, false]),
+      );
+    }
+
     return Number(localStorage.getItem("daily_sentences_count") || 0);
   });
 
@@ -82,6 +91,36 @@ export default function LessonList({ difficulty }) {
 
   // Logic for the first mission item
   const isSentencesDone = sentencesMastered >= 2;
+
+  const [claimedSundayReward, setClaimedSundayReward] = useState(() => {
+    return (
+      localStorage.getItem("sunday_reward_claimed") ===
+      new Date().toLocaleDateString()
+    );
+  });
+
+  useEffect(() => {
+    const isSunday = new Date().getDay() === 0;
+    const perfectWeek = weeklyProgress.every(Boolean);
+
+    // 🎯 Trigger Grand Prize if it's Sunday, the week is perfect, and not yet claimed
+    if (isSunday && perfectWeek && !claimedSundayReward) {
+      // 1. Fire an massive gold confetti burst
+      confetti({
+        particleCount: 400,
+        spread: 100,
+        origin: { y: 0.5 },
+        colors: ["#FFD700", "#FFA500", "#FFFFFF"], // Pure Gold palette
+      });
+
+      // 2. Mark as claimed for today
+      setClaimedSundayReward(true);
+      localStorage.setItem(
+        "sunday_reward_claimed",
+        new Date().toLocaleDateString(),
+      );
+    }
+  }, [weeklyProgress, claimedSundayReward]);
 
   // 🎯 4. Data Fetching (Starting your original useEffect)
 
@@ -506,6 +545,22 @@ export default function LessonList({ difficulty }) {
           </div>
         </div>
       </aside>
+      {/* 👑 SUNDAY GRAND PRIZE BADGE */}
+      {weeklyProgress.every(Boolean) && (
+        <div className="mb-6 p-6 rounded-[2rem] bg-gradient-to-br from-amber-300 via-yellow-400 to-orange-500 shadow-lg shadow-yellow-200 animate-in slide-in-from-top-4 duration-700">
+          <div className="flex items-center gap-4">
+            <span className="text-4xl animate-bounce">👑</span>
+            <div>
+              <h3 className="text-white font-black uppercase tracking-tighter text-sm">
+                Perfect Week!
+              </h3>
+              <p className="text-white/80 font-bold text-[10px] uppercase tracking-widest">
+                +500 XP BONUS
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       {showReward && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
           <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in duration-500">
