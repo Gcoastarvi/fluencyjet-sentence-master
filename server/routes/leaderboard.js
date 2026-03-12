@@ -32,29 +32,28 @@ function addMonthsUTC(date, months) {
   return d;
 }
 
-// --- 📊 XP Aggregator (With Debug Logging) ---
+// --- 📊 XP Aggregator (Aligned with your actual Schema) ---
 async function aggregateXP(period) {
   try {
     const now = new Date();
-    let where = {};
+    let queryWhere = {}; // 🎯 Fixed: Renamed to avoid reserved word conflicts
 
     if (period === "today") {
       const start = new Date(
         Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
       );
-      where = { created_at: { gte: start, lt: addDaysUTC(start, 1) } };
+      queryWhere = { created_at: { gte: start, lt: addDaysUTC(start, 1) } };
     } else if (period === "weekly") {
       const start = weekStartUTC(now);
-      where = { created_at: { gte: start, lt: addDaysUTC(start, 7) } };
+      queryWhere = { created_at: { gte: start, lt: addDaysUTC(start, 7) } };
     } else if (period === "monthly") {
       const start = monthStartUTC(now);
-      where = { created_at: { gte: start, lt: addMonthsUTC(start, 1) } };
+      queryWhere = { created_at: { gte: start, lt: addMonthsUTC(start, 1) } };
     }
 
-    // 🎯 Step 1: Grouping (Verify user_id and xp_delta exist)
     const grouped = await prisma.xpEvent.groupBy({
       by: ["user_id"],
-      where,
+      where: queryWhere,
       _sum: { xp_delta: true },
     });
 
@@ -65,13 +64,12 @@ async function aggregateXP(period) {
     const userIds = rowsSorted.map((r) => r.user_id).filter((id) => id != null);
     if (userIds.length === 0) return [];
 
-    // 🎯 Step 2: Fetch Users (Using xpTotal from your schema)
+    // 🎯 SCHEMA FIX: Using 'username' and 'xpTotal' as seen in your logs
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
       select: {
         id: true,
-        name: true,
-        daily_streak: true,
+        username: true, // Logs showed 'username' exists, 'name' does not
         league: true,
         xpTotal: true,
       },
@@ -82,16 +80,61 @@ async function aggregateXP(period) {
     return rowsSorted.map((r, idx) => ({
       rank: idx + 1,
       user_id: r.user_id,
-      name: userMap.get(r.user_id)?.name || "Learner",
+      name: userMap.get(r.user_id)?.username || "Learner", // Mapping username -> name
       xp: r.xp,
-      streak: userMap.get(r.user_id)?.daily_streak || 0,
+      streak: 0, // 🎯 Temporary: Setting to 0 since 'daily_streak' is missing from DB
       league: userMap.get(r.user_id)?.league || "BRONZE",
     }));
   } catch (error) {
-    console.error("❌ CRITICAL: aggregateXP failed:", error.message);
-    throw error; // Re-throw so the router catches it
+    console.error("❌ aggregateXP failed:", error.message);
+    throw error;
   }
 }
+
+// --- 🏆 The Consolidated Route ---
+router.get("/", authMiddleware, async (req, res) => {
+  try {
+    const period = req.query.period || "all";
+    let rows;
+
+    if (period === "all") {
+      const users = await prisma.user.findMany({
+        orderBy: { xpTotal: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          username: true,
+          xpTotal: true,
+          league: true,
+        },
+      });
+      rows = users.map((u, idx) => ({
+        rank: idx + 1,
+        user_id: u.id,
+        name: u.username || "Learner",
+        xp: u.xpTotal,
+        streak: 0,
+        league: u.league || "BRONZE",
+      }));
+    } else {
+      rows = await aggregateXP(period);
+    }
+
+    const meId = req.user.id;
+    const meRow = rows.find((r) => r.user_id === meId);
+
+    res.json({
+      ok: true,
+      period,
+      rows,
+      top: rows.slice(0, 3),
+      you: meRow || { rank: null, xp: 0, name: "You" },
+    });
+  } catch (err) {
+    console.error("❌ Leaderboard route error:", err.message);
+    res.status(500).json({ ok: false, message: "Failed to load leaderboard" });
+  }
+});
 
 // --- 🏆 The Consolidated Route ---
 // Handles: ?period=today|weekly|monthly|all & ?sortBy=xp|streak
