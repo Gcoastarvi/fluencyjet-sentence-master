@@ -30,8 +30,29 @@ export default function LessonList({ difficulty }) {
 
   // 🎯 Load session progress from storage
   const [sentencesMastered, setSentencesMastered] = useState(() => {
+    const savedDate = localStorage.getItem("last_practice_date");
+    const today = new Date().toLocaleDateString();
+
+    // 🎯 If the dates don't match, it's a new day! Reset to 0.
+    if (savedDate !== today) {
+      localStorage.setItem("last_practice_date", today);
+      localStorage.setItem("daily_sentences_count", "0");
+      return 0;
+    }
+
     return Number(localStorage.getItem("daily_sentences_count") || 0);
   });
+
+  const handleSentenceMastery = () => {
+    setSentencesMastered((prev) => {
+      const newVal = prev + 1;
+      // Trigger confetti if they just hit the goal of 2!
+      if (newVal === 2) {
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.8 } });
+      }
+      return newVal;
+    });
+  };
 
   // 🎯 Save whenever it changes
   useEffect(() => {
