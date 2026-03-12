@@ -28,6 +28,19 @@ export default function LessonList({ difficulty }) {
     }));
   };
 
+  // 🎯 Load session progress from storage
+  const [sentencesMastered, setSentencesMastered] = useState(() => {
+    return Number(localStorage.getItem("daily_sentences_count") || 0);
+  });
+
+  // 🎯 Save whenever it changes
+  useEffect(() => {
+    localStorage.setItem("daily_sentences_count", sentencesMastered);
+  }, [sentencesMastered]);
+
+  // Logic for the first mission item
+  const isSentencesDone = sentencesMastered >= 2;
+
   // 🎯 4. Data Fetching (Starting your original useEffect)
 
   useEffect(() => {
@@ -297,7 +310,7 @@ export default function LessonList({ difficulty }) {
                     label="Master 2 New Sentences"
                     tamil="2 புதிய வாக்கியங்கள்"
                     xp={50}
-                    done={false}
+                    done={isSentencesDone}
                   />
                   <MissionItem
                     label="Maintain 3-Day Streak"
@@ -432,10 +445,22 @@ export default function LessonList({ difficulty }) {
             </div>
 
             <button
-              onClick={() => setShowReward(false)}
-              className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all"
+              onClick={() => {
+                // 🎯 1. Fire the Golden Cannon
+                confetti({
+                  particleCount: 150,
+                  spread: 70,
+                  origin: { y: 0.6 },
+                  colors: ["#fbbf24", "#f59e0b", "#6366f1"], // Gold, Amber, and Indigo
+                  zIndex: 999,
+                });
+
+                // 🎯 2. Close the modal after a short delay so they enjoy the stars
+                setTimeout(() => setShowReward(false), 500);
+              }}
+              className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all hover:scale-[1.02] active:scale-95"
             >
-              Claim Rewards
+              Claim Rewards 🏆
             </button>
           </div>
         </div>
@@ -476,7 +501,7 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
     >
       <div className="flex items-center gap-3">
         <div
-          className={`h-6 w-6 rounded-full border-2 flex items-center justify-center ${
+          className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${
             done
               ? "bg-emerald-500 border-emerald-500"
               : "border-slate-200 bg-white"
@@ -484,13 +509,18 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
         >
           {done ? (
             <span className="text-white text-xs">✓</span>
+          ) : // 🎯 The flame now uses the CSS class we added to index.css
+          isStreak ? (
+            <span className="text-[10px] animate-flame">🔥</span>
           ) : (
-            isStreak && <span className="text-[10px]">🔥</span>
+            <div className="h-1.5 w-1.5 rounded-full bg-slate-200" />
           )}
         </div>
         <div>
           <span
-            className={`block text-xs font-black leading-tight ${shouldPulse ? "text-orange-700" : "text-slate-800"}`}
+            className={`block text-xs font-black leading-tight ${
+              isStreak && !done ? "text-orange-700" : "text-slate-800"
+            }`}
           >
             {label}
           </span>

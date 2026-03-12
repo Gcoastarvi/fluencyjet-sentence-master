@@ -1047,3 +1047,23 @@ body {
     text-align: center;
   }
 }
+
+/* 🔥 Streak Flame Animation */
+@keyframes flameFlicker {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px #f97316);
+    transform: scale(1);
+  }
+
+  50% {
+    filter: drop-shadow(0 0 8px #fb923c);
+    transform: scale(1.1);
+  }
+}
+
+.animate-flame {
+  animation: flameFlicker 1.5s infinite ease-in-out;
+  display: inline-block;
+}
