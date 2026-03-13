@@ -864,8 +864,7 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
         </div>
       </div>
       <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
-      </div>
-            </div>
+      </div>          
 
             {/* 🏆 BRONZE MASTER POPUP - Placed inside the main return */}
             {showMilestone && (
