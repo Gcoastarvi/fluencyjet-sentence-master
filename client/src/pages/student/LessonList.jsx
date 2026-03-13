@@ -824,6 +824,7 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
   const shouldPulse = isStreak && !done;
 
   return (
+    <>
     <div
       className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-500 ${
         done
@@ -894,6 +895,6 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
                 </div>
               </div>
             )}
-          </div> // This is the final </div> of your main return
+    </>
         ); // This is the final ); of your return
       } // This is the final } of your LessonList function
