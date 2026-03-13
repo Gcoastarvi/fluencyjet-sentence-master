@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import * as api from "../../api/apiClient";
 import { useAuth } from "../../context/AuthContext";
 import LessonCard from "../../components/student/LessonCard";
+import confetti from "canvas-confetti";
 
 export default function LessonList({ difficulty }) {
   // 🎯 1. Fundamental Hooks

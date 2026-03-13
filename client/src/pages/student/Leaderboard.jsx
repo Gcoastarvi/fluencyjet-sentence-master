@@ -1,6 +1,7 @@
 // client/src/pages/student/Leaderboard.jsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api/apiClient";
+import { useAuth } from "@/context/AuthContext";
 
 // Small helper – compact XP formatting like "1.2K"
 function kFormat(xp) {
@@ -25,6 +26,7 @@ export default function Leaderboard() {
   const [top, setTop] = useState([]); // spotlight learners
   const [you, setYou] = useState(null); // current learner summary
   const [totalLearners, setTotalLearners] = useState(0);
+  const { auth } = useAuth();
 
   const loadLeaderboard = useCallback(async (activePeriod) => {
     setLoading(true);
@@ -56,6 +58,15 @@ export default function Leaderboard() {
     }
   }, []);
 
+  // 🚀 Promotion Toast Logic
+  if (data.you?.rank <= 3 && data.you?.rank !== null) {
+    toast.success("You're in the Promotion Zone! 🏆", {
+      description: "Keep it up to reach Silver League this Sunday.",
+      icon: "🚀",
+      duration: 5000,
+    });
+  }
+
   // 🎯 Cleaned logic block (No nested functions or duplicate exports)
   const [sortBy, setSortBy] = useState("xp");
 
@@ -67,8 +78,6 @@ export default function Leaderboard() {
     if (tabId === period) return;
     setPeriod(tabId);
   };
-
-  const auth = { user: { name: "Learner", league: "BRONZE" } };
 
   const activePeriodLabel =
     PERIOD_TABS.find((t) => t.id === period)?.label || "This Week";
