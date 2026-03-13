@@ -22,6 +22,19 @@ export default function LessonList({ difficulty }) {
   const [showMilestone, setShowMilestone] = useState(false);
   const [hasCelebrated, setHasCelebrated] = useState(false);
 
+  useEffect(() => {
+    const currentXP = auth?.user?.xpTotal || 0;
+    if (
+      currentXP >= 1000 &&
+      !hasCelebrated &&
+      !localStorage.getItem("milestone_1k_seen")
+    ) {
+      setShowMilestone(true);
+      setHasCelebrated(true);
+      localStorage.setItem("milestone_1k_seen", "true");
+    }
+  }, [auth?.user?.xpTotal, hasCelebrated]);
+
   // Logic to check if all missions are done
   const allMissionsDone = auth?.user?.daily_streak >= 3; // Add your other mission logic here
 
@@ -825,76 +838,76 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
 
   return (
     <>
-    <div
-      className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-500 ${
-        done
-          ? "bg-emerald-50 border-emerald-100 opacity-60"
-          : shouldPulse
-            ? "bg-orange-50 border-orange-200 shadow-[0_0_15px_rgba(251,146,60,0.3)] animate-pulse"
-            : "bg-slate-50 border-slate-50"
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        <div
-          className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-            done
-              ? "bg-emerald-500 border-emerald-500"
-              : "border-slate-200 bg-white"
-          }`}
-        >
-          {done ? (
-            <span className="text-white text-xs">✓</span>
-          ) : // 🎯 The flame now uses the CSS class we added to index.css
-          isStreak ? (
-            <span className="text-[10px] animate-flame">🔥</span>
-          ) : (
-            <div className="h-1.5 w-1.5 rounded-full bg-slate-200" />
-          )}
-        </div>
-        <div>
-          <span
-            className={`block text-xs font-black leading-tight ${
-              isStreak && !done ? "text-orange-700" : "text-slate-800"
+      <div
+        className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-500 ${
+          done
+            ? "bg-emerald-50 border-emerald-100 opacity-60"
+            : shouldPulse
+              ? "bg-orange-50 border-orange-200 shadow-[0_0_15px_rgba(251,146,60,0.3)] animate-pulse"
+              : "bg-slate-50 border-slate-50"
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              done
+                ? "bg-emerald-500 border-emerald-500"
+                : "border-slate-200 bg-white"
             }`}
           >
-            {label}
-          </span>
-          <span className="block text-[9px] font-bold text-slate-400 uppercase mt-0.5">
-            {tamil}
-          </span>
-        </div>
-      </div>
-      <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
-      </div>          
-
-            {/* 🏆 BRONZE MASTER POPUP - Placed inside the main return */}
-            {showMilestone && (
-              <div className="fixed inset-0 z-[150] flex items-center justify-center bg-indigo-950/80 backdrop-blur-md animate-in fade-in duration-500">
-                <div className="text-center p-10 bg-white rounded-[3rem] shadow-2xl scale-110 animate-in zoom-in-75 duration-500 max-w-sm mx-4">
-                  <div className="w-24 h-24 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <span className="text-5xl">🛡️</span>
-                  </div>
-                  <h2 className="text-3xl font-black text-slate-900 leading-tight">
-                    BRONZE MASTER
-                  </h2>
-                  <p className="text-indigo-600 font-black text-xs uppercase tracking-[0.2em] mt-2">
-                    1,000 XP Milestone
-                  </p>
-
-                  <p className="mt-6 text-slate-500 text-sm font-medium leading-relaxed">
-                    You've officially mastered the basics! You're now a top-tier
-                    competitor in the Bronze League.
-                  </p>
-
-                  <button
-                    onClick={() => setShowMilestone(false)}
-                    className="mt-8 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
-                  >
-                    Continue My Reign
-                  </button>
-                </div>
-              </div>
+            {done ? (
+              <span className="text-white text-xs">✓</span>
+            ) : // 🎯 The flame now uses the CSS class we added to index.css
+            isStreak ? (
+              <span className="text-[10px] animate-flame">🔥</span>
+            ) : (
+              <div className="h-1.5 w-1.5 rounded-full bg-slate-200" />
             )}
+          </div>
+          <div>
+            <span
+              className={`block text-xs font-black leading-tight ${
+                isStreak && !done ? "text-orange-700" : "text-slate-800"
+              }`}
+            >
+              {label}
+            </span>
+            <span className="block text-[9px] font-bold text-slate-400 uppercase mt-0.5">
+              {tamil}
+            </span>
+          </div>
+        </div>
+        <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
+      </div>
+
+      {/* 🏆 BRONZE MASTER POPUP - Placed inside the main return */}
+      {showMilestone && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-indigo-950/80 backdrop-blur-md animate-in fade-in duration-500">
+          <div className="text-center p-10 bg-white rounded-[3rem] shadow-2xl scale-110 animate-in zoom-in-75 duration-500 max-w-sm mx-4">
+            <div className="w-24 h-24 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <span className="text-5xl">🛡️</span>
+            </div>
+            <h2 className="text-3xl font-black text-slate-900 leading-tight">
+              BRONZE MASTER
+            </h2>
+            <p className="text-indigo-600 font-black text-xs uppercase tracking-[0.2em] mt-2">
+              1,000 XP Milestone
+            </p>
+
+            <p className="mt-6 text-slate-500 text-sm font-medium leading-relaxed">
+              You've officially mastered the basics! You're now a top-tier
+              competitor in the Bronze League.
+            </p>
+
+            <button
+              onClick={() => setShowMilestone(false)}
+              className="mt-8 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
+            >
+              Continue My Reign
+            </button>
+          </div>
+        </div>
+      )}
     </>
-        ); // This is the final ); of your return
-      } // This is the final } of your LessonList function
+  ); // This is the final ); of your return
+} // This is the final } of your LessonList function
