@@ -150,37 +150,29 @@ router.get("/", authMiddleware, async (req, res) => {
 // Handles: ?period=today|weekly|monthly|all & ?sortBy=xp|streak
 router.get("/", authMiddleware, async (req, res) => {
   try {
-    const allowed = new Set(["today", "weekly", "monthly", "all"]);
-    const period = allowed.has(req.query.period) ? req.query.period : "all";
-    const sortBy = req.query.sortBy === "streak" ? "streak" : "xp";
+    const period = req.query.period || "all";
+    // 🎯 ADD THIS LINE:
+    const limit = parseInt(req.query.limit) || 50;
 
-    let rows;
+    let rows = [];
     if (period === "all") {
-      // 🎯 Schema Alignment: Using 'xpTotal' instead of 'xp'
       const users = await prisma.user.findMany({
-        orderBy:
-          sortBy === "streak" ? { daily_streak: "desc" } : { xpTotal: "desc" },
-        take: 50,
-        select: {
-          id: true,
-          name: true,
-          xpTotal: true, // ⬅️ Matches your schema line 22
-          daily_streak: true,
-          league: true,
-        },
+        orderBy: { xpTotal: "desc" },
+        take: limit, // 🛡️ Use the limit here
+        select: { id: true, username: true, xpTotal: true, league: true },
       });
-
       rows = users.map((u, idx) => ({
         rank: idx + 1,
         user_id: u.id,
-        name: u.name || "Master Learner",
-        xp: u.xpTotal, // ⬅️ Maps database 'xpTotal' to frontend 'xp'
-        streak: u.daily_streak,
-        league: u.league,
+        name: u.username || "Learner",
+        xp: u.xpTotal,
+        streak: 0,
+        league: u.league || "BRONZE",
       }));
     } else {
-      // Period-Specific Aggregation
-      rows = await aggregateXP(period);
+      const allPeriodRows = await aggregateXP(period);
+      // 🛡️ Slice the rows to respect the limit (fixes the 500 error for ?limit=3)
+      rows = allPeriodRows.slice(0, limit);
     }
 
     const meId = req.user.id;
@@ -189,14 +181,12 @@ router.get("/", authMiddleware, async (req, res) => {
     res.json({
       ok: true,
       period,
-      sortBy,
-      totalLearners: rows.length,
-      rows, // Full list for the main table
-      top: rows.slice(0, 3), // Top 3 for the Hero cards
+      rows,
+      top: rows.slice(0, 3), // Spotlight the top 3
       you: meRow || { rank: null, xp: 0, name: "You" },
     });
   } catch (err) {
-    console.error("❌ Leaderboard error:", err);
+    console.error("❌ Leaderboard route error:", err.message);
     res.status(500).json({ ok: false, message: "Failed to load leaderboard" });
   }
 });

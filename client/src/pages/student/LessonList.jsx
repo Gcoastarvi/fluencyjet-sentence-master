@@ -17,8 +17,10 @@ export default function LessonList({ difficulty }) {
   const [expandedModules, setExpandedModules] = useState({ 1: true });
 
   const [showReward, setShowReward] = useState(false);
-
   const [showLevelUp, setShowLevelUp] = useState(false);
+
+  const [showMilestone, setShowMilestone] = useState(false);
+  const [hasCelebrated, setHasCelebrated] = useState(false);
 
   // Logic to check if all missions are done
   const allMissionsDone = auth?.user?.daily_streak >= 3; // Add your other mission logic here

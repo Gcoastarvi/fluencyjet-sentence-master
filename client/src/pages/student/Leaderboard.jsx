@@ -219,6 +219,17 @@ export default function Leaderboard() {
     };
   };
 
+  const getPromoProb = () => {
+    if (!you || !rows || rows.length < 3) return null;
+    if (you.rank <= 3) return { msg: "Top 3: Promoting! 🚀", color: "text-emerald-600" };
+    const gap = (rows[2]?.xp || 0) - (you.xp || 0);
+    return { 
+      msg: gap < 100 ? "So Close! 📈" : "Keep Climbing! 💪", 
+      color: gap < 100 ? "text-indigo-600" : "text-slate-500" 
+    };
+  };
+  const promoProb = getPromoProb();
+
   const promoProb = getPromotionProbability();
 
   return (
