@@ -20,6 +20,8 @@ model User {
   isAdmin      Boolean           @default(false)
   lastActiveAt DateTime?
   xpTotal      Int               @default(0)
+  league       String            @default("BRONZE")
+  daily_streak Int               @default(0)
   plan         String            @default("FREE")
   payments     Payment[]
   user_badges  UserBadge[]

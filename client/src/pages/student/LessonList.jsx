@@ -223,6 +223,29 @@ export default function LessonList({ difficulty }) {
     }));
   }, [lessons]);
 
+  const [showLeagueIntro, setShowLeagueIntro] = useState(() => {
+    return !localStorage.getItem("league_intro_seen");
+  });
+
+  useEffect(() => {
+    if (showLeagueIntro) {
+      // 🎊 Fire a Bronze-colored confetti burst (Orange/Brown/Gold)
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#CD7F32", "#A0522D", "#8B4513"],
+      });
+
+      // Auto-hide after 4 seconds
+      const timer = setTimeout(() => {
+        setShowLeagueIntro(false);
+        localStorage.setItem("league_intro_seen", "true");
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showLeagueIntro]);
+
   // 63: Keep your loading check
   if (loading) return <LessonSkeleton />;
 
@@ -553,6 +576,25 @@ export default function LessonList({ difficulty }) {
             >
               Keep Exploring
             </button>
+          </div>
+        </div>
+      )}
+      {/* 🥉 LEAGUE ENTRY ANIMATION */}
+      {showLeagueIntro && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-500">
+          <div className="text-center animate-in zoom-in-50 duration-500">
+            <div className="inline-block p-8 rounded-[3rem] bg-white shadow-2xl relative">
+              <span className="text-8xl block mb-4 animate-bounce">🥉</span>
+              <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">
+                Bronze League
+              </h2>
+              <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">
+                Welcome to the Arena, {auth?.user?.username}!
+              </p>
+
+              {/* Decorative rays */}
+              <div className="absolute inset-0 -z-10 bg-orange-400/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
+            </div>
           </div>
         </div>
       )}

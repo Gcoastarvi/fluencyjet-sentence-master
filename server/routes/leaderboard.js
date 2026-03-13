@@ -51,6 +51,7 @@ async function aggregateXP(period) {
       queryWhere = { created_at: { gte: start, lt: addMonthsUTC(start, 1) } };
     }
 
+    // 🎯 Use user_id (snake_case) to match your XpEvent model
     const grouped = await prisma.xpEvent.groupBy({
       by: ["user_id"],
       where: queryWhere,
@@ -58,7 +59,10 @@ async function aggregateXP(period) {
     });
 
     const rowsSorted = grouped
-      .map((g) => ({ user_id: g.user_id, xp: Number(g._sum?.xp_delta || 0) }))
+      .map((g) => ({
+        user_id: g.user_id, // 🛡️ Fix: Ensure this matches the 'by' field above
+        xp: Number(g._sum?.xp_delta || 0),
+      }))
       .sort((a, b) => b.xp - a.xp);
 
     const userIds = rowsSorted.map((r) => r.user_id).filter((id) => id != null);
@@ -99,23 +103,29 @@ router.get("/", authMiddleware, async (req, res) => {
 
     if (period === "all") {
       const users = await prisma.user.findMany({
-        orderBy: { xpTotal: "desc" },
-        take: 50,
+        where: { id: { in: userIds } },
         select: {
           id: true,
           username: true,
           xpTotal: true,
+          // 🛡️ These might fail if migration isn't done, so we'll be careful
           league: true,
+          daily_streak: true,
         },
       });
-      rows = users.map((u, idx) => ({
-        rank: idx + 1,
-        user_id: u.id,
-        name: u.username || "Learner",
-        xp: u.xpTotal,
-        streak: 0,
-        league: u.league || "BRONZE",
-      }));
+
+      return rowsSorted.map((r, idx) => {
+        const u = userMap.get(r.user_id);
+        return {
+          rank: idx + 1,
+          user_id: r.user_id,
+          name: u?.username || "Learner",
+          xp: r.xp,
+          // 🛡️ Fallback values if fields are null/undefined
+          streak: u?.daily_streak || 0,
+          league: u?.league || "BRONZE",
+        };
+      });
     } else {
       rows = await aggregateXP(period);
     }

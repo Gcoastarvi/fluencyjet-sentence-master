@@ -4,39 +4,64 @@ import bcrypt from "bcryptjs";
 async function main() {
   console.log("🌱 Seeding FluencyJet database...");
 
-  // ----------------------------
-  // ADMIN USER
-  // ----------------------------
-  const adminEmail = "admin@fluencyjet.com";
-  const adminPass = await bcrypt.hash("admin123", 10);
+  const saltRounds = 10;
+  const commonPassword = await bcrypt.hash("admin123", saltRounds);
 
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {},
-    create: {
-      name: "Admin",
-      email: adminEmail,
-      password: adminPass,
+  // ----------------------------
+  // 1. ADMIN & TEST USERS
+  // ----------------------------
+  const usersToSeed = [
+    {
+      email: "admin@fluencyjet.com",
+      username: "Admin", // 🎯 Changed from 'name'
       isAdmin: true,
-      has_access: true,
-      tier_level: "pro",
       xpTotal: 0,
-      lastActiveAt: new Date(),
-      progress: {
-        create: {},
-      },
-      weekly: {
-        create: {
-          week_key: new Date(),
-        },
-      },
+      league: "GOLD",
+      daily_streak: 100,
     },
-  });
+    {
+      email: "mango@gmail.com",
+      username: "MangoMaster",
+      isAdmin: false,
+      xpTotal: 1250,
+      league: "BRONZE",
+      daily_streak: 5,
+    },
+    {
+      email: "pro@test.com",
+      username: "SentencePro",
+      isAdmin: false,
+      xpTotal: 2500,
+      league: "BRONZE",
+      daily_streak: 12,
+    },
+    {
+      email: "alpha@test.com",
+      username: "AlphaZero",
+      isAdmin: false,
+      xpTotal: 900,
+      league: "BRONZE",
+      daily_streak: 2,
+    },
+  ];
 
-  console.log("✅ Admin account ready:", adminEmail);
+  for (const u of usersToSeed) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: {},
+      create: {
+        ...u,
+        password: commonPassword,
+        has_access: true,
+        tier_level: u.isAdmin ? "pro" : "free",
+        lastActiveAt: new Date(),
+      },
+    });
+  }
+  console.log("✅ Users and Competitors seeded");
 
   // ----------------------------
-  // BASIC TYPING QUIZ SEED
+  // 2. TYPING QUIZ SEED (Preserved)
   // ----------------------------
   const sampleData = [
     {
@@ -56,13 +81,49 @@ async function main() {
     skipDuplicates: true,
   });
 
-  console.log("✅ Sample typing quiz inserted");
+  // ----------------------------
+  // 3. XP EVENTS (Weekly/Today Data)
+  // ----------------------------
+  console.log("📊 Generating weekly XP events...");
 
-  console.log("🌱 Seeding completed");
+  // Get the IDs of the users we just created
+  const allUsers = await prisma.user.findMany({ select: { id: true } });
+
+  const xpEvents = allUsers.map((u) => ({
+    user_id: u.id,
+    xp_delta: Math.floor(Math.random() * 500) + 100, // Random XP between 100-600
+    type: "LESSON_COMPLETED",
+    created_at: new Date(), // This ensures they show up for 'Today' and 'Weekly'
+  }));
+
+  // We use a loop or createMany to avoid the unique constraint if you run it twice
+  for (const event of xpEvents) {
+    await prisma.xpEvent.upsert({
+      where: {
+        user_id_type: {
+          user_id: event.user_id,
+          type: event.type,
+        },
+      },
+      update: {
+        xp_delta: event.xp_delta,
+        created_at: new Date(),
+      },
+      create: event,
+    });
+  }
+
+  console.log("✅ Weekly XP events synchronized");
+
+  console.log("✅ Sample typing quiz inserted");
+  console.log("🏁 Seeding completed successfully!");
 }
 
 main()
-  .catch((e) => console.error(e))
+  .catch((e) => {
+    console.error("❌ Seeding failed:", e);
+    process.exit(1);
+  })
   .finally(async () => {
     await prisma.$disconnect();
   });
