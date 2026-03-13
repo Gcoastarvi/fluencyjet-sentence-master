@@ -56,6 +56,25 @@ export default function LessonList({ difficulty }) {
   // Logic to check if all missions are done
   const allMissionsDone = auth?.user?.daily_streak >= 3; // Add your other mission logic here
 
+  const [showPromotion, setShowPromotion] = useState(false);
+
+  useEffect(() => {
+    const userRank = auth?.user?.last_week_rank; // You'll need to sync this from backend
+    const hasSeenPromotion = localStorage.getItem("promotion_silver_seen");
+
+    if (userRank <= 3 && !hasSeenPromotion) {
+      setShowPromotion(true);
+
+      // 🥈 Silver-themed confetti (Silver, White, Blue-Gray)
+      confetti({
+        particleCount: 300,
+        spread: 120,
+        origin: { y: 0.6 },
+        colors: ["#C0C0C0", "#E5E4E2", "#BCC6CC"],
+      });
+    }
+  }, [auth?.user]);
+
   // 🎯 3. Toggle Logic
   const toggleModule = (id) => {
     setExpandedModules((prev) => ({
@@ -856,9 +875,37 @@ export default function LessonList({ difficulty }) {
           </div>
         </div>
       )}
-    </div> // This matches the <div> at Line 815
-  ); // This matches the return at Line 816
-} // This closes the main LessonList function
+      {showPromotion && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/90 backdrop-blur-xl animate-in fade-in duration-700">
+          <div className="text-center animate-in zoom-in-95 duration-1000">
+            {/* The Transformation Badge */}
+            <div className="relative inline-block mb-8">
+              <div className="text-9xl animate-bounce">🥈</div>
+              <div className="absolute inset-0 bg-silver-400/30 blur-3xl rounded-full scale-150 animate-pulse"></div>
+            </div>
+
+            <h2 className="text-5xl font-black text-white uppercase tracking-tighter">
+              Promoted to <span className="text-slate-300">Silver</span>!
+            </h2>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-xs mt-4">
+              You finished in the Top 3 last week. Welcome to the next tier.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowPromotion(false);
+                localStorage.setItem("promotion_silver_seen", "true");
+              }}
+              className="mt-12 px-12 py-4 bg-white text-slate-900 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+            >
+              Enter Silver League
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // 🎯 Dopamine-friendly Skeleton Screen
 const LessonSkeleton = () => (
