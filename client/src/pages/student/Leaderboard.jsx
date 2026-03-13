@@ -36,6 +36,30 @@ export default function Leaderboard() {
   const [showMilestone, setShowMilestone] = useState(false);
   const [hasCelebrated, setHasCelebrated] = useState(false);
 
+  // 🎯 Add this BEFORE your return (around Line 640)
+  const getPromoProb = () => {
+    if (!you || !rows || rows.length < 3) return null;
+
+    const isTop3 = you.rank <= 3;
+    const gap = (rows[2]?.xp || 0) - (you.xp || 0);
+
+    return {
+      msg: isTop3
+        ? "Promoting! 🚀"
+        : gap < 200
+          ? "So Close! 📈"
+          : "Keep Climbing! 💪",
+      sub: isTop3 ? "Maintain your spot!" : `${gap} XP to Top 3`,
+      color: isTop3
+        ? "text-emerald-600"
+        : gap < 200
+          ? "text-indigo-600"
+          : "text-slate-500",
+    };
+  };
+
+  const promoProb = getPromoProb(); // 🎯 This defines the variable for Line 738
+
   const loadLeaderboard = useCallback(async (activePeriod) => {
     setLoading(true);
     setError("");
@@ -218,18 +242,6 @@ export default function Leaderboard() {
       color: "text-slate-500",
     };
   };
-
-  const getPromoProb = () => {
-    if (!you || !rows || rows.length < 3) return null;
-    if (you.rank <= 3)
-      return { msg: "Top 3: Promoting! 🚀", color: "text-emerald-600" };
-    const gap = (rows[2]?.xp || 0) - (you.xp || 0);
-    return {
-      msg: gap < 100 ? "So Close! 📈" : "Keep Climbing! 💪",
-      color: gap < 100 ? "text-indigo-600" : "text-slate-500",
-    };
-  };
-  const promoProb = getPromoProb();
 
   return (
     <div className="max-w-5xl mx-auto px-4 pb-10">
