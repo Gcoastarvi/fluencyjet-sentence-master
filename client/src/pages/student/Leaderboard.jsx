@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "react-hot-toast";
 
 // Small helper – compact XP formatting like "1.2K"
 function kFormat(xp) {
@@ -78,6 +79,17 @@ export default function Leaderboard() {
     loadLeaderboard(period);
   }, [period]);
 
+  {
+    /* 🥉 Updated Banner with Live Timer */
+  }
+  <p className="text-indigo-200 text-xs font-bold mt-2 flex items-center gap-2">
+    🏆 Top 3 players promote to{" "}
+    <span className="text-white underline">Silver League</span> in:
+    <span className="bg-indigo-500/50 px-3 py-1 rounded-full text-white font-black animate-pulse border border-indigo-400/30">
+      {timeLeft}
+    </span>
+  </p>;
+
   const handleTabClick = (tabId) => {
     if (tabId === period) return;
     setPeriod(tabId);
@@ -127,6 +139,31 @@ export default function Leaderboard() {
 
     const timer = setInterval(updateCountdown, 60000);
     updateCountdown();
+    return () => clearInterval(timer);
+  }, []);
+
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const calculateTime = () => {
+      // Target: This Sunday at 11:59:59 PM
+      const now = new Date();
+      const sunday = new Date();
+      sunday.setDate(now.getDate() + (7 - now.getDay()));
+      sunday.setHours(23, 59, 59, 999);
+
+      const diff = sunday - now;
+      if (diff <= 0) return "Calculating...";
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+
+      setTimeLeft(`${days}d ${hours}h ${mins}m`);
+    };
+
+    calculateTime();
+    const timer = setInterval(calculateTime, 60000); // Update every minute
     return () => clearInterval(timer);
   }, []);
 
