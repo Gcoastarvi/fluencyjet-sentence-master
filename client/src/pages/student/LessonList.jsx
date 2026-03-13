@@ -867,6 +867,7 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
       </div>        
     );
   }
+      {showMilestone && (
         <div className="fixed inset-0 z-[150] flex items-center justify-center bg-indigo-950/80 backdrop-blur-md animate-in fade-in duration-500">
           <div className="text-center p-10 bg-white rounded-[3rem] shadow-2xl scale-110 animate-in zoom-in-75 duration-500 max-w-sm mx-4">
             <div className="w-24 h-24 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -893,6 +894,4 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
           </div>          
         </div>
       )}        
-    </div>
-  );
-}
+  
