@@ -412,6 +412,7 @@ export default function Leaderboard() {
               loading={loading}
               rows={rows}
               periodLabel={activePeriodLabel}
+              auth={auth}
             />
           </div>
           <div className="md:col-span-4">
@@ -419,6 +420,7 @@ export default function Leaderboard() {
               loading={loading}
               you={you}
               periodLabel={activePeriodLabel}
+              promoProb={promoProb}
               totalLearners={totalLearners}
             />
           </div>
@@ -570,7 +572,7 @@ function HeroTopPerformers({ top, periodLabel, loading }) {
   );
 }
 
-function TopLearnersCard({ rows, loading, periodLabel }) {
+function TopLearnersCard({ rows, loading, periodLabel, auth }) {
   return (
     <section className="rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 px-5 py-5 sm:px-6 sm:py-6">
       <h2 className="text-lg font-bold text-slate-900">Top Learners</h2>
@@ -668,7 +670,14 @@ function TopLearnersCard({ rows, loading, periodLabel }) {
   );
 }
 
-function YourPositionCard({ you, loading, periodLabel, totalLearners, rows }) {
+function YourPositionCard({
+  you,
+  loading,
+  periodLabel,
+  totalLearners,
+  rows,
+  promoProb,
+}) {
   // 🎯 Calculate Probability Logic
   const getPromoStats = () => {
     if (!you || !rows || rows.length < 3)
