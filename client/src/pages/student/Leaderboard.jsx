@@ -20,6 +20,7 @@ const PERIOD_TABS = [
 ];
 
 export default function Leaderboard() {
+  const { auth } = useAuth();
   const [period, setPeriod] = useState("weekly");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -27,11 +28,13 @@ export default function Leaderboard() {
   const [top, setTop] = useState([]); // spotlight learners
   const [you, setYou] = useState(null); // current learner summary
   const [totalLearners, setTotalLearners] = useState(0);
-  const { auth } = useAuth();
 
   const dailyTarget = 500; // Your MVP daily goal
   const earnedToday = you?.xp || 0; // Or fetch from a separate 'today' state
   const progressPercent = Math.min(100, (earnedToday / dailyTarget) * 100);
+
+  const [showMilestone, setShowMilestone] = useState(false);
+  const [hasCelebrated, setHasCelebrated] = useState(false);
 
   const loadLeaderboard = useCallback(async (activePeriod) => {
     setLoading(true);
@@ -71,6 +74,28 @@ export default function Leaderboard() {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const xp = auth?.user?.xpTotal || 0;
+    // Trigger when they hit 1000 XP for the first time this session
+    if (
+      xp >= 1000 &&
+      !hasCelebrated &&
+      !localStorage.getItem("milestone_1k_seen")
+    ) {
+      setShowMilestone(true);
+      setHasCelebrated(true);
+      localStorage.setItem("milestone_1k_seen", "true");
+
+      // 🎉 Multi-color celebration confetti
+      confetti({
+        particleCount: 200,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ["#6366f1", "#a855f7", "#ec4899"],
+      });
+    }
+  }, [auth?.user?.xpTotal]);
 
   // 🎯 Cleaned logic block (No nested functions or duplicate exports)
   const [sortBy, setSortBy] = useState("xp");
@@ -166,6 +191,35 @@ export default function Leaderboard() {
     const timer = setInterval(calculateTime, 60000); // Update every minute
     return () => clearInterval(timer);
   }, []);
+
+  const getPromotionProbability = () => {
+    if (!you || !rows || rows.length < 3) return null;
+
+    if (you.rank <= 3) {
+      return {
+        msg: "High Probability of Promotion! 🚀",
+        sub: "Keep this rank to reach Silver League.",
+        color: "text-emerald-600",
+      };
+    }
+
+    const thirdPlaceXP = rows[2]?.xp || 0;
+    const gap = thirdPlaceXP - you.xp;
+
+    if (gap < 100)
+      return {
+        msg: "Almost there! 📈",
+        sub: "Only a few lessons away from Top 3!",
+        color: "text-indigo-600",
+      };
+    return {
+      msg: "Keep Climbing! 💪",
+      sub: "The Silver League is waiting for you.",
+      color: "text-slate-500",
+    };
+  };
+
+  const promoProb = getPromotionProbability();
 
   return (
     <div className="max-w-5xl mx-auto px-4 pb-10">
@@ -680,6 +734,19 @@ function YourPositionCard({ you, loading, periodLabel, totalLearners, rows }) {
                   : `Catch #${you.rank - 1} to increase your odds.`}
               </p>
             </div>
+            {/* 🎯 Promotion Probability Message (Line 711) */}
+            {promoProb && (
+              <div className="mt-6 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <p
+                  className={`text-xs font-black uppercase tracking-tight ${promoProb.color}`}
+                >
+                  {promoProb.msg}
+                </p>
+                <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                  {promoProb.sub}
+                </p>
+              </div>
+            )}
           </>
         )}
       </div>
