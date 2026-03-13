@@ -1,31 +1,43 @@
 lessonSlug,lessonTitle,lessonLevel,mode,orderIndex,promptTa,answer,xp
-lesson-120,Lesson 120,basic,typing,1,என்னால் முன்பு விட இப்போது நன்றாக ஆங்கிலம் பேச முடியும்.,I can speak English better than before.,150
-lesson-120,Lesson 120,basic,reorder,1,என்னால் முன்பு விட இப்போது நன்றாக ஆங்கிலம் பேச முடியும்.,I can speak English better than before.,150
-lesson-120,Lesson 120,basic,audio,1,என்னால் முன்பு விட இப்போது நன்றாக ஆங்கிலம் பேச முடியும்.,I can speak English better than before.,150
-lesson-120,Lesson 120,basic,typing,2,நேற்று இரவு எங்களுக்கு ஒரு சிறந்த நேரம் கிடைத்தது.,We had a great time last night.,150
-lesson-120,Lesson 120,basic,reorder,2,நேற்று இரவு எங்களுக்கு ஒரு சிறந்த நேரம் கிடைத்தது.,We had a great time last night.,150
-lesson-120,Lesson 120,basic,audio,2,நேற்று இரவு எங்களுக்கு ஒரு சிறந்த நேரம் கிடைத்தது.,We had a great time last night.,150
-lesson-120,Lesson 120,basic,typing,3,நாளை நீ என்ன செய்யப் போகிறாய்?,What are you going to do tomorrow?,150
-lesson-120,Lesson 120,basic,reorder,3,நாளை நீ என்ன செய்யப் போகிறாய்?,What are you going to do tomorrow?,150
-lesson-120,Lesson 120,basic,audio,3,நாளை நீ என்ன செய்யப் போகிறாய்?,What are you going to do tomorrow?,150
-lesson-120,Lesson 120,basic,typing,4,இதுவே மிக முக்கியமான பாடம்.,This is the most important lesson.,150
-lesson-120,Lesson 120,basic,reorder,4,இதுவே மிக முக்கியமான பாடம்.,This is the most important lesson.,150
-lesson-120,Lesson 120,basic,audio,4,இதுவே மிக முக்கியமான பாடம்.,This is the most important lesson.,150
-lesson-120,Lesson 120,basic,typing,5,அவளுக்குக் குளிர்ந்த காபி பிடிக்காது.,She doesn't like cold coffee.,150
-lesson-120,Lesson 120,basic,reorder,5,அவளுக்குக் குளிர்ந்த காபி பிடிக்காது.,She doesn't like cold coffee.,150
-lesson-120,Lesson 120,basic,audio,5,அவளுக்குக் குளிர்ந்த காபி பிடிக்காது.,She doesn't like cold coffee.,150
-lesson-120,Lesson 120,basic,typing,6,என் நண்பன் என்னை விட உயரமானவன்.,My friend is taller than me.,150
-lesson-120,Lesson 120,basic,reorder,6,என் நண்பன் என்னை விட உயரமானவன்.,My friend is taller than me.,150
-lesson-120,Lesson 120,basic,audio,6,என் நண்பன் என்னை விட உயரமானவன்.,My friend is taller than me.,150
-lesson-120,Lesson 120,basic,typing,7,நான் மதிய உணவு சாப்பிட்டுக்கொண்டே டிவி பார்க்கிறேன்.,I am eating lunch and watching TV.,150
-lesson-120,Lesson 120,basic,reorder,7,நான் மதிய உணவு சாப்பிட்டுக்கொண்டே டிவி பார்க்கிறேன்.,I am eating lunch and watching TV.,150
-lesson-120,Lesson 120,basic,audio,7,நான் மதிய உணவு சாப்பிட்டுக்கொண்டே டிவி பார்க்கிறேன்.,I am eating lunch and watching TV.,150
-lesson-120,Lesson 120,basic,typing,8,அவர் அந்த நீல நிற சட்டையை வாங்கினாரா?,Did he buy the blue shirt?,150
-lesson-120,Lesson 120,basic,reorder,8,அவர் அந்த நீல நிற சட்டையை வாங்கினாரா?,Did he buy the blue shirt?,150
-lesson-120,Lesson 120,basic,audio,8,அவர் அந்த நீல நிற சட்டையை வாங்கினாரா?,Did he buy the blue shirt?,150
-lesson-120,Lesson 120,basic,typing,9,நாம் ஏன் கடற்கரைக்குச் செல்லக்கூடாது?,Why don't we go to the beach?,150
-lesson-120,Lesson 120,basic,reorder,9,நாம் ஏன் கடற்கரைக்குச் செல்லக்கூடாது?,Why don't we go to the beach?,150
-lesson-120,Lesson 120,basic,audio,9,நாம் ஏன் கடற்கரைக்குச் செல்லக்கூடாது?,Why don't we go to the beach?,150
-lesson-120,Lesson 120,basic,typing,10,நான் நூறு பாடங்களையும் முடித்துவிட்டேன்!,I finished all one hundred lessons!,150
-lesson-120,Lesson 120,basic,reorder,10,நான் நூறு பாடங்களையும் முடித்துவிட்டேன்!,I finished all one hundred lessons!,150
-lesson-120,Lesson 120,basic,audio,10,நான் நூறு பாடங்களையும் முடித்துவிட்டேன்!,I finished all one hundred lessons!,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,1,போன் ஒலித்தபோது நான் இரவு உணவு சாப்பிட்டுக் கொண்டிருந்தேன்.,I was eating dinner when the phone rang.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,1,போன் ஒலித்தபோது நான் இரவு உணவு சாப்பிட்டுக் கொண்டிருந்தேன்.,I was eating dinner when the phone rang.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,1,போன் ஒலித்தபோது நான் இரவு உணவு சாப்பிட்டுக் கொண்டிருந்தேன்.,I was eating dinner when the phone rang.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,2,நாங்கள் வீட்டுக்கு நடந்து செல்லும் போது மழை பெய்யத் தொடங்கியது.,It started to rain while we were walking home.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,2,நாங்கள் வீட்டுக்கு நடந்து செல்லும் போது மழை பெய்யத் தொடங்கியது.,It started to rain while we were walking home.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,2,நாங்கள் வீட்டுக்கு நடந்து செல்லும் போது மழை பெய்யத் தொடங்கியது.,It started to rain while we were walking home.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,3,அவள் கார் ஓட்டிக் கொண்டிருந்த போது ஒரு விபத்தைப் பார்த்தாள்.,She saw an accident while she was driving.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,3,அவள் கார் ஓட்டிக் கொண்டிருந்த போது ஒரு விபத்தைப் பார்த்தாள்.,She saw an accident while she was driving.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,3,அவள் கார் ஓட்டிக் கொண்டிருந்த போது ஒரு விபத்தைப் பார்த்தாள்.,She saw an accident while she was driving.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,4,பலத்த சத்தம் கேட்டபோது நாங்கள் தூங்கிக் கொண்டிருந்தோம்.,We were sleeping when the loud noise happened.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,4,பலத்த சத்தம் கேட்டபோது நாங்கள் தூங்கிக் கொண்டிருந்தோம்.,We were sleeping when the loud noise happened.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,4,பலத்த சத்தம் கேட்டபோது நாங்கள் தூங்கிக் கொண்டிருந்தோம்.,We were sleeping when the loud noise happened.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,5,அவர் கால்பந்து விளையாடிக் கொண்டிருந்த போது தனது காலை உடைத்துக் கொண்டார்.,He broke his leg while he was playing football.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,5,அவர் கால்பந்து விளையாடிக் கொண்டிருந்த போது தனது காலை உடைத்துக் கொண்டார்.,He broke his leg while he was playing football.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,5,அவர் கால்பந்து விளையாடிக் கொண்டிருந்த போது தனது காலை உடைத்துக் கொண்டார்.,He broke his leg while he was playing football.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,6,மின்சாரம் நின்றபோது (லைட் அணைந்தபோது) நான் ஒரு புத்தகம் படித்துக் கொண்டிருந்தேன்.,I was reading a book when the lights went out.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,6,மின்சாரம் நின்றபோது (லைட் அணைந்தபோது) நான் ஒரு புத்தகம் படித்துக் கொண்டிருந்தேன்.,I was reading a book when the lights went out.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,6,மின்சாரம் நின்றபோது (லைட் அணைந்தபோது) நான் ஒரு புத்தகம் படித்துக் கொண்டிருந்தேன்.,I was reading a book when the lights went out.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,7,நீங்கள் பஸ்சுக்காகக் காத்திருந்த போது அவரைப் பார்த்தீர்களா?,Did you see him while you were waiting for the bus?,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,7,நீங்கள் பஸ்சுக்காகக் காத்திருந்த போது அவரைப் பார்த்தீர்களா?,Did you see him while you were waiting for the bus?,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,7,நீங்கள் பஸ்சுக்காகக் காத்திருந்த போது அவரைப் பார்த்தீர்களா?,Did you see him while you were waiting for the bus?,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,8,விருந்தினர் வந்தபோது அவர்கள் டிவி பார்த்துக் கொண்டிருக்கவில்லை.,They weren't watching TV when the guest arrived.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,8,விருந்தினர் வந்தபோது அவர்கள் டிவி பார்த்துக் கொண்டிருக்கவில்லை.,They weren't watching TV when the guest arrived.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,8,விருந்தினர் வந்தபோது அவர்கள் டிவி பார்த்துக் கொண்டிருக்கவில்லை.,They weren't watching TV when the guest arrived.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,9,அவர் வந்தபோது நான் சமைத்துக் கொண்டிருந்தேன்.,I was cooking when he arrived.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,9,அவர் வந்தபோது நான் சமைத்துக் கொண்டிருந்தேன்.,I was cooking when he arrived.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,9,அவர் வந்தபோது நான் சமைத்துக் கொண்டிருந்தேன்.,I was cooking when he arrived.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,10,அவர் இரவு உணவின் போது வந்தார்.,He arrived during dinner.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,10,அவர் இரவு உணவின் போது வந்தார்.,He arrived during dinner.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,10,அவர் இரவு உணவின் போது வந்தார்.,He arrived during dinner.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,11,நான் நடக்கும்போது அவளைச் சந்தித்தேன்.,I met her while walking.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,11,நான் நடக்கும்போது அவளைச் சந்தித்தேன்.,I met her while walking.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,11,நான் நடக்கும்போது அவளைச் சந்தித்தேன்.,I met her while walking.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,12,நான் நடந்து கொண்டிருந்தபோது அவளைச் சந்தித்தேன்.,I was walking when I met her.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,12,நான் நடந்து கொண்டிருந்தபோது அவளைச் சந்தித்தேன்.,I was walking when I met her.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,12,நான் நடந்து கொண்டிருந்தபோது அவளைச் சந்தித்தேன்.,I was walking when I met her.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,13,நான் ஒரு முக்கியமான மின்னஞ்சலை எழுதிக் கொண்டிருந்தபோது என் கணினி திடீரென பழுதடைந்தது.,My computer suddenly crashed while I was writing an important email.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,13,நான் ஒரு முக்கியமான மின்னஞ்சலை எழுதிக் கொண்டிருந்தபோது என் கணினி திடீரென பழுதடைந்தது.,My computer suddenly crashed while I was writing an important email.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,13,நான் ஒரு முக்கியமான மின்னஞ்சலை எழுதிக் கொண்டிருந்தபோது என் கணினி திடீரென பழுதடைந்தது.,My computer suddenly crashed while I was writing an important email.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,typing,14,அவர்கள் தோட்டத்தில் வேலை செய்து கொண்டிருந்தபோது ஒரு பழைய தங்க நாணயத்தைக் கண்டுபிடித்தார்கள்.,They found an old gold coin while they were working in the garden.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,reorder,14,அவர்கள் தோட்டத்தில் வேலை செய்து கொண்டிருந்தபோது ஒரு பழைய தங்க நாணயத்தைக் கண்டுபிடித்தார்கள்.,They found an old gold coin while they were working in the garden.,150
+intermediate-lesson-2,Intermediate Lesson 2,intermediate,audio,14,அவர்கள் தோட்டத்தில் வேலை செய்து கொண்டிருந்தபோது ஒரு பழைய தங்க நாணயத்தைக் கண்டுபிடித்தார்கள்.,They found an old gold coin while they were working in the garden.,150
