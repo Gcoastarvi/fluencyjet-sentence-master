@@ -28,6 +28,10 @@ export default function Leaderboard() {
   const [totalLearners, setTotalLearners] = useState(0);
   const { auth } = useAuth();
 
+  const dailyTarget = 500; // Your MVP daily goal
+  const earnedToday = you?.xp || 0; // Or fetch from a separate 'today' state
+  const progressPercent = Math.min(100, (earnedToday / dailyTarget) * 100);
+
   const loadLeaderboard = useCallback(async (activePeriod) => {
     setLoading(true);
     setError("");
@@ -35,6 +39,15 @@ export default function Leaderboard() {
       const res = await api.get(`/leaderboard?period=${activePeriod}`);
       if (!res.ok) throw new Error(res.error || "Failed to load leaderboard");
       const data = res.data;
+
+      // 🚀 Promotion Toast Logic
+      if (data.you?.rank <= 3 && data.you?.rank !== null) {
+        toast.success("You're in the Promotion Zone! 🏆", {
+          description: "Keep it up to reach Silver League this Sunday.",
+          icon: "🚀",
+          duration: 5000,
+        });
+      }
 
       setRows(Array.isArray(data.rows) ? data.rows : []);
       setTop(Array.isArray(data.top) ? data.top : []);
@@ -57,15 +70,6 @@ export default function Leaderboard() {
       setLoading(false);
     }
   }, []);
-
-  // 🚀 Promotion Toast Logic
-  if (data.you?.rank <= 3 && data.you?.rank !== null) {
-    toast.success("You're in the Promotion Zone! 🏆", {
-      description: "Keep it up to reach Silver League this Sunday.",
-      icon: "🚀",
-      duration: 5000,
-    });
-  }
 
   // 🎯 Cleaned logic block (No nested functions or duplicate exports)
   const [sortBy, setSortBy] = useState("xp");
@@ -169,6 +173,44 @@ export default function Leaderboard() {
           </h1>
           <p className="mt-1 text-sm text-slate-600">
             Ranking the top masters of {activePeriodLabel.toLowerCase()}.
+          </p>
+        </div>
+
+        {/* 🎯 Daily XP Progress Circle */}
+        <div className="flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+          <svg className="w-24 h-24 transform -rotate-90">
+            <circle
+              cx="48"
+              cy="48"
+              r="40"
+              stroke="currentColor"
+              strokeWidth="8"
+              fill="transparent"
+              className="text-slate-100"
+            />
+            <circle
+              cx="48"
+              cy="48"
+              r="40"
+              stroke="currentColor"
+              strokeWidth="8"
+              fill="transparent"
+              strokeDasharray={251.2}
+              strokeDashoffset={251.2 - (251.2 * progressPercent) / 100}
+              strokeLinecap="round"
+              className="text-indigo-600 transition-all duration-1000 ease-out"
+            />
+          </svg>
+          <div className="absolute flex flex-col items-center">
+            <span className="text-lg font-black text-slate-900">
+              {Math.round(progressPercent)}%
+            </span>
+            <span className="text-[8px] font-black text-slate-400 uppercase">
+              Goal
+            </span>
+          </div>
+          <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+            {dailyTarget - earnedToday} XP to Daily Target
           </p>
         </div>
 
