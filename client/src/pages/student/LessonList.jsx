@@ -816,31 +816,6 @@ export default function LessonList({ difficulty }) {
   );
 }
 
-{
-  showMilestone && (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-indigo-950/80 backdrop-blur-md">
-      <div className="text-center p-10 bg-white rounded-[3rem] shadow-2xl max-w-sm mx-4">
-        <div className="w-24 h-24 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-full flex items-center justify-center mx-auto mb-6">
-          <span className="text-5xl">🛡️</span>
-        </div>
-        <h2 className="text-3xl font-black text-slate-900">BRONZE MASTER</h2>
-        <p className="text-indigo-600 font-black text-xs uppercase tracking-widest mt-2">
-          1,000 XP Milestone
-        </p>
-        <p className="mt-6 text-slate-500 text-sm font-medium">
-          You're now a top-tier competitor in the Bronze League.
-        </p>
-        <button
-          onClick={() => setShowMilestone(false)}
-          className="mt-8 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest"
-        >
-          Continue My Reign
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // 🎯 Dopamine-friendly Skeleton Screen
 const LessonSkeleton = () => (
   <div className="max-w-2xl mx-auto px-4 py-10 animate-pulse space-y-12">
