@@ -24,6 +24,24 @@ export default function LessonList({ difficulty }) {
 
   useEffect(() => {
     const currentXP = auth?.user?.xpTotal || 0;
+
+    // Trigger if XP is 1000+ and they haven't seen it yet
+    if (currentXP >= 1000 && !localStorage.getItem("milestone_1k_seen")) {
+      setShowMilestone(true);
+      localStorage.setItem("milestone_1k_seen", "true");
+
+      // 🎊 Massive celebration burst
+      confetti({
+        particleCount: 250,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ["#6366f1", "#fbbf24", "#f59e0b"],
+      });
+    }
+  }, [auth?.user?.xpTotal]);
+
+  useEffect(() => {
+    const currentXP = auth?.user?.xpTotal || 0;
     if (
       currentXP >= 1000 &&
       !hasCelebrated &&

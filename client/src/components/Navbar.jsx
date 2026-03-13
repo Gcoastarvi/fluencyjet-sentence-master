@@ -44,6 +44,24 @@ export default function Navbar() {
             FluencyJet <span className="font-normal">Sentence Master</span>
           </Link>
 
+          {/* 🥉 Navbar League Badge */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors cursor-help group relative">
+            <span className="text-lg">🥉</span>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-slate-400 uppercase leading-none tracking-tighter">
+                League
+              </span>
+              <span className="text-xs font-black text-slate-700 leading-none mt-0.5">
+                {auth?.user?.league || "BRONZE"}
+              </span>
+            </div>
+
+            {/* Tooltip on Hover */}
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+              Maintain Top 3 to Promote! 🚀
+            </div>
+          </div>
+
           {/* 🔥 Clickable Streak Flame Trigger */}
           {user?.daily_streak > 0 && (
             <button
