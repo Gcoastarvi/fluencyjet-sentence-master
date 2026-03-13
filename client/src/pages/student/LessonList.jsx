@@ -861,37 +861,38 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
           <span className="block text-[9px] font-bold text-slate-400 uppercase mt-0.5">
             {tamil}
           </span>
-        </div>        
-      </div>      
-      <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>      
-      </div>        
-    );
-  }
-      {showMilestone && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-indigo-950/80 backdrop-blur-md animate-in fade-in duration-500">
-          <div className="text-center p-10 bg-white rounded-[3rem] shadow-2xl scale-110 animate-in zoom-in-75 duration-500 max-w-sm mx-4">
-            <div className="w-24 h-24 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-              <span className="text-5xl">🛡️</span>
-            </div>
-            <h2 className="text-3xl font-black text-slate-900 leading-tight">
-              BRONZE MASTER
-            </h2>
-            <p className="text-indigo-600 font-black text-xs uppercase tracking-[0.2em] mt-2">
-              1,000 XP Milestone
-            </p>
-
-            <p className="mt-6 text-slate-500 text-sm font-medium leading-relaxed">
-              You've officially mastered the basics! You're now a top-tier
-              competitor in the Bronze League.
-            </p>
-
-            <button
-              onClick={() => setShowMilestone(false)}
-              className="mt-8 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
-            >
-              Continue My Reign
-            </button>            
-          </div>          
         </div>
-      )}        
-  
+      </div>
+      <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
+    </div>
+  );
+}
+{
+  showMilestone && (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-indigo-950/80 backdrop-blur-md animate-in fade-in duration-500">
+      <div className="text-center p-10 bg-white rounded-[3rem] shadow-2xl scale-110 animate-in zoom-in-75 duration-500 max-w-sm mx-4">
+        <div className="w-24 h-24 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+          <span className="text-5xl">🛡️</span>
+        </div>
+        <h2 className="text-3xl font-black text-slate-900 leading-tight">
+          BRONZE MASTER
+        </h2>
+        <p className="text-indigo-600 font-black text-xs uppercase tracking-[0.2em] mt-2">
+          1,000 XP Milestone
+        </p>
+
+        <p className="mt-6 text-slate-500 text-sm font-medium leading-relaxed">
+          You've officially mastered the basics! You're now a top-tier
+          competitor in the Bronze League.
+        </p>
+
+        <button
+          onClick={() => setShowMilestone(false)}
+          className="mt-8 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
+        >
+          Continue My Reign
+        </button>
+      </div>
+    </div>
+  );
+}
