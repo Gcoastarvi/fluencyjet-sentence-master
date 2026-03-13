@@ -816,6 +816,31 @@ export default function LessonList({ difficulty }) {
   );
 }
 
+{
+  showMilestone && (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-indigo-950/80 backdrop-blur-md">
+      <div className="text-center p-10 bg-white rounded-[3rem] shadow-2xl max-w-sm mx-4">
+        <div className="w-24 h-24 bg-gradient-to-tr from-orange-400 to-yellow-300 rounded-full flex items-center justify-center mx-auto mb-6">
+          <span className="text-5xl">🛡️</span>
+        </div>
+        <h2 className="text-3xl font-black text-slate-900">BRONZE MASTER</h2>
+        <p className="text-indigo-600 font-black text-xs uppercase tracking-widest mt-2">
+          1,000 XP Milestone
+        </p>
+        <p className="mt-6 text-slate-500 text-sm font-medium">
+          You're now a top-tier competitor in the Bronze League.
+        </p>
+        <button
+          onClick={() => setShowMilestone(false)}
+          className="mt-8 w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest"
+        >
+          Continue My Reign
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // 🎯 Dopamine-friendly Skeleton Screen
 const LessonSkeleton = () => (
   <div className="max-w-2xl mx-auto px-4 py-10 animate-pulse space-y-12">
@@ -836,45 +861,47 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
   // 🎯 Pulse only if it's a streak mission and NOT done yet
   const shouldPulse = isStreak && !done;
 
-  return (  
-      <div
-        className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-500 ${
-          done
-            ? "bg-emerald-50 border-emerald-100 opacity-60"
-            : shouldPulse
-              ? "bg-orange-50 border-orange-200 shadow-[0_0_15px_rgba(251,146,60,0.3)] animate-pulse"
-              : "bg-slate-50 border-slate-50"
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <div
-            className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-              done
-                ? "bg-emerald-500 border-emerald-500"
-                : "border-slate-200 bg-white"
+  return (
+    <div
+      className={`flex items-center justify-between p-4 rounded-2xl border transition-all duration-500 ${
+        done
+          ? "bg-emerald-50 border-emerald-100 opacity-60"
+          : shouldPulse
+            ? "bg-orange-50 border-orange-200 shadow-[0_0_15px_rgba(251,146,60,0.3)] animate-pulse"
+            : "bg-slate-50 border-slate-50"
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+            done
+              ? "bg-emerald-500 border-emerald-500"
+              : "border-slate-200 bg-white"
+          }`}
+        >
+          {done ? (
+            <span className="text-white text-xs">✓</span>
+          ) : // 🎯 The flame now uses the CSS class we added to index.css
+          isStreak ? (
+            <span className="text-[10px] animate-flame">🔥</span>
+          ) : (
+            <div className="h-1.5 w-1.5 rounded-full bg-slate-200" />
+          )}
+        </div>
+        <div>
+          <span
+            className={`block text-xs font-black leading-tight ${
+              isStreak && !done ? "text-orange-700" : "text-slate-800"
             }`}
           >
-            {done ? (
-              <span className="text-white text-xs">✓</span>
-            ) : // 🎯 The flame now uses the CSS class we added to index.css
-            isStreak ? (
-              <span className="text-[10px] animate-flame">🔥</span>
-            ) : (
-              <div className="h-1.5 w-1.5 rounded-full bg-slate-200" />
-            )}
-          </div>
-          <div>
-            <span
-              className={`block text-xs font-black leading-tight ${
-                isStreak && !done ? "text-orange-700" : "text-slate-800"
-              }`}
-            >
-              {label}
-            </span>
-            <span className="block text-[9px] font-bold text-slate-400 uppercase mt-0.5">
-              {tamil}
-            </span>
-          </div>
+            {label}
+          </span>
+          <span className="block text-[9px] font-bold text-slate-400 uppercase mt-0.5">
+            {tamil}
+          </span>
         </div>
-        <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
       </div>
+      <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
+    </div>
+  );
+}
