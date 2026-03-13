@@ -890,8 +890,7 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
             >
               Continue My Reign
             </button>            
-          </div>
-          
+          </div>          
         </div>
       )}        
     </div>
