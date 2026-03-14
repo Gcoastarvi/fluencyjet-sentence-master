@@ -5,7 +5,7 @@ import { getAdminDashboard } from "../../api/adminApi";
 
 import UserTableSearch from "../../components/UserTableSearch";
 
-function AdminDashboardInner() {
+function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

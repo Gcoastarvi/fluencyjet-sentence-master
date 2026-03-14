@@ -96,4 +96,24 @@ router.get("/stats", adminAuth, async (req, res) => {
   }
 });
 
+router.get("/search", adminAuth, async (req, res) => {
+  const { q } = req.query; // This is the "Man" from the search bar
+
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        username: {
+          contains: q,
+          mode: "insensitive", // 🎯 "man" will match "Mango" or "MANGO"
+        },
+      },
+      select: { id: true, username: true, league: true, daily_streak: true },
+      take: 10, // Only return top 10 to keep it fast
+    });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
 export default router;
