@@ -44,6 +44,29 @@ export default function Settings() {
           className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-lg hover:bg-indigo-700 transition-all active:scale-95"
         >
           Save Changes
+          {/* ✉️ Support Section */}
+          <div className="mt-8 p-6 bg-indigo-50/50 rounded-[2rem] border border-indigo-100/50">
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                💬
+              </div>
+              <div>
+                <h4 className="text-sm font-black text-slate-900 leading-none">
+                  Need Help?
+                </h4>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                  We're here to support you
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="mailto:support@fluencyjet.com?subject=Support Request - FluencyJet MVP"
+              className="mt-6 w-full py-3 bg-white text-indigo-600 text-[10px] font-black uppercase tracking-widest rounded-xl border border-indigo-100 flex items-center justify-center hover:bg-indigo-100 transition-colors"
+            >
+              Contact Support Team
+            </a>
+          </div>
           {/* 🚪 Dangerous Area */}
           <div className="mt-12 pt-8 border-t border-slate-100">
             <button
