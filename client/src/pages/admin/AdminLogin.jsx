@@ -30,7 +30,7 @@ export default function AdminLogin() {
       localStorage.setItem("fj_admin_token", res.token);
 
       // 🔥 Redirect to admin dashboard (root admin route)
-      navigate("/admin", { replace: true });
+      navigate("/admin/dashboard", { replace: true });
     } catch (err) {
       console.error("Admin login error:", err);
       const msg = err?.message || "Invalid admin credentials";

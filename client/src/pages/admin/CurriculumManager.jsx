@@ -14,6 +14,23 @@ const handleCSVUpload = async (file) => {
   }
 };
 
+const validateCSV = (data) => {
+  const errors = [];
+  data.forEach((row, index) => {
+    if (!row.tamil_sentence)
+      errors.push(`Line ${index + 1}: Missing Tamil translation`);
+    if (!row.english_mastery_goal)
+      errors.push(`Line ${index + 1}: Missing English goal`);
+    if (!row.module_id) errors.push(`Line ${index + 1}: No Module ID assigned`);
+  });
+
+  if (errors.length > 0) {
+    alert("❌ CSV Errors Found:\n" + errors.slice(0, 5).join("\n"));
+    return false;
+  }
+  return true;
+};
+
 export default function CurriculumManager() {
   const [modules, setModules] = useState([]);
 

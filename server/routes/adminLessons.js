@@ -193,7 +193,7 @@ router.delete("/:id", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
-router.post("/bulk-import", adminAuth, async (req, res) => {
+router.post("/bulk-import", authRequired, requireAdmin, async (req, res) => {
   const { lessons } = req.body; // Array of lessons from the CSV
 
   try {
