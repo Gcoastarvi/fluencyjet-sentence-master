@@ -29,6 +29,7 @@ model User {
   progress     UserProgress?
   weekly       UserWeeklyTotals?
   xp_events    XpEvent[]
+  league_history LeagueHistory[]
 }
 
 model XpEvent {
@@ -51,6 +52,18 @@ model UserWeeklyTotals {
   month_xp   Int       @default(0)
   updated_at DateTime  @default(now())
   user       User      @relation(fields: [user_id], references: [id])
+}
+
+model LeagueHistory {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  leagueName  String   // e.g., "BRONZE"
+  rank        Int      // e.g., 1
+  xpEarned    Int      // XP earned during that specific week
+  seasonEnded DateTime @default(now())
+
+  @@index([userId])
 }
 
 model UserProgress {

@@ -113,6 +113,17 @@ const ALLOW_HEADERS =
   "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match";
 const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 
+app.post("/api/admin/reset-leagues", async (req, res) => {
+  // 🛡️ Simple security check
+  if (req.headers.authorization !== `Bearer ${process.env.ADMIN_SECRET}`) {
+    return res.status(401).send("Unauthorized");
+  }
+
+  // Run the logic from our reset script
+  const result = await runLeagueResetLogic();
+  res.json({ success: true, result });
+});
+
 app.get("/api/debug/static", (_req, res) => {
   const distPath = path.resolve(process.cwd(), "dist", "public");
   res.json({
