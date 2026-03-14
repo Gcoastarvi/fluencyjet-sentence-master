@@ -1,6 +1,6 @@
 //client/src/components/UserTableSearch.jsx
 import React, { useState } from "react";
-import api from "../api/axiosConfig"; // 🎯 Ensure this path matches your axios setup
+import api from "../api/apiClient";
 
 function UserTableSearch() {
   const [query, setQuery] = useState("");
