@@ -56,35 +56,39 @@ export default function Settings() {
             {/* 🏷️ Version Footer */}
             <div className="mt-6 text-center">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                FluencyJet <span className="text-indigo-400 ml-1">v1.0.0-MVP</span>
+                FluencyJet{" "}
+                <span className="text-indigo-400 ml-1">v1.0.0-MVP</span>
               </p>
               <p className="text-[8px] font-bold text-slate-300 uppercase mt-1">
-                Build ID: {new Date().toISOString().split('T')[0].replace(/-/g, '')}-BETA
+                Build ID:{" "}
+                {new Date().toISOString().split("T")[0].replace(/-/g, "")}-BETA
               </p>
             </div>
           </div>
-
           {/* 🛠️ Confirmation Modal Overlay */}
           {isLogoutModalOpen && (
             <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
               <div className="bg-white rounded-[3rem] p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in duration-300">
                 <div className="text-5xl mb-6">👋</div>
-                <h3 className="text-2xl font-black text-slate-900 mb-2 leading-tight">Wait, leaving?</h3>
+                <h3 className="text-2xl font-black text-slate-900 mb-2 leading-tight">
+                  Wait, leaving?
+                </h3>
                 <p className="text-slate-500 text-sm font-medium mb-8 leading-relaxed">
-                  Are you sure you want to log out? Your daily streak is waiting for you!
+                  Are you sure you want to log out? Your daily streak is waiting
+                  for you!
                 </p>
 
                 <div className="space-y-3">
-                  <button 
+                  <button
                     onClick={() => {
-                      localStorage.removeItem('token');
-                      window.location.href = '/login';
+                      localStorage.removeItem("token");
+                      window.location.href = "/login";
                     }}
                     className="w-full py-4 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-200"
                   >
                     Yes, Log Me Out
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsLogoutModalOpen(false)}
                     className="w-full py-4 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all"
                   >
@@ -94,7 +98,7 @@ export default function Settings() {
               </div>
             </div>
           )}
-        </p>
+        </button>
       </div>
     </div>
   );
