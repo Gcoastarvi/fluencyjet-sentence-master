@@ -156,6 +156,7 @@ export default function App() {
             <Route path="/level-check" element={<LevelCheck />} />
             <Route path="/upgrade" element={<Upgrade />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/settings" element={<Settings />} />
             <Route
               path="/b/lessons"
               element={<LessonList difficulty="basic" />}

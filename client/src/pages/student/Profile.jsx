@@ -7,14 +7,19 @@ export default function Profile() {
   const [stats, setStats] = useState({ mastered: 0 });
 
   useEffect(() => {
-    // Fetch how many lessons this user has mastered
-    api.get("/api/lessons").then((res) => {
-      const mastered = res.data.filter(
-        (l) => l.progress?.typing === 100,
-      ).length;
-      setStats({ mastered });
-    });
-  }, []);
+    // 🎯 Use the existing auth data or fetch specific profile stats
+    if (auth?.user) {
+      const masteredCount = auth.user.masteredCount || 0;
+      setStats((prev) => ({ ...prev, mastered: masteredCount }));
+    }
+
+    // Optional: If you want to refresh the specific history from the server
+    // api.get("/api/me").then((res) => {
+    //   if (res.data.league_history) {
+    //      setHistory(res.data.league_history);
+    //   }
+    // });
+  }, [auth?.user]);
 
   return (
     <div className="max-w-4xl mx-auto p-8">
