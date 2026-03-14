@@ -1,43 +1,70 @@
 import React, { useState, useEffect } from "react";
-import { getAdminLessons } from "@/api/adminApi"; // Ensure this exists
+import { getAdminLessons } from "@/api/adminApi";
+import api from "@/api/api"; // Ensure this import is correct for your axios instance
 
 export default function CurriculumManager() {
-  // 🎯 MUST BE INSIDE THE FUNCTION
+  // 🎯 State Hooks
+  const [modules, setModules] = useState([]);
   const [editingLesson, setEditingLesson] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
 
-const handleCSVUpload = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
+  // 🎯 CSV Validation Logic
+  const validateCSV = (data) => {
+    const errors = [];
+    data.forEach((row, index) => {
+      if (!row.tamil_sentence)
+        errors.push(`Line ${index + 1}: Missing Tamil translation`);
+      if (!row.english_mastery_goal)
+        errors.push(`Line ${index + 1}: Missing English goal`);
+      if (!row.module_id)
+        errors.push(`Line ${index + 1}: No Module ID assigned`);
+    });
 
-  try {
-    // 🎯 api.post('/api/admin/lessons/bulk-import', formData)
-    alert("Processing 120 lessons... Please wait! ⏳");
-  } catch (err) {
-    alert("Import failed. Check CSV format.");
-  }
-};
+    if (errors.length > 0) {
+      alert("❌ CSV Errors Found:\n" + errors.slice(0, 5).join("\n"));
+      return false;
+    }
+    return true;
+  };
 
-const validateCSV = (data) => {
-  const errors = [];
-  data.forEach((row, index) => {
-    if (!row.tamil_sentence)
-      errors.push(`Line ${index + 1}: Missing Tamil translation`);
-    if (!row.english_mastery_goal)
-      errors.push(`Line ${index + 1}: Missing English goal`);
-    if (!row.module_id) errors.push(`Line ${index + 1}: No Module ID assigned`);
-  });
+  // 🎯 CSV Upload Logic with Progress Bar
+  const handleCSVUpload = async (file) => {
+    if (!file) return;
 
-  if (errors.length > 0) {
-    alert("❌ CSV Errors Found:\n" + errors.slice(0, 5).join("\n"));
-    return false;
-  }
-  return true;
-};
+    setIsImporting(true);
+    setProgress(10);
 
-export default function CurriculumManager() {
-  const [modules, setModules] = useState([]);
+    // Simulation of progress while uploading
+    const interval = setInterval(() => {
+      setProgress((prev) => (prev >= 90 ? 90 : prev + 10));
+    }, 200);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // This calls your backend bulk-import route
+      const response = await api.post(
+        "/api/admin/lessons/bulk-import",
+        formData,
+      );
+
+      if (response.data.ok) {
+        setProgress(100);
+        alert(`Success! ${response.data.count} lessons imported. 🚀`);
+      }
+    } catch (err) {
+      console.error("Import error:", err);
+      alert("Import failed. Check CSV format or Server logs.");
+    } finally {
+      clearInterval(interval);
+      setTimeout(() => {
+        setIsImporting(false);
+        setProgress(0);
+      }, 1500);
+    }
+  };
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
@@ -148,6 +175,24 @@ export default function CurriculumManager() {
             >
               Save Changes
             </button>
+          </div>
+        </div>
+      )}
+      {isImporting && (
+        <div className="mb-8 p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
+          <div className="flex justify-between mb-2">
+            <span className="text-[10px] font-black uppercase text-indigo-600">
+              Importing Curriculum...
+            </span>
+            <span className="text-[10px] font-black text-slate-400">
+              {progress}%
+            </span>
+          </div>
+          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-indigo-600 transition-all duration-300 shadow-[0_0_15px_rgba(79,70,229,0.4)]"
+              style={{ width: `${progress}%` }}
+            />
           </div>
         </div>
       )}
