@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { getAdminLessons } from "@/api/adminApi"; // Ensure this exists
-const [editingLesson, setEditingLesson] = useState(null);
+
+export default function CurriculumManager() {
+  // 🎯 MUST BE INSIDE THE FUNCTION
+  const [editingLesson, setEditingLesson] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [progress, setProgress] = useState(0);
 
 const handleCSVUpload = async (file) => {
   const formData = new FormData();
