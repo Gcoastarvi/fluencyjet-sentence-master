@@ -116,4 +116,10 @@ router.get("/search", adminAuth, async (req, res) => {
   }
 });
 
-export default router;
+export default function AdminDashboard() {
+  return (
+    <ProtectedAdminRoute>
+      <AdminDashboardContent />
+    </ProtectedAdminRoute>
+  );
+}
