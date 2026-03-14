@@ -1,6 +1,6 @@
 //client/src/components/UserTableSearch.jsx
 import React, { useState } from "react";
-import api from "../api/apiClient";
+import { api } from "../api/apiClient";
 
 function UserTableSearch() {
   const [query, setQuery] = useState("");
