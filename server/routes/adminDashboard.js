@@ -69,4 +69,31 @@ router.get("/", adminOnly, async (req, res) => {
   }
 });
 
+router.get("/stats", adminAuth, async (req, res) => {
+  try {
+    const totalUsers = await prisma.user.count();
+    const activeUsers = await prisma.user.count({
+      where: { daily_streak: { gt: 0 } },
+    });
+
+    // 🎯 Aggregate average feedback stars (assuming you save rating in user or a separate table)
+    const feedback = await prisma.user.aggregate({
+      _avg: { feedbackRating: true },
+      _count: { feedbackRating: true },
+    });
+
+    res.json({
+      ok: true,
+      stats: {
+        totalUsers,
+        activeUsers,
+        avgRating: feedback._avg.feedbackRating || 0,
+        totalFeedbacks: feedback._count.feedbackRating,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: err.message });
+  }
+});
+
 export default router;
