@@ -3,6 +3,8 @@ import React, { useEffect, useState } from "react";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
 import { getAdminDashboard } from "../../api/adminApi";
 
+import UserTableSearch from "../../components/UserTableSearch";
+
 function AdminDashboardInner() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -161,3 +163,5 @@ function StatCard({ label, value, icon, color, text }) {
     </div>
   );
 }
+
+export default AdminDashboard;
