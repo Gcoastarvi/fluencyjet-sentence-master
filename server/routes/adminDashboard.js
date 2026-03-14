@@ -116,6 +116,24 @@ router.get("/search", adminAuth, async (req, res) => {
   }
 });
 
+router.post("/bulk-message", adminAuth, async (req, res) => {
+  const { message } = req.body;
+
+  try {
+    // 🎯 Logic: Update a 'system_announcement' field or create a notification for all
+    await prisma.user.updateMany({
+      data: {
+        lastNotification: message,
+        hasUnreadNotification: true,
+      },
+    });
+
+    res.json({ ok: true, message: "Announcement sent to all users! 📢" });
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 export default function AdminDashboard() {
   return (
     <ProtectedAdminRoute>

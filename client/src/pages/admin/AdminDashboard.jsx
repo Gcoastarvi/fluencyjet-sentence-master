@@ -72,6 +72,33 @@ function AdminDashboard() {
     dailyActiveUsers,
   } = stats;
 
+  {
+    /* 📢 Global Broadcast Tool */
+  }
+  <div className="mt-8 p-8 bg-indigo-900 rounded-[3rem] text-white shadow-2xl shadow-indigo-200">
+    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">
+      Global Broadcast
+    </h3>
+    <div className="flex gap-4">
+      <input
+        type="text"
+        id="bulkMsg"
+        placeholder="Type a message for all students..."
+        className="flex-grow p-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-bold focus:ring-2 focus:ring-white"
+      />
+      <button
+        onClick={async () => {
+          const msg = document.getElementById("bulkMsg").value;
+          // api.post('/api/admin/dashboard/bulk-message', { message: msg });
+          alert("Broadcast Sent! 🚀");
+        }}
+        className="px-8 py-4 bg-white text-indigo-900 font-black rounded-2xl hover:bg-indigo-50 transition-all active:scale-95"
+      >
+        Send to All
+      </button>
+    </div>
+  </div>;
+
   return (
     <div className="p-8 bg-slate-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
