@@ -32,6 +32,7 @@ import LevelCheck from "./pages/student/LevelCheck";
 import Upgrade from "./pages/student/Upgrade";
 import LessonList from "./pages/student/LessonList";
 import Profile from "./pages/student/Profile";
+import Settings from "./pages/student/Settings";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
