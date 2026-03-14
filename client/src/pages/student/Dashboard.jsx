@@ -446,7 +446,26 @@ export default function Dashboard() {
   }, [summary.uniqueDays]);
 
   return (
-    <div className="fj-dashboard">
+    <div className="fj-dashboard px-4">
+      {/* 📢 Global Announcement Banner - Placed at the very top */}
+      {auth?.user?.lastNotification && (
+        <div className="mb-6 p-5 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-[2rem] text-white shadow-lg flex items-center justify-between animate-in slide-in-from-top duration-500">
+          <div className="flex items-center gap-4">
+            <div className="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center text-xl backdrop-blur-md">
+              📢
+            </div>
+            <p className="text-sm font-bold leading-tight">
+              {auth.user.lastNotification}
+            </p>
+          </div>
+          <button
+            onClick={() => alert("Cleared!")}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {/* 396: Refined Header with Avatar Frame */}
       <header className="flex items-center gap-6 mb-8 pt-10">
         <AvatarFrame

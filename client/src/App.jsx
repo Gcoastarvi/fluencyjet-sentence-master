@@ -46,6 +46,7 @@ import AdminUsers from "./pages/admin/AdminUsers.jsx";
 import AdminUserDetail from "./pages/admin/AdminUserDetail.jsx";
 import AdminXP from "./pages/admin/AdminXP.jsx";
 import AdminAnalytics from "./pages/admin/AdminAnalytics.jsx";
+import CurriculumManager from "./pages/admin/CurriculumManager";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -158,6 +159,7 @@ export default function App() {
             <Route path="/upgrade" element={<Upgrade />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/admin/curriculum" element={<CurriculumManager />} />
             <Route
               path="/b/lessons"
               element={<LessonList difficulty="basic" />}
