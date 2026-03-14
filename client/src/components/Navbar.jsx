@@ -108,6 +108,14 @@ export default function Navbar() {
                 <Link className="text-sm sm:text-base" to="/practice">
                   Practice
                 </Link>
+                {/* 👤 Profile Link */}
+                <Link
+                  to="/profile"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors"
+                >
+                  <span>👤</span>
+                  Profile
+                </Link>
                 <Link className="text-sm sm:text-base" to="/leaderboard">
                   Leaderboard
                 </Link>

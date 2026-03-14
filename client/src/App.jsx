@@ -31,6 +31,7 @@ import IntermediateLessons from "./pages/student/IntermediateLessons";
 import LevelCheck from "./pages/student/LevelCheck";
 import Upgrade from "./pages/student/Upgrade";
 import LessonList from "./pages/student/LessonList";
+import Profile from "./pages/student/Profile";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
@@ -154,6 +155,7 @@ export default function App() {
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/level-check" element={<LevelCheck />} />
             <Route path="/upgrade" element={<Upgrade />} />
+            <Route path="/profile" element={<Profile />} />
             <Route
               path="/b/lessons"
               element={<LessonList difficulty="basic" />}
