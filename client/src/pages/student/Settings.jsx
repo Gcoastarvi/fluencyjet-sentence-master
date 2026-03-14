@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
 
-const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-
 export default function Settings() {
   const { auth, updateProfile } = useAuth();
+
+  // 🎯 Move these to be the VERY FIRST lines inside the function
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [lang, setLang] = useState(auth?.user?.nativeLanguage || "Tamil");
+  const [rating, setRating] = useState(0);
 
   const handleSave = async () => {
     try {
@@ -122,6 +124,31 @@ export default function Settings() {
             </div>
           )}
         </button>
+      </div>
+      {/* ⭐ Feedback Rating */}
+      <div className="mt-8 p-6 bg-amber-50/50 rounded-[2rem] border border-amber-100/50 text-center">
+        <p className="text-[10px] font-black uppercase text-amber-600 tracking-widest mb-4">
+          Rate your Experience
+        </p>
+        <div className="flex justify-center gap-2">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              onClick={() => {
+                setRating(star);
+                toast.success(`Thanks for the ${star}-star feedback!`);
+              }}
+              className={`text-3xl transition-transform active:scale-125 ${
+                rating >= star ? "grayscale-0" : "grayscale opacity-30"
+              }`}
+            >
+              ⭐
+            </button>
+          ))}
+        </div>
+        <p className="mt-4 text-[9px] font-bold text-slate-400 italic">
+          Your feedback helps us build a better Sentence Master!
+        </p>
       </div>
     </div>
   );
