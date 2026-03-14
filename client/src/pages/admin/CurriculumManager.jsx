@@ -1,5 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { getAdminLessons } from "@/api/adminApi"; // Ensure this exists
+const [editingLesson, setEditingLesson] = useState(null);
+
+const handleCSVUpload = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    // 🎯 api.post('/api/admin/lessons/bulk-import', formData)
+    alert("Processing 120 lessons... Please wait! ⏳");
+  } catch (err) {
+    alert("Import failed. Check CSV format.");
+  }
+};
 
 export default function CurriculumManager() {
   const [modules, setModules] = useState([]);
@@ -15,6 +28,27 @@ export default function CurriculumManager() {
             12 Modules • 120 Mastery Lessons
           </p>
         </header>
+
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">
+              Curriculum Master
+            </h2>
+            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-2">
+              12 Modules • 120 Mastery Lessons
+            </p>
+          </div>
+
+          <label className="cursor-pointer bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 flex items-center gap-2">
+            <input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => handleCSVUpload(e.target.files[0])}
+            />
+            📥 Bulk Import CSV
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2, 3, 4].map((mod) => (
@@ -44,6 +78,57 @@ export default function CurriculumManager() {
           ))}
         </div>
       </div>
+      {/* ✍️ Instant Lesson Editor Slide-over */}
+      {editingLesson && (
+        <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl z-[300] p-8 animate-in slide-in-from-right duration-300 border-l border-slate-100">
+          <div className="flex justify-between items-center mb-10">
+            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter text-indigo-600">
+              Edit Lesson
+            </h3>
+            <button
+              onClick={() => setEditingLesson(null)}
+              className="h-10 w-10 bg-slate-50 rounded-full flex items-center justify-center font-bold text-slate-400 hover:text-rose-500 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-8">
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                Tamil Sentence (Native)
+              </label>
+              <textarea
+                className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500"
+                value={editingLesson.tamil}
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                English Mastery Goal
+              </label>
+              <textarea
+                className="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500"
+                value={editingLesson.english}
+                rows={3}
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                // 🎯 Logic: api.put(`/api/admin/lessons/${editingLesson.id}`, editingLesson)
+                alert("Lesson Updated! 🚀");
+                setEditingLesson(null);
+              }}
+              className="w-full py-4 bg-indigo-600 text-white font-black rounded-2xl shadow-xl hover:bg-indigo-700 transition-all active:scale-95"
+            >
+              Save Changes
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

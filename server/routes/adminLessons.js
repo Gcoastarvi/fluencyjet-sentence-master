@@ -193,4 +193,25 @@ router.delete("/:id", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
+router.post("/bulk-import", adminAuth, async (req, res) => {
+  const { lessons } = req.body; // Array of lessons from the CSV
+
+  try {
+    const result = await prisma.lesson.createMany({
+      data: lessons,
+      skipDuplicates: true, // 🛡️ Prevents double-importing if you run it twice
+    });
+
+    res.json({
+      ok: true,
+      count: result.count,
+      message: "Curriculum Imported! 📚",
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ ok: false, error: "Import failed. Check data format." });
+  }
+});
+
 export default router;
