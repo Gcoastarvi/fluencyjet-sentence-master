@@ -237,8 +237,8 @@ export async function resetStudentProgress(studentId) {
 // ─────────────────────────────────────────────
 
 export async function getAdminDashboard() {
-  // 🎯 Ensure this matches the new mount in index.js
-  const res = await api.get("admin/dashboard");
+  // GET /api/admin/dashboard
+  const res = await api.get("/admin/dashboard", withCreds);
   return res.data;
 }
 
