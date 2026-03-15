@@ -35,6 +35,22 @@ function AdminDashboard() {
     fetchDashboard();
   }, []);
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this lesson?")) return;
+
+    try {
+      const res = await deleteLesson(id);
+      if (res.ok) {
+        // 🎯 Refresh the list automatically after deletion
+        setLessons((prev) => prev.filter((lesson) => lesson.id !== id));
+        alert("Lesson deleted successfully!");
+      }
+    } catch (err) {
+      console.error("Delete failed:", err);
+      alert("Failed to delete lesson.");
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: "2rem" }}>
@@ -112,35 +128,36 @@ function AdminDashboard() {
         </header>
 
         {/* 📊 Admin KPI Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <StatCard
-            label="Total Masters"
-            value={totalUsers}
-            icon="👥"
-            color="bg-indigo-50"
-            text="text-indigo-600"
-          />
-          <StatCard
-            label="Active Users"
-            value={activeUsers}
-            icon="🔥"
-            color="bg-rose-50"
-            text="text-rose-600"
-          />
-          <StatCard
-            label="Avg. Rating"
-            value={`${stats.avgRating?.toFixed(1) || "0.0"} / 5`}
-            icon="⭐"
-            color="bg-amber-50"
-            text="text-amber-600"
-          />
-          <StatCard
-            label="Total Lessons"
-            value={totalLessons}
-            icon="📚"
-            color="bg-emerald-50"
-            text="text-emerald-600"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {/* Card 1: Total Masters (Users) */}
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
+                👥
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Total Masters
+              </p>
+            </div>
+            <h2 className="text-4xl font-black text-slate-900">
+              {stats?.users ?? "-"}
+            </h2>
+          </div>
+
+          {/* Card 4: Total Lessons */}
+          <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="p-3 bg-emerald-50 rounded-2xl text-emerald-600">
+                📚
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                Total Lessons
+              </p>
+            </div>
+            <h2 className="text-4xl font-black text-slate-900 text-emerald-500">
+              {stats?.lessons ?? "-"}
+            </h2>
+          </div>
         </div>
 
         {/* ⭐ Feedback & Detailed Metrics Area */}
@@ -169,6 +186,56 @@ function AdminDashboard() {
     </div>
   );
 }
+
+<div className="mt-8 bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+  <h3 className="text-xl font-bold text-slate-800 mb-6">Curriculum Overview</h3>
+
+  <div className="overflow-x-auto">
+    <table className="w-full text-left border-collapse">
+      <thead>
+        <tr className="border-b border-slate-50">
+          <th className="py-4 px-4 text-slate-400 font-medium">Level</th>
+          <th className="py-4 px-4 text-slate-400 font-medium">
+            Tamil Sentence
+          </th>
+          <th className="py-4 px-4 text-slate-400 font-medium">English Goal</th>
+          <th className="py-4 px-4 text-slate-400 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {filteredLessons.length > 0 ? (
+          filteredLessons.map((lesson) => (
+            <tr
+              key={lesson.id}
+              className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
+            >
+              <td className="py-4 px-4 font-bold text-indigo-600">
+                {lesson.level}
+              </td>
+              <td className="py-4 px-4 text-slate-700">
+                {lesson.tamil_sentence}
+              </td>
+              <td className="py-4 px-4 text-slate-600 italic">
+                "{lesson.english_mastery_goal}"
+              </td>
+              <td className="py-4 px-4">
+                <button className="text-rose-500 hover:text-rose-700 font-medium">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan="4" className="py-10 text-center text-slate-400">
+              No lessons found. Use Bulk Import to start!
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  </div>
+</div>;
 
 // 🛡️ Helper Component for beautiful cards
 function StatCard({ label, value, icon, color, text }) {

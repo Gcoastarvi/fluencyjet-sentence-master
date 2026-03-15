@@ -219,9 +219,12 @@ export default function CurriculumManager() {
               style={{ width: `${progress}%` }}
             />
           </div>
-        </div>
-      )}
-      <div className="mb-6 relative">
+           <button 
+           onClick={() => handleDelete(lesson.id)}
+           className="text-rose-500 hover:text-rose-700 font-bold transition-all px-3 py-1 rounded-lg hover:bg-rose-50"
+         >
+           Delete
+        </button>
         <input
           type="text"
           placeholder="Search sentences (Tamil or English)..."
@@ -231,6 +234,6 @@ export default function CurriculumManager() {
         />
         <span className="absolute left-4 top-4 opacity-30">🔍</span>
       </div>
-    </div>
+    </div>      
   );
 }
