@@ -1,7 +1,7 @@
 // client/src/api/adminApi.js
 // Centralized Admin API client – clean & stable version
-
 import axios from "axios";
+import { api } from "@/api/apiClient";
 
 /**
  * BACKEND BASE URL
