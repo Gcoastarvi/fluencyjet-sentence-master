@@ -72,24 +72,36 @@ async function calculateStreak(userId) {
 // 🎯 Add this specifically for the Admin Dashboard
 router.get("/", authRequired, requireAdmin, async (req, res) => {
   try {
-    // 📊 Fetch real stats from your database
-    const [totalUsers, totalLessons, totalXP] = await Promise.all([
-      prisma.user.count(),
-      prisma.lesson.count(),
-      prisma.user.aggregate({ _sum: { xp: true } }),
-    ]);
+    console.log("📊 Starting Admin Stats Fetch...");
+
+    // 1. Count Users
+    const userCount = await prisma.user.count();
+
+    // 2. Count Lessons
+    const lessonCount = await prisma.lesson.count();
+
+    // 3. Get Total XP (Wrapped in a try/catch to prevent a total crash)
+    let totalXp = 0;
+    try {
+      const xpResult = await prisma.user.aggregate({ _sum: { xp: true } });
+      totalXp = xpResult._sum.xp || 0;
+    } catch (xpErr) {
+      console.warn("⚠️ XP column might be missing or empty:", xpErr.message);
+    }
 
     res.json({
       ok: true,
       stats: {
-        users: totalUsers,
-        lessons: totalLessons,
-        xp: totalXP._sum.xp || 0,
+        users: userCount,
+        lessons: lessonCount,
+        xp: totalXp,
       },
     });
   } catch (err) {
-    console.error("Admin Stats Error:", err);
-    res.status(500).json({ ok: false, message: "Failed to fetch stats" });
+    console.error("❌ CRITICAL Admin Stats Error:", err);
+    res
+      .status(500)
+      .json({ ok: false, message: `Server Error: ${err.message}` });
   }
 });
 
