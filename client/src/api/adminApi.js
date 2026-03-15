@@ -261,9 +261,9 @@ export async function getStudents() {
 }
 
 export async function adminLogin(email, password) {
-  // 🎯 Notice: No leading slash. This tells axios to just append to the baseURL.
-  // If your baseURL is ".../api", this becomes ".../api/auth/admin/login"
-  const res = await api.post("auth/admin/login", { email, password });
+  // 🎯 The grep showed the route is inside 'adminAuth.js'
+  // In Express, if adminAuth is mounted at '/api/admin/auth', the path is:
+  const res = await api.post("admin/auth/login", { email, password });
   return res.data;
 }
 
