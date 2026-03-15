@@ -1,6 +1,6 @@
 import express from "express";
 import cookieParser from "cookie-parser";
-//import cors from "cors";
+import cors from "cors";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -112,6 +112,8 @@ const corsOptions = {
   exposedHeaders: ["ETag"],
 };
 
+app.use(cors(corsOptions));
+
 const ALLOW_HEADERS =
   "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match";
 const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
@@ -222,6 +224,10 @@ if (fs.existsSync(distPath)) {
     res.sendFile(path.join(distPath, "index.html"));
   });
 }
+
+app.use("/api/admin/auth", adminAuthRouter);
+app.use("/api/admin/dashboard", dashboardRouter);
+app.use("/api/admin/lessons", adminLessonsRouter);
 
 /* -------------------------------------------------- */
 app.listen(PORT, "0.0.0.0", () => {
