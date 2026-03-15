@@ -162,23 +162,33 @@ app.use(authMiddleware);
 /* --------------------------------------------------
    API routes
 -------------------------------------------------- */
+// --- Standard API Routes ---
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
+app.use("/api/shop", shopRouter);
 
+// --- Student Progression Routes ---
 app.use("/api/quizzes", quizzesRouter);
-
 app.use("/api/xp", xpRouter);
 app.use("/api/progress", progressRouter);
 app.use("/api/leaderboard", leaderboardRouter);
-app.use("/api/dashboard", dashboardRouter);
-app.use("/api/lessons", lessonsRouter);
+app.use("/api/dashboard", dashboardRouter); // Student Dashboard
+app.use("/api/lessons", lessonsRouter); // Student Lessons
+
+// --- 🎯 ADMIN COMMAND CENTER (Strict Order) ---
+// 1. Auth first
+app.use("/api/admin/auth", adminAuthRouter);
+
+// 2. Static Dashboard SECOND (This fixes the 'Invalid lesson id' error!)
+app.use("/api/admin/dashboard", dashboardRouter);
+
+// 3. Specific Admin Tools THIRD
 app.use("/api/admin/exercises", adminExercises);
-app.use("/api/admin", adminLessonsRouter);
-app.use("/api/admin", adminLessonsUpsertRouter);
-app.use("/api/me", meRouter);
-app.use("/api/shop", shopRouter);
+app.use("/api/admin/lessons", adminLessonsRouter);
+app.use("/api/admin/lessons/upsert", adminLessonsUpsertRouter); // Give this its own path to avoid conflicts
 
 // -----------------------------
 // Serve React build in production

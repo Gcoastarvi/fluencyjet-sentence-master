@@ -10,6 +10,17 @@ export default function CurriculumManager() {
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Filter lessons based on search
+  const filteredLessons = lessons.filter(
+    (lesson) =>
+      lesson.tamil_sentence.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lesson.english_mastery_goal
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()),
+  );
+
   // 🎯 CSV Validation Logic
   const validateCSV = (data) => {
     const errors = [];
@@ -210,6 +221,16 @@ export default function CurriculumManager() {
           </div>
         </div>
       )}
+      <div className="mb-6 relative">
+        <input
+          type="text"
+          placeholder="Search sentences (Tamil or English)..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full p-4 pl-12 rounded-2xl border border-slate-100 bg-white/50 backdrop-blur-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+        />
+        <span className="absolute left-4 top-4 opacity-30">🔍</span>
+      </div>
     </div>
   );
 }
