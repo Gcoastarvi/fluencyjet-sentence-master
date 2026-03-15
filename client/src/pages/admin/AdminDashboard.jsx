@@ -51,6 +51,28 @@ function AdminDashboard() {
     }
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setLoading(true);
+      // 🎯 We'll use the 'upsert' route we organized earlier
+      const res = await api.post("admin/lessons/upsert", formData);
+      if (res.data.ok) {
+        alert(`Success! Imported ${res.data.count} lessons.`);
+        fetchDashboard(); // Refresh your stats cards automatically
+      }
+    } catch (err) {
+      alert("Import failed. Check CSV format.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: "2rem" }}>
@@ -234,6 +256,35 @@ function AdminDashboard() {
         )}
       </tbody>
     </table>
+  </div>
+</div>;
+
+{
+  /* 📤 Bulk Import Section */
+}
+<div className="mt-10 p-8 bg-indigo-900 rounded-[3rem] text-white shadow-xl shadow-indigo-200">
+  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+    <div>
+      <h3 className="text-2xl font-black mb-2">Master Curriculum Upload</h3>
+      <p className="text-indigo-200 text-sm">
+        Upload your .csv file to populate {120 + 150} total master sentences.
+      </p>
+    </div>
+    <div className="flex gap-4">
+      <input
+        type="file"
+        id="csvUpload"
+        className="hidden"
+        accept=".csv"
+        onChange={handleFileUpload}
+      />
+      <label
+        htmlFor="csvUpload"
+        className="bg-white text-indigo-900 px-8 py-4 rounded-2xl font-black cursor-pointer hover:scale-105 transition-transform"
+      >
+        Select CSV File
+      </label>
+    </div>
   </div>
 </div>;
 

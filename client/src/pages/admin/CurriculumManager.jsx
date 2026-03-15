@@ -219,21 +219,22 @@ export default function CurriculumManager() {
               style={{ width: `${progress}%` }}
             />
           </div>
-           <button 
-           onClick={() => handleDelete(lesson.id)}
-           className="text-rose-500 hover:text-rose-700 font-bold transition-all px-3 py-1 rounded-lg hover:bg-rose-50"
-         >
-           Delete
-        </button>
-        <input
-          type="text"
-          placeholder="Search sentences (Tamil or English)..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-4 pl-12 rounded-2xl border border-slate-100 bg-white/50 backdrop-blur-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
-        />
-        <span className="absolute left-4 top-4 opacity-30">🔍</span>
-      </div>
-    </div>      
+          <button
+            onClick={() => handleDelete(lesson.id)}
+            className="text-rose-500 hover:text-rose-700 font-bold transition-all px-3 py-1 rounded-lg hover:bg-rose-50"
+          >
+            Delete
+          </button>
+          <input
+            type="text"
+            placeholder="Search sentences (Tamil or English)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-4 pl-12 rounded-2xl border border-slate-100 bg-white/50 backdrop-blur-sm focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+          />
+          <span className="absolute left-4 top-4 opacity-30">🔍</span>
+        </div>
+      )}
+    </div>
   );
 }
