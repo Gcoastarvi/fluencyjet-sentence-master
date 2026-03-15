@@ -68,6 +68,30 @@ async function calculateStreak(userId) {
   return progress.streak;
 }
 
+// 🎯 Add this specifically for the Admin Dashboard
+router.get("/", authRequired, requireAdmin, async (req, res) => {
+  try {
+    // 📊 Fetch real stats from your database
+    const [totalUsers, totalLessons, totalXP] = await Promise.all([
+      prisma.user.count(),
+      prisma.lesson.count(),
+      prisma.user.aggregate({ _sum: { xp: true } }),
+    ]);
+
+    res.json({
+      ok: true,
+      stats: {
+        users: totalUsers,
+        lessons: totalLessons,
+        xp: totalXP._sum.xp || 0,
+      },
+    });
+  } catch (err) {
+    console.error("Admin Stats Error:", err);
+    res.status(500).json({ ok: false, message: "Failed to fetch stats" });
+  }
+});
+
 router.get("/summary", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
