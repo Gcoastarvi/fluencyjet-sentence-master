@@ -1,6 +1,7 @@
 import express from "express";
 import prisma from "../db/client.js";
-import authRequired from "../middleware/authMiddleware.js";
+import { authRequired } from "../middleware/authMiddleware.js";
+import requireAdmin from "../middleware/admin.js"; // 🎯 THIS IS THE MISSING PIECE
 
 const router = express.Router();
 
