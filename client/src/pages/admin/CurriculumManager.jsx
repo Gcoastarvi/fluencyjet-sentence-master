@@ -93,6 +93,24 @@ export default function CurriculumManager() {
             />
             📥 Bulk Import CSV
           </label>
+          <button
+            onClick={async () => {
+              if (
+                confirm(
+                  "🚨 DANGER: This will delete ALL 120 lessons. Are you sure?",
+                )
+              ) {
+                if (confirm("Final warning: This cannot be undone.")) {
+                  await api.delete("/api/admin/lessons/delete-all");
+                  alert("Curriculum wiped. Ready for fresh import! 🧹");
+                  window.location.reload();
+                }
+              }
+            }}
+            className="bg-rose-50 text-rose-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-rose-100 hover:bg-rose-100 transition-all flex items-center gap-2"
+          >
+            <span>🗑️</span> Clear All
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

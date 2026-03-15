@@ -193,6 +193,19 @@ router.delete("/:id", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
+// 💣 NEW: Delete ALL lessons
+router.delete("/delete-all", authRequired, requireAdmin, async (req, res) => {
+  try {
+    await prisma.lesson.deleteMany({});
+    return res.json({ ok: true, message: "Curriculum wiped successfully" });
+  } catch (err) {
+    console.error("DELETE /api/admin/lessons/delete-all error:", err);
+    return res
+      .status(500)
+      .json({ ok: false, message: "Failed to clear curriculum" });
+  }
+});
+
 router.post("/bulk-import", authRequired, requireAdmin, async (req, res) => {
   const { lessons } = req.body; // Array of lessons from the CSV
 
