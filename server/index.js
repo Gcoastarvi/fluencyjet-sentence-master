@@ -30,6 +30,7 @@ import adminLessonsUpsertRouter from "./routes/adminLessonsUpsert.js";
 import meRouter from "./routes/me.js";
 import shopRouter from "./routes/shop.js";
 import userRoutes from "./routes/user.js";
+import adminAuthRouter from "./routes/adminAuth.js";
 
 // Auth middleware
 import { authMiddleware } from "./middleware/authMiddleware.js";
@@ -49,6 +50,8 @@ app.use(cookieParser());
 app.set("etag", false);
 
 app.use("/api/user", userRoutes);
+
+app.use("/api/admin/auth", adminAuthRouter);
 
 // Prevent caching for API responses (fixes 304 issues in browser)
 app.use("/api", (req, res, next) => {

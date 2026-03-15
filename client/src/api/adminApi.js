@@ -261,8 +261,7 @@ export async function getStudents() {
 }
 
 export async function adminLogin(email, password) {
-  // 🎯 The grep showed the route is inside 'adminAuth.js'
-  // In Express, if adminAuth is mounted at '/api/admin/auth', the path is:
+  // 🎯 This now perfectly matches the server mount we just created
   const res = await api.post("admin/auth/login", { email, password });
   return res.data;
 }
