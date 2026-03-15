@@ -1,3 +1,4 @@
+//client/src/pages/admin/CurriculumManager.jsx
 import React, { useState, useEffect } from "react";
 import { getAdminLessons } from "@/api/adminApi";
 import api from "@/api/api"; // Ensure this import is correct for your axios instance
