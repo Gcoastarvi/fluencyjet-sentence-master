@@ -169,4 +169,25 @@ router.get("/me", authRequired, async (req, res) => {
   }
 });
 
+// 🎯 Welcome Email Template
+const welcomeEmail = (userName) => ({
+  subject: "Welcome to Sentence Master 🚀",
+  body: `
+    Hello ${userName},
+
+    Welcome to FluencyJet! You've taken the first step toward mastering English 
+    through our Tamil-specialized sentence mastery system.
+
+    🔥 Your first mission: Complete 5 sentences to start your streak!
+
+    Master your sentences here: https://fluencyjet.com/dashboard
+
+    Happy Learning,
+    Aravind (Founder, FluencyJet)
+  `
+});
+
+// Inside your Signup Logic:
+// await sendEmail(user.email, welcomeEmail(user.username));
+
 export default router;

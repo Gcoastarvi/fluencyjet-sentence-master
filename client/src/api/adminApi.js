@@ -261,7 +261,7 @@ export async function getStudents() {
 }
 
 export async function adminLogin(email, password) {
-  const res = await api.post("/api/auth/admin/login", { email, password });
+  const res = await api.post("/auth/admin/login", { email, password });
   return res.data;
 }
 
