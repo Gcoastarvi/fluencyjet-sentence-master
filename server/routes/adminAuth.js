@@ -1,7 +1,7 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js"; // 🎯 Connect to your DB
-import bcrypt from "bcrypt"; // 🎯 Assuming you use bcrypt for student passwords
+import bcrypt from "bcryptjs"; // 🎯 Use bcryptjs for better compatibility
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
@@ -26,8 +26,16 @@ router.post("/login", async (req, res) => {
         .json({ ok: false, message: "Access denied: Admins only" });
     }
 
-    // 🎯 3. Password Check (Matches the student login logic)
-    const isMatch = await bcrypt.compare(password, user.password);
+    // 🎯 Smart Password Comparison
+    let isMatch = false;
+    if (user.password.startsWith("$2")) {
+      // It's a hash, use bcrypt
+      isMatch = await bcrypt.compare(password, user.password);
+    } else {
+      // It's plain text (fallback for manual DB updates)
+      isMatch = password === user.password;
+    }
+
     if (!isMatch) {
       return res
         .status(401)
