@@ -7,10 +7,10 @@ import UserTableSearch from "../../components/UserTableSearch";
 
 function AdminDashboard() {
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [lessons, setLessons] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");  
 
   const filteredLessons = lessons.filter(
     (lesson) =>
