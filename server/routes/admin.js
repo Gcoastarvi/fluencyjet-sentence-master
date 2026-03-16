@@ -129,6 +129,19 @@ router.get("/users/:id", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
+/* ─────────────────────────────────────────────
+   Who's Learning List
+────────────────────────────────────────────── */
+
+router.get("/activity", authRequired, requireAdmin, async (req, res) => {
+  const users = await prisma.user.findMany({
+    take: 10,
+    orderBy: { updatedAt: "desc" },
+    select: { email: true, xp: true, updatedAt: true },
+  });
+  res.json({ ok: true, users });
+});
+
 // Update user plan (tier_level)
 router.patch(
   "/users/:id/plan",
