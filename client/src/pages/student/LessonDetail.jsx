@@ -1,3 +1,4 @@
+//client/src/pages/student/LessonDetail.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Link,
@@ -1034,897 +1035,237 @@ export default function LessonDetail() {
   const description = lesson?.description || lesson?.desc || "";
 
   return (
-    <div className="mx-auto max-w-xl p-4">
-      <div className="rounded-[2.5rem] border border-slate-200 bg-white p-6 shadow-sm overflow-hidden relative">
-        {/* Animated Streak Background Glow */}
-        {Number(streak || 0) > 0 && (
-          <div className="absolute -top-10 -right-10 h-32 w-32 bg-orange-100/50 blur-3xl rounded-full" />
-        )}
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-slate-900 selection:bg-indigo-100">
+      {/* 1. PREMIUM HEADER: Minimal & Focused */}
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-100 bg-white/80 p-4 backdrop-blur-md max-w-2xl mx-auto w-full sm:rounded-b-3xl shadow-sm">
+        <button
+          onClick={() => navigate("/lessons")}
+          className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black tracking-widest text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-900"
+        >
+          <span>←</span> BACK
+        </button>
 
-        <div className="flex items-start justify-between gap-3 relative">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1">
-              <h1 className="text-3xl font-black text-slate-900">
-                Lesson {displayNum}
-                {/* 🎯 Only show the DB title if it's not a duplicate of the ID */}
-                {lesson?.title && !lesson.title.includes(String(lesson.id)) && (
-                  <span className="text-slate-400 font-medium ml-2">
-                    | {lesson.title}
-                  </span>
-                )}
-              </h1>
-
-              {/* 🎖️ Verified Level Badge */}
-              {userProfile?.placement_level?.toLowerCase() ===
-                difficulty.toLowerCase() && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold uppercase tracking-tight border border-emerald-100">
-                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Verified
-                </span>
-              )}
-
-              {/* 🔥 Daily Streak Flame */}
-              {Number(streak || 0) > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-[10px] font-black uppercase tracking-tight border border-orange-100 animate-bounce-subtle">
-                  <span className="text-sm">🔥</span>
-                  {streak} Day Streak
-                </span>
-              )}
+        <div className="flex items-center gap-3">
+          {streak > 0 && (
+            <div className="flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 border border-orange-100 animate-pulse">
+              <span className="text-sm">🔥</span>
+              <span className="text-[10px] font-black text-orange-600 uppercase tracking-tighter">
+                {streak} Day Streak
+              </span>
             </div>
-
-            <p className="text-sm font-medium text-slate-500">
-              {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} Track •
-              10 min daily goal
-            </p>
-          </div>
-
-          <button
-            onClick={() => navigate(-1)}
-            className="rounded-2xl bg-slate-50 px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors shrink-0"
-          >
-            Back
-          </button>
+          )}
+          <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-black text-indigo-600 border border-indigo-100 uppercase tracking-widest">
+            {difficulty}
+          </span>
         </div>
+      </header>
 
-        {/* Lock banner */}
-        {isLocked ? (
-          <div className="mt-4 rounded-2xl border border-purple-200 bg-purple-50 p-4">
-            <div className="font-semibold text-purple-900">Locked lesson</div>
-            <div className="mt-1 text-sm text-purple-800">
-              Upgrade to unlock Lessons 4+.
-            </div>
-            <button
-              type="button"
-              onClick={goPaywall}
-              className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 font-semibold text-white hover:opacity-95"
-            >
-              Unlock Beginner Course <span aria-hidden>→</span>
-            </button>
-          </div>
-        ) : null}
+      <main className="mx-auto max-w-xl px-4 pt-8">
+        {/* 2. LESSON TITLE & MASTER ACTION */}
+        <section className="mb-8 text-center">
+          <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
+            Lesson {displayNum}
+          </h1>
+          {lesson?.title && !lesson.title.includes(String(lesson.id)) && (
+            <p className="mt-2 text-lg font-medium text-slate-400">
+              {lesson.title}
+            </p>
+          )}
 
-        {teach ? (
-          <div className="mt-4 rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 to-white p-5 text-left shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-sm font-semibold text-slate-900">
-                  Learn (60 sec): {teach.title}
+          {/* PRIMARY CTA: The "Dopamine Button" */}
+          <div className="mt-10 relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[2rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative flex flex-col items-center bg-white rounded-[2rem] p-8 shadow-2xl border border-slate-100">
+              {isLocked && (
+                <div className="mb-6 flex items-center gap-2 rounded-full bg-purple-50 px-4 py-1.5 text-[10px] font-black text-purple-600 uppercase tracking-widest border border-purple-100">
+                  🔒 Premium Content
                 </div>
-                <div className="mt-1 text-sm text-slate-700">
-                  <span className="font-semibold">Rule:</span> {teach.rule}
-                </div>
-                {/* Coach / Recommendation row */}
-                {(() => {
-                  // Recommendation order (lowest friction first):
-                  // Reorder -> Typing -> Audio
-                  const ordered = ["reorder", "typing", "audio"];
-
-                  // Only recommend modes that are available + actually have items
-                  const canUse = (m) => {
-                    if (m === "typing") return !!modeAvail.typing;
-                    if (m === "reorder") return !!modeAvail.reorder;
-                    if (m === "audio") return !!modeAvail.audio && ENABLE_AUDIO;
-                    return false;
-                  };
-
-                  const firstIncomplete = ordered.find(
-                    (m) =>
-                      canUse(m) &&
-                      (m === "typing"
-                        ? isIncomplete(typingProg)
-                        : m === "reorder"
-                          ? isIncomplete(reorderProg)
-                          : isIncomplete(audioProg)),
-                  );
-
-                  const nextMode = continueHref
-                    ? null
-                    : firstIncomplete ||
-                      (canUse("reorder")
-                        ? "reorder"
-                        : canUse("typing")
-                          ? "typing"
-                          : canUse("audio")
-                            ? "audio"
-                            : canUse("cloze")
-                              ? "cloze"
-                              : "reorder");
-
-                  const nextLabel =
-                    nextMode === "typing"
-                      ? "Typing"
-                      : nextMode === "reorder"
-                        ? "Reorder"
-                        : "Audio";
-
-                  const chosenMode = recommendedMode || nextMode || "reorder";
-                  const coachText = continueHref
-                    ? `Continue ${modeLabel(session?.mode)} — you were at Q# ${Number(session?.questionIndex || 0) + 1}.`
-                    : uiFor(chosenMode).coach ||
-                      `Recommended: Start ${uiFor(chosenMode).title} now.`;
-
-                  return (
-                    <div className="mt-2 flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white/70 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="inline-flex flex-wrap items-center gap-2 text-xs text-slate-700">
-                        <span className="inline-flex items-center rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
-                          Coach
-                        </span>
-                        <span>{coachText}</span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {continueHref ? (
-                          <Link
-                            to={continueHref}
-                            className="inline-flex items-center justify-center rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
-                          >
-                            Continue →
-                          </Link>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              startMode(
-                                recommendedMode || nextMode || "reorder",
-                              )
-                            }
-                            className="inline-flex items-center justify-center rounded-full bg-black px-4 py-2 text-xs font-semibold text-white hover:opacity-90"
-                          >
-                            Start{" "}
-                            {
-                              uiFor(recommendedMode || nextMode || "reorder")
-                                .title
-                            }{" "}
-                            →
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
+              )}
 
               <button
-                type="button"
-                className={`rounded-full border px-3 py-2 text-sm font-semibold transition ${
-                  showTamilHelp
-                    ? "border-slate-900 bg-slate-900 text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                onClick={() =>
+                  isLocked
+                    ? goPaywall()
+                    : continueHref
+                      ? navigate(continueHref)
+                      : smartStart()
+                }
+                className={`w-full py-6 rounded-2xl text-xl font-black shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center justify-center gap-1 ${
+                  isLocked
+                    ? "bg-slate-900 text-white"
+                    : "bg-indigo-600 text-white shadow-indigo-200"
                 }`}
-                onClick={() => setShowTamilHelp((v) => !v)}
               >
-                {showTamilHelp ? "Hide Tamil" : "Tamil help"}
+                <span>
+                  {isLocked
+                    ? "Unlock Course"
+                    : continueHref
+                      ? "CONTINUE MASTERY"
+                      : "START PRACTICE"}
+                </span>
+                <span className="text-[10px] opacity-70 tracking-[0.2em]">
+                  {continueHref
+                    ? `RESUMING ${modeLabel(session?.mode)} Q#${Number(session?.questionIndex || 0) + 1}`
+                    : "AUTO-PICK BEST MODE →"}
+                </span>
               </button>
             </div>
+          </div>
+        </section>
 
-            <div className="mt-3">
-              <div className="text-xs font-semibold text-slate-600">
-                Patterns
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {(teach?.patterns ?? []).map((p, idx) => (
-                  <span
-                    key={`${p}-${idx}`}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-1 text-sm text-slate-800"
-                  >
-                    {p}
-                  </span>
-                ))}
+        {/* 3. MASTERY SUMMARY: Circular Progress & Sub-goals */}
+        <section className="grid grid-cols-1 gap-6 mb-8">
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex items-center gap-8">
+            {/* Circular Progress (The "Heart") */}
+            <div className="relative h-24 w-24 shrink-0">
+              <svg className="h-full w-full" viewBox="0 0 100 100">
+                <circle
+                  className="text-slate-50 stroke-current"
+                  strokeWidth="10"
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="transparent"
+                />
+                <circle
+                  className="text-indigo-600 stroke-current transition-all duration-1000"
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="transparent"
+                  strokeDasharray="251.2"
+                  strokeDashoffset={251.2 - 251.2 * (overallDone / 100)}
+                  transform="rotate(-90 50 50)"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center font-black text-xl text-slate-900">
+                {overallDone}%
               </div>
             </div>
 
-            <div className="mt-3">
-              <div className="text-xs font-semibold text-slate-600">
-                Examples
-              </div>
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {(teach?.examples ?? []).map((e, idx) => (
-                  <div
-                    key={`${e}-${idx}`}
-                    className="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
-                  >
-                    {e}
-                  </div>
-                ))}
+            <div className="flex-1">
+              <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-3">
+                Skill Breakdown
+              </h3>
+              <div className="space-y-3">
+                {["typing", "reorder", "audio"].map(
+                  (m) =>
+                    modeAvail[m] && (
+                      <div key={m} className="flex items-center gap-2">
+                        <span className="text-xs uppercase font-bold text-slate-400 w-16">
+                          {m}
+                        </span>
+                        <div className="h-1.5 flex-1 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                          <div
+                            className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
+                            style={{
+                              width: `${pct(m === "typing" ? typingProg : m === "reorder" ? reorderProg : audioProg)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ),
+                )}
               </div>
             </div>
+          </div>
 
-            {/* 🎥 Cinematic Video Hub: Normalized for Platform Agnostic Playback */}
-            {videoUrl || teach?.video?.id ? (
-              <div className="mt-8 group relative overflow-hidden rounded-[2.5rem] border-4 border-white shadow-2xl bg-slate-900 transition-all duration-500 hover:shadow-indigo-100">
-                {/* Subtle Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent z-10 opacity-60 pointer-events-none" />
+          {/* Certificate Claim (Only shown at 100%) */}
+          {overallDone === 100 && (
+            <button
+              onClick={handleDownloadCertificate}
+              className="w-full p-6 rounded-[2rem] bg-emerald-600 text-white font-black text-sm uppercase tracking-widest flex items-center justify-between hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100"
+            >
+              <span>🏆 Claim Mastery Certificate</span>
+              <span>→</span>
+            </button>
+          )}
+        </section>
 
-                <div className="relative z-0 w-full aspect-video">
+        {/* 4. CONTENT DRAWER: Video & Teacher Guides */}
+        <section className="space-y-4">
+          <button
+            onClick={() => setShowMoreModes(!showMoreModes)}
+            className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-indigo-600 transition-colors"
+          >
+            {showMoreModes
+              ? "Hide Teacher Guide ↑"
+              : "View Teacher Guide & Video ↓"}
+          </button>
+
+          {showMoreModes && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
+              {/* Video Player */}
+              {(videoUrl || teach?.video?.id) && (
+                <div className="aspect-video w-full rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-4 border-white">
                   <iframe
-                    title={`Lesson ${lessonId} video`}
-                    className="absolute inset-0 h-full w-full"
+                    className="w-full h-full"
                     src={
                       videoUrl ||
                       (teach.video.provider === "vimeo"
                         ? `https://player.vimeo.com/video/${teach.video.id}`
-                        : `https://www.youtube-nocookie.com/embed/${teach.video.id}?rel=0&modestbranding=1`)
+                        : `https://www.youtube-nocookie.com/embed/${teach.video.id}`)
                     }
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
                 </div>
-
-                {/* Floating Glassmorphism Interaction Bar */}
-                <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center justify-between">
-                  <div className="px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-[10px] font-bold uppercase tracking-widest shadow-sm">
-                    {videoUrl ? "Lesson Guide" : "Visual Guide"}
-                  </div>
-                  <button
-                    onClick={() =>
-                      document
-                        .getElementById("practice-actions")
-                        ?.scrollIntoView({ behavior: "smooth" })
-                    }
-                    className="bg-white text-slate-900 px-6 py-2 rounded-full font-bold text-xs shadow-lg hover:scale-105 active:scale-95 transition-all"
-                  >
-                    Practice Now ↓
-                  </button>
-                </div>
-              </div>
-            ) : (
-              /* 📖 Dynamic Fallback if no video exists */
-              <div className="mt-8 p-10 rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center text-center">
-                <div className="h-16 w-16 bg-white shadow-sm rounded-2xl flex items-center justify-center text-3xl mb-4">
-                  📖
-                </div>
-                <h3 className="text-slate-900 font-bold">Concept Overview</h3>
-                <p className="text-sm text-slate-500 max-w-[200px] mt-2">
-                  {description ||
-                    "Master this sentence pattern through active practice."}
-                </p>
-              </div>
-            )}
-
-            {showTamilHelp ? (
-              <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-800">
-                <div className="mb-1 text-xs font-semibold text-slate-600">
-                  Tamil help
-                </div>
-                {teach.ta}
-              </div>
-            ) : null}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-                onClick={() => {
-                  document
-                    .getElementById("practice-actions")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
-              >
-                Start practice →
-              </button>
-              <div className="text-xs text-slate-500">
-                1 minute learn → 2 minutes practice
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {/* World-Class Dashboard */}
-        {(() => {
-          const pts = [
-            modeAvail.typing ? pct(typingProg) : null,
-            modeAvail.reorder ? pct(reorderProg) : null,
-            ENABLE_AUDIO && modeAvail.audio ? pct(audioProg) : null,
-          ].filter((x) => typeof x === "number");
-          const dashboardAvg = pts.length
-            ? Math.round(pts.reduce((a, b) => a + b, 0) / pts.length)
-            : 0;
-
-          return (
-            <div className="mt-8 rounded-[2.5rem] border border-slate-200 bg-white p-8 shadow-sm relative overflow-hidden">
-              <div className="flex flex-col items-center text-center">
-                <div className="relative h-32 w-32 mb-4">
-                  <svg className="h-full w-full" viewBox="0 0 100 100">
-                    <circle
-                      className="text-slate-100 stroke-current"
-                      strokeWidth="8"
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="transparent"
-                    />
-                    <circle
-                      className="text-orange-500 stroke-current transition-all duration-1000 ease-out"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      cx="50"
-                      cy="50"
-                      r="40"
-                      fill="transparent"
-                      strokeDasharray="251.2"
-                      strokeDashoffset={251.2 - 251.2 * (dashboardAvg / 100)}
-                      transform="rotate(-90 50 50)"
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl">🔥</span>
-                    <span className="text-xl font-black text-slate-900">
-                      {streak || 0}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleShare(dashboardAvg)}
-                  disabled={isSharing}
-                  className={`mb-4 flex items-center gap-2 px-6 py-2 rounded-full text-[11px] font-bold uppercase tracking-widest transition-all shadow-lg ${
-                    isSharing
-                      ? "bg-slate-400"
-                      : "bg-slate-900 text-white hover:bg-slate-800"
-                  }`}
-                >
-                  {isSharing ? "Generating..." : "Share Mastery"}
-                </button>
-
-                <h2 className="text-lg font-bold text-slate-900">
-                  {dashboardAvg === 100
-                    ? "Mastery Achieved! 🎉"
-                    : "Great start! 🚀"}
-                </h2>
-              </div>
-
-              <div className="mt-6 grid grid-cols-3 gap-4 w-full">
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Status
-                  </div>
-                  <div className="text-xs font-black text-slate-800">
-                    {session ? "In Progress" : "New"}
-                  </div>
-                </div>
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Pace
-                  </div>
-                  <div className="text-xs font-black text-slate-800">Swift</div>
-                </div>
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                    Focus
-                  </div>
-                  <div className="text-xs font-black text-slate-800">Daily</div>
-                </div>
-              </div>
-
-              {/* 🎓 Certificate Banner */}
-              {dashboardAvg === 100 && (
-                <div className="mt-8 p-6 rounded-[2rem] bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xl relative overflow-hidden group animate-fade-in">
-                  <div className="absolute -right-4 -bottom-4 text-8xl opacity-10 rotate-12">
-                    🎓
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-center gap-5 relative z-10">
-                    <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl">
-                      🏆
-                    </div>
-                    <div className="flex-1 text-center sm:text-left">
-                      <h3 className="font-black text-lg leading-tight">
-                        Course Achievement!
-                      </h3>
-                      <p className="text-emerald-50/80 text-[10px] mt-1 uppercase font-bold tracking-widest">
-                        Mastery Level Reached
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDownloadCertificate()}
-                      className="px-6 py-2.5 rounded-xl bg-white text-emerald-700 font-black text-[11px] uppercase tracking-widest hover:scale-105 transition-transform"
-                    >
-                      Claim Certificate
-                    </button>
-                  </div>
-                </div>
               )}
-            </div>
-          );
-        })()}
 
-        {/* Mode chips start here */}
-        <div className="mt-6 flex flex-wrap gap-2">
-          {/* Mode chips */}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[
-              {
-                label: uiFor("typing").title,
-                p: typingProg,
-                show: modeAvail.typing,
-              },
-              {
-                label: uiFor("reorder").title,
-                p: reorderProg,
-                show: modeAvail.reorder,
-              },
-              {
-                label: uiFor("audio").title,
-                p: audioProg,
-                show: ENABLE_AUDIO && modeAvail.audio,
-              },
-              {
-                label: uiFor("cloze").title,
-                p: clozeProg,
-                show: ENABLE_CLOZE && modeAvail.cloze,
-              },
-            ]
-              .filter((x) => x.show)
-              .map(({ label, p }) => (
-                <div
-                  key={label}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs"
-                  title={`Last practiced: ${formatLast(Number(p?.updatedAt || 0))}`}
-                >
-                  <span className="font-semibold text-slate-900">{label}</span>
-                  <span className="text-slate-500">•</span>
-                  <span className="font-semibold text-slate-800">
-                    {pct(p)}%
-                  </span>
-                  <span className="text-slate-500">•</span>
-                  <span className="text-slate-600">
-                    {formatLast(Number(p?.updatedAt || 0))}
-                  </span>
-                </div>
-              ))}
-          </div>
-
-          {/* If no modes have items, show a single empty-state */}
-          {!showMoreModes && noModes && (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-              No practice items yet for this lesson.
-            </div>
-          )}
-        </div>
-
-        {missedBanner ? (
-          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
-            <div className="text-sm font-semibold text-amber-900">
-              Quick win: finish your missed practice
-            </div>
-
-            <div className="mt-1 text-sm text-amber-800">
-              You skipped{" "}
-              <span className="font-semibold">
-                {missedBanner.missingModesLabel}
-              </span>{" "}
-              in Lesson{" "}
-              <span className="font-semibold">{missedBanner.prevLessonId}</span>
-              .
-            </div>
-
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                className="px-3 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold"
-                onClick={goToPrevLessonHub}
-              >
-                Finish Lesson {missedBanner.prevLessonId}
-              </button>
-
-              <button
-                type="button"
-                className="px-3 py-2 rounded-lg border border-amber-300 text-amber-900 text-sm font-semibold"
-                onClick={dismissMissedBanner}
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Actions */}
-        <div id="practice-actions" className="mt-6 space-y-4">
-          {/* HERO CTA */}
-          <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-purple-600 to-indigo-600 p-5 text-white shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm font-semibold text-white/90">
-                  {continueHref ? "Continue" : "Start now"}
-                </div>
-                <div className="mt-1 text-2xl font-semibold">
-                  {continueHref ? continueText : "Start practice"}
-                </div>
-                <div className="mt-1 text-xs text-white/80">
-                  {continueHref
-                    ? "Resume exactly where you left off"
-                    : "Auto-picks the best mode for you"}
-                </div>
-                {!continueHref ? (
-                  <div className="mt-1 text-xs text-white/80">
-                    Path: {uiFor(recommendedMode || "reorder").title} →{" "}
-                    {uiFor("typing").title} → {uiFor("audio").title}
-                  </div>
-                ) : null}
-              </div>
-
-              {continueHref ? (
-                <Link
-                  to={continueHref}
-                  onClick={() =>
-                    track("continue_clicked", {
-                      lessonId: Number(dayNumber) || 0,
-                      difficulty,
-                      mode: normalizedSession?.mode || session?.mode || null,
-                      q:
-                        normalizedSession?.questionIndex ??
-                        session?.questionIndex ??
-                        null,
-                      source: "hero",
-                    })
-                  }
-                  className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 hover:opacity-95"
-                >
-                  Continue →
-                </Link>
-              ) : (
-                <button
-                  onClick={smartStart}
-                  disabled={smartStarting}
-                  className={`inline-flex items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold ${
-                    smartStarting
-                      ? "bg-white/40 text-white/90 cursor-not-allowed"
-                      : "bg-white text-slate-900 hover:opacity-95"
-                  }`}
-                >
-                  {smartStarting ? "Starting..." : "Start →"}
-                </button>
-              )}
-            </div>
-
-            {/* micro reassurance row */}
-            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-white/85">
-              <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
-                ⚡ Fast sessions
-              </span>
-              <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
-                🎯 Fluency-focused
-              </span>
-              <span className="inline-flex items-center rounded-full bg-white/15 px-2 py-1">
-                🏆 XP + streak
-              </span>
-
-              {/* 🏆 NEW: Daily Goal Tracker */}
-              <div className="bg-white rounded-[2rem] p-8 border-2 border-slate-50 shadow-xl shadow-indigo-50/50 mb-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">
-                      Current Progress
-                    </h4>
-                    <p className="text-2xl font-black text-slate-900">
-                      10 Min Daily Goal
+              {/* Teaching Context */}
+              {teach && (
+                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                  <h4 className="font-black text-indigo-600 text-xs uppercase tracking-widest mb-4">
+                    Lesson Context: {teach.title}
+                  </h4>
+                  <div className="p-4 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
+                      The Rule
+                    </p>
+                    <p className="text-sm font-medium text-slate-900 leading-relaxed">
+                      {teach.rule}
                     </p>
                   </div>
-                  <div className="h-14 w-14 rounded-2xl bg-indigo-50 flex items-center justify-center">
-                    <span className="text-2xl">🎯</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    {teach.patterns?.map((p, i) => (
+                      <div
+                        key={i}
+                        className="bg-white border border-slate-100 p-3 rounded-xl text-[11px] font-bold text-slate-600 text-center"
+                      >
+                        {p}
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                {/* Progress Bar Container */}
-                <div className="relative h-6 w-full bg-slate-100 rounded-2xl overflow-hidden p-1 border border-slate-200">
-                  <div
-                    className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl transition-all duration-1000 ease-out shadow-inner"
-                    style={{ width: `${overallDone}%` }}
-                  />
-                </div>
-
-                <div className="flex justify-between mt-4">
-                  <span className="text-[11px] font-black text-slate-400 uppercase">
-                    {overallDone}% Mastered
-                  </span>
-                  <span className="text-[11px] font-black text-indigo-600 uppercase">
-                    {overallDone === 100
-                      ? "Goal Smashed! 🏅"
-                      : "Almost there..."}
-                  </span>
-                </div>
-              </div>
-
-              {/* Premium: time + XP estimate (based on recommended mode) */}
-              <span className="ml-auto inline-flex items-center rounded-full bg-black/20 px-2 py-1">
-                {(() => {
-                  if (continueHref) return `Next: ${modeLabel(session?.mode)}`;
-
-                  const rm = recommendedMode;
-                  if (!rm) return "Next: —";
-
-                  return `Next: ${uiFor(rm).title}`;
-                })()}
-              </span>
+              )}
             </div>
+          )}
+        </section>
 
-            <span
-              className={`ml-auto inline-flex items-center rounded-full px-2 py-1 text-xs ${
-                continueHref || !recommendedMode
-                  ? "cursor-not-allowed bg-black/10 text-white/60"
-                  : "bg-black/20 text-white"
-              }`}
-              title={
-                continueHref
-                  ? `Continue ${modeLabel(session?.mode)}`
-                  : !recommendedMode
-                    ? "No recommended mode available yet"
-                    : recommendedMode === "reorder"
-                      ? "Recommended because it's the easiest quick win (word order)"
-                      : recommendedMode === "typing"
-                        ? "Recommended to build speed + sentence flow"
-                        : "Recommended for pronunciation + listening"
-              }
-            >
-              {(() => {
-                if (continueHref) return `Next: ${modeLabel(session?.mode)}`;
-
-                const rm = recommendedMode;
-                if (!rm) return "Next: —";
-              })()}
-            </span>
-          </div>
-
-          {/* Optional Smart Start message */}
-          {smartStartMsg ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-              {smartStartMsg}
-            </div>
-          ) : null}
-
-          {/* QUICK MODE PICKER */}
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold text-slate-900">
-                  Choose a mode
-                </div>
-                <div className="mt-1 text-xs text-slate-500">
-                  Pick one — or hit Start for auto mode.
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowMoreModes((v) => {
-                    const next = !v;
-                    track("view_details_toggled", {
-                      lessonId: Number(dayNumber) || 0,
-                      difficulty,
-                      open: next,
-                    });
-                    return next;
-                  })
-                }
-                className="text-xs font-semibold text-slate-600 underline-offset-4 hover:underline"
-              >
-                {showMoreModes ? "Hide details" : "View details"}
-              </button>
-            </div>
-
-            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-              {/* Typing */}
-              <button
-                disabled={!modeEnabled("typing", modeAvail)}
-                onClick={() =>
-                  modeEnabled("typing", modeAvail) && startMode("typing")
-                }
-                className={`rounded-2xl border p-4 text-left transition ${
-                  modeEnabled("typing", modeAvail)
-                    ? isRec("typing")
-                      ? "border-black bg-white shadow-sm ring-2 ring-black/10"
-                      : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
-                    : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-semibold">
-                      {uiFor("typing").title}
-                    </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {modeEnabled("typing", modeAvail)
-                        ? uiFor("typing").sub
-                        : "Coming soon"}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
-                      {pct(typingProg)}%
-                    </span>
-                    {isRec("typing") ? (
-                      <span className="rounded-full border border-black/10 bg-black px-2 py-0.5 text-[10px] font-semibold text-white">
-                        Recommended
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
-                  <div
-                    className="h-2 rounded-full bg-slate-900"
-                    style={{ width: `${pct(typingProg)}%` }}
-                  />
-                </div>
-              </button>
-
-              {/* Reorder */}
-              <button
-                disabled={!modeAvail.reorder}
-                onClick={() => startMode("reorder")}
-                className={`rounded-2xl border p-4 text-left transition ${
-                  modeEnabled("reorder", modeAvail)
-                    ? isRec("reorder")
-                      ? "border-black bg-white shadow-sm ring-2 ring-black/10"
-                      : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
-                    : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-semibold">
-                      {uiFor("reorder").title}
-                    </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {modeEnabled("reorder", modeAvail)
-                        ? uiFor("reorder").sub
-                        : "Coming soon"}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
-                      {pct(reorderProg)}%
-                    </span>
-
-                    {isRec("reorder") ? (
-                      <span className="rounded-full border border-black/10 bg-black px-2 py-0.5 text-[10px] font-semibold text-white">
-                        Recommended
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
-                  <div
-                    className="h-2 rounded-full bg-slate-900"
-                    style={{ width: `${pct(reorderProg)}%` }}
-                  />
-                </div>
-              </button>
-
-              {/* Audio */}
-              <button
-                disabled={!modeAvail.audio}
-                onClick={() => startMode("audio")}
-                className={`rounded-2xl border p-4 text-left transition ${
-                  modeEnabled("audio", modeAvail)
-                    ? isRec("audio")
-                      ? "border-black bg-white shadow-sm ring-2 ring-black/10"
-                      : "border-slate-200 bg-gradient-to-br from-slate-50 to-white hover:shadow-sm"
-                    : "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="text-sm font-semibold">
-                      {uiFor("audio").title}
-                    </div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {modeEnabled("audio", modeAvail)
-                        ? uiFor("audio").sub
-                        : "Coming soon"}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <span className="rounded-full bg-slate-900 px-2 py-1 text-[11px] font-semibold text-white">
-                      {pct(audioProg)}%
-                    </span>
-
-                    {isRec("audio") ? (
-                      <span className="rounded-full border border-black/10 bg-black px-2 py-0.5 text-[10px] font-semibold text-white">
-                        Recommended
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="mt-3 h-2 w-full rounded-full bg-slate-200">
-                  <div
-                    className="h-2 rounded-full bg-slate-900"
-                    style={{ width: `${pct(audioProg)}%` }}
-                  />
-                </div>
-              </button>
-            </div>
-
-            {/* DETAILS DRAWER */}
-            {showMoreModes && (
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                <div className="font-semibold">What each mode does</div>
-                <ul className="mt-2 list-disc pl-5 text-sm text-slate-600">
-                  <li>
-                    <span className="font-semibold">
-                      {uiFor("typing").title}:
-                    </span>{" "}
-                    build speed + sentence flow
-                  </li>
-                  <li>
-                    <span className="font-semibold">
-                      {uiFor("reorder").title}:
-                    </span>{" "}
-                    fix grammar + word order
-                  </li>
-                  <li>
-                    <span className="font-semibold">
-                      {uiFor("audio").title}:
-                    </span>{" "}
-                    pronunciation + listening
-                  </li>
-                </ul>
-
-                <div className="mt-3">
-                  <button
-                    onClick={() => startMode("cloze")}
-                    disabled={!ENABLE_CLOZE}
-                    className={`w-full rounded-2xl px-4 py-3 text-left ${
-                      ENABLE_CLOZE
-                        ? "border border-slate-200 bg-white hover:bg-slate-50"
-                        : "cursor-not-allowed bg-slate-100 text-slate-400"
-                    }`}
-                  >
-                    <div className="text-sm font-semibold">Cloze</div>
-                    <div className="mt-1 text-xs text-slate-500">
-                      {ENABLE_CLOZE ? "Fill the missing word" : "Coming soon"}
-                    </div>
-                  </button>
-                </div>
-              </div>
-            )}
-            {/* 1684: Hidden elements for Image Generation (Off-screen) */}
-            <div
-              style={{
-                position: "absolute",
-                top: "-10000px",
-                left: "-10000px",
-                pointerEvents: "none",
-                visibility: "hidden",
-              }}
-            >
-              <AchievementCard
-                lessonTitle={title}
-                streak={streak}
-                overallAvg={overallAvg}
-                difficulty={difficulty}
-              />
-              <div id="certificate-canvas-wrapper">
-                <Certificate
-                  userName={
-                    userProfile?.name || userProfile?.email || "Student"
-                  }
-                  trackName={difficulty.toUpperCase()}
-                  date={new Date().toLocaleDateString()}
-                />
-              </div>
-            </div>
+        {/* 5. HIDDEN CERTIFICATE ASSETS (KEEP FOR FUNCTIONALITY) */}
+        <div
+          style={{
+            position: "absolute",
+            top: "-10000px",
+            visibility: "hidden",
+          }}
+        >
+          <AchievementCard
+            lessonTitle={title}
+            streak={streak}
+            overallAvg={overallDone}
+            difficulty={difficulty}
+          />
+          <div id="certificate-canvas-wrapper">
+            <Certificate
+              userName={userProfile?.name || userProfile?.email || "Student"}
+              trackName={difficulty.toUpperCase()}
+              date={new Date().toLocaleDateString()}
+            />
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
