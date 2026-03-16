@@ -25,6 +25,8 @@ import confetti from "canvas-confetti";
 
 import { useAuth } from "../../context/AuthContext";
 
+import confetti from "canvas-confetti";
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -274,14 +276,37 @@ export default function LessonDetail() {
   // ✅ Use backend + lesson metadata for lock UI. Do NOT use "first 3 only" anymore.
   const isLocked = Boolean(lesson?.isLocked ?? lesson?.is_locked ?? false);
 
-  // Preference toggle (Show Tamil help)
-  //const [showTa, setShowTa] = useState(() => {
-  // Avoid SSR issues (not relevant here) and keep predictable default
-  //if (typeof window === "undefined") return true;
-  //return readPrefShowTa(dayNumber);
-  //});
+  useEffect(() => {
+    // 🏆 Trigger celebration only when they reach 100%
+    if (overallDone === 100) {
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-  // Tamil toggle disabled for MVP (no showTa state)
+      const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+      const interval = setInterval(function () {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        // Since they're confused, they might fly off-screen, so we launch from two sides
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        });
+      }, 250);
+    }
+  }, [overallDone]); // 🎯 Re-run only when the progress hits 100
 
   useEffect(() => {
     track("lesson_hub_view", { lessonId: Number(dayNumber) || 0, difficulty });
