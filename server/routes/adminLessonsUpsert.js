@@ -9,7 +9,7 @@ const router = express.Router();
  * POST /api/admin/lessons/upsert
  * Body: { slug: string, title?: string, level?: "basic"|"intermediate" }
  */
-router.post("/lessons/upsert", authRequired, async (req, res) => {
+router.post("/", authRequired, async (req, res) => {
   try {
     const { slug, title, level } = req.body || {};
 
