@@ -1059,214 +1059,156 @@ export default function LessonDetail() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-slate-900">
-      {/* 1. WORLD-CLASS HEADER */}
+      {/* 1. COMPACT HEADER */}
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-100 bg-white/80 p-4 backdrop-blur-md max-w-2xl mx-auto w-full sm:rounded-b-3xl">
         <button
           onClick={() => navigate("/lessons")}
-          className="flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black tracking-[0.2em] text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all"
+          className="flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all"
         >
           <span>←</span> BACK
         </button>
-
         <div className="flex items-center gap-3">
-          {Number(streak || 0) > 0 && (
-            <div className="flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 border border-orange-100 animate-bounce-subtle">
-              <span className="text-sm">🔥</span>
-              <span className="text-[10px] font-black text-orange-600 uppercase tracking-tighter">
-                {streak} Day Streak
-              </span>
-            </div>
+          {streak > 0 && (
+            <span className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black border border-orange-100">
+              🔥 {streak} DAY STREAK
+            </span>
           )}
-          <span className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black text-white uppercase tracking-widest">
+          <span className="bg-slate-900 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
             {difficulty}
           </span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-6 pt-12">
-        {/* 2. HERO SECTION */}
-        <section className="mb-12 text-center">
-          <h1 className="text-5xl font-black tracking-tight text-slate-900 mb-4 leading-[0.9]">
-            Lesson {displayNum}
-          </h1>
-          {lesson?.title && (
-            <p className="text-xl font-medium text-slate-400 italic">
-              "{lesson.title}"
+      <main className="mx-auto max-w-xl px-6 pt-10">
+        {/* 2. DUAL-LANGUAGE CONCEPT CARD (Creative Solution) */}
+        <section className="mb-8 group">
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10 text-4xl font-black">
+              அ
+            </div>
+
+            <h1 className="text-4xl font-black text-slate-900 mb-6 tracking-tight">
+              Lesson {displayNum || lessonId}
+            </h1>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+              <div className="space-y-2">
+                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+                  English Goal
+                </span>
+                <p className="text-sm font-bold text-slate-700 leading-relaxed italic">
+                  "
+                  {lesson?.english_mastery_goal ||
+                    "Master these sentence structures through active practice."}
+                  "
+                </p>
+              </div>
+              <div className="space-y-2 border-t pt-4 md:border-t-0 md:pt-0 md:border-l md:pl-6">
+                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                  Tamil Translation
+                </span>
+                <p className="text-sm font-bold text-slate-700 leading-relaxed">
+                  {lesson?.tamil_sentence ||
+                    "இந்த பாடத்தின் வாக்கிய அமைப்புகளைப் பயிற்சி மூலம் தேர்ச்சி பெறுங்கள்."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. VIDEO GUIDE (Cinematic Placeholder) */}
+        <section className="mb-10">
+          <div className="aspect-video w-full rounded-[2.5rem] bg-slate-900 shadow-2xl border-4 border-white overflow-hidden relative group">
+            {videoUrl || teach?.video?.id ? (
+              <iframe
+                className="w-full h-full"
+                src={
+                  videoUrl ||
+                  (teach?.video?.provider === "vimeo"
+                    ? `https://player.vimeo.com/video/${teach.video.id}`
+                    : `https://www.youtube-nocookie.com/embed/${teach.video.id}`)
+                }
+                allowFullScreen
+              />
+            ) : (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40">
+                <span className="text-4xl mb-2">🎬</span>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">
+                  Video Guide Coming Soon
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* 4. THE ACTION HUB (THE REDIRECTION FIX) */}
+        <section className="mb-12 relative">
+          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[2.5rem] blur opacity-20 transition duration-1000 group-hover:opacity-40"></div>
+          <div className="relative bg-white rounded-[2.5rem] p-8 shadow-xl border border-slate-50">
+            <button
+              onClick={() => {
+                if (isLocked) return goPaywall();
+                if (continueHref) return navigate(continueHref);
+
+                // 🎯 THE FIX: Force navigation if smartStart is silent
+                const firstMode = modeAvail.reorder
+                  ? "reorder"
+                  : modeAvail.typing
+                    ? "typing"
+                    : "audio";
+                navigate(
+                  `/practice/${firstMode}?lessonId=${lessonId}&difficulty=${difficulty}`,
+                );
+              }}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 rounded-2xl text-xl font-black shadow-xl shadow-indigo-100 transition-all hover:scale-[1.01] active:scale-[0.99] mb-4"
+            >
+              {continueHref ? "RESUME MASTERY" : "START PRACTICE"}
+            </button>
+            <p className="text-center text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">
+              {continueHref
+                ? "Continuing from where you left off"
+                : "Standard Learning Path Enabled"}
             </p>
-          )}
-
-          {/* PRIMARY CTA (THE FIX) */}
-          <div className="mt-12 relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 rounded-[2.5rem] blur opacity-25 group-hover:opacity-60 transition duration-1000"></div>
-            <div className="relative bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
-              {isLocked && (
-                <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-purple-50 px-4 py-1.5 text-[10px] font-black text-purple-600 uppercase tracking-widest border border-purple-100">
-                  🔒 Premium Lesson
-                </div>
-              )}
-
-              <button
-                disabled={smartStarting}
-                onClick={() => {
-                  if (isLocked) return goPaywall();
-                  if (continueHref) return navigate(continueHref);
-                  // 🎯 Call your component's specific start function
-                  smartStart();
-                }}
-                className={`w-full py-7 rounded-3xl text-2xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center justify-center gap-1 ${
-                  isLocked
-                    ? "bg-slate-900 text-white"
-                    : "bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700"
-                }`}
-              >
-                <span>
-                  {isLocked
-                    ? "Unlock Now"
-                    : continueHref
-                      ? "RESUME MASTERY"
-                      : "START PRACTICE"}
-                </span>
-                <span className="text-[10px] opacity-60 tracking-[0.3em] font-bold">
-                  {smartStarting
-                    ? "PREPARING..."
-                    : continueHref
-                      ? "PICK UP WHERE YOU LEFT OFF"
-                      : "READY TO BEGIN →"}
-                </span>
-              </button>
-            </div>
           </div>
         </section>
 
-        {/* 3. MASTERY HUB (PROGRESS) */}
-        <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mb-8">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 text-center">
-            Skill Progress
-          </h3>
-
-          <div className="space-y-6">
-            {/* Typing Progress */}
-            {modeAvail.typing && (
-              <div className="flex items-center gap-6">
-                <span className="text-2xl w-8">⌨️</span>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-[11px] font-black text-slate-900 uppercase">
-                      Typing Fluency
-                    </span>
-                    <span className="text-[11px] font-black text-indigo-600">
-                      {pct(typingProg)}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-500 transition-all duration-1000"
-                      style={{ width: `${pct(typingProg)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Reorder Progress */}
-            {modeAvail.reorder && (
-              <div className="flex items-center gap-6">
-                <span className="text-2xl w-8">🧩</span>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-[11px] font-black text-slate-900 uppercase">
-                      Sentence Logic
-                    </span>
-                    <span className="text-[11px] font-black text-purple-600">
-                      {pct(reorderProg)}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
-                    <div
-                      className="h-full bg-purple-500 transition-all duration-1000"
-                      style={{ width: `${pct(reorderProg)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Audio Progress */}
-            {modeAvail.audio && (
-              <div className="flex items-center gap-6">
-                <span className="text-2xl w-8">🎧</span>
-                <div className="flex-1">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-[11px] font-black text-slate-900 uppercase">
-                      Audio Mastery
-                    </span>
-                    <span className="text-[11px] font-black text-emerald-600">
-                      {pct(audioProg)}%
-                    </span>
-                  </div>
-                  <div className="h-2 bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-1000"
-                      style={{ width: `${pct(audioProg)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* 4. DRAWER: SPECIALIZED MODES */}
-        <section>
-          <button
-            onClick={() => setShowMoreModes(!showMoreModes)}
-            className="w-full py-6 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] hover:text-indigo-600 transition-colors"
-          >
-            {showMoreModes
-              ? "Close Specialized Modes ↑"
-              : "Switch Practice Mode ↓"}
-          </button>
-
-          {showMoreModes && (
-            <div className="grid grid-cols-2 gap-4 mt-2 animate-in fade-in slide-in-from-top-4 duration-500">
-              {modeAvail.typing && (
-                <button
-                  onClick={() => startMode("typing")}
-                  className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-all text-left"
+        {/* 5. SKILL PROGRESS BARS */}
+        <div className="space-y-4 mb-10">
+          {["typing", "reorder", "audio"].map(
+            (m) =>
+              modeAvail[m] && (
+                <div
+                  key={m}
+                  className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between"
                 >
-                  <span className="block text-lg mb-2">⌨️</span>
-                  <span className="block text-[11px] font-black uppercase text-slate-900">
-                    Typing
+                  <span className="text-xl">
+                    {m === "typing" ? "⌨️" : m === "reorder" ? "🧩" : "🎧"}
                   </span>
-                </button>
-              )}
-              {modeAvail.reorder && (
-                <button
-                  onClick={() => startMode("reorder")}
-                  className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:border-purple-200 transition-all text-left"
-                >
-                  <span className="block text-lg mb-2">🧩</span>
-                  <span className="block text-[11px] font-black uppercase text-slate-900">
-                    Reorder
+                  <div className="flex-1 px-4">
+                    <div className="h-1.5 w-full bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-500 transition-all duration-1000"
+                        style={{
+                          width: `${pct(m === "typing" ? typingProg : m === "reorder" ? reorderProg : audioProg)}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-black text-slate-900">
+                    {pct(
+                      m === "typing"
+                        ? typingProg
+                        : m === "reorder"
+                          ? reorderProg
+                          : audioProg,
+                    )}
+                    %
                   </span>
-                </button>
-              )}
-            </div>
+                </div>
+              ),
           )}
-        </section>
-
-        {/* 5. HIDDEN ASSETS FOR FUNCTIONALITY (KEEP!) */}
-        <div className="hidden">
-          <div id="certificate-canvas-wrapper">
-            <Certificate
-              userName={userProfile?.name || "Student"}
-              trackName={difficulty.toUpperCase()}
-              date={new Date().toLocaleDateString()}
-            />
-          </div>
         </div>
       </main>
-      {/* 🎊 CONFETTI TRIGGER (Hidden but active) */}
     </div>
   );
 }
