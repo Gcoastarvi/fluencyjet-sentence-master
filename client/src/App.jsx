@@ -14,7 +14,7 @@ import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
 
 // Student pages
-import Home from "./pages/student/Home.jsx";
+import Home from "./pages/Home";
 import Dashboard from "./pages/student/Dashboard.jsx";
 import LessonDetail from "./pages/student/LessonDetail.jsx";
 import LessonQuiz from "./pages/student/LessonQuiz.jsx";
@@ -150,7 +150,7 @@ export default function App() {
           {/* All other pages share Navbar */}
           <Route element={<MainLayout />}>
             {/* Public */}
-            <Route index element={<Home />} />
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signin" element={<Navigate to="/login" replace />} />
             <Route path="/signup" element={<Signup />} />
