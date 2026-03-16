@@ -250,11 +250,8 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-<div className="mt-8 bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
+      <div className="mt-8 bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
   <h3 className="text-xl font-bold text-slate-800 mb-6">Curriculum Overview</h3>
 
   <div className="overflow-x-auto">
@@ -302,12 +299,10 @@ function AdminDashboard() {
       </tbody>
     </table>
   </div>
-</div>;
+      </div>
 
-{
-  /* 📤 Bulk Import Section */
-}
-<div className="mt-10 p-8 bg-indigo-900 rounded-[3rem] text-white shadow-xl shadow-indigo-200">
+      {/* 📤 Bulk Import Section */}
+      <div className="mt-10 p-8 bg-indigo-900 rounded-[3rem] text-white shadow-xl shadow-indigo-200">
   <div className="flex flex-col md:flex-row items-center justify-between gap-6">
     <div>
       <h3 className="text-2xl font-black mb-2">Master Curriculum Upload</h3>
@@ -331,14 +326,17 @@ function AdminDashboard() {
       </label>
     </div>
   </div>
-</div>;
+      </div>
 
-<button
-  onClick={handleClearAll}
-  className="border-2 border-rose-500 text-rose-500 px-6 py-4 rounded-2xl font-black hover:bg-rose-50 transition-all"
->
-  Clear All Lessons
-</button>;
+      <button
+        onClick={handleClearAll}
+        className="border-2 border-rose-500 text-rose-500 px-6 py-4 rounded-2xl font-black hover:bg-rose-50 transition-all"
+      >
+        Clear All Lessons
+      </button>
+    </div>
+  );
+}
 
 // 🛡️ Helper Component for beautiful cards
 function StatCard({ label, value, icon, color, text }) {
