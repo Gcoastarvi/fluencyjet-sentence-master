@@ -539,7 +539,7 @@ export default function LessonDetail() {
     if (!prog) return false;
     const total = Number(prog.total || 0);
     const completed = Number(prog.completed || 0);
-    if (total <= 0) return false; // if no items, don’t nag
+    if (total <= 0) return false; // if no items, don ��t nag
     return completed < total;
   }
 
@@ -1058,237 +1058,215 @@ export default function LessonDetail() {
   const description = lesson?.description || lesson?.desc || "";
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-slate-900 selection:bg-indigo-100">
-      {/* 1. PREMIUM HEADER: Minimal & Focused */}
-      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-100 bg-white/80 p-4 backdrop-blur-md max-w-2xl mx-auto w-full sm:rounded-b-3xl shadow-sm">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-slate-900">
+      {/* 1. WORLD-CLASS HEADER */}
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-100 bg-white/80 p-4 backdrop-blur-md max-w-2xl mx-auto w-full sm:rounded-b-3xl">
         <button
           onClick={() => navigate("/lessons")}
-          className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-black tracking-widest text-slate-400 transition-all hover:bg-slate-50 hover:text-slate-900"
+          className="flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black tracking-[0.2em] text-slate-400 hover:bg-slate-50 hover:text-slate-900 transition-all"
         >
           <span>←</span> BACK
         </button>
 
         <div className="flex items-center gap-3">
-          {streak > 0 && (
-            <div className="flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 border border-orange-100 animate-pulse">
+          {Number(streak || 0) > 0 && (
+            <div className="flex items-center gap-1 rounded-full bg-orange-50 px-3 py-1 border border-orange-100 animate-bounce-subtle">
               <span className="text-sm">🔥</span>
               <span className="text-[10px] font-black text-orange-600 uppercase tracking-tighter">
                 {streak} Day Streak
               </span>
             </div>
           )}
-          <span className="rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-black text-indigo-600 border border-indigo-100 uppercase tracking-widest">
+          <span className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black text-white uppercase tracking-widest">
             {difficulty}
           </span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-4 pt-8">
-        {/* 2. LESSON TITLE & MASTER ACTION */}
-        <section className="mb-8 text-center">
-          <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl">
+      <main className="mx-auto max-w-xl px-6 pt-12">
+        {/* 2. HERO SECTION */}
+        <section className="mb-12 text-center">
+          <h1 className="text-5xl font-black tracking-tight text-slate-900 mb-4 leading-[0.9]">
             Lesson {displayNum}
           </h1>
-          {lesson?.title && !lesson.title.includes(String(lesson.id)) && (
-            <p className="mt-2 text-lg font-medium text-slate-400">
-              {lesson.title}
+          {lesson?.title && (
+            <p className="text-xl font-medium text-slate-400 italic">
+              "{lesson.title}"
             </p>
           )}
 
-          {/* PRIMARY CTA: The "Dopamine Button" */}
-          <div className="mt-10 relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-[2rem] blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative flex flex-col items-center bg-white rounded-[2rem] p-8 shadow-2xl border border-slate-100">
+          {/* PRIMARY CTA (THE FIX) */}
+          <div className="mt-12 relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 rounded-[2.5rem] blur opacity-25 group-hover:opacity-60 transition duration-1000"></div>
+            <div className="relative bg-white rounded-[2.5rem] p-8 shadow-2xl border border-slate-100">
               {isLocked && (
-                <div className="mb-6 flex items-center gap-2 rounded-full bg-purple-50 px-4 py-1.5 text-[10px] font-black text-purple-600 uppercase tracking-widest border border-purple-100">
-                  🔒 Premium Content
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-purple-50 px-4 py-1.5 text-[10px] font-black text-purple-600 uppercase tracking-widest border border-purple-100">
+                  🔒 Premium Lesson
                 </div>
               )}
 
               <button
-                onClick={() =>
-                  isLocked
-                    ? goPaywall()
-                    : continueHref
-                      ? navigate(continueHref)
-                      : smartStart()
-                }
-                className={`w-full py-6 rounded-2xl text-xl font-black shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center justify-center gap-1 ${
+                disabled={smartStarting}
+                onClick={() => {
+                  if (isLocked) return goPaywall();
+                  if (continueHref) return navigate(continueHref);
+                  // 🎯 Call your component's specific start function
+                  smartStart();
+                }}
+                className={`w-full py-7 rounded-3xl text-2xl font-black shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98] flex flex-col items-center justify-center gap-1 ${
                   isLocked
                     ? "bg-slate-900 text-white"
-                    : "bg-indigo-600 text-white shadow-indigo-200"
+                    : "bg-indigo-600 text-white shadow-indigo-200 hover:bg-indigo-700"
                 }`}
               >
                 <span>
                   {isLocked
-                    ? "Unlock Course"
+                    ? "Unlock Now"
                     : continueHref
-                      ? "CONTINUE MASTERY"
+                      ? "RESUME MASTERY"
                       : "START PRACTICE"}
                 </span>
-                <span className="text-[10px] opacity-70 tracking-[0.2em]">
-                  {continueHref
-                    ? `RESUMING ${modeLabel(session?.mode)} Q#${Number(session?.questionIndex || 0) + 1}`
-                    : "AUTO-PICK BEST MODE →"}
+                <span className="text-[10px] opacity-60 tracking-[0.3em] font-bold">
+                  {smartStarting
+                    ? "PREPARING..."
+                    : continueHref
+                      ? "PICK UP WHERE YOU LEFT OFF"
+                      : "READY TO BEGIN →"}
                 </span>
               </button>
             </div>
           </div>
         </section>
 
-        {/* 3. MASTERY SUMMARY: Circular Progress & Sub-goals */}
-        <section className="grid grid-cols-1 gap-6 mb-8">
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex items-center gap-8">
-            {/* Circular Progress (The "Heart") */}
-            <div className="relative h-24 w-24 shrink-0">
-              <svg className="h-full w-full" viewBox="0 0 100 100">
-                <circle
-                  className="text-slate-50 stroke-current"
-                  strokeWidth="10"
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                />
-                <circle
-                  className="text-indigo-600 stroke-current transition-all duration-1000"
-                  strokeWidth="10"
-                  strokeLinecap="round"
-                  cx="50"
-                  cy="50"
-                  r="40"
-                  fill="transparent"
-                  strokeDasharray="251.2"
-                  strokeDashoffset={251.2 - 251.2 * (overallDone / 100)}
-                  transform="rotate(-90 50 50)"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center font-black text-xl text-slate-900">
-                {overallDone}%
-              </div>
-            </div>
+        {/* 3. MASTERY HUB (PROGRESS) */}
+        <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mb-8">
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-8 text-center">
+            Skill Progress
+          </h3>
 
-            <div className="flex-1">
-              <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs mb-3">
-                Skill Breakdown
-              </h3>
-              <div className="space-y-3">
-                {["typing", "reorder", "audio"].map(
-                  (m) =>
-                    modeAvail[m] && (
-                      <div key={m} className="flex items-center gap-2">
-                        <span className="text-xs uppercase font-bold text-slate-400 w-16">
-                          {m}
-                        </span>
-                        <div className="h-1.5 flex-1 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
-                          <div
-                            className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
-                            style={{
-                              width: `${pct(m === "typing" ? typingProg : m === "reorder" ? reorderProg : audioProg)}%`,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ),
-                )}
+          <div className="space-y-6">
+            {/* Typing Progress */}
+            {modeAvail.typing && (
+              <div className="flex items-center gap-6">
+                <span className="text-2xl w-8">⌨️</span>
+                <div className="flex-1">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-[11px] font-black text-slate-900 uppercase">
+                      Typing Fluency
+                    </span>
+                    <span className="text-[11px] font-black text-indigo-600">
+                      {pct(typingProg)}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-500 transition-all duration-1000"
+                      style={{ width: `${pct(typingProg)}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Reorder Progress */}
+            {modeAvail.reorder && (
+              <div className="flex items-center gap-6">
+                <span className="text-2xl w-8">🧩</span>
+                <div className="flex-1">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-[11px] font-black text-slate-900 uppercase">
+                      Sentence Logic
+                    </span>
+                    <span className="text-[11px] font-black text-purple-600">
+                      {pct(reorderProg)}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
+                    <div
+                      className="h-full bg-purple-500 transition-all duration-1000"
+                      style={{ width: `${pct(reorderProg)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Audio Progress */}
+            {modeAvail.audio && (
+              <div className="flex items-center gap-6">
+                <span className="text-2xl w-8">🎧</span>
+                <div className="flex-1">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-[11px] font-black text-slate-900 uppercase">
+                      Audio Mastery
+                    </span>
+                    <span className="text-[11px] font-black text-emerald-600">
+                      {pct(audioProg)}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 transition-all duration-1000"
+                      style={{ width: `${pct(audioProg)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Certificate Claim (Only shown at 100%) */}
-          {overallDone === 100 && (
-            <button
-              onClick={handleDownloadCertificate}
-              className="w-full p-6 rounded-[2rem] bg-emerald-600 text-white font-black text-sm uppercase tracking-widest flex items-center justify-between hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100"
-            >
-              <span>🏆 Claim Mastery Certificate</span>
-              <span>→</span>
-            </button>
-          )}
         </section>
 
-        {/* 4. CONTENT DRAWER: Video & Teacher Guides */}
-        <section className="space-y-4">
+        {/* 4. DRAWER: SPECIALIZED MODES */}
+        <section>
           <button
             onClick={() => setShowMoreModes(!showMoreModes)}
-            className="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-indigo-600 transition-colors"
+            className="w-full py-6 text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] hover:text-indigo-600 transition-colors"
           >
             {showMoreModes
-              ? "Hide Teacher Guide ↑"
-              : "View Teacher Guide & Video ↓"}
+              ? "Close Specialized Modes ↑"
+              : "Switch Practice Mode ↓"}
           </button>
 
           {showMoreModes && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
-              {/* Video Player */}
-              {(videoUrl || teach?.video?.id) && (
-                <div className="aspect-video w-full rounded-[2.5rem] overflow-hidden shadow-2xl bg-black border-4 border-white">
-                  <iframe
-                    className="w-full h-full"
-                    src={
-                      videoUrl ||
-                      (teach.video.provider === "vimeo"
-                        ? `https://player.vimeo.com/video/${teach.video.id}`
-                        : `https://www.youtube-nocookie.com/embed/${teach.video.id}`)
-                    }
-                    allowFullScreen
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-4 mt-2 animate-in fade-in slide-in-from-top-4 duration-500">
+              {modeAvail.typing && (
+                <button
+                  onClick={() => startMode("typing")}
+                  className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 transition-all text-left"
+                >
+                  <span className="block text-lg mb-2">⌨️</span>
+                  <span className="block text-[11px] font-black uppercase text-slate-900">
+                    Typing
+                  </span>
+                </button>
               )}
-
-              {/* Teaching Context */}
-              {teach && (
-                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                  <h4 className="font-black text-indigo-600 text-xs uppercase tracking-widest mb-4">
-                    Lesson Context: {teach.title}
-                  </h4>
-                  <div className="p-4 bg-slate-50 rounded-2xl mb-4 border border-slate-100">
-                    <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">
-                      The Rule
-                    </p>
-                    <p className="text-sm font-medium text-slate-900 leading-relaxed">
-                      {teach.rule}
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {teach.patterns?.map((p, i) => (
-                      <div
-                        key={i}
-                        className="bg-white border border-slate-100 p-3 rounded-xl text-[11px] font-bold text-slate-600 text-center"
-                      >
-                        {p}
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              {modeAvail.reorder && (
+                <button
+                  onClick={() => startMode("reorder")}
+                  className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:border-purple-200 transition-all text-left"
+                >
+                  <span className="block text-lg mb-2">🧩</span>
+                  <span className="block text-[11px] font-black uppercase text-slate-900">
+                    Reorder
+                  </span>
+                </button>
               )}
             </div>
           )}
         </section>
 
-        {/* 5. HIDDEN CERTIFICATE ASSETS (KEEP FOR FUNCTIONALITY) */}
-        <div
-          style={{
-            position: "absolute",
-            top: "-10000px",
-            visibility: "hidden",
-          }}
-        >
-          <AchievementCard
-            lessonTitle={title}
-            streak={streak}
-            overallAvg={overallDone}
-            difficulty={difficulty}
-          />
+        {/* 5. HIDDEN ASSETS FOR FUNCTIONALITY (KEEP!) */}
+        <div className="hidden">
           <div id="certificate-canvas-wrapper">
             <Certificate
-              userName={userProfile?.name || userProfile?.email || "Student"}
+              userName={userProfile?.name || "Student"}
               trackName={difficulty.toUpperCase()}
               date={new Date().toLocaleDateString()}
             />
           </div>
         </div>
       </main>
+      {/* 🎊 CONFETTI TRIGGER (Hidden but active) */}
     </div>
   );
 }
