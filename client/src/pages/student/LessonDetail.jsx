@@ -888,11 +888,11 @@ export default function LessonDetail() {
   ]);
 
   async function smartStart() {
-    // --- Part 1 & 2: Basic Guard & Resume Path ---
+    // 1. Core Invariants (Keep your safety guards)
     if (!lessonId) return;
     if (isLocked) return goPaywall();
 
-    // 🎯 If a "Continue" session exists, always honor it first
+    // 2. Priority 1: Resume an existing session
     if (continueHref) {
       track("continue_clicked", {
         lessonId: Number(dayNumber),
@@ -903,53 +903,41 @@ export default function LessonDetail() {
       return;
     }
 
-    // --- Part 3 & 4: UI State & Preferred Mode Selection ---
     setSmartStarting(true);
     setSmartStartMsg("");
 
     try {
-      // 🎯 Part 5: Sequential Fallback Loop (The Brain)
-      // We prioritize the 'lowest progress' mode but fallback to others if empty
-      const modes = [
-        { id: "reorder", progress: pReorder || 0 },
-        { id: "typing", progress: pTyping || 0 },
-        { id: "audio", progress: pAudio || 0 },
+      // 3. Priority 2: The "Mastery Path" Logic
+      // We look for the first mode that is NOT 100% complete
+      const path = [
+        { id: "reorder", current: pct(reorderProg) },
+        { id: "typing", current: pct(typingProg) },
+        { id: "audio", current: pct(audioProg) },
       ];
 
-      // Sort by lowest progress first
-      const order = modes
-        .sort((a, b) => a.progress - b.progress)
-        .map((m) => m.id);
+      // Find the first one below 100%
+      const nextBest = path.find((m) => m.current < 100) || path[0];
 
-      for (const mode of order) {
-        // Skip disabled feature flags
-        if (mode === "audio" && !ENABLE_AUDIO) continue;
-        if (mode === "cloze" && !ENABLE_CLOZE) continue;
+      // 4. Verification: Ensure the mode actually has content
+      const ok = await hasExercises(dayNumber, nextBest.id, difficulty);
 
-        // 🎯 Deep Function Audit: Check actual content availability
-        const ok = await hasExercises(dayNumber, mode, difficulty);
+      if (ok === "AUTH" || ok === "PAYWALL") return;
 
-        // Handle special outcomes (Auth/Paywall)
-        if (ok === "AUTH" || ok === "PAYWALL") return;
+      if (ok) {
+        track("start_practice_clicked", {
+          lessonId: Number(lessonId),
+          difficulty,
+          mode: nextBest.id,
+          autoSelected: true,
+        });
 
-        if (ok) {
-          track("start_practice_clicked", {
-            lessonId: Number(lessonId),
-            difficulty,
-            mode,
-            autoSelected: true,
-          });
-
-          // 🚀 Navigate to the first valid mode and exit
-          navigate(
-            `/practice/${mode}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
-          );
-          return;
-        }
+        navigate(
+          `/practice/${nextBest.id}?lessonId=${encodeURIComponent(dayNumber)}&difficulty=${encodeURIComponent(difficulty)}`,
+        );
+      } else {
+        // Fallback if the "best" mode is empty for some reason
+        setSmartStartMsg("No practice items found for the recommended mode.");
       }
-
-      // If the loop finishes without finding any 'ok' modes
-      setSmartStartMsg("No practice items yet for this lesson.");
     } catch (err) {
       console.error("SmartStart Error:", err);
     } finally {
@@ -1150,25 +1138,74 @@ export default function LessonDetail() {
                 if (isLocked) return goPaywall();
                 if (continueHref) return navigate(continueHref);
 
-                // 🎯 THE FIX: Force navigation if smartStart is silent
-                const firstMode = modeAvail.reorder
-                  ? "reorder"
-                  : modeAvail.typing
-                    ? "typing"
-                    : "audio";
+                // 🎯 CTO LOGIC: Priority-based Smart Start
+                const bestMode =
+                  modeAvail.reorder && pct(reorderProg) < 100
+                    ? "reorder"
+                    : modeAvail.typing && pct(typingProg) < 100
+                      ? "typing"
+                      : modeAvail.audio && pct(audioProg) < 100
+                        ? "audio"
+                        : "reorder";
+
                 navigate(
-                  `/practice/${firstMode}?lessonId=${lessonId}&difficulty=${difficulty}`,
+                  `/practice/${bestMode}?lessonId=${lessonId}&difficulty=${difficulty}`,
                 );
               }}
               className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-6 rounded-2xl text-xl font-black shadow-xl shadow-indigo-100 transition-all hover:scale-[1.01] active:scale-[0.99] mb-4"
             >
               {continueHref ? "RESUME MASTERY" : "START PRACTICE"}
             </button>
-            <p className="text-center text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em]">
+
+            <p className="text-center text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-8">
               {continueHref
                 ? "Continuing from where you left off"
                 : "Standard Learning Path Enabled"}
             </p>
+
+            {/* 🎯 NEW: Quick Mode Switcher (The Choice Layer) */}
+            <div className="flex justify-center gap-6 border-t border-slate-50 pt-8">
+              {["reorder", "typing", "audio"].map((m) => {
+                const isDone =
+                  pct(
+                    m === "reorder"
+                      ? reorderProg
+                      : m === "typing"
+                        ? typingProg
+                        : audioProg,
+                  ) === 100;
+                const icon =
+                  m === "reorder" ? "🧩" : m === "typing" ? "⌨️" : "🎧";
+                const label =
+                  m === "reorder"
+                    ? "Logic"
+                    : m === "typing"
+                      ? "Speed"
+                      : "Audio";
+
+                return (
+                  modeAvail[m] && (
+                    <button
+                      key={m}
+                      onClick={() => startMode(m)}
+                      className="flex flex-col items-center gap-2 group transition-all"
+                    >
+                      <div
+                        className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm border 
+                              ${isDone ? "bg-emerald-50 border-emerald-100" : "bg-slate-50 border-slate-100 group-hover:bg-white group-hover:border-indigo-200"}`}
+                      >
+                        {isDone ? "✅" : icon}
+                      </div>
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-widest ${isDone ? "text-emerald-500" : "text-slate-400"}`}
+                      >
+                        {label}
+                      </span>
+                    </button>
+                  )
+                );
+              })}
+            </div>
           </div>
         </section>
 
