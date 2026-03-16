@@ -115,6 +115,22 @@ router.post("/", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
+// 🎯 The "Nuclear Option" to reset the curriculum
+router.delete("/clear-all", authRequired, requireAdmin, async (req, res) => {
+  try {
+    // Delete all records from the Lesson table
+    await prisma.lesson.deleteMany({});
+
+    res.json({
+      ok: true,
+      message: "Curriculum wiped successfully. Ready for fresh import.",
+    });
+  } catch (err) {
+    console.error("Clear All Error:", err);
+    res.status(500).json({ ok: false, message: "Failed to clear database." });
+  }
+});
+
 /**
  * PUT /api/admin/lessons/:id
  * Update an existing lesson

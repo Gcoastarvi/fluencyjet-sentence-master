@@ -21,7 +21,7 @@ function AdminDashboard() {
       lesson?.english_mastery_goal?.toLowerCase().includes(search) ||
       lesson?.level?.toLowerCase().includes(search)
     );
-  });
+  });  
 
   useEffect(() => {
     async function fetchDashboard() {
