@@ -116,3 +116,115 @@ export default function Home() {
     </div>
   );
 }
+
+<section className="py-24 bg-white">
+  <div className="max-w-7xl mx-auto px-6">
+    <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+      <div className="max-w-xl">
+        <h2 className="text-4xl font-black text-slate-900 mb-4 leading-tight">
+          Joined by <span className="text-indigo-600">Masters</span> across the
+          globe.
+        </h2>
+        <p className="text-slate-500 font-medium italic">
+          "The fastest way I've found to bridge the gap between thinking in
+          Tamil and speaking in English."
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <div className="h-12 w-12 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-black">
+          4.9
+        </div>
+        <div className="text-xs font-black uppercase tracking-widest text-slate-400">
+          Average Rating <br /> <span className="text-indigo-600">★★★★★</span>
+        </div>
+      </div>
+    </div>
+
+    <div className="grid md:grid-cols-3 gap-8">
+      {/* Testimonial 1 */}
+      <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 flex flex-col justify-between">
+        <p className="text-slate-600 leading-relaxed mb-8">
+          "I tried many apps, but most just teach words. FluencyJet teaches me
+          how to build <strong>real sentences</strong>. The typing mode is a
+          game changer for my speed."
+        </p>
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600">
+            A
+          </div>
+          <div>
+            <p className="text-sm font-black text-slate-900">Arun K.</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Software Engineer
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonial 2 */}
+      <div className="p-8 rounded-[2.5rem] bg-indigo-600 text-white flex flex-col justify-between shadow-2xl shadow-indigo-200">
+        <p className="leading-relaxed mb-8 opacity-90">
+          "Using Tamil prompts to build English sentences is exactly how my
+          brain works. I reached 100% mastery on the Beginner track in just 3
+          weeks!"
+        </p>
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center font-bold">
+            P
+          </div>
+          <div>
+            <p className="text-sm font-black">Priya M.</p>
+            <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">
+              College Student
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonial 3 */}
+      <div className="p-8 rounded-[2.5rem] bg-slate-50 border border-slate-100 flex flex-col justify-between">
+        <p className="text-slate-600 leading-relaxed mb-8">
+          "The audio repeat mode helped me fix my pronunciation. Now I'm not
+          afraid to speak in English meetings at work anymore."
+        </p>
+        <div className="flex items-center gap-4">
+          <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600">
+            S
+          </div>
+          <div>
+            <p className="text-sm font-black text-slate-900">Suresh R.</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Business Owner
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>;
+
+<footer className="bg-slate-900 py-20">
+  <div className="max-w-4xl mx-auto px-6 text-center">
+    <h2 className="text-4xl font-black text-white mb-6">
+      Ready to master your first 10 sentences?
+    </h2>
+    <p className="text-slate-400 mb-10 text-lg">
+      Join our community of Tamil learners and start your journey to fluency
+      today.
+    </p>
+    <button
+      onClick={() => navigate("/signup")}
+      className="bg-indigo-600 text-white px-12 py-5 rounded-2xl font-black text-xl hover:scale-105 transition-all shadow-2xl shadow-indigo-500/20"
+    >
+      Create My Free Account →
+    </button>
+    <div className="mt-20 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="text-white font-black tracking-tighter text-xl">
+        FLUENCY<span className="text-indigo-500">JET</span>
+      </div>
+      <p className="text-slate-500 text-xs">
+        © 2026 FluencyJet. All rights reserved.
+      </p>
+    </div>
+  </div>
+</footer>;
