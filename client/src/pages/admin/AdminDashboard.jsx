@@ -9,6 +9,17 @@ function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [lessons, setLessons] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredLessons = lessons.filter(
+    (lesson) =>
+      lesson.tamil_sentence?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lesson.english_mastery_goal
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      lesson.level?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -33,6 +44,21 @@ function AdminDashboard() {
     }
 
     fetchDashboard();
+  }, []);
+
+  useEffect(() => {
+    async function loadLessons() {
+      try {
+        // Assuming you have this helper in adminApi.js
+        const data = await getAdminLessons();
+        if (data?.ok) {
+          setLessons(data.lessons || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch lessons:", err);
+      }
+    }
+    loadLessons();
   }, []);
 
   const handleDelete = async (id) => {
