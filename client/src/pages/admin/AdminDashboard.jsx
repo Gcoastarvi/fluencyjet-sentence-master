@@ -123,6 +123,24 @@ function AdminDashboard() {
     }
   };
 
+  <header className="mb-10 flex justify-between items-start">
+    <div>
+      <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">
+        Command Center
+      </h2>
+      <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.2em] mt-2">
+        Platform Overview & Insights
+      </p>
+    </div>
+
+    <button
+      onClick={handleLogout}
+      className="bg-slate-200 hover:bg-rose-100 hover:text-rose-600 text-slate-600 px-4 py-2 rounded-xl text-xs font-black transition-all"
+    >
+      LOGOUT
+    </button>
+  </header>;
+
   if (loading) {
     return (
       <div style={{ padding: "2rem" }}>
