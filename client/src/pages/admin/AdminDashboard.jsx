@@ -10,16 +10,18 @@ function AdminDashboard() {
   const [lessons, setLessons] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");  
+  const [error, setError] = useState("");
 
-  const filteredLessons = lessons.filter(
-    (lesson) =>
-      lesson.tamil_sentence?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lesson.english_mastery_goal
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      lesson.level?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // 🎯 SUPER-SAFE LOGIC: We calculate this directly every render
+  const safeLessons = Array.isArray(lessons) ? lessons : [];
+  const filteredLessons = safeLessons.filter((lesson) => {
+    const search = (searchTerm || "").toLowerCase();
+    return (
+      lesson?.tamil_sentence?.toLowerCase().includes(search) ||
+      lesson?.english_mastery_goal?.toLowerCase().includes(search) ||
+      lesson?.level?.toLowerCase().includes(search)
+    );
+  });
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -96,6 +98,23 @@ function AdminDashboard() {
       alert("Import failed. Check CSV format.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (
+      !window.confirm("🚨 CEO WARNING: This will delete ALL lessons. Proceed?")
+    )
+      return;
+    try {
+      // We'll create a new 'bulk-delete' route or simply loop deletes
+      const res = await api.delete("admin/lessons/clear-all");
+      if (res.data.ok) {
+        setLessons([]);
+        alert("Database wiped clean. Ready for a fresh import!");
+      }
+    } catch (err) {
+      alert("Clear failed. Please check backend logs.");
     }
   };
 
@@ -313,6 +332,13 @@ function AdminDashboard() {
     </div>
   </div>
 </div>;
+
+<button
+  onClick={handleClearAll}
+  className="border-2 border-rose-500 text-rose-500 px-6 py-4 rounded-2xl font-black hover:bg-rose-50 transition-all"
+>
+  Clear All Lessons
+</button>;
 
 // 🛡️ Helper Component for beautiful cards
 function StatCard({ label, value, icon, color, text }) {
