@@ -264,6 +264,20 @@ router.get("/diagnostics/db", authRequired, requireAdmin, async (req, res) => {
   }
 });
 
+// 🎯 Reset Admin's own XP for testing
+router.post("/reset-test-stats", authRequired, async (req, res) => {
+  const userId = req.user.id; // Your test account
+
+  // Wipe events and reset the user record
+  await prisma.xpEvent.deleteMany({ where: { user_id: userId } });
+  await prisma.user.update({
+    where: { id: userId },
+    data: { xpTotal: 0, daily_streak: 0, level: 1 },
+  });
+
+  res.json({ ok: true, message: "Stats reset to zero." });
+});
+
 // ─────────────────────────────────────────────
 // Admin Analytics: /api/admin/analytics
 // ─────────────────────────────────────────────

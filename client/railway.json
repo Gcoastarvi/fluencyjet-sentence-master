@@ -5,7 +5,7 @@
     "watchPatterns": ["src/**"]
   },
   "deploy": {
-    "startCommand": "npx serve -s dist -l 3000",
+    "startCommand": "npx serve -s dist -l tcp://0.0.0.0:$PORT",
     "restartPolicyType": "always",
     "healthcheckPath": "/"
   }

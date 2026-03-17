@@ -21,4 +21,3 @@ cmd = "node server/index.js"
 
 [variables]
 NODE_ENV = "production"
-PORT = "8080"

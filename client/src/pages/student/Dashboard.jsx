@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { getDisplayName } from "@/utils/displayName";
 import { getToken } from "@/utils/tokenStore";
 import { toPng } from "html-to-image";
+import confetti from "canvas-confetti";
 
 import AvatarFrame from "../../components/student/AvatarFrame";
 
@@ -153,6 +154,39 @@ export default function Dashboard() {
       alert("Copy failed (browser blocked clipboard).");
     }
   }, []);
+
+  useEffect(() => {
+    const hasSeenWelcome = localStorage.getItem("fj_welcome_celebrated");
+
+    // 🎯 Trigger only if they haven't seen it and it's a "fresh" account
+    if (!hasSeenWelcome && (summary.totalXP || 0) < 50) {
+      const duration = 5 * 1000;
+      const end = Date.now() + duration;
+
+      (function frame() {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ["#6366f1", "#a855f7", "#ec4899"],
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ["#6366f1", "#a855f7", "#ec4899"],
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+
+      localStorage.setItem("fj_welcome_celebrated", "true");
+    }
+  }, [summary.totalXP]);
 
   // 129: Corrected loadMe with async wrapper
   const loadMe = useCallback(async () => {
