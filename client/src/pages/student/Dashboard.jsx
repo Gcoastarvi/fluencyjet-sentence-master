@@ -446,524 +446,220 @@ export default function Dashboard() {
   }, [summary.uniqueDays]);
 
   return (
-    <div className="fj-dashboard px-4">
-      {/* 📢 Global Announcement Banner - Placed at the very top */}
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 font-sans selection:bg-indigo-100">
+      {/* 1. ANNOUNCEMENT BANNER */}
       {auth?.user?.lastNotification && (
-        <div className="mb-6 p-5 bg-gradient-to-r from-indigo-600 to-violet-600 rounded-[2rem] text-white shadow-lg flex items-center justify-between animate-in slide-in-from-top duration-500">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center text-xl backdrop-blur-md">
-              📢
-            </div>
-            <p className="text-sm font-bold leading-tight">
-              {auth.user.lastNotification}
-            </p>
-          </div>
-          <button
-            onClick={() => alert("Cleared!")}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            ✕
-          </button>
+        <div className="bg-indigo-600 p-4 text-center text-white text-xs font-black uppercase tracking-widest animate-pulse">
+          📢 {auth.user.lastNotification}
         </div>
       )}
-      {/* 396: Refined Header with Avatar Frame */}
-      <header className="flex items-center gap-6 mb-8 pt-10">
-        <AvatarFrame
-          src={auth?.user?.avatar_url}
-          league={summary.league || "BRONZE"}
-          size="lg"
-        />
-        <div className="flex-1">
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] leading-none mb-1">
-            Your Dashboard
-          </p>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">
-            Welcome back, <span className="text-indigo-600">{userName}</span>
-          </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500 uppercase tracking-tighter">
-              {summary.league || "BRONZE"} Division
-            </span>
+
+      <header className="max-w-6xl mx-auto px-6 pt-12 flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="flex items-center gap-6">
+          <AvatarFrame
+            src={auth?.user?.avatar_url}
+            league={summary.league || "BRONZE"}
+            size="lg"
+          />
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 leading-tight">
+              Welcome back, <span className="text-indigo-600">{userName}</span>
+            </h1>
+            <div className="flex gap-2 mt-2">
+              <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                🔥 {summary.streak} DAY STREAK
+              </span>
+              <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                ⭐ {summary.totalXP} TOTAL XP
+              </span>
+            </div>
           </div>
         </div>
 
-        {DEV_ONLY && (
-          <button
-            type="button"
-            onClick={copyJwtToClipboard}
-            className="px-3 py-1 text-xs rounded bg-slate-900 text-white self-start transition-opacity hover:opacity-80"
-            title="Dev-only: copy JWT"
-          >
-            Copy JWT
-          </button>
-        )}
+        {/* 2. LEAGUE PROMOTION RING (Side-Widget) */}
+        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="relative h-16 w-16 flex items-center justify-center">
+            <svg className="absolute inset-0 -rotate-90">
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                fill="transparent"
+                stroke="#F1F5F9"
+                strokeWidth="6"
+              />
+              <circle
+                cx="32"
+                cy="32"
+                r="28"
+                fill="transparent"
+                stroke="#F97316"
+                strokeWidth="6"
+                strokeDasharray="175.9"
+                strokeDashoffset={
+                  175.9 - 175.9 * (Math.min(summary.xpTotal || 0, 500) / 500)
+                }
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="text-2xl">🥉</span>
+          </div>
+          <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              League Standing
+            </p>
+            <p className="text-sm font-black text-slate-900">
+              {summary.xpTotal < 500
+                ? `${500 - summary.xpTotal} XP to Silver`
+                : "Promotion Ready!"}
+            </p>
+          </div>
+        </div>
       </header>
 
-      {plan === "FREE" && (
-        <div className="bg-yellow-50 border border-yellow-300 p-3 rounded mb-4 text-sm">
-          ⚠️ You’re on the FREE plan. Daily XP is limited.
-          <button
-            className="ml-2 text-purple-600 underline"
-            onClick={() => navigate("/paywall")}
-          >
-            Upgrade
-          </button>
-        </div>
-      )}
-
-      {xpCapReached && (
-        <div className="mb-4 p-4 rounded-lg bg-yellow-100 border border-yellow-400 text-yellow-900">
-          You’ve hit today’s FREE XP limit.
-          <a href="/paywall" className="underline font-semibold ml-1">
-            Upgrade to PRO
-          </a>{" "}
-          for unlimited XP.
-        </div>
-      )}
-
-      {loading ? (
-        <div className="fj-dashboard-loading">Loading dashboard...</div>
-      ) : error ? (
-        <div className="fj-dashboard-error">
-          {error}
-          <div className="mt-2">
-            <button
-              className="px-3 py-1 text-xs rounded bg-slate-900 text-white"
-              onClick={bootstrap}
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Streak + XP */}
-          <div className="fj-card fj-stats-bar">
-            <div className="fj-stats-left">
-              <span className="fj-streak">🔥 {summary.streak}-day streak</span>
-              <span className="fj-xp">⭐ {fmt(summary.totalXP)} XP</span>
-            </div>
-          </div>
-
-          {/* Level progress */}
-          <div className="fj-card">
-            <h2 className="fj-section-title">Level {summary.level}</h2>
-            <div className="fj-progress-bar">
-              <div
-                className="fj-progress-fill"
-                style={{ width: `${percent}%` }}
-              />
-            </div>
-            <p className="fj-progress-caption">
-              {percent}% • {fmt(summary.xpToNextLevel)} XP to next level
-            </p>
-          </div>
-
-          {showEmergencyAlert && (
-            <div className="mb-6 p-4 bg-red-50 border-2 border-red-500 rounded-3xl animate-pulse">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">🚨</span>
-                <div>
-                  <h4 className="text-sm font-black text-red-900 uppercase tracking-tighter">
-                    Streak at Risk!
-                  </h4>
-                  <p className="text-xs text-red-700 font-bold">
-                    It's past 10 PM and you have 0 freezes. Complete a lesson
-                    now to save your streak!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Pending + Snapshot */}
-          {/* Premium Dashboard Grid */}
-          <div className="fj-grid fj-grid-2">
-            {/* 🏆 Column 1: Weekly Goal Progress */}
-            <div className="rounded-[2.5rem] bg-white p-8 border border-slate-100 shadow-sm mb-4">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                  Weekly Goal
-                </h3>
-                <span className="px-3 py-1 rounded-full bg-orange-100 text-orange-600 text-[10px] font-black uppercase tracking-widest">
-                  10 min daily
-                </span>
-              </div>
-
-              <div className="flex gap-2 mb-4">
-                {[...Array(7)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-                      i < (summary.uniqueDays || 0)
-                        ? "bg-orange-500"
-                        : "bg-slate-100"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-3xl font-black text-slate-900">
-                    {summary.uniqueDays || 0}/7
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                    Days Mastered
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Daily Mission Card inserted between Weekly Goal and Activity Feed */}
-            <section className="fj-dashboard-section mb-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-400">
-                      Daily Mission
-                    </h3>
-                    {/* 🔥 Mission Streak Sidebar/Badge */}
-                    <span className="flex items-center gap-1 bg-orange-500/20 text-orange-400 text-[8px] font-black px-2 py-0.5 rounded-full border border-orange-500/30">
-                      {summary.missionStreak || 0} DAY STREAK
-                    </span>
-                  </div>
-                  {summary.missionCompleted ? (
-                    <span className="bg-emerald-500 text-[8px] font-black px-2 py-0.5 rounded-full uppercase">
-                      Claimed
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-slate-400">
-                      +{summary.missionXpReward || 50} XP
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm font-bold mb-4">
-                  Complete 3 Instant Accuracy sessions
-                </p>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-2">
-                  <div
-                    className="h-full bg-indigo-500 transition-all duration-1000"
-                    style={{
-                      width: `${((summary.missionProgress || 0) / (summary.missionGoal || 3)) * 100}%`,
-                    }}
-                  />
-                </div>
-
-                <div className="flex justify-between text-[10px] font-black text-slate-500 uppercase">
-                  <span>
-                    {summary.missionProgress || 0} / {summary.missionGoal || 3}{" "}
-                    Sessions
-                  </span>
-                  <span>
-                    {Math.round(
-                      ((summary.missionProgress || 0) /
-                        (summary.missionGoal || 3)) *
-                        100,
-                    )}
-                    %
-                  </span>
-                </div>
-              </div>
-              <div className="absolute -right-2 -bottom-2 text-6xl opacity-10 rotate-12">
-                🎯
-              </div>
-            </section>
-
-            <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm mt-6">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
-                League Standing
-              </h3>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  {/* 🎡 League Progress Ring with Promotion Preview */}
-                  <div className="group relative w-14 h-14 flex items-center justify-center">
-                    <svg className="absolute inset-0 w-full h-full -rotate-90">
-                      <circle
-                        cx="28"
-                        cy="28"
-                        r="24"
-                        fill="transparent"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        className="text-slate-100"
-                      />
-                      <circle
-                        cx="28"
-                        cy="28"
-                        r="24"
-                        fill="transparent"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        strokeDasharray={150.8}
-                        strokeDashoffset={
-                          150.8 -
-                          Math.min((summary.xpTotal || 0) / 500, 1) * 150.8
-                        }
-                        strokeLinecap="round"
-                        className="text-orange-500 transition-all duration-1000"
-                      />
-                    </svg>
-                    <div className="text-2xl z-10">🥉</div>
-
-                    {/* 💎 Promotion Preview Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-40 p-3 bg-slate-900 text-white text-[10px] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
-                      <p className="font-black mb-1 uppercase tracking-widest text-orange-400">
-                        Next Reward
-                      </p>
-                      <p className="text-slate-300 leading-tight">
-                        Reach 500 XP to unlock the{" "}
-                        <span className="text-white font-bold">
-                          Silver Frame
-                        </span>{" "}
-                        & 50 Bonus Gems!
-                      </p>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-slate-900" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-black text-slate-900">
-                      Bronze League
-                    </p>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase">
-                      {summary.xpTotal < 500
-                        ? `${500 - summary.xpTotal} XP to promote`
-                        : "In Promotion Zone!"}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-black text-indigo-600">Rank #1</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">
-                    Top 10%
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* ⚡ Column 2: Global Activity Feed */}
-            <div className="rounded-[2.5rem] bg-slate-900 p-8 text-white shadow-xl mb-4 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-6 opacity-5 text-6xl italic font-black pointer-events-none">
-                LIVE
-              </div>
-
-              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 mb-6 flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                </span>
-                Activity Feed
-              </h3>
-
-              <div className="space-y-4">
-                {globalFeed.length > 0 ? (
-                  globalFeed.map((event, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 animate-fade-in"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-violet-500 to-fuchsia-500 flex-shrink-0 border border-white/10" />
-                      <div className="text-[11px] leading-tight">
-                        <span className="font-bold text-white block">
-                          {event.user?.name || "A Learner"}
-                        </span>
-                        <span className="text-slate-400 font-medium italic">
-                          Just earned Mastery!
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-[11px] text-slate-500 italic">
-                    Waiting for fresh achievements...
-                  </p>
-                )}
-              </div>
-
-              <div className="flex items-end justify-between">
-                <div>
-                  <div className="text-3xl font-black text-slate-900">
-                    {summary.uniqueDays || 0}/7
-                  </div>
-                  <div className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">
-                    Days Mastered
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold text-slate-800">
-                    {summary.uniqueDays >= 7
-                      ? "Goal Smashed! 🎉"
-                      : `${7 - (summary.uniqueDays || 0)} days to go`}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 542: Unified "My Badges" Component */}
-            <section className="fj-dashboard-section mt-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                  My Badges
+      <main className="max-w-6xl mx-auto px-6 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
+        {/* 3. CENTER COLUMN: THE MASTERY PATH */}
+        <div className="lg:col-span-2 space-y-10">
+          <section>
+            <div className="flex justify-between items-end mb-8 px-2">
+              <div>
+                <h2 className="text-2xl font-black text-slate-900">
+                  Foundations Path
                 </h2>
-                <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
-                  {summary.earnedBadges?.length || 0} Unlocked
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {summary.earnedBadges && summary.earnedBadges.length > 0 ? (
-                  summary.earnedBadges.map((badge, i) => (
-                    <div
-                      key={i}
-                      className="group relative bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex flex-col items-center text-center group hover:border-indigo-200 transition-all"
-                    >
-                      <div className="text-4xl mb-3 transition-transform group-hover:scale-110 duration-300">
-                        {badge.badge_name === "Weekly Warrior" ? "🛡️" : "🏅"}
-                      </div>
-                      <div className="text-[10px] font-black text-slate-900 uppercase tracking-tighter leading-tight">
-                        {badge.badge_name}
-                      </div>
-                      <div className="text-[8px] font-bold text-slate-400 mt-1 uppercase">
-                        {new Date(badge.earned_at).toLocaleDateString()}
-                      </div>
-
-                      {/* 590: Share Button integrated into the main card */}
-                      <button
-                        onClick={() => shareBadge(badge.badge_name)}
-                        className="mt-4 opacity-0 group-hover:opacity-100 transition-opacity bg-indigo-600 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest"
-                      >
-                        Share Badge
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full bg-slate-50 rounded-[2rem] p-8 text-center border-2 border-dashed border-slate-200">
-                    <p className="text-sm font-medium text-slate-500">
-                      No badges yet. Complete a weekly goal to earn your first!
-                    </p>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Existing Pending Lessons Card */}
-            <div className="fj-card">
-              <h2 className="fj-section-title">Pending Lessons</h2>
-              {summary.pendingLessons?.length ? (
-                <ul className="fj-list">
-                  {summary.pendingLessons.map((l) => (
-                    <li key={l.id || l.title} className="fj-list-item">
-                      <span>{l.title}</span>
-                      {l.xpReward != null && (
-                        <span className="fj-chip">+{l.xpReward} XP</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="fj-empty-state">All caught up! 🎉</p>
-              )}
-            </div>
-
-            <div className="fj-card">
-              <h2 className="fj-section-title">Daily Snapshot</h2>
-              <div className="fj-snapshot-row">
-                <span className="fj-snapshot-label">Today&apos;s XP</span>
-                <span className="fj-snapshot-value">
-                  {fmt(summary.todayXP)}
-                </span>
-              </div>
-              <div className="fj-snapshot-row">
-                <span className="fj-snapshot-label">Yesterday</span>
-                <span className="fj-snapshot-value">
-                  {fmt(summary.yesterdayXP)}
-                </span>
-              </div>
-              <div className="fj-snapshot-row">
-                <span className="fj-snapshot-label">This Week</span>
-                <span className="fj-snapshot-value">
-                  {fmt(summary.weeklyXP)}
-                </span>
-              </div>
-              <div className="fj-snapshot-row">
-                <span className="fj-snapshot-label">Last Week</span>
-                <span className="fj-snapshot-value">
-                  {fmt(summary.lastWeekXP)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 575: Recent Activity Section */}
-          <section className="fj-dashboard-section">
-            <div className="fj-card">
-              <h2 className="fj-section-title">Recent Activity</h2>
-              {summary.recentActivity?.length ? (
-                <ul className="fj-activity-list">
-                  {summary.recentActivity.map((event) => (
-                    <li
-                      key={`${event.event_type}-${event.created_at}`}
-                      className="fj-activity-item"
-                    >
-                      <div>
-                        <p className="fj-activity-title">
-                          {humanizeEventType(event.event_type)}{" "}
-                          <span className="fj-activity-xp">
-                            {event.xp_delta} XP
-                          </span>
-                        </p>
-                        <div className="text-xs text-slate-400">
-                          {event.event_type}
-                        </div>
-                        <p className="fj-activity-time">
-                          {new Date(event.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="fj-empty-state">
-                  No activity yet. Start practicing!
+                <p className="text-sm text-slate-400 font-medium italic">
+                  Phase 1: 120 Essential Lessons
                 </p>
-              )}
+              </div>
+              <span className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                Level {summary.level}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {lessons
+                .filter((l) => l.level === "Beginner")
+                .slice(0, 10)
+                .map((lesson, idx) => {
+                  const isCompleted = userProgress[lesson.id] === 100;
+                  const isLocked =
+                    idx > 0 && userProgress[lessons[idx - 1].id] < 100;
+                  return (
+                    <div
+                      key={lesson.id}
+                      onClick={() =>
+                        !isLocked && navigate(`/lesson/${lesson.id}`)
+                      }
+                      className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative overflow-hidden group
+                    ${isLocked ? "bg-slate-50 border-slate-100 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
+                    >
+                      <div className="flex items-center gap-5">
+                        <div
+                          className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl font-black ${isCompleted ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"}`}
+                        >
+                          {isLocked ? "🔒" : isCompleted ? "✓" : idx + 1}
+                        </div>
+                        <div>
+                          <h3 className="font-black text-slate-900 leading-tight mb-1">
+                            {lesson.title || `Lesson ${idx + 1}`}
+                          </h3>
+                          <div className="h-1 w-24 bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-indigo-500"
+                              style={{
+                                width: `${userProgress[lesson.id] || 0}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
           </section>
-        </>
-      )}
+        </div>
 
-      {/* 🏆 614: Milestone Modal UI */}
-      {showMilestoneModal && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-indigo-950/80 backdrop-blur-xl animate-fade-in">
-          <div className="bg-white rounded-[3.5rem] p-10 max-w-md w-full text-center shadow-2xl relative overflow-hidden border-4 border-indigo-100">
-            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-              ✨
-            </div>
-            <div className="text-7xl mb-6 scale-110">👑</div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tighter leading-tight">
-              Perfect Week!
-            </h2>
-            <p className="text-slate-500 mt-4 text-sm font-medium leading-relaxed">
-              You've mastered 7 days in a row. Your discipline is unmatched!
-              You've earned the{" "}
-              <span className="text-indigo-600 font-bold">
-                "Weekly Warrior"
-              </span>{" "}
-              status.
+        {/* 4. RIGHT COLUMN: MISSIONS & FEED */}
+        <div className="space-y-8">
+          {/* Daily Mission Card */}
+          <section className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
+            <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">
+              Daily Mission
+            </h3>
+            <p className="text-lg font-bold mb-6 italic leading-tight">
+              Complete 3 Instant Accuracy sessions
             </p>
-            <div className="mt-10">
-              <button
-                onClick={handleClaimBonusXP}
-                className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95"
-              >
-                Collect 500 Bonus XP
-              </button>
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+              <div
+                className="h-full bg-indigo-500 transition-all duration-1000"
+                style={{
+                  width: `${((summary.missionProgress || 0) / 3) * 100}%`,
+                }}
+              />
             </div>
+            <p className="text-[10px] font-black text-slate-500 uppercase">
+              {summary.missionProgress || 0} / 3 Sessions Completed
+            </p>
+            <div className="absolute -right-4 -bottom-4 text-7xl opacity-10 rotate-12">
+              🎯
+            </div>
+          </section>
+
+          {/* Global Activity Feed (World-Class Polish) */}
+          <section className="bg-white rounded-[2.5rem] p-8 border border-slate-100">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+              <span className="relative h-2 w-2 flex">
+                <span className="animate-ping absolute h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="h-2 w-2 rounded-full bg-indigo-500"></span>
+              </span>
+              Live Activity
+            </h3>
+            <div className="space-y-6">
+              {globalFeed.slice(0, 5).map((event, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-4 animate-in fade-in slide-in-from-right-4 duration-500"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 shrink-0" />
+                  <div>
+                    <p className="text-xs font-black text-slate-900 uppercase tracking-tighter">
+                      {event.user?.name || "A Master"}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-medium italic">
+                      Earned 50 XP in Level {summary.level}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </main>
+
+      {/* 5. PERFECT WEEK MODAL */}
+      {showMilestoneModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-xl">
+          <div className="bg-white rounded-[3.5rem] p-12 max-w-md w-full text-center shadow-2xl">
+            <div className="text-7xl mb-6">👑</div>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">
+              PERFECT WEEK!
+            </h2>
+            <p className="text-slate-500 font-medium mb-10">
+              You've mastered 7 days in a row. Your discipline is legendary.
+            </p>
+            <button
+              onClick={handleClaimBonusXP}
+              className="w-full py-5 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-100"
+            >
+              CLAIM 500 BONUS XP
+            </button>
           </div>
         </div>
       )}
     </div>
   );
+
   // 统一 Promotion Modal - Place at the very bottom of Dashboard.jsx
   function PromotionModal({ isOpen, type, league, onClose }) {
     if (!isOpen) return null;

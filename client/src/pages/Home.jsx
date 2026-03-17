@@ -2,6 +2,21 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
+const [demoWords, setDemoWords] = useState([
+  "are",
+  "We",
+  "planning",
+  "a",
+  "strategy",
+]);
+const [selected, setSelected] = useState([]);
+
+const handleWordClick = (word) => {
+  setSelected([...selected, word]);
+  setDemoWords(demoWords.filter((w) => w !== word));
+  if (selected.length === 4) confetti(); // 🎉 Reward them for trying!
+};
+
 export default function Home() {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
