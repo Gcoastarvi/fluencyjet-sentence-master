@@ -4,8 +4,9 @@
     "buildCommand": "npm install && npm run build"
   },
   "deploy": {
-    "startCommand": "npx serve -s dist -l tcp://0.0.0.0:$PORT",
-    "restartPolicyType": "always"
+    "startCommand": "npx serve -s dist -l 3000",
+    "restartPolicyType": "always",
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 100
   }
 }
-
