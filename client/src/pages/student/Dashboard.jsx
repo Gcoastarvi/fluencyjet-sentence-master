@@ -88,6 +88,9 @@ export default function Dashboard() {
   const [showPromotionModal, setShowPromotionModal] = useState(false);
   const [milestoneType, setMilestoneType] = useState(""); // "FIRST_LESSON" or "BRONZE_LEAGUE"
 
+  const [lessons, setLessons] = useState([]);
+  const [userProgress, setUserProgress] = useState({});
+
   const [userName, setUserName] = useState(
     () => getDisplayName?.() || "Learner",
   );
@@ -95,6 +98,9 @@ export default function Dashboard() {
   const [globalFeed, setGlobalFeed] = useState([]);
 
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [prevLevel, setPrevLevel] = useState(summary.level);
 
   const [summary, setSummary] = useState({
     todayXP: 0,
@@ -154,6 +160,44 @@ export default function Dashboard() {
       alert("Copy failed (browser blocked clipboard).");
     }
   }, []);
+
+  // ⚡ Real-Time Stats Refresher
+  useEffect(() => {
+    // 🎯 Function to fetch latest stats
+    const refreshStats = async () => {
+      try {
+        const response = await api.get("/api/user/summary"); // Adjust to your actual endpoint
+        if (response.data.ok) {
+          setSummary(response.data.summary);
+          setUserProgress(response.data.userProgress || {});
+        }
+      } catch (err) {
+        console.error("Stats Refresh Failed:", err);
+      }
+    };
+
+    // 🔄 Refresh whenever the user brings the tab back to focus
+    window.addEventListener("focus", refreshStats);
+
+    // Also refresh once on mount
+    refreshStats();
+
+    return () => window.removeEventListener("focus", refreshStats);
+  }, []);
+
+  useEffect(() => {
+    if (summary.level > prevLevel && prevLevel !== 0) {
+      setShowLevelModal(true);
+      // 🎆 Fire a massive "School Pride" Confetti burst
+      confetti({
+        particleCount: 200,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ["#6366f1", "#f59e0b", "#10b981"],
+      });
+    }
+    setPrevLevel(summary.level);
+  }, [summary.level]);
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem("fj_welcome_celebrated");
@@ -604,45 +648,57 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {lessons
-                .filter((l) => l.level === "Beginner")
-                .slice(0, 10)
-                .map((lesson, idx) => {
-                  const isCompleted = userProgress[lesson.id] === 100;
-                  const isLocked =
-                    idx > 0 && userProgress[lessons[idx - 1].id] < 100;
-                  return (
-                    <div
-                      key={lesson.id}
-                      onClick={() =>
-                        !isLocked && navigate(`/lesson/${lesson.id}`)
-                      }
-                      className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative overflow-hidden group
-                    ${isLocked ? "bg-slate-50 border-slate-100 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
-                    >
-                      <div className="flex items-center gap-5">
-                        <div
-                          className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl font-black ${isCompleted ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"}`}
-                        >
-                          {isLocked ? "🔒" : isCompleted ? "✓" : idx + 1}
-                        </div>
-                        <div>
-                          <h3 className="font-black text-slate-900 leading-tight mb-1">
-                            {lesson.title || `Lesson ${idx + 1}`}
-                          </h3>
-                          <div className="h-1 w-24 bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-indigo-500"
-                              style={{
-                                width: `${userProgress[lesson.id] || 0}%`,
-                              }}
-                            />
+              {Array.isArray(lessons) && lessons.length > 0 ? (
+                lessons
+                  .filter((l) => l.level === "Beginner")
+                  .slice(0, 10)
+                  .map((lesson, idx) => {
+                    // 🛡️ Safety fallback for userProgress
+                    const progress = userProgress ? userProgress[lesson.id] : 0;
+                    const isCompleted = progress === 100;
+
+                    // Logic for locking (Previous lesson must be 100%)
+                    const isLocked =
+                      idx > 0 &&
+                      (!userProgress ||
+                        (userProgress[lessons[idx - 1].id] || 0) < 100);
+
+                    return (
+                      <div
+                        key={lesson.id}
+                        onClick={() =>
+                          !isLocked && navigate(`/lesson/${lesson.id}`)
+                        }
+                        className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative overflow-hidden group
+                         ${isLocked ? "bg-slate-50 border-slate-100 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
+                      >
+                        <div className="flex items-center gap-5">
+                          <div
+                            className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl font-black 
+                             ${isCompleted ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"}`}
+                          >
+                            {isLocked ? "🔒" : isCompleted ? "✓" : idx + 1}
+                          </div>
+                          <div>
+                            <h3 className="font-black text-slate-900 leading-tight mb-1">
+                              {lesson.title || `Lesson ${idx + 1}`}
+                            </h3>
+                            <div className="h-1 w-24 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-indigo-500"
+                                style={{ width: `${progress || 0}%` }}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+              ) : (
+                <div className="col-span-2 py-12 text-center text-slate-400 italic font-medium">
+                  Loading your Mastery Path...
+                </div>
+              )}
             </div>
           </section>
         </div>
@@ -721,6 +777,37 @@ export default function Dashboard() {
               className="w-full py-5 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-indigo-100"
             >
               CLAIM 500 BONUS XP
+            </button>
+          </div>
+        </div>
+      )}
+      {showLevelModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-2xl animate-in fade-in duration-500">
+          <div className="bg-white rounded-[4rem] p-12 max-w-sm w-full text-center shadow-2xl border-b-8 border-indigo-600 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+
+            <div className="text-8xl mb-6 animate-bounce">🏆</div>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-2">
+              LEVEL UP!
+            </h2>
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-8">
+              New Mastery Unlocked
+            </p>
+
+            <div className="flex justify-center items-center gap-4 mb-10">
+              <span className="text-4xl font-black text-slate-200 line-through">
+                {prevLevel}
+              </span>
+              <span className="text-6xl font-black text-indigo-600 animate-in zoom-in spin-in-12 duration-700">
+                {summary.level}
+              </span>
+            </div>
+
+            <button
+              onClick={() => setShowLevelModal(false)}
+              className="w-full py-5 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl"
+            >
+              Keep Climbing →
             </button>
           </div>
         </div>
