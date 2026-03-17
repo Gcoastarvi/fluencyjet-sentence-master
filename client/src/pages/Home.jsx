@@ -1,25 +1,37 @@
 //client/src/pages/Home.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-
-const [demoWords, setDemoWords] = useState([
-  "are",
-  "We",
-  "planning",
-  "a",
-  "strategy",
-]);
-const [selected, setSelected] = useState([]);
-
-const handleWordClick = (word) => {
-  setSelected([...selected, word]);
-  setDemoWords(demoWords.filter((w) => w !== word));
-  if (selected.length === 4) confetti(); // 🎉 Reward them for trying!
-};
+import confetti from "canvas-confetti";
 
 export default function Home() {
-  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+
+  // 🧩 Demo State Logic
+  const [demoWords, setDemoWords] = useState([
+    "are",
+    "We",
+    "planning",
+    "a",
+    "strategy",
+  ]);
+  const [selected, setSelected] = useState([]);
+
+  const handleWordClick = (word) => {
+    const newSelected = [...selected, word];
+    setSelected(newSelected);
+    setDemoWords(demoWords.filter((w) => w !== word));
+
+    // 🎉 If they complete the sentence "We are planning a strategy"
+    if (newSelected.length === 5) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#6366f1", "#a855f7"],
+      });
+    }
+  };
 
   useEffect(() => {
     // 🎯 Use the login check from your old student/Home.jsx

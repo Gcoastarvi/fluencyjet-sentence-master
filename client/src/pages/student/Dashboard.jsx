@@ -241,6 +241,40 @@ export default function Dashboard() {
     link.click();
   };
 
+  useEffect(() => {
+    // 🏁 Check if this is the very first time they land here
+    const hasCelebrated = localStorage.getItem("fj_first_login_done");
+
+    if (!hasCelebrated) {
+      // 🎆 Side-firing "Fountain" Confetti
+      const end = Date.now() + 3 * 1000;
+      const colors = ["#6366f1", "#a855f7", "#ffffff"];
+
+      (function frame() {
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: colors,
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: colors,
+        });
+
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      })();
+
+      localStorage.setItem("fj_first_login_done", "true");
+    }
+  }, []);
+
   // Unified & Safe Async Effect for Dashboard Data
   useEffect(() => {
     let isMounted = true;
