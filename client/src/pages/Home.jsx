@@ -7,7 +7,6 @@ export default function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  // 🧩 Demo State Logic
   const [demoWords, setDemoWords] = useState([
     "are",
     "We",
@@ -16,21 +15,34 @@ export default function Home() {
     "strategy",
   ]);
   const [selected, setSelected] = useState([]);
+  const [isCorrect, setIsCorrect] = useState(false);
 
   const handleWordClick = (word) => {
+    if (isCorrect) return; // Stop if already won
+
     const newSelected = [...selected, word];
     setSelected(newSelected);
     setDemoWords(demoWords.filter((w) => w !== word));
 
-    // 🎉 If they complete the sentence "We are planning a strategy"
+    // Check if sentence is complete (5 words)
     if (newSelected.length === 5) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ["#6366f1", "#a855f7"],
-      });
+      const finalSentence = newSelected.join(" ");
+      if (finalSentence === "We are planning a strategy") {
+        setIsCorrect(true);
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#6366f1", "#a855f7"],
+        });
+      }
     }
+  };
+
+  const resetDemo = () => {
+    setDemoWords(["are", "We", "planning", "a", "strategy"]);
+    setSelected([]);
+    setIsCorrect(false);
   };
 
   useEffect(() => {
@@ -140,6 +152,51 @@ export default function Home() {
       <section className="py-24 bg-slate-50 rounded-t-[4rem]">
         {/* ... Paste the Roadmap code from the previous chat here ... */}
       </section>
+      <div className="bg-white rounded-[2.5rem] p-8 shadow-sm text-center">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
+          Try it now
+        </p>
+        <h3 className="text-xl font-bold text-slate-900 mb-6">
+          நாங்கள் தற்போது ஒரு புதிய உத்தியைத் திட்டமிட்டு வருகிறோம்.
+        </h3>
+
+        {/* The "Work Area" */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8 min-h-[50px] p-4 border-2 border-dashed border-slate-100 rounded-2xl">
+          {selected.map((word, i) => (
+            <span
+              key={i}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-indigo-100 animate-in zoom-in duration-300"
+            >
+              {word}
+            </span>
+          ))}
+        </div>
+
+        {/* The "Selection Area" */}
+        <div className="flex flex-wrap justify-center gap-2">
+          {isCorrect ? (
+            <div className="text-emerald-500 font-black flex flex-col items-center gap-2">
+              <span>🎉 EXCELLENT MASTERY!</span>
+              <button
+                onClick={resetDemo}
+                className="text-[10px] text-slate-400 underline"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : (
+            demoWords.map((word) => (
+              <button
+                key={word}
+                onClick={() => handleWordClick(word)}
+                className="bg-slate-50 hover:bg-white hover:border-indigo-200 border border-slate-100 px-4 py-2 rounded-lg text-xs font-bold text-slate-600 transition-all active:scale-90"
+              >
+                {word}
+              </button>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
