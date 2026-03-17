@@ -1,12 +1,12 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "buildCommand": "npm install && npm run build"
+    "buildCommand": "npm install && npm run build",
+    "watchPatterns": ["src/**"]
   },
   "deploy": {
     "startCommand": "npx serve -s dist -l 3000",
     "restartPolicyType": "always",
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 100
+    "healthcheckPath": "/"
   }
 }
