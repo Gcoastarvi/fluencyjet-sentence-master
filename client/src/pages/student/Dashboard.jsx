@@ -99,9 +99,6 @@ export default function Dashboard() {
 
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
 
-  const [showLevelModal, setShowLevelModal] = useState(false);
-  const [prevLevel, setPrevLevel] = useState(summary.level);
-
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -119,6 +116,9 @@ export default function Dashboard() {
     pendingLessons: [],
     recentActivity: [],
   });
+
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [prevLevel, setPrevLevel] = useState(summary.level);
 
   const percent = useMemo(
     () => levelProgressPct(summary.totalXP),
@@ -726,6 +726,48 @@ export default function Dashboard() {
             </p>
             <div className="absolute -right-4 -bottom-4 text-7xl opacity-10 rotate-12">
               🎯
+            </div>
+          </section>
+
+          <section
+            className={`fj-dashboard-section mb-6 rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden transition-all duration-500 ${
+              summary.missionProgress >= 3
+                ? "bg-gradient-to-br from-emerald-600 to-teal-500 scale-[1.02]"
+                : "bg-gradient-to-br from-slate-900 to-slate-800"
+            }`}
+          >
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-indigo-400">
+                  Daily Mission
+                </h3>
+
+                {summary.missionProgress >= 3 ? (
+                  <button
+                    onClick={handleClaimBonusXP}
+                    className="bg-white text-emerald-600 text-[10px] font-black px-4 py-2 rounded-full uppercase animate-bounce shadow-lg"
+                  >
+                    🎁 Claim 500 XP
+                  </button>
+                ) : (
+                  <span className="text-[10px] font-bold text-slate-400">
+                    +{summary.missionXpReward || 50} XP
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-bold mb-4">
+                Complete 3 Practice Sessions
+              </p>
+
+              {/* Progress Bar */}
+              <div className="h-3 bg-white/10 rounded-full overflow-hidden mb-2">
+                <div
+                  className={`h-full transition-all duration-1000 ${summary.missionProgress >= 3 ? "bg-white" : "bg-indigo-500"}`}
+                  style={{
+                    width: `${Math.min((summary.missionProgress / 3) * 100, 100)}%`,
+                  }}
+                />
+              </div>
             </div>
           </section>
 
