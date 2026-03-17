@@ -141,6 +141,38 @@ function AdminDashboard() {
     </button>
   </header>;
 
+  const handleResetStats = async () => {
+    if (
+      !window.confirm(
+        "WARNING: This will permanently delete your test XP and Streaks. Proceed?",
+      )
+    )
+      return;
+
+    const res = await axios.post(
+      "/api/admin/reset-test-stats",
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
+        },
+      },
+    );
+
+    if (res.data.ok) {
+      alert("Test Stats Reset! You are now Level 1 with 0 XP.");
+      window.location.reload();
+    }
+  };
+
+  // ... inside your return block, next to Logout ...
+  <button
+    onClick={handleResetStats}
+    className="bg-rose-50 text-rose-600 px-4 py-2 rounded-xl text-[10px] font-black hover:bg-rose-600 hover:text-white transition-all"
+  >
+    RESET MY TEST XP
+  </button>;
+
   if (loading) {
     return (
       <div style={{ padding: "2rem" }}>
