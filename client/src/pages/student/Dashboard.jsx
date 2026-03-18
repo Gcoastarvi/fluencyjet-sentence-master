@@ -10,6 +10,22 @@ import confetti from "canvas-confetti";
 
 import AvatarFrame from "../../components/student/AvatarFrame";
 
+const dashboardStyles = `
+  .league-silver-glow {
+    background: linear-gradient(135deg, #e2e8f0 0%, #ffffff 50%, #cbd5e1 100%) !important;
+    background-size: 200% 200%;
+    animation: silverShimmer 3s ease infinite;
+    border: 2px solid #94a3b8 !important;
+    box-shadow: 0 0 20px rgba(203, 213, 225, 0.5);
+  }
+
+  @keyframes silverShimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+`;
+
 const LEVELS = [
   { level: 1, xp: 0 },
   { level: 2, xp: 1000 },
@@ -614,43 +630,67 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 2. LEAGUE PROMOTION RING (Side-Widget) */}
-        <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-4">
-          <div className="relative h-16 w-16 flex items-center justify-center">
-            <svg className="absolute inset-0 -rotate-90">
-              <circle
-                cx="32"
-                cy="32"
-                r="28"
-                fill="transparent"
-                stroke="#F1F5F9"
-                strokeWidth="6"
-              />
-              <circle
-                cx="32"
-                cy="32"
-                r="28"
-                fill="transparent"
-                stroke="#F97316"
-                strokeWidth="6"
-                strokeDasharray="175.9"
-                strokeDashoffset={
-                  150.8 - Math.min((summary.xpTotal || 0) / 500, 1) * 150.8
-                }
-                strokeLinecap="round"
-              />
-            </svg>
-            <span className="text-2xl">🥉</span>
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              League Standing
-            </p>
-            <p className="text-sm font-black text-slate-900">
-              {summary.xpTotal < 500
-                ? `${500 - summary.xpTotal} XP to promote`
-                : "In Promotion Zone!"}
-            </p>
+        {/* 🎯 Dynamic League Card */}
+        <div
+          className={`bg-white rounded-[2rem] p-6 border transition-all duration-700 ${
+            summary.xpTotal >= 500 ? "league-silver-glow" : "border-slate-100"
+          }`}
+        >
+          <h3
+            className={`text-xs font-black uppercase tracking-widest mb-4 ${
+              summary.xpTotal >= 500 ? "text-silver-prestige" : "text-slate-400"
+            }`}
+          >
+            {summary.xpTotal >= 500
+              ? "🥈 Silver League Status"
+              : "🥉 League Standing"}
+          </h3>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* 🎡 The Progress Ring */}
+              <div className="relative w-14 h-14 flex items-center justify-center">
+                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="24"
+                    fill="transparent"
+                    stroke="#f1f5f9"
+                    strokeWidth="4"
+                  />
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="24"
+                    fill="transparent"
+                    stroke={summary.xpTotal >= 500 ? "#94a3b8" : "#f97316"}
+                    strokeWidth="4"
+                    strokeDasharray={150.8}
+                    strokeDashoffset={
+                      150.8 - Math.min((summary.xpTotal || 0) / 500, 1) * 150.8
+                    }
+                    className="transition-all duration-1000"
+                  />
+                </svg>
+                <div className="text-2xl">
+                  {summary.xpTotal >= 500 ? "🥈" : "🥉"}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-black text-slate-900">
+                  {summary.xpTotal >= 500
+                    ? "Promoted to Silver!"
+                    : "Bronze League"}
+                </p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase">
+                  {summary.xpTotal < 500
+                    ? `${500 - (summary.xpTotal || 0)} XP to Silver`
+                    : "Top Tier Achieved"}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
