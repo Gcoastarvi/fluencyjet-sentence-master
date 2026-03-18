@@ -119,6 +119,32 @@ async function main() {
   console.log("🏁 Seeding completed successfully!");
 }
 
+// ----------------------------
+// 4. FOUNDATION LESSONS (The Mastery Path)
+// ----------------------------
+console.log("📚 Seeding Foundation Lessons...");
+const foundationLessons = [
+  {
+    id: "l1",
+    title: "Basic Sentence Structure",
+    level: "Beginner",
+    xpReward: 100,
+  },
+  { id: "l2", title: "Subject-Verb Order", level: "Beginner", xpReward: 100 },
+  { id: "l3", title: "Common Daily Phrases", level: "Beginner", xpReward: 100 },
+  { id: "l4", title: "Action Verbs Intro", level: "Beginner", xpReward: 100 },
+  { id: "l5", title: "Planning a Strategy", level: "Beginner", xpReward: 150 },
+];
+
+for (const lesson of foundationLessons) {
+  await prisma.lesson.upsert({
+    where: { id: lesson.id },
+    update: {},
+    create: lesson,
+  });
+}
+console.log("✅ 5 Foundation Lessons added to the Path");
+
 main()
   .catch((e) => {
     console.error("❌ Seeding failed:", e);

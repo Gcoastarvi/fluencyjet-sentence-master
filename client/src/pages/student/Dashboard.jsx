@@ -203,6 +203,26 @@ export default function Dashboard() {
     }
   };
 
+  const handleLessonComplete = async (lessonId, xpEarned) => {
+    try {
+      // 1. Tell the backend we finished
+      await api.post("/api/xp/add", {
+        xp: xpEarned,
+        type: "LESSON_COMPLETED",
+        lessonId: lessonId,
+      });
+
+      // 2. Play the XP Sound
+      const audio = new Audio("/sounds/xp.mp3");
+      audio.play();
+
+      // 3. Redirect back with a "success" flag
+      navigate("/dashboard?completed=true");
+    } catch (err) {
+      console.error("XP Sync Failed", err);
+    }
+  };
+
   // ⚡ Real-Time Stats Refresher
   useEffect(() => {
     // 🎯 Function to fetch latest stats
@@ -628,8 +648,11 @@ export default function Dashboard() {
             size="lg"
           />
           <div>
-            <h1 className="text-3xl font-black text-slate-900 leading-tight">
-              Welcome back, <span className="text-indigo-600">{userName}</span>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
+              Welcome back,{" "}
+              <span className="text-indigo-600">
+                {auth?.user?.name || auth?.user?.email.split("@")[0]}
+              </span>
             </h1>
             <div className="flex gap-2 mt-2">
               <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
@@ -688,36 +711,38 @@ export default function Dashboard() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* 🎡 The Progress Ring */}
-              <div className="relative w-14 h-14 flex items-center justify-center">
-                <svg className="absolute inset-0 w-full h-full -rotate-90">
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="24"
-                    fill="transparent"
-                    stroke="#f1f5f9"
-                    strokeWidth="4"
-                  />
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="24"
-                    fill="transparent"
-                    stroke={summary.xpTotal >= 500 ? "#94a3b8" : "#f97316"}
-                    strokeWidth="4"
-                    strokeDasharray={150.8}
-                    strokeDashoffset={
-                      150.8 - Math.min((summary.xpTotal || 0) / 500, 1) * 150.8
-                    }
-                    className="transition-all duration-1000"
-                  />
-                </svg>
-                <div className="text-2xl">
-                  {summary.xpTotal >= 500 ? "🥈" : "🥉"}
-                </div>
-              </div>
-
+              // 🎡 The "Living" Progress Ring const radius = 24; const
+              circumference = 2 * Math.PI * radius; // 150.8 const progress =
+              Math.min((summary.totalXP || 0) / 1000, 1); // Goal is 1000 XP
+              const offset = circumference - (progress * circumference); return
+              (
+              <svg className="w-14 h-14 -rotate-90">
+                <circle
+                  cx="28"
+                  cy="28"
+                  r={radius}
+                  fill="transparent"
+                  stroke="#f1f5f9"
+                  strokeWidth="4"
+                />
+                <circle
+                  cx="28"
+                  cy="28"
+                  r={radius}
+                  fill="transparent"
+                  stroke="#6366f1"
+                  strokeWidth="4"
+                  strokeDasharray={circumference}
+                  style={{
+                    strokeDashoffset: offset,
+                    transition:
+                      "stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}
+                  className="drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]"
+                />
+              </svg>
+              );
+              
               <div>
                 <p className="text-sm font-black text-slate-900">
                   {summary.xpTotal >= 500
@@ -773,8 +798,12 @@ export default function Dashboard() {
                       <div
                         key={lesson.id}
                         onClick={() =>
-                          !isLocked && navigate(`/lesson/${lesson.id}`)
-                        }
+                        if (!isLocked) {
+                            // 🎯 ACTIVATE THE XP FEEDBACK
+                            handleLessonComplete(lesson.id, lesson.xpReward || 100);
+                            navigate(`/lesson/${lesson.id}`);
+                          }
+                        }}
                         className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative overflow-hidden group
                          ${isLocked ? "bg-slate-50 border-slate-100 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
                       >

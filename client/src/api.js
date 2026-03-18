@@ -33,7 +33,15 @@ function authHeader() {
   return t ? { Authorization: `Bearer ${t}` } : {};
 }
 
+// 🎯 This is for general data (lessons, summary, XP)
 export const api = axios.create({
+  baseURL: `${API_BASE_URL}/api`,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
+
+// 🎯 This is specifically for Login/Register/Me
+export const authApi = axios.create({
   baseURL: `${API_BASE_URL}/api/auth`,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
