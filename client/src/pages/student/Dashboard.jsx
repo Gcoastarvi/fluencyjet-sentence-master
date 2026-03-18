@@ -111,14 +111,14 @@ export default function Dashboard() {
     streak: 0,
     streakFreezes: 0,
     uniqueDays: 0,
-    xpTotal: 0 ? nextBadge : null,
+    xpTotal: 0,
     earnedBadges: [],
     pendingLessons: [],
     recentActivity: [],
   });
 
   const [showLevelModal, setShowLevelModal] = useState(false);
-  const [prevLevel, setPrevLevel] = useState(summary.level);
+  const [prevLevel, setPrevLevel] = useState(1); // 🎯 Fix: Start at 1, don't reference summary yet
 
   const percent = useMemo(
     () => levelProgressPct(summary.totalXP),
@@ -131,6 +131,25 @@ export default function Dashboard() {
   const needsMastery = (summary?.uniqueDays || 0) === 0;
 
   const showEmergencyAlert = isLate && hasNoFreezes && needsMastery;
+
+  // 🎯 Track Level Up and Sync prevLevel
+  useEffect(() => {
+    if (summary.level > prevLevel && prevLevel !== 1) {
+      setShowLevelModal(true);
+      playLevelUp(); // We will define this below
+    }
+    setPrevLevel(summary.level);
+  }, [summary.level]);
+
+  const playXP = () => {
+    const audio = new Audio("/sounds/xp.mp3");
+    audio.play().catch((e) => console.log("Audio play blocked"));
+  };
+
+  const playLevelUp = () => {
+    const audio = new Audio("/sounds/levelup.mp3");
+    audio.play().catch((e) => console.log("Audio play blocked"));
+  };
 
   const triggerCelebration = (type) => {
     setMilestoneType(type);
@@ -160,6 +179,13 @@ export default function Dashboard() {
       alert("Copy failed (browser blocked clipboard).");
     }
   }, []);
+
+  const syncXP = async () => {
+    const res = await api.get("/api/user/summary");
+    if (res.data.ok) {
+      setSummary(res.data.summary); // This triggers the Progress Bar animation!
+    }
+  };
 
   // ⚡ Real-Time Stats Refresher
   useEffect(() => {
