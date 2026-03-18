@@ -635,7 +635,7 @@ export default function Dashboard() {
                 strokeWidth="6"
                 strokeDasharray="175.9"
                 strokeDashoffset={
-                  175.9 - 175.9 * (Math.min(summary.xpTotal || 0, 500) / 500)
+                  150.8 - Math.min((summary.xpTotal || 0) / 500, 1) * 150.8
                 }
                 strokeLinecap="round"
               />
@@ -648,8 +648,8 @@ export default function Dashboard() {
             </p>
             <p className="text-sm font-black text-slate-900">
               {summary.xpTotal < 500
-                ? `${500 - summary.xpTotal} XP to Silver`
-                : "Promotion Ready!"}
+                ? `${500 - summary.xpTotal} XP to promote`
+                : "In Promotion Zone!"}
             </p>
           </div>
         </div>
