@@ -797,8 +797,8 @@ export default function Dashboard() {
                     return (
                       <div
                         key={lesson.id}
-                        onClick={() =>
-                        if (!isLocked) {
+                        onClick={() => {
+                          if (!isLocked) {
                             // 🎯 ACTIVATE THE XP FEEDBACK
                             handleLessonComplete(lesson.id, lesson.xpReward || 100);
                             navigate(`/lesson/${lesson.id}`);
