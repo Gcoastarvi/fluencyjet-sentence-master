@@ -306,6 +306,28 @@ export default function Dashboard() {
     }
   }, [summary.totalXP]);
 
+  useEffect(() => {
+    const adminXP = 1100;
+    const hasCelebratedRank = localStorage.getItem('rank_up_celebrated');
+
+    if (summary.totalXP > adminXP && !hasCelebratedRank) {
+      // 🎆 MASSIVE SILVER BURST
+      const duration = 5 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 }, colors: ['#94a3b8', '#cbd5e1', '#ffffff'] });
+      }, 250);
+
+      localStorage.setItem('rank_up_celebrated', 'true');
+    }
+  }, [summary.totalXP]);
+
   // 129: Corrected loadMe with async wrapper
   const loadMe = useCallback(async () => {
     try {
@@ -695,6 +717,28 @@ export default function Dashboard() {
             <button className="bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-[9px] font-black hover:bg-slate-900 hover:text-white transition-all">
               {summary.streakFreezes > 0 ? "REFILL" : "BUY"}
             </button>
+          </div>
+        </div>
+
+        {/* 🏆 THE LEADERBOARD */}
+        <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm mt-6">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">World Ranking</h3>
+          <div className="space-y-4">
+            {[
+              { name: "MangoMaster", xp: 1250, rank: 1, color: "bg-amber-100 text-amber-600" },
+              { name: "Admin", xp: 1100, rank: 2, color: "bg-slate-100 text-slate-600" },
+              { name: "You", xp: summary.totalXP || 0, rank: 3, color: "bg-indigo-600 text-white" }
+            ].map((player, i) => (
+              <div key={i} className="flex items-center justify-between group">
+                <div className="flex items-center gap-3">
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black ${player.color}`}>
+                    {player.rank}
+                  </div>
+                  <span className="text-sm font-bold text-slate-700">{player.name}</span>
+                </div>
+                <span className="text-xs font-black text-slate-400">{player.xp} XP</span>
+              </div>
+            ))}
           </div>
         </div>
 
