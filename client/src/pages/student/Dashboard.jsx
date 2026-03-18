@@ -631,6 +631,11 @@ export default function Dashboard() {
     }
   }, [summary.uniqueDays]);
 
+  const radius = 24;
+  const circumference = 2 * Math.PI * radius; 
+  const progressPercent = Math.min((summary.totalXP || 0) / 1000, 1);
+  const offset = circumference - (progressPercent * circumference);
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 font-sans selection:bg-indigo-100">
       {/* 1. ANNOUNCEMENT BANNER */}
@@ -717,13 +722,13 @@ export default function Dashboard() {
               const offset = circumference - (progress * circumference); return
               (
               <svg className="w-14 h-14 -rotate-90">
-                <circle
-                  cx="28"
-                  cy="28"
-                  r={radius}
-                  fill="transparent"
-                  stroke="#f1f5f9"
-                  strokeWidth="4"
+                <circle 
+                  cx="28" 
+                  cy="28" 
+                  r={radius} 
+                  fill="transparent" 
+                  stroke="#f1f5f9" 
+                  strokeWidth="4" 
                 />
                 <circle
                   cx="28"
@@ -733,10 +738,9 @@ export default function Dashboard() {
                   stroke="#6366f1"
                   strokeWidth="4"
                   strokeDasharray={circumference}
-                  style={{
+                  style={{ 
                     strokeDashoffset: offset,
-                    transition:
-                      "stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                    transition: 'stroke-dashoffset 1.5s ease-in-out' 
                   }}
                   className="drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]"
                 />
@@ -797,8 +801,8 @@ export default function Dashboard() {
                     return (
                       <div
                         key={lesson.id}
-                        onClick={() => {
-                          if (!isLocked) {
+                        onClick={() =>
+                        if (!isLocked) {
                             // 🎯 ACTIVATE THE XP FEEDBACK
                             handleLessonComplete(lesson.id, lesson.xpReward || 100);
                             navigate(`/lesson/${lesson.id}`);
