@@ -308,7 +308,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const adminXP = 1100;
-    const hasCelebratedRank = localStorage.getItem('rank_up_celebrated');
+    const hasCelebratedRank = localStorage.getItem("rank_up_celebrated");
 
     if (summary.totalXP > adminXP && !hasCelebratedRank) {
       // 🎆 MASSIVE SILVER BURST
@@ -316,15 +316,20 @@ export default function Dashboard() {
       const animationEnd = Date.now() + duration;
       const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
 
-      const interval = setInterval(function() {
+      const interval = setInterval(function () {
         const timeLeft = animationEnd - Date.now();
         if (timeLeft <= 0) return clearInterval(interval);
 
         const particleCount = 50 * (timeLeft / duration);
-        confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 }, colors: ['#94a3b8', '#cbd5e1', '#ffffff'] });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: Math.random(), y: Math.random() - 0.2 },
+          colors: ["#94a3b8", "#cbd5e1", "#ffffff"],
+        });
       }, 250);
 
-      localStorage.setItem('rank_up_celebrated', 'true');
+      localStorage.setItem("rank_up_celebrated", "true");
     }
   }, [summary.totalXP]);
 
@@ -654,9 +659,9 @@ export default function Dashboard() {
   }, [summary.uniqueDays]);
 
   const radius = 24;
-  const circumference = 2 * Math.PI * radius; 
+  const circumference = 2 * Math.PI * radius;
   const progressPercent = Math.min((summary.totalXP || 0) / 1000, 1);
-  const offset = circumference - (progressPercent * circumference);
+  const offset = circumference - progressPercent * circumference;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 font-sans selection:bg-indigo-100">
@@ -722,21 +727,44 @@ export default function Dashboard() {
 
         {/* 🏆 THE LEADERBOARD */}
         <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm mt-6">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">World Ranking</h3>
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">
+            World Ranking
+          </h3>
           <div className="space-y-4">
             {[
-              { name: "MangoMaster", xp: 1250, rank: 1, color: "bg-amber-100 text-amber-600" },
-              { name: "Admin", xp: 1100, rank: 2, color: "bg-slate-100 text-slate-600" },
-              { name: "You", xp: summary.totalXP || 0, rank: 3, color: "bg-indigo-600 text-white" }
+              {
+                name: "MangoMaster",
+                xp: 1250,
+                rank: 1,
+                color: "bg-amber-100 text-amber-600",
+              },
+              {
+                name: "Admin",
+                xp: 1100,
+                rank: 2,
+                color: "bg-slate-100 text-slate-600",
+              },
+              {
+                name: "You",
+                xp: summary.totalXP || 0,
+                rank: 3,
+                color: "bg-indigo-600 text-white",
+              },
             ].map((player, i) => (
               <div key={i} className="flex items-center justify-between group">
                 <div className="flex items-center gap-3">
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black ${player.color}`}>
+                  <div
+                    className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black ${player.color}`}
+                  >
                     {player.rank}
                   </div>
-                  <span className="text-sm font-bold text-slate-700">{player.name}</span>
+                  <span className="text-sm font-bold text-slate-700">
+                    {player.name}
+                  </span>
                 </div>
-                <span className="text-xs font-black text-slate-400">{player.xp} XP</span>
+                <span className="text-xs font-black text-slate-400">
+                  {player.xp} XP
+                </span>
               </div>
             ))}
           </div>
@@ -766,13 +794,13 @@ export default function Dashboard() {
               const offset = circumference - (progress * circumference); return
               (
               <svg className="w-14 h-14 -rotate-90">
-                <circle 
-                  cx="28" 
-                  cy="28" 
-                  r={radius} 
-                  fill="transparent" 
-                  stroke="#f1f5f9" 
-                  strokeWidth="4" 
+                <circle
+                  cx="28"
+                  cy="28"
+                  r={radius}
+                  fill="transparent"
+                  stroke="#f1f5f9"
+                  strokeWidth="4"
                 />
                 <circle
                   cx="28"
@@ -782,15 +810,14 @@ export default function Dashboard() {
                   stroke="#6366f1"
                   strokeWidth="4"
                   strokeDasharray={circumference}
-                  style={{ 
+                  style={{
                     strokeDashoffset: offset,
-                    transition: 'stroke-dashoffset 1.5s ease-in-out' 
+                    transition: "stroke-dashoffset 1.5s ease-in-out",
                   }}
                   className="drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]"
                 />
               </svg>
               );
-              
               <div>
                 <p className="text-sm font-black text-slate-900">
                   {summary.xpTotal >= 500
@@ -845,10 +872,13 @@ export default function Dashboard() {
                     return (
                       <div
                         key={lesson.id}
-                        onClick={() =>
-                        if (!isLocked) {
+                        onClick={() => {
+                          if (!isLocked) {
                             // 🎯 ACTIVATE THE XP FEEDBACK
-                            handleLessonComplete(lesson.id, lesson.xpReward || 100);
+                            handleLessonComplete(
+                              lesson.id,
+                              lesson.xpReward || 100,
+                            );
                             navigate(`/lesson/${lesson.id}`);
                           }
                         }}
