@@ -17,23 +17,29 @@ export default function Home() {
   const [selected, setSelected] = useState([]);
   const [isCorrect, setIsCorrect] = useState(false);
 
+  // 🎯 Helper for the "Success" Sound
+  const playCorrect = () => {
+    const audio = new Audio("/sounds/correct.mp3");
+    audio.play().catch((e) => console.log("Audio blocked by browser"));
+  };
+
+  // 🎯 Update your handleWordClick logic
   const handleWordClick = (word) => {
-    if (isCorrect) return; // Stop if already won
+    if (isCorrect) return;
 
     const newSelected = [...selected, word];
     setSelected(newSelected);
     setDemoWords(demoWords.filter((w) => w !== word));
 
-    // Check if sentence is complete (5 words)
     if (newSelected.length === 5) {
       const finalSentence = newSelected.join(" ");
       if (finalSentence === "We are planning a strategy") {
         setIsCorrect(true);
+        playCorrect(); // 🔔 The "Ding!" happens here
         confetti({
           particleCount: 150,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ["#6366f1", "#a855f7"],
         });
       }
     }
