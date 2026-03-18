@@ -228,6 +228,18 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    const fetchLessons = async () => {
+      try {
+        const res = await api.get("/api/lessons");
+        if (res.data) setLessons(res.data);
+      } catch (err) {
+        console.error("MISSION CRITICAL: Lesson Fetch Failed", err);
+      }
+    };
+    fetchLessons();
+  }, []);
+
+  useEffect(() => {
     if (summary.level > prevLevel && prevLevel !== 0) {
       setShowLevelModal(true);
       // 🎆 Fire a massive "School Pride" Confetti burst
@@ -627,6 +639,34 @@ export default function Dashboard() {
                 ⭐ {summary.totalXP} TOTAL XP
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* 🛡️ Streak Freeze Shield Widget */}
+        <div
+          className={`p-5 rounded-[2rem] border-2 mb-4 transition-all ${
+            summary.streakFreezes > 0
+              ? "bg-indigo-50 border-indigo-100"
+              : "bg-slate-50 border-slate-100 opacity-60"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl animate-pulse">
+                {summary.streakFreezes > 0 ? "🛡️" : "⚪"}
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400">
+                  Streak Shield
+                </p>
+                <p className="text-xs font-black text-slate-900">
+                  {summary.streakFreezes > 0 ? "PROTECTED" : "INACTIVE"}
+                </p>
+              </div>
+            </div>
+            <button className="bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-[9px] font-black hover:bg-slate-900 hover:text-white transition-all">
+              {summary.streakFreezes > 0 ? "REFILL" : "BUY"}
+            </button>
           </div>
         </div>
 
