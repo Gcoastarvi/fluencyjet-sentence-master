@@ -24,6 +24,16 @@ const dashboardStyles = `
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
+
+  @keyframes flamePulse {
+    0% { transform: scale(1); filter: drop-shadow(0 0 2px #f97316); }
+    50% { transform: scale(1.1); filter: drop-shadow(0 0 8px #ea580c); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 2px #f97316); }
+  }
+  .streak-flame-active {
+    animation: flamePulse 2s infinite ease-in-out;
+    display: inline-block;
+  }
 `;
 
 const LEVELS = [
