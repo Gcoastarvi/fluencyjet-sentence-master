@@ -304,7 +304,7 @@ export default function Dashboard() {
     // 🎯 Function to fetch latest stats
     const refreshStats = async () => {
       try {
-        const response = await api.get("/api/user/summary"); // Adjust to your actual endpoint
+        const response = await api.get("/user/summary");
         if (response.data.ok) {
           setSummary(response.data.summary);
           setUserProgress(response.data.userProgress || {});
@@ -789,8 +789,9 @@ export default function Dashboard() {
               >
                 🔥 {summary.streak || 0} DAY STREAK
               </span>
-              <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                ⭐ {displayXP.toLocaleString()} TOTAL XP
+              <span className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100 flex items-center gap-1 transition-all hover:scale-105">
+                <span className="animate-pulse">⭐</span>{" "}
+                {displayXP.toLocaleString()} TOTAL XP
               </span>
             </div>
           </div>
@@ -954,14 +955,24 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Array.isArray(lessons) && lessons.length > 0 ? (
-                lessons
-                  .filter((l) => l.level === "Beginner")
-                  .slice(0, 10)
-                  .map((lesson, idx) => {
-                    // 🛡️ Safety fallback for userProgress
-                    const progress = userProgress ? userProgress[lesson.id] : 0;
-                    const isCompleted = progress === 100;
+                    {Array.isArray(lessons) && lessons.length > 0 ? (
+                      lessons
+                        .map((lesson, idx) => {
+                          // 🛡️ Enhanced Safety fallback
+                          const currentXP = summary?.totalXP || 0;
+                          // Let's make the first 3 lessons always unlocked for testing
+                          const isUnlocked = idx < 3 || currentXP > (idx * 100); 
+
+                          return (
+                            <div key={lesson.id || idx} className="p-4 bg-white border rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer">
+                               <h4 className="font-black text-slate-800">{lesson.title}</h4>
+                               <p className="text-[10px] text-slate-400 uppercase font-bold">{lesson.slug}</p>
+                            </div>
+                          );
+                        })
+                    ) : (
+                      <div className="text-slate-400 italic">No lessons available in your path yet.</div>
+                    )}
 
                     // Logic for locking (Previous lesson must be 100%)
                     const isLocked =
