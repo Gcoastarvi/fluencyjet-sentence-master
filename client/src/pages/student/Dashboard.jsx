@@ -158,6 +158,29 @@ export default function Dashboard() {
 
   const showEmergencyAlert = isLate && hasNoFreezes && needsMastery;
 
+  const [displayXP, setDisplayXP] = useState(0);
+
+  useEffect(() => {
+    let start = displayXP;
+    const end = summary.totalXP || 0;
+    if (start === end) return;
+
+    const duration = 1000; // 1 second animation
+    const stepTime = Math.abs(Math.floor(duration / (end - start || 1)));
+
+    const timer = setInterval(() => {
+      start += Math.ceil((end - start) / 10); // Move in 10% chunks
+      if (start >= end) {
+        setDisplayXP(end);
+        clearInterval(timer);
+      } else {
+        setDisplayXP(start);
+      }
+    }, 50);
+
+    return () => clearInterval(timer);
+  }, [summary.totalXP]);
+
   // 🎯 Track Level Up and Sync prevLevel
   useEffect(() => {
     if (summary.level > prevLevel && prevLevel !== 1) {
@@ -282,6 +305,18 @@ export default function Dashboard() {
     }
     setPrevLevel(summary.level);
   }, [summary.level]);
+
+  useEffect(() => {
+    // 🏁 If we just came back from a successful lesson
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("completed") === "true") {
+      // 🎉 Trigger a manual stats refresh
+      fetchUserSummary();
+
+      // Clean up the URL so it doesn't keep refreshing
+      window.history.replaceState({}, document.title, "/dashboard");
+    }
+  }, [location]);
 
   useEffect(() => {
     const hasSeenWelcome = localStorage.getItem("fj_welcome_celebrated");
@@ -697,11 +732,13 @@ export default function Dashboard() {
               </span>
             </h1>
             <div className="flex gap-2 mt-2">
-              <span className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                🔥 {summary.streak} DAY STREAK
+              <span
+                className={`bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${summary.streak > 0 ? "streak-flame-active" : ""}`}
+              >
+                🔥 {summary.streak || 0} DAY STREAK
               </span>
               <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-                ⭐ {summary.totalXP} TOTAL XP
+                ⭐ {displayXP.toLocaleString()} TOTAL XP
               </span>
             </div>
           </div>

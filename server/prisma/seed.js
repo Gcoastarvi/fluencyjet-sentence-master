@@ -124,38 +124,33 @@ async function main() {
 // 4. FOUNDATION LESSONS (The Mastery Path)
 // ----------------------------
 console.log("📚 Seeding Foundation Lessons...");
-// 🎯 Updated Foundation Lessons with ID and Slug
+// 🎯 Use slugs to identify lessons since IDs are auto-generated
 const foundationLessons = [
   {
-    id: 1,
     slug: "basic-sentence",
     title: "Basic Sentence Structure",
     level: "Beginner",
     xpReward: 100,
   },
   {
-    id: 2,
     slug: "subject-verb",
     title: "Subject-Verb Order",
     level: "Beginner",
     xpReward: 100,
   },
   {
-    id: 3,
     slug: "daily-phrases",
     title: "Common Daily Phrases",
     level: "Beginner",
     xpReward: 100,
   },
   {
-    id: 4,
     slug: "action-verbs",
     title: "Action Verbs Intro",
     level: "Beginner",
     xpReward: 100,
   },
   {
-    id: 5,
     slug: "strategy-planning",
     title: "Planning a Strategy",
     level: "Beginner",
@@ -165,9 +160,14 @@ const foundationLessons = [
 
 for (const lesson of foundationLessons) {
   await prisma.lesson.upsert({
-    where: { id: lesson.id },
+    where: { slug: lesson.slug }, // 🔍 Use slug as the unique key
     update: {},
-    create: lesson,
+    create: {
+      ...lesson,
+      description: "Foundation practice",
+      difficulty: "Easy",
+      isLocked: false,
+    },
   });
 }
 console.log("✅ 5 Foundation Lessons added to the Path");

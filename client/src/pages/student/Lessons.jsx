@@ -351,6 +351,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
           const isRecommended = isUnlocked && recommendedLessonId === lesson.id;
 
           const goPrimary = () => {
+            playClick();
             const diff = String(
               lesson?.difficulty || lesson?.lessonLevel || track || "beginner",
             ).toLowerCase();
