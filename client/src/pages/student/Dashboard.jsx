@@ -1107,6 +1107,16 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      {showVictoryModal && (
+        <VictoryModal
+          isOpen={showVictoryModal}
+          xp={earnedXp}
+          onNext={() => {
+            setShowVictoryModal(false);
+            fetchUserSummary(); // Refresh stats immediately
+          }}
+        />
+      )}
     </div>
   );
 

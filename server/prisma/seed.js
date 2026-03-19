@@ -79,16 +79,24 @@ async function main() {
 
   // 🎯 Loop through quizzes instead of createMany to avoid crashes
   console.log("⌨️ Seeding Typing Quizzes...");
-  for (const quiz of sampleData) {
-    await prisma.typingQuiz.upsert({
-      where: {
-        // 💡 Logic: Use a unique combination of Tamil and English as the "ID"
-        // if your schema doesn't have a dedicated ID for this.
-        ta_en: { ta: quiz.ta, en: quiz.en },
-      },
-      update: {},
-      create: quiz,
-    });
+  // Check if the model exists in your prisma client
+  const quizModel =
+    prisma.typingQuiz || prisma.TypingQuiz || prisma.typing_quiz;
+
+  if (quizModel) {
+    for (const quiz of sampleData) {
+      await quizModel.upsert({
+        where: {
+          // Unique key: Ensure your schema has a unique constraint on 'en' or 'ta'
+          en: quiz.en,
+        },
+        update: {},
+        create: quiz,
+      });
+    }
+    console.log("✅ Typing Quizzes seeded");
+  } else {
+    console.warn("⚠️ TypingQuiz model not found in schema, skipping...");
   }
 
   // ----------------------------
