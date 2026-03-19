@@ -124,13 +124,13 @@ async function main() {
 // 4. FOUNDATION LESSONS (The Mastery Path)
 // ----------------------------
 console.log("📚 Seeding Foundation Lessons...");
-// 🎯 Updated to match your specific Prisma Schema
+// 🎯 Cleaned to match your strict Prisma Schema
 const foundationLessons = [
-  { slug: "basic-sentence", title: "Basic Sentence Structure", xpReward: 100 },
-  { slug: "subject-verb", title: "Subject-Verb Order", xpReward: 100 },
-  { slug: "daily-phrases", title: "Common Daily Phrases", xpReward: 100 },
-  { slug: "action-verbs", title: "Action Verbs Intro", xpReward: 100 },
-  { slug: "strategy-planning", title: "Planning a Strategy", xpReward: 150 },
+  { slug: "basic-sentence", title: "Basic Sentence Structure" },
+  { slug: "subject-verb", title: "Subject-Verb Order" },
+  { slug: "daily-phrases", title: "Common Daily Phrases" },
+  { slug: "action-verbs", title: "Action Verbs Intro" },
+  { slug: "strategy-planning", title: "Planning a Strategy" },
 ];
 
 for (const lesson of foundationLessons) {
@@ -140,8 +140,9 @@ for (const lesson of foundationLessons) {
     create: {
       ...lesson,
       description: "Foundation practice",
-      difficulty: "Beginner", // Use difficulty since 'level' was rejected
+      difficulty: "Beginner",
       isLocked: false,
+      // ❌ REMOVED xpReward since schema rejected it
     },
   });
 }

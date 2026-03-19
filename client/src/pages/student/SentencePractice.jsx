@@ -2157,6 +2157,7 @@ export default function SentencePractice() {
                       type="button"
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-left hover:bg-slate-100"
                       onClick={() => {
+                        playClick(); // 🔔 Immediate audio feedback
                         track("mode_switched", {
                           lessonId: Number(lid) || 0,
                           difficulty,
@@ -2380,6 +2381,7 @@ export default function SentencePractice() {
             <button
               type="button"
               onClick={() => {
+                playClick();
                 const sp = new URLSearchParams(window.location.search);
                 const lid = sp.get("lessonId") || String(lessonId);
                 const diff = sp.get("difficulty") || difficulty || "beginner";
@@ -3059,6 +3061,7 @@ export default function SentencePractice() {
                   <button
                     type="button"
                     onClick={() => {
+                      playClick();
                       openAudioGateAfter(1800);
                       speakTTS(englishFull);
                     }}
@@ -3072,6 +3075,7 @@ export default function SentencePractice() {
                   <button
                     type="button"
                     onClick={() => {
+                      playClick();
                       stopTTS();
                       resetAudioGate();
                     }}
