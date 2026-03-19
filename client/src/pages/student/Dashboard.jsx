@@ -34,6 +34,11 @@ const dashboardStyles = `
     animation: flamePulse 2s infinite ease-in-out;
     display: inline-block;
   }
+  .frame-silver-pro {
+    box-shadow: 0 0 15px rgba(148, 163, 184, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.8);
+    border: 4px solid #cbd5e1;
+    background: linear-gradient(135deg, #e2e8f0 0%, #ffffff 50%, #94a3b8 100%);
+  }
 `;
 
 const LEVELS = [
@@ -258,6 +263,23 @@ export default function Dashboard() {
     }
   };
 
+  const buyShield = async () => {
+    if (summary.totalXP < 500) return alert("Not enough XP! Need 500.");
+
+    try {
+      // 🛡️ Deduct XP and add shield in backend
+      const res = await api.post("/user/buy-shield");
+      if (res.data.ok) {
+        // 🎉 Play a "Shield Equip" sound
+        const audio = new Audio("/sounds/levelup.mp3");
+        audio.play();
+        fetchUserSummary(); // Refresh to see 'PROTECTED'
+      }
+    } catch (err) {
+      console.error("Shield Purchase Failed", err);
+    }
+  };
+
   useEffect(() => {
     const adminXP = 1100;
     // Check if current user XP is higher than Admin
@@ -305,7 +327,13 @@ export default function Dashboard() {
     const fetchLessons = async () => {
       try {
         const res = await api.get("/lessons");
-        if (res.data) setLessons(res.data);
+        // 🎯 Safety check: Ensure we only set array data
+        if (res.data && Array.data) {
+          const sorted = res.data.sort((a, b) => a.id - b.id);
+          setLessons(sorted);
+        } else if (Array.isArray(res.data)) {
+          setLessons(res.data);
+        }
       } catch (err) {
         console.error("MISSION CRITICAL: Lesson Fetch Failed", err);
       }
@@ -740,11 +768,17 @@ export default function Dashboard() {
 
       <header className="max-w-6xl mx-auto px-6 pt-12 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex items-center gap-6">
-          <AvatarFrame
-            src={auth?.user?.avatar_url}
-            league={summary.league || "BRONZE"}
-            size="lg"
-          />
+          <div
+            className={`p-1 rounded-full transition-all duration-1000 ${
+              (summary.xpTotal || 0) > 5000 ? "frame-silver-pro" : ""
+            }`}
+          >
+            <AvatarFrame
+              src={auth?.user?.avatar_url}
+              league={summary.league || "BRONZE"}
+              size="lg"
+            />
+          </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
               Welcome back,{" "}
@@ -787,8 +821,11 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <button className="bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-[9px] font-black hover:bg-slate-900 hover:text-white transition-all">
-              {summary.streakFreezes > 0 ? "REFILL" : "BUY"}
+            <button
+              onClick={buyShield}
+              className="bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-[9px] font-black hover:bg-slate-900 hover:text-white transition-all"
+            >
+              {summary.streak_freezes > 0 ? "REFILL" : "BUY"}
             </button>
           </div>
         </div>
@@ -832,6 +869,51 @@ export default function Dashboard() {
                 </div>
                 <span className="text-xs font-black text-slate-400">
                   {player.xp} XP
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 🏆 GLOBAL LEADERBOARD */}
+        <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mb-8">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">
+            Global Leaderboard
+          </h3>
+          <div className="space-y-6">
+            {[
+              {
+                name: "MangoMaster",
+                xp: 1250,
+                rank: 1,
+                color: "bg-amber-100 text-amber-600",
+              },
+              {
+                name: "Admin",
+                xp: 1100,
+                rank: 2,
+                color: "bg-slate-200 text-slate-500",
+              },
+              {
+                name: "You",
+                xp: summary.totalXP || 0,
+                rank: 3,
+                color: "bg-indigo-600 text-white shadow-lg shadow-indigo-200",
+              },
+            ].map((user, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${user.color}`}
+                  >
+                    {user.rank}
+                  </div>
+                  <span className="text-sm font-bold text-slate-800">
+                    {user.name}
+                  </span>
+                </div>
+                <span className="text-xs font-black text-slate-400">
+                  {user.xp.toLocaleString()} XP
                 </span>
               </div>
             ))}

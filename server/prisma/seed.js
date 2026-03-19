@@ -77,26 +77,42 @@ async function main() {
     },
   ];
 
-  // 🎯 Loop through quizzes instead of createMany to avoid crashes
-  console.log("⌨️ Seeding Typing Quizzes...");
-  // Check if the model exists in your prisma client
-  const quizModel =
-    prisma.typingQuiz || prisma.TypingQuiz || prisma.typing_quiz;
+  // 🎯 Use the 'Quiz' model as per your schema
+  console.log("⌨️ Seeding Quizzes into Lesson 1...");
 
-  if (quizModel) {
-    for (const quiz of sampleData) {
-      await quizModel.upsert({
-        where: {
-          // Unique key: Ensure your schema has a unique constraint on 'en' or 'ta'
-          en: quiz.en,
-        },
+  // We fetch Lesson 1 first to make sure it exists
+  const lesson1 = await prisma.lesson.findUnique({
+    where: { slug: "basic-sentence" },
+  });
+
+  if (lesson1) {
+    const quizData = [
+      {
+        lessonId: lesson1.id,
+        question: "நான் பள்ளிக்கு செல்கிறேன்",
+        type: "typing",
+        prompt: "I am going to school",
+        xpReward: 50,
+      },
+      {
+        lessonId: lesson1.id,
+        question: "அவர் புத்தகம் படிக்கிறார்",
+        type: "typing",
+        prompt: "He is reading a book",
+        xpReward: 50,
+      },
+    ];
+
+    for (const quiz of quizData) {
+      await prisma.quiz.upsert({
+        where: { id: quiz.id || 0 }, // Using 0 for new entries or a specific ID
         update: {},
         create: quiz,
       });
     }
-    console.log("✅ Typing Quizzes seeded");
+    console.log("✅ Quizzes seeded and linked to Lesson 1");
   } else {
-    console.warn("⚠️ TypingQuiz model not found in schema, skipping...");
+    console.warn("⚠️ Lesson 1 not found. Seed the lessons first!");
   }
 
   // ----------------------------
