@@ -1,4 +1,5 @@
-import prisma from "../prisma/client.js";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 import bcrypt from "bcryptjs";
 
 async function main() {
@@ -123,17 +124,18 @@ async function main() {
 // 4. FOUNDATION LESSONS (The Mastery Path)
 // ----------------------------
 console.log("📚 Seeding Foundation Lessons...");
+// 🎯 Updated Foundation Lessons with Integer IDs
 const foundationLessons = [
   {
-    id: "l1",
+    id: 1,
     title: "Basic Sentence Structure",
     level: "Beginner",
     xpReward: 100,
   },
-  { id: "l2", title: "Subject-Verb Order", level: "Beginner", xpReward: 100 },
-  { id: "l3", title: "Common Daily Phrases", level: "Beginner", xpReward: 100 },
-  { id: "l4", title: "Action Verbs Intro", level: "Beginner", xpReward: 100 },
-  { id: "l5", title: "Planning a Strategy", level: "Beginner", xpReward: 150 },
+  { id: 2, title: "Subject-Verb Order", level: "Beginner", xpReward: 100 },
+  { id: 3, title: "Common Daily Phrases", level: "Beginner", xpReward: 100 },
+  { id: 4, title: "Action Verbs Intro", level: "Beginner", xpReward: 100 },
+  { id: 5, title: "Planning a Strategy", level: "Beginner", xpReward: 150 },
 ];
 
 for (const lesson of foundationLessons) {

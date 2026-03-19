@@ -788,43 +788,41 @@ export default function Dashboard() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              // 🎡 The "Living" Progress Ring const radius = 24; const
-              circumference = 2 * Math.PI * radius; // 150.8 const progress =
-              Math.min((summary.totalXP || 0) / 1000, 1); // Goal is 1000 XP
-              const offset = circumference - (progress * circumference); return
-              (
-              <svg className="w-14 h-14 -rotate-90">
-                <circle
-                  cx="28"
-                  cy="28"
-                  r={radius}
-                  fill="transparent"
-                  stroke="#f1f5f9"
-                  strokeWidth="4"
-                />
-                <circle
-                  cx="28"
-                  cy="28"
-                  r={radius}
-                  fill="transparent"
-                  stroke="#6366f1"
-                  strokeWidth="4"
-                  strokeDasharray={circumference}
-                  style={{
-                    strokeDashoffset: offset,
-                    transition: "stroke-dashoffset 1.5s ease-in-out",
-                  }}
-                  className="drop-shadow-[0_0_8px_rgba(99,102,241,0.4)]"
-                />
-              </svg>
-              );
+              <div className="relative w-14 h-14 flex items-center justify-center">
+                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="24"
+                    fill="transparent"
+                    stroke="#f1f5f9"
+                    strokeWidth="4"
+                  />
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="24"
+                    fill="transparent"
+                    stroke="#6366f1"
+                    strokeWidth="4"
+                    strokeDasharray={150.8}
+                    strokeDashoffset={
+                      150.8 - Math.min((summary.totalXP || 0) / 1000, 1) * 150.8
+                    }
+                    style={{ transition: "stroke-dashoffset 1.5s ease-in-out" }}
+                  />
+                </svg>
+                <span className="text-xl">
+                  {summary.xpTotal >= 500 ? "🥈" : "🥉"}
+                </span>
+              </div>
               <div>
                 <p className="text-sm font-black text-slate-900">
                   {summary.xpTotal >= 500
                     ? "Promoted to Silver!"
                     : "Bronze League"}
                 </p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
                   {summary.xpTotal < 500
                     ? `${500 - (summary.xpTotal || 0)} XP to Silver`
                     : "Top Tier Achieved"}
