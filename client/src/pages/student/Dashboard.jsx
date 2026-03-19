@@ -327,11 +327,8 @@ export default function Dashboard() {
     const fetchLessons = async () => {
       try {
         const res = await api.get("/lessons");
-        // 🎯 Safety check: Ensure we only set array data
-        if (res.data && Array.data) {
-          const sorted = res.data.sort((a, b) => a.id - b.id);
-          setLessons(sorted);
-        } else if (Array.isArray(res.data)) {
+        console.log("🛠️ API DEBUG: Lessons Received ->", res.data); // Add this!
+        if (res.data && res.data.length > 0) {
           setLessons(res.data);
         }
       } catch (err) {
@@ -827,51 +824,6 @@ export default function Dashboard() {
             >
               {summary.streak_freezes > 0 ? "REFILL" : "BUY"}
             </button>
-          </div>
-        </div>
-
-        {/* 🏆 THE LEADERBOARD */}
-        <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm mt-6">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">
-            World Ranking
-          </h3>
-          <div className="space-y-4">
-            {[
-              {
-                name: "MangoMaster",
-                xp: 1250,
-                rank: 1,
-                color: "bg-amber-100 text-amber-600",
-              },
-              {
-                name: "Admin",
-                xp: 1100,
-                rank: 2,
-                color: "bg-slate-100 text-slate-600",
-              },
-              {
-                name: "You",
-                xp: summary.totalXP || 0,
-                rank: 3,
-                color: "bg-indigo-600 text-white",
-              },
-            ].map((player, i) => (
-              <div key={i} className="flex items-center justify-between group">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-black ${player.color}`}
-                  >
-                    {player.rank}
-                  </div>
-                  <span className="text-sm font-bold text-slate-700">
-                    {player.name}
-                  </span>
-                </div>
-                <span className="text-xs font-black text-slate-400">
-                  {player.xp} XP
-                </span>
-              </div>
-            ))}
           </div>
         </div>
 
