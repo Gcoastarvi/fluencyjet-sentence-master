@@ -256,6 +256,25 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    const adminXP = 1100;
+    // Check if current user XP is higher than Admin
+    if (summary.totalXP > adminXP) {
+      const hasCelebrated = localStorage.getItem("rank_up_1100");
+
+      if (!hasCelebrated) {
+        // 🎆 Trigger the Silver Burst
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ["#94a3b8", "#cbd5e1", "#ffffff"], // Silver/White palette
+        });
+        localStorage.setItem("rank_up_1100", "true");
+      }
+    }
+  }, [summary.totalXP]);
+
   // ⚡ Real-Time Stats Refresher
   useEffect(() => {
     // 🎯 Function to fetch latest stats
