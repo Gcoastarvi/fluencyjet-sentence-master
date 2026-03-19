@@ -955,72 +955,57 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Array.isArray(lessons) && lessons.length > 0 ? (
-                      lessons
-                        .map((lesson, idx) => {
-                          // 🛡️ Enhanced Safety fallback
-                          const currentXP = summary?.totalXP || 0;
-                          // Let's make the first 3 lessons always unlocked for testing
-                          const isUnlocked = idx < 3 || currentXP > (idx * 100); 
+              {Array.isArray(lessons) && lessons.length > 0 ? (
+                lessons.map((lesson, idx) => {
+                  // 🛡️ Use the real progress from your API (seen in your curl output)
+                  const typingProg = lesson.progress?.typing || 0;
+                  const reorderProg = lesson.progress?.reorder || 0;
+                  const avgProgress = Math.round(
+                    (typingProg + reorderProg) / 2,
+                  );
+                  const isCompleted = avgProgress === 100;
 
-                          return (
-                            <div key={lesson.id || idx} className="p-4 bg-white border rounded-2xl shadow-sm hover:shadow-md transition-all cursor-pointer">
-                               <h4 className="font-black text-slate-800">{lesson.title}</h4>
-                               <p className="text-[10px] text-slate-400 uppercase font-bold">{lesson.slug}</p>
-                            </div>
-                          );
-                        })
-                    ) : (
-                      <div className="text-slate-400 italic">No lessons available in your path yet.</div>
-                    )}
+                  // Unlock Lesson 1 always; others unlock if previous is > 0%
+                  const isLocked =
+                    idx > 0 && (lessons[idx - 1].progress?.reorder || 0) < 50;
 
-                    // Logic for locking (Previous lesson must be 100%)
-                    const isLocked =
-                      idx > 0 &&
-                      (!userProgress ||
-                        (userProgress[lessons[idx - 1].id] || 0) < 100);
-
-                    return (
-                      <div
-                        key={lesson.id}
-                        onClick={() => {
-                          if (!isLocked) {
-                            // 🎯 ACTIVATE THE XP FEEDBACK
-                            handleLessonComplete(
-                              lesson.id,
-                              lesson.xpReward || 100,
-                            );
-                            navigate(`/lesson/${lesson.id}`);
-                          }
-                        }}
-                        className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative overflow-hidden group
-                         ${isLocked ? "bg-slate-50 border-slate-100 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
-                      >
-                        <div className="flex items-center gap-5">
-                          <div
-                            className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl font-black 
-                             ${isCompleted ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"}`}
-                          >
-                            {isLocked ? "🔒" : isCompleted ? "✓" : idx + 1}
-                          </div>
-                          <div>
-                            <h3 className="font-black text-slate-900 leading-tight mb-1">
-                              {lesson.title || `Lesson ${idx + 1}`}
-                            </h3>
-                            <div className="h-1 w-24 bg-slate-100 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-indigo-500"
-                                style={{ width: `${progress || 0}%` }}
-                              />
-                            </div>
+                  return (
+                    <div
+                      key={lesson.id || idx}
+                      onClick={() =>
+                        !isLocked && navigate(`/lesson/${lesson.id}`)
+                      }
+                      className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative group
+                        ${isLocked ? "bg-slate-50 border-slate-100 opacity-60 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
+                    >
+                      <div className="flex items-center gap-5">
+                        <div
+                          className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl font-black 
+                          ${isCompleted ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"}`}
+                        >
+                          {isLocked ? "🔒" : isCompleted ? "✓" : idx + 1}
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-black text-slate-900 leading-tight mb-1">
+                            {lesson.title || `Mastery ${idx + 1}`}
+                          </h3>
+                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-indigo-500 transition-all duration-1000"
+                              style={{ width: `${avgProgress}%` }}
+                            />
                           </div>
                         </div>
                       </div>
-                    );
-                  })
+                    </div>
+                  );
+                })
               ) : (
-                <div className="col-span-2 py-12 text-center text-slate-400 italic font-medium">
-                  Loading your Mastery Path...
+                <div className="col-span-2 py-20 text-center">
+                  <div className="animate-spin h-8 w-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className="text-slate-400 font-bold italic">
+                    Opening the Mastery Path...
+                  </p>
                 </div>
               )}
             </div>
