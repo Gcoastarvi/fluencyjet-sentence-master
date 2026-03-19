@@ -124,48 +124,23 @@ async function main() {
 // 4. FOUNDATION LESSONS (The Mastery Path)
 // ----------------------------
 console.log("📚 Seeding Foundation Lessons...");
-// 🎯 Use slugs to identify lessons since IDs are auto-generated
+// 🎯 Updated to match your specific Prisma Schema
 const foundationLessons = [
-  {
-    slug: "basic-sentence",
-    title: "Basic Sentence Structure",
-    level: "Beginner",
-    xpReward: 100,
-  },
-  {
-    slug: "subject-verb",
-    title: "Subject-Verb Order",
-    level: "Beginner",
-    xpReward: 100,
-  },
-  {
-    slug: "daily-phrases",
-    title: "Common Daily Phrases",
-    level: "Beginner",
-    xpReward: 100,
-  },
-  {
-    slug: "action-verbs",
-    title: "Action Verbs Intro",
-    level: "Beginner",
-    xpReward: 100,
-  },
-  {
-    slug: "strategy-planning",
-    title: "Planning a Strategy",
-    level: "Beginner",
-    xpReward: 150,
-  },
+  { slug: "basic-sentence", title: "Basic Sentence Structure", xpReward: 100 },
+  { slug: "subject-verb", title: "Subject-Verb Order", xpReward: 100 },
+  { slug: "daily-phrases", title: "Common Daily Phrases", xpReward: 100 },
+  { slug: "action-verbs", title: "Action Verbs Intro", xpReward: 100 },
+  { slug: "strategy-planning", title: "Planning a Strategy", xpReward: 150 },
 ];
 
 for (const lesson of foundationLessons) {
   await prisma.lesson.upsert({
-    where: { slug: lesson.slug }, // 🔍 Use slug as the unique key
+    where: { slug: lesson.slug },
     update: {},
     create: {
       ...lesson,
       description: "Foundation practice",
-      difficulty: "Easy",
+      difficulty: "Beginner", // Use difficulty since 'level' was rejected
       isLocked: false,
     },
   });

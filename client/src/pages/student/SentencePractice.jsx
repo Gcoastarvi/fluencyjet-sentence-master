@@ -1,3 +1,4 @@
+//client/src/pages/student/SentencePractice.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { api } from "@/api/apiClient";
@@ -366,6 +367,12 @@ export default function SentencePractice() {
           current?.id ?? `${lid}:${currentIndex}`,
         )
       : typingWordBankBase;
+
+  const playClick = () => {
+    const audio = new Audio("/sounds/xp.mp3");
+    audio.volume = 0.3; // Gentle feedback
+    audio.play().catch(() => {});
+  };
 
   console.log(
     "[DBG] currentIndex =",
