@@ -263,6 +263,27 @@ export default function Dashboard() {
     }
   };
 
+  const fetchUserSummary = async () => {
+    try {
+      const res = await api.get("/user/summary");
+      if (res.data) {
+        // 🏎️ TRIGGER: Update the display XP gradually
+        setSummary(res.data);
+
+        // If we just completed a lesson, play the 'Dopamine' sound
+        if (window.location.search.includes("completed=true")) {
+          const audio = new Audio(
+            "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
+          );
+          audio.volume = 0.3;
+          audio.play().catch(() => {});
+        }
+      }
+    } catch (err) {
+      console.error("Summary Sync Failed", err);
+    }
+  };
+
   const buyShield = async () => {
     if (summary.totalXP < 500) return alert("Not enough XP! Need 500.");
 
@@ -973,7 +994,10 @@ export default function Dashboard() {
                     <div
                       key={lesson.id || idx}
                       onClick={() =>
-                        !isLocked && navigate(`/lesson/${lesson.id}`)
+                        !isLocked &&
+                        navigate(
+                          `/b/lesson/${lesson.slug || lesson.id}?difficulty=beginner`,
+                        )
                       }
                       className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative group
                         ${isLocked ? "bg-slate-50 border-slate-100 opacity-60 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
