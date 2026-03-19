@@ -114,6 +114,8 @@ export default function Dashboard() {
   const [showPromotionModal, setShowPromotionModal] = useState(false);
   const [milestoneType, setMilestoneType] = useState(""); // "FIRST_LESSON" or "BRONZE_LEAGUE"
 
+  const [showVictoryModal, setShowVictoryModal] = useState(false);
+
   const [lessons, setLessons] = useState([]);
   const [userProgress, setUserProgress] = useState({});
 
