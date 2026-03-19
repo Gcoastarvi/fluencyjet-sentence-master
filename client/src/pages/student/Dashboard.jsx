@@ -302,7 +302,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchLessons = async () => {
       try {
-        const res = await api.get("/api/lessons");
+        const res = await api.get("/lessons");
         if (res.data) setLessons(res.data);
       } catch (err) {
         console.error("MISSION CRITICAL: Lesson Fetch Failed", err);
@@ -982,30 +982,6 @@ export default function Dashboard() {
 
         {/* 4. RIGHT COLUMN: MISSIONS & FEED */}
         <div className="space-y-8">
-          {/* Daily Mission Card */}
-          <section className="bg-slate-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden">
-            <h3 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">
-              Daily Mission
-            </h3>
-            <p className="text-lg font-bold mb-6 italic leading-tight">
-              Complete 3 Instant Accuracy sessions
-            </p>
-            <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-4">
-              <div
-                className="h-full bg-indigo-500 transition-all duration-1000"
-                style={{
-                  width: `${((summary.missionProgress || 0) / 3) * 100}%`,
-                }}
-              />
-            </div>
-            <p className="text-[10px] font-black text-slate-500 uppercase">
-              {summary.missionProgress || 0} / 3 Sessions Completed
-            </p>
-            <div className="absolute -right-4 -bottom-4 text-7xl opacity-10 rotate-12">
-              🎯
-            </div>
-          </section>
-
           <section
             className={`fj-dashboard-section mb-6 rounded-[2.5rem] p-6 text-white shadow-xl relative overflow-hidden transition-all duration-500 ${
               summary.missionProgress >= 3
