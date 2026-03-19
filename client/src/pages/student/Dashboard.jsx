@@ -230,7 +230,7 @@ export default function Dashboard() {
   }, []);
 
   const syncXP = async () => {
-    const res = await api.get("/api/user/summary");
+    const res = await api.get("/user/summary");
     if (res.data.ok) {
       setSummary(res.data.summary); // This triggers the Progress Bar animation!
     }

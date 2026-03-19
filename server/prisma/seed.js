@@ -77,10 +77,19 @@ async function main() {
     },
   ];
 
-  await prisma.typingQuiz.createMany({
-    data: sampleData,
-    skipDuplicates: true,
-  });
+  // 🎯 Loop through quizzes instead of createMany to avoid crashes
+  console.log("⌨️ Seeding Typing Quizzes...");
+  for (const quiz of sampleData) {
+    await prisma.typingQuiz.upsert({
+      where: {
+        // 💡 Logic: Use a unique combination of Tamil and English as the "ID"
+        // if your schema doesn't have a dedicated ID for this.
+        ta_en: { ta: quiz.ta, en: quiz.en },
+      },
+      update: {},
+      create: quiz,
+    });
+  }
 
   // ----------------------------
   // 3. XP EVENTS (Weekly/Today Data)
