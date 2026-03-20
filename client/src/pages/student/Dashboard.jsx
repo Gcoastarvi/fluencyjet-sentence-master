@@ -228,27 +228,29 @@ export default function Dashboard() {
   const [isBuying, setIsBuying] = useState(false);
 
   const handleBuyShield = async () => {
-    if (summary.totalXP < 500) {
-      alert("You need 500 XP for a Streak Shield!");
+    // 🛡️ Guard Clause: Check if user is rich enough
+    if ((summary.totalXP || 0) < 500) {
+      alert("You need 500 XP to buy a Streak Shield! Keep practicing.");
       return;
     }
 
     try {
-      // 🛡️ Deduct 500 XP and add 1 Streak Freeze
-      const res = await api.post("/user/purchase-shield", { cost: 500 });
+      // 💸 Step 1: Tell the server to deduct XP and add a freeze
+      const res = await api.post("/user/purchase-shield");
 
       if (res.data.success) {
-        // 🎉 Play a 'Power-up' sound
+        // 🔊 Step 2: Play the 'Transaction Success' sound
         const audio = new Audio(
           "https://www.soundjay.com/buttons/sounds/button-3.mp3",
         );
-        audio.play();
+        audio.play().catch(() => {});
 
-        // Refresh the dashboard to see the new XP total and active shield
+        // 🔄 Step 3: Refresh the dashboard data
         fetchUserSummary();
       }
     } catch (err) {
       console.error("Economy Error:", err);
+      alert("Marketplace is currently offline. Please try again later.");
     }
   };
 
@@ -1031,7 +1033,8 @@ export default function Dashboard() {
           >
             <div
               className="w-full bg-slate-100 rounded-t-xl relative overflow-hidden transition-all duration-700 hover:bg-indigo-50"
-              style={{ height: `${d.xp}%` }} // 🎯 Ensure this percentage is applied
+              /* 🎯 Set a minimum height of 5% so the bars never disappear */
+              style={{ height: `${Math.max(d.xp || 0, 5)}%` }}
             >
               <div className="absolute bottom-0 left-0 w-full bg-indigo-500 h-full origin-bottom" />
             </div>
