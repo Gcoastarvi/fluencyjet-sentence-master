@@ -199,15 +199,6 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [summary.totalXP]);
 
-  // 🎯 Track Level Up and Sync prevLevel
-  useEffect(() => {
-    if (summary.level > prevLevel && prevLevel !== 1) {
-      setShowLevelModal(true);
-      playLevelUp(); // We will define this below
-    }
-    setPrevLevel(summary.level);
-  }, [summary.level]);
-
   const playXP = () => {
     const audio = new Audio("/sounds/xp.mp3");
     audio.play().catch((e) => console.log("Audio play blocked"));
@@ -398,17 +389,20 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
+    // 🎢 If the new level is higher than the one we had stored, trigger the pop-up
     if (summary.level > prevLevel && prevLevel !== 0) {
       setShowLevelModal(true);
-      // 🎆 Fire a massive "School Pride" Confetti burst
-      confetti({
-        particleCount: 200,
-        spread: 100,
-        origin: { y: 0.6 },
-        colors: ["#6366f1", "#f59e0b", "#10b981"],
+      setPrevLevel(summary.level); // Update the snapshot
+
+      // 🎆 Fire some Silver Confetti for the Level Up
+      import("canvas-confetti").then((confetti) => {
+        confetti.default({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
       });
     }
-    setPrevLevel(summary.level);
   }, [summary.level]);
 
   useEffect(() => {
@@ -899,40 +893,36 @@ export default function Dashboard() {
 
         {/* 🛡️ Streak Freeze Shield Widget */}
         <div
-          className={`p-5 rounded-[2rem] border-2 mb-4 transition-all ${
-            summary.streakFreezes > 0
-              ? "bg-indigo-50 border-indigo-100"
+          className={`p-5 rounded-[2rem] border-2 mb-4 transition-all duration-500 ${
+            summary.streak_freezes > 0
+              ? "bg-indigo-50 border-indigo-100 shadow-lg shadow-indigo-100/50"
               : "bg-slate-50 border-slate-100 opacity-60"
           }`}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-2xl animate-pulse">
-                {summary.streakFreezes > 0 ? "🛡️" : "⚪"}
+              <div
+                className={`text-2xl ${summary.streak_freezes > 0 ? "animate-bounce" : ""}`}
+              >
+                {summary.streak_freezes > 0 ? "🛡️" : "🔮"}
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400">
                   Streak Shield
                 </p>
-                <p className="text-xs font-black text-slate-900">
-                  {summary.streakFreezes > 0 ? "PROTECTED" : "INACTIVE"}
+                <p
+                  className={`text-xs font-black ${summary.streak_freezes > 0 ? "text-indigo-600" : "text-slate-900"}`}
+                >
+                  {summary.streak_freezes > 0 ? "PROTECTED" : "INACTIVE"}
                 </p>
               </div>
             </div>
             <button
               onClick={handleBuyShield}
               disabled={isBuying}
-              className={`bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-[9px] font-black transition-all ${
-                isBuying
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-slate-900 hover:text-white"
-              }`}
+              className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] font-black hover:scale-105 transition-all disabled:opacity-50"
             >
-              {isBuying
-                ? "PROCESSING..."
-                : summary.streak_freezes > 0
-                  ? "REFILL"
-                  : "BUY"}
+              {isBuying ? "..." : summary.streak_freezes > 0 ? "REFILL" : "BUY"}
             </button>
           </div>
         </div>
@@ -1270,7 +1260,7 @@ export default function Dashboard() {
 
             <div className="flex justify-center items-center gap-4 mb-10">
               <span className="text-4xl font-black text-slate-200 line-through">
-                {prevLevel}
+                {summary.level - 1}
               </span>
               <span className="text-6xl font-black text-indigo-600 animate-in zoom-in spin-in-12 duration-700">
                 {summary.level}
@@ -1350,4 +1340,3 @@ export default function Dashboard() {
     );
   }
 }
-//testing
