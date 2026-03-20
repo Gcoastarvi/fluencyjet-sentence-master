@@ -1026,45 +1026,32 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* 📊 WEEKLY PERFORMANCE GRAPH */}
-      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mt-8">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Weekly Activity
-          </h3>
-          <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
-            +12% vs LAST WEEK
-          </span>
-        </div>
-
-        <div className="flex items-end justify-between h-32 gap-2 px-2">
-          {[
-            { day: "M", xp: 40 },
-            { day: "T", xp: 70 },
-            { day: "W", xp: 100 },
-            { day: "T", xp: 60 },
-            { day: "F", xp: 85 },
-            { day: "S", xp: 30 },
-            { day: "S", xp: 10 },
-          ].map((d, i) => (
+      {/* 📊 FIXED WEEKLY PERFORMANCE GRAPH */}
+      <div className="flex items-end justify-between h-32 gap-3 px-2">
+        {[
+          { day: "M", xp: 45 },
+          { day: "T", xp: 82 },
+          { day: "W", xp: 60 },
+          { day: "T", xp: 95 },
+          { day: "F", xp: 70 },
+          { day: "S", xp: 30 },
+          { day: "S", xp: 15 },
+        ].map((d, i) => (
+          <div
+            key={i}
+            className="flex-1 flex flex-col items-center gap-2 group"
+          >
             <div
-              key={i}
-              className="flex-1 flex flex-col items-center gap-2 group"
+              className="w-full bg-slate-100 rounded-t-xl relative overflow-hidden transition-all duration-700 hover:bg-indigo-50"
+              style={{ height: `${d.xp}%` }} // 🎯 Ensure this percentage is applied
             >
-              {/* The Bar */}
-              <div
-                className="w-full bg-slate-50 rounded-t-lg relative overflow-hidden transition-all duration-500 group-hover:bg-indigo-50"
-                style={{ height: `${d.xp}%` }}
-              >
-                <div className="absolute bottom-0 left-0 w-full bg-indigo-500/20 h-full origin-bottom scale-y-0 group-hover:scale-y-100 transition-transform duration-700" />
-              </div>
-              {/* Day Label */}
-              <span className="text-[9px] font-black text-slate-400">
-                {d.day}
-              </span>
+              <div className="absolute bottom-0 left-0 w-full bg-indigo-500 h-full origin-bottom" />
             </div>
-          ))}
-        </div>
+            <span className="text-[9px] font-black text-slate-400">
+              {d.day}
+            </span>
+          </div>
+        ))}
       </div>
 
       <main className="max-w-6xl mx-auto px-6 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
