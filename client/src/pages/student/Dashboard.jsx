@@ -223,6 +223,32 @@ export default function Dashboard() {
     }
   };
 
+  const [isBuying, setIsBuying] = useState(false);
+
+  const handleBuyShield = async () => {
+    if ((summary.totalXP || 0) < 500) {
+      alert("You need 500 XP to buy a Streak Shield!");
+      return;
+    }
+
+    setIsBuying(true);
+    try {
+      // 🛡️ API Call to deduct XP and add a freeze
+      const response = await api.post("/user/purchase-shield");
+      if (response.data.success) {
+        // 🎉 Play success sound
+        new Audio(
+          "https://www.soundjay.com/buttons/sounds/button-3.mp3",
+        ).play();
+        fetchUserSummary(); // Refresh stats
+      }
+    } catch (error) {
+      console.error("Purchase failed", error);
+    } finally {
+      setIsBuying(false);
+    }
+  };
+
   const copyJwtToClipboard = useCallback(async () => {
     const token = getJwt();
     if (!token) return alert("No token found. Please login first.");
@@ -841,19 +867,34 @@ export default function Dashboard() {
               </div>
             </div>
             <button
-              onClick={buyShield}
-              className="bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-[9px] font-black hover:bg-slate-900 hover:text-white transition-all"
+              onClick={handleBuyShield}
+              disabled={isBuying}
+              className={`bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-[9px] font-black transition-all ${
+                isBuying
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-slate-900 hover:text-white"
+              }`}
             >
-              {summary.streak_freezes > 0 ? "REFILL" : "BUY"}
+              {isBuying
+                ? "PROCESSING..."
+                : summary.streak_freezes > 0
+                  ? "REFILL"
+                  : "BUY"}
             </button>
           </div>
         </div>
 
-        {/* 🏆 GLOBAL LEADERBOARD */}
+        {/* 🏆 THE GLOBAL LEADERBOARD */}
         <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mb-8">
-          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">
-            Global Leaderboard
-          </h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              World Ranking
+            </h3>
+            <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg">
+              LIVE
+            </span>
+          </div>
+
           <div className="space-y-6">
             {[
               {
@@ -874,20 +915,25 @@ export default function Dashboard() {
                 rank: 3,
                 color: "bg-indigo-600 text-white shadow-lg shadow-indigo-200",
               },
-            ].map((user, i) => (
-              <div key={i} className="flex items-center justify-between">
+            ].map((player, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between group cursor-default"
+              >
                 <div className="flex items-center gap-4">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black ${user.color}`}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-transform group-hover:scale-110 ${player.color}`}
                   >
-                    {user.rank}
+                    {player.rank}
                   </div>
-                  <span className="text-sm font-bold text-slate-800">
-                    {user.name}
+                  <span
+                    className={`text-sm font-bold ${player.name === "You" ? "text-indigo-600" : "text-slate-700"}`}
+                  >
+                    {player.name}
                   </span>
                 </div>
-                <span className="text-xs font-black text-slate-400">
-                  {user.xp.toLocaleString()} XP
+                <span className="text-[11px] font-black text-slate-400">
+                  {player.xp.toLocaleString()} XP
                 </span>
               </div>
             ))}
@@ -993,12 +1039,16 @@ export default function Dashboard() {
                   return (
                     <div
                       key={lesson.id || idx}
-                      onClick={() =>
-                        !isLocked &&
-                        navigate(
-                          `/b/lesson/${lesson.slug || lesson.id}?difficulty=beginner`,
-                        )
-                      }
+                      onClick={() => {
+                        if (!isLocked) {
+                          const isInt =
+                            summary?.tier_level === "intermediate" ||
+                            summary?.plan === "INTERMEDIATE";
+                          const p = isInt ? "i" : "b";
+                          const d = isInt ? "intermediate" : "basic";
+                          navigate(`/${p}/lesson/${idx + 1}?difficulty=${d}`);
+                        }
+                      }}
                       className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative group
                         ${isLocked ? "bg-slate-50 border-slate-100 opacity-60 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
                     >
