@@ -330,25 +330,6 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    const adminXP = 1100;
-    // Check if current user XP is higher than Admin
-    if (summary.totalXP > adminXP) {
-      const hasCelebrated = localStorage.getItem("rank_up_1100");
-
-      if (!hasCelebrated) {
-        // 🎆 Trigger the Silver Burst
-        confetti({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#94a3b8", "#cbd5e1", "#ffffff"], // Silver/White palette
-        });
-        localStorage.setItem("rank_up_1100", "true");
-      }
-    }
-  }, [summary.totalXP]);
-
   // ⚡ Real-Time Stats Refresher
   useEffect(() => {
     // 🎯 Function to fetch latest stats
@@ -452,15 +433,23 @@ export default function Dashboard() {
 
   useEffect(() => {
     const adminXP = 1100;
-    const hasCelebratedRank = localStorage.getItem("rank_up_celebrated");
+    // 🛡️ Use a single key to prevent double-firing
+    const hasCelebratedRank = localStorage.getItem(
+      "rank_up_master_celebration",
+    );
 
     if (summary.totalXP > adminXP && !hasCelebratedRank) {
-      // 🎆 MASSIVE SILVER BURST
+      // 🎆 WORLD-CLASS PERSISTENT CELEBRATION
       const duration = 5 * 1000;
       const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+      const defaults = {
+        startVelocity: 30,
+        spread: 360,
+        ticks: 60,
+        zIndex: 1000,
+      };
 
-      const interval = setInterval(function () {
+      const interval = setInterval(() => {
         const timeLeft = animationEnd - Date.now();
         if (timeLeft <= 0) return clearInterval(interval);
 
@@ -468,12 +457,14 @@ export default function Dashboard() {
         confetti({
           ...defaults,
           particleCount,
+          // Randomly fire from all over the screen
           origin: { x: Math.random(), y: Math.random() - 0.2 },
-          colors: ["#94a3b8", "#cbd5e1", "#ffffff"],
+          // 🌈 Professional Silver & Indigo Palette
+          colors: ["#6366f1", "#94a3b8", "#ffffff"],
         });
       }, 250);
 
-      localStorage.setItem("rank_up_celebrated", "true");
+      localStorage.setItem("rank_up_master_celebration", "true");
     }
   }, [summary.totalXP]);
 
@@ -733,41 +724,6 @@ export default function Dashboard() {
     // IMPORTANT: do NOT setLoading(false) here (loadSummary controls loading)
   }, [loadMe, loadSummary]);
 
-  useEffect(() => {
-    const adminXP = 1100;
-    const hasCelebrated = sessionStorage.getItem("rank_celebrated");
-
-    if (summary.totalXP > adminXP && !hasCelebrated) {
-      // 🎆 TRIGGER: Silver/Purple Celebration
-      import("canvas-confetti").then((confetti) => {
-        const end = Date.now() + 3 * 1000;
-        const colors = ["#6366f1", "#a855f7", "#ffffff"];
-
-        (function frame() {
-          confetti.default({
-            particleCount: 3,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: colors,
-          });
-          confetti.default({
-            particleCount: 3,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: colors,
-          });
-
-          if (Date.now() < end) {
-            requestAnimationFrame(frame);
-          }
-        })();
-      });
-      sessionStorage.setItem("rank_celebrated", "true");
-    }
-  }, [summary.totalXP]);
-
   // Load on mount + refresh instantly when XP changes / user returns to tab
   useEffect(() => {
     let inFlight = false;
@@ -983,7 +939,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 🎯 Dynamic League Card */}
+        {/* 🎯 Dynamic League Card - League Standing*/}
         <div
           className={`bg-white rounded-[2rem] p-6 border transition-all duration-700 ${
             summary.xpTotal >= 500 ? "league-silver-glow" : "border-slate-100"
@@ -1002,36 +958,10 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="relative w-14 h-14 flex items-center justify-center">
-                <svg className="absolute inset-0 w-full h-full -rotate-90">
-                  {/* Background Track */}
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="24"
-                    fill="transparent"
-                    stroke="#f1f5f9"
-                    strokeWidth="4"
-                  />
-                  {/* Animated Progress */}
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="24"
-                    fill="transparent"
-                    stroke="url(#ringGradient)"
-                    strokeWidth="4"
-                    strokeDasharray={150.8}
-                    strokeDashoffset={
-                      150.8 -
-                      Math.min(((summary.totalXP || 0) % 1000) / 1000, 1) *
-                        150.8
-                    }
-                    strokeLinecap="round"
-                    style={{
-                      transition:
-                        "stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1)",
-                    }}
-                  />
+                <svg
+                  className="absolute inset-0 w-full h-full -rotate-90"
+                  viewBox="0 0 56 56"
+                >
                   <defs>
                     <linearGradient
                       id="ringGradient"
@@ -1044,11 +974,41 @@ export default function Dashboard() {
                       <stop offset="100%" stopColor="#8b5cf6" />
                     </linearGradient>
                   </defs>
+                  {/* Background Track */}
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="22"
+                    fill="transparent"
+                    stroke="#f1f5f9"
+                    strokeWidth="4"
+                  />
+                  {/* Animated Progress */}
+                  <circle
+                    cx="28"
+                    cy="28"
+                    r="22"
+                    fill="transparent"
+                    stroke="url(#ringGradient)"
+                    strokeWidth="4"
+                    strokeDasharray={138.2} /* 2 * PI * 22 */
+                    strokeDashoffset={
+                      138.2 -
+                      Math.min(((summary.totalXP || 0) % 1000) / 1000, 1) *
+                        138.2
+                    }
+                    strokeLinecap="round"
+                    style={{
+                      transition:
+                        "stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1)",
+                    }}
+                  />
                 </svg>
                 <span className="text-xl relative z-10">
-                  {summary.xpTotal >= 500 ? "🥈" : "🥉"}
+                  {summary.totalXP >= 500 ? "🥈" : "🥉"}
                 </span>
               </div>
+
               <div>
                 <p className="text-sm font-black text-slate-900">
                   {summary.xpTotal >= 500
@@ -1065,6 +1025,47 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {/* 📊 WEEKLY PERFORMANCE GRAPH */}
+      <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mt-8">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            Weekly Activity
+          </h3>
+          <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-1 rounded-lg">
+            +12% vs LAST WEEK
+          </span>
+        </div>
+
+        <div className="flex items-end justify-between h-32 gap-2 px-2">
+          {[
+            { day: "M", xp: 40 },
+            { day: "T", xp: 70 },
+            { day: "W", xp: 100 },
+            { day: "T", xp: 60 },
+            { day: "F", xp: 85 },
+            { day: "S", xp: 30 },
+            { day: "S", xp: 10 },
+          ].map((d, i) => (
+            <div
+              key={i}
+              className="flex-1 flex flex-col items-center gap-2 group"
+            >
+              {/* The Bar */}
+              <div
+                className="w-full bg-slate-50 rounded-t-lg relative overflow-hidden transition-all duration-500 group-hover:bg-indigo-50"
+                style={{ height: `${d.xp}%` }}
+              >
+                <div className="absolute bottom-0 left-0 w-full bg-indigo-500/20 h-full origin-bottom scale-y-0 group-hover:scale-y-100 transition-transform duration-700" />
+              </div>
+              {/* Day Label */}
+              <span className="text-[9px] font-black text-slate-400">
+                {d.day}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <main className="max-w-6xl mx-auto px-6 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* 3. CENTER COLUMN: THE MASTERY PATH */}
