@@ -39,6 +39,17 @@ const dashboardStyles = `
     border: 4px solid #cbd5e1;
     background: linear-gradient(135deg, #e2e8f0 0%, #ffffff 50%, #94a3b8 100%);
   }
+  .rank-master-glow {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    border: 4px solid #cbd5e1; /* Silver Border */
+    animation: silver-shimmer 3s infinite linear;
+  }
+
+  @keyframes silver-shimmer {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.2); }
+    100% { filter: brightness(1); }
+  }
 `;
 
 const LEVELS = [
@@ -226,26 +237,27 @@ export default function Dashboard() {
   const [isBuying, setIsBuying] = useState(false);
 
   const handleBuyShield = async () => {
-    if ((summary.totalXP || 0) < 500) {
-      alert("You need 500 XP to buy a Streak Shield!");
+    if (summary.totalXP < 500) {
+      alert("You need 500 XP for a Streak Shield!");
       return;
     }
 
-    setIsBuying(true);
     try {
-      // 🛡️ API Call to deduct XP and add a freeze
-      const response = await api.post("/user/purchase-shield");
-      if (response.data.success) {
-        // 🎉 Play success sound
-        new Audio(
+      // 🛡️ Deduct 500 XP and add 1 Streak Freeze
+      const res = await api.post("/user/purchase-shield", { cost: 500 });
+
+      if (res.data.success) {
+        // 🎉 Play a 'Power-up' sound
+        const audio = new Audio(
           "https://www.soundjay.com/buttons/sounds/button-3.mp3",
-        ).play();
-        fetchUserSummary(); // Refresh stats
+        );
+        audio.play();
+
+        // Refresh the dashboard to see the new XP total and active shield
+        fetchUserSummary();
       }
-    } catch (error) {
-      console.error("Purchase failed", error);
-    } finally {
-      setIsBuying(false);
+    } catch (err) {
+      console.error("Economy Error:", err);
     }
   };
 
@@ -852,11 +864,17 @@ export default function Dashboard() {
               (summary.xpTotal || 0) > 5000 ? "frame-silver-pro" : ""
             }`}
           >
-            <AvatarFrame
-              src={auth?.user?.avatar_url}
-              league={summary.league || "BRONZE"}
-              size="lg"
-            />
+            <div
+              className={
+                summary.totalXP > 1100 ? "rank-master-glow rounded-full" : ""
+              }
+            >
+              <AvatarFrame
+                src={auth?.user?.avatar_url}
+                league={summary.league || "BRONZE"}
+                size="lg"
+              />
+            </div>
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
