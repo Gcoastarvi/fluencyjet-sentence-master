@@ -727,6 +727,41 @@ export default function Dashboard() {
     // IMPORTANT: do NOT setLoading(false) here (loadSummary controls loading)
   }, [loadMe, loadSummary]);
 
+  useEffect(() => {
+    const adminXP = 1100;
+    const hasCelebrated = sessionStorage.getItem("rank_celebrated");
+
+    if (summary.totalXP > adminXP && !hasCelebrated) {
+      // 🎆 TRIGGER: Silver/Purple Celebration
+      import("canvas-confetti").then((confetti) => {
+        const end = Date.now() + 3 * 1000;
+        const colors = ["#6366f1", "#a855f7", "#ffffff"];
+
+        (function frame() {
+          confetti.default({
+            particleCount: 3,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: colors,
+          });
+          confetti.default({
+            particleCount: 3,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: colors,
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        })();
+      });
+      sessionStorage.setItem("rank_celebrated", "true");
+    }
+  }, [summary.totalXP]);
+
   // Load on mount + refresh instantly when XP changes / user returns to tab
   useEffect(() => {
     let inFlight = false;
@@ -960,6 +995,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-4">
               <div className="relative w-14 h-14 flex items-center justify-center">
                 <svg className="absolute inset-0 w-full h-full -rotate-90">
+                  {/* Background Track */}
                   <circle
                     cx="28"
                     cy="28"
@@ -968,21 +1004,40 @@ export default function Dashboard() {
                     stroke="#f1f5f9"
                     strokeWidth="4"
                   />
+                  {/* Animated Progress */}
                   <circle
                     cx="28"
                     cy="28"
                     r="24"
                     fill="transparent"
-                    stroke="#6366f1"
+                    stroke="url(#ringGradient)"
                     strokeWidth="4"
                     strokeDasharray={150.8}
                     strokeDashoffset={
-                      150.8 - Math.min((summary.totalXP || 0) / 1000, 1) * 150.8
+                      150.8 -
+                      Math.min(((summary.totalXP || 0) % 1000) / 1000, 1) *
+                        150.8
                     }
-                    style={{ transition: "stroke-dashoffset 1.5s ease-in-out" }}
+                    strokeLinecap="round"
+                    style={{
+                      transition:
+                        "stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1)",
+                    }}
                   />
+                  <defs>
+                    <linearGradient
+                      id="ringGradient"
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#8b5cf6" />
+                    </linearGradient>
+                  </defs>
                 </svg>
-                <span className="text-xl">
+                <span className="text-xl relative z-10">
                   {summary.xpTotal >= 500 ? "🥈" : "🥉"}
                 </span>
               </div>
