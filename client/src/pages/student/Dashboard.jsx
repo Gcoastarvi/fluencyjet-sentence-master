@@ -850,7 +850,7 @@ export default function Dashboard() {
         {/* 🛡️ Streak Freeze Shield Widget */}
         <div
           className={`p-5 rounded-[2rem] border-2 mb-4 transition-all duration-500 ${
-            summary.streak_freezes > 0
+            summary.streakFreezes > 0
               ? "bg-indigo-50 border-indigo-100 shadow-lg shadow-indigo-100/50"
               : "bg-slate-50 border-slate-100 opacity-60"
           }`}
@@ -858,18 +858,18 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div
-                className={`text-2xl ${summary.streak_freezes > 0 ? "animate-bounce" : ""}`}
+                className={`text-2xl ${summary.streakFreezes > 0 ? "animate-bounce" : ""}`}
               >
-                {summary.streak_freezes > 0 ? "🛡️" : "🔮"}
+                {summary.streakFreezes > 0 ? "🛡️" : "🔮"}
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400">
                   Streak Shield
                 </p>
                 <p
-                  className={`text-xs font-black ${summary.streak_freezes > 0 ? "text-indigo-600" : "text-slate-900"}`}
+                  className={`text-xs font-black ${summary.streakFreezes > 0 ? "text-indigo-600" : "text-slate-900"}`}
                 >
-                  {summary.streak_freezes > 0 ? "PROTECTED" : "INACTIVE"}
+                  {summary.streakFreezes > 0 ? "PROTECTED" : "INACTIVE"}
                 </p>
               </div>
             </div>
@@ -878,7 +878,7 @@ export default function Dashboard() {
               disabled={isBuying}
               className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] font-black hover:scale-105 transition-all disabled:opacity-50"
             >
-              {isBuying ? "..." : summary.streak_freezes > 0 ? "REFILL" : "BUY"}
+              {isBuying ? "..." : summary.streakFreezes > 0 ? "REFILL" : "BUY"}
             </button>
           </div>
         </div>
@@ -962,18 +962,6 @@ export default function Dashboard() {
                   className="absolute inset-0 w-full h-full -rotate-90"
                   viewBox="0 0 56 56"
                 >
-                  <defs>
-                    <linearGradient
-                      id="ringGradient"
-                      x1="0%"
-                      y1="0%"
-                      x2="100%"
-                      y2="0%"
-                    >
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#8b5cf6" />
-                    </linearGradient>
-                  </defs>
                   {/* Background Track */}
                   <circle
                     cx="28"
@@ -991,7 +979,7 @@ export default function Dashboard() {
                     fill="transparent"
                     stroke="url(#ringGradient)"
                     strokeWidth="4"
-                    strokeDasharray={138.2} /* 2 * PI * 22 */
+                    strokeDasharray={138.2}
                     strokeDashoffset={
                       138.2 -
                       Math.min(((summary.totalXP || 0) % 1000) / 1000, 1) *
@@ -1005,7 +993,7 @@ export default function Dashboard() {
                   />
                 </svg>
                 <span className="text-xl relative z-10">
-                  {summary.totalXP >= 500 ? "🥈" : "🥉"}
+                  {summary.xpTotal >= 1100 ? "🥈" : "🥉"}
                 </span>
               </div>
 
