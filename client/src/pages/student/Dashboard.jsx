@@ -52,6 +52,13 @@ const dashboardStyles = `
   }
 `;
 
+const navItems = [
+  { label: "Home", icon: "🏠", path: "/dashboard" },
+  { label: "Lessons", icon: "📚", path: "/lessons" },
+  { label: "Ranking", icon: "🏆", path: "/leaderboard" },
+  { label: "Profile", icon: "👤", path: "/profile" },
+];
+
 const LEVELS = [
   { level: 1, xp: 0 },
   { level: 2, xp: 1000 },
@@ -1265,6 +1272,23 @@ export default function Dashboard() {
           }}
         />
       )}
+      {/* 📱 MOBILE BOTTOM NAVIGATION */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 z-[100] flex justify-between items-center shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+        {navItems.map((item) => (
+          <button
+            key={item.label}
+            onClick={() => navigate(item.path)}
+            className="flex flex-col items-center gap-1 group transition-all"
+          >
+            <span className="text-xl group-active:scale-125 transition-transform">
+              {item.icon}
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400 group-hover:text-indigo-600">
+              {item.label}
+            </span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 
