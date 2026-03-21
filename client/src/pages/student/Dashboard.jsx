@@ -237,13 +237,13 @@ export default function Dashboard() {
   const handleOpenProfile = () => {
     setIsProfileOpen(true);
 
-    // 🎆 Trigger Celebration
+    // 🎆 Trigger the "Pro Master" Confetti
     import("canvas-confetti").then((confetti) => {
       confetti.default({
         particleCount: 100,
         spread: 70,
-        origin: { y: 0.7 },
-        colors: ["#6366f1", "#f59e0b", "#ffffff"], // Indigo, Gold, White
+        origin: { y: 0.8 }, // Fire from the bottom of the drawer
+        colors: ["#6366f1", "#f59e0b", "#ffffff"], // Indigo, Gold, and White
       });
     });
   };
@@ -1025,7 +1025,7 @@ export default function Dashboard() {
                   />
                 </svg>
                 <span className="text-xl relative z-10">
-                  {summary.xpTotal >= 1100 ? "🥈" : "🥉"}
+                  {summary.xpTotal >= 1100 ? "🥈" : "   �"}
                 </span>
               </div>
 
@@ -1448,6 +1448,81 @@ export default function Dashboard() {
                   League
                 </p>
                 <p className="text-lg font-black text-amber-600">🥉 Bronze</p>
+              </div>
+            </div>
+
+            {/* 🎖️ BADGE GALLERY */}
+            <div className="w-full mb-10">
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Achievement Gallery
+                </h3>
+                <span className="text-[10px] font-bold text-slate-300">
+                  {summary.earnedBadges?.length || 0} / 6 UNLOCKED
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  {
+                    id: "streak_7",
+                    icon: "🔥",
+                    label: "7 Day Warrior",
+                    locked: summary.streak < 7,
+                  },
+                  {
+                    id: "xp_100k",
+                    icon: "💎",
+                    label: "100K Club",
+                    locked: (summary.totalXP || 0) < 100000,
+                  },
+                  {
+                    id: "lesson_50",
+                    icon: "🎯",
+                    label: "Half Century",
+                    locked: (summary.completedLessons || 0) < 50,
+                  },
+                  {
+                    id: "first_shield",
+                    icon: "🛡️",
+                    label: "Protected",
+                    locked: (summary.streakFreezes || 0) === 0,
+                  },
+                  {
+                    id: "night_owl",
+                    icon: "🦉",
+                    label: "Night Owl",
+                    locked: true,
+                  }, // For future logic
+                  {
+                    id: "early_bird",
+                    icon: "🌅",
+                    label: "Early Bird",
+                    locked: true,
+                  }, // For future logic
+                ].map((badge) => (
+                  <div
+                    key={badge.id}
+                    className="flex flex-col items-center gap-2"
+                  >
+                    <div
+                      className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500 border-2 ${
+                        badge.locked
+                          ? "bg-slate-50 border-slate-100 grayscale opacity-40"
+                          : "bg-white border-indigo-100 shadow-lg shadow-indigo-100/50 scale-110"
+                      }`}
+                    >
+                      {badge.icon}
+                    </div>
+                    <span
+                      className={`text-[8px] font-black uppercase tracking-tighter text-center leading-tight ${
+                        badge.locked ? "text-slate-300" : "text-indigo-600"
+                      }`}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
