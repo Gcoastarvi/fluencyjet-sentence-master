@@ -10,6 +10,17 @@ import confetti from "canvas-confetti";
 
 import AvatarFrame from "../../components/student/AvatarFrame";
 
+<style>
+  {`
+    @media (max-width: 768px) {
+      /* 🎯 Hide any navigation links at the very top on mobile */
+      nav:not(.fixed), .top-nav, header ul, header .flex.gap-8 {
+        display: none !important;
+      }
+    }
+  `}
+</style>;
+
 const dashboardStyles = `
   .league-silver-glow {
     background: linear-gradient(135deg, #e2e8f0 0%, #ffffff 50%, #cbd5e1 100%) !important;
@@ -1367,6 +1378,7 @@ export default function Dashboard() {
                   className="transition-all duration-[2000ms] ease-out"
                 />
               </svg>
+              {/* The User Avatar */}
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10">
                 <img
                   src={auth?.user?.avatar_url}
