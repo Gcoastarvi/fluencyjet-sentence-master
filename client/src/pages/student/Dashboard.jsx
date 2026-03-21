@@ -277,9 +277,10 @@ export default function Dashboard() {
   }, []);
 
   const syncXP = async () => {
-    const res = await api.get("/user/summary");
-    if (res.data.ok) {
-      setSummary(res.data.summary); // This triggers the Progress Bar animation!
+    const res = await api.get("/dashboard/summary");
+    const data = res?.data ?? res;
+    if (data?.ok) {
+      setSummary((prev) => ({ ...prev, ...data }));
     }
   };
 
@@ -305,12 +306,12 @@ export default function Dashboard() {
 
   const fetchUserSummary = async () => {
     try {
-      const res = await api.get("/user/summary");
-      if (res.data) {
-        // 🏎️ TRIGGER: Update the display XP gradually
-        setSummary(res.data);
+      const res = await api.get("/dashboard/summary");
+      const data = res?.data ?? res;
 
-        // If we just completed a lesson, play the 'Dopamine' sound
+      if (data?.ok) {
+        setSummary((prev) => ({ ...prev, ...data }));
+
         if (window.location.search.includes("completed=true")) {
           const audio = new Audio(
             "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
@@ -346,10 +347,12 @@ export default function Dashboard() {
     // 🎯 Function to fetch latest stats
     const refreshStats = async () => {
       try {
-        const response = await api.get("/user/summary");
-        if (response.data.ok) {
-          setSummary(response.data.summary);
-          setUserProgress(response.data.userProgress || {});
+        const response = await api.get("/dashboard/summary");
+        const data = response?.data ?? response;
+
+        if (data?.ok) {
+          setSummary((prev) => ({ ...prev, ...data }));
+          setUserProgress(data.userProgress || {});
         }
       } catch (err) {
         console.error("Stats Refresh Failed:", err);
