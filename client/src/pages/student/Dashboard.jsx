@@ -563,6 +563,43 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
+    if (summary.level > prevLevel && prevLevel !== 0) {
+      // 🎇 MASSIVE LEVEL UP CELEBRATION
+      const duration = 7 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = {
+        startVelocity: 30,
+        spread: 360,
+        ticks: 60,
+        zIndex: 1000,
+      };
+
+      const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+      const interval = setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+
+        const particleCount = 50 * (timeLeft / duration);
+        // Fling confetti from the corners
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+        });
+        confetti({
+          ...defaults,
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+        });
+      }, 250);
+
+      setPrevLevel(summary.level);
+      setShowLevelModal(true); // Show the Level Up Modal we built earlier
+    }
+  }, [summary.level]);
+
+  useEffect(() => {
     // 🏁 Check if this is the very first time they land here
     const hasCelebrated = localStorage.getItem("fj_first_login_done");
 
@@ -841,6 +878,16 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-12 transition-all duration-500">
+      <style>{`
+        /* Target the specific top bar by its text content if needed */
+        div:has(> span:contains("Dashboard")), 
+        .top-navigation-bar-class-name { 
+          display: none !important; 
+        }
+        @media (min-width: 768px) {
+          div:has(> span:contains("Dashboard")) { display: flex !important; }
+        }
+      `}</style>
       {/* 1. ANNOUNCEMENT BANNER */}
       {auth?.user?.lastNotification && (
         <div className="bg-indigo-600 p-4 text-center text-white text-xs font-black uppercase tracking-widest animate-pulse">

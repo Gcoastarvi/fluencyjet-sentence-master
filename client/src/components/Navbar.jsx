@@ -1,3 +1,4 @@
+// client/src/components/Navbar.jsx
 // 🎯 STEP 1: ADD THIS MISSING IMPORT (Vital for line 8)
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
