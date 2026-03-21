@@ -152,6 +152,8 @@ export default function Dashboard() {
 
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
 
+  const [unlockedBadge, setUnlockedBadge] = useState(null);
+
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -1535,6 +1537,44 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      {unlockedBadge && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-900/95 backdrop-blur-xl animate-in fade-in duration-500">
+          <div className="bg-white rounded-[4rem] p-12 max-w-sm w-full text-center shadow-2xl relative overflow-hidden animate-in zoom-in duration-700">
+            {/* 🎇 Confetti Background */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
+              <div className="absolute top-10 left-10 text-4xl animate-bounce">
+                ✨
+              </div>
+              <div className="absolute bottom-10 right-10 text-4xl animate-bounce delay-300">
+                ✨
+              </div>
+            </div>
+
+            <div className="text-8xl mb-8 animate-in spin-in-180 duration-1000">
+              {unlockedBadge.icon}
+            </div>
+
+            <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2">
+              New Achievement
+            </h2>
+            <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-6">
+              {unlockedBadge.label}
+            </h3>
+
+            <p className="text-slate-400 text-xs font-bold leading-relaxed mb-10 px-4">
+              You've officially joined the elite ranks of FluencyJet! Keep
+              pushing your boundaries.
+            </p>
+
+            <button
+              onClick={() => setUnlockedBadge(null)}
+              className="w-full py-5 rounded-3xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100"
+            >
+              Collect Reward →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
