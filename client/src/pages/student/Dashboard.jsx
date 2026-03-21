@@ -1396,6 +1396,44 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* 🎯 DAILY MISSION TRACKER */}
+            <div className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-left">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                    Daily Mission
+                  </p>
+                  <h4 className="text-sm font-black text-slate-900">
+                    Finish 3 Lessons
+                  </h4>
+                </div>
+                <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                  +50 XP
+                </span>
+              </div>
+
+              {/* 📈 The Progress Bar */}
+              <div className="relative h-4 w-full bg-slate-200 rounded-full overflow-hidden mb-2">
+                <div
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-1000 ease-out"
+                  style={{
+                    width: `${Math.min(((summary.todayLessons || 0) / 3) * 100, 100)}%`,
+                  }}
+                />
+              </div>
+
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] font-bold text-slate-400">
+                  {summary.todayLessons || 0} / 3 Completed
+                </p>
+                {summary.todayLessons >= 3 && (
+                  <span className="text-[10px] font-black text-emerald-500 animate-bounce">
+                    MISSION COMPLETE! ✅
+                  </span>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4 w-full mb-8">
               <div className="bg-slate-50 p-4 rounded-2xl text-center">
                 <p className="text-[10px] font-black text-slate-400 uppercase">
