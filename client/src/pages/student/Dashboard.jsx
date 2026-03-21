@@ -234,6 +234,20 @@ export default function Dashboard() {
     }
   };
 
+  const handleOpenProfile = () => {
+    setIsProfileOpen(true);
+
+    // 🎆 Trigger Celebration
+    import("canvas-confetti").then((confetti) => {
+      confetti.default({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.7 },
+        colors: ["#6366f1", "#f59e0b", "#ffffff"], // Indigo, Gold, White
+      });
+    });
+  };
+
   const [isBuying, setIsBuying] = useState(false);
 
   const handleBuyShield = async () => {
@@ -821,12 +835,16 @@ export default function Dashboard() {
         </div>
       )}
 
-      <header className="max-w-6xl mx-auto px-6 pt-12 flex flex-col md:flex-row justify-between items-center gap-8">
+      <header className="max-w-6xl mx-auto px-6 pt-12 flex flex-col md:flex-row justify-between items-center gap-8 relative">
+        {/* 🎯 Desktop-Only Nav: Hides on Mobile */}
+        <nav className="hidden md:flex absolute top-4 right-6 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <button onClick={() => navigate("/lessons")}>Lessons</button>
+          <button onClick={() => navigate("/practice")}>Practice Hub</button>
+        </nav>
+
         <div className="flex items-center gap-6">
           <div
-            className={`p-1 rounded-full transition-all duration-1000 ${
-              (summary.xpTotal || 0) > 5000 ? "frame-silver-pro" : ""
-            }`}
+            className={`p-1 rounded-full transition-all duration-1000 ${(summary.xpTotal || 0) > 5000 ? "frame-silver-pro" : ""}`}
           >
             <div
               className={
@@ -1283,8 +1301,9 @@ export default function Dashboard() {
           <button
             key={item.label}
             onClick={() => {
+              // 🎯 If the button is 'Profile', fire our celebration function!
               if (item.label === "Profile") {
-                setIsProfileOpen(true); // 🎯 Trigger the Drawer!
+                handleOpenProfile();
               } else {
                 navigate(item.path);
               }
@@ -1317,18 +1336,65 @@ export default function Dashboard() {
           <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" />
 
           <div className="flex flex-col items-center text-center">
-            <div className="w-24 h-24 rounded-full border-4 border-indigo-100 p-1 mb-4">
-              <img
-                src={auth?.user?.avatar_url}
-                className="w-full h-full rounded-full object-cover"
-              />
+            <div className="relative w-32 h-32 mb-6 flex items-center justify-center">
+              {/* 🎡 PRESTIGE PROGRESS RING */}
+              <svg
+                className="absolute inset-0 w-full h-full -rotate-90"
+                viewBox="0 0 100 100"
+              >
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  fill="transparent"
+                  stroke="#f1f5f9"
+                  strokeWidth="4"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="46"
+                  fill="transparent"
+                  stroke="#6366f1"
+                  strokeWidth="4"
+                  strokeDasharray="289"
+                  strokeDashoffset={
+                    289 - Math.min((summary.totalXP % 1000) / 1000, 1) * 289
+                  }
+                  strokeLinecap="round"
+                  className="transition-all duration-[2000ms] ease-out"
+                />
+              </svg>
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10">
+                <img
+                  src={auth?.user?.avatar_url}
+                  className="w-full h-full object-cover"
+                />
+              </div>
             </div>
+
             <h2 className="text-2xl font-black text-slate-900">
               {auth?.user?.name}
             </h2>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
               Level {summary.level} Explorer
             </p>
+
+            {/* 🔥 Pulsing Streak Flame Inserted Here */}
+            <div className="flex items-center gap-4 bg-orange-50 p-6 rounded-[2rem] w-full mb-6 border border-orange-100">
+              <div className="relative">
+                <span className="text-4xl animate-pulse">🔥</span>
+                <div className="absolute inset-0 bg-orange-400 blur-xl opacity-20 animate-ping rounded-full" />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">
+                  Current Heat
+                </p>
+                <p className="text-xl font-black text-orange-600">
+                  {summary.streak || 1} DAY STREAK
+                </p>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-4 w-full mb-8">
               <div className="bg-slate-50 p-4 rounded-2xl text-center">
@@ -1354,21 +1420,6 @@ export default function Dashboard() {
               Close Drawer
             </button>
           </div>
-        </div>
-      </div>
-      {/* 🔥 Pulsing Streak Flame */}
-      <div className="flex items-center gap-4 bg-orange-50 p-6 rounded-[2rem] w-full mb-6 border border-orange-100">
-        <div className="relative">
-          <span className="text-4xl animate-pulse">🔥</span>
-          <div className="absolute inset-0 bg-orange-400 blur-xl opacity-20 animate-ping rounded-full" />
-        </div>
-        <div className="text-left">
-          <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">
-            Current Heat
-          </p>
-          <p className="text-xl font-black text-orange-600">
-            {summary.streak || 1} DAY STREAK
-          </p>
         </div>
       </div>
     </div>
