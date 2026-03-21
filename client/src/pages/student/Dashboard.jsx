@@ -1279,7 +1279,13 @@ export default function Dashboard() {
         {navItems.map((item) => (
           <button
             key={item.label}
-            onClick={() => navigate(item.path)}
+            onClick={() => {
+              if (item.label === "Profile") {
+                setIsProfileOpen(true); // 🎯 Trigger the Drawer!
+              } else {
+                navigate(item.path);
+              }
+            }}
             className="flex flex-col items-center gap-1 group transition-all"
           >
             <span className="text-xl group-active:scale-125 transition-transform">
@@ -1345,6 +1351,21 @@ export default function Dashboard() {
               Close Drawer
             </button>
           </div>
+        </div>
+      </div>
+      {/* 🔥 Pulsing Streak Flame */}
+      <div className="flex items-center gap-4 bg-orange-50 p-6 rounded-[2rem] w-full mb-6 border border-orange-100">
+        <div className="relative">
+          <span className="text-4xl animate-pulse">🔥</span>
+          <div className="absolute inset-0 bg-orange-400 blur-xl opacity-20 animate-ping rounded-full" />
+        </div>
+        <div className="text-left">
+          <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">
+            Current Heat
+          </p>
+          <p className="text-xl font-black text-orange-600">
+            {summary.streak || 1} DAY STREAK
+          </p>
         </div>
       </div>
     </div>
