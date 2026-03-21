@@ -142,6 +142,8 @@ export default function Dashboard() {
   const [lessons, setLessons] = useState([]);
   const [userProgress, setUserProgress] = useState({});
 
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   const [userName, setUserName] = useState(
     () => getDisplayName?.() || "Learner",
   );
@@ -808,7 +810,7 @@ export default function Dashboard() {
   const offset = circumference - progressPercent * circumference;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-24 font-sans selection:bg-indigo-100">
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-12 transition-all duration-500">
       {/* 1. ANNOUNCEMENT BANNER */}
       {auth?.user?.lastNotification && (
         <div className="bg-indigo-600 p-4 text-center text-white text-xs font-black uppercase tracking-widest animate-pulse">
@@ -1289,6 +1291,62 @@ export default function Dashboard() {
           </button>
         ))}
       </nav>
+      {/* 👤 MOBILE PROFILE DRAWER */}
+      <div
+        className={`fixed inset-0 z-[200] transition-all duration-500 ${isProfileOpen ? "visible" : "invisible"}`}
+      >
+        {/* Backdrop */}
+        <div
+          className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-500 ${isProfileOpen ? "opacity-100" : "opacity-0"}`}
+          onClick={() => setIsProfileOpen(false)}
+        />
+
+        {/* The Actual Drawer */}
+        <div
+          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 pb-12 transition-transform duration-500 transform ${isProfileOpen ? "translate-y-0" : "translate-y-full"}`}
+        >
+          <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" />
+
+          <div className="flex flex-col items-center text-center">
+            <div className="w-24 h-24 rounded-full border-4 border-indigo-100 p-1 mb-4">
+              <img
+                src={auth?.user?.avatar_url}
+                className="w-full h-full rounded-full object-cover"
+              />
+            </div>
+            <h2 className="text-2xl font-black text-slate-900">
+              {auth?.user?.name}
+            </h2>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8">
+              Level {summary.level} Explorer
+            </p>
+
+            <div className="grid grid-cols-2 gap-4 w-full mb-8">
+              <div className="bg-slate-50 p-4 rounded-2xl text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase">
+                  Total XP
+                </p>
+                <p className="text-lg font-black text-indigo-600">
+                  ⭐ {summary.totalXP}
+                </p>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-2xl text-center">
+                <p className="text-[10px] font-black text-slate-400 uppercase">
+                  League
+                </p>
+                <p className="text-lg font-black text-amber-600">🥉 Bronze</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsProfileOpen(false)}
+              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest"
+            >
+              Close Drawer
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
