@@ -205,9 +205,6 @@ export default function Dashboard() {
     recentActivity: [],
   });
 
-  const [showLevelModal, setShowLevelModal] = useState(false);
-  const [prevLevel, setPrevLevel] = useState(1); // 🎯 Fix: Start at 1, don't reference summary yet
-
   const percent = useMemo(
     () => levelProgressPct(summary.totalXP),
     [summary.totalXP],
@@ -221,6 +218,11 @@ export default function Dashboard() {
   const showEmergencyAlert = isLate && hasNoFreezes && needsMastery;
 
   const [displayXP, setDisplayXP] = useState(0);
+
+  // 🎯 This goes at the top with your other states
+  const [showLevelModal, setShowLevelModal] = useState(false);
+  const [prevLevel, setPrevLevel] = useState(0);
+  const [prevBadgeCount, setPrevBadgeCount] = useState(0);
 
   useEffect(() => {
     let start = displayXP;
