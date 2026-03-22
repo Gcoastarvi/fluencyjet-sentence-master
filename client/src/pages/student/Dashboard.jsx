@@ -1380,7 +1380,7 @@ export default function Dashboard() {
 
           <div className="flex flex-col items-center text-center">
             <div className="relative w-32 h-32 mb-6 flex items-center justify-center">
-              {/* 🎡 PRESTIGE PROGRESS RING */}
+              {/* 🎡 ANIMATED PRESTIGE RING */}
               <svg
                 className="absolute inset-0 w-full h-full -rotate-90"
                 viewBox="0 0 100 100"
@@ -1401,18 +1401,22 @@ export default function Dashboard() {
                   stroke="#6366f1"
                   strokeWidth="4"
                   strokeDasharray="289"
+                  /* 🎯 Animation Logic: Starts at 289 (empty) and transitions to value */
                   strokeDashoffset={
-                    289 - Math.min((summary.totalXP % 1000) / 1000, 1) * 289
+                    isProfileOpen
+                      ? 289 - Math.min((summary.totalXP % 1000) / 1000, 1) * 289
+                      : 289
                   }
                   strokeLinecap="round"
-                  className="transition-all duration-[2000ms] ease-out"
+                  className="transition-all duration-[1500ms] ease-out delay-300"
                 />
               </svg>
-              {/* The User Avatar */}
+
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10">
                 <img
                   src={auth?.user?.avatar_url}
                   className="w-full h-full object-cover"
+                  alt="Profile"
                 />
               </div>
             </div>
