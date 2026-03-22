@@ -22,6 +22,7 @@ const UI_TEXT = {
     streak: "Daily Streak",
     newAchievement: "New Medal Unlocked!",
     finishLessons: "Finish 3 Lessons",
+    close: "Close Drawer",
   },
   ta: {
     home: "முகப்பு",
@@ -34,6 +35,7 @@ const UI_TEXT = {
     streak: "தொடர் நாட்கள்",
     newAchievement: "புதிய பதக்கம்!",
     finishLessons: "3 பாடங்களை முடிக்கவும்",
+    close: "சரி", // 🎯 "Okay/Got it" - Friendly & Natural
   },
 };
 
