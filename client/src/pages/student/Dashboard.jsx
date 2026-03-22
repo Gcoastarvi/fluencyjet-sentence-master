@@ -419,6 +419,19 @@ export default function Dashboard() {
     return () => window.removeEventListener("focus", refreshStats);
   }, []);
 
+  // 🏆 Level Up Celebration Logic
+  const handleLevelUpCelebration = () => {
+    setShowLevelModal(true); // This opens the Level Up Modal we built
+    import("canvas-confetti").then((confetti) => {
+      confetti.default({
+        particleCount: 200,
+        spread: 100,
+        origin: { y: 0.6 },
+        colors: ["#6366f1", "#f59e0b", "#ffffff"],
+      });
+    });
+  };
+
   // 🏆 VICTORY & BADGE DETECTOR
   useEffect(() => {
     // 1. Detect Level Up

@@ -48,6 +48,16 @@ export default function Signup() {
     }
   }
 
+  const handleSignup = async (data) => {
+    const res = await api.post("/auth/register", data);
+    if (res.data.success) {
+      // 🎯 AUTO-LOGIN: Save the token immediately
+      localStorage.setItem("token", res.data.token);
+      // Redirect straight back to the lesson they were on
+      window.location.href = "/b/lesson/2?difficulty=beginner";
+    }
+  };
+
   return (
     <div className="min-h-[70vh] flex items-start justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
