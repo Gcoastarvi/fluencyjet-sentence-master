@@ -22,7 +22,7 @@ const UI_TEXT = {
     streak: "Daily Streak",
     newAchievement: "New Medal Unlocked!",
     finishLessons: "Finish 3 Lessons",
-    close: "Close Drawer",
+    close: "Got it!",
   },
   ta: {
     home: "முகப்பு",
@@ -416,6 +416,31 @@ export default function Dashboard() {
 
     return () => window.removeEventListener("focus", refreshStats);
   }, []);
+
+  // 🏆 VICTORY & BADGE DETECTOR
+  useEffect(() => {
+    // 1. Detect Level Up
+    if (summary.level > prevLevel && prevLevel !== 0) {
+      handleLevelUpCelebration();
+    }
+
+    // 2. Detect New Badge
+    if (summary.earnedBadges?.length > prevBadgeCount && prevBadgeCount !== 0) {
+      const newestBadge = summary.earnedBadges[summary.earnedBadges.length - 1];
+      setUnlockedBadge(newestBadge); // Triggers the 3D Modal we built
+      triggerConfetti();
+    }
+
+    // Sync the local state so we don't trigger twice
+    setPrevLevel(summary.level);
+    setPrevBadgeCount(summary.earnedBadges?.length || 0);
+  }, [summary.level, summary.earnedBadges]);
+
+  const triggerConfetti = () => {
+    import("canvas-confetti").then((confetti) => {
+      confetti.default({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+    });
+  };
 
   useEffect(() => {
     const fetchLessons = async () => {
@@ -1398,11 +1423,15 @@ export default function Dashboard() {
       </nav>
       {/* 👤 MOBILE PROFILE DRAWER */}
       <div
-        className={`fixed inset-0 z-[200] transition-all duration-500 ${isProfileOpen ? "visible" : "invisible"}`}
+        className={`fixed inset-0 z-[200] transition-all duration-500 ${
+          isProfileOpen ? "visible" : "invisible delay-500" // 🎯 The delay keeps the wrapper alive!
+        }`}
       >
         {/* Backdrop */}
         <div
-          className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-500 ${isProfileOpen ? "opacity-100" : "opacity-0"}`}
+          className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-500 ${
+            isProfileOpen ? "opacity-100" : "opacity-0"
+          }`}
           onClick={() => setIsProfileOpen(false)}
         />
 
