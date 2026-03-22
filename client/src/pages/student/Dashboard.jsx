@@ -1374,7 +1374,11 @@ export default function Dashboard() {
 
         {/* The Actual Drawer */}
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 pb-12 transition-transform duration-500 transform ${isProfileOpen ? "translate-y-0" : "translate-y-full"}`}
+          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 pb-12 transition-all duration-700 ease-in-out transform ${
+            isProfileOpen
+              ? "translate-y-0 opacity-100"
+              : "translate-y-full opacity-0"
+          }`}
         >
           <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" />
 
@@ -1503,10 +1507,10 @@ export default function Dashboard() {
             <div className="w-full mb-10">
               <div className="flex items-center justify-between mb-4 px-2">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  Achievement Gallery
+                  My Medals
                 </h3>
-                <span className="text-[10px] font-bold text-slate-300">
-                  {summary.earnedBadges?.length || 0} / 6 UNLOCKED
+                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                  {summary.earnedBadges?.length || 1} Unlocked
                 </span>
               </div>
 
