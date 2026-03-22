@@ -10,16 +10,32 @@ import confetti from "canvas-confetti";
 
 import AvatarFrame from "../../components/student/AvatarFrame";
 
-<style>
-  {`
-    @media (max-width: 768px) {
-      /* 🎯 Hide any navigation links at the very top on mobile */
-      nav:not(.fixed), .top-nav, header ul, header .flex.gap-8 {
-        display: none !important;
-      }
-    }
-  `}
-</style>;
+const UI_TEXT = {
+  en: {
+    home: "Home",
+    lessons: "Lessons",
+    ranking: "Ranking",
+    progress: "My Progress",
+    medals: "My Medals",
+    dailyGoal: "Daily Goal",
+    master: "Master",
+    streak: "Daily Streak",
+    newAchievement: "New Medal Unlocked!",
+    finishLessons: "Finish 3 Lessons",
+  },
+  ta: {
+    home: "முகப்பு",
+    lessons: "பாடங்கள்",
+    ranking: "தரவரிசை",
+    progress: "முன்னேற்றம்",
+    medals: "எனது பதக்கங்கள்",
+    dailyGoal: "இன்றைய இலக்கு",
+    master: "நிபுணர்",
+    streak: "தொடர் நாட்கள்",
+    newAchievement: "புதிய பதக்கம்!",
+    finishLessons: "3 பாடங்களை முடிக்கவும்",
+  },
+};
 
 const dashboardStyles = `
   .league-silver-glow {
@@ -78,33 +94,6 @@ const LEVELS = [
   { level: 5, xp: 50000 },
   { level: 6, xp: 100000 },
 ];
-
-const UI_TEXT = {
-  en: {
-    home: "Home",
-    lessons: "Lessons",
-    ranking: "Ranking",
-    progress: "My Progress",
-    medals: "My Medals",
-    dailyGoal: "Daily Goal",
-    master: "Master",
-    streak: "Daily Streak",
-    newAchievement: "New Medal Unlocked!",
-    finishLessons: "Finish 3 Lessons",
-  },
-  ta: {
-    home: "முகப்பு",
-    lessons: "பாடங்கள்",
-    ranking: "தரவரிசை",
-    progress: "முன்னேற்றம்",
-    medals: "எனது பதக்கங்கள்",
-    dailyGoal: "இன்றைய இலக்கு",
-    master: "நிபுணர்",
-    streak: "தொடர் நாட்கள்",
-    newAchievement: "புதிய பதக்கம்!",
-    finishLessons: "3 பாடங்களை முடிக்கவும்",
-  },
-};
 
 const lang = "en"; // Switch to 'en' but we will show BOTH labels for accessibility
 
