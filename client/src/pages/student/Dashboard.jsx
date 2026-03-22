@@ -64,10 +64,10 @@ const dashboardStyles = `
 `;
 
 const navItems = [
-  { label: "Home", icon: "🏠", path: "/dashboard" },
-  { label: "Lessons", icon: "📚", path: "/lessons" },
-  { label: "Ranking", icon: "🏆", path: "/leaderboard" },
-  { label: "Profile", icon: "👤", path: "/profile" },
+  { label: UI_TEXT[currentLang].home, icon: "🏠", path: "/dashboard" },
+  { label: UI_TEXT[currentLang].lessons, icon: "📚", path: "/lessons" },
+  { label: UI_TEXT[currentLang].ranking, icon: "🏆", path: "/leaderboard" },
+  { label: UI_TEXT[currentLang].progress, icon: "👤", path: "profile" }, // 🎯 CHANGED TO PROGRESS
 ];
 
 const LEVELS = [
@@ -78,6 +78,35 @@ const LEVELS = [
   { level: 5, xp: 50000 },
   { level: 6, xp: 100000 },
 ];
+
+const UI_TEXT = {
+  en: {
+    home: "Home",
+    lessons: "Lessons",
+    ranking: "Ranking",
+    progress: "My Progress",
+    medals: "My Medals",
+    dailyGoal: "Daily Goal",
+    master: "Master",
+    streak: "Daily Streak",
+    newAchievement: "New Medal Unlocked!",
+    finishLessons: "Finish 3 Lessons",
+  },
+  ta: {
+    home: "முகப்பு",
+    lessons: "பாடங்கள்",
+    ranking: "தரவரிசை",
+    progress: "முன்னேற்றம்",
+    medals: "எனது பதக்கங்கள்",
+    dailyGoal: "இன்றைய இலக்கு",
+    master: "நிபுணர்",
+    streak: "தொடர் நாட்கள்",
+    newAchievement: "புதிய பதக்கம்!",
+    finishLessons: "3 பாடங்களை முடிக்கவும்",
+  },
+};
+
+const lang = "en"; // Switch to 'en' but we will show BOTH labels for accessibility
 
 function fmt(n) {
   const num = Number(n || 0);
@@ -1314,9 +1343,14 @@ export default function Dashboard() {
               <span className="text-4xl font-black text-slate-200 line-through">
                 {summary.level - 1}
               </span>
-              <span className="text-6xl font-black text-indigo-600 animate-in zoom-in spin-in-12 duration-700">
-                {summary.level}
-              </span>
+              <div className="flex flex-col items-center">
+                <span className="text-6xl font-black text-indigo-600 animate-in zoom-in spin-in-12 duration-700">
+                  {summary.level}
+                </span>
+                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+                  {UI_TEXT.ta.master}
+                </span>
+              </div>
             </div>
 
             <button
@@ -1339,26 +1373,33 @@ export default function Dashboard() {
         />
       )}
       {/* 📱 MOBILE BOTTOM NAVIGATION */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-3 z-[100] flex justify-between items-center shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-slate-100 px-6 py-4 pb-8 z-[100] flex justify-between items-center shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
         {navItems.map((item) => (
           <button
             key={item.label}
-            onClick={() => {
-              // 🎯 If the button is 'Profile', fire our celebration function!
-              if (item.label === "Profile") {
-                handleOpenProfile();
-              } else {
-                navigate(item.path);
-              }
-            }}
+            onClick={() =>
+              item.label === "My Progress" || item.label === "Profile"
+                ? handleOpenProfile()
+                : navigate(item.path)
+            }
             className="flex flex-col items-center gap-1 group transition-all"
           >
             <span className="text-xl group-active:scale-125 transition-transform">
               {item.icon}
             </span>
-            <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400 group-hover:text-indigo-600">
-              {item.label}
-            </span>
+            <div className="flex flex-col items-center">
+              <span className="text-[9px] font-black uppercase tracking-tighter text-slate-400 group-hover:text-indigo-600">
+                {item.label === "Profile" ? UI_TEXT.en.progress : item.label}
+              </span>
+              {/* 🇮🇳 TAMIL SUBTEXT */}
+              <span className="text-[8px] font-bold text-slate-300 -mt-0.5">
+                {item.label === "Home" && UI_TEXT.ta.home}
+                {item.label === "Lessons" && UI_TEXT.ta.lessons}
+                {item.label === "Ranking" && UI_TEXT.ta.ranking}
+                {(item.label === "Profile" || item.label === "My Progress") &&
+                  UI_TEXT.ta.progress}
+              </span>
+            </div>
           </button>
         ))}
       </nav>
@@ -1429,7 +1470,7 @@ export default function Dashboard() {
               {auth?.user?.name}
             </h2>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
-              Level {summary.level} Explorer
+              Level {summary.level} {UI_TEXT.en.master} • {UI_TEXT.ta.master}
             </p>
 
             {/* 🔥 Pulsing Streak Flame Inserted Here */}
@@ -1440,10 +1481,10 @@ export default function Dashboard() {
               </div>
               <div className="text-left">
                 <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">
-                  Current Heat
+                  {UI_TEXT.en.streak} • {UI_TEXT.ta.streak}
                 </p>
                 <p className="text-xl font-black text-orange-600">
-                  {summary.streak || 1} DAY STREAK
+                  {summary.streak || 1} {summary.streak === 1 ? "DAY" : "DAYS"}
                 </p>
               </div>
             </div>
@@ -1453,10 +1494,10 @@ export default function Dashboard() {
               <div className="flex justify-between items-center mb-4">
                 <div className="text-left">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
-                    Daily Mission
+                    {UI_TEXT.en.dailyGoal} • {UI_TEXT.ta.dailyGoal}
                   </p>
                   <h4 className="text-sm font-black text-slate-900">
-                    Finish 3 Lessons
+                    {UI_TEXT.en.finishLessons}
                   </h4>
                 </div>
                 <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
@@ -1605,7 +1646,7 @@ export default function Dashboard() {
             </div>
 
             <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2">
-              New Achievement
+              {UI_TEXT.en.newAchievement} • {UI_TEXT.ta.newAchievement}
             </h2>
             <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-6">
               {unlockedBadge.label}
