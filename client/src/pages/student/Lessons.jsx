@@ -414,6 +414,62 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
           );
         })}
       </div>
+      <div className="fixed inset-0 z-[300] bg-indigo-600 flex flex-col items-center justify-center p-6 text-white overflow-hidden">
+        {/* 🎆 Celebration Background */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none animate-pulse">
+          <div className="absolute top-20 left-10 text-4xl">⭐</div>
+          <div className="absolute bottom-20 right-10 text-4xl">🔥</div>
+        </div>
+
+        <div className="bg-white rounded-[3rem] p-10 w-full max-w-md text-center shadow-2xl transform animate-in zoom-in duration-500">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">✅</span>
+          </div>
+
+          <h2 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-2">
+            Lesson 1 Complete
+          </h2>
+          <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-4">
+            You are a Rising Star!
+          </h3>
+
+          <div className="bg-slate-50 rounded-2xl p-6 mb-8 flex justify-between items-center">
+            <div className="text-left">
+              <p className="text-[10px] font-black text-slate-400 uppercase">
+                Points Earned
+              </p>
+              <p className="text-2xl font-black text-indigo-600">+150 XP</p>
+            </div>
+            <div className="h-10 w-[1px] bg-slate-200" />
+            <div className="text-right">
+              <p className="text-[10px] font-black text-slate-400 uppercase">
+                Accuracy
+              </p>
+              <p className="text-2xl font-black text-emerald-500">95%</p>
+            </div>
+          </div>
+
+          <p className="text-slate-500 text-xs font-bold leading-relaxed mb-10">
+            Don't lose your progress! Save your XP and unlock
+            <span className="text-indigo-600">
+              {" "}
+              Lesson 2: Building Confidence
+            </span>
+            .
+          </p>
+
+          <button
+            onClick={() => navigate("/signup")}
+            className="w-full py-5 rounded-2xl bg-indigo-600 text-white font-black text-sm uppercase tracking-widest shadow-xl shadow-indigo-100 animate-bounce"
+          >
+            Claim My XP & Continue →
+          </button>
+
+          <button className="mt-6 text-[10px] font-black text-slate-300 uppercase tracking-widest">
+            Maybe Later
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

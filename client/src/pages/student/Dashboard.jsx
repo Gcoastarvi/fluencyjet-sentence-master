@@ -1438,8 +1438,10 @@ export default function Dashboard() {
       </nav>
       {/* 👤 MOBILE PROFILE DRAWER */}
       <div
-        className={`fixed inset-0 z-[200] transition-all duration-500 ${
-          isProfileOpen ? "visible" : "invisible delay-500" // 🎯 The delay keeps the wrapper alive!
+        className={`fixed inset-0 z-[200] transition-opacity duration-500 ${
+          isProfileOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none delay-500"
         }`}
       >
         {/* Backdrop */}
