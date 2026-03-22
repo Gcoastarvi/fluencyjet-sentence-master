@@ -1612,9 +1612,9 @@ export default function Dashboard() {
 
             <button
               onClick={() => setIsProfileOpen(false)}
-              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest"
+              className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-transform"
             >
-              Close Drawer
+              {UI_TEXT[currentLang].close}
             </button>
           </div>
         </div>
