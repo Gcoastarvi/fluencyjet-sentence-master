@@ -37,6 +37,15 @@ const UI_TEXT = {
   },
 };
 
+const currentLang = "en";
+
+const navItems = [
+  { label: UI_TEXT[currentLang].home, icon: "🏠", path: "/dashboard" },
+  { label: UI_TEXT[currentLang].lessons, icon: "📚", path: "/lessons" },
+  { label: UI_TEXT[currentLang].ranking, icon: "🏆", path: "/leaderboard" },
+  { label: UI_TEXT[currentLang].progress, icon: "👤", path: "profile" }, // 🎯 CHANGED TO PROGRESS
+];
+
 const dashboardStyles = `
   .league-silver-glow {
     background: linear-gradient(135deg, #e2e8f0 0%, #ffffff 50%, #cbd5e1 100%) !important;
@@ -78,13 +87,6 @@ const dashboardStyles = `
     100% { filter: brightness(1); }
   }
 `;
-
-const navItems = [
-  { label: UI_TEXT[currentLang].home, icon: "🏠", path: "/dashboard" },
-  { label: UI_TEXT[currentLang].lessons, icon: "📚", path: "/lessons" },
-  { label: UI_TEXT[currentLang].ranking, icon: "🏆", path: "/leaderboard" },
-  { label: UI_TEXT[currentLang].progress, icon: "👤", path: "profile" }, // 🎯 CHANGED TO PROGRESS
-];
 
 const LEVELS = [
   { level: 1, xp: 0 },
