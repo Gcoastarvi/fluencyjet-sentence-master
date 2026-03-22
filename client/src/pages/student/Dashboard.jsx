@@ -411,23 +411,6 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // 🎢 If the new level is higher than the one we had stored, trigger the pop-up
-    if (summary.level > prevLevel && prevLevel !== 0) {
-      setShowLevelModal(true);
-      setPrevLevel(summary.level); // Update the snapshot
-
-      // 🎆 Fire some Silver Confetti for the Level Up
-      import("canvas-confetti").then((confetti) => {
-        confetti.default({
-          particleCount: 150,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-      });
-    }
-  }, [summary.level]);
-
-  useEffect(() => {
     // 🏁 If we just came back from a successful lesson
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get("completed") === "true") {

@@ -98,48 +98,50 @@ export default function Navbar() {
               </>
             )}
 
-            {isAuthenticated && (
-              <>
-                <Link className="text-sm sm:text-base" to="/dashboard">
-                  Dashboard
-                </Link>
-                <Link className="text-sm sm:text-base" to="/lessons">
-                  Lessons
-                </Link>
-                <Link className="text-sm sm:text-base" to="/practice">
-                  Practice
-                </Link>
-                {/* 👤 Profile Link */}
-                <Link
-                  to="/profile"
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors"
-                >
-                  <span>👤</span>
-                  Profile
-                </Link>
-                <Link className="text-sm sm:text-base" to="/leaderboard">
-                  Leaderboard
-                </Link>
-
-                <Link
-                  to="/upgrade"
-                  className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"
-                >
-                  Upgrade
-                </Link>
-                {isAdmin && (
-                  <Link className="text-sm sm:text-base" to="/admin">
-                    Admin
+            <nav className="hidden md:flex items-center gap-4 sm:gap-8">
+              {isAuthenticated && (
+                <>
+                  <Link className="text-sm sm:text-base" to="/dashboard">
+                    Dashboard
                   </Link>
-                )}
-                <button
-                  onClick={handleLogoutClick}
-                  className="shrink-0 px-4 py-2 bg-gray-800 text-white rounded-full shadow text-sm sm:text-base"
-                >
-                  Logout
-                </button>
-              </>
-            )}
+                  <Link className="text-sm sm:text-base" to="/lessons">
+                    Lessons
+                  </Link>
+                  <Link className="text-sm sm:text-base" to="/practice">
+                    Practice
+                  </Link>
+                  {/* 👤 Profile Link */}
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 transition-colors"
+                  >
+                    <span>👤</span>
+                    Profile
+                  </Link>
+                  <Link className="text-sm sm:text-base" to="/leaderboard">
+                    Leaderboard
+                  </Link>
+
+                  <Link
+                    to="/upgrade"
+                    className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"
+                  >
+                    Upgrade
+                  </Link>
+                  {isAdmin && (
+                    <Link className="text-sm sm:text-base" to="/admin">
+                      Admin
+                    </Link>
+                  )}
+                  <button
+                    onClick={handleLogoutClick}
+                    className="shrink-0 px-4 py-2 bg-gray-800 text-white rounded-full shadow text-sm sm:text-base"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
+            </nav>
           </div>
           {/* 🎯 Premium Streak Flame */}
           {showStreakModal && (
