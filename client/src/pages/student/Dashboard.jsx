@@ -1454,10 +1454,10 @@ export default function Dashboard() {
 
         {/* The Actual Drawer */}
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 pb-12 transition-all duration-700 ease-in-out transform ${
+          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 pb-12 transition-all duration-700 ease-[cubic-bezier(0.32,0,0.67,0)] transform ${
             isProfileOpen
               ? "translate-y-0 opacity-100"
-              : "translate-y-full opacity-0"
+              : "translate-y-[110%] opacity-0" // 🎯 Move it further down
           }`}
         >
           <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" />

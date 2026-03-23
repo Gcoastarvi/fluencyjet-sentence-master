@@ -2735,7 +2735,25 @@ export default function SentencePractice() {
   // UI
   // -------------------
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 pt-20">
+      {" "}
+      {/* 🎯 Added pt-20 for bar space */}
+      {/* ⚡ THE PROGRESS BAR (Always Visible) */}
+      <div className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-slate-100 px-6 py-4">
+        <div className="max-w-xl mx-auto flex items-center gap-4">
+          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-indigo-600 transition-all duration-500"
+              style={{
+                width: `${(currentIndex / (totalSentences || 1)) * 100}%`,
+              }}
+            />
+          </div>
+          <span className="text-[10px] font-black text-indigo-600 uppercase">
+            {currentIndex}/{totalSentences}
+          </span>
+        </div>
+      </div>
       <PracticeHeader
         lid={lid}
         difficulty={difficulty}
@@ -2751,16 +2769,13 @@ export default function SentencePractice() {
           )
         }
       />
-
       {import.meta.env.DEV ? (
         <div className="mx-auto max-w-xl px-4 pt-3 text-center text-xs text-slate-400">
           urlMode: <b>{String(urlMode)}</b> | activeMode: <b>{activeMode}</b> |
           safeMode: <b>{safeMode}</b> | lid: <b>{String(lid)}</b>
         </div>
       ) : null}
-
       <PromptCard tamil={current?.promptTa || "—"} />
-
       {/* Hint */}
       {showHint && status !== "correct" && (
         <div className="mx-auto max-w-3xl px-4 pt-3">
@@ -2769,7 +2784,6 @@ export default function SentencePractice() {
           </div>
         </div>
       )}
-
       {/* Main content wrapper (DO NOT close this here) */}
       <div
         className={`mx-auto max-w-xl px-4 pt-4 ${stickyCfg.show ? "pb-28" : "pb-10"}`}
@@ -3323,9 +3337,67 @@ export default function SentencePractice() {
           </div>
         )}
       </div>
-
       <StickyCTABar cfg={stickyCfg} />
+      {/* 🏆 THE PRESTIGE SUMMARY CARD */}
+      <div className="fixed inset-0 z-[500] bg-slate-900/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-500">
+        <div className="bg-white rounded-[4rem] p-10 w-full max-w-sm text-center shadow-2xl relative overflow-hidden transform animate-in zoom-in duration-700">
+          {/* ✨ Celebration Glow */}
+          <div className="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full" />
+          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/10 blur-[80px] rounded-full" />
 
+          <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-white shadow-lg">
+            <span className="text-5xl">🏆</span>
+          </div>
+
+          <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-2">
+            Lesson Mastered
+          </h2>
+          <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-8">
+            Fantastic Work!
+          </h3>
+
+          {/* 📊 The Performance Grid */}
+          <div className="grid grid-cols-2 gap-4 mb-10">
+            <div className="bg-slate-50 p-5 rounded-3xl text-center border border-slate-100">
+              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
+                XP Gained
+              </p>
+              <p className="text-xl font-black text-indigo-600">
+                +{earnedXP || 150} XP
+              </p>
+            </div>
+            <div className="bg-slate-50 p-5 rounded-3xl text-center border border-slate-100">
+              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
+                Accuracy
+              </p>
+              <p className="text-xl font-black text-emerald-500">100%</p>
+            </div>
+          </div>
+
+          {/* 🎯 Next Level Teaser */}
+          <div className="flex flex-col items-center gap-3 mb-10">
+            <p className="text-xs font-bold text-slate-500 italic">
+              "You're just 3 lessons away from Level {summary.level + 1}!"
+            </p>
+            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-full bg-indigo-600 w-3/4 animate-pulse" />
+            </div>
+          </div>
+
+          <button
+            onClick={() => navigate("/dashboard")}
+            className="w-full py-5 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 active:scale-95 transition-transform"
+          >
+            Claim Rewards & Finish →
+          </button>
+
+          {/* 📱 WhatsApp Share Option */}
+          <button className="mt-6 flex items-center justify-center gap-2 mx-auto text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:opacity-70 transition-opacity">
+            <span>Share My Achievement</span>
+            <span className="text-lg">📲</span>
+          </button>
+        </div>
+      </div>
       {/* ✅ Lesson completion modal */}
       {!isComplete &&
         !(totalQuestions > 0 && currentIndex >= totalQuestions) &&
@@ -3415,7 +3487,6 @@ export default function SentencePractice() {
             </div>
           </div>
         )}
-
       {/* ✅ Correct banner (Typing + Reorder) — bottom floating */}
       {status === "correct" && Number(earnedXP || 0) > 0 && (
         <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50">
