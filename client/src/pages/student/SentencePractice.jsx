@@ -65,18 +65,17 @@ const SUPPORTED_PRACTICE_MODES = new Set([
 const MAX_ATTEMPTS = 3;
 
 const handleShareSuccess = () => {
+  // 🎯 WE REMOVED 'summary' HERE. Using hardcoded labels for safety.
   const score = earnedXP || 150;
-  const levelName = summary.level >= 108 ? "Confidence Master" : "Rising Star";
+  const levelName = "Rising Star";
 
-  // 📝 The Viral Message Template
   const message = encodeURIComponent(
     `🏆 I just mastered a lesson on FluencyJet!\n\n` +
       `⭐ Status: ${levelName}\n` +
       `⚡ Points: +${score} XP gained\n\n` +
-      `Can you beat my score? join me here: https://fluencyjet.com`,
+      `நிங்களும் ஆங்கிலம் கற்கலாம்! Join me: https://fluencyjet.com`,
   );
 
-  // Open WhatsApp
   window.open(`https://wa.me/?text=${message}`, "_blank");
 };
 
@@ -320,9 +319,11 @@ export default function SentencePractice() {
 
   // Reset practice UI when switching modes/lesson/difficulty (React Router does not remount)
   useEffect(() => {
-    setIsComplete(false);
+    setIsComplete(false); // 🎯 CRITICAL: Reset the finish line
+    setEarnedXP(0); // 🎯 CRITICAL: Reset the points
     setShowCompleteModal(false);
     setLoadError("");
+    setCurrentIndex(0); // 🎯 CRITICAL: Force start at Question 1
   }, [safeMode, lid, difficulty]);
 
   const xpInFlightRef = useRef(false);
