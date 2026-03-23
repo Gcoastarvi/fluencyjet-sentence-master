@@ -64,6 +64,22 @@ const SUPPORTED_PRACTICE_MODES = new Set([
 ]);
 const MAX_ATTEMPTS = 3;
 
+const handleShareSuccess = () => {
+  const score = earnedXP || 150;
+  const levelName = summary.level >= 108 ? "Confidence Master" : "Rising Star";
+
+  // 📝 The Viral Message Template
+  const message = encodeURIComponent(
+    `🏆 I just mastered a lesson on FluencyJet!\n\n` +
+      `⭐ Status: ${levelName}\n` +
+      `⚡ Points: +${score} XP gained\n\n` +
+      `Can you beat my score? join me here: https://fluencyjet.com`,
+  );
+
+  // Open WhatsApp
+  window.open(`https://wa.me/?text=${message}`, "_blank");
+};
+
 export default function SentencePractice() {
   const { mode: urlMode } = useParams();
 
@@ -2745,12 +2761,12 @@ export default function SentencePractice() {
             <div
               className="h-full bg-indigo-600 transition-all duration-500"
               style={{
-                width: `${(currentIndex / (totalSentences || 1)) * 100}%`,
+                width: `${(currentIndex / (lessonExercises?.length || 1)) * 100}%`,
               }}
             />
           </div>
           <span className="text-[10px] font-black text-indigo-600 uppercase">
-            {currentIndex}/{totalSentences}
+            {currentIndex}/{lessonExercises?.length || 0}
           </span>
         </div>
       </div>
@@ -3392,7 +3408,10 @@ export default function SentencePractice() {
           </button>
 
           {/* 📱 WhatsApp Share Option */}
-          <button className="mt-6 flex items-center justify-center gap-2 mx-auto text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:opacity-70 transition-opacity">
+          <button
+            onClick={handleShareSuccess}
+            className="mt-6 flex items-center justify-center gap-2 mx-auto text-[10px] font-black text-emerald-500 uppercase tracking-widest"
+          >
             <span>Share My Achievement</span>
             <span className="text-lg">📲</span>
           </button>
