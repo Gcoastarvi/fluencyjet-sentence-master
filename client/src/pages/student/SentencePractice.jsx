@@ -64,21 +64,6 @@ const SUPPORTED_PRACTICE_MODES = new Set([
 ]);
 const MAX_ATTEMPTS = 3;
 
-const handleShareSuccess = () => {
-  // 🎯 WE REMOVED 'summary' HERE. Using hardcoded labels for safety.
-  const score = earnedXP || 150;
-  const levelName = "Rising Star";
-
-  const message = encodeURIComponent(
-    `🏆 I just mastered a lesson on FluencyJet!\n\n` +
-      `⭐ Status: ${levelName}\n` +
-      `⚡ Points: +${score} XP gained\n\n` +
-      `நிங்களும் ஆங்கிலம் கற்கலாம்! Join me: https://fluencyjet.com`,
-  );
-
-  window.open(`https://wa.me/?text=${message}`, "_blank");
-};
-
 export default function SentencePractice() {
   const { mode: urlMode } = useParams();
 
@@ -317,14 +302,11 @@ export default function SentencePractice() {
 
   const lid = Number(lessonIdFromQuery ?? lessonId ?? 0);
 
-  // Reset practice UI when switching modes/lesson/difficulty (React Router does not remount)
   useEffect(() => {
-    // 🧹 Deep Purge
     setIsComplete(false);
     setShowCompleteModal(false);
-    setEarnedXP(0);
-    setCurrentIndex(0);
-  }, [lid, safeMode]); // 🎯 Trigger on every lesson/mode change
+    setLoadError("");
+  }, [safeMode, lid, difficulty]);
 
   const xpInFlightRef = useRef(false);
 
@@ -2748,40 +2730,11 @@ export default function SentencePractice() {
     navigate(`${location.pathname}?${sp.toString()}`, { replace: true });
   };
 
-  const handleShareAchievement = () => {
-    const xp = earnedXP || 150;
-    const text = encodeURIComponent(
-      `🏆 I just mastered a lesson on FluencyJet!\n` +
-        `⭐ Status: Rising Star\n` +
-        `⚡ Points: +${xp} XP\n\n` +
-        `நிங்களும் ஆங்கிலம் கற்கலாம்! Join me: https://fluencyjet.com`,
-    );
-    window.open(`https://wa.me/?text=${text}`, "_blank");
-  };
-
   // -------------------
   // UI
   // -------------------
   return (
     <div className="min-h-screen bg-slate-50 pt-20">
-      {" "}
-      {/* 🎯 Added pt-20 for bar space */}
-      {/* ⚡ THE PROGRESS BAR (Always Visible) */}
-      <div className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-slate-100 px-6 py-4">
-        <div className="max-w-xl mx-auto flex items-center gap-4">
-          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-indigo-600 transition-all duration-500"
-              style={{
-                width: `${(currentIndex / (lessonExercises?.length || 1)) * 100}%`,
-              }}
-            />
-          </div>
-          <span className="text-[10px] font-black text-indigo-600 uppercase">
-            {currentIndex}/{lessonExercises?.length || 0}
-          </span>
-        </div>
-      </div>
       <PracticeHeader
         lid={lid}
         difficulty={difficulty}
@@ -3366,73 +3319,7 @@ export default function SentencePractice() {
         )}
       </div>
       <StickyCTABar cfg={stickyCfg} />
-      {/* 🏆 THE PRESTIGE SUMMARY CARD */}
-      <div className="fixed inset-0 z-[500] bg-slate-900/90 backdrop-blur-xl flex items-center justify-center p-6 animate-in fade-in duration-500">
-        <div className="bg-white rounded-[4rem] p-10 w-full max-w-sm text-center shadow-2xl relative overflow-hidden transform animate-in zoom-in duration-700">
-          {/* ✨ Celebration Glow */}
-          <div className="absolute -top-24 -left-24 w-48 h-48 bg-indigo-500/10 blur-[80px] rounded-full" />
-          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/10 blur-[80px] rounded-full" />
 
-          <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-8 border-4 border-white shadow-lg">
-            <span className="text-5xl">🏆</span>
-          </div>
-
-          <h2 className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-2">
-            Lesson Mastered
-          </h2>
-          <h3 className="text-3xl font-black text-slate-900 tracking-tighter mb-8">
-            Fantastic Work!
-          </h3>
-
-          {/* 📊 The Performance Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-10">
-            <div className="bg-slate-50 p-5 rounded-3xl text-center border border-slate-100">
-              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
-                XP Gained
-              </p>
-              <p className="text-xl font-black text-indigo-600">
-                +{earnedXP || 150} XP
-              </p>
-            </div>
-            <div className="bg-slate-50 p-5 rounded-3xl text-center border border-slate-100">
-              <p className="text-[10px] font-black text-slate-400 uppercase mb-1">
-                Accuracy
-              </p>
-              <p className="text-xl font-black text-emerald-500">100%</p>
-            </div>
-          </div>
-
-          {/* 🎯 Next Level Teaser */}
-          {/* 🎯 Achievement Status (India 2 Persona) */}
-          {/* 🎯 Achievement Status (Surgical Fix - NO SUMMARY REFS) */}
-          <div className="flex flex-col items-center gap-3 mb-10">
-            <p className="text-xs font-bold text-slate-500 italic">
-              "Great job! You've officially earned the{" "}
-              <span className="text-indigo-600 font-black">Rising Star</span>{" "}
-              status for this lesson."
-            </p>
-            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-600 w-full animate-pulse" />
-            </div>
-          </div>
-
-          <button
-            onClick={() => navigate("/dashboard")}
-            className="w-full py-5 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 active:scale-95 transition-transform"
-          >
-            Claim Rewards & Finish →
-          </button>
-
-          {/* 📱 WhatsApp Share Option */}
-          <button
-            onClick={handleShareAchievement}
-            className="mt-6 flex items-center justify-center gap-2 mx-auto text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:opacity-70 transition-opacity"
-          >
-            <span>Share My Achievement</span>
-            <span className="text-lg">📲</span>
-          </button>
-        </div>
-      </div>
       {/* ✅ Lesson completion modal */}
       {/* 🛑 BANNER KILL SWITCH: Only show if questions are actually finished */}
       {isComplete &&
