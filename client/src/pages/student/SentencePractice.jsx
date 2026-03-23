@@ -319,11 +319,11 @@ export default function SentencePractice() {
 
   // Reset practice UI when switching modes/lesson/difficulty (React Router does not remount)
   useEffect(() => {
-    setIsComplete(false); // 🎯 CRITICAL: Reset the finish line
-    setEarnedXP(0); // 🎯 CRITICAL: Reset the points
-    setShowCompleteModal(false);
+    setIsComplete(false); // 🎯 Reset the "Finished" flag
+    setEarnedXP(0); // 🎯 Reset the points
+    setShowCompleteModal(false); // 🎯 Hide the banner
     setLoadError("");
-    setCurrentIndex(0); // 🎯 CRITICAL: Force start at Question 1
+    setCurrentIndex(0); // 🎯 Start from Question 1
   }, [safeMode, lid, difficulty]);
 
   const xpInFlightRef = useRef(false);
@@ -3434,94 +3434,93 @@ export default function SentencePractice() {
         </div>
       </div>
       {/* ✅ Lesson completion modal */}
-      {!isComplete &&
-        !(totalQuestions > 0 && currentIndex >= totalQuestions) &&
-        showCompleteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-            <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
-              {/* Top accent */}
-              <div className="h-1.5 w-full bg-emerald-500" />
+      {/* ✅ ONLY show when the lesson IS actually finished */}
+      {isComplete && currentIndex > 0 && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center bg-slate-900/90 backdrop-blur-xl p-4 animate-in fade-in duration-500">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+            {/* Top accent */}
+            <div className="h-1.5 w-full bg-emerald-500" />
 
-              <div className="p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Lesson complete
-                    </div>
-                    <div className="mt-1 text-2xl font-extrabold text-slate-900">
-                      🎉 Great job!
-                    </div>
-                    <div className="mt-2 text-sm text-slate-600">
-                      You earned{" "}
-                      <span className="font-bold text-slate-900">
-                        +{completionXp}
-                      </span>{" "}
-                      XP bonus.
-                    </div>
+            <div className="p-6">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Lesson complete
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowCompleteModal(false)}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Close
-                  </button>
+                  <div className="mt-1 text-2xl font-extrabold text-slate-900">
+                    🎉 Great job!
+                  </div>
+                  <div className="mt-2 text-sm text-slate-600">
+                    You earned{" "}
+                    <span className="font-bold text-slate-900">
+                      +{completionXp}
+                    </span>{" "}
+                    XP bonus.
+                  </div>
                 </div>
 
-                <div className="mt-5 grid gap-3">
-                  {/* Primary */}
+                <button
+                  type="button"
+                  onClick={() => setShowCompleteModal(false)}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="mt-5 grid gap-3">
+                {/* Primary */}
+                <button
+                  className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                  onClick={() => {
+                    setShowCompleteModal(false);
+                    const next = Number(lid) + 1;
+                    navigate(
+                      `${base}/lesson/${next}?difficulty=${encodeURIComponent(difficulty)}`,
+                      { replace: true },
+                    );
+                  }}
+                >
+                  Continue to next lesson →
+                </button>
+
+                {/* Secondary row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
-                    className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:opacity-90"
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                     onClick={() => {
                       setShowCompleteModal(false);
-                      const next = Number(lid) + 1;
-                      navigate(
-                        `${base}/lesson/${next}?difficulty=${encodeURIComponent(difficulty)}`,
-                        { replace: true },
-                      );
+                      initQuiz();
                     }}
                   >
-                    Continue to next lesson →
+                    Repeat lesson
                   </button>
 
-                  {/* Secondary row */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                      onClick={() => {
-                        setShowCompleteModal(false);
-                        initQuiz();
-                      }}
-                    >
-                      Repeat lesson
-                    </button>
-
-                    <button
-                      className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
-                      onClick={() => {
-                        setShowCompleteModal(false);
-                        navigate("/leaderboard");
-                      }}
-                    >
-                      View leaderboard
-                    </button>
-                  </div>
+                  <button
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                    onClick={() => {
+                      setShowCompleteModal(false);
+                      navigate("/leaderboard");
+                    }}
+                  >
+                    View leaderboard
+                  </button>
                 </div>
+              </div>
 
-                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="text-xs font-semibold text-slate-600">
-                    Keep your streak going
-                  </div>
-                  <div className="mt-1 text-sm text-slate-700">
-                    Practice 10 minutes daily for faster automatic sentence
-                    formation.
-                  </div>
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold text-slate-600">
+                  Keep your streak going
+                </div>
+                <div className="mt-1 text-sm text-slate-700">
+                  Practice 10 minutes daily for faster automatic sentence
+                  formation.
                 </div>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
       {/* ✅ Correct banner (Typing + Reorder) — bottom floating */}
       {status === "correct" && Number(earnedXP || 0) > 0 && (
         <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50">
