@@ -2747,6 +2747,17 @@ export default function SentencePractice() {
     navigate(`${location.pathname}?${sp.toString()}`, { replace: true });
   };
 
+  const handleShareAchievement = () => {
+    const xp = earnedXP || 150;
+    const text = encodeURIComponent(
+      `🏆 I just mastered a lesson on FluencyJet!\n` +
+        `⭐ Status: Rising Star\n` +
+        `⚡ Points: +${xp} XP\n\n` +
+        `நிங்களும் ஆங்கிலம் கற்கலாம்! Join me: https://fluencyjet.com`,
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
   // -------------------
   // UI
   // -------------------
@@ -3391,12 +3402,16 @@ export default function SentencePractice() {
           </div>
 
           {/* 🎯 Next Level Teaser */}
+          {/* 🎯 Achievement Status (India 2 Persona) */}
+          {/* 🎯 Achievement Status (Surgical Fix - NO SUMMARY REFS) */}
           <div className="flex flex-col items-center gap-3 mb-10">
             <p className="text-xs font-bold text-slate-500 italic">
-              "You're just 3 lessons away from Level {summary.level + 1}!"
+              "Great job! You've officially earned the{" "}
+              <span className="text-indigo-600 font-black">Rising Star</span>{" "}
+              status for this lesson."
             </p>
             <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-600 w-3/4 animate-pulse" />
+              <div className="h-full bg-indigo-600 w-full animate-pulse" />
             </div>
           </div>
 
@@ -3409,8 +3424,8 @@ export default function SentencePractice() {
 
           {/* 📱 WhatsApp Share Option */}
           <button
-            onClick={handleShareSuccess}
-            className="mt-6 flex items-center justify-center gap-2 mx-auto text-[10px] font-black text-emerald-500 uppercase tracking-widest"
+            onClick={handleShareAchievement}
+            className="mt-6 flex items-center justify-center gap-2 mx-auto text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:opacity-70 transition-opacity"
           >
             <span>Share My Achievement</span>
             <span className="text-lg">📲</span>
