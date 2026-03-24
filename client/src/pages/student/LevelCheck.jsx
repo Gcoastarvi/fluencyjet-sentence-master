@@ -146,6 +146,8 @@ export default function LevelCheck() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({}); // { [questionId]: optionIndex }
   const [result, setResult] = useState(null); // { score, track }
+  const [userName, setUserName] = useState("");
+  const [step, setStep] = useState("intro"); // intro, quiz, result
 
   function goToTrack(track, opts = {}) {
     try {
@@ -308,6 +310,15 @@ export default function LevelCheck() {
                   </div>
                 </div>
               </div>
+
+              {/* 🎤 Coach Aravind asking for the name */}
+              <input
+                type="text"
+                placeholder="Enter your name..."
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                className="w-full p-4 rounded-xl border border-slate-200 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
 
               {/* 251: Right Column - Finalized Start Action */}
               <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-8 text-center border border-slate-100 shadow-inner">

@@ -143,6 +143,28 @@ export default function Signup() {
             {loading ? "Creating…" : "Sign Up"}
           </button>
 
+          {/* ✅ VALIDATION HOOK: Social Proof */}
+          <div className="mt-6 flex flex-col items-center gap-2">
+            <div className="flex -space-x-2">
+              {[1, 2, 3, 4].map((i) => (
+                <img
+                  key={i}
+                  src={`https://i.pravatar.cc/100?img=${i + 10}`}
+                  className="h-6 w-6 rounded-full border-2 border-white"
+                  alt="User"
+                />
+              ))}
+              <div className="h-6 w-6 rounded-full bg-indigo-600 border-2 border-white flex items-center justify-center text-[8px] font-bold text-white">
+                +1k
+              </div>
+            </div>
+            <p className="text-[10px] font-medium text-slate-500">
+              Join{" "}
+              <span className="font-bold text-slate-700">1,240+ students</span>{" "}
+              from Tamil Nadu today.
+            </p>
+          </div>
+
           <div className="text-center text-sm text-slate-600">
             Already have an account?{" "}
             <a
