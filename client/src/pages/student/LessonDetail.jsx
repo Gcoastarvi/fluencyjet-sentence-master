@@ -1195,14 +1195,12 @@ export default function LessonDetail() {
                         ? typingProg
                         : audioProg,
                   ) === 100;
-                const icon =
-                  m === "reorder" ? "🧩" : m === "typing" ? "⌨️" : "🎧";
-                const label =
-                  m === "reorder"
-                    ? "Logic"
-                    : m === "typing"
-                      ? "Speed"
-                      : "Audio";
+                const config = MODE_CONFIG[m] || {};
+                const icon = config.icon || "🧩";
+                const label = config.title || m;
+                const subText = config.sub || "";
+
+                m === "reorder" ? "Logic" : m === "typing" ? "Speed" : "Audio";
 
                 return (
                   modeAvail[m] && (
@@ -1221,6 +1219,9 @@ export default function LessonDetail() {
                         className={`text-[10px] font-black uppercase tracking-widest ${isDone ? "text-emerald-500" : "text-slate-400"}`}
                       >
                         {label}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-300 italic -mt-1">
+                        {config.tamil}
                       </span>
                     </button>
                   )

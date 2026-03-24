@@ -1323,18 +1323,6 @@ export default function SentencePractice() {
 
       if (total > 0 && next >= total) {
         setIsComplete(true);
-
-        // ⚡ SPEED DEMON CALCULATION
-        if (safeMode === "reorder") {
-          const timeElapsed = (Date.now() - sessionStartTimeRef.current) / 1000;
-          if (timeElapsed < 60) {
-            window.dispatchEvent(
-              new CustomEvent("show-speed-toast", {
-                detail: { time: Math.round(timeElapsed) },
-              }),
-            );
-          }
-        }
       }
 
       return next;
