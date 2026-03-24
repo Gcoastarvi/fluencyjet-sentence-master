@@ -1323,6 +1323,18 @@ export default function SentencePractice() {
 
       if (total > 0 && next >= total) {
         setIsComplete(true);
+
+        // ⚡ SPEED DEMON CALCULATION
+        if (safeMode === "reorder") {
+          const timeElapsed = (Date.now() - sessionStartTimeRef.current) / 1000;
+          if (timeElapsed < 60) {
+            window.dispatchEvent(
+              new CustomEvent("show-speed-toast", {
+                detail: { time: Math.round(timeElapsed) },
+              }),
+            );
+          }
+        }
       }
 
       return next;
@@ -2729,6 +2741,19 @@ export default function SentencePractice() {
     sp.set("variant", v);
     navigate(`${location.pathname}?${sp.toString()}`, { replace: true });
   };
+
+  {
+    /* ⚡ SPEED DEMON TOAST */
+  }
+  <div
+    id="speed-toast"
+    className="fixed top-24 left-1/2 -translate-x-1/2 z-[600] pointer-events-none opacity-0 transition-all duration-500"
+  >
+    <div className="bg-amber-400 text-slate-900 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 border-4 border-white animate-bounce">
+      <span>⚡ SPEED DEMON!</span>
+      <span className="bg-white/30 px-2 py-0.5 rounded-lg">FAST AS FLASH</span>
+    </div>
+  </div>;
 
   // -------------------
   // UI

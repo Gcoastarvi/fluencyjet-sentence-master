@@ -1437,8 +1437,9 @@ export default function Dashboard() {
         ))}
       </nav>
       {/* 👤 MOBILE PROFILE DRAWER */}
+      {/* 🎯 Always render the drawer, but control visibility with classes */}
       <div
-        className={`fixed inset-0 z-[200] transition-opacity duration-500 ${
+        className={`fixed inset-0 z-[200] transition-all duration-700 ${
           isProfileOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none delay-500"
@@ -1446,19 +1447,14 @@ export default function Dashboard() {
       >
         {/* Backdrop */}
         <div
-          className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-500 ${
-            isProfileOpen ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-700 ${isProfileOpen ? "opacity-100" : "opacity-0"}`}
           onClick={() => setIsProfileOpen(false)}
         />
 
         {/* The Actual Drawer */}
+        {/* The Panel */}
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 pb-12 transition-all duration-700 ease-[cubic-bezier(0.32,0,0.67,0)] transform ${
-            isProfileOpen
-              ? "translate-y-0 opacity-100"
-              : "translate-y-[110%] opacity-0" // 🎯 Move it further down
-          }`}
+          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-[3rem] p-8 pb-12 shadow-[0_-20px_40px_rgba(0,0,0,0.1)] transition-transform duration-700 ease-in-out transform ${isProfileOpen ? "translate-y-0" : "translate-y-full"}`}
         >
           <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-8" />
 

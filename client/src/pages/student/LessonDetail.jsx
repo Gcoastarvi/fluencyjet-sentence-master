@@ -1239,10 +1239,22 @@ export default function LessonDetail() {
                   key={m}
                   className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between"
                 >
-                  <span className="text-xl">
-                    {m === "typing" ? "⌨️" : m === "reorder" ? "🧩" : "🎧"}
-                  </span>
+                  <span className="text-xl">{MODE_CONFIG[m]?.icon}</span>
                   <div className="flex-1 px-4">
+                    <div className="flex justify-between items-end mb-1">
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                          {MODE_CONFIG[m]?.title}
+                        </span>
+                        <p className="text-[9px] font-bold text-slate-300 italic -mt-0.5">
+                          {MODE_CONFIG[m]?.tamil}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-black text-slate-400">
+                        0%
+                      </span>
+                    </div>
+
                     <div className="h-1.5 w-full bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
                       <div
                         className="h-full bg-indigo-500 transition-all duration-1000"
