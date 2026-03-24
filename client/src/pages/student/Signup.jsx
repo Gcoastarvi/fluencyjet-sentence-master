@@ -14,7 +14,7 @@ export default function Signup() {
       ? rawNext
       : "/dashboard";
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(searchParams.get("name") || "");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -65,6 +65,27 @@ export default function Signup() {
         <p className="mt-1 text-sm text-slate-600">
           Create a free account to start practicing.
         </p>
+
+        {/* 🤝 THE TRUST HOOK: Coach Aravind Welcome */}
+        <div className="flex items-center gap-4 bg-indigo-50 p-4 rounded-2xl mb-2 border border-indigo-100 mt-6">
+          <div className="relative flex-shrink-0">
+            <img
+              src="/aravind-profile.png"
+              className="h-12 w-12 rounded-full border-2 border-white shadow-sm object-cover"
+              alt="Coach Aravind"
+            />
+            <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-emerald-500 rounded-full border-2 border-white"></div>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-tighter text-indigo-600">
+              Secure Your Spot
+            </p>
+            <p className="text-xs font-bold text-slate-700 leading-tight">
+              "Great choice! I've prepared your first lesson. Just enter your
+              email to start."
+            </p>
+          </div>
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
