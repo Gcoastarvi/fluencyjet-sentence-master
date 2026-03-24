@@ -162,9 +162,9 @@ export default function LevelCheck() {
 
     // If we want to start Lesson 1 (teach first → then practice)
     if (opts && opts.startLesson1) {
-      const difficulty = track === "intermediate" ? "intermediate" : "beginner";
-      const base = track === "intermediate" ? "/i" : "/b";
-      const lessonHubUrl = `${base}/lesson/1?difficulty=${encodeURIComponent(difficulty)}`;
+      const isHighPath = track === "intermediate" || track === "advanced";
+      const difficulty = isHighPath ? "intermediate" : "beginner";
+      const base = isHighPath ? "/i" : "/b";
 
       if (!token) {
         navigate(`/signup?next=${encodeURIComponent(lessonHubUrl)}`, {
@@ -178,9 +178,9 @@ export default function LevelCheck() {
     }
 
     // Default behavior: go to Lesson 1 hub (teach first → then practice)
-    const difficulty = track === "intermediate" ? "intermediate" : "beginner";
-    const base = track === "intermediate" ? "/i" : "/b";
-    const target = `${base}/lesson/1?difficulty=${encodeURIComponent(difficulty)}`;
+    const isHighPath = track === "intermediate" || track === "advanced";
+    const difficulty = isHighPath ? "intermediate" : "beginner";
+    const base = isHighPath ? "/i" : "/b";
 
     if (!token) {
       navigate(`/signup?next=${encodeURIComponent(target)}`, { replace: true });
@@ -310,15 +310,6 @@ export default function LevelCheck() {
                   </div>
                 </div>
               </div>
-
-              {/* 🎤 Coach Aravind asking for the name */}
-              <input
-                type="text"
-                placeholder="Enter your name..."
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                className="w-full p-4 rounded-xl border border-slate-200 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
 
               {/* 251: Right Column - Finalized Start Action */}
               <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-8 text-center border border-slate-100 shadow-inner">

@@ -69,9 +69,10 @@ export default function Signup() {
         {/* 🤝 THE TRUST HOOK: Coach Aravind Welcome */}
         <div className="flex items-center gap-4 bg-indigo-50 p-4 rounded-2xl mb-2 border border-indigo-100 mt-6">
           <div className="relative flex-shrink-0">
+            {/* 🤝 Trust Hook Avatar Update */}
             <img
-              src="/aravind-profile.png"
-              className="h-12 w-12 rounded-full border-2 border-white shadow-sm object-cover"
+              src="/avatar-fallback.png"
+              className="h-12 w-12 rounded-full border-2 border-white shadow-sm object-cover bg-indigo-100"
               alt="Coach Aravind"
             />
             <div className="absolute -bottom-1 -right-1 h-3 w-3 bg-emerald-500 rounded-full border-2 border-white"></div>
