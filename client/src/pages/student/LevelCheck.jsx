@@ -205,7 +205,7 @@ export default function LevelCheck() {
   async function finishQuiz() {
     const finalScore = score;
     let track = "beginner";
-    if (finalScore >= 8) track = "advanced";
+    if (finalScore >= 5) track = "intermediate";
     else if (finalScore >= 5) track = "intermediate";
 
     // Set local state first for immediate UI feedback
@@ -559,16 +559,13 @@ export default function LevelCheck() {
               <div className="flex flex-col gap-4 max-w-sm mx-auto">
                 <button
                   onClick={() => {
-                    // 🔄 Logic: 0-39 = Beginner | 40+ = Intermediate/Advanced Path
-                    const isAdvancedOrInter = score >= 40;
-                    const path = isAdvancedOrInter
+                    // Use the actual score (0-10) to determine the path
+                    const isHighPath = score >= 5;
+                    const path = isHighPath
                       ? "/i/lesson/1?difficulty=intermediate"
                       : "/b/lesson/1?difficulty=beginner";
 
-                    // 🏎️ Passing the name for the Auto-fill Hook
-                    // Note: Ensure your component has the 'userName' variable from the quiz start
                     const encodedName = encodeURIComponent(userName || "");
-
                     window.location.href = `/signup?next=${encodeURIComponent(path)}&name=${encodedName}`;
                   }}
                   className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
