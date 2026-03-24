@@ -37,6 +37,27 @@ const modeEnabled = (mode, modeAvail) => {
   return false;
 };
 
+const MODE_CONFIG = {
+  reorder: {
+    title: "Quick English",
+    sub: "Think Fast & Smart",
+    tamil: "வேகமாக சிந்திக்க",
+    icon: "⚡",
+  },
+  typing: {
+    title: "Grammar Genius",
+    sub: "Office Writing Pro",
+    tamil: "அலுவலக எழுத்துமுறை",
+    icon: "⌨️",
+  },
+  audio: {
+    title: "Fluent Voice",
+    sub: "Speak with Confidence",
+    tamil: "சரளமாக பேச",
+    icon: "🎧",
+  },
+};
+
 const LAST_SESSION_KEY = "fj_last_session";
 
 function getDayNumberFromLesson(lesson) {
