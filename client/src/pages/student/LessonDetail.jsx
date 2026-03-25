@@ -1296,26 +1296,6 @@ export default function LessonDetail() {
           )}
         </div>
       </main>
-      {/* 🚀 GROWTH HOOK: Referral Section */}
-      <div className="mt-8 p-6 bg-indigo-600 rounded-3xl text-white shadow-xl shadow-indigo-200">
-        <p className="text-[10px] font-black uppercase tracking-widest opacity-80">
-          Help a Friend
-        </p>
-        <h3 className="text-lg font-bold mt-1">Share FluencyJet</h3>
-        <p className="text-xs opacity-90 mt-2 mb-4">
-          "Send this to 3 friends who want to speak English fluently."
-        </p>
-        <button
-          onClick={() => {
-            const shareUrl = "https://fluencyjet.com/level-check";
-            navigator.clipboard.writeText(shareUrl);
-            alert("Link Copied! Share it on WhatsApp.");
-          }}
-          className="w-full py-3 bg-white text-indigo-600 rounded-xl font-black text-sm uppercase tracking-tighter hover:scale-[1.02] transition-all"
-        >
-          Copy Link to Share
-        </button>
-      </div>
     </div>
   );
 }
