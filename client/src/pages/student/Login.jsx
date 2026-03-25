@@ -93,6 +93,31 @@ export default function Login() {
             {loading ? "Logging in..." : "Login"}
           </button>
 
+          {/* ✅ LOGIN TRUST HOOK */}
+          <div className="mt-4 mb-8 bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black uppercase text-indigo-600">
+                Daily Goal
+              </p>
+              <p className="text-xs font-bold text-slate-700 italic">
+                "Finish 1 lesson to keep your streak!"
+              </p>
+            </div>
+            <div className="flex -space-x-1.5">
+              {[1, 2, 3].map((i) => (
+                <img
+                  key={i}
+                  src={`https://i.pravatar.cc/100?img=${i + 20}`}
+                  className="h-6 w-6 rounded-full border-2 border-white"
+                  alt="Active User"
+                />
+              ))}
+              <div className="h-6 w-6 rounded-full bg-indigo-500 border-2 border-white flex items-center justify-center text-[8px] font-bold text-white">
+                +82
+              </div>
+            </div>
+          </div>
+
           <div className="text-center text-sm text-slate-600">
             Don’t have an account?{" "}
             <a
