@@ -20,38 +20,6 @@ export default function LessonList({ difficulty }) {
   const [showLevelUp, setShowLevelUp] = useState(false);
 
   const [showMilestone, setShowMilestone] = useState(false);
-  const [hasCelebrated, setHasCelebrated] = useState(false);
-
-  useEffect(() => {
-    const currentXP = auth?.user?.xpTotal || 0;
-
-    // Trigger if XP is 1000+ and they haven't seen it yet
-    if (currentXP >= 1000 && !localStorage.getItem("milestone_1k_seen")) {
-      setShowMilestone(true);
-      localStorage.setItem("milestone_1k_seen", "true");
-
-      // 🎊 Massive celebration burst
-      confetti({
-        particleCount: 250,
-        spread: 100,
-        origin: { y: 0.6 },
-        colors: ["#6366f1", "#fbbf24", "#f59e0b"],
-      });
-    }
-  }, [auth?.user?.xpTotal]);
-
-  useEffect(() => {
-    const currentXP = auth?.user?.xpTotal || 0;
-    if (
-      currentXP >= 1000 &&
-      !hasCelebrated &&
-      !localStorage.getItem("milestone_1k_seen")
-    ) {
-      setShowMilestone(true);
-      setHasCelebrated(true);
-      localStorage.setItem("milestone_1k_seen", "true");
-    }
-  }, [auth?.user?.xpTotal, hasCelebrated]);
 
   // Logic to check if all missions are done
   const allMissionsDone = auth?.user?.daily_streak >= 3; // Add your other mission logic here
@@ -268,10 +236,17 @@ export default function LessonList({ difficulty }) {
     }
   }, [auth?.user?.daily_streak]);
 
+  // 🎯 THE DYNAMIC UNIT BUILDER (Replaces the old 'length: 12' block)
   const modules = useMemo(() => {
-    if (!lessons.length) return [];
-    return Array.from({ length: 12 }, (_, i) => ({
+    if (!lessons || lessons.length === 0) return [];
+
+    // 💡 CEO Logic: Instead of 12, we calculate how many units exist
+    // based on 10 lessons per unit.
+    const totalUnits = Math.ceil(lessons.length / 10);
+
+    return Array.from({ length: totalUnits }, (_, i) => ({
       id: i + 1,
+      title: `Unit ${i + 1}`,
       lessons: lessons.slice(i * 10, (i + 1) * 10),
     }));
   }, [lessons]);
@@ -329,7 +304,7 @@ export default function LessonList({ difficulty }) {
               <span className="text-xs font-black text-indigo-600">
                 {Math.round(
                   (lessons.filter((l) => (l.progress || 0) >= 100).length /
-                    120) *
+                    lessons.length) *
                     100,
                 )}
                 % Overall
@@ -621,7 +596,7 @@ export default function LessonList({ difficulty }) {
               New Rank!
             </h2>
             <p className="text-indigo-600 font-bold uppercase tracking-widest text-[10px] mb-8">
-              புதிய நிலை எட்டப்பட்டது!
+              புதிய நில � எட்டப்பட்டது!
             </p>
             <button
               onClick={() => setShowLevelUp(false)}
