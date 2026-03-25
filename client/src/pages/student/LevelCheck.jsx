@@ -575,13 +575,6 @@ export default function LevelCheck() {
                   </span>
                   <span className="text-xl">→</span>
                 </button>
-
-                <button
-                  onClick={() => window.location.reload()}
-                  className="text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors"
-                >
-                  Retake Assessment
-                </button>
               </div>
 
               {/* Shareable Footer */}
