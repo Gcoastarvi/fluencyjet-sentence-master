@@ -208,6 +208,20 @@ export default function LessonDetail() {
   const [isSharing, setIsSharing] = useState(false);
   const [missedBanner, setMissedBanner] = useState(null);
 
+  useEffect(() => {
+    // 🥂 THE PERSONALIZED WELCOME HOOK
+    const rawUser = localStorage.getItem("user");
+    if (rawUser) {
+      const user = JSON.parse(rawUser);
+      if (user.name) {
+        // Show a temporary "Toast" message
+        const welcomeMsg = `Welcome, ${user.name}! Coach Aravind is ready for you.`;
+        // You can use a library like react-hot-toast or just a simple alert for now
+        console.log("🎯", welcomeMsg);
+      }
+    }
+  }, []);
+
   // 🎯 4. Effects (The Actions)
   useEffect(() => {
     if (overallDone === 100) {

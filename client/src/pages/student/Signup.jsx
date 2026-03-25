@@ -40,23 +40,26 @@ export default function Signup() {
         return;
       }
 
-      navigate(`/login?next=${encodeURIComponent(next)}`, { replace: true });
+      // 🚀 HYPER-SPEED HOOK: Automatic Login
+      // If your API returns a token, save it and teleport them instantly.
+      if (res.token) {
+        localStorage.setItem("token", res.token);
+        // Using window.location.href forces a clean state for the new user
+        window.location.href = next;
+      } else {
+        // Fallback: If no token, go to the pre-filled login page we built
+        navigate(
+          `/login?next=${encodeURIComponent(next)}&email=${encodeURIComponent(email)}`,
+          { replace: true },
+        );
+      }
     } catch (err) {
       console.error("Signup error:", err);
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   }
-
-  const handleSignup = async (data) => {
-    const res = await api.post("/auth/register", data);
-    if (res.data.success) {
-      // 🎯 AUTO-LOGIN: Save the token immediately
-      localStorage.setItem("token", res.data.token);
-      // Redirect straight back to the lesson they were on
-      window.location.href = "/b/lesson/2?difficulty=beginner";
-    }
-  };
+  // 🗑️ (Note: Delete the old 'const handleSignup = ...' block entirely)
 
   return (
     <div className="min-h-[70vh] flex items-start justify-center px-4 py-10">

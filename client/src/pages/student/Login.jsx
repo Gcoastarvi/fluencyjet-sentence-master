@@ -7,17 +7,12 @@ export default function Login() {
   const { login } = useAuth();
 
   const [searchParams] = useSearchParams();
-
-  const rawNext = searchParams.get("next") || "/dashboard";
-  const next =
-    typeof rawNext === "string" && rawNext.startsWith("/")
-      ? rawNext
-      : "/dashboard";
-
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(searchParams.get("email") || "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const next = searchParams.get("next") || "/dashboard";
 
   async function handleSubmit(e) {
     e.preventDefault();
