@@ -610,7 +610,7 @@ export default function LessonList({ difficulty }) {
       {/* 🥉 LEAGUE ENTRY ANIMATION */}
       {showLeagueIntro && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-500">
-          <div className="text-center animate-in zoom-in-50 duration-500">
+          <div className="text-center animate-in zoom-in-50 duration-300">
             <div className="inline-block p-8 rounded-[3rem] bg-white shadow-2xl relative">
               <span className="text-8xl block mb-4 animate-bounce">🥉</span>
               <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">
