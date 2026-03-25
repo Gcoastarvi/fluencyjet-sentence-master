@@ -212,12 +212,14 @@ export default function LessonDetail() {
     // 🥂 THE PERSONALIZED WELCOME HOOK
     const rawUser = localStorage.getItem("user");
     if (rawUser) {
-      const user = JSON.parse(rawUser);
-      if (user.name) {
-        // Show a temporary "Toast" message
-        const welcomeMsg = `Welcome, ${user.name}! Coach Aravind is ready for you.`;
-        // You can use a library like react-hot-toast or just a simple alert for now
-        console.log("🎯", welcomeMsg);
+      try {
+        const user = JSON.parse(rawUser);
+        if (user.name) {
+          // 🎯 This shows a real popup to the user
+          alert(`Welcome, ${user.name}! Coach Aravind is ready for you.`);
+        }
+      } catch (e) {
+        console.error("User data parse error");
       }
     }
   }, []);
@@ -1294,6 +1296,26 @@ export default function LessonDetail() {
           )}
         </div>
       </main>
+      {/* 🚀 GROWTH HOOK: Referral Section */}
+      <div className="mt-8 p-6 bg-indigo-600 rounded-3xl text-white shadow-xl shadow-indigo-200">
+        <p className="text-[10px] font-black uppercase tracking-widest opacity-80">
+          Help a Friend
+        </p>
+        <h3 className="text-lg font-bold mt-1">Share FluencyJet</h3>
+        <p className="text-xs opacity-90 mt-2 mb-4">
+          "Send this to 3 friends who want to speak English fluently."
+        </p>
+        <button
+          onClick={() => {
+            const shareUrl = "https://fluencyjet.com/level-check";
+            navigator.clipboard.writeText(shareUrl);
+            alert("Link Copied! Share it on WhatsApp.");
+          }}
+          className="w-full py-3 bg-white text-indigo-600 rounded-xl font-black text-sm uppercase tracking-tighter hover:scale-[1.02] transition-all"
+        >
+          Copy Link to Share
+        </button>
+      </div>
     </div>
   );
 }
