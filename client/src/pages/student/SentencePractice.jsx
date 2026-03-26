@@ -2046,7 +2046,7 @@ export default function SentencePractice() {
     return (
       <div className="min-h-screen bg-slate-50 px-4 py-8">
         <div className="mx-auto max-w-3xl">
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
             {/* Accent bar (mode-based) */}
             <div
               className={`h-2 w-full ${MODE_ACCENT?.[safeMode]?.bar || "bg-slate-500"}`}
@@ -2061,7 +2061,7 @@ export default function SentencePractice() {
                   🎉 Great job!
                 </h1>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-600">
-                  You finished today’s practice. Keep going with just 10 minutes
+                  Nice work. Keep improving with just 10 minutes a day.
                   a day.
                 </p>
               </div>
@@ -2092,13 +2092,13 @@ export default function SentencePractice() {
                 {/* CTA 2 + CTA 3: Try another mode */}
                 <div className="mt-2">
                   <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Try another mode
+                    Try another practice
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-6 py-5 text-left shadow-sm transition hover:bg-white hover:shadow-md"
+                      className="w-full rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-6 py-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
                       onClick={() => {
                         playClick();
 
@@ -2149,7 +2149,7 @@ export default function SentencePractice() {
 
                     <button
                       type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-6 py-5 text-left shadow-sm transition hover:bg-white hover:shadow-md"
+                      className="w-full rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-6 py-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
                       onClick={() => {
                         playClick();
 
@@ -2194,7 +2194,7 @@ export default function SentencePractice() {
                 {nextLessonId ? (
                   <button
                     type="button"
-                    className="w-full rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
+                    className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-6 py-3.5 text-sm font-semibold text-slate-900 shadow-sm hover:bg-white"
                     onClick={() => {
                       track("practice_cta_clicked", {
                         lessonId: Number(lid) || 0,
