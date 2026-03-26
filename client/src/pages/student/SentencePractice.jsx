@@ -2068,33 +2068,7 @@ export default function SentencePractice() {
 
               {/* CTAs */}
               <div className="mt-7 grid gap-3">
-                {/* Primary: Continue */}
-                {nextLessonId ? (
-                  <button
-                    type="button"
-                    className="w-full rounded-2xl bg-slate-900 px-6 py-4 text-base font-semibold text-white shadow-sm hover:opacity-90"
-                    onClick={() => {
-                      track("practice_cta_clicked", {
-                        lessonId: Number(lid) || 0,
-                        difficulty,
-                        mode: safeMode,
-                        cta: "continue_next_lesson",
-                        nextLessonId,
-                      });
-
-                      navigate(
-                        `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
-                          difficulty,
-                        )}&autostart=1`,
-                        { replace: true },
-                      );
-                    }}
-                  >
-                    Continue to Lesson {nextLessonId} →
-                  </button>
-                ) : null}
-
-                {/* Secondary: Back */}
+                {/* CTA 1: Back to same lesson */}
                 <button
                   type="button"
                   className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-base font-semibold text-slate-900 hover:bg-slate-50"
@@ -2115,7 +2089,7 @@ export default function SentencePractice() {
                   Back to Lesson {lid || 1}
                 </button>
 
-                {/* Engagement loop */}
+                {/* CTA 2 + CTA 3: Try another mode */}
                 <div className="mt-2">
                   <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     Try another mode
@@ -2191,7 +2165,33 @@ export default function SentencePractice() {
                   </div>
                 </div>
 
-                {/* Optional: leaderboard (kept as tertiary) */}
+                {/* CTA 4: Continue to next lesson */}
+                {nextLessonId ? (
+                  <button
+                    type="button"
+                    className="w-full rounded-2xl bg-slate-900 px-6 py-4 text-base font-semibold text-white shadow-sm hover:opacity-90"
+                    onClick={() => {
+                      track("practice_cta_clicked", {
+                        lessonId: Number(lid) || 0,
+                        difficulty,
+                        mode: safeMode,
+                        cta: "continue_next_lesson",
+                        nextLessonId,
+                      });
+
+                      navigate(
+                        `${base}/lesson/${nextLessonId}?difficulty=${encodeURIComponent(
+                          difficulty,
+                        )}&autostart=1`,
+                        { replace: true },
+                      );
+                    }}
+                  >
+                    Continue to Lesson {nextLessonId} →
+                  </button>
+                ) : null}
+
+                {/* CTA 5: Leaderboard */}
                 <button
                   type="button"
                   className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
