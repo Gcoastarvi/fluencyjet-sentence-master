@@ -2101,16 +2101,32 @@ export default function SentencePractice() {
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-6 py-5 text-left shadow-sm transition hover:bg-white hover:shadow-md"
                       onClick={() => {
                         playClick();
+
+                        const targetMode = fallbackMode;
+
                         track("mode_switched", {
                           lessonId: Number(lid) || 0,
                           difficulty,
                           fromMode: safeMode,
-                          toMode: fallbackMode,
+                          toMode: targetMode,
                           source: "session_complete",
+                          ...(targetMode === "audio"
+                            ? { audioVariant: "repeat" }
+                            : {}),
                         });
 
+                        if (targetMode === "audio") {
+                          setAudioVariant("repeat");
+                          navigate(
+                            `/practice/audio?lessonId=${encodeURIComponent(
+                              lid || 1,
+                            )}&difficulty=${encodeURIComponent(difficulty)}&variant=repeat`,
+                          );
+                          return;
+                        }
+
                         navigate(
-                          `/practice/${fallbackMode}?lessonId=${encodeURIComponent(
+                          `/practice/${targetMode}?lessonId=${encodeURIComponent(
                             lid || 1,
                           )}&difficulty=${encodeURIComponent(difficulty)}`,
                         );
@@ -2135,6 +2151,10 @@ export default function SentencePractice() {
                       type="button"
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-6 py-5 text-left shadow-sm transition hover:bg-white hover:shadow-md"
                       onClick={() => {
+                        playClick();
+
+                        setAudioVariant("dictation");
+
                         track("mode_switched", {
                           lessonId: Number(lid) || 0,
                           difficulty,
