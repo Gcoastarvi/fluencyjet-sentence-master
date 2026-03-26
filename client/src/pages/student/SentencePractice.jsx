@@ -2052,15 +2052,15 @@ export default function SentencePractice() {
               className={`h-2 w-full ${MODE_ACCENT?.[safeMode]?.bar || "bg-slate-500"}`}
             />
 
-            <div className="p-6 sm:p-8">
+            <div className="p-6 sm:p-9">
               <div className="text-center">
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Session complete
                 </div>
-                <h1 className="mt-2 text-3xl font-extrabold text-slate-900">
+                <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
                   🎉 Great job!
                 </h1>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-600">
                   You finished today’s practice. Keep going with just 10 minutes
                   a day.
                 </p>
@@ -2071,7 +2071,7 @@ export default function SentencePractice() {
                 {/* CTA 1: Back to same lesson */}
                 <button
                   type="button"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-base font-semibold text-slate-900 hover:bg-slate-50"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-6 py-4 text-base font-semibold text-slate-900 shadow-sm hover:bg-slate-100"
                   onClick={() => {
                     track("practice_cta_clicked", {
                       lessonId: Number(lid) || 0,
@@ -2098,7 +2098,7 @@ export default function SentencePractice() {
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-left hover:bg-slate-100"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-6 py-5 text-left shadow-sm transition hover:bg-white hover:shadow-md"
                       onClick={() => {
                         playClick();
                         track("mode_switched", {
@@ -2118,7 +2118,7 @@ export default function SentencePractice() {
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className={`h-2 w-2 rounded-full ${
+                          className={`h-2.5 w-2.5 rounded-full ${
                             MODE_ACCENT?.[fallbackMode]?.bar || "bg-slate-500"
                           }`}
                         />
@@ -2126,40 +2126,45 @@ export default function SentencePractice() {
                           {uiFor(fallbackMode).title}
                         </div>
                       </div>
-                      <div className="mt-1 text-xs text-slate-600">
+                      <div className="mt-2 text-sm text-slate-600">
                         Quick 2-minute boost →
                       </div>
                     </button>
 
                     <button
                       type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-left hover:bg-slate-100"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50/90 px-6 py-5 text-left shadow-sm transition hover:bg-white hover:shadow-md"
                       onClick={() => {
                         track("mode_switched", {
                           lessonId: Number(lid) || 0,
                           difficulty,
                           fromMode: safeMode,
                           toMode: "audio",
-                          source: "session_complete",
+                          source: "session_complete_dictation",
+                          audioVariant: "dictation",
                         });
 
                         navigate(
                           `/practice/audio?lessonId=${encodeURIComponent(
                             lid || 1,
-                          )}&difficulty=${encodeURIComponent(difficulty)}&variant=repeat`,
+                          )}&difficulty=${encodeURIComponent(
+                            difficulty,
+                          )}&variant=dictation`,
                         );
                       }}
                     >
                       <div className="flex items-center gap-2">
                         <span
-                          className={`h-2 w-2 rounded-full ${MODE_ACCENT?.audio?.bar || "bg-slate-500"}`}
+                          className={`h-2.5 w-2.5 rounded-full ${
+                            MODE_ACCENT?.audio?.bar || "bg-slate-500"
+                          }`}
                         />
                         <div className="text-sm font-bold text-slate-900">
-                          {uiFor("audio").title}
+                          Listening Dictation
                         </div>
                       </div>
-                      <div className="mt-1 text-xs text-slate-600">
-                        Improve pronunciation →
+                      <div className="mt-2 text-sm text-slate-600">
+                        Listen and type the sentence →
                       </div>
                     </button>
                   </div>
@@ -2169,7 +2174,7 @@ export default function SentencePractice() {
                 {nextLessonId ? (
                   <button
                     type="button"
-                    className="w-full rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-6 py-3.5 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
                     onClick={() => {
                       track("practice_cta_clicked", {
                         lessonId: Number(lid) || 0,
@@ -2194,7 +2199,7 @@ export default function SentencePractice() {
                 {/* CTA 5: Leaderboard */}
                 <button
                   type="button"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                   onClick={() => navigate("/leaderboard")}
                 >
                   View leaderboard
