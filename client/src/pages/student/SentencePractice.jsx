@@ -658,12 +658,12 @@ export default function SentencePractice() {
 
     // Clear any prior error
     setLoadError(null);
-  }, [safeMode, lid, difficulty]);
+  }, [safeMode, lid, difficulty, audioVariant]);
 
   useEffect(() => {
     setLessonExercises([]);
     loadLessonBatch();
-  }, [safeMode, lid, difficulty]);
+  }, [safeMode, lid, difficulty, audioVariant]);
 
   // Keep total question count stored for LessonDetail progress summary
   useEffect(() => {
