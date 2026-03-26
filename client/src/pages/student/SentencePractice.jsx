@@ -2169,7 +2169,7 @@ export default function SentencePractice() {
                 {nextLessonId ? (
                   <button
                     type="button"
-                    className="w-full rounded-2xl bg-slate-900 px-6 py-4 text-base font-semibold text-white shadow-sm hover:opacity-90"
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
                     onClick={() => {
                       track("practice_cta_clicked", {
                         lessonId: Number(lid) || 0,
