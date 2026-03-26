@@ -2046,7 +2046,7 @@ export default function SentencePractice() {
     return (
       <div className="min-h-screen bg-slate-50 px-4 py-8">
         <div className="mx-auto max-w-3xl">
-            className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]"
+          <div className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
             {/* Accent bar (mode-based) */}
             <div
               className={`h-2 w-full ${MODE_ACCENT?.[safeMode]?.bar || "bg-slate-500"}`}
@@ -2061,8 +2061,7 @@ export default function SentencePractice() {
                   🎉 Great job!
                 </h1>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-600">
-                  Nice work. Keep improving with just 10 minutes a day.
-                  a day.
+                  Nice work. Keep improving with just 10 minutes a day. a day.
                 </p>
               </div>
 
