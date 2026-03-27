@@ -2754,19 +2754,18 @@ export default function SentencePractice() {
         total={totalQuestions || lessonExercises?.length || 0}
         streakText={`${Number(streak || 0)}-day streak`}
         onBack={() => {
+          const rawDifficulty = String(difficulty || "").toLowerCase();
           const normalizedDifficulty =
-            String(difficulty || "").toLowerCase() === "intermediate"
-              ? "intermediate"
-              : "beginner";
+            rawDifficulty === "intermediate" ? "intermediate" : "basic";
 
           const lessonBase =
             normalizedDifficulty === "intermediate" ? "/i" : "/b";
 
-          navigate(
-            `${lessonBase}/lesson/${lesson?.day_number || lid || 1}?difficulty=${encodeURIComponent(
-              normalizedDifficulty,
-            )}`,
-          );
+          const hubHref = `${lessonBase}/lesson/${lesson?.day_number || lid || 1}?difficulty=${encodeURIComponent(
+            normalizedDifficulty,
+          )}`;
+
+          window.location.href = hubHref;
         }}
       />
       {import.meta.env.DEV ? (
