@@ -2761,7 +2761,7 @@ export default function SentencePractice() {
           const lessonBase =
             normalizedDifficulty === "intermediate" ? "/i" : "/b";
 
-          const hubHref = `${lessonBase}/lesson/${lesson?.day_number || lid || 1}?difficulty=${encodeURIComponent(
+          const hubHref = `${lessonBase}/lesson/${lid || 1}?difficulty=${encodeURIComponent(
             normalizedDifficulty,
           )}`;
 
