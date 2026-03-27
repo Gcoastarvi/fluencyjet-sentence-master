@@ -2753,13 +2753,21 @@ export default function SentencePractice() {
         currentIndex={currentIndex}
         total={totalQuestions || lessonExercises?.length || 0}
         streakText={`${Number(streak || 0)}-day streak`}
-        onBack={() =>
+        onBack={() => {
+          const normalizedDifficulty =
+            String(difficulty || "").toLowerCase() === "intermediate"
+              ? "intermediate"
+              : "beginner";
+
+          const lessonBase =
+            normalizedDifficulty === "intermediate" ? "/i" : "/b";
+
           navigate(
-            `/b/lesson/${lesson?.day_number || lid || 1}?difficulty=${encodeURIComponent(
-              difficulty || "beginner",
+            `${lessonBase}/lesson/${lesson?.day_number || lid || 1}?difficulty=${encodeURIComponent(
+              normalizedDifficulty,
             )}`,
-          )
-        }
+          );
+        }}
       />
       {import.meta.env.DEV ? (
         <div className="mx-auto max-w-xl px-4 pt-3 text-center text-xs text-slate-400">
@@ -3194,15 +3202,6 @@ export default function SentencePractice() {
                   </div>
                 )}
               </div>
-
-              <button
-                type="button"
-                onClick={handleTryAgain}
-                className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                disabled={status === "correct" || status === "reveal"}
-              >
-                Reset
-              </button>
             </div>
 
             {/* Answer Area */}
