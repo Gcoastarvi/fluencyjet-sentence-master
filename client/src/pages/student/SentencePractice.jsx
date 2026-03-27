@@ -1649,9 +1649,15 @@ export default function SentencePractice() {
           : `typing_${current.id}`;
 
       if (normalize(user) === normalize(target)) {
+        const isPostReveal = status === "reveal";
+
         setStatus("correct");
         setWrongIndexes([]);
-        playSfx("correct"); // ✅ always play on correct, regardless of XP award
+        playSfx("correct");
+
+        if (isPostReveal) {
+          return;
+        }
 
         const xpDelta = Number(current?.xp ?? 150) || 150;
 
@@ -1684,7 +1690,6 @@ export default function SentencePractice() {
           console.error("[XP] typing: XP not awarded", result);
         }
 
-        // Update lesson progress (Typing)
         {
           const prev = readProgress(lessonId, "typing");
           const completedNow = Math.max(
@@ -1699,7 +1704,6 @@ export default function SentencePractice() {
           });
         }
 
-        // ✅ Completion bonus (ONLY once, only on last question)
         const isLastQuestion =
           currentIndex >= (lessonExercises?.length || 0) - 1;
 
@@ -1717,7 +1721,7 @@ export default function SentencePractice() {
                 ? "audio"
                 : "typing",
             );
-            // Don't show old modal if session-complete screen is about to show
+
             const willHitSessionComplete =
               totalQuestions > 0 && currentIndex + 1 >= totalQuestions;
 
@@ -2619,10 +2623,22 @@ export default function SentencePractice() {
       const trimmed = String(typedAnswer || "").trim();
       const canSubmit = trimmed.length > 0;
 
-      if (status === "reveal" || status === "correct") {
+      if (status === "correct") {
         return {
           show: true,
           primary: { label: "Next", onClick: firePrimary("Next", onNext) },
+          secondary: [],
+        };
+      }
+
+      if (status === "reveal") {
+        return {
+          show: true,
+          primary: {
+            label: "Try it now",
+            onClick: firePrimary("Try it now", onSubmit),
+            disabled: !canSubmit,
+          },
           secondary: [],
         };
       }
@@ -2884,7 +2900,7 @@ export default function SentencePractice() {
                   <div
                     className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${A.border} ${A.soft} ${A.text}`}
                   >
-                    Answer shown
+                    Answer shown — try typing it now
                   </div>
                 )}
                 {status === "correct" && (
@@ -2906,7 +2922,7 @@ export default function SentencePractice() {
                   type="button"
                   onClick={() => setTypedAnswer("")}
                   className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                  disabled={status === "correct" || status === "reveal"}
+                  disabled={status === "correct"}
                 >
                   Clear
                 </button>
@@ -2975,7 +2991,7 @@ export default function SentencePractice() {
               placeholder="Type the full English sentence here..."
               className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
               rows={3}
-              disabled={status === "correct" || status === "reveal"}
+              disabled={status === "correct"}
             />
             <div className="flex items-center gap-3 mt-3">
               {!stickyCfg.show && (
