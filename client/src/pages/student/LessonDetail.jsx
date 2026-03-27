@@ -670,10 +670,23 @@ export default function LessonDetail() {
 
     const lid = Number(dayNumber);
 
+    if (mode === "audio") {
+      navigate(
+        `/practice/audio?lessonId=${encodeURIComponent(
+          lid,
+        )}&difficulty=${encodeURIComponent(
+          difficulty,
+        )}&variant=repeat&q=0&restart=${Date.now()}`,
+      );
+      return;
+    }
+
     navigate(
-      `/practice/${mode}?lessonId=${encodeURIComponent(lid)}&difficulty=${encodeURIComponent(
+      `/practice/${mode}?lessonId=${encodeURIComponent(
+        lid,
+      )}&difficulty=${encodeURIComponent(
         difficulty,
-      )}`,
+      )}&q=0&restart=${Date.now()}`,
     );
   }
 

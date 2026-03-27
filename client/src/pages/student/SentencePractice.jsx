@@ -658,12 +658,12 @@ export default function SentencePractice() {
 
     // Clear any prior error
     setLoadError(null);
-  }, [safeMode, lid, difficulty, audioVariant]);
+  }, [safeMode, lid, difficulty, audioVariant, location.search]);
 
   useEffect(() => {
     setLessonExercises([]);
     loadLessonBatch();
-  }, [safeMode, lid, difficulty, audioVariant]);
+  }, [safeMode, lid, difficulty, audioVariant, location.search]);
 
   // Keep total question count stored for LessonDetail progress summary
   useEffect(() => {
@@ -2119,7 +2119,9 @@ export default function SentencePractice() {
                           navigate(
                             `/practice/audio?lessonId=${encodeURIComponent(
                               lid || 1,
-                            )}&difficulty=${encodeURIComponent(difficulty)}&variant=repeat`,
+                            )}&difficulty=${encodeURIComponent(
+                              difficulty,
+                            )}&variant=repeat&q=0&restart=${Date.now()}`,
                           );
                           return;
                         }
@@ -2127,7 +2129,9 @@ export default function SentencePractice() {
                         navigate(
                           `/practice/${targetMode}?lessonId=${encodeURIComponent(
                             lid || 1,
-                          )}&difficulty=${encodeURIComponent(difficulty)}`,
+                          )}&difficulty=${encodeURIComponent(
+                            difficulty,
+                          )}&q=0&restart=${Date.now()}`,
                         );
                       }}
                     >
@@ -2168,7 +2172,7 @@ export default function SentencePractice() {
                             lid || 1,
                           )}&difficulty=${encodeURIComponent(
                             difficulty,
-                          )}&variant=dictation`,
+                          )}&variant=dictation&q=0&restart=${Date.now()}`,
                         );
                       }}
                     >
