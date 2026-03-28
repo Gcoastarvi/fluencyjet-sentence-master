@@ -145,8 +145,11 @@ function writePrefShowTa(v) {
 }
 
 function readProgress(lessonId, mode) {
+  const stableId = Number(lessonId) || 0;
+  if (!stableId) return null;
+
   return safeJsonParse(
-    localStorage.getItem(`fj_progress:${lessonId}:${mode}`) || "null",
+    localStorage.getItem(`fj_progress:${stableId}:${mode}`) || "null",
   );
 }
 

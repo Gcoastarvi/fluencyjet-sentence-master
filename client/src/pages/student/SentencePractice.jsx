@@ -154,16 +154,19 @@ export default function SentencePractice() {
 
   function writeProgress(lid, mode, patch) {
     try {
-      const prev = readProgress(lid, mode) || {};
+      const stableId = Number(lid) || 0;
+      if (!stableId) return;
+
+      const prev = readProgress(stableId, mode) || {};
       const next = {
-        lessonId: lid,
+        lessonId: stableId,
         mode,
         completed: Number(prev.completed || 0),
         total: Number(prev.total || 0),
         updatedAt: prev.updatedAt || Date.now(),
         ...patch,
       };
-      localStorage.setItem(progressKey(lid, mode), JSON.stringify(next));
+      localStorage.setItem(progressKey(stableId, mode), JSON.stringify(next));
     } catch {
       // ignore
     }
@@ -671,7 +674,7 @@ export default function SentencePractice() {
     if (!lessonExercises || lessonExercises.length === 0) return;
 
     // store total for both supported modes (typing/reorder)
-    writeProgress(lessonId, safeMode, {
+    writeProgress(lid, safeMode, {
       total: lessonExercises.length,
       updatedAt: Date.now(),
     });
@@ -1563,7 +1566,7 @@ export default function SentencePractice() {
 
       resetAudioGate();
 
-      writeProgress(lessonId, "audio", {
+      writeProgress(lid, "audio", {
         total: lessonExercises.length,
         completed: Math.min(lessonExercises.length, currentIndex + 1),
         updatedAt: Date.now(),
@@ -1691,13 +1694,13 @@ export default function SentencePractice() {
         }
 
         {
-          const prev = readProgress(lessonId, "typing");
+          const prev = readProgress(lid, "typing");
           const completedNow = Math.max(
             Number(prev?.completed || 0),
             currentIndex + 1,
           );
           const totalNow = Number(prev?.total || lessonExercises?.length || 0);
-          writeProgress(lessonId, "typing", {
+          writeProgress(lid, "typing", {
             completed: completedNow,
             total: totalNow,
             updatedAt: Date.now(),
@@ -1895,13 +1898,13 @@ export default function SentencePractice() {
 
       // Update lesson progress (Reorder)
       {
-        const prev = readProgress(lessonId, "reorder");
+        const prev = readProgress(lid, "reorder");
         const completedNow = Math.max(
           Number(prev?.completed || 0),
           currentIndex + 1,
         );
         const totalNow = Number(prev?.total || lessonExercises?.length || 0);
-        writeProgress(lessonId, "reorder", {
+        writeProgress(lid, "reorder", {
           completed: completedNow,
           total: totalNow,
           updatedAt: Date.now(),
@@ -3022,7 +3025,7 @@ export default function SentencePractice() {
                 {/* Status pills */}
                 {!audioGateOpen && (
                   <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                    Tap Play first to unlock ✅
+                    Listen & Repeat ✅
                   </div>
                 )}
                 {status === "correct" && (
