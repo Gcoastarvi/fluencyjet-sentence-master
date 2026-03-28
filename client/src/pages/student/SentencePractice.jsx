@@ -2422,7 +2422,7 @@ export default function SentencePractice() {
 
   function AudioVariantToggle({ audioVariant, onGoVariant }) {
     return (
-      <div className="inline-flex items-center rounded-2xl border border-slate-300 bg-slate-100 p-1 shadow-inner">
+      <div className="inline-flex items-center rounded-2xl border border-slate-300 bg-indigo-50/40 p-1 shadow-inner">
         <button
           type="button"
           onClick={() => onGoVariant("repeat")}
@@ -2865,7 +2865,7 @@ export default function SentencePractice() {
           (safeMode === "audio" && audioVariant === "dictation")) && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className={`h-1 w-full rounded-t-2xl ${A.bar}`} />
-            <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="mb-4">
               <div className="min-w-0">
                 <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
                   {safeMode === "audio" && audioVariant === "dictation"
