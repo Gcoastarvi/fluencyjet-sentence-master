@@ -2648,14 +2648,6 @@ export default function SentencePractice() {
           label: "Show Answer",
           onClick: fireSecondary("Show Answer", onReveal),
         },
-        ...(safeMode === "audio" && audioVariant === "dictation"
-          ? [
-              {
-                label: "Play Audio",
-                onClick: fireSecondary("Play Audio", onPlayAudio),
-              },
-            ]
-          : []),
       ];
 
       // Typing & Dictation: keep sticky clean (Clear stays in the card header)
@@ -2679,10 +2671,7 @@ export default function SentencePractice() {
           onClick: firePrimary("I repeated it ✅", onAudioRepeated),
           disabled: !audioGateOpen,
         },
-        secondary: [
-          { label: "Reset", onClick: fireSecondary("Reset", onResetAudio) },
-          { label: "Play", onClick: fireSecondary("Play", onPlayAudio) },
-        ],
+        secondary: [],
         hintText: audioGateOpen ? undefined : "Tap Play first to unlock ✅",
       };
     }
