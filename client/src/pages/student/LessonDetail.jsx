@@ -1283,9 +1283,6 @@ export default function LessonDetail() {
                           {MODE_CONFIG[m]?.tamil}
                         </p>
                       </div>
-                      <span className="text-[10px] font-black text-slate-400">
-                        0%
-                      </span>
                     </div>
 
                     <div className="h-1.5 w-full bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
