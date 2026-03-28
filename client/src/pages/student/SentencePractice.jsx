@@ -158,14 +158,36 @@ export default function SentencePractice() {
       if (!stableId) return;
 
       const prev = readProgress(stableId, mode) || {};
+
+      const prevCompleted = Number(prev.completed || 0);
+      const prevTotal = Number(prev.total || 0);
+
+      const patchCompletedRaw = Number(patch?.completed);
+      const patchTotalRaw = Number(patch?.total);
+
+      const nextCompleted = Number.isFinite(patchCompletedRaw)
+        ? Math.max(prevCompleted, patchCompletedRaw)
+        : prevCompleted;
+
+      const nextTotal =
+        Number.isFinite(patchTotalRaw) && patchTotalRaw > 0
+          ? Math.max(prevTotal, patchTotalRaw)
+          : prevTotal;
+
       const next = {
         lessonId: stableId,
         mode,
-        completed: Number(prev.completed || 0),
-        total: Number(prev.total || 0),
-        updatedAt: prev.updatedAt || Date.now(),
+        completed: nextCompleted,
+        total: nextTotal,
+        updatedAt: Date.now(),
         ...patch,
       };
+
+      // Re-apply the protected fields after spreading patch
+      next.completed = nextCompleted;
+      next.total = nextTotal;
+      next.updatedAt = Date.now();
+
       localStorage.setItem(progressKey(stableId, mode), JSON.stringify(next));
     } catch {
       // ignore
@@ -184,6 +206,8 @@ export default function SentencePractice() {
       const totalNow = Number(
         prev?.total || lessonExercises?.length || totalQuestions || 0,
       );
+
+      if (!totalNow || totalNow <= 0) return;
 
       writeProgress(stableId, modeKey, {
         completed: Math.max(
@@ -660,6 +684,7 @@ export default function SentencePractice() {
     if (!allowed.includes(mode)) return;
 
     // When session is done, mark THIS mode complete (numbers)
+    if (!totalQuestions || Number(totalQuestions) <= 0) return;
     try {
       writeProgress(lid, mode, {
         completed: Number(totalQuestions || 0),
