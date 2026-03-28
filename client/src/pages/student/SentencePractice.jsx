@@ -2422,14 +2422,14 @@ export default function SentencePractice() {
 
   function AudioVariantToggle({ audioVariant, onGoVariant }) {
     return (
-      <div className="inline-flex items-center rounded-2xl border border-slate-200 bg-white/80 p-1 shadow-sm">
+      <div className="inline-flex items-center rounded-2xl border border-slate-300 bg-slate-100 p-1 shadow-inner">
         <button
           type="button"
           onClick={() => onGoVariant("repeat")}
-          className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+          className={`min-w-[96px] rounded-xl px-4 py-2 text-sm font-semibold transition ${
             audioVariant === "repeat"
               ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-700 hover:bg-slate-50"
+              : "text-slate-700 hover:bg-white"
           }`}
         >
           Repeat
@@ -2438,10 +2438,10 @@ export default function SentencePractice() {
         <button
           type="button"
           onClick={() => onGoVariant("dictation")}
-          className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+          className={`min-w-[96px] rounded-xl px-4 py-2 text-sm font-semibold transition ${
             audioVariant === "dictation"
               ? "bg-slate-900 text-white shadow-sm"
-              : "text-slate-700 hover:bg-slate-50"
+              : "text-slate-700 hover:bg-white"
           }`}
         >
           Dictation
@@ -2672,7 +2672,7 @@ export default function SentencePractice() {
           disabled: !audioGateOpen,
         },
         secondary: [],
-        hintText: audioGateOpen ? undefined : "Tap Play first to unlock ✅",
+        hintText: audioGateOpen ? undefined : "Click Play & Listen ✅",
       };
     }
 
@@ -2869,8 +2869,8 @@ export default function SentencePractice() {
               <div className="min-w-0">
                 <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
                   {safeMode === "audio" && audioVariant === "dictation"
-                    ? "Audio Dictation"
-                    : uiFor("typing").title}
+                    ? "Listening Dictation"
+                    : uiFor("audio").title}
                 </h2>
 
                 {safeMode === "audio" && audioVariant === "dictation" ? (
@@ -2899,7 +2899,7 @@ export default function SentencePractice() {
                 )}
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <div className="mt-4 flex shrink-0 flex-wrap items-center gap-3">
                 {safeMode === "audio" && audioVariant === "dictation" ? (
                   <AudioVariantToggle
                     audioVariant={audioVariant}
@@ -3031,23 +3031,24 @@ export default function SentencePractice() {
                   </div>
                 )}
                 {/* Repeat / Dictation toggle */}
-                <AudioVariantToggle
-                  audioVariant={audioVariant}
-                  onGoVariant={(v) => setAudioVariantInUrl(v)}
-                />
+                <div className="mt-4 flex flex-wrap items-center gap-3">
+                  <AudioVariantToggle
+                    audioVariant={audioVariant}
+                    onGoVariant={(v) => setAudioVariantInUrl(v)}
+                  />
 
-                {/* Reset */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    stopTTS();
-                    setRevealEnglish(false);
-                    resetAudioGate();
-                  }}
-                  className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Reset
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopTTS();
+                      setRevealEnglish(false);
+                      resetAudioGate();
+                    }}
+                    className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    Reset
+                  </button>
+                </div>
               </div>
             </div>
 
