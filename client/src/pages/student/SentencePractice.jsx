@@ -172,6 +172,32 @@ export default function SentencePractice() {
     }
   }
 
+  function persistModeProgress(modeOverride, completedCount) {
+    try {
+      const stableId = Number(lid || lessonId || 0);
+      if (!stableId) return;
+
+      const modeKey =
+        modeOverride || (safeMode === "audio" ? "audio" : safeMode);
+
+      const prev = readProgress(stableId, modeKey) || {};
+      const totalNow = Number(
+        prev?.total || lessonExercises?.length || totalQuestions || 0,
+      );
+
+      writeProgress(stableId, modeKey, {
+        completed: Math.max(
+          Number(prev?.completed || 0),
+          Number(completedCount || 0),
+        ),
+        total: totalNow,
+        updatedAt: Date.now(),
+      });
+    } catch {
+      // ignore
+    }
+  }
+
   function stopTTS() {
     try {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
@@ -1311,6 +1337,9 @@ export default function SentencePractice() {
     const total = Math.min(lessonExercises?.length || 0, sessionTarget);
     const nextIndex = currentIndex + 1;
 
+    const modeKey = safeMode === "audio" ? "audio" : safeMode;
+    persistModeProgress(modeKey, nextIndex);
+
     // ✅ if this Next will finish the session, compute + store completion bonus now
     if (total > 0 && nextIndex >= total) {
       // guard: don't spam-set if already set
@@ -1659,6 +1688,10 @@ export default function SentencePractice() {
         playSfx("correct");
 
         if (isPostReveal) {
+          persistModeProgress(
+            safeMode === "audio" ? "audio" : "typing",
+            currentIndex + 1,
+          );
           return;
         }
 
@@ -2768,6 +2801,14 @@ export default function SentencePractice() {
 
           const lessonBase =
             normalizedDifficulty === "intermediate" ? "/i" : "/b";
+
+          const modeKey = safeMode === "audio" ? "audio" : safeMode;
+          const resolved = status === "correct" || status === "reveal";
+
+          persistModeProgress(
+            modeKey,
+            resolved ? currentIndex + 1 : currentIndex,
+          );
 
           const hubHref = `${lessonBase}/lesson/${lid || 1}?difficulty=${encodeURIComponent(
             normalizedDifficulty,
