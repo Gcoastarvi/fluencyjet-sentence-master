@@ -2422,7 +2422,7 @@ export default function SentencePractice() {
 
   function AudioVariantToggle({ audioVariant, onGoVariant }) {
     return (
-      <div className="inline-flex items-center rounded-2xl border border-slate-300 bg-indigo-400 p-1 shadow-inner">
+      <div className="inline-flex items-center rounded-2xl border border-slate-300 bg-indigo-200 p-1 shadow-inner">
         <button
           type="button"
           onClick={() => onGoVariant("repeat")}
