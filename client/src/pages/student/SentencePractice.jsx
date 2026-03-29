@@ -13,6 +13,8 @@ import PromptCard from "@/components/student/PromptCard";
 
 import { readProgress, writeProgress, pct } from "@/lib/progressStore";
 
+import { useAuth } from "../../context/AuthContext";
+
 // ===== helpers (reorder/typing normalization) =====
 const norm = (v) =>
   String(v ?? "")
@@ -73,6 +75,9 @@ export default function SentencePractice() {
   const segments = window.location.pathname.split("/").filter(Boolean);
   const practiceIdx = segments.indexOf("practice");
   const pathMode = practiceIdx >= 0 ? segments[practiceIdx + 1] : null;
+
+  const { auth } = useAuth();
+  const userId = auth?.user?.id;
 
   const rawMode = String(
     urlMode || pathMode || DEFAULT_PRACTICE_MODE,
@@ -149,14 +154,14 @@ export default function SentencePractice() {
       const modeKey =
         modeOverride || (safeMode === "audio" ? "audio" : safeMode);
 
-      const prev = readProgress(stableId, modeKey) || {};
+      const prev = readProgress(userId, stableId, modeKey) || {};
       const totalNow = Number(
         prev?.total || lessonExercises?.length || totalQuestions || 0,
       );
 
       if (!totalNow || totalNow <= 0) return;
 
-      writeProgress(stableId, modeKey, {
+      writeProgress(userId, stableId, modeKey, {
         completed: Math.max(
           Number(prev?.completed || 0),
           Number(completedCount || 0),
@@ -633,7 +638,7 @@ export default function SentencePractice() {
     // When session is done, mark THIS mode complete (numbers)
     if (!totalQuestions || Number(totalQuestions) <= 0) return;
     try {
-      writeProgress(lid, mode, {
+      writeProgress(userId, lid, mode, {
         completed: Number(totalQuestions || 0),
         total: Number(totalQuestions || 0),
         updatedAt: Date.now(),
@@ -672,7 +677,7 @@ export default function SentencePractice() {
     if (!lessonExercises || lessonExercises.length === 0) return;
 
     // store total for both supported modes (typing/reorder)
-    writeProgress(lid, safeMode, {
+    writeProgress(userId, lid, safeMode, {
       total: lessonExercises.length,
       updatedAt: Date.now(),
     });
@@ -1567,7 +1572,7 @@ export default function SentencePractice() {
 
       resetAudioGate();
 
-      writeProgress(lid, "audio", {
+      writeProgress(userId, lid, "audio", {
         total: lessonExercises.length,
         completed: Math.min(lessonExercises.length, currentIndex + 1),
         updatedAt: Date.now(),
@@ -1699,13 +1704,13 @@ export default function SentencePractice() {
         }
 
         {
-          const prev = readProgress(lid, "typing");
+          const prev = readProgress(userId, lid, "typing");
           const completedNow = Math.max(
             Number(prev?.completed || 0),
             currentIndex + 1,
           );
           const totalNow = Number(prev?.total || lessonExercises?.length || 0);
-          writeProgress(lid, "typing", {
+          writeProgress(userId, lid, "typing", {
             completed: completedNow,
             total: totalNow,
             updatedAt: Date.now(),
@@ -1903,7 +1908,7 @@ export default function SentencePractice() {
 
       // Update lesson progress (Reorder)
       {
-        const prev = readProgress(lid, "reorder");
+        const prev = readProgress(userId, lid, "reorder");
         const completedNow = Math.max(
           Number(prev?.completed || 0),
           currentIndex + 1,

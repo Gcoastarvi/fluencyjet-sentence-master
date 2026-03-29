@@ -25,7 +25,7 @@ import confetti from "canvas-confetti";
 
 import { useAuth } from "../../context/AuthContext";
 
-import { readProgress, pct, overallLessonPct } from "@/lib/progressStore";
+import { readProgress, pct } from "@/lib/progressStore";
 
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
@@ -176,6 +176,8 @@ export default function LessonDetail() {
   // 🎯 1. Hooks MUST be first
   const { lid, lessonId: lessonIdParam } = useParams();
   const { auth } = useAuth();
+  const userId = auth?.user?.id;
+
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -506,20 +508,20 @@ export default function LessonDetail() {
   }, [lessonId]);
 
   const typingProg = useMemo(
-    () => (lessonId ? readProgress(lessonId, "typing") : null),
-    [lessonId],
+    () => (lessonId ? readProgress(userId, lessonId, "typing") : null),
+    [userId, lessonId],
   );
   const reorderProg = useMemo(
-    () => (lessonId ? readProgress(lessonId, "reorder") : null),
-    [lessonId],
+    () => (lessonId ? readProgress(userId, lessonId, "reorder") : null),
+    [userId, lessonId],
   );
   const clozeProg = useMemo(
-    () => (lessonId ? readProgress(lessonId, "cloze") : null),
-    [lessonId],
+    () => (lessonId ? readProgress(userId, lessonId, "cloze") : null),
+    [userId, lessonId],
   );
   const audioProg = useMemo(
-    () => (lessonId ? readProgress(lessonId, "audio") : null),
-    [lessonId],
+    () => (lessonId ? readProgress(userId, lessonId, "audio") : null),
+    [userId, lessonId],
   );
 
   // 🏆 World-Class Achievement Math (Global Scope within component)
@@ -1038,9 +1040,9 @@ export default function LessonDetail() {
     // NOTE: this banner is only meant to nudge the PREVIOUS lesson’s missing modes.
     // We can’t read previous lesson progress if you only compute progress for current lesson.
     // So we derive it from localStorage keys directly:
-    const prevTyping = readProgress(fromLessonId, "typing");
-    const prevReorder = readProgress(fromLessonId, "reorder");
-    const prevAudio = readProgress(fromLessonId, "audio");
+    const prevTyping = readProgress(userId, fromLessonId, "typing");
+    const prevReorder = readProgress(userId, fromLessonId, "reorder");
+    const prevAudio = readProgress(userId, fromLessonId, "audio");
 
     const missing = [];
     if (isIncomplete(prevTyping)) missing.push("typing");

@@ -4,14 +4,19 @@ import { useNavigate } from "react-router-dom";
 
 import { readProgress, pct } from "@/lib/progressStore";
 
+import { useAuth } from "../../context/AuthContext";
+
 export default function LessonCard({ lesson, displayNum, isLocked }) {
-  const navigate = useNavigate();  
+  const navigate = useNavigate();
+
+  const { auth } = useAuth();
+  const userId = auth?.user?.id;
 
   const lessonKey = Number(lesson.day_number || displayNum || lesson.id || 0);
 
-  const typingProg = pct(readProgress(lessonKey, "typing"));
-  const reorderProg = pct(readProgress(lessonKey, "reorder"));
-  const audioProg = pct(readProgress(lessonKey, "audio"));
+  const typingProg = pct(readProgress(userId, lessonKey, "typing"));
+  const reorderProg = pct(readProgress(userId, lessonKey, "reorder"));
+  const audioProg = pct(readProgress(userId, lessonKey, "audio"));
 
   const overallDone = Math.round((typingProg + reorderProg + audioProg) / 3);
   const isStarted = overallDone > 0;
