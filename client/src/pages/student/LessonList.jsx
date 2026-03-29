@@ -1,9 +1,37 @@
+// client/src/pages/student/LessonList.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import * as api from "../../api/apiClient";
 import { useAuth } from "../../context/AuthContext";
 import LessonCard from "../../components/student/LessonCard";
 import confetti from "canvas-confetti";
+
+function readProgress(lessonId, mode) {
+  const stableId = Number(lessonId) || 0;
+  if (!stableId) return null;
+
+  try {
+    return JSON.parse(
+      localStorage.getItem(`fj_progress:${stableId}:${mode}`) || "null",
+    );
+  } catch {
+    return null;
+  }
+}
+
+function pct(p) {
+  const total = Number(p?.total || 0);
+  const done = Number(p?.completed || 0);
+  if (!total) return 0;
+  return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+}
+
+function overallLessonPct(lessonId) {
+  const typingPct = pct(readProgress(lessonId, "typing"));
+  const reorderPct = pct(readProgress(lessonId, "reorder"));
+  const audioPct = pct(readProgress(lessonId, "audio"));
+  return Math.round((typingPct + reorderPct + audioPct) / 3);
+}
 
 export default function LessonList({ difficulty }) {
   // 🎯 1. Fundamental Hooks
@@ -303,7 +331,7 @@ export default function LessonList({ difficulty }) {
             ) : (
               <span className="text-xs font-black text-indigo-600">
                 {Math.round(
-                  (lessons.filter((l) => (l.progress || 0) >= 100).length /
+                  (lessons.filter((l) => overallLessonPct(l.id) >= 100).length /
                     lessons.length) *
                     100,
                 )}
@@ -436,9 +464,9 @@ export default function LessonList({ difficulty }) {
                     );
                   })}
 
-                  {/* 🏆 Unit Mastery Trophy (Celebrates 100% completion) */}
+                  {/* 🏆 Unit Mastery Trophy (Celebrates 100% completion) */}                  
                   {module.lessons.length > 0 &&
-                    module.lessons.every((l) => (l.progress || 0) >= 100) && (
+                    module.lessons.every((l) => overallLessonPct(l.id) >= 100) && (
                       <div className="w-full mt-8 p-6 rounded-3xl bg-emerald-50 border-2 border-emerald-100 text-center animate-bounce">
                         <div className="text-4xl mb-2">🏆</div>
                         <h5 className="text-emerald-900 font-black text-sm uppercase tracking-widest">
@@ -462,7 +490,10 @@ export default function LessonList({ difficulty }) {
               return (
                 expandedModules[id] &&
                 mod?.lessons.length > 0 &&
-                mod?.lessons.every((l) => (l.progress || 0) >= 100)
+                mod?.lessons.every(
+                  (l) =>
+                    overallLessonPct(l.id || l.dayNumber || l.lessonId) >= 100,
+                )
               );
             }) ? (
               <div className="text-center py-6 animate-in zoom-in duration-500">
