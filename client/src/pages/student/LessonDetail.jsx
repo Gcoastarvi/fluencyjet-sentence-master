@@ -25,6 +25,8 @@ import confetti from "canvas-confetti";
 
 import { useAuth } from "../../context/AuthContext";
 
+import { readProgress, pct, overallLessonPct } from "@/lib/progressStore";
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -144,24 +146,8 @@ function writePrefShowTa(v) {
   localStorage.setItem(PREF_KEY_SHOW_TA, v ? "1" : "0");
 }
 
-function readProgress(lessonId, mode) {
-  const stableId = Number(lessonId) || 0;
-  if (!stableId) return null;
-
-  return safeJsonParse(
-    localStorage.getItem(`fj_progress:${stableId}:${mode}`) || "null",
-  );
-}
-
 function readLastSession() {
   return safeJsonParse(localStorage.getItem(LAST_SESSION_KEY) || "null");
-}
-
-function pct(p) {
-  const total = Number(p?.total || 0);
-  const done = Number(p?.completed || 0);
-  if (!total) return 0;
-  return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
 }
 
 function formatLast(ms) {

@@ -11,6 +11,8 @@ import { track } from "@/lib/track";
 import PracticeHeader from "@/components/student/PracticeHeader";
 import PromptCard from "@/components/student/PromptCard";
 
+import { readProgress, writeProgress, pct } from "@/lib/progressStore";
+
 // ===== helpers (reorder/typing normalization) =====
 const norm = (v) =>
   String(v ?? "")
@@ -137,61 +139,6 @@ export default function SentencePractice() {
     navigate(
       `/practice/audio?lessonId=${encodeURIComponent(lessonIdNumSafe)}&difficulty=${encodeURIComponent(difficulty)}&variant=${encodeURIComponent(variant)}`,
     );
-  }
-
-  // -------------------
-  // Local progress store (LessonDetail summary)
-  // -------------------
-  const progressKey = (lid, mode) => `fj_progress:${lid}:${mode}`;
-
-  function readProgress(lid, mode) {
-    try {
-      return JSON.parse(localStorage.getItem(progressKey(lid, mode)) || "null");
-    } catch {
-      return null;
-    }
-  }
-
-  function writeProgress(lid, mode, patch) {
-    try {
-      const stableId = Number(lid) || 0;
-      if (!stableId) return;
-
-      const prev = readProgress(stableId, mode) || {};
-
-      const prevCompleted = Number(prev.completed || 0);
-      const prevTotal = Number(prev.total || 0);
-
-      const patchCompletedRaw = Number(patch?.completed);
-      const patchTotalRaw = Number(patch?.total);
-
-      const nextCompleted = Number.isFinite(patchCompletedRaw)
-        ? Math.max(prevCompleted, patchCompletedRaw)
-        : prevCompleted;
-
-      const nextTotal =
-        Number.isFinite(patchTotalRaw) && patchTotalRaw > 0
-          ? Math.max(prevTotal, patchTotalRaw)
-          : prevTotal;
-
-      const next = {
-        lessonId: stableId,
-        mode,
-        completed: nextCompleted,
-        total: nextTotal,
-        updatedAt: Date.now(),
-        ...patch,
-      };
-
-      // Re-apply the protected fields after spreading patch
-      next.completed = nextCompleted;
-      next.total = nextTotal;
-      next.updatedAt = Date.now();
-
-      localStorage.setItem(progressKey(stableId, mode), JSON.stringify(next));
-    } catch {
-      // ignore
-    }
   }
 
   function persistModeProgress(modeOverride, completedCount) {

@@ -2,28 +2,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
+import { readProgress, pct } from "@/lib/progressStore";
+
 export default function LessonCard({ lesson, displayNum, isLocked }) {
-  const navigate = useNavigate();
-
-  function readProgress(lessonId, mode) {
-    const stableId = Number(lessonId) || 0;
-    if (!stableId) return null;
-
-    try {
-      return JSON.parse(
-        localStorage.getItem(`fj_progress:${stableId}:${mode}`) || "null",
-      );
-    } catch {
-      return null;
-    }
-  }
-
-  function pct(p) {
-    const total = Number(p?.total || 0);
-    const done = Number(p?.completed || 0);
-    if (!total) return 0;
-    return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
-  }
+  const navigate = useNavigate();  
 
   const lessonKey = Number(lesson.day_number || displayNum || lesson.id || 0);
 
