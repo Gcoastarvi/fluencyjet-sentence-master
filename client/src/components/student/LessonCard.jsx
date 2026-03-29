@@ -5,10 +5,31 @@ import { useNavigate } from "react-router-dom";
 export default function LessonCard({ lesson, displayNum, isLocked }) {
   const navigate = useNavigate();
 
-  // 🎯 Extract progress for each mode (default to 0 if missing)
-  const typingProg = lesson.progress?.typing || 0;
-  const reorderProg = lesson.progress?.reorder || 0;
-  const audioProg = lesson.progress?.audio || 0;
+  function readProgress(lessonId, mode) {
+    const stableId = Number(lessonId) || 0;
+    if (!stableId) return null;
+
+    try {
+      return JSON.parse(
+        localStorage.getItem(`fj_progress:${stableId}:${mode}`) || "null",
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  function pct(p) {
+    const total = Number(p?.total || 0);
+    const done = Number(p?.completed || 0);
+    if (!total) return 0;
+    return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
+  }
+
+  const lessonKey = Number(lesson.day_number || displayNum || lesson.id || 0);
+
+  const typingProg = pct(readProgress(lessonKey, "typing"));
+  const reorderProg = pct(readProgress(lessonKey, "reorder"));
+  const audioProg = pct(readProgress(lessonKey, "audio"));
 
   const overallDone = Math.round((typingProg + reorderProg + audioProg) / 3);
   const isStarted = overallDone > 0;
@@ -22,12 +43,9 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
       ? "intermediate"
       : "basic";
 
-    navigate(
-      `${basePath}/${lesson.day_number || displayNum}?difficulty=${difficulty}`,
-      {
-        state: { lessonNumber: displayNum },
-      },
-    );
+    navigate(`${basePath}/${lessonKey}?difficulty=${difficulty}`, {
+      state: { lessonNumber: displayNum },
+    });
   };
 
   return (
