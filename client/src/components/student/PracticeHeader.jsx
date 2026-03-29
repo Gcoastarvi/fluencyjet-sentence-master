@@ -17,6 +17,7 @@ export default function PracticeHeader({
   const q = Math.min(Number(currentIndex || 0) + 1, Math.max(safeTotal, 1));
   const pct = safeTotal ? Math.round((q / safeTotal) * 100) : 0;
   const { auth } = useAuth();
+  const displayStreakText = `${Number(auth?.user?.daily_streak || 0)}-day streak`;
 
   return (
     <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
@@ -57,7 +58,7 @@ export default function PracticeHeader({
               <span className="font-semibold text-slate-800">{safeTotal}</span>
             </span>
             <span className="inline-flex items-center gap-2 font-semibold text-orange-600">
-              🔥 {streakText || "0-day streak"}
+              🔥 {displayStreakText}
             </span>
           </div>
 
