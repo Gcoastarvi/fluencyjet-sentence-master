@@ -79,6 +79,13 @@ export default function SentencePractice() {
   const { auth } = useAuth();
   const progressUserId = auth?.user?.id || auth?.user?.email || null;
 
+  console.log("[PROGRESS_DEBUG] auth/progressUserId", {
+    auth,
+    UserId,
+    lid,
+    safeMode,
+  });
+
   const rawMode = String(
     urlMode || pathMode || DEFAULT_PRACTICE_MODE,
   ).toLowerCase();
