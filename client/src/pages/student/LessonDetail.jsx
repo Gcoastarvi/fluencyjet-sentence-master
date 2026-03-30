@@ -176,7 +176,7 @@ export default function LessonDetail() {
   // 🎯 1. Hooks MUST be first
   const { lid, lessonId: lessonIdParam } = useParams();
   const { auth } = useAuth();
-  const userId = auth?.user?.id;
+  const progressUserId = auth?.user?.id || auth?.user?.email || null;
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -508,19 +508,19 @@ export default function LessonDetail() {
   }, [lessonId]);
 
   const typingProg = useMemo(
-    () => (lessonId ? readProgress(userId, lessonId, "typing") : null),
+    () => (lessonId ? readProgress(progressUserId, lessonId, "typing") : null),
     [userId, lessonId],
   );
   const reorderProg = useMemo(
-    () => (lessonId ? readProgress(userId, lessonId, "reorder") : null),
+    () => (lessonId ? readProgress(progressUserId, lessonId, "reorder") : null),
     [userId, lessonId],
   );
   const clozeProg = useMemo(
-    () => (lessonId ? readProgress(userId, lessonId, "cloze") : null),
+    () => (lessonId ? readProgress(progressUserId, lessonId, "cloze") : null),
     [userId, lessonId],
   );
   const audioProg = useMemo(
-    () => (lessonId ? readProgress(userId, lessonId, "audio") : null),
+    () => (lessonId ? readProgress(progressUserId, lessonId, "audio") : null),
     [userId, lessonId],
   );
 
@@ -1040,9 +1040,9 @@ export default function LessonDetail() {
     // NOTE: this banner is only meant to nudge the PREVIOUS lesson’s missing modes.
     // We can’t read previous lesson progress if you only compute progress for current lesson.
     // So we derive it from localStorage keys directly:
-    const prevTyping = readProgress(userId, fromLessonId, "typing");
-    const prevReorder = readProgress(userId, fromLessonId, "reorder");
-    const prevAudio = readProgress(userId, fromLessonId, "audio");
+    const prevTyping = readProgress(progressUserId, fromLessonId, "typing");
+    const prevReorder = readProgress(progressUserId, fromLessonId, "reorder");
+    const prevAudio = readProgress(progressUserId, fromLessonId, "audio");
 
     const missing = [];
     if (isIncomplete(prevTyping)) missing.push("typing");

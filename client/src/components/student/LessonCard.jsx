@@ -10,13 +10,13 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
   const navigate = useNavigate();
 
   const { auth } = useAuth();
-  const userId = auth?.user?.id;
+  const progressUserId = auth?.user?.id || auth?.user?.email || null;
 
   const lessonKey = Number(lesson.day_number || displayNum || lesson.id || 0);
 
-  const typingProg = pct(readProgress(userId, lessonKey, "typing"));
-  const reorderProg = pct(readProgress(userId, lessonKey, "reorder"));
-  const audioProg = pct(readProgress(userId, lessonKey, "audio"));
+  const typingProg = pct(readProgress(progressUserId, lessonKey, "typing"));
+  const reorderProg = pct(readProgress(progressUserId, lessonKey, "reorder"));
+  const audioProg = pct(readProgress(progressUserId, lessonKey, "audio"));
 
   const overallDone = Math.round((typingProg + reorderProg + audioProg) / 3);
   const isStarted = overallDone > 0;

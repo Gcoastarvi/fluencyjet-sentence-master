@@ -39,7 +39,7 @@ export default function LessonList({ difficulty }) {
   const location = useLocation();
   const { auth } = useAuth();
 
-  const userId = auth?.user?.id;
+  const progressUserId = auth?.user?.id || auth?.user?.email || null;
 
   // 🎯 2. Local State
   const [lessons, setLessons] = useState([]);
@@ -333,7 +333,7 @@ export default function LessonList({ difficulty }) {
             ) : (
               <span className="text-xs font-black text-indigo-600">
                 {Math.round(
-                  (lessons.filter((l) => overallLessonPct(userId, l.id) >= 100)
+                  (lessons.filter((l) => overallLessonPct(progressUserId, l.id) >= 100)
                     .length /
                     lessons.length) *
                     100,
@@ -470,7 +470,7 @@ export default function LessonList({ difficulty }) {
                   {/* 🏆 Unit Mastery Trophy (Celebrates 100% completion) */}
                   {module.lessons.length > 0 &&
                     module.lessons.every(
-                      (l) => overallLessonPct(userId, l.id) >= 100,
+                      (l) => overallLessonPct(progressUserId, l.id) >= 100,
                     ) && (
                       <div className="w-full mt-8 p-6 rounded-3xl bg-emerald-50 border-2 border-emerald-100 text-center animate-bounce">
                         <div className="text-4xl mb-2">🏆</div>

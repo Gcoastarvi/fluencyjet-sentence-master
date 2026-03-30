@@ -77,7 +77,9 @@ export default function SentencePractice() {
   const pathMode = practiceIdx >= 0 ? segments[practiceIdx + 1] : null;
 
   const { auth } = useAuth();
-  const userId = auth?.user?.id;
+  const progressUserId = auth?.user?.id || auth?.user?.email || null;
+
+  console.log("[PROGRESS_DEBUG] auth/userId", { auth, userId, lid, safeMode });
 
   const rawMode = String(
     urlMode || pathMode || DEFAULT_PRACTICE_MODE,
@@ -154,14 +156,14 @@ export default function SentencePractice() {
       const modeKey =
         modeOverride || (safeMode === "audio" ? "audio" : safeMode);
 
-      const prev = readProgress(userId, stableId, modeKey) || {};
+      const prev = readProgress(progressUserId, stableId, modeKey) || {};
       const totalNow = Number(
         prev?.total || lessonExercises?.length || totalQuestions || 0,
       );
 
       if (!totalNow || totalNow <= 0) return;
 
-      writeProgress(userId, stableId, modeKey, {
+      writeProgress(progressUserId, stableId, modeKey, {
         completed: Math.max(
           Number(prev?.completed || 0),
           Number(completedCount || 0),
@@ -638,7 +640,7 @@ export default function SentencePractice() {
     // When session is done, mark THIS mode complete (numbers)
     if (!totalQuestions || Number(totalQuestions) <= 0) return;
     try {
-      writeProgress(userId, lid, mode, {
+      writeProgress(progressUserId, lid, mode, {
         completed: Number(totalQuestions || 0),
         total: Number(totalQuestions || 0),
         updatedAt: Date.now(),
@@ -677,7 +679,7 @@ export default function SentencePractice() {
     if (!lessonExercises || lessonExercises.length === 0) return;
 
     // store total for both supported modes (typing/reorder)
-    writeProgress(userId, lid, safeMode, {
+    writeProgress(progressUserId, lid, safeMode, {
       total: lessonExercises.length,
       updatedAt: Date.now(),
     });
@@ -1572,7 +1574,7 @@ export default function SentencePractice() {
 
       resetAudioGate();
 
-      writeProgress(userId, lid, "audio", {
+      writeProgress(progressUserId, lid, "audio", {
         total: lessonExercises.length,
         completed: Math.min(lessonExercises.length, currentIndex + 1),
         updatedAt: Date.now(),
@@ -1704,13 +1706,13 @@ export default function SentencePractice() {
         }
 
         {
-          const prev = readProgress(userId, lid, "typing");
+          const prev = readProgress(progressUserId, lid, "typing");
           const completedNow = Math.max(
             Number(prev?.completed || 0),
             currentIndex + 1,
           );
           const totalNow = Number(prev?.total || lessonExercises?.length || 0);
-          writeProgress(userId, lid, "typing", {
+          writeProgress(progressUserId, lid, "typing", {
             completed: completedNow,
             total: totalNow,
             updatedAt: Date.now(),
@@ -1828,7 +1830,7 @@ export default function SentencePractice() {
         }
 
         // i�� Update progress (Cloze)
-        writeProgress(userId, lessonId, "cloze", {
+        writeProgress(progressUserId, lessonId, "cloze", {
           total: lessonExercises.length,
           completed: Math.min(lessonExercises.length, currentIndex + 1),
           updatedAt: Date.now(),
@@ -1908,13 +1910,13 @@ export default function SentencePractice() {
 
       // Update lesson progress (Reorder)
       {
-        const prev = readProgress(userId, lid, "reorder");
+        const prev = readProgress(progressUserId, lid, "reorder");
         const completedNow = Math.max(
           Number(prev?.completed || 0),
           currentIndex + 1,
         );
         const totalNow = Number(prev?.total || lessonExercises?.length || 0);
-        writeProgress(userId, lid, "reorder", {
+        writeProgress(progressUserId, lid, "reorder", {
           completed: completedNow,
           total: totalNow,
           updatedAt: Date.now(),
@@ -2050,7 +2052,7 @@ export default function SentencePractice() {
   // -------------------
   // completion
   // -------------------
-  //   � SESSION COMPLETE (10 questions) — engagement loop
+  //    �� SESSION COMPLETE (10 questions) — engagement loop
   if (isComplete || (totalQuestions > 0 && currentIndex >= totalQuestions)) {
     const search = new URLSearchParams(location.search);
     const lid = Number(search.get("lessonId") || 0);

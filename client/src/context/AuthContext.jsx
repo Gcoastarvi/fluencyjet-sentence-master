@@ -84,8 +84,10 @@ export function AuthProvider({ children }) {
 
       if (ok && data?.email) {
         const nextUser = {
-          email: data.email,
-          plan: data.plan || "FREE",
+          id: data?.id || data?.user_id || data?.userId || null,
+          email: data?.email || null,
+          plan: data?.plan || "FREE",
+          daily_streak: data?.daily_streak || 0,
         };
         setUser(nextUser);
         persist(storedToken, nextUser);
@@ -117,8 +119,10 @@ export function AuthProvider({ children }) {
     }
 
     const nextUser = {
+      id: data?.id || data?.user_id || data?.userId || null,
       email: data?.email || email,
       plan: data?.plan || "FREE",
+      daily_streak: data?.daily_streak || 0,
     };
 
     setToken(nextToken);
