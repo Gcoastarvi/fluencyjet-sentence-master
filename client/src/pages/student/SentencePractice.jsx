@@ -1828,7 +1828,7 @@ export default function SentencePractice() {
         }
 
         // i�� Update progress (Cloze)
-        writeProgress(lessonId, "cloze", {
+        writeProgress(userId, lessonId, "cloze", {
           total: lessonExercises.length,
           completed: Math.min(lessonExercises.length, currentIndex + 1),
           updatedAt: Date.now(),
@@ -1914,7 +1914,7 @@ export default function SentencePractice() {
           currentIndex + 1,
         );
         const totalNow = Number(prev?.total || lessonExercises?.length || 0);
-        writeProgress(lid, "reorder", {
+        writeProgress(userId, lid, "reorder", {
           completed: completedNow,
           total: totalNow,
           updatedAt: Date.now(),

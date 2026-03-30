@@ -56,6 +56,16 @@ export function readProgress(userId, lessonId, mode) {
   };
 }
 
+if (!uid || !lid || !safeMode) {
+  console.warn("[progressStore] writeProgress skipped", {
+    userId,
+    lessonId,
+    mode,
+    patch,
+  });
+  return;
+}
+
 export function writeProgress(userId, lessonId, mode, patch = {}) {
   const uid = normalizeUserId(userId);
   const lid = normalizeLessonId(lessonId);
