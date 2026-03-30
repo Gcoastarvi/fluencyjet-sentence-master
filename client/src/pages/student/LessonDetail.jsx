@@ -509,19 +509,19 @@ export default function LessonDetail() {
 
   const typingProg = useMemo(
     () => (lessonId ? readProgress(progressUserId, lessonId, "typing") : null),
-    [userId, lessonId],
+    [progressUserId, lessonId],
   );
   const reorderProg = useMemo(
     () => (lessonId ? readProgress(progressUserId, lessonId, "reorder") : null),
-    [userId, lessonId],
+    [progressUserId, lessonId],
   );
   const clozeProg = useMemo(
     () => (lessonId ? readProgress(progressUserId, lessonId, "cloze") : null),
-    [userId, lessonId],
+    [progressUserId, lessonId],
   );
   const audioProg = useMemo(
     () => (lessonId ? readProgress(progressUserId, lessonId, "audio") : null),
-    [userId, lessonId],
+    [progressUserId, lessonId],
   );
 
   // 🏆 World-Class Achievement Math (Global Scope within component)
