@@ -5,33 +5,7 @@ import * as api from "../../api/apiClient";
 import { useAuth } from "../../context/AuthContext";
 import LessonCard from "../../components/student/LessonCard";
 import confetti from "canvas-confetti";
-
-function readProgress(lessonId, mode) {
-  const stableId = Number(lessonId) || 0;
-  if (!stableId) return null;
-
-  try {
-    return JSON.parse(
-      localStorage.getItem(`fj_progress:${stableId}:${mode}`) || "null",
-    );
-  } catch {
-    return null;
-  }
-}
-
-function pct(p) {
-  const total = Number(p?.total || 0);
-  const done = Number(p?.completed || 0);
-  if (!total) return 0;
-  return Math.max(0, Math.min(100, Math.round((done / total) * 100)));
-}
-
-function overallLessonPct(lessonId) {
-  const typingPct = pct(readProgress(lessonId, "typing"));
-  const reorderPct = pct(readProgress(lessonId, "reorder"));
-  const audioPct = pct(readProgress(lessonId, "audio"));
-  return Math.round((typingPct + reorderPct + audioPct) / 3);
-}
+import { overallLessonPct } from "@/lib/progressStore";
 
 export default function LessonList({ difficulty }) {
   // 🎯 1. Fundamental Hooks
@@ -39,7 +13,22 @@ export default function LessonList({ difficulty }) {
   const location = useLocation();
   const { auth } = useAuth();
 
-  const progressUserId = auth?.user?.id || auth?.user?.email || null;
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const progressUserId =
+    auth?.user?.id ||
+    auth?.user?.email ||
+    auth?.id ||
+    auth?.email ||
+    storedUser?.id ||
+    storedUser?.email ||
+    null;
 
   // 🎯 2. Local State
   const [lessons, setLessons] = useState([]);

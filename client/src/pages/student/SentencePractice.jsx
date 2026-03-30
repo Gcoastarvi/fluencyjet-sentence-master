@@ -77,7 +77,23 @@ export default function SentencePractice() {
   const pathMode = practiceIdx >= 0 ? segments[practiceIdx + 1] : null;
 
   const { auth } = useAuth();
-  const progressUserId = auth?.user?.id || auth?.user?.email || null;
+
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const progressUserId =
+    auth?.user?.id ||
+    auth?.user?.email ||
+    auth?.id ||
+    auth?.email ||
+    storedUser?.id ||
+    storedUser?.email ||
+    null;
 
   const rawMode = String(
     urlMode || pathMode || DEFAULT_PRACTICE_MODE,
@@ -153,6 +169,8 @@ export default function SentencePractice() {
 
       const modeKey =
         modeOverride || (safeMode === "audio" ? "audio" : safeMode);
+
+      if (!progressUserId) return;
 
       const prev = readProgress(progressUserId, stableId, modeKey) || {};
       const totalNow = Number(
@@ -625,8 +643,13 @@ export default function SentencePractice() {
   useEffect(() => {
     if (!isSessionDone) return;
 
+    if (!lid) return;
+
+    if (!isSessionDone) return;
+
     const search = new URLSearchParams(location.search);
     if (!lid) return;
+    if (!progressUserId) return;
 
     const mode = String(fetchMode || safeMode || "").toLowerCase();
     if (!mode) return;
@@ -674,6 +697,7 @@ export default function SentencePractice() {
   // Keep total question count stored for LessonDetail progress summary
   useEffect(() => {
     if (!lid) return;
+    if (!progressUserId) return;
     if (!lessonExercises || lessonExercises.length === 0) return;
 
     // store total for both supported modes (typing/reorder)
@@ -682,7 +706,7 @@ export default function SentencePractice() {
       updatedAt: Date.now(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lid, safeMode, lessonExercises?.length]);
+  }, [lid, safeMode, lessonExercises?.length, progressUserId]);
 
   useEffect(() => {
     initQuiz();
@@ -1572,11 +1596,13 @@ export default function SentencePractice() {
 
       resetAudioGate();
 
-      writeProgress(progressUserId, lid, "audio", {
-        total: lessonExercises.length,
-        completed: Math.min(lessonExercises.length, currentIndex + 1),
-        updatedAt: Date.now(),
-      });
+      if (progressUserId) {
+        writeProgress(progressUserId, lid, "audio", {
+          total: lessonExercises.length,
+          completed: Math.min(lessonExercises.length, currentIndex + 1),
+          updatedAt: Date.now(),
+        });
+      }
 
       setTimeout(() => {
         loadNextQuestion();
@@ -1703,13 +1729,14 @@ export default function SentencePractice() {
           console.error("[XP] typing: XP not awarded", result);
         }
 
-        {
+        if (progressUserId) {
           const prev = readProgress(progressUserId, lid, "typing");
           const completedNow = Math.max(
             Number(prev?.completed || 0),
             currentIndex + 1,
           );
           const totalNow = Number(prev?.total || lessonExercises?.length || 0);
+
           writeProgress(progressUserId, lid, "typing", {
             completed: completedNow,
             total: totalNow,
@@ -1828,11 +1855,13 @@ export default function SentencePractice() {
         }
 
         // i�� Update progress (Cloze)
-        writeProgress(progressUserId, lessonId, "cloze", {
-          total: lessonExercises.length,
-          completed: Math.min(lessonExercises.length, currentIndex + 1),
-          updatedAt: Date.now(),
-        });
+        if (progressUserId) {
+          writeProgress(progressUserId, lessonId, "cloze", {
+            total: lessonExercises.length,
+            completed: Math.min(lessonExercises.length, currentIndex + 1),
+            updatedAt: Date.now(),
+          });
+        }
 
         setTimeout(() => {
           loadNextQuestion(); // loadNextQuestion will handle resets
@@ -1907,13 +1936,14 @@ export default function SentencePractice() {
       }
 
       // Update lesson progress (Reorder)
-      {
+      if (progressUserId) {
         const prev = readProgress(progressUserId, lid, "reorder");
         const completedNow = Math.max(
           Number(prev?.completed || 0),
           currentIndex + 1,
         );
         const totalNow = Number(prev?.total || lessonExercises?.length || 0);
+
         writeProgress(progressUserId, lid, "reorder", {
           completed: completedNow,
           total: totalNow,
