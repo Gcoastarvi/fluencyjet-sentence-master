@@ -176,7 +176,23 @@ export default function LessonDetail() {
   // 🎯 1. Hooks MUST be first
   const { lid, lessonId: lessonIdParam } = useParams();
   const { auth } = useAuth();
-  const progressUserId = auth?.user?.id || auth?.user?.email || null;
+
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const progressUserId =
+    auth?.user?.id ||
+    auth?.user?.email ||
+    auth?.id ||
+    auth?.email ||
+    storedUser?.id ||
+    storedUser?.email ||
+    null;
 
   const location = useLocation();
   const navigate = useNavigate();

@@ -10,9 +10,35 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
   const navigate = useNavigate();
 
   const { auth } = useAuth();
-  const progressUserId = auth?.user?.id || auth?.user?.email || null;
+
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const progressUserId =
+    auth?.user?.id ||
+    auth?.user?.email ||
+    auth?.id ||
+    auth?.email ||
+    storedUser?.id ||
+    storedUser?.email ||
+    null;
 
   const lessonKey = Number(lesson.day_number || displayNum || lesson.id || 0);
+
+  console.log("[LessonCard progress debug]", {
+    title: lesson?.title,
+    displayNum,
+    lessonId: lesson?.id,
+    dayNumber: lesson?.day_number,
+    lessonKey,
+    progressUserId,
+    reorder: readProgress(progressUserId, lessonKey, "reorder"),
+  });
 
   const typingProg = pct(readProgress(progressUserId, lessonKey, "typing"));
   const reorderProg = pct(readProgress(progressUserId, lessonKey, "reorder"));

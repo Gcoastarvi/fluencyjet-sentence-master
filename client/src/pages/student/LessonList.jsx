@@ -11,6 +11,7 @@ export default function LessonList({ difficulty }) {
   // 🎯 1. Fundamental Hooks
   const navigate = useNavigate();
   const location = useLocation();
+
   const { auth } = useAuth();
 
   const storedUser = (() => {

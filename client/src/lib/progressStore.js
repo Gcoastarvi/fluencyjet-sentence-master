@@ -1,5 +1,4 @@
 // client/src/lib/progressStore.js
-
 function safeJsonParse(raw) {
   try {
     return JSON.parse(raw || "null");
