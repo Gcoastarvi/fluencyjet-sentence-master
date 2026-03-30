@@ -56,22 +56,20 @@ export function readProgress(userId, lessonId, mode) {
   };
 }
 
-if (!uid || !lid || !safeMode) {
-  console.warn("[progressStore] writeProgress skipped", {
-    userId,
-    lessonId,
-    mode,
-    patch,
-  });
-  return;
-}
-
 export function writeProgress(userId, lessonId, mode, patch = {}) {
   const uid = normalizeUserId(userId);
   const lid = normalizeLessonId(lessonId);
   const safeMode = normalizeMode(mode);
 
-  if (!uid || !lid || !safeMode) return;
+  if (!uid || !lid || !safeMode) {
+    console.warn("[progressStore] writeProgress skipped", {
+      userId,
+      lessonId,
+      mode,
+      patch,
+    });
+    return;
+  }
 
   const prev = readProgress(uid, lid, safeMode) || {};
 
