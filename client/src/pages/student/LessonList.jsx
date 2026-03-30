@@ -333,8 +333,9 @@ export default function LessonList({ difficulty }) {
             ) : (
               <span className="text-xs font-black text-indigo-600">
                 {Math.round(
-                  (lessons.filter((l) => overallLessonPct(progressUserId, l.id) >= 100)
-                    .length /
+                  (lessons.filter(
+                    (l) => overallLessonPct(progressUserId, l.id) >= 100,
+                  ).length /
                     lessons.length) *
                     100,
                 )}
@@ -498,7 +499,7 @@ export default function LessonList({ difficulty }) {
                 mod?.lessons.every(
                   (l) =>
                     overallLessonPct(
-                      userId,
+                      progressUserId,
                       l.id || l.dayNumber || l.lessonId,
                     ) >= 100,
                 )
