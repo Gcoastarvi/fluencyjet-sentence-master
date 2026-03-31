@@ -32,6 +32,21 @@ model User {
   league_history LeagueHistory[]
 }
 
+model LessonModeProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  lessonId  Int
+  mode      String
+  completed Int      @default(0)
+  total     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, lessonId, mode])
+  @@index([userId])
+  @@index([lessonId])
+}
+
 model XpEvent {
   id         Int      @id @default(autoincrement())
   user_id    Int
