@@ -87,7 +87,7 @@ async function ensureProgress(tx, userId) {
     create: {
       user_id: userId,
       xp: 0,
-      streak: 0,      
+      streak: 0,
       // updated_at has default(now()) in schema, so we can omit it
     },
   });
@@ -116,6 +116,18 @@ async function ensureLessonProgress(tx, userId, lessonId) {
   }
 
   return row;
+}
+
+function normalizeLessonId(input) {
+  const n = Number(input || 0);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : 0;
+}
+
+function normalizeMode(input) {
+  const s = String(input || "")
+    .trim()
+    .toLowerCase();
+  return ["reorder", "typing", "audio", "cloze"].includes(s) ? s : null;
 }
 
 function parseLessonId(raw) {
@@ -305,7 +317,7 @@ router.post("/save", authRequired, async (req, res) => {
         create: {
           user_id: userId,
           xp: amount,
-          streak: 0,          
+          streak: 0,
           updated_at: new Date(),
         },
         update: {
@@ -337,6 +349,134 @@ router.post("/save", authRequired, async (req, res) => {
     res.status(500).json({
       ok: false,
       message: "Failed to save progress",
+      error: String(err?.message || err),
+    });
+  }
+});
+
+router.get("/lesson-summary", authRequired, async (req, res) => {
+  try {
+    const userId = String(req.user?.id || "").trim();
+    if (!userId) {
+      return res.status(401).json({ ok: false, message: "Unauthorized" });
+    }
+
+    if (!prisma.lessonModeProgress) {
+      return res.json({ ok: true, items: [] });
+    }
+
+    const rows = await prisma.lessonModeProgress.findMany({
+      where: { userId },
+      orderBy: [{ lessonId: "asc" }, { mode: "asc" }],
+    });
+
+    return res.json({
+      ok: true,
+      items: rows.map((row) => ({
+        lessonId: row.lessonId,
+        mode: row.mode,
+        completed: row.completed,
+        total: row.total,
+        updatedAt: row.updatedAt,
+      })),
+    });
+  } catch (err) {
+    console.error("❌ /progress/lesson-summary error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to fetch lesson summary",
+      error: String(err?.message || err),
+    });
+  }
+});
+
+router.post("/lesson-mode", authRequired, async (req, res) => {
+  try {
+    const userId = String(req.user?.id || "").trim();
+    if (!userId) {
+      return res.status(401).json({ ok: false, message: "Unauthorized" });
+    }
+
+    if (!prisma.lessonModeProgress) {
+      return res.status(500).json({
+        ok: false,
+        message: "LessonModeProgress model is not available in Prisma client",
+      });
+    }
+
+    const lessonId = normalizeLessonId(req.body?.lessonId);
+    const mode = normalizeMode(req.body?.mode);
+    const completedRaw = Number(req.body?.completed || 0);
+    const totalRaw = Number(req.body?.total || 0);
+
+    if (!lessonId || !mode) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid lessonId or mode",
+      });
+    }
+
+    const incomingCompleted = Number.isFinite(completedRaw)
+      ? Math.max(0, Math.trunc(completedRaw))
+      : 0;
+
+    const incomingTotal = Number.isFinite(totalRaw)
+      ? Math.max(0, Math.trunc(totalRaw))
+      : 0;
+
+    const existing = await prisma.lessonModeProgress.findUnique({
+      where: {
+        userId_lessonId_mode: {
+          userId,
+          lessonId,
+          mode,
+        },
+      },
+    });
+
+    const nextCompleted = Math.max(
+      Number(existing?.completed || 0),
+      incomingCompleted,
+    );
+
+    const nextTotal = Math.max(Number(existing?.total || 0), incomingTotal);
+
+    const row = await prisma.lessonModeProgress.upsert({
+      where: {
+        userId_lessonId_mode: {
+          userId,
+          lessonId,
+          mode,
+        },
+      },
+      update: {
+        completed: nextCompleted,
+        total: nextTotal,
+      },
+      create: {
+        userId,
+        lessonId,
+        mode,
+        completed: nextCompleted,
+        total: nextTotal,
+      },
+    });
+
+    return res.json({
+      ok: true,
+      item: {
+        lessonId: row.lessonId,
+        mode: row.mode,
+        completed: row.completed,
+        total: row.total,
+        updatedAt: row.updatedAt,
+      },
+    });
+  } catch (err) {
+    console.error("❌ /progress/lesson-mode error:", err);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to save lesson mode progress",
       error: String(err?.message || err),
     });
   }
@@ -602,7 +742,7 @@ router.post("/update", authRequired, async (req, res) => {
         create: {
           user_id: userId,
           xp: Number(xpDelta) || 0,
-          streak: newStreak,          
+          streak: newStreak,
           updated_at: now,
         },
       });
