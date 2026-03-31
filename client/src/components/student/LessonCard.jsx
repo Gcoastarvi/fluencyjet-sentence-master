@@ -61,6 +61,21 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
     });
   };
 
+  console.log("[LessonCard progress debug]", {
+    title: lesson?.title,
+    displayNum,
+    lessonId: lesson?.id,
+    dayNumber: lesson?.day_number,
+    lessonKey,
+    progressUserId,
+    typing: readProgress(progressUserId, lessonKey, "typing"),
+    reorder: readProgress(progressUserId, lessonKey, "reorder"),
+    audio: readProgress(progressUserId, lessonKey, "audio"),
+    progressKeys: Object.keys(localStorage)
+      .filter((k) => k.startsWith("fj_progress"))
+      .sort(),
+  });
+
   return (
     <div
       className={`relative bg-white rounded-[2.5rem] border p-6 mb-4 transition-all 

@@ -653,6 +653,25 @@ export default function LessonDetail() {
     );
   }
 
+  console.log("[LessonDetail progress debug]", {
+    progressUserId,
+    dayNumber,
+    lessonId,
+    typingProg,
+    reorderProg,
+    audioProg,
+    storedUser: (() => {
+      try {
+        return JSON.parse(localStorage.getItem("user") || "null");
+      } catch {
+        return null;
+      }
+    })(),
+    progressKeys: Object.keys(localStorage)
+      .filter((k) => k.startsWith("fj_progress"))
+      .sort(),
+  });
+
   async function startMode(mode) {
     // 🎯 Added async here
     setShowMoreModes(false);
