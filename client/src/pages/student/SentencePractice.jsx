@@ -1,7 +1,7 @@
 //client/src/pages/student/SentencePractice.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { api } from "@/api/apiClient";
+import { api, saveLessonModeProgress } from "@/api/apiClient";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { uiFor } from "@/lib/modeUi";
@@ -179,13 +179,22 @@ export default function SentencePractice() {
 
       if (!totalNow || totalNow <= 0) return;
 
+      const nextCompleted = Math.max(
+        Number(prev?.completed || 0),
+        Number(completedCount || 0),
+      );
+
       writeProgress(progressUserId, stableId, modeKey, {
-        completed: Math.max(
-          Number(prev?.completed || 0),
-          Number(completedCount || 0),
-        ),
+        completed: nextCompleted,
         total: totalNow,
         updatedAt: Date.now(),
+      });
+
+      persistBackendLessonModeProgress({
+        lessonId: stableId,
+        mode: modeKey,
+        completed: nextCompleted,
+        total: totalNow,
       });
     } catch {
       // ignore
@@ -705,6 +714,12 @@ export default function SentencePractice() {
       total: lessonExercises.length,
       updatedAt: Date.now(),
     });
+    persistBackendLessonModeProgress({
+      lessonId: lid,
+      mode: safeMode,
+      completed: 0,
+      total: lessonExercises.length,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lid, safeMode, lessonExercises?.length, progressUserId]);
 
@@ -1003,6 +1018,24 @@ export default function SentencePractice() {
       lessonId: Number(lessonId),
       completedQuiz: true,
     });
+  }
+
+  async function persistBackendLessonModeProgress({
+    lessonId,
+    mode,
+    completed,
+    total,
+  }) {
+    try {
+      await saveLessonModeProgress({
+        lessonId,
+        mode,
+        completed,
+        total,
+      });
+    } catch (err) {
+      console.error("[progress] backend lesson-mode persist failed", err);
+    }
   }
 
   function normalizeForValidation(text) {
@@ -1596,13 +1629,20 @@ export default function SentencePractice() {
 
       resetAudioGate();
 
-      if (progressUserId) {
-        writeProgress(progressUserId, lid, "audio", {
-          total: lessonExercises.length,
-          completed: Math.min(lessonExercises.length, currentIndex + 1),
-          updatedAt: Date.now(),
-        });
-      }
+      const completedNow = Math.min(lessonExercises.length, currentIndex + 1);
+
+      writeProgress(progressUserId, lid, "audio", {
+        total: lessonExercises.length,
+        completed: completedNow,
+        updatedAt: Date.now(),
+      });
+
+      persistBackendLessonModeProgress({
+        lessonId: lid,
+        mode: "audio",
+        completed: completedNow,
+        total: lessonExercises.length,
+      });
 
       setTimeout(() => {
         loadNextQuestion();
@@ -1741,6 +1781,12 @@ export default function SentencePractice() {
             completed: completedNow,
             total: totalNow,
             updatedAt: Date.now(),
+          });
+          persistBackendLessonModeProgress({
+            lessonId: lid,
+            mode: "typing",
+            completed: completedNow,
+            total: totalNow,
           });
         }
 
@@ -1948,6 +1994,12 @@ export default function SentencePractice() {
           completed: completedNow,
           total: totalNow,
           updatedAt: Date.now(),
+        });
+        persistBackendLessonModeProgress({
+          lessonId: lid,
+          mode: "reorder",
+          completed: completedNow,
+          total: totalNow,
         });
       }
     }
@@ -2784,7 +2836,7 @@ export default function SentencePractice() {
     className="fixed top-24 left-1/2 -translate-x-1/2 z-[600] pointer-events-none opacity-0 transition-all duration-500"
   >
     <div className="bg-amber-400 text-slate-900 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl flex items-center gap-3 border-4 border-white animate-bounce">
-      <span>⚡ SPEED DEMON!</span>
+      <span> � SPEED DEMON!</span>
       <span className="bg-white/30 px-2 py-0.5 rounded-lg">FAST AS FLASH</span>
     </div>
   </div>;
