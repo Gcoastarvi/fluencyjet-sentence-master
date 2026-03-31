@@ -212,25 +212,6 @@ if (process.env.NODE_ENV === "production") {
   }
 }
 
-/* --------------------------------------------------
-   Static frontend (production build output)
-   NOTE: your build script copies client build into server/dist/public
--------------------------------------------------- */
-const distPath = path.resolve(process.cwd(), "dist", "public");
-
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-
-  // SPA fallback (must be AFTER API routes)
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
-  });
-}
-
-app.use("/api/admin/auth", adminAuthRouter);
-app.use("/api/admin/dashboard", dashboardRouter);
-app.use("/api/admin/lessons", adminLessonsRouter);
-
 /* -------------------------------------------------- */
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API running on port ${PORT}`);
