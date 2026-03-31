@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { loginUser, getMe } from "@/api/apiClient";
+import { loginUser, getMe, getLessonProgressSummary } from "@/api/apiClient";
+import { hydrateProgressSummary } from "@/lib/progressStore";
 
 const AuthContext = createContext(null);
 
@@ -91,6 +92,19 @@ export function AuthProvider({ children }) {
         };
         setUser(nextUser);
         persist(storedToken, nextUser);
+        const progressUserId = nextUser?.id || nextUser?.email || null;
+
+        if (progressUserId) {
+          try {
+            const progressRes = await getLessonProgressSummary();
+            const items = Array.isArray(progressRes?.data?.items)
+              ? progressRes.data.items
+              : [];
+            hydrateProgressSummary(progressUserId, items);
+          } catch (e) {
+            console.error("[Auth] lesson progress hydration failed", e);
+          }
+        }
       } else {
         // invalid/expired token
         logout();
@@ -128,6 +142,20 @@ export function AuthProvider({ children }) {
     setToken(nextToken);
     setUser(nextUser);
     persist(nextToken, nextUser);
+
+    const progressUserId = nextUser?.id || nextUser?.email || null;
+
+    if (progressUserId) {
+      try {
+        const progressRes = await getLessonProgressSummary();
+        const items = Array.isArray(progressRes?.data?.items)
+          ? progressRes.data.items
+          : [];
+        hydrateProgressSummary(progressUserId, items);
+      } catch (e) {
+        console.error("[Auth] lesson progress hydration failed after login", e);
+      }
+    }
 
     return res;
   };

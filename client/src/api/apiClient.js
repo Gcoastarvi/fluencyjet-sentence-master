@@ -163,3 +163,11 @@ export async function updateMyPlan() {
 export async function updateUserPlan() {
   throw new Error("updateUserPlan not implemented");
 }
+
+export async function getLessonProgressSummary() {
+  return api.get("/progress/lesson-summary");
+}
+
+export async function saveLessonModeProgress(payload) {
+  return api.post("/progress/lesson-mode", payload);
+}
