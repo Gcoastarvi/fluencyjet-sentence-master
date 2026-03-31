@@ -412,11 +412,6 @@ export default function SentencePractice() {
     lessonExercises?.length,
   );
 
-  console.log("[DBG] current", current);
-  console.log("[DBG] expectedWords", expectedWords);
-  console.log("[DBG] expectedAnswer", expectedAnswer);
-  console.log("[DBG] correctOrderArr", correctOrderArr);
-
   // ✅ Auto-hide XP toast + reset earnedXP
   useEffect(() => {
     if (!showXPToast) return;
@@ -560,9 +555,7 @@ export default function SentencePractice() {
           ? { variant: audioVariant }
           : {}),
       };
-
-      localStorage.setItem("fj_last_session", JSON.stringify(session));
-      console.log("[DBG] saved fj_last_session (progress)", session);
+      
     } catch {}
   }, [
     lid,
@@ -595,9 +588,6 @@ export default function SentencePractice() {
           ? { variant: audioVariant }
           : {}),
       };
-
-      localStorage.setItem("fj_last_session", JSON.stringify(session));
-      console.log("[DBG] saved fj_last_session", session);
     } catch {
       // ignore
     }
@@ -1260,9 +1250,6 @@ export default function SentencePractice() {
       const max = lessonExercises.length - 1;
       const clamped = Math.max(0, Math.min(idx, max));
 
-      setCurrentIndex(clamped);
-      console.log("[DBG] applied resume index after load", clamped);
-
       resumeIndexRef.current = null;
       resumeWantedRef.current = false;
     }
@@ -1474,10 +1461,6 @@ export default function SentencePractice() {
       setAttempts(0); // reset attempts after correct
       setStatus("correct");
     }
-
-    console.log("[DBG] REORDER userArr   =", userArr);
-    console.log("[DBG] REORDER correctArr=", correctArr);
-    console.log("[DBG] REORDER isCorrect =", isCorrect);
 
     if (isCorrect) {
       const xp = Number(current?.xp ?? 150) || 150;
@@ -2335,14 +2318,6 @@ export default function SentencePractice() {
   }
 
   const exLen = Array.isArray(lessonExercises) ? lessonExercises.length : 0;
-
-  console.log("[DBG] empty-check", {
-    hasLoadedOnce,
-    loading,
-    loadError,
-    exLen,
-    status: typeof status === "undefined" ? "(no status var)" : status,
-  });
 
   // -------------------
   // empty state (no exercises)
