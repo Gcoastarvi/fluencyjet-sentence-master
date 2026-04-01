@@ -2,25 +2,24 @@
 
 export const MODE_UI = {
   reorder: {
-    title: "Instant Accuracy",
+    title: "Quick English",
     sub: "Reorder (word order)",
     coach:
-      "Recommended: Instant Accuracy first for a quick win (grammar + word order).",
+      "Recommended: Quick English first for a quick win (grammar + word order).",
     est: "~90 sec",
     xp: "+300–450 XP",
   },
   typing: {
-    title: "Speed Builder",
+    title: "Grammar Genius",
     sub: "Typing (fluency)",
-    coach: "Recommended: Speed Builder next to build speed and sentence flow.",
+    coach: "Recommended: Grammar Genius next to build speed and sentence flow.",
     est: "~2 min",
     xp: "+450–600 XP",
   },
   audio: {
-    title: "Pronunciation Booster",
+    title: "Fluent Voice",
     sub: "Audio (repeat + dictation)",
-    coach:
-      "Recommended: Pronunciation Booster next for pronunciation + listening.",
+    coach: "Recommended: Fluent Voice next for pronunciation + listening.",
     est: "~2–3 min",
     xp: "+350–550 XP",
   },
