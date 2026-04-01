@@ -2937,7 +2937,7 @@ export default function SentencePractice() {
                 <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
                   {safeMode === "audio" && audioVariant === "dictation"
                     ? "Listening Dictation"
-                    : uiFor("audio").title}
+                    : uiFor(safeMode).title}
                 </h2>
 
                 {safeMode === "audio" && audioVariant === "dictation" ? (
@@ -3245,10 +3245,6 @@ export default function SentencePractice() {
                 <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
                   {uiFor("reorder").title}
                 </h2>
-
-                <div className="mt-1 text-sm text-slate-600">
-                  {uiFor("reorder").sub}
-                </div>
 
                 {/* Status pills */}
                 {(status === "wrong" ||
