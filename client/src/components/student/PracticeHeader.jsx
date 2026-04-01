@@ -19,6 +19,11 @@ export default function PracticeHeader({
   const { auth } = useAuth();
   const displayStreakText = `${Number(auth?.user?.daily_streak || 0)}-day streak`;
 
+  const difficultyLabel =
+    String(difficulty || "").toLowerCase() === "intermediate"
+      ? "INTERMEDIATE"
+      : "BEGINNER";
+
   return (
     <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
       <div className="mx-auto max-w-3xl px-4 py-4">
@@ -30,7 +35,7 @@ export default function PracticeHeader({
               </span>
               <span className="text-slate-300">•</span>
               <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {difficulty}
+                {difficultyLabel}
               </span>
               <span className="text-slate-300">•</span>
               <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
