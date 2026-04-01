@@ -405,13 +405,6 @@ export default function SentencePractice() {
     audio.play().catch(() => {});
   };
 
-  console.log(
-    "[DBG] currentIndex =",
-    currentIndex,
-    "| lessonExercises len =",
-    lessonExercises?.length,
-  );
-
   // ✅ Auto-hide XP toast + reset earnedXP
   useEffect(() => {
     if (!showXPToast) return;
@@ -555,7 +548,6 @@ export default function SentencePractice() {
           ? { variant: audioVariant }
           : {}),
       };
-      
     } catch {}
   }, [
     lid,
@@ -780,11 +772,8 @@ export default function SentencePractice() {
       const idx = Number(last.questionIndex);
       if (Number.isFinite(idx) && idx >= 0) {
         setCurrentIndex(idx);
-        console.log("[DBG] restored index", idx, last);
       }
-    } catch (e) {
-      console.log("[DBG] restore failed", e);
-    }
+    } catch {}
   }, [lid, difficulty, fetchMode, safeMode]);
 
   useEffect(() => {
