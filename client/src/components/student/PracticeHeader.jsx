@@ -37,8 +37,6 @@ export default function PracticeHeader({
                 {ui.title}
               </span>
             </div>
-
-            <div className="mt-1 text-xs text-slate-500">{ui.sub}</div>
           </div>
 
           <button

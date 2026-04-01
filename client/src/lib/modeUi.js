@@ -3,7 +3,7 @@
 export const MODE_UI = {
   reorder: {
     title: "Quick English",
-    sub: "Reorder (word order)",
+    sub: "",
     coach:
       "Recommended: Quick English first for a quick win (grammar + word order).",
     est: "~90 sec",
@@ -11,21 +11,21 @@ export const MODE_UI = {
   },
   typing: {
     title: "Grammar Genius",
-    sub: "Typing (fluency)",
+    sub: "",
     coach: "Recommended: Grammar Genius next to build speed and sentence flow.",
     est: "~2 min",
     xp: "+450–600 XP",
   },
   audio: {
     title: "Fluent Voice",
-    sub: "Audio (repeat + dictation)",
+    sub: "",
     coach: "Recommended: Fluent Voice next for pronunciation + listening.",
     est: "~2–3 min",
     xp: "+350–550 XP",
   },
   cloze: {
     title: "Grammar Fix",
-    sub: "Cloze",
+    sub: "",
     coach: "Recommended: Grammar Fix next.",
     est: "~2 min",
     xp: "+XP",

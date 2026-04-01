@@ -41,19 +41,19 @@ const modeEnabled = (mode, modeAvail) => {
 
 const MODE_CONFIG = {
   reorder: {
-    title: "Quick English",
+    title: uiFor("reorder").title,
     sub: "Think Fast & Smart",
     tamil: "வேகமாக சிந்திக்க",
     icon: "⚡",
   },
   typing: {
-    title: "Grammar Genius",
+    title: uiFor("typing").title,
     sub: "Office Writing Pro",
     tamil: "அலுவலக எழுத்துமுறை",
     icon: "⌨️",
   },
   audio: {
-    title: "Fluent Voice",
+    title: uiFor("audio").title,
     sub: "Speak with Confidence",
     tamil: "சரளமாக பேச",
     icon: "🎧",
