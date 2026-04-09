@@ -160,12 +160,13 @@ export default function LevelCheck() {
 
     const token = getToken();
 
-    // If we want to start Lesson 1 (teach first → then practice)
-    if (opts && opts.startLesson1) {
-      const isHighPath = track === "intermediate" || track === "advanced";
-      const difficulty = isHighPath ? "intermediate" : "beginner";
-      const base = isHighPath ? "/i" : "/b";
+    const isHighPath = track === "intermediate" || track === "advanced";
+    const difficulty = isHighPath ? "intermediate" : "beginner";
+    const base = isHighPath ? "/i" : "/b";
+    const lessonHubUrl = `${base}/lesson/1?difficulty=${difficulty}`;
+    const target = lessonHubUrl;
 
+    if (opts && opts.startLesson1) {
       if (!token) {
         navigate(`/signup?next=${encodeURIComponent(lessonHubUrl)}`, {
           replace: true,
@@ -176,11 +177,6 @@ export default function LevelCheck() {
       navigate(lessonHubUrl, { replace: true });
       return;
     }
-
-    // Default behavior: go to Lesson 1 hub (teach first → then practice)
-    const isHighPath = track === "intermediate" || track === "advanced";
-    const difficulty = isHighPath ? "intermediate" : "beginner";
-    const base = isHighPath ? "/i" : "/b";
 
     if (!token) {
       navigate(`/signup?next=${encodeURIComponent(target)}`, { replace: true });
@@ -214,7 +210,7 @@ export default function LevelCheck() {
   async function finishQuiz() {
     const finalScore = QUESTIONS.reduce((total, q) => {
       const selected = answers[q.id];
-      return total + (selected === q.correctIndex ? 1 : 0);
+      return total + (selected === q.answer ? 1 : 0);
     }, 0);
     const track = finalScore >= 5 ? "intermediate" : "beginner";
 
