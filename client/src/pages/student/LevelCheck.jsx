@@ -560,7 +560,7 @@ export default function LevelCheck() {
 
               {/* Personalized Level Feedback */}
               <div
-                className={`mb-10 p-6 rounded-3xl border ${TRACK_METADATA[result.track].bg} border-opacity-50 inline-block max-w-sm mx-auto shadow-sm`}
+                className={`mb-10 p-6 rounded-3xl border ${TRACK_METADATA[result?.track]?.bg || "bg-slate-50"} border-opacity-50 inline-block max-w-sm mx-auto shadow-sm`}
               >
                 <h3
                   className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${TRACK_METADATA[result?.track]?.color || "text-slate-600"}`}
