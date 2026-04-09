@@ -191,14 +191,14 @@ export default function LevelCheck() {
   }
 
   useEffect(() => {
-    if (mode !== "result" || !result?.track) return;
+    if (!result?.track) return;
 
     const id = setTimeout(() => {
-      navigate(result.track === "intermediate" ? "/i/lessons" : "/b/lessons");
+      goToTrack(result.track);
     }, 1200);
 
     return () => clearTimeout(id);
-  }, [mode, result, navigate]);
+  }, [result]);
 
   const current = QUESTIONS[idx];
 
@@ -216,6 +216,8 @@ export default function LevelCheck() {
     const track = finalScore >= 5 ? "intermediate" : "beginner";
 
     setResult({ score: finalScore, track });
+    setMode("result");
+    setStep("result");
 
     try {
       localStorage.setItem("fj_track", track);
@@ -233,8 +235,6 @@ export default function LevelCheck() {
       console.error("❌ Placement sync failed:", err);
     }
 
-    setMode("result");
-
     try {
       const levelUpSound = new Audio("/sounds/levelup.mp3");
       levelUpSound.volume = 0.5;
@@ -249,11 +249,6 @@ export default function LevelCheck() {
         colors: ["#8b5cf6", "#a78bfa", "#c4b5fd"],
       });
     } catch {}
-
-    // Redirect after brief result display
-    setTimeout(() => {
-      navigate(track === "intermediate" ? "/i/lessons" : "/b/lessons");
-    }, 1200);
   }
 
   return (
@@ -339,7 +334,10 @@ export default function LevelCheck() {
 
                   <button
                     type="button"
-                    onClick={() => setMode("quiz")}
+                    onClick={() => {
+                      setMode("quiz");
+                      setStep("quiz");
+                    }}
                     className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-8 py-5 text-xl font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
                   >
                     <span>Start Level Test</span>
