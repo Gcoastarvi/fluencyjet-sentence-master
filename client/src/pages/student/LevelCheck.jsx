@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getToken } from "@/utils/tokenStore";
@@ -190,6 +190,16 @@ export default function LevelCheck() {
     navigate(target, { replace: true });
   }
 
+  useEffect(() => {
+    if (mode !== "result" || !result?.track) return;
+
+    const id = setTimeout(() => {
+      navigate(result.track === "intermediate" ? "/i/lessons" : "/b/lessons");
+    }, 1200);
+
+    return () => clearTimeout(id);
+  }, [mode, result, navigate]);
+
   const current = QUESTIONS[idx];
 
   const score = useMemo(() => {
@@ -200,15 +210,13 @@ export default function LevelCheck() {
     }
     return s;
   }, [answers]);
-  
+
   async function finishQuiz() {
     const finalScore = score;
     const track = finalScore >= 5 ? "intermediate" : "beginner";
 
-    // Immediate result UI
     setResult({ score: finalScore, track });
 
-    // Persist track locally for app-wide redirects
     try {
       localStorage.setItem("fj_track", track);
     } catch {}
@@ -223,13 +231,10 @@ export default function LevelCheck() {
       }
     } catch (err) {
       console.error("❌ Placement sync failed:", err);
-      // Do not block the user if sync fails
     }
 
-    // Show result screen
     setMode("result");
 
-    // Celebration effects
     try {
       const levelUpSound = new Audio("/sounds/levelup.mp3");
       levelUpSound.volume = 0.5;
