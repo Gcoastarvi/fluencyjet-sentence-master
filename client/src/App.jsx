@@ -11,7 +11,7 @@ import {
 import { useEffect } from "react";
 
 import Navbar from "./components/Navbar";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Student pages
 import Home from "./pages/Home";
@@ -101,7 +101,7 @@ function readTrackFromStorage() {
   try {
     const raw = localStorage.getItem("user");
     const u = raw ? JSON.parse(raw) : null;
-    const t = String(u?.track || "").toLowerCase();
+    const t = String(u?.track || u?.placement_level || "").toLowerCase();
     if (t === "intermediate" || t === "beginner") return t;
   } catch {}
 
@@ -117,7 +117,21 @@ function readTrackFromStorage() {
 }
 
 function LessonsRedirect() {
-  const track = readTrackFromStorage();
+  const { loading, user } = useAuth();
+
+  if (loading) return null;
+
+  let track = readTrackFromStorage();
+
+  const userTrack = String(
+    user?.track || user?.placement_level || "",
+  ).toLowerCase();
+
+  if (userTrack === "intermediate" || userTrack === "beginner") {
+    track = userTrack;
+    writeTrackToStorage(track);
+  }
+
   const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
   return <Navigate to={target} replace />;
 }
