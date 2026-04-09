@@ -218,6 +218,8 @@ export default function LevelCheck() {
     }, 0);
     const track = finalScore >= 5 ? "intermediate" : "beginner";
 
+    console.log("[LEVEL CHECK]", { answers, finalScore, track });
+
     setResult({ score: finalScore, track });
     setMode("result");
     setStep("result");
