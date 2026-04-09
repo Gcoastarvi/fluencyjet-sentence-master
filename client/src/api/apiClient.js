@@ -132,12 +132,25 @@ export async function loginUser(email, password) {
 
   setToken(token);
 
+  const normalizedTrack = String(res.data?.track || "").toLowerCase();
+
   localStorage.setItem(
     "user",
     JSON.stringify({
       email: res.data.email,
       plan: res.data.plan || "FREE",
+      track:
+        normalizedTrack === "intermediate" || normalizedTrack === "beginner"
+          ? normalizedTrack
+          : "beginner",
     }),
+  );
+
+  localStorage.setItem(
+    "fj_track",
+    normalizedTrack === "intermediate" || normalizedTrack === "beginner"
+      ? normalizedTrack
+      : "beginner",
   );
 
   return res.data; // important: return payload, not axios response
