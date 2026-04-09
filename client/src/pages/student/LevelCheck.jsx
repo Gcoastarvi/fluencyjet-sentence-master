@@ -200,19 +200,20 @@ export default function LevelCheck() {
     }
     return s;
   }, [answers]);
-
-  // 173: Async function to sync results with Railway DB
+  
   async function finishQuiz() {
     const finalScore = score;
-    let track = "beginner";
-    if (finalScore >= 5) track = "intermediate";
-    else if (finalScore >= 5) track = "intermediate";
+    const track = finalScore >= 5 ? "intermediate" : "beginner";
 
-    // Set local state first for immediate UI feedback
+    // Immediate result UI
     setResult({ score: finalScore, track });
 
+    // Persist track locally for app-wide redirects
     try {
-      // 🚀 Trigger the Backend Sync
+      localStorage.setItem("fj_track", track);
+    } catch {}
+
+    try {
       const response = await api.post("/quizzes/sync-placement", {
         track: track.toUpperCase(),
       });
@@ -222,22 +223,32 @@ export default function LevelCheck() {
       }
     } catch (err) {
       console.error("❌ Placement sync failed:", err);
-      // We don't block the user if sync fails; they still see their results
+      // Do not block the user if sync fails
     }
 
-    // Trigger the premium celebration effects
-    const levelUpSound = new Audio("/sounds/levelup.mp3");
-    levelUpSound.volume = 0.5;
-    levelUpSound.play().catch(() => {});
-
+    // Show result screen
     setMode("result");
 
-    confetti({
-      particleCount: 150,
-      spread: 70,
-      origin: { y: 0.6 },
-      colors: ["#8b5cf6", "#a78bfa", "#c4b5fd"],
-    });
+    // Celebration effects
+    try {
+      const levelUpSound = new Audio("/sounds/levelup.mp3");
+      levelUpSound.volume = 0.5;
+      levelUpSound.play().catch(() => {});
+    } catch {}
+
+    try {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#8b5cf6", "#a78bfa", "#c4b5fd"],
+      });
+    } catch {}
+
+    // Redirect after brief result display
+    setTimeout(() => {
+      navigate(track === "intermediate" ? "/i/lessons" : "/b/lessons");
+    }, 1200);
   }
 
   return (
