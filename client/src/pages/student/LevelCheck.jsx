@@ -212,7 +212,10 @@ export default function LevelCheck() {
   }, [answers]);
 
   async function finishQuiz() {
-    const finalScore = score;
+    const finalScore = QUESTIONS.reduce((total, q) => {
+      const selected = answers[q.id];
+      return total + (selected === q.correctIndex ? 1 : 0);
+    }, 0);
     const track = finalScore >= 5 ? "intermediate" : "beginner";
 
     setResult({ score: finalScore, track });
@@ -560,12 +563,13 @@ export default function LevelCheck() {
                 className={`mb-10 p-6 rounded-3xl border ${TRACK_METADATA[result.track].bg} border-opacity-50 inline-block max-w-sm mx-auto shadow-sm`}
               >
                 <h3
-                  className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${TRACK_METADATA[result.track].color}`}
+                  className={`text-xs font-black uppercase tracking-[0.2em] mb-2 ${TRACK_METADATA[result?.track]?.color || "text-slate-600"}`}
                 >
-                  {TRACK_METADATA[result.track].title}
+                  {TRACK_METADATA[result?.track]?.title || "Your Result"}
                 </h3>
                 <p className="text-slate-600 text-sm leading-relaxed font-medium">
-                  {TRACK_METADATA[result.track].description}
+                  {TRACK_METADATA[result?.track]?.description ||
+                    "Your level assessment is ready."}
                 </p>
               </div>
 
@@ -573,11 +577,10 @@ export default function LevelCheck() {
               <div className="flex flex-col gap-4 max-w-sm mx-auto">
                 <button
                   onClick={() => {
-                    // Use the actual score (0-10) to determine the path
-                    const isHighPath = score >= 5;
-                    const path = isHighPath
-                      ? "/i/lesson/1?difficulty=intermediate"
-                      : "/b/lesson/1?difficulty=beginner";
+                    const path =
+                      result?.track === "intermediate"
+                        ? "/i/lesson/1?difficulty=intermediate"
+                        : "/b/lesson/1?difficulty=beginner";
 
                     const encodedName = encodeURIComponent(userName || "");
                     window.location.href = `/signup?next=${encodeURIComponent(path)}&name=${encodedName}`;
@@ -585,7 +588,11 @@ export default function LevelCheck() {
                   className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   <span>
-                    Start {score >= 80 ? "Mastery" : "Personalized"} Journey
+                    Start{" "}
+                    {result?.track === "intermediate"
+                      ? "Mastery"
+                      : "Personalized"}{" "}
+                    Journey
                   </span>
                   <span className="text-xl">→</span>
                 </button>
