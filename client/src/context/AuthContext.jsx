@@ -62,6 +62,9 @@ export function AuthProvider({ children }) {
     setToken("");
     setUser(null);
     persist("", null);
+    try {
+      localStorage.removeItem("fj_track");
+    } catch {}
   }
 
   // ✅ SESSION HYDRATION (restore login on refresh)
@@ -84,14 +87,23 @@ export function AuthProvider({ children }) {
       if (cancelled) return;
 
       if (ok && data?.email) {
+        const normalizedTrack = String(data?.track || "").toLowerCase();
+
         const nextUser = {
           id: data?.id || data?.user_id || data?.userId || null,
           email: data?.email || null,
           plan: data?.plan || "FREE",
           daily_streak: data?.daily_streak || 0,
+          track:
+            normalizedTrack === "intermediate" || normalizedTrack === "beginner"
+              ? normalizedTrack
+              : "beginner",
         };
         setUser(nextUser);
         persist(storedToken, nextUser);
+        try {
+          localStorage.setItem("fj_track", nextUser.track);
+        } catch {}
         const progressUserId = nextUser?.id || nextUser?.email || null;
 
         if (progressUserId) {
@@ -132,16 +144,26 @@ export function AuthProvider({ children }) {
       throw new Error(message || "Login failed");
     }
 
+    const normalizedTrack = String(data?.track || "").toLowerCase();
+
     const nextUser = {
       id: data?.id || data?.user_id || data?.userId || null,
       email: data?.email || email,
       plan: data?.plan || "FREE",
       daily_streak: data?.daily_streak || 0,
+      track:
+        normalizedTrack === "intermediate" || normalizedTrack === "beginner"
+          ? normalizedTrack
+          : "beginner",
     };
 
     setToken(nextToken);
     setUser(nextUser);
     persist(nextToken, nextUser);
+
+    try {
+      localStorage.setItem("fj_track", nextUser.track);
+    } catch {}
 
     const progressUserId = nextUser?.id || nextUser?.email || null;
 
