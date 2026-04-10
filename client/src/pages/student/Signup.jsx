@@ -42,13 +42,31 @@ export default function Signup() {
         return;
       }
 
-      const loginUrl =
-        `/login?next=${encodeURIComponent(next)}` +
-        `&email=${encodeURIComponent(payload.email)}` +
-        (track ? `&track=${encodeURIComponent(track)}` : "");
+      // 🚀 HYPER-SPEED HOOK: Automatic Login
+      // If your API returns a token, save it and teleport them instantly.
+      // Automatic login path
+      if (res.token) {
+        localStorage.setItem("token", res.token);
 
-      navigate(loginUrl, { replace: true });
-      return;
+        if (track === "beginner" || track === "intermediate") {
+          try {
+            await api.post("/quizzes/sync-placement", {
+              track: track.toUpperCase(),
+            });
+          } catch (err) {
+            console.error("Placement sync after signup failed", err);
+          }
+        }
+
+        window.location.href = next;
+      } else {
+        const loginUrl =
+          `/login?next=${encodeURIComponent(next)}` +
+          `&email=${encodeURIComponent(email)}` +
+          (track ? `&track=${encodeURIComponent(track)}` : "");
+
+        navigate(loginUrl, { replace: true });
+      }
     } catch (err) {
       console.error("Signup error:", err);
       setError("Something went wrong. Please try again.");
