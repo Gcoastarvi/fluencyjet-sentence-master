@@ -171,8 +171,6 @@ router.get("/me", authRequired, async (req, res) => {
 
     if (!u) return res.status(401).json({ ok: false, message: "Unauthorized" });
 
-    console.log("[AUTH ME USER]", req.user);
-
     const normalizedTrack = String(u.placement_level || "").toLowerCase();
 
     return res.json({
