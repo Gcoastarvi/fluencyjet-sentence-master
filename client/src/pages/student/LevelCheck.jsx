@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getToken } from "@/utils/tokenStore";
@@ -185,16 +185,6 @@ export default function LevelCheck() {
 
     navigate(target, { replace: true });
   }
-
-  useEffect(() => {
-    if (!result?.track) return;
-
-    const id = setTimeout(() => {
-      goToTrack(result.track);
-    }, 1200);
-
-    return () => clearTimeout(id);
-  }, [result]);
 
   const current = QUESTIONS[idx];
 
@@ -581,7 +571,7 @@ export default function LevelCheck() {
                         : "/b/lesson/1?difficulty=beginner";
 
                     const encodedName = encodeURIComponent(userName || "");
-                    window.location.href = `/signup?next=${encodeURIComponent(path)}&name=${encodedName}`;
+                    window.location.href = `/signup?next=${encodeURIComponent(path)}&name=${encodedName}&track=${encodeURIComponent(result?.track || "beginner")}`;
                   }}
                   className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
