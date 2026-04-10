@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { api } from "../../api/apiClient";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -13,8 +12,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const next = searchParams.get("next") || "/dashboard";
-  const track = (searchParams.get("track") || "").toLowerCase();
+  const next = searchParams.get("next") || "/dashboard";  
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -29,16 +27,7 @@ export default function Login() {
         return;
       }
 
-      if (track === "beginner" || track === "intermediate") {
-        try {
-          await api.post("/quizzes/sync-placement", {
-            track: track.toUpperCase(),
-          });
-        } catch (err) {
-          console.error("Placement sync after login failed", err);
-        }
-      }
-
+      // ✅ SUCCESS → redirect back to where user wanted to go
       navigate(next, { replace: true });
     } catch (err) {
       console.error("Login failed", err);
