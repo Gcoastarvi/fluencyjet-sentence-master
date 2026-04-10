@@ -174,14 +174,16 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin/curriculum" element={<CurriculumManager />} />
+            {/* 🛡️ UNIFIED LESSON HUB ROUTES */}
             <Route
               path="/b/lessons"
               element={
                 <ProtectedRoute>
-                  <LessonList difficulty="basic" />
+                  <LessonList difficulty="beginner" />
                 </ProtectedRoute>
               }
             />
+
             <Route
               path="/i/lessons"
               element={
