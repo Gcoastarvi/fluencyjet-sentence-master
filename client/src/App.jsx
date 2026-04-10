@@ -179,7 +179,7 @@ export default function App() {
               path="/b/lessons"
               element={
                 <ProtectedRoute>
-                  <LessonList difficulty="basic" />
+                  <LessonList difficulty="beginner" />
                 </ProtectedRoute>
               }
             />
