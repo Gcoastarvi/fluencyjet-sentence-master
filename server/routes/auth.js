@@ -158,7 +158,6 @@ router.get("/me", authRequired, async (req, res) => {
         plan: true,
         tier_level: true,
         has_access: true,
-        placement_level: true,
       },
     });
 
