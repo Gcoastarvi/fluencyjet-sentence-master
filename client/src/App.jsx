@@ -99,7 +99,7 @@ function readTrackFromStorage() {
   try {
     const raw = localStorage.getItem("user");
     const u = raw ? JSON.parse(raw) : null;
-    const t = String(u?.track || u?.placement_level || "").toLowerCase();
+    const t = String(u?.track || "").toLowerCase();
     if (t === "intermediate" || t === "beginner") return t;
   } catch {}
 
@@ -115,21 +115,7 @@ function readTrackFromStorage() {
 }
 
 function LessonsRedirect() {
-  const { loading, user } = useAuth();
-
-  if (loading) return null;
-
-  let track = readTrackFromStorage();
-
-  const userTrack = String(
-    user?.track || user?.placement_level || "",
-  ).toLowerCase();
-
-  if (userTrack === "intermediate" || userTrack === "beginner") {
-    track = userTrack;
-    writeTrackToStorage(track);
-  }
-
+  const track = readTrackFromStorage();
   const target = track === "intermediate" ? "/i/lessons" : "/b/lessons";
   return <Navigate to={target} replace />;
 }
