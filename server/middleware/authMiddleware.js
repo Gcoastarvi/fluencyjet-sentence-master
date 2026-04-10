@@ -18,7 +18,21 @@ export function authMiddleware(req, res, next) {
     }
 
     const payload = jwt.verify(token, JWT_SECRET);
-    req.user = payload;
+
+    const normalizedId =
+      payload?.id ||
+      payload?.userId ||
+      payload?.user_id ||
+      payload?.sub ||
+      null;
+
+    req.user = {
+      ...payload,
+      id: normalizedId,
+      email: payload?.email || null,
+    };
+
+    console.log("[AUTH MIDDLEWARE USER]", req.user);
     return next();
   } catch (err) {
     console.error("[authMiddleware] jwt.verify failed:", err?.message);
