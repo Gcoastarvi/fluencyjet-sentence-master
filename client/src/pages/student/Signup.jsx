@@ -14,8 +14,6 @@ export default function Signup() {
       ? rawNext
       : "/dashboard";
 
-  const track = (searchParams.get("track") || "").toLowerCase();
-
   const [name, setName] = useState(searchParams.get("name") || "");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,25 +45,14 @@ export default function Signup() {
       // Automatic login path
       if (res.token) {
         localStorage.setItem("token", res.token);
-
-        if (track === "beginner" || track === "intermediate") {
-          try {
-            await api.post("/quizzes/sync-placement", {
-              track: track.toUpperCase(),
-            });
-          } catch (err) {
-            console.error("Placement sync after signup failed", err);
-          }
-        }
-
+        // Using window.location.href forces a clean state for the new user
         window.location.href = next;
       } else {
-        const loginUrl =
-          `/login?next=${encodeURIComponent(next)}` +
-          `&email=${encodeURIComponent(email)}` +
-          (track ? `&track=${encodeURIComponent(track)}` : "");
-
-        navigate(loginUrl, { replace: true });
+        // Fallback: If no token, go to the pre-filled login page we built
+        navigate(
+          `/login?next=${encodeURIComponent(next)}&email=${encodeURIComponent(email)}`,
+          { replace: true },
+        );
       }
     } catch (err) {
       console.error("Signup error:", err);
