@@ -26,8 +26,6 @@ import TypingQuiz from "./pages/student/TypingQuiz.jsx";
 import SentencePractice from "./pages/student/SentencePractice.jsx";
 import Paywall from "./pages/student/Paywall.jsx";
 import Checkout from "./pages/student/Checkout.jsx";
-import BeginnerLessons from "./pages/student/BeginnerLessons";
-import IntermediateLessons from "./pages/student/IntermediateLessons";
 import LevelCheck from "./pages/student/LevelCheck";
 import Upgrade from "./pages/student/Upgrade";
 import LessonList from "./pages/student/LessonList";

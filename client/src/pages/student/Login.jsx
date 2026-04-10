@@ -13,8 +13,8 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const next = searchParams.get("next") || "/lessons";
-  const track = (searchParams.get("track") || "").toLowerCase();
+  const requestedNext = searchParams.get("next");
+  const trackFromUrl = (searchParams.get("track") || "").toLowerCase();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -29,18 +29,46 @@ export default function Login() {
         return;
       }
 
-      if (track === "beginner" || track === "intermediate") {
+      if (trackFromUrl === "beginner" || trackFromUrl === "intermediate") {
         try {
           await api.post("/quizzes/sync-placement", {
-            track: track.toUpperCase(),
+            track: trackFromUrl.toUpperCase(),
           });
+          localStorage.setItem("fj_track", trackFromUrl);
         } catch (err) {
           console.error("Placement sync after login failed", err);
         }
       }
 
-      // redirect back to where user wanted to go
-      navigate(next, { replace: true });
+      let resolvedTrack = String(
+        res?.track ||
+          res?.user?.track ||
+          trackFromUrl ||
+          JSON.parse(localStorage.getItem("user") || "null")?.track ||
+          localStorage.getItem("fj_track") ||
+          "",
+      ).toLowerCase();
+
+      if (resolvedTrack !== "intermediate" && resolvedTrack !== "beginner") {
+        resolvedTrack = "beginner";
+      }
+
+      const finalTarget =
+        requestedNext ||
+        (resolvedTrack === "intermediate" ? "/i/lessons" : "/b/lessons");
+
+      console.log("[LOGIN REDIRECT]", {
+        requestedNext,
+        trackFromUrl,
+        resTrack: res?.track,
+        userTrack: res?.user?.track,
+        storedUser: JSON.parse(localStorage.getItem("user") || "null")?.track,
+        fjTrack: localStorage.getItem("fj_track"),
+        resolvedTrack,
+        finalTarget,
+      });
+
+      navigate(finalTarget, { replace: true });
     } catch (err) {
       console.error("Login failed", err);
       setError("Something went wrong. Please try again.");
