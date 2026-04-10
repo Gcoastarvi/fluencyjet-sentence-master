@@ -1,7 +1,7 @@
 // client/src/pages/student/Signup.jsx
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { signupUser } from "../../api/apiClient";
+import { api, signupUser } from "../../api/apiClient";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -13,6 +13,8 @@ export default function Signup() {
     typeof rawNext === "string" && rawNext.startsWith("/")
       ? rawNext
       : "/dashboard";
+
+  const track = (searchParams.get("track") || "").toLowerCase();
 
   const [name, setName] = useState(searchParams.get("name") || "");
   const [email, setEmail] = useState("");
@@ -42,16 +44,28 @@ export default function Signup() {
 
       // 🚀 HYPER-SPEED HOOK: Automatic Login
       // If your API returns a token, save it and teleport them instantly.
+      // Automatic login path
       if (res.token) {
         localStorage.setItem("token", res.token);
-        // Using window.location.href forces a clean state for the new user
+
+        if (track === "beginner" || track === "intermediate") {
+          try {
+            await api.post("/quizzes/sync-placement", {
+              track: track.toUpperCase(),
+            });
+          } catch (err) {
+            console.error("Placement sync after signup failed", err);
+          }
+        }
+
         window.location.href = next;
       } else {
-        // Fallback: If no token, go to the pre-filled login page we built
-        navigate(
-          `/login?next=${encodeURIComponent(next)}&email=${encodeURIComponent(email)}`,
-          { replace: true },
-        );
+        const loginUrl =
+          `/login?next=${encodeURIComponent(next)}` +
+          `&email=${encodeURIComponent(email)}` +
+          (track ? `&track=${encodeURIComponent(track)}` : "");
+
+        navigate(loginUrl, { replace: true });
       }
     } catch (err) {
       console.error("Signup error:", err);
