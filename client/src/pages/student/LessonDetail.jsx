@@ -315,8 +315,10 @@ export default function LessonDetail() {
 
   const [showTamilHelp, setShowTamilHelp] = useState(false);
 
-  // ✅ Use backend + lesson metadata for lock UI. Do NOT use "first 3 only" anymore.
-  const isLocked = Boolean(lesson?.isLocked ?? lesson?.is_locked ?? false);
+  // 🎯 THE MASTER KEY: Overrides database locks for the first 3 lessons
+  const isLocked =
+    auth?.user?.has_access === false &&
+    parseInt(lessonId || dayNumber || 1) > 3;
 
   useEffect(() => {
     // 🏆 Trigger celebration only when they reach 100%
@@ -648,8 +650,11 @@ export default function LessonDetail() {
       : null;
 
   function goPaywall() {
+    // Use the current difficulty to show the right price/plan
+    const plan = difficulty?.toUpperCase() || "BEGINNER";
+
     navigate(
-      `/paywall?plan=BEGINNER&from=lesson_${dayNumber || ""}&difficulty=${encodeURIComponent(difficulty)}`,
+      `/paywall?plan=${plan}&from=lesson_${lessonId || dayNumber || ""}&difficulty=${encodeURIComponent(difficulty)}`,
     );
   }
 
@@ -778,7 +783,12 @@ export default function LessonDetail() {
         return "AUTH";
       }
 
-      if (status === 403 && data?.code === "PAYWALL") {
+      // 🎯 Added a safety check for Lesson 1-3
+      if (
+        status === 403 &&
+        data?.code === "PAYWALL" &&
+        parseInt(lessonId) > 3
+      ) {
         const action = data?.nextAction || null;
         const from = action?.from || `lesson_${lid}`;
         const base = action?.url || `/paywall?plan=BEGINNER`;
