@@ -13,7 +13,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const next = searchParams.get("next") || "/dashboard";
+  const next = searchParams.get("next") || "/lessons";
   const track = (searchParams.get("track") || "").toLowerCase();
 
   async function handleSubmit(e) {
