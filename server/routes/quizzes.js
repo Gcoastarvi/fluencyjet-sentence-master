@@ -324,6 +324,14 @@ router.post("/sync-placement", authRequired, async (req, res) => {
 
     console.log(`[PLACEMENT] User ${userId} synced to ${track.toUpperCase()}`);
 
+    console.log("[SYNC PLACEMENT SAVED]", {
+      userId,
+      email: req.user?.email,
+      requestedTrack: track,
+      savedPlacementLevel: updatedUser.placement_level,
+      savedPlan: updatedUser.plan,
+    });
+
     return res.json({
       ok: true,
       message: `Profile updated to ${track} level`,

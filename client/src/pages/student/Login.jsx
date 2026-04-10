@@ -68,6 +68,16 @@ export default function Login() {
         finalTarget,
       });
 
+      console.log("[LOGIN REDIRECT]", {
+        requestedNext,
+        trackFromUrl,
+        res,
+        storedUser: JSON.parse(localStorage.getItem("user") || "null"),
+        fjTrack: localStorage.getItem("fj_track"),
+        resolvedTrack,
+        finalTarget,
+      });
+
       navigate(finalTarget, { replace: true });
     } catch (err) {
       console.error("Login failed", err);
