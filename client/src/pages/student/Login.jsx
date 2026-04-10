@@ -13,8 +13,8 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const requestedNext = searchParams.get("next");
-  const trackFromUrl = (searchParams.get("track") || "").toLowerCase();
+  const next = searchParams.get("next") || "/lessons";
+  const track = (searchParams.get("track") || "").toLowerCase();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -29,35 +29,17 @@ export default function Login() {
         return;
       }
 
-      if (trackFromUrl === "beginner" || trackFromUrl === "intermediate") {
+      if (track === "beginner" || track === "intermediate") {
         try {
           await api.post("/quizzes/sync-placement", {
-            track: trackFromUrl.toUpperCase(),
+            track: track.toUpperCase(),
           });
-          localStorage.setItem("fj_track", trackFromUrl);
         } catch (err) {
           console.error("Placement sync after login failed", err);
         }
       }
 
-      let resolvedTrack = String(
-        res?.track ||
-          res?.user?.track ||
-          trackFromUrl ||
-          JSON.parse(localStorage.getItem("user") || "null")?.track ||
-          localStorage.getItem("fj_track") ||
-          "",
-      ).toLowerCase();
-
-      if (resolvedTrack !== "intermediate" && resolvedTrack !== "beginner") {
-        resolvedTrack = "beginner";
-      }
-
-      const finalTarget =
-        requestedNext ||
-        (resolvedTrack === "intermediate" ? "/i/lessons" : "/b/lessons");
-
-      navigate(finalTarget, { replace: true });
+      navigate(next, { replace: true });
     } catch (err) {
       console.error("Login failed", err);
       setError("Something went wrong. Please try again.");
