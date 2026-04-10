@@ -125,18 +125,11 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
     });
 
     // ✅ KEEP returning token (works for localStorage/Bearer)
-    const normalizedTrack = String(user.placement_level || "").toLowerCase();
-
     return res.json({
       ok: true,
       token,
       email: user.email,
-      plan: user.plan || "FREE",
-      track:
-        normalizedTrack === "intermediate" || normalizedTrack === "beginner"
-          ? normalizedTrack
-          : "beginner",
-      placement_level: user.placement_level || null,
+      plan: user.plan,
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -163,26 +156,13 @@ router.get("/me", authRequired, async (req, res) => {
 
     if (!u) return res.status(401).json({ ok: false, message: "Unauthorized" });
 
-    const normalizedTrack = String(u.placement_level || "").toLowerCase();
-
     return res.json({
       ok: true,
       email: u.email,
       plan: u.plan || "FREE",
       tier_level: u.tier_level || null,
       has_access: !!u.has_access,
-      track:
-        normalizedTrack === "intermediate" || normalizedTrack === "beginner"
-          ? normalizedTrack
-          : "beginner",
-      placement_level: u.placement_level || null,
-      user: {
-        ...u,
-        track:
-          normalizedTrack === "intermediate" || normalizedTrack === "beginner"
-            ? normalizedTrack
-            : "beginner",
-      },
+      user: u, // optional, but helpful
     });
   } catch (err) {
     return res.status(401).json({ ok: false, message: "Unauthorized" });
