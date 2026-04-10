@@ -176,11 +176,19 @@ export default function App() {
             <Route path="/admin/curriculum" element={<CurriculumManager />} />
             <Route
               path="/b/lessons"
-              element={<LessonList difficulty="basic" />}
+              element={
+                <ProtectedRoute>
+                  <LessonList difficulty="basic" />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/i/lessons"
-              element={<LessonList difficulty="intermediate" />}
+              element={
+                <ProtectedRoute>
+                  <LessonList difficulty="intermediate" />
+                </ProtectedRoute>
+              }
             />
 
             {/* keep diagnostic as alias → level-check */}
@@ -333,22 +341,6 @@ export default function App() {
                 <ProtectedAdminRoute>
                   <AdminAnalytics />
                 </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/b/lessons"
-              element={
-                <ProtectedRoute>
-                  <BeginnerLessons />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/i/lessons"
-              element={
-                <ProtectedRoute>
-                  <IntermediateLessons />
-                </ProtectedRoute>
               }
             />
             <Route
