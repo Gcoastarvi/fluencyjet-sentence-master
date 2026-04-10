@@ -345,11 +345,12 @@ export default function App() {
                 </ProtectedAdminRoute>
               }
             />
+            {/* 📖 Updated Individual Lesson Routes */}
             <Route
               path="/b/lesson/:lessonId"
               element={
                 <ProtectedRoute>
-                  <LessonDetail />
+                  <LessonDetail difficulty="beginner" />
                 </ProtectedRoute>
               }
             />
@@ -357,7 +358,7 @@ export default function App() {
               path="/i/lesson/:lessonId"
               element={
                 <ProtectedRoute>
-                  <LessonDetail />
+                  <LessonDetail difficulty="intermediate" />
                 </ProtectedRoute>
               }
             />
