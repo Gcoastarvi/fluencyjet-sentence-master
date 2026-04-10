@@ -313,12 +313,16 @@ router.post("/sync-placement", authRequired, async (req, res) => {
     }
 
     // Update the placement_level in the User model
+    const normalizedTrack =
+      String(track).toLowerCase() === "intermediate"
+        ? "INTERMEDIATE"
+        : "BEGINNER";
+
+    // Update only placement level. Do not overwrite billing/access plan here.
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
-        placement_level: track.toUpperCase(),
-        // Also update the 'plan' field if you want to unlock lessons immediately
-        plan: track.toUpperCase(),
+        placement_level: normalizedTrack,
       },
     });
 
@@ -334,7 +338,7 @@ router.post("/sync-placement", authRequired, async (req, res) => {
 
     return res.json({
       ok: true,
-      message: `Profile updated to ${track} level`,
+      message: `Profile updated to ${normalizedTrack.toLowerCase()} level`,
       track: updatedUser.placement_level,
     });
   } catch (err) {
