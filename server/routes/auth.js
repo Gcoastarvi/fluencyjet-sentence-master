@@ -127,13 +127,6 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
     // ✅ KEEP returning token (works for localStorage/Bearer)
     const normalizedTrack = String(user.placement_level || "").toLowerCase();
 
-    console.log("[AUTH LOGIN TRACK]", {
-      email: user.email,
-      placement_level: user.placement_level,
-      plan: user.plan,
-      normalizedTrack,
-    });
-
     return res.json({
       ok: true,
       token,

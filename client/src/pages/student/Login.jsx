@@ -57,27 +57,6 @@ export default function Login() {
         requestedNext ||
         (resolvedTrack === "intermediate" ? "/i/lessons" : "/b/lessons");
 
-      console.log("[LOGIN REDIRECT]", {
-        requestedNext,
-        trackFromUrl,
-        resTrack: res?.track,
-        userTrack: res?.user?.track,
-        storedUser: JSON.parse(localStorage.getItem("user") || "null")?.track,
-        fjTrack: localStorage.getItem("fj_track"),
-        resolvedTrack,
-        finalTarget,
-      });
-
-      console.log("[LOGIN REDIRECT]", {
-        requestedNext,
-        trackFromUrl,
-        res,
-        storedUser: JSON.parse(localStorage.getItem("user") || "null"),
-        fjTrack: localStorage.getItem("fj_track"),
-        resolvedTrack,
-        finalTarget,
-      });
-
       navigate(finalTarget, { replace: true });
     } catch (err) {
       console.error("Login failed", err);
