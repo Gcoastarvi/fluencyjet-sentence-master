@@ -1,7 +1,7 @@
 // client/src/pages/student/Signup.jsx
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { api, signupUser } from "../../api/apiClient";
+import { signupUser } from "../../api/apiClient";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -42,31 +42,13 @@ export default function Signup() {
         return;
       }
 
-      // 🚀 HYPER-SPEED HOOK: Automatic Login
-      // If your API returns a token, save it and teleport them instantly.
-      // Automatic login path
-      if (res.token) {
-        localStorage.setItem("token", res.token);
+      const loginUrl =
+        `/login?next=${encodeURIComponent(next)}` +
+        `&email=${encodeURIComponent(payload.email)}` +
+        (track ? `&track=${encodeURIComponent(track)}` : "");
 
-        if (track === "beginner" || track === "intermediate") {
-          try {
-            await api.post("/quizzes/sync-placement", {
-              track: track.toUpperCase(),
-            });
-          } catch (err) {
-            console.error("Placement sync after signup failed", err);
-          }
-        }
-
-        window.location.href = next;
-      } else {
-        const loginUrl =
-          `/login?next=${encodeURIComponent(next)}` +
-          `&email=${encodeURIComponent(email)}` +
-          (track ? `&track=${encodeURIComponent(track)}` : "");
-
-        navigate(loginUrl, { replace: true });
-      }
+      navigate(loginUrl, { replace: true });
+      return;
     } catch (err) {
       console.error("Signup error:", err);
       setError("Something went wrong. Please try again.");
