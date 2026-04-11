@@ -42,7 +42,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link
             to="/"
-            className="text-xl sm:text-2xl font-bold text-purple-700 leading-tight"
+            className="text-xl sm:text-2xl font-bold text-purple-700 leading-tight whitespace-nowrap"
           >
             FluencyJet <span className="font-normal">Sentence Master</span>
           </Link>
@@ -118,9 +118,7 @@ export default function Navbar() {
                       </span>
                     )}
                   </Link>
-                  <Link className="text-sm sm:text-base" to="/practice">
-                    Practice
-                  </Link>
+
                   {/* 👤 Profile Link */}
                   <Link
                     to="/profile"
@@ -133,12 +131,15 @@ export default function Navbar() {
                     Leaderboard
                   </Link>
 
-                  <Link
-                    to="/upgrade"
-                    className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"
-                  >
-                    Upgrade
-                  </Link>
+                  {/* 🎯 Hide Upgrade if user has paid access */}
+                  {!auth?.has_access && (
+                    <Link
+                      to="/upgrade"
+                      className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"
+                    >
+                      Upgrade
+                    </Link>
+                  )}
                   {isAdmin && (
                     <Link className="text-sm sm:text-base" to="/admin">
                       Admin

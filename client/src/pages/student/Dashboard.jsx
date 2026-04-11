@@ -943,11 +943,11 @@ export default function Dashboard() {
       <header className="max-w-6xl mx-auto px-6 pt-12 flex flex-col md:flex-row justify-between items-center gap-8 relative">
         {/* 🎯 Desktop-Only Nav: Hides on Mobile */}
         <nav className="hidden md:flex absolute top-4 right-6 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
-          // 🎯 THE DASHBOARD NAV FIX
+          {/* 🎯 THE DASHBOARD NAV FIX (Wrapped in curly braces to prevent text leak) */}
           <button
             onClick={() =>
               navigate(
-                auth?.user?.track?.toLowerCase() === "intermediate"
+                user?.track?.toLowerCase() === "intermediate" // Changed from auth?.user to just user for consistency
                   ? "/i/lessons"
                   : "/b/lessons",
               )
