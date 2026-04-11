@@ -30,6 +30,8 @@ model User {
   weekly       UserWeeklyTotals?
   xp_events    XpEvent[]
   league_history LeagueHistory[]
+  track        String            @default("BEGINNER") 
+  current_unit Int               @default(1)
 }
 
 model LessonModeProgress {

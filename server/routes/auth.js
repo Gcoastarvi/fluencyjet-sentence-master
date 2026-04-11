@@ -125,11 +125,14 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
     });
 
     // ✅ KEEP returning token (works for localStorage/Bearer)
+    // ✅ Updated to include Track and Unit data
     return res.json({
       ok: true,
       token,
       email: user.email,
       plan: user.plan,
+      track: user.track || "BEGINNER",
+      current_unit: user.current_unit || 1,
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -151,6 +154,8 @@ router.get("/me", authRequired, async (req, res) => {
         plan: true,
         tier_level: true,
         has_access: true,
+        track: true,
+        current_unit: true,
       },
     });
 
@@ -160,6 +165,8 @@ router.get("/me", authRequired, async (req, res) => {
       ok: true,
       email: u.email,
       plan: u.plan || "FREE",
+      track: u.track || "BEGINNER",
+      current_unit: u.current_unit || 1,
       tier_level: u.tier_level || null,
       has_access: !!u.has_access,
       user: u, // optional, but helpful
