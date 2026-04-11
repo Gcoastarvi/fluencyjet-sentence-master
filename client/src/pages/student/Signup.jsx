@@ -26,10 +26,15 @@ export default function Signup() {
     setLoading(true);
 
     try {
+      // 🎯 THE GRABBER: Pull the track directly from the URL
+      const params = new URLSearchParams(window.location.search);
+      const trackFromUrl = params.get("track") || "BEGINNER";
+
       const payload = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
+        track: trackFromUrl.toUpperCase(), // 👈 ADD THIS LINE
       };
 
       const res = await signupUser(payload);
