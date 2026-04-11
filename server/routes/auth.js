@@ -28,7 +28,7 @@ function signToken(user) {
 
 router.post("/signup", async (req, res) => {
   try {
-    let { name, email, password } = req.body;
+    let { name, email, password, track } = req.body;
     email = normalizeEmail(email);
 
     if (!email || !password) {
@@ -50,6 +50,8 @@ router.post("/signup", async (req, res) => {
         email,
         password: hashedPassword,
         plan: "FREE",
+        track: (track || "BEGINNER").toUpperCase(), // 🎯 THE SYNC FIX
+        current_unit: 1,
       },
     });
 

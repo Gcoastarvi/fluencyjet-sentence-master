@@ -138,6 +138,9 @@ export function AuthProvider({ children }) {
       email: data?.email || email,
       plan: data?.plan || "FREE",
       daily_streak: data?.daily_streak || 0,
+      // 🎯 THE IDENTITY FIX: Keep the track and unit in memory
+      track: data?.track || "BEGINNER",
+      current_unit: data?.current_unit || 1,
     };
 
     setToken(nextToken);

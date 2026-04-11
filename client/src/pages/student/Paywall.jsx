@@ -135,7 +135,22 @@ export default function Paywall() {
         </button>
 
         <button
-          onClick={() => navigate("/lessons")}
+          // 🎯 THE LOOP BUSTER
+          onClick={() => {
+            const params = new URLSearchParams(window.location.search);
+            const from = params.get("from") || "lesson_1"; // e.g., 'lesson_1'
+            const difficulty = params.get("difficulty") || "beginner"; // Get difficulty from URL
+
+            // Extract the ID (e.g., '1')
+            const lid = from.split("_")[1] || "1";
+
+            // Determine if it's /i/ or /b/
+            const trackBase =
+              difficulty.toLowerCase() === "intermediate" ? "/i" : "/b";
+
+            // Teleport them back to the specific lesson
+            navigate(`${trackBase}/lesson/${lid}`);
+          }}
           className="w-full mt-3 py-2 text-sm text-gray-500 hover:underline"
         >
           Continue with Free Access
