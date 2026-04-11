@@ -943,8 +943,29 @@ export default function Dashboard() {
       <header className="max-w-6xl mx-auto px-6 pt-12 flex flex-col md:flex-row justify-between items-center gap-8 relative">
         {/* 🎯 Desktop-Only Nav: Hides on Mobile */}
         <nav className="hidden md:flex absolute top-4 right-6 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
-          <button onClick={() => navigate("/lessons")}>Lessons</button>
-          <button onClick={() => navigate("/practice")}>Practice Hub</button>
+          // 🎯 THE DASHBOARD NAV FIX
+          <button
+            onClick={() =>
+              navigate(
+                auth?.user?.track?.toLowerCase() === "intermediate"
+                  ? "/i/lessons"
+                  : "/b/lessons",
+              )
+            }
+          >
+            Lessons
+          </button>
+          <button
+            onClick={() =>
+              navigate(
+                auth?.user?.track?.toLowerCase() === "intermediate"
+                  ? "/i/practice"
+                  : "/b/practice",
+              )
+            }
+          >
+            Practice Hub
+          </button>
         </nav>
 
         <div className="flex items-center gap-6">

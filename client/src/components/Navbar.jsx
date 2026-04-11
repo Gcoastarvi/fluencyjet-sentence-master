@@ -7,6 +7,8 @@ import { useAuth } from "../context/AuthContext";
 export default function Navbar() {
   const { user, auth, logout, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const trackPath =
+    user?.track?.toLowerCase() === "intermediate" ? "/i/lessons" : "/b/lessons";
 
   // 🎯 STEP 2: Use the local 'useState' instead of 'React.useState' for cleaner code
   const [showStreakModal, setShowStreakModal] = useState(false);
@@ -104,8 +106,17 @@ export default function Navbar() {
                   <Link className="text-sm sm:text-base" to="/dashboard">
                     Dashboard
                   </Link>
-                  <Link className="text-sm sm:text-base" to="/lessons">
+                  {/* 🎯 THE SMART UNIT LABEL */}
+                  <Link
+                    className="text-sm sm:text-base flex items-center gap-1"
+                    to={trackPath}
+                  >
                     Lessons
+                    {user?.current_unit && (
+                      <span className="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">
+                        U{user.current_unit}
+                      </span>
+                    )}
                   </Link>
                   <Link className="text-sm sm:text-base" to="/practice">
                     Practice
