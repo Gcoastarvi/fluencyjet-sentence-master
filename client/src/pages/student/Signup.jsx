@@ -26,15 +26,21 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      // 🎯 THE GRABBER: Pull the track directly from the URL
       const params = new URLSearchParams(window.location.search);
-      const trackFromUrl = params.get("track") || "BEGINNER";
+
+      // 🎯 SMART TRACK DETECTION
+      // 1. Check if 'track' is in the URL
+      // 2. If not, check if 'intermediate' is mentioned in the 'next' param
+      let trackFromUrl = params.get("track");
+      if (!trackFromUrl && params.get("next")?.includes("intermediate")) {
+        trackFromUrl = "intermediate";
+      }
 
       const payload = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
-        track: trackFromUrl.toUpperCase(), // 👈 ADD THIS LINE
+        track: (trackFromUrl || "beginner").toUpperCase(),
       };
 
       const res = await signupUser(payload);

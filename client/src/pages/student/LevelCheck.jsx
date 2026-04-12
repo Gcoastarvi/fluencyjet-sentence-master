@@ -570,8 +570,13 @@ export default function LevelCheck() {
                         ? "/i/lesson/1?difficulty=intermediate"
                         : "/b/lesson/1?difficulty=beginner";
 
-                    const encodedName = encodeURIComponent(userName || "");
-                    window.location.href = `/signup?next=${encodeURIComponent(path)}&name=${encodedName}`;
+                    // 🎯 THE SOURCE FIX: Explicitly pass the track parameter
+                    const track = score >= 5 ? "intermediate" : "beginner";
+                    const encodedNext = encodeURIComponent(
+                      `/i/lesson/1?difficulty=${track}`,
+                    );
+
+                    window.location.href = `/signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName)}`;
                   }}
                   className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
