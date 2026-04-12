@@ -101,6 +101,24 @@ export default function LessonList({ difficulty }) {
     return Number(localStorage.getItem("daily_sentences_count") || 0);
   });
 
+  // 🎯 THE UNIT PROGRESS CALCULATOR
+  const unitOneProgress = useMemo(() => {
+    // 1. Filter for the first 10 lessons
+    const unitOneLessons = modules.find((m) => m.id === 1)?.lessons || [];
+    if (unitOneLessons.length === 0) return 0;
+
+    // 2. Sum up the completion of each lesson
+    const totalPercentage = unitOneLessons.reduce((acc, lesson) => {
+      const p = lesson.progress || { typing: 0, reorder: 0, audio: 0 };
+      const lessonAvg =
+        (Number(p.typing) + Number(p.reorder) + Number(p.audio)) / 3;
+      return acc + lessonAvg;
+    }, 0);
+
+    // 3. Get the Unit average
+    return Math.round(totalPercentage / unitOneLessons.length);
+  }, [modules]);
+
   const handleSentenceMastery = () => {
     setSentencesMastered((prev) => {
       const newVal = prev + 1;
@@ -338,7 +356,7 @@ export default function LessonList({ difficulty }) {
           <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-4">
             <div
               className="h-full bg-indigo-500 transition-all duration-1000"
-              style={{ width: "0%" }}
+              style={{ width: `${unitOneProgress}%` }}
             />
           </div>
 

@@ -134,25 +134,21 @@ export default function Paywall() {
           Upgrade Now
         </button>
 
-        {/* 🎯 THE TRACK LOCK: Prevents drifting back to Beginner */}
+        {/* 🎯 THE TRACK ANCHOR: Returns users to their correct level */}
         <button
           onClick={() => {
             const params = new URLSearchParams(window.location.search);
             const from = params.get("from") || "lesson_1";
+
+            // 1. Detect the difficulty from the URL
+            const diff = params.get("difficulty")?.toLowerCase() || "beginner";
             const lid = from.split("_")[1] || "1";
 
-            // 1. Detect the track from the URL param we passed
-            const currentDifficulty =
-              params.get("difficulty")?.toLowerCase() || "beginner";
+            // 2. Build the correct path (/i/ or /b/)
+            const trackBase = diff === "intermediate" ? "/i" : "/b";
 
-            // 2. Build the correct path
-            const trackBase =
-              currentDifficulty === "intermediate" ? "/i" : "/b";
-
-            // 3. Teleport back with the difficulty context locked in
-            navigate(
-              `${trackBase}/lesson/${lid}?difficulty=${currentDifficulty}`,
-            );
+            // 3. Teleport back with the context locked
+            navigate(`${trackBase}/lesson/${lid}?difficulty=${diff}`);
           }}
           className="w-full mt-3 py-2 text-sm text-gray-500 hover:underline"
         >
