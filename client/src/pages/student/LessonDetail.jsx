@@ -180,6 +180,8 @@ export default function LessonDetail() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
+  console.log("🕵️ LessonDetail Context:", { dayNumber, difficulty });
+
   // 2. IDENTITY & DIFFICULTY (The "Intermediate" Fix)
   const difficulty = window.location.pathname.includes("/i/")
     ? "intermediate"
@@ -644,12 +646,11 @@ export default function LessonDetail() {
       : null;
 
   function goPaywall() {
-    // Use the current difficulty to show the right price/plan
+    // 🎯 THE TRACK PRESERVER
     const plan = difficulty?.toUpperCase() || "BEGINNER";
+    const from = `lesson_${dayNumber}`;
 
-    navigate(
-      `/paywall?plan=${plan}&from=lesson_${lessonId || dayNumber || ""}&difficulty=${encodeURIComponent(difficulty)}`,
-    );
+    navigate(`/paywall?plan=${plan}&from=${from}&difficulty=${difficulty}`);
   }
 
   console.log("[LessonDetail progress debug]", {
