@@ -707,12 +707,9 @@ export default function LessonDetail() {
       return;
     }
 
+    // 🎯 Ensure 'difficulty' is passed to the practice engine
     navigate(
-      `/practice/${mode}?lessonId=${encodeURIComponent(
-        lid,
-      )}&difficulty=${encodeURIComponent(
-        difficulty,
-      )}&q=0&restart=${Date.now()}`,
+      `/practice/${mode}?lessonId=${encodeURIComponent(lid)}&difficulty=${difficulty}&q=0&restart=${Date.now()}`,
     );
   }
 
