@@ -8,6 +8,8 @@ import confetti from "canvas-confetti";
 
 import SentenceBuilder from "@/components/quiz/SentenceBuilder";
 
+import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
+
 const TRACK_KEY = "fj_track";
 
 const TRACK_METADATA = {
@@ -565,18 +567,14 @@ export default function LevelCheck() {
               <div className="flex flex-col gap-4 max-w-sm mx-auto">
                 <button
                   onClick={() => {
-                    const path =
-                      result?.track === "intermediate"
-                        ? "/i/lesson/1?difficulty=intermediate"
-                        : "/b/lesson/1?difficulty=beginner";
-
-                    // 🎯 THE SOURCE FIX: Explicitly pass the track parameter
-                    const track = score >= 5 ? "intermediate" : "beginner";
-                    const encodedNext = encodeURIComponent(
-                      `/i/lesson/1?difficulty=${track}`,
+                    const track = normalizeTrack(
+                      result?.track ||
+                        (score >= 5 ? "intermediate" : "beginner"),
                     );
+                    const next = lessonPathForTrack(track, 1);
+                    const encodedNext = encodeURIComponent(next);
 
-                    window.location.href = `/signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName)}`;
+                    window.location.href = `/signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName || "")}`;
                   }}
                   className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >

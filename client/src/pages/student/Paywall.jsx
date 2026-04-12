@@ -1,7 +1,8 @@
 // client/src/pages/student/Paywall.jsx
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation,} from "react-router-dom";
 import { getMe } from "../../api/apiClient";
+import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 
 /**
  * PAYWALL LOGIC (FINAL – CLEAN)
@@ -12,6 +13,7 @@ import { getMe } from "../../api/apiClient";
 
 export default function Paywall() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [loading, setLoading] = useState(true);
   const [plan, setPlan] = useState(null); // FREE | PRO | null
@@ -19,6 +21,34 @@ export default function Paywall() {
 
   const [searchParams] = useSearchParams();
   const selectedPlan = (searchParams.get("plan") || "BEGINNER").toUpperCase();
+
+  function inferTrack() {
+    if (location.pathname.startsWith("/i/")) return "intermediate";
+    if (location.pathname.startsWith("/b/")) return "beginner";
+
+    const params = new URLSearchParams(location.search);
+
+    const difficulty = params.get("difficulty");
+    if (difficulty) return normalizeTrack(difficulty);
+
+    const track = params.get("track");
+    if (track) return normalizeTrack(track);
+
+    const plan = params.get("plan");
+    if (String(plan || "").toUpperCase() === "INTERMEDIATE")
+      return "intermediate";
+    if (String(plan || "").toUpperCase() === "BEGINNER") return "beginner";
+
+    try {
+      const storedTrack = localStorage.getItem("fj_track");
+      if (storedTrack) return normalizeTrack(storedTrack);
+
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user?.track) return normalizeTrack(user.track);
+    } catch {}
+
+    return "beginner";
+  }
 
   useEffect(() => {
     let alive = true;
@@ -139,20 +169,10 @@ export default function Paywall() {
           onClick={() => {
             const params = new URLSearchParams(window.location.search);
             const from = params.get("from") || "lesson_1";
-
-            // 1. Force detection of the track from the URL
-            const currentDiff =
-              params.get("difficulty")?.toLowerCase() || "beginner";
             const lid = from.split("_")[1] || "1";
 
-            // 2. Lock the path (/i/ or /b/)
-            const targetPath =
-              currentDiff === "intermediate"
-                ? `/i/lesson/${lid}`
-                : `/b/lesson/${lid}`;
-
-            // 3. Redirect back with the context preserved
-            navigate(`${targetPath}?difficulty=${currentDiff}`);
+            const track = inferTrack();
+            navigate(lessonPathForTrack(track, Number(lid)), { replace: true });
           }}
           className="w-full mt-3 py-2 text-sm text-gray-500 hover:underline"
         >

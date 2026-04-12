@@ -6,6 +6,11 @@ import ProgressBar from "../../components/quiz/ProgressBar";
 import ResultScreen from "../../components/quiz/ResultScreen";
 import ConfettiBlast from "../../components/quiz/ConfettiBlast";
 import { api } from "@/api/apiClient";
+import { difficultyForTrack, normalizeTrack } from "../../lib/trackRoutes";
+
+const searchParams = new URLSearchParams(location.search);
+const rawDifficulty = searchParams.get("difficulty");
+const difficulty = difficultyForTrack(normalizeTrack(rawDifficulty));
 
 const XP_PER_CORRECT = 150;
 
@@ -66,7 +71,7 @@ function Practice() {
         }
 
         const res = await fetch(
-          `/api/quizzes/random?lessonId=${lessonId}&limit=10&difficulty=beginner`,
+          `/api/quizzes/random?lessonId=${lessonId}&limit=10&difficulty=${encodeURIComponent(difficulty)}`
           {
             method: "GET",
             headers: {
