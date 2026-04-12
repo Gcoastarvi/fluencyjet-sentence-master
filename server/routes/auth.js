@@ -65,11 +65,14 @@ router.post("/signup", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    // 🎯 THE SYNC FIX: Send the track back to the frontend immediately
     res.status(201).json({
       ok: true,
       token,
       email: user.email,
       plan: user.plan,
+      track: user.track,
+      current_unit: user.current_unit,
     });
   } catch (err) {
     console.error("Signup error:", err);

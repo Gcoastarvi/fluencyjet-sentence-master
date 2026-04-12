@@ -173,10 +173,22 @@ function modeLabel(m) {
 }
 
 export default function LessonDetail() {
-  // 🎯 1. Hooks MUST be first
-  const { lid, lessonId: lessonIdParam } = useParams();
+  // 1. ALL HOOKS (Only once!)
+  const { lessonId: lessonIdParam, lid } = useParams();
   const { auth } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
 
+  // 2. IDENTITY & DIFFICULTY (The "Intermediate" Fix)
+  const difficulty = window.location.pathname.includes("/i/")
+    ? "intermediate"
+    : "beginner";
+  const dayNumber = Number(lessonIdParam || lid || 1);
+  const lessonId = String(dayNumber);
+  const displayNum = location.state?.lessonNumber || dayNumber;
+
+  // 3. USER CONTEXT (The Logic you need to keep)
   const storedUser = (() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "null");
@@ -193,10 +205,6 @@ export default function LessonDetail() {
     storedUser?.id ||
     storedUser?.email ||
     null;
-
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
 
   // 🎯 2. State MUST be second
   const [lessonData, setLessonData] = useState(null);
@@ -256,11 +264,6 @@ export default function LessonDetail() {
     }
   }, [overallDone]);
 
-  // 🎯 5. Derived Variables
-  const displayNum = location.state?.lessonNumber || lesson?.id;
-  const dayNumber = Number(lessonIdParam || lid);
-  const lessonId = String(dayNumber);
-
   const lessonIdNum = dayNumber;
 
   // 150: Image Generation Handlers
@@ -295,13 +298,6 @@ export default function LessonDetail() {
     }
   };
 
-  // Difficulty: URL wins, else lesson metadata, else beginner
-  const lessonDifficulty = (
-    getDifficultyFromLesson(lesson) || ""
-  ).toLowerCase();
-  const urlDifficulty = (searchParams.get("difficulty") || "").toLowerCase();
-  const difficulty = urlDifficulty || lessonDifficulty || "beginner";
-
   const [showMoreModes, setShowMoreModes] = useState(false);
 
   useEffect(() => {
@@ -315,10 +311,8 @@ export default function LessonDetail() {
 
   const [showTamilHelp, setShowTamilHelp] = useState(false);
 
-  // 🎯 THE MASTER KEY: Overrides database locks for the first 3 lessons
-  const isLocked =
-    auth?.user?.has_access === false &&
-    parseInt(lessonId || dayNumber || 1) > 3;
+  // 🎯 OPTION A: 3 LESSONS FREE
+  const isLocked = auth?.user?.has_access === false && dayNumber > 3;
 
   useEffect(() => {
     // 🏆 Trigger celebration only when they reach 100%
