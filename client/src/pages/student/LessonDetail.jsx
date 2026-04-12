@@ -180,8 +180,6 @@ export default function LessonDetail() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  console.log("🕵️ LessonDetail Context:", { dayNumber, difficulty });
-
   // 2. IDENTITY & DIFFICULTY (The "Intermediate" Fix)
   const difficulty = window.location.pathname.includes("/i/")
     ? "intermediate"
@@ -189,6 +187,8 @@ export default function LessonDetail() {
   const dayNumber = Number(lessonIdParam || lid || 1);
   const lessonId = String(dayNumber);
   const displayNum = location.state?.lessonNumber || dayNumber;
+
+  console.log("🕵️ LessonDetail Context:", { dayNumber, difficulty });
 
   // 3. USER CONTEXT (The Logic you need to keep)
   const storedUser = (() => {
