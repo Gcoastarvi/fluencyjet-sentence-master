@@ -101,24 +101,6 @@ export default function LessonList({ difficulty }) {
     return Number(localStorage.getItem("daily_sentences_count") || 0);
   });
 
-  // 🎯 THE UNIT PROGRESS CALCULATOR
-  const unitOneProgress = useMemo(() => {
-    // 1. Filter for the first 10 lessons
-    const unitOneLessons = modules.find((m) => m.id === 1)?.lessons || [];
-    if (unitOneLessons.length === 0) return 0;
-
-    // 2. Sum up the completion of each lesson
-    const totalPercentage = unitOneLessons.reduce((acc, lesson) => {
-      const p = lesson.progress || { typing: 0, reorder: 0, audio: 0 };
-      const lessonAvg =
-        (Number(p.typing) + Number(p.reorder) + Number(p.audio)) / 3;
-      return acc + lessonAvg;
-    }, 0);
-
-    // 3. Get the Unit average
-    return Math.round(totalPercentage / unitOneLessons.length);
-  }, [modules]);
-
   const handleSentenceMastery = () => {
     setSentencesMastered((prev) => {
       const newVal = prev + 1;
@@ -288,6 +270,33 @@ export default function LessonList({ difficulty }) {
       lessons: lessons.slice(i * 10, (i + 1) * 10),
     }));
   }, [lessons]);
+
+  // 🎯 THE SAFE UNIT PROGRESS CALCULATOR
+  // Place this BELOW your 'const modules = ...' line
+  const unitOneProgress = useMemo(() => {
+    // 1. Guard: If modules doesn't exist yet, return 0%
+    if (!modules || !Array.isArray(modules)) return 0;
+
+    // 2. Filter for the first module (Unit 1)
+    const unitOneModule = modules.find((m) => m.id === 1);
+    const unitOneLessons = unitOneModule?.lessons || [];
+
+    if (unitOneLessons.length === 0) return 0;
+
+    // 3. Sum up the completion (using your existing quiz percentage logic)
+    const totalPercentage = unitOneLessons.reduce((acc, lesson) => {
+      const p = lesson.progress || { typing: 0, reorder: 0, audio: 0 };
+      const lessonAvg =
+        (Number(p.typing || 0) +
+          Number(p.reorder || 0) +
+          Number(p.audio || 0)) /
+        3;
+      return acc + lessonAvg;
+    }, 0);
+
+    // 4. Return the Unit average
+    return Math.round(totalPercentage / unitOneLessons.length);
+  }, [modules]); // 👈 This waits for modules to change
 
   const [showLeagueIntro, setShowLeagueIntro] = useState(() => {
     return !localStorage.getItem("league_intro_seen");
