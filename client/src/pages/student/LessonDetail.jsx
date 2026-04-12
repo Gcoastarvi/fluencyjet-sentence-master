@@ -180,10 +180,12 @@ export default function LessonDetail() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // 2. IDENTITY & DIFFICULTY (The "Intermediate" Fix)
-  const difficulty = window.location.pathname.includes("/i/")
-    ? "intermediate"
-    : "beginner";
+  // 🎯 THE ROBUST IDENTITY FIX
+  const difficulty =
+    window.location.pathname.startsWith("/i/") ||
+    window.location.search.includes("difficulty=intermediate")
+      ? "intermediate"
+      : "beginner";
   const dayNumber = Number(lessonIdParam || lid || 1);
   const lessonId = String(dayNumber);
   const displayNum = location.state?.lessonNumber || dayNumber;
@@ -313,8 +315,8 @@ export default function LessonDetail() {
 
   const [showTamilHelp, setShowTamilHelp] = useState(false);
 
-  // 🎯 OPTION A: 3 LESSONS FREE
-  const isLocked = auth?.user?.has_access === false && dayNumber > 3;
+  // 🎯 OPTION A: 3 LESSONS FREE // 🎯 THE LOCK PROTECTOR
+  const isLocked = auth?.user?.has_access === false && Number(dayNumber) > 3;
 
   useEffect(() => {
     // 🏆 Trigger celebration only when they reach 100%

@@ -361,13 +361,16 @@ export default function LessonList({ difficulty }) {
             )}
           </div>
 
-          {/* Progress Bar Container */}
-          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden mb-4">
+          {/* 📈 DYNAMIC UNIT PROGRESS BAR */}
+          <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden mb-4 border border-slate-200">
             <div
-              className="h-full bg-indigo-500 transition-all duration-1000"
+              className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-1000 shadow-[0_0_10px_rgba(79,70,229,0.3)]"
               style={{ width: `${unitOneProgress}%` }}
             />
           </div>
+          <p className="text-[10px] font-bold text-slate-400 text-right">
+            {unitOneProgress}% of Unit 1 Mastered
+          </p>
 
           {/* 🎯 UPDATED: Smart Navigation Pill Menu */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
