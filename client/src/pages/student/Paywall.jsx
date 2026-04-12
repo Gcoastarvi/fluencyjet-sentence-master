@@ -134,20 +134,25 @@ export default function Paywall() {
           Upgrade Now
         </button>
 
-        {/* 🎯 THE TRACK LOCK: Forces the app to stay in the /i/ or /b/ track */}
+        {/* 🎯 THE ULTIMATE TRACK ANCHOR */}
         <button
           onClick={() => {
             const params = new URLSearchParams(window.location.search);
             const from = params.get("from") || "lesson_1";
-            // 1. Detect difficulty from URL or fallback to 'beginner'
-            const diff = params.get("difficulty")?.toLowerCase() || "beginner";
+
+            // 1. Force detection of the track from the URL
+            const currentDiff =
+              params.get("difficulty")?.toLowerCase() || "beginner";
             const lid = from.split("_")[1] || "1";
 
-            // 2. Build the correct path (/i/ or /b/)
-            const trackBase = diff === "intermediate" ? "/i" : "/b";
+            // 2. Lock the path (/i/ or /b/)
+            const targetPath =
+              currentDiff === "intermediate"
+                ? `/i/lesson/${lid}`
+                : `/b/lesson/${lid}`;
 
-            // 3. Teleport back with the difficulty context locked in
-            navigate(`${trackBase}/lesson/${lid}?difficulty=${diff}`);
+            // 3. Redirect back with the context preserved
+            navigate(`${targetPath}?difficulty=${currentDiff}`);
           }}
           className="w-full mt-3 py-2 text-sm text-gray-500 hover:underline"
         >

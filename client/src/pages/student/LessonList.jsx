@@ -272,31 +272,34 @@ export default function LessonList({ difficulty }) {
   }, [lessons]);
 
   // 🎯 THE SAFE UNIT PROGRESS CALCULATOR
-  // Place this BELOW your 'const modules = ...' line
   const unitOneProgress = useMemo(() => {
-    // 1. Guard: If modules doesn't exist yet, return 0%
-    if (!modules || !Array.isArray(modules)) return 0;
+    if (!modules || modules.length === 0) return 0;
 
-    // 2. Filter for the first module (Unit 1)
-    const unitOneModule = modules.find((m) => m.id === 1);
-    const unitOneLessons = unitOneModule?.lessons || [];
+    // 1. Grab the current active Unit (usually the first one)
+    const activeModule = modules[0];
+    const lessons = activeModule?.lessons || [];
 
-    if (unitOneLessons.length === 0) return 0;
+    if (lessons.length === 0) return 0;
 
-    // 3. Sum up the completion (using your existing quiz percentage logic)
-    const totalPercentage = unitOneLessons.reduce((acc, lesson) => {
-      const p = lesson.progress || { typing: 0, reorder: 0, audio: 0 };
+    // 2. Sum up progress by checking every possible naming convention
+    const total = lessons.reduce((acc, lesson) => {
+      // Check for 'progress' object or 'percentage' field
+      const p = lesson.progress || {};
+      const typing = Number(p.typing || 0);
+      const reorder = Number(p.reorder || 0);
+      const audio = Number(p.audio || 0);
+
+      // Use the stored percentage if the individual modes are missing
       const lessonAvg =
-        (Number(p.typing || 0) +
-          Number(p.reorder || 0) +
-          Number(p.audio || 0)) /
-        3;
+        typing + reorder + audio > 0
+          ? (typing + reorder + audio) / 3
+          : Number(lesson.percentage || 0);
+
       return acc + lessonAvg;
     }, 0);
 
-    // 4. Return the Unit average
-    return Math.round(totalPercentage / unitOneLessons.length);
-  }, [modules]); // 👈 This waits for modules to change
+    return Math.round(total / lessons.length);
+  }, [modules]);
 
   const [showLeagueIntro, setShowLeagueIntro] = useState(() => {
     return !localStorage.getItem("league_intro_seen");
