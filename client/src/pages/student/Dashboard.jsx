@@ -187,6 +187,9 @@ export default function Dashboard() {
 
   const [unlockedBadge, setUnlockedBadge] = useState(null);
 
+  const [showPromotion, setShowPromotion] = useState(false);
+  const [newLeague, setNewLeague] = useState("");
+
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -223,6 +226,17 @@ export default function Dashboard() {
   const [showLevelModal, setShowLevelModal] = useState(false);
   const [prevLevel, setPrevLevel] = useState(0);
   const [prevBadgeCount, setPrevBadgeCount] = useState(0);
+
+  // 🎯 THE PROGRESS NUDGE CALCULATOR
+  const leagueNudge = useMemo(() => {
+    const xp = user?.total_xp || 0;
+    if (xp <= 5000) return { next: "SILVER", diff: 5000 - xp };
+    if (xp <= 15000) return { next: "GOLD", diff: 15000 - xp };
+    if (xp <= 40000) return { next: "EMERALD", diff: 40000 - xp };
+    if (xp <= 80000) return { next: "SAPPHIRE", diff: 80000 - xp };
+    if (xp <= 150000) return { next: "DIAMOND", diff: 150000 - xp };
+    return null; // Top Tier
+  }, [user?.total_xp]);
 
   useEffect(() => {
     let start = displayXP;
@@ -431,6 +445,18 @@ export default function Dashboard() {
       });
     });
   };
+
+  useEffect(() => {
+    const savedLeague = localStorage.getItem("last_notified_league");
+    if (user?.league && savedLeague && user.league !== savedLeague) {
+      setNewLeague(user.league);
+      setShowPromotion(true);
+      // Play a sound effect if you have one!
+    }
+    if (user?.league) {
+      localStorage.setItem("last_notified_league", user.league);
+    }
+  }, [user?.league]);
 
   // 🏆 VICTORY & BADGE DETECTOR
   useEffect(() => {
@@ -1191,6 +1217,27 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {leagueNudge && (
+        <div className="mt-4 p-4 bg-indigo-50 rounded-2xl border border-indigo-100 animate-pulse">
+          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
+            Next Promotion
+          </p>
+          <p className="text-sm font-bold text-indigo-900 mt-1">
+            Only{" "}
+            <span className="text-indigo-600">
+              {leagueNudge.diff.toLocaleString()} XP
+            </span>{" "}
+            until {leagueNudge.next}!
+          </p>
+          <div className="h-1.5 w-full bg-indigo-200 rounded-full mt-2 overflow-hidden">
+            <div
+              className="h-full bg-indigo-600"
+              style={{ width: `${((user?.total_xp % 5000) / 5000) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* 📊 FIXED WEEKLY PERFORMANCE GRAPH */}
       <div className="flex items-end justify-between h-32 gap-3 px-2">
         {[
@@ -1853,6 +1900,23 @@ export default function Dashboard() {
           league={summary.league}
           onClose={() => setShowPromotionModal(false)}
         />
+        {showPromotion && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/90 backdrop-blur-xl p-6">
+            <div className="text-center animate-in zoom-in duration-500">
+              <div className="text-8xl mb-6">💎</div>
+              <h2 className="text-5xl font-black text-white mb-2">PROMOTED!</h2>
+              <p className="text-indigo-300 text-xl font-bold uppercase tracking-widest mb-8">
+                Welcome to the {newLeague} Family
+              </p>
+              <button
+                onClick={() => setShowPromotion(false)}
+                className="px-12 py-4 bg-white text-indigo-600 rounded-full font-black text-lg shadow-2xl hover:scale-105 transition-transform"
+              >
+                Continue My Journey
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

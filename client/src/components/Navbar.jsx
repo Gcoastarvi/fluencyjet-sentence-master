@@ -82,7 +82,8 @@ export default function Navbar() {
           )}
 
           {/* Navigation */}
-          <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap pb-1 sm:pb-0">
+          <div className="flex items-center gap-3 overflow-x-hidden hover:overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
+            {/* Links go here */}
             {!isAuthenticated && (
               <>
                 <Link
