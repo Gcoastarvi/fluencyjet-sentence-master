@@ -221,7 +221,32 @@ export default function Dashboard() {
 
   const showEmergencyAlert = isLate && hasNoFreezes && needsMastery;
 
+  // 🎯 THE SLOT MACHINE HOOK
   const [displayXP, setDisplayXP] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = Number(user?.total_xp || 0);
+    if (start === end) return;
+
+    let totalMiliseconds = 2000; // 2 second animation
+    let timer = setInterval(() => {
+      start += Math.ceil(end / 50); // Increment speed
+      if (start >= end) {
+        clearInterval(timer);
+        setDisplayXP(end);
+      } else {
+        setDisplayXP(start);
+      }
+    }, 30);
+
+    return () => clearInterval(timer);
+  }, [user?.total_xp]);
+
+  // JSX for the XP Card:
+  <span className="text-indigo-600 font-black">
+    {displayXP.toLocaleString()} TOTAL XP
+  </span>;
 
   // 🎯 This goes at the top with your other states
   const [showLevelModal, setShowLevelModal] = useState(false);
@@ -229,14 +254,20 @@ export default function Dashboard() {
   const [prevBadgeCount, setPrevBadgeCount] = useState(0);
 
   // 🎯 THE PROGRESS NUDGE CALCULATOR
+  // 🎯 THE TRUTH FIX: Ensure the UI respects the Database League
+  const currentLeague = user?.league?.toUpperCase() || "BRONZE";
+
   const leagueNudge = useMemo(() => {
-    const xp = user?.total_xp || 0;
-    if (xp <= 5000) return { next: "SILVER", diff: 5000 - xp };
-    if (xp <= 15000) return { next: "GOLD", diff: 15000 - xp };
-    if (xp <= 40000) return { next: "EMERALD", diff: 40000 - xp };
-    if (xp <= 80000) return { next: "SAPPHIRE", diff: 80000 - xp };
-    if (xp <= 150000) return { next: "DIAMOND", diff: 150000 - xp };
-    return null; // Top Tier
+    // Use Number() to ensure math works even if XP comes as a string
+    const xp = Number(user?.total_xp || 0);
+
+    if (xp <= 5000) return { next: "SILVER", diff: 5000 - xp, goal: 5000 };
+    if (xp <= 15000) return { next: "GOLD", diff: 15000 - xp, goal: 15000 };
+    if (xp <= 40000) return { next: "EMERALD", diff: 40000 - xp, goal: 40000 };
+    if (xp <= 80000) return { next: "SAPPHIRE", diff: 80000 - xp, goal: 80000 };
+    if (xp <= 150000)
+      return { next: "DIAMOND", diff: 150000 - xp, goal: 150000 };
+    return null;
   }, [user?.total_xp]);
 
   useEffect(() => {

@@ -82,7 +82,9 @@ export default function Navbar() {
           )}
 
           {/* Navigation */}
-          <div className="flex items-center gap-3 overflow-x-hidden hover:overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
+          {/* 🎯 THE FLEXIBLE NAV: No scrollbars, no cut-offs */}
+          <div className="flex items-center gap-2 sm:gap-4 ml-auto overflow-visible">
+            {/* Logout and Upgrade buttons now have room to breathe */}
             {/* Links go here */}
             {!isAuthenticated && (
               <>
