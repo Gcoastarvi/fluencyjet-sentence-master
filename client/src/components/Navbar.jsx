@@ -83,7 +83,7 @@ export default function Navbar() {
 
           {/* Navigation */}
           {/* 🎯 THE FLEXIBLE NAV: No scrollbars, no cut-offs */}
-          <div className="flex items-center gap-2 sm:gap-4 ml-auto overflow-visible">
+          <div className="flex items-center gap-2 sm:gap-4 sm:ml-auto min-w-0">
             {!isAuthenticated && (
               <>
                 <Link
@@ -101,7 +101,7 @@ export default function Navbar() {
               </>
             )}
 
-              <div className="hidden md:flex items-center flex-wrap justify-end gap-4 sm:gap-6 min-w-0">
+            <div className="hidden md:flex items-center flex-wrap justify-end gap-4 sm:gap-6 min-w-0">
               {isAuthenticated && (
                 <>
                   <Link className="text-sm sm:text-base" to="/dashboard">
@@ -154,7 +154,7 @@ export default function Navbar() {
                   </button>
                 </>
               )}
-            </nav>
+            </div>
           </div>
           {/* 🎯 Premium Streak Flame */}
           {showStreakModal && (
