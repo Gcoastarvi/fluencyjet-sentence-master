@@ -22,10 +22,10 @@ import AchievementCard from "@/components/student/AchievementCard";
 import Certificate from "@/components/student/Certificate";
 
 import confetti from "canvas-confetti";
-
 import { useAuth } from "../../context/AuthContext";
 
 import { readProgress, pct } from "@/lib/progressStore";
+import { freeAllowsLesson } from "../../lib/accessRules";
 
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
@@ -354,6 +354,38 @@ export default function LessonDetail() {
     track("lesson_hub_view", { lessonId: Number(dayNumber) || 0, difficulty });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dayNumber, difficulty]);
+
+  useEffect(() => {
+    const lessonNum = Number(dayNumber || lessonId);
+    const diff = String(difficulty || "beginner").toLowerCase();
+
+    const storedUser = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("user") || "null");
+      } catch {
+        return null;
+      }
+    })();
+
+    const isFreeUser =
+      auth?.user?.has_access === false ||
+      auth?.has_access === false ||
+      storedUser?.has_access === false ||
+      storedUser?.hasAccess === false ||
+      (!auth?.user?.has_access &&
+        !auth?.has_access &&
+        !storedUser?.has_access &&
+        !storedUser?.hasAccess);
+
+    if (!isFreeUser) return;
+    if (freeAllowsLesson(lessonNum)) return;
+
+    const plan = diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER";
+    navigate(
+      `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonNum}&difficulty=${encodeURIComponent(diff)}`,
+      { replace: true },
+    );
+  }, [auth, dayNumber, lessonId, difficulty, navigate]);
 
   // 192: Add state for User Metadata
   const [userProfile, setUserProfile] = useState(null);

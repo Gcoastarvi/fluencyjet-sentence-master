@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { readProgress, pct } from "@/lib/progressStore";
 
 import { useAuth } from "../../context/AuthContext";
+import { freeAllowsLesson } from "../../lib/accessRules";
 
 export default function LessonCard({ lesson, displayNum, isLocked }) {
   const navigate = useNavigate();
@@ -49,12 +50,29 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
 
   const handleClick = () => {
     if (isLocked) return;
-    const basePath = window.location.pathname.startsWith("/i/")
-      ? "/i/lesson"
-      : "/b/lesson";
-    const difficulty = window.location.pathname.startsWith("/i/")
-      ? "intermediate"
-      : "basic";
+
+    const isIntermediate = window.location.pathname.startsWith("/i/");
+    const basePath = isIntermediate ? "/i/lesson" : "/b/lesson";
+    const difficulty = isIntermediate ? "intermediate" : "beginner";
+
+    const isFreeUser =
+      auth?.user?.has_access === false ||
+      auth?.has_access === false ||
+      storedUser?.has_access === false ||
+      storedUser?.hasAccess === false ||
+      (!auth?.user?.has_access &&
+        !auth?.has_access &&
+        !storedUser?.has_access &&
+        !storedUser?.hasAccess);
+
+    if (isFreeUser && !freeAllowsLesson(lessonKey)) {
+      const plan = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
+      navigate(
+        `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonKey}&difficulty=${encodeURIComponent(difficulty)}`,
+        { replace: true },
+      );
+      return;
+    }
 
     navigate(`${basePath}/${lessonKey}?difficulty=${difficulty}`, {
       state: { lessonNumber: displayNum },

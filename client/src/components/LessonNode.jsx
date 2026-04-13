@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { freeAllowsLesson } from "../lib/accessRules";
 
 export default function LessonNode({ lesson, displayNum, isLocked }) {
   const navigate = useNavigate();
@@ -17,11 +18,32 @@ export default function LessonNode({ lesson, displayNum, isLocked }) {
       lesson.level === "INTERMEDIATE" ||
       window.location.pathname.startsWith("/i/");
     const basePath = isIntermediate ? "/i/lesson" : "/b/lesson";
-    const difficulty = isIntermediate ? "intermediate" : "basic";
+    const difficulty = isIntermediate ? "intermediate" : "beginner";
 
-    // 🎯 Use displayNum or Day Number for the URL so it hits /b/lesson/1 instead of 74
     const routeId =
       lesson.day_number || lesson.dayNumber || displayNum || lesson.id;
+
+    const storedUser = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("user") || "null");
+      } catch {
+        return null;
+      }
+    })();
+
+    const isFreeUser =
+      storedUser?.has_access === false ||
+      storedUser?.hasAccess === false ||
+      (!storedUser?.has_access && !storedUser?.hasAccess);
+
+    if (isFreeUser && !freeAllowsLesson(routeId)) {
+      const plan = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
+      navigate(
+        `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${routeId}&difficulty=${encodeURIComponent(difficulty)}`,
+        { replace: true },
+      );
+      return;
+    }
 
     navigate(`${basePath}/${routeId}?difficulty=${difficulty}`, {
       state: { lessonNumber: displayNum },
