@@ -1231,9 +1231,6 @@ export default function Dashboard() {
                   const isCompleted = avgProgress === 100;
 
                   // Unlock Lesson 1 always; others unlock if previous is > 0%
-                  const isLocked =
-                    idx > 0 && (lessons[idx - 1].progress?.reorder || 0) < 50;
-
                   const lessonNum = idx + 1;
 
                   const isInt =
@@ -1253,9 +1250,6 @@ export default function Dashboard() {
 
                   const isFreeLesson = lessonNum <= 3;
 
-                  // Dashboard behavior:
-                  // - paid user: everything open
-                  // - free user: 1–3 open, 4+ shown as locked but still clickable to paywall
                   const isLocked = !hasPaidAccess && !isFreeLesson;
 
                   return (
