@@ -319,7 +319,7 @@ export default function LessonList({ difficulty }) {
       const timer = setTimeout(() => {
         setShowLeagueIntro(false);
         localStorage.setItem("league_intro_seen", "true");
-      }, 1000);
+      }, 1500);
       return () => clearTimeout(timer);
     }
   }, [showLeagueIntro]);
@@ -680,7 +680,7 @@ export default function LessonList({ difficulty }) {
                 Bronze League
               </h2>
               <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">
-                Welcome to the Arena, {auth?.user?.username}!
+                Welcome to the Fluency Family!, {auth?.user?.username}!
               </p>
 
               {/* Decorative rays */}

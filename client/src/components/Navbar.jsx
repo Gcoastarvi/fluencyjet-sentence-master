@@ -10,8 +10,6 @@ export default function Navbar() {
   const trackPath =
     user?.track?.toLowerCase() === "intermediate" ? "/i/lessons" : "/b/lessons";
 
-  console.log("🕵️ Navbar Track:", user?.track);
-
   // 🎯 STEP 2: Use the local 'useState' instead of 'React.useState' for cleaner code
   const [showStreakModal, setShowStreakModal] = useState(false);
 

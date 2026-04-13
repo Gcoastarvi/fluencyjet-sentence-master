@@ -579,6 +579,25 @@ export default function Dashboard() {
     }
   }, [api]);
 
+  // 🎯 THE MISSING KEY: Calculate daily trial usage
+  const freeLessonsUsed = useMemo(() => {
+    // 1. Safety check for data
+    if (!lessons || !Array.isArray(lessons)) return 0;
+
+    // 2. Look at the first 3 lessons specifically
+    const trialLessons = lessons.slice(0, 3);
+
+    // 3. Count how many have any progress (typing, reorder, or audio > 0)
+    const count = trialLessons.filter((lesson) => {
+      const p = lesson.progress || {};
+      return (
+        Number(p.typing) > 0 || Number(p.reorder) > 0 || Number(p.audio) > 0
+      );
+    }).length;
+
+    return count;
+  }, [lessons]);
+
   const handleClaimBonusXP = async () => {
     try {
       const res = await api.post("/quizzes/claim-weekly-bonus");
