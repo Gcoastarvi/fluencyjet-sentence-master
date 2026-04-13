@@ -1219,6 +1219,49 @@ export default function Dashboard() {
               </span>
             </div>
 
+            {/* 🎯 THE DAILY TRIAL CIRCLE */}
+            <div className="flex items-center gap-4 mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+              <div className="relative h-12 w-12">
+                {/* Background Circle */}
+                <svg className="h-12 w-12 transform -rotate-90">
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="transparent"
+                    className="text-slate-200"
+                  />
+                  {/* Progress Circle */}
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="20"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="transparent"
+                    strokeDasharray={125.6}
+                    strokeDashoffset={125.6 - 125.6 * (freeLessonsUsed / 3)}
+                    className="text-indigo-600 transition-all duration-1000"
+                  />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-black">
+                  {freeLessonsUsed}/3
+                </span>
+              </div>
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  Daily Trial
+                </h4>
+                <p className="text-sm font-bold text-slate-700">
+                  {freeLessonsUsed === 3
+                    ? "Trial finished! 🚀"
+                    : "Keep going, Master!"}
+                </p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Array.isArray(lessons) && lessons.length > 0 ? (
                 lessons.map((lesson, idx) => {

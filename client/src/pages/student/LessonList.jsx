@@ -319,7 +319,7 @@ export default function LessonList({ difficulty }) {
       const timer = setTimeout(() => {
         setShowLeagueIntro(false);
         localStorage.setItem("league_intro_seen", "true");
-      }, 4000);
+      }, 1000);
       return () => clearTimeout(timer);
     }
   }, [showLeagueIntro]);
