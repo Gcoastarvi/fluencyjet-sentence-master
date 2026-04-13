@@ -785,7 +785,11 @@ export default function LessonDetail() {
       ) {
         const action = data?.nextAction || null;
         const from = action?.from || `lesson_${lid}`;
-        const base = action?.url || `/paywall?plan=BEGINNER`;
+        const base =
+          action?.url ||
+          `/paywall?plan=${encodeURIComponent(
+            String(diff || difficulty || "beginner").toUpperCase(),
+          )}`;
         const sep = String(base).includes("?") ? "&" : "?";
         const target = `${base}${sep}from=${encodeURIComponent(from)}`;
         navigate(target, { replace: true });

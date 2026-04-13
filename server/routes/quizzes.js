@@ -74,14 +74,11 @@ function getUserTrack(userRow, diff) {
 }
 
 function freeAllowsLesson(track, lessonIdNum) {
-  const beginnerMax = Number(process.env.FREE_BEGINNER_MAX || 3);
-  const interIds = parseCsvIds(process.env.FREE_INTERMEDIATE_IDS || "13,14,15");
-
-  if (String(track).toUpperCase() === "INTERMEDIATE") {
-    return interIds.includes(Number(lessonIdNum));
-  }
-  // default BEGINNER
-  return Number(lessonIdNum) <= beginnerMax;
+  const freeMax = Number(
+    process.env.FREE_LESSON_MAX || process.env.FREE_BEGINNER_MAX || 3,
+  );
+  const n = Number(lessonIdNum);
+  return Number.isFinite(n) && n >= 1 && n <= freeMax;
 }
 
 function planForTrack(track) {
