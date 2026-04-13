@@ -158,6 +158,7 @@ function getJwt() {
 
 export default function Dashboard() {
   const auth = useAuth();
+  const user = auth?.user;
   const xpCapReached = auth?.xpCapReached;
   const plan = auth?.plan;
 
