@@ -258,8 +258,8 @@ export default function Dashboard() {
   const currentLeague = user?.league?.toUpperCase() || "BRONZE";
 
   const leagueNudge = useMemo(() => {
-    // Use Number() to ensure math works even if XP comes as a string
-    const xp = Number(user?.total_xp || 0);
+    // 🎯 THE UNIFIER: Look in both places just in case
+    const xp = Number(user?.totalXP || user?.total_xp || summary?.totalXP || 0);
 
     if (xp <= 5000) return { next: "SILVER", diff: 5000 - xp, goal: 5000 };
     if (xp <= 15000) return { next: "GOLD", diff: 15000 - xp, goal: 15000 };
@@ -268,7 +268,7 @@ export default function Dashboard() {
     if (xp <= 150000)
       return { next: "DIAMOND", diff: 150000 - xp, goal: 150000 };
     return null;
-  }, [user?.total_xp]);
+  }, [user, summary]); // 👈 Added both as dependencies
 
   useEffect(() => {
     let start = displayXP;
