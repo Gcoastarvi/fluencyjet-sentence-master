@@ -1234,21 +1234,46 @@ export default function Dashboard() {
                   const isLocked =
                     idx > 0 && (lessons[idx - 1].progress?.reorder || 0) < 50;
 
+                  const lessonNum = idx + 1;
+
+                  const isInt =
+                    summary?.tier_level === "intermediate" ||
+                    summary?.plan === "INTERMEDIATE";
+
+                  const p = isInt ? "i" : "b";
+                  const d = isInt ? "intermediate" : "beginner";
+
+                  const hasPaidAccess =
+                    auth?.user?.has_access === true ||
+                    auth?.has_access === true ||
+                    summary?.has_access === true ||
+                    summary?.plan === "BEGINNER" ||
+                    summary?.plan === "INTERMEDIATE" ||
+                    summary?.plan === "PRO";
+
+                  const isFreeLesson = lessonNum <= 3;
+
+                  // Dashboard behavior:
+                  // - paid user: everything open
+                  // - free user: 1–3 open, 4+ shown as locked but still clickable to paywall
+                  const isLocked = !hasPaidAccess && !isFreeLesson;
+
                   return (
                     <div
                       key={lesson.id || idx}
                       onClick={() => {
-                        if (!isLocked) {
-                          const isInt =
-                            summary?.tier_level === "intermediate" ||
-                            summary?.plan === "INTERMEDIATE";
-                          const p = isInt ? "i" : "b";
-                          const d = isInt ? "intermediate" : "basic";
-                          navigate(`/${p}/lesson/${idx + 1}?difficulty=${d}`);
+                        if (hasPaidAccess || isFreeLesson) {
+                          navigate(`/${p}/lesson/${lessonNum}?difficulty=${d}`);
+                          return;
                         }
+
+                        const plan = isInt ? "INTERMEDIATE" : "BEGINNER";
+                        navigate(
+                          `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonNum}&difficulty=${encodeURIComponent(d)}`,
+                        );
                       }}
                       className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative group
-                        ${isLocked ? "bg-slate-50 border-slate-100 opacity-60 grayscale" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
+                            ${isLocked ? "bg-slate-50 border-slate-100 opacity-60" : "bg-white border-white hover:border-indigo-100 hover:scale-[1.02]"}`}
                     >
                       <div className="flex items-center gap-5">
                         <div
