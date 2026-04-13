@@ -38,7 +38,7 @@ export default function Navbar() {
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           {/* Logo */}
           <Link
             to="/"
@@ -84,8 +84,6 @@ export default function Navbar() {
           {/* Navigation */}
           {/* 🎯 THE FLEXIBLE NAV: No scrollbars, no cut-offs */}
           <div className="flex items-center gap-2 sm:gap-4 ml-auto overflow-visible">
-            {/* Logout and Upgrade buttons now have room to breathe */}
-            {/* Links go here */}
             {!isAuthenticated && (
               <>
                 <Link
@@ -103,7 +101,7 @@ export default function Navbar() {
               </>
             )}
 
-            <nav className="hidden md:flex items-center gap-4 sm:gap-8">
+              <div className="hidden md:flex items-center flex-wrap justify-end gap-4 sm:gap-6 min-w-0">
               {isAuthenticated && (
                 <>
                   <Link className="text-sm sm:text-base" to="/dashboard">
