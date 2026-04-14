@@ -637,7 +637,7 @@ router.post("/update", authRequired, async (req, res) => {
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
         select: { id: true },
-      });      
+      });
 
       // Keep type length safe (type column usually limited)
       const dayKey = now.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
@@ -692,7 +692,36 @@ router.post("/update", authRequired, async (req, res) => {
             xp_delta: 0,
           },
         });
-      }      
+      }
+
+      // 🎯 AUTO-PROMOTION LOGIC
+      // 1. Fetch the user's latest XP within the transaction
+      const userToUpdate = await tx.user.findUnique({
+        where: { id: userId },
+        select: { total_xp: true, league: true },
+      });
+
+      const currentXP = Number(userToUpdate?.total_xp || 0);
+      let newLeague = "BRONZE";
+
+      // 2. Determine the correct league based on the new total
+      if (currentXP > 150000) newLeague = "DIAMOND";
+      else if (currentXP > 80000) newLeague = "SAPPHIRE";
+      else if (currentXP > 40000) newLeague = "EMERALD";
+      else if (currentXP > 15000) newLeague = "GOLD";
+      else if (currentXP > 5000) newLeague = "SILVER";
+      else newLeague = "BRONZE";
+
+      // 3. Only trigger a database update if the league actually changed
+      if (userToUpdate.league !== newLeague) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { league: newLeague },
+        });
+
+        // 🥂 Optional: Log this for the "Promotion Celebration" later
+        console.log(`🚀 User ${userId} promoted to ${newLeague}`);
+      }
 
       // 4) Update UserProgress (keep cached totals/streak in sync with XpEvent)
       const updatedProgress = await tx.userProgress.upsert({

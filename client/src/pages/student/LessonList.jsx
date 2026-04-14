@@ -7,20 +7,50 @@ import LessonCard from "../../components/student/LessonCard";
 import confetti from "canvas-confetti";
 import { overallLessonPct } from "@/lib/progressStore";
 
-// 🎯 THE LEAGUE TRUTH: Standardize names based on XP
+// 🎯 THE SOURCE OF TRUTH: Unify all league thresholds here
 export const getLeagueInfo = (xp) => {
   const score = Number(xp || 0);
   if (score <= 5000)
-    return { name: "BRONZE", icon: "🥉", color: "text-orange-600" };
+    return {
+      name: "BRONZE",
+      icon: "🥉",
+      glow: "border-slate-100",
+      text: "text-slate-400",
+    };
   if (score <= 15000)
-    return { name: "SILVER", icon: "🥈", color: "text-slate-400" };
+    return {
+      name: "SILVER",
+      icon: "🥈",
+      glow: "league-silver-glow",
+      text: "text-silver-prestige",
+    };
   if (score <= 40000)
-    return { name: "GOLD", icon: "🥇", color: "text-yellow-500" };
+    return {
+      name: "GOLD",
+      icon: "🥇",
+      glow: "league-gold-glow",
+      text: "text-yellow-500",
+    };
   if (score <= 80000)
-    return { name: "EMERALD", icon: "✳️", color: "text-emerald-500" };
+    return {
+      name: "EMERALD",
+      icon: "✳️",
+      glow: "league-emerald-glow",
+      text: "text-emerald-500",
+    };
   if (score <= 150000)
-    return { name: "SAPPHIRE", icon: "💎", color: "text-blue-500" };
-  return { name: "DIAMOND", icon: "👑", color: "text-indigo-500" };
+    return {
+      name: "SAPPHIRE",
+      icon: "💎",
+      glow: "league-sapphire-glow",
+      text: "text-blue-500",
+    };
+  return {
+    name: "DIAMOND",
+    icon: "👑",
+    glow: "league-diamond-glow",
+    text: "text-indigo-500",
+  };
 };
 
 export default function LessonList({ difficulty }) {
@@ -686,23 +716,31 @@ export default function LessonList({ difficulty }) {
           </div>
         </div>
       )}
-      {/* 🥉 LEAGUE ENTRY ANIMATION */}
+      {/* 🥉 DYNAMIC LEAGUE ENTRY ANIMATION */}
       {showLeagueIntro && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-500">
-          <div className="text-center animate-in zoom-in-50 duration-300">
-            <div className="inline-block p-8 rounded-[3rem] bg-white shadow-2xl relative">
-              <span className="text-8xl block mb-4 animate-bounce">🥉</span>
-              <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">
-                Bronze League
-              </h2>
-              <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">
-                Welcome to the Fluency Family!, {auth?.user?.username}!
-              </p>
-
-              {/* Decorative rays */}
-              <div className="absolute inset-0 -z-10 bg-orange-400/20 blur-3xl rounded-full scale-150 animate-pulse"></div>
-            </div>
-          </div>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          {(() => {
+            const league = getLeagueInfo(auth?.user?.totalXP || 0);
+            return (
+              <div className="text-center animate-in zoom-in-50 duration-300">
+                <div className="inline-block p-8 rounded-[3rem] bg-white shadow-2xl relative">
+                  <span className="text-8xl block mb-4 animate-bounce">
+                    {league.icon}
+                  </span>
+                  <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">
+                    {league.name} League
+                  </h2>
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">
+                    Welcome to the Fluency Family,{" "}
+                    {auth?.user?.name || "Student"}!
+                  </p>
+                  <div
+                    className={`absolute inset-0 -z-10 blur-3xl rounded-full scale-150 animate-pulse ${league.glow.replace("border-", "bg-")}/20`}
+                  ></div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
       {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}

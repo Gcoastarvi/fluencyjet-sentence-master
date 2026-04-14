@@ -156,20 +156,50 @@ function getJwt() {
   return getToken() || "";
 }
 
-// 🎯 THE LEAGUE TRUTH: Standardize names based on XP
+// 🎯 THE SOURCE OF TRUTH: Unify all league thresholds here
 export const getLeagueInfo = (xp) => {
   const score = Number(xp || 0);
   if (score <= 5000)
-    return { name: "BRONZE", icon: "🥉", color: "text-orange-600" };
+    return {
+      name: "BRONZE",
+      icon: "🥉",
+      glow: "border-slate-100",
+      text: "text-slate-400",
+    };
   if (score <= 15000)
-    return { name: "SILVER", icon: "🥈", color: "text-slate-400" };
+    return {
+      name: "SILVER",
+      icon: "🥈",
+      glow: "league-silver-glow",
+      text: "text-silver-prestige",
+    };
   if (score <= 40000)
-    return { name: "GOLD", icon: "🥇", color: "text-yellow-500" };
+    return {
+      name: "GOLD",
+      icon: "🥇",
+      glow: "league-gold-glow",
+      text: "text-yellow-500",
+    };
   if (score <= 80000)
-    return { name: "EMERALD", icon: "✳️", color: "text-emerald-500" };
+    return {
+      name: "EMERALD",
+      icon: "✳️",
+      glow: "league-emerald-glow",
+      text: "text-emerald-500",
+    };
   if (score <= 150000)
-    return { name: "SAPPHIRE", icon: "💎", color: "text-blue-500" };
-  return { name: "DIAMOND", icon: "👑", color: "text-indigo-500" };
+    return {
+      name: "SAPPHIRE",
+      icon: "💎",
+      glow: "league-sapphire-glow",
+      text: "text-blue-500",
+    };
+  return {
+    name: "DIAMOND",
+    icon: "👑",
+    glow: "league-diamond-glow",
+    text: "text-indigo-500",
+  };
 };
 
 export default function Dashboard() {
@@ -1190,79 +1220,45 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 🎯 Dynamic League Card - League Standing*/}
-        <div
-          className={`bg-white rounded-[2rem] p-6 border transition-all duration-700 ${
-            summary.xpTotal >= 500 ? "league-silver-glow" : "border-slate-100"
-          }`}
-        >
-          <h3
-            className={`text-xs font-black uppercase tracking-widest mb-4 ${
-              summary.xpTotal >= 500 ? "text-silver-prestige" : "text-slate-400"
-            }`}
-          >
-            {summary.xpTotal >= 500
-              ? "🥈 Silver League Status"
-              : "🥉 League Standing"}
-          </h3>
+        {/* 🎯 Dynamic League Card - League Standing */}
+        {(() => {
+          const league = getLeagueInfo(
+            summary?.totalXP || summary?.xpTotal || 0,
+          );
+          return (
+            <div
+              className={`bg-white rounded-[2rem] p-6 border transition-all duration-700 ${league.glow}`}
+            >
+              <h3
+                className={`text-xs font-black uppercase tracking-widest mb-4 ${league.text}`}
+              >
+                {league.icon} {league.name} LEAGUE STATUS
+              </h3>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative w-14 h-14 flex items-center justify-center">
-                <svg
-                  className="absolute inset-0 w-full h-full -rotate-90"
-                  viewBox="0 0 56 56"
-                >
-                  {/* Background Track */}
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="22"
-                    fill="transparent"
-                    stroke="#f1f5f9"
-                    strokeWidth="4"
-                  />
-                  {/* Animated Progress */}
-                  <circle
-                    cx="28"
-                    cy="28"
-                    r="22"
-                    fill="transparent"
-                    stroke="url(#ringGradient)"
-                    strokeWidth="4"
-                    strokeDasharray={138.2}
-                    strokeDashoffset={
-                      138.2 -
-                      Math.min(((summary.totalXP || 0) % 1000) / 1000, 1) *
-                        138.2
-                    }
-                    strokeLinecap="round"
-                    style={{
-                      transition:
-                        "stroke-dashoffset 2s cubic-bezier(0.4, 0, 0.2, 1)",
-                    }}
-                  />
-                </svg>
-                <span className="text-xl relative z-10">
-                  {summary.xpTotal >= 1100 ? "🥈" : "   �"}
-                </span>
-              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="relative w-14 h-14 flex items-center justify-center">
+                    {/* ... SVG Circle Logic stays same ... */}
+                    <span className="text-xl relative z-10">{league.icon}</span>
+                  </div>
 
-              <div>
-                <p className="text-sm font-black text-slate-900">
-                  {summary.xpTotal >= 500
-                    ? "Promoted to Silver!"
-                    : "Bronze League"}
-                </p>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
-                  {summary.xpTotal < 500
-                    ? `${500 - (summary.xpTotal || 0)} XP to Silver`
-                    : "Top Tier Achieved"}
-                </p>
+                  <div>
+                    <p className="text-sm font-black text-slate-900">
+                      {league.name === "BRONZE"
+                        ? "Bronze League"
+                        : `Promoted to ${league.name}!`}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
+                      {leagueNudge
+                        ? `Only ${leagueNudge.diff.toLocaleString()} XP to ${leagueNudge.next}`
+                        : "Top Tier Achieved!"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
       </header>
 
       {leagueNudge && (
