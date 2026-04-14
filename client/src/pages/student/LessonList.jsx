@@ -7,6 +7,22 @@ import LessonCard from "../../components/student/LessonCard";
 import confetti from "canvas-confetti";
 import { overallLessonPct } from "@/lib/progressStore";
 
+// 🎯 THE LEAGUE TRUTH: Standardize names based on XP
+export const getLeagueInfo = (xp) => {
+  const score = Number(xp || 0);
+  if (score <= 5000)
+    return { name: "BRONZE", icon: "🥉", color: "text-orange-600" };
+  if (score <= 15000)
+    return { name: "SILVER", icon: "🥈", color: "text-slate-400" };
+  if (score <= 40000)
+    return { name: "GOLD", icon: "🥇", color: "text-yellow-500" };
+  if (score <= 80000)
+    return { name: "EMERALD", icon: "✳️", color: "text-emerald-500" };
+  if (score <= 150000)
+    return { name: "SAPPHIRE", icon: "💎", color: "text-blue-500" };
+  return { name: "DIAMOND", icon: "👑", color: "text-indigo-500" };
+};
+
 export default function LessonList({ difficulty }) {
   // 🎯 1. Fundamental Hooks
   const navigate = useNavigate();

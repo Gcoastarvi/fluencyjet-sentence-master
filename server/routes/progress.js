@@ -637,20 +637,7 @@ router.post("/update", authRequired, async (req, res) => {
       const existing = await tx.xpEvent.findFirst({
         where: { user_id: userId, type: eventKey },
         select: { id: true },
-      });
-
-      console.log("[XPDBG] rawKey", rawKey);
-      console.log("[XPDBG] eventKey", eventKey);
-
-      console.log("[progress/update]", {
-        event: body.event,
-        xp: body.xp,
-        mode: body.mode,
-        practiceType: body.practiceType,
-        practice_type: body.practice_type,
-        lessonId: body.lessonId,
-        exerciseId: body.exerciseId,
-      });
+      });      
 
       // Keep type length safe (type column usually limited)
       const dayKey = now.toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
@@ -688,21 +675,6 @@ router.post("/update", authRequired, async (req, res) => {
         existing || existingQuestionAward ? 0 : baseXP + streakBonus;
       const xpDelta = Number.isFinite(rawDelta) ? Math.trunc(rawDelta) : 0;
 
-      console.log("[XPDBG] awardCheck", {
-        isCorrect,
-        event: body.event,
-        baseXP,
-        streakBonus,
-        existingEventKey: !!existing,
-        existingQuestionAward: !!existingQuestionAward,
-        xpDelta,
-        qEventKey,
-        eventKey,
-        exerciseKey,
-        lessonIdNum,
-        practiceType,
-      });
-
       if (!existing && !existingQuestionAward && xpDelta > 0) {
         await tx.xpEvent.create({
           data: {
@@ -720,16 +692,7 @@ router.post("/update", authRequired, async (req, res) => {
             xp_delta: 0,
           },
         });
-      }
-
-      console.log(
-        "[DBG] tx keys:",
-        Object.keys(tx)
-          .filter((k) => !k.startsWith("$"))
-          .slice(0, 200),
-      );
-      console.log("[DBG] tx.userProgress?", !!tx.userProgress);
-      console.log("[DBG] tx.userLessonProgress?", !!tx.userLessonProgress);
+      }      
 
       // 4) Update UserProgress (keep cached totals/streak in sync with XpEvent)
       const updatedProgress = await tx.userProgress.upsert({
