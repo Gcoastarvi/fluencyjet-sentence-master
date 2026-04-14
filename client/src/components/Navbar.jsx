@@ -7,8 +7,23 @@ import { useAuth } from "../context/AuthContext";
 export default function Navbar() {
   const { user, auth, logout, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const storedTrack =
+    typeof window !== "undefined" ? localStorage.getItem("fj_track") || "" : "";
+
+  const pathname =
+    typeof window !== "undefined" ? window.location.pathname : "";
+
+  const resolvedTrack = pathname.startsWith("/i/")
+    ? "intermediate"
+    : pathname.startsWith("/b/")
+      ? "beginner"
+      : String(storedTrack || user?.track || "").toLowerCase() ===
+          "intermediate"
+        ? "intermediate"
+        : "beginner";
+
   const trackPath =
-    user?.track?.toLowerCase() === "intermediate" ? "/i/lessons" : "/b/lessons";
+    resolvedTrack === "intermediate" ? "/i/lessons" : "/b/lessons";
 
   // 🎯 STEP 2: Use the local 'useState' instead of 'React.useState' for cleaner code
   const [showStreakModal, setShowStreakModal] = useState(false);
