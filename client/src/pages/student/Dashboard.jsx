@@ -222,6 +222,9 @@ export default function Dashboard() {
   const [lessons, setLessons] = useState([]);
   const [userProgress, setUserProgress] = useState({});
 
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationData, setCelebrationData] = useState(null);
+
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const [userName, setUserName] = useState(
@@ -658,6 +661,32 @@ export default function Dashboard() {
     }
   }, [summary.totalXP]);
 
+  useEffect(() => {
+    const currentLeague = getLeagueInfo(
+      user?.totalXP || user?.total_xp || 0,
+    ).name;
+    const lastSeenLeague = localStorage.getItem("last_notified_league");
+
+    // 🥂 THE TRIGGER: If DB league is higher than the last one we saw
+    if (lastSeenLeague && currentLeague !== lastSeenLeague) {
+      setCelebrationData(getLeagueInfo(user?.totalXP || user?.total_xp || 0));
+      setShowCelebration(true);
+
+      // Confetti Cannon
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#6366f1", "#a855f7", "#ec4899"],
+      });
+    }
+
+    // Update memory for next time
+    if (currentLeague) {
+      localStorage.setItem("last_notified_league", currentLeague);
+    }
+  }, [user?.totalXP]);
+
   // 129: Corrected loadMe with async wrapper
   const loadMe = useCallback(async () => {
     try {
@@ -1078,12 +1107,14 @@ export default function Dashboard() {
           >
             Lessons
           </button>
+          // 🎯 THE HUB FIX: Match the 'Lessons' button logic
           <button
+            className="text-slate-400 hover:text-indigo-600 transition-colors"
             onClick={() =>
               navigate(
-                auth?.user?.track?.toLowerCase() === "intermediate"
-                  ? "/i/practice"
-                  : "/b/practice",
+                user?.track?.toLowerCase() === "intermediate"
+                  ? "/i/lessons"
+                  : "/b/lessons",
               )
             }
           >
@@ -1955,6 +1986,27 @@ export default function Dashboard() {
               <button
                 onClick={() => setShowPromotion(false)}
                 className="px-12 py-4 bg-white text-indigo-600 rounded-full font-black text-lg shadow-2xl hover:scale-105 transition-transform"
+              >
+                Continue My Journey
+              </button>
+            </div>
+          </div>
+        )}
+        {showCelebration && celebrationData && (
+          <div className="fixed inset-0 z-[999] flex items-center justify-center bg-slate-900/90 backdrop-blur-2xl p-6">
+            <div className="text-center animate-in zoom-in duration-500 max-w-sm">
+              <div className="text-9xl mb-6 drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+                {celebrationData.icon}
+              </div>
+              <h2 className="text-5xl font-black text-white mb-2 tracking-tighter">
+                PROMOTED!
+              </h2>
+              <p className="text-indigo-300 text-xl font-bold uppercase tracking-widest mb-8">
+                Welcome to {celebrationData.name} League
+              </p>
+              <button
+                onClick={() => setShowCelebration(false)}
+                className="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black text-lg shadow-2xl hover:scale-105 active:scale-95 transition-all"
               >
                 Continue My Journey
               </button>
