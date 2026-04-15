@@ -698,25 +698,34 @@ router.post("/update", authRequired, async (req, res) => {
       // 1. Fetch the user's latest XP within the transaction
       const userToUpdate = await tx.user.findUnique({
         where: { id: userId },
-        select: { total_xp: true, league: true },
+        select: { xpTotal: true, league: true },
       });
 
-      const currentXP = Number(userToUpdate?.total_xp || 0);
+      const currentXP = Number(userToUpdate?.xpTotal || 0);
+      const nextXP = currentXP + (Number(xpDelta) || 0);
+
       let newLeague = "BRONZE";
 
       // 2. Determine the correct league based on the new total
-      if (currentXP > 150000) newLeague = "DIAMOND";
-      else if (currentXP > 80000) newLeague = "SAPPHIRE";
-      else if (currentXP > 40000) newLeague = "EMERALD";
-      else if (currentXP > 15000) newLeague = "GOLD";
-      else if (currentXP > 5000) newLeague = "SILVER";
+      if (nextXP > 150000) newLeague = "DIAMOND";
+      else if (nextXP > 80000) newLeague = "SAPPHIRE";
+      else if (nextXP > 40000) newLeague = "EMERALD";
+      else if (nextXP > 15000) newLeague = "GOLD";
+      else if (nextXP > 5000) newLeague = "SILVER";
       else newLeague = "BRONZE";
 
       // 3. Only trigger a database update if the league actually changed
-      if (userToUpdate.league !== newLeague) {
+      if (
+        !userToUpdate ||
+        userToUpdate.league !== newLeague ||
+        currentXP !== nextXP
+      ) {
         await tx.user.update({
           where: { id: userId },
-          data: { league: newLeague },
+          data: {
+            xpTotal: nextXP,
+            league: newLeague,
+          },
         });
 
         // 🥂 Optional: Log this for the "Promotion Celebration" later
