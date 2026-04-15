@@ -1189,7 +1189,13 @@ export default function SentencePractice() {
       }
 
       setLessonExercises(normalized);
-      setCurrentIndex(0);
+
+      // Only reset to Q1 on first load or hard restart, not on every reload
+      setCurrentIndex((prev) => {
+        if (!Number.isFinite(prev) || prev < 0) return 0;
+        const max = Math.max(0, normalized.length - 1);
+        return Math.min(prev, max);
+      });
     } catch (e) {
       const status = e?.response?.status ?? e?.status ?? null;
 
