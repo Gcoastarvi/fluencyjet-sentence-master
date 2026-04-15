@@ -1107,19 +1107,6 @@ export default function Dashboard() {
           >
             Lessons
           </button>
-          // 🎯 THE HUB FIX: Match the 'Lessons' button logic
-          <button
-            className="text-slate-400 hover:text-indigo-600 transition-colors"
-            onClick={() =>
-              navigate(
-                user?.track?.toLowerCase() === "intermediate"
-                  ? "/i/lessons"
-                  : "/b/lessons",
-              )
-            }
-          >
-            Practice Hub
-          </button>
         </nav>
 
         <div className="flex items-center gap-6">
