@@ -285,7 +285,7 @@ export default function SentencePractice() {
   const [isComplete, setIsComplete] = useState(false);
 
   const [loadError, setLoadError] = useState("");
-  const [sessionTarget] = useState(10); // MVP: 10 questions per session
+  const [sessionTarget] = useState(null); // use all available questions in the lesson
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completionXp, setCompletionXp] = useState(0);
@@ -1344,7 +1344,10 @@ export default function SentencePractice() {
     setAnswer([]);
     setTiles([]);
 
-    const total = Math.min(lessonExercises?.length || 0, sessionTarget);
+    const total =
+      sessionTarget == null
+        ? lessonExercises?.length || 0
+        : Math.min(lessonExercises?.length || 0, sessionTarget);
     const nextIndex = currentIndex + 1;
 
     const modeKey = safeMode === "audio" ? "audio" : safeMode;
@@ -1493,7 +1496,7 @@ export default function SentencePractice() {
     }
   };
 
-  // ✅ Typing helper: tap a word chip to append into typedAnswer
+  //  �� Typing helper: tap a word chip to append into typedAnswer
   function addToTyped(word) {
     if (status === "correct" || status === "reveal") return;
 

@@ -71,7 +71,7 @@ function Practice() {
         }
 
         const res = await fetch(
-          `/api/quizzes/random?lessonId=${lessonId}&limit=10&difficulty=${encodeURIComponent(difficulty)}`,
+          `/api/quizzes/random?lessonId=${lessonId}&limit=50&difficulty=${encodeURIComponent(difficulty)}`,
           {
             method: "GET",
             headers: {
