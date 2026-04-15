@@ -960,6 +960,8 @@ export default function SentencePractice() {
         console.error("[XP] /progress/update not ok", {
           payload,
           response: data,
+          message: data?.message,
+          error: data?.error,
         });
         return { ok: false, awarded: 0, data };
       }
@@ -1593,7 +1595,7 @@ export default function SentencePractice() {
         mode: "audio",
         practiceType: "audio",
         exerciseId: current.id,
-        questionId: String(current.id),
+        questionId: `repeat_${current.id}`,
         meta: { audioVariant: "repeat" },
         completedQuiz: false,
         isCorrect: true,
