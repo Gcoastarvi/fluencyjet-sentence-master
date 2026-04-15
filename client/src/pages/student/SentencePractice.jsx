@@ -1593,7 +1593,7 @@ export default function SentencePractice() {
         mode: "audio",
         practiceType: "audio",
         exerciseId: current.id,
-        questionId: `repeat_${current.id}`, // ✅ stable dedupe key
+        questionId: String(current.id),
         meta: { audioVariant: "repeat" },
         completedQuiz: false,
         isCorrect: true,
