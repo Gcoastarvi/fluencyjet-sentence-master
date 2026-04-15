@@ -1356,6 +1356,14 @@ export default function SentencePractice() {
         : Math.min(lessonExercises?.length || 0, sessionTarget);
     const nextIndex = currentIndex + 1;
 
+    console.log("[loadNextQuestion]", {
+      currentIndex,
+      nextIndex,
+      total,
+      safeMode,
+      audioVariant,
+    });
+
     const modeKey = safeMode === "audio" ? "audio" : safeMode;
     persistModeProgress(modeKey, nextIndex);
 
@@ -1371,6 +1379,14 @@ export default function SentencePractice() {
 
     setCurrentIndex((prev) => {
       const next = prev + 1;
+
+      console.log("[CURRENT_RENDER]", {
+        currentIndex,
+        currentId: current?.id,
+        totalQuestions,
+        safeMode,
+        audioVariant,
+      });
 
       if (total > 0 && next >= total) {
         setIsComplete(true);
@@ -1623,6 +1639,12 @@ export default function SentencePractice() {
         mode: "audio",
         completed: completedNow,
         total: lessonExercises.length,
+      });
+
+      console.log("[REPEAT before next]", {
+        currentIndex,
+        totalQuestions,
+        currentId: current?.id,
       });
 
       setTimeout(() => {
