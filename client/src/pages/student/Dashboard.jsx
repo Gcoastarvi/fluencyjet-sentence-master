@@ -1285,7 +1285,11 @@ export default function Dashboard() {
           {currentLeague.name} PERKS
         </h4>
         <ul className="space-y-2">
-          {currentLeague.perks.map((perk, i) => (
+          {(Array.isArray(currentLeague?.perks) &&
+          currentLeague.perks.length > 0
+            ? currentLeague.perks
+            : ["Keep practicing to unlock league benefits."]
+          ).map((perk, i) => (
             <li key={i} className="flex items-center gap-2 text-xs font-bold">
               <span className="text-indigo-400">✦</span> {perk}
             </li>
