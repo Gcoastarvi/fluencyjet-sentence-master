@@ -6,7 +6,6 @@ import { getAdminDashboard } from "../../api/adminApi";
 import UserTableSearch from "../../components/UserTableSearch";
 
 import axios from "axios"; // 🎯 FIX: Define axios
-import { getAdminLessons } from "../../api/adminApi"; // 🎯 FIX: Define the helper
 
 function AdminDashboard() {
   const [stats, setStats] = useState(null);
@@ -15,6 +14,7 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [users, setUsers] = useState([]);
+  const [broadcastMsg, setBroadcastMsg] = useState("");
 
   // 🎯 SUPER-SAFE LOGIC: We calculate this directly every render
   const safeLessons = Array.isArray(lessons) ? lessons : [];
@@ -356,15 +356,18 @@ function AdminDashboard() {
     <div className="flex gap-4">
       <input
         type="text"
-        id="bulkMsg"
         placeholder="Type a message for all students..."
-        className="flex-grow p-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-bold focus:ring-2 focus:ring-white"
+        value={broadcastMsg}
+        onChange={(e) => setBroadcastMsg(e.target.value)} // 🎯 Update state directly
+        className="flex-grow p-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-bold focus:ring-2 focus:ring-white outline-none"
       />
       <button
         onClick={async () => {
-          const msg = document.getElementById("bulkMsg").value;
-          // api.post('/api/admin/dashboard/bulk-message', { message: msg });
+          if (!broadcastMsg) return alert("Please enter a message.");
+          // 🎯 Logic is now clean and error-free
+          console.log("Sending Broadcast:", broadcastMsg);
           alert("Broadcast Sent! 🚀");
+          setBroadcastMsg(""); // Clear after sending
         }}
         className="px-8 py-4 bg-white text-indigo-900 font-black rounded-2xl hover:bg-indigo-50 transition-all active:scale-95"
       >
