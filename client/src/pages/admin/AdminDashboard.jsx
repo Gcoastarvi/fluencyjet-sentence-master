@@ -1,21 +1,22 @@
 // client/src/pages/admin/AdminDashboard.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react"; // 🎯 Added useMemo
+import axios from "axios";
+import { toast, Toaster } from "react-hot-toast"; // 🎯 Added toast for feedback
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
-import { getAdminDashboard } from "../../api/adminApi";
-
 import UserTableSearch from "../../components/UserTableSearch";
 
-import axios from "axios"; // 🎯 FIX: Define axios
-
+// 🎯 THE SOURCE OF TRUTH: Admin Dashboard Component
 function AdminDashboard() {
-  const [stats, setStats] = useState(null);
+  // --- States ---
+  const [users, setUsers] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [users, setUsers] = useState([]);
   const [broadcastMsg, setBroadcastMsg] = useState("");
-
+  const [loading, setLoading] = useState(true);
+  const [bulkEmails, setBulkEmails] = useState("");
+  const [isBuying, setIsBuying] = useState(false); // For the shop logic if ever reactivated
+  const [bulkTrack, setBulkTrack] = useState("INTERMEDIATE");
+  
   // 🎯 SUPER-SAFE LOGIC: We calculate this directly every render
   const safeLessons = Array.isArray(lessons) ? lessons : [];
   const filteredLessons = safeLessons.filter((lesson) => {
@@ -26,6 +27,29 @@ function AdminDashboard() {
       lesson?.level?.toLowerCase().includes(search)
     );
   });
+
+  const handleBulkDelete = async () => {
+    if (
+      !window.confirm(
+        "Are you sure? This will delete these test users forever!",
+      )
+    )
+      return;
+    const emailsToDelete = [
+      "nana@gmail.com",
+      "hachi@gmail.com",
+      "roku@gmail.com",
+    ]; // Add your test list
+    try {
+      await axios.delete("/api/admin/users/bulk-cleanup", {
+        data: { emails: emailsToDelete },
+      });
+      setUsers((prev) => prev.filter((u) => !emailsToDelete.includes(u.email)));
+      toast.success("Test users purged! 🧹");
+    } catch (err) {
+      toast.error("Delete failed.");
+    }
+  };
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -53,34 +77,33 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    async function loadLessons() {
+    async function loadDashboardData() {
       try {
-        // Assuming you have this helper in adminApi.js
-        const data = await getAdminLessons();
-        if (data?.ok) {
-          setLessons(data.lessons || []);
-        }
+        const [userRes, lessonRes] = await Promise.all([
+          axios.get("/api/admin/users"),
+          axios.get("/api/admin/lessons"),
+        ]);
+
+        // 🎯 Logic: Extracting the arrays from the {ok: true, users: []} structure
+        if (userRes.data.ok) setUsers(userRes.data.users || []);
+        if (lessonRes.data.ok) setLessons(lessonRes.data.lessons || []);
       } catch (err) {
-        console.error("Failed to fetch lessons:", err);
+        console.error("Critical Fetch Error:", err);
+        toast.error("Failed to load dashboard data.");
       }
     }
-    loadLessons();
+    loadDashboardData();
   }, []);
 
-  // 🎯 THE DATA BRIDGE: Fetches students from your database
-  useEffect(() => {
-    const fetchStudents = async () => {
-      try {
-        const res = await axios.get("/api/admin/users"); // Ensure this route exists in admin.js
-        if (res.data) {
-          setUsers(res.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch students:", err);
-      }
-    };
-    fetchStudents();
-  }, []);
+  // 🎯 THE INSTANT SEARCH FILTER
+  const filteredUsers = useMemo(() => {
+    const search = searchTerm.toLowerCase();
+    return users.filter(
+      (u) =>
+        u.email?.toLowerCase().includes(search) ||
+        u.name?.toLowerCase().includes(search),
+    );
+  }, [searchTerm, users]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this lesson?")) return;
@@ -160,8 +183,9 @@ function AdminDashboard() {
           Active Pro Users
         </h4>
       </div>
+      {/* 🎯 SAFE FILTER: Use (users || []) to prevent crashes */}
       <p className="text-4xl font-black text-slate-900">
-        {users.filter((u) => u.has_access).length}
+        {(users || []).filter((u) => u.has_access).length}
       </p>
       {/* 🎯 THE FAIL-SAFE CALCULATION */}
       <p className="text-[10px] font-bold text-slate-400 mt-2">
@@ -271,10 +295,7 @@ function AdminDashboard() {
       console.error("Access update failed:", err);
       toast.error("Failed to update student access.");
     }
-  };
-
-  const [bulkEmails, setBulkEmails] = useState(""); // 👈 Add this state at the top with other states
-  const [bulkTrack, setBulkTrack] = useState("INTERMEDIATE");
+  };  
 
   const handleBulkEnroll = async () => {
     if (!bulkEmails.trim())
@@ -421,14 +442,33 @@ function AdminDashboard() {
           </div>
         </div>
 
-        {/* ⭐ Feedback & Detailed Metrics Area */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          <div className="lg:col-span-2 bg-white rounded-[3rem] p-10 border border-slate-100 shadow-xl">
-            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mb-8">
-              User Table Search
+        {/* 🎯 REFINED STUDENT HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+          <div>
+            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
+              Student Access Control
             </h3>
-            {/* 🎯 USER TABLE SEARCH GOES HERE */}
-            <UserTableSearch />
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+              Manage enrollment and track assignments
+            </p>
+          </div>
+
+          {/* The Badge stays pinned to the right */}
+          <span className="text-[10px] font-black px-4 py-2 bg-indigo-100 text-indigo-600 rounded-full shadow-sm">
+            Showing {filteredUsers.length} of {users.length} Masters
+          </span>
+        </div>
+
+        {/* 🎯 SEARCH BOX (Standalone for full width) */}
+        <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-xl mb-8">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <UserTableSearch
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+              />
+            </div>
+            {/* Optional: Add your "Clear Search" button here if not inside the component */}
           </div>
 
           <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-xl flex flex-col justify-center text-center">

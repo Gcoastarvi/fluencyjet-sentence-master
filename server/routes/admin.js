@@ -45,6 +45,23 @@ router.get("/overview", authRequired, requireAdmin, async (req, res) => {
 });
 
 /* ─────────────────────────────────────────────
+   USER BULK DELETE
+────────────────────────────────────────────── */
+
+router.delete(
+  "/users/bulk-cleanup",
+  authRequired,
+  requireAdmin,
+  async (req, res) => {
+    const { emails } = req.body;
+    await prisma.user.deleteMany({
+      where: { email: { in: emails } },
+    });
+    res.json({ ok: true });
+  },
+);
+
+/* ─────────────────────────────────────────────
    ADMIN USER LIST
 ────────────────────────────────────────────── */
 router.get("/users", authRequired, requireAdmin, async (req, res) => {
