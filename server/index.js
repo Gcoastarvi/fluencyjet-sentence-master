@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import adminRouter from "./routes/admin.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -171,6 +172,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
+app.use("/api/admin", adminRouter);
 // app.use("/api/shop", shopRouter);
 
 // --- Student Progression Routes ---

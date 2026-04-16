@@ -72,11 +72,13 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
         id: true,
         email: true,
         name: true,
-        track: true,
+        username: true, // 🎯 For the Avatar and Search
+        track: true, // 🎯 For the Beginner/Intermediate dropdown
+        has_access: true, // 🎯 For the Grant Access button
+        total_xp: true, // 🎯 For the "Avg XP / Student" card
+        daily_streak: true, // 🎯 For the student card subtitle
         created_at: true,
         isAdmin: true,
-        has_access: true,
-        tier_level: true,
       },
     });
 
