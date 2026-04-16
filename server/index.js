@@ -27,7 +27,7 @@ import adminExercises from "./routes/adminExercises.js";
 import adminLessonsRouter from "./routes/adminLessons.js";
 import adminLessonsUpsertRouter from "./routes/adminLessonsUpsert.js";
 import meRouter from "./routes/me.js";
-import shopRouter from "./routes/shop.js";
+// import shopRouter from "./routes/shop.js";
 import userRoutes from "./routes/user.js";
 import adminAuthRouter from "./routes/adminAuth.js";
 
