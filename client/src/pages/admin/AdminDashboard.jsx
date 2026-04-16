@@ -1,33 +1,33 @@
 // client/src/pages/admin/AdminDashboard.jsx
-import React, { useEffect, useState, useMemo } from "react"; // 🎯 Added useMemo
+import React, { useEffect, useState, useMemo } from "react";
 import axios from "axios";
-import { toast, Toaster } from "react-hot-toast"; // 🎯 Added toast for feedback
+import { toast, Toaster } from "react-hot-toast";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
 import UserTableSearch from "../../components/UserTableSearch";
 
-// 🎯 THE SOURCE OF TRUTH: Admin Dashboard Component
 function AdminDashboard() {
-  // --- States ---
+  // 🎯 THE COMPLETE STATE ROOM (All boxes defined here)
+  const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [broadcastMsg, setBroadcastMsg] = useState("");
   const [loading, setLoading] = useState(true);
-  const [bulkEmails, setBulkEmails] = useState("");
   const [error, setError] = useState("");
-  const [isBuying, setIsBuying] = useState(false); // For the shop logic if ever reactivated
+  const [broadcastMsg, setBroadcastMsg] = useState("");
+  const [bulkEmails, setBulkEmails] = useState("");
   const [bulkTrack, setBulkTrack] = useState("INTERMEDIATE");
+  const [isBuying, setIsBuying] = useState(false);
 
-  // 🎯 SUPER-SAFE LOGIC: We calculate this directly every render
-  const safeLessons = Array.isArray(lessons) ? lessons : [];
-  const filteredLessons = safeLessons.filter((lesson) => {
+  // 🎯 THE DUAL FILTER BRAIN (Calculates matches instantly)
+  const filteredUsers = useMemo(() => {
     const search = (searchTerm || "").toLowerCase();
-    return (
-      lesson?.tamil_sentence?.toLowerCase().includes(search) ||
-      lesson?.english_mastery_goal?.toLowerCase().includes(search) ||
-      lesson?.level?.toLowerCase().includes(search)
+    return (users || []).filter(
+      (u) =>
+        u.email?.toLowerCase().includes(search) ||
+        u.name?.toLowerCase().includes(search) ||
+        u.username?.toLowerCase().includes(search),
     );
-  });
+  }, [searchTerm, users]);
 
   const handleBulkDelete = async () => {
     if (
@@ -96,16 +96,6 @@ function AdminDashboard() {
     }
     loadDashboardData();
   }, []);
-
-  // 🎯 THE INSTANT SEARCH FILTER
-  const filteredUsers = useMemo(() => {
-    const search = searchTerm.toLowerCase();
-    return users.filter(
-      (u) =>
-        u.email?.toLowerCase().includes(search) ||
-        u.name?.toLowerCase().includes(search),
-    );
-  }, [searchTerm, users]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this lesson?")) return;
