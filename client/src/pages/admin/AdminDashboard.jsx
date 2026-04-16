@@ -46,6 +46,25 @@ function AdminDashboard() {
     );
   }, [searchTerm, lessons]);
 
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        const [userRes, lessonRes] = await Promise.all([
+          axios.get("/api/admin/users"),
+          axios.get("/api/admin/lessons"),
+        ]);
+
+        // 🎯 Logic: Extracting the arrays from the {ok: true, users: []} structure
+        if (userRes.data.ok) setUsers(userRes.data.users || []);
+        if (lessonRes.data.ok) setLessons(lessonRes.data.lessons || []);
+      } catch (err) {
+        console.error("Critical Fetch Error:", err);
+        toast.error("Failed to load dashboard data.");
+      }
+    }
+    loadDashboardData();
+  }, []);
+
   const handleBulkDelete = async () => {
     if (
       !window.confirm(
@@ -95,25 +114,6 @@ function AdminDashboard() {
         setError("Connection failed. Check if Railway backend is awake.");
       } finally {
         setLoading(false);
-      }
-    }
-    loadDashboardData();
-  }, []);
-
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        const [userRes, lessonRes] = await Promise.all([
-          axios.get("/api/admin/users"),
-          axios.get("/api/admin/lessons"),
-        ]);
-
-        // 🎯 Logic: Extracting the arrays from the {ok: true, users: []} structure
-        if (userRes.data.ok) setUsers(userRes.data.users || []);
-        if (lessonRes.data.ok) setLessons(lessonRes.data.lessons || []);
-      } catch (err) {
-        console.error("Critical Fetch Error:", err);
-        toast.error("Failed to load dashboard data.");
       }
     }
     loadDashboardData();
