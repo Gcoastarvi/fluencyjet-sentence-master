@@ -20,13 +20,15 @@ function AdminDashboard() {
 
   // 🎯 THE DUAL FILTER BRAIN (Calculates matches instantly)
   const filteredUsers = useMemo(() => {
-    const search = (searchTerm || "").toLowerCase();
-    return (users || []).filter(
-      (u) =>
-        u.email?.toLowerCase().includes(search) ||
-        u.name?.toLowerCase().includes(search) ||
-        u.username?.toLowerCase().includes(search),
-    );
+    const search = (searchTerm || "").toLowerCase().trim();
+    if (!search) return users;
+
+    return (users || []).filter((u) => {
+      const emailMatch = u.email?.toLowerCase().includes(search);
+      const nameMatch = u.name?.toLowerCase().includes(search);
+      const userMatch = u.username?.toLowerCase().includes(search);
+      return emailMatch || nameMatch || userMatch;
+    });
   }, [searchTerm, users]);
 
   // 🎯 THE LESSON FILTER BRAIN (Fixes the Curriculum Table crash)
@@ -71,21 +73,26 @@ function AdminDashboard() {
     async function loadDashboardData() {
       try {
         setLoading(true);
-        setError(""); // Now this will work!
+        setError("");
 
-        const [dashboardRes, userRes, lessonRes] = await Promise.all([
-          axios.get("/api/admin/dashboard"), // 🎯 Adjust endpoint as needed
+        const [userRes, lessonRes, statsRes] = await Promise.all([
           axios.get("/api/admin/users"),
           axios.get("/api/admin/lessons"),
+          axios.get("/api/admin/dashboard"),
         ]);
 
-        // Sync the stats and lists
-        if (dashboardRes.data) setStats(dashboardRes.data);
-        if (userRes.data.ok) setUsers(userRes.data.users || []);
-        if (lessonRes.data.ok) setLessons(lessonRes.data.lessons || []);
+        console.log("DEBUG - Users Data:", userRes.data); // 🎯 Check this in your console!
+
+        // 🎯 SMART UNPACKING: Handles both {users:[]} and just []
+        const userData = userRes.data.users || userRes.data;
+        const lessonData = lessonRes.data.lessons || lessonRes.data;
+
+        setUsers(Array.isArray(userData) ? userData : []);
+        setLessons(Array.isArray(lessonData) ? lessonData : []);
+        if (statsRes.data) setStats(statsRes.data);
       } catch (err) {
-        console.error("Dashboard Load Failed:", err);
-        setError(err.message || "Failed to load admin dashboard data.");
+        console.error("Fetch Error:", err);
+        setError("Connection failed. Check if Railway backend is awake.");
       } finally {
         setLoading(false);
       }
