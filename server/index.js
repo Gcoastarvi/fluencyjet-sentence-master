@@ -73,16 +73,6 @@ app.use("/api", (req, res, next) => {
   next();
 });
 
-app.use(
-  cors({
-    origin: [
-      "https://fluencyjet-sentence-master-production.up.railway.app",
-      "https://fluencyjet-sentence-master-production-de09.up.railway.app", // 👈 Add the URL from your screenshot error
-    ],
-    credentials: true,
-  }),
-);
-
 /* --------------------------------------------------
    Core middleware
 -------------------------------------------------- */
