@@ -142,44 +142,53 @@ router.get("/activity", authRequired, requireAdmin, async (req, res) => {
   res.json({ ok: true, users });
 });
 
-// Update user plan (tier_level)
 router.patch(
-  "/users/:id/plan",
+  "/users/:id/access",
   authRequired,
   requireAdmin,
   async (req, res) => {
-    const { plan } = req.body;
-    await prisma.user.update({
-      where: { id },
-      data: { plan },
-    });
-
-    if (!["FREE", "PRO", "LIFETIME"].includes(plan)) {
-      return res.status(400).json({ ok: false, message: "INVALID_PLAN" });
-    }
+    const { plan, track, hasAccess } = req.body; // 🎯 Added 'track' and 'hasAccess'
 
     try {
       const updated = await prisma.user.update({
         where: { id: req.params.id },
-        data: { tier_level: plan },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          tier_level: true,
-          isAdmin: true,
-          has_access: true,
-          created_at: true,
+        data: {
+          plan: plan || "PRO",
+          track: track || "BEGINNER", // 🎯 Sets the level
+          has_access: hasAccess ?? true,
         },
+        select: { id: true, email: true, track: true, has_access: true },
       });
 
       return res.json({ ok: true, user: updated });
     } catch (err) {
-      console.error("Plan update failed:", err);
-      return res.status(500).json({ ok: false, message: "PLAN_UPDATE_FAILED" });
+      return res
+        .status(500)
+        .json({ ok: false, message: "ACCESS_UPDATE_FAILED" });
     }
   },
 );
+
+/* ─────────────────────────────────────────────
+   STUDENT BULK ENROL / BULK ACCESS
+────────────────────────────────────────────── */
+router.post("/users/bulk-access", authRequired, requireAdmin, async (req, res) => {
+  const { emails, track, plan } = req.body; 
+  // 'emails' is an array: ["user1@gmail.com", "user2@gmail.com"]
+
+  const results = await prisma.user.updateMany({
+    where: { 
+      email: { in: emails.map(e => e.toLowerCase().trim()) } 
+    },
+    data: { 
+      has_access: true, 
+      plan: plan || "PRO", 
+      track: track || "BEGINNER" 
+    }
+  });
+
+  res.json({ ok: true, count: results.count });
+});
 
 /* ─────────────────────────────────────────────
    ADMIN PROMOTE / DEMOTE

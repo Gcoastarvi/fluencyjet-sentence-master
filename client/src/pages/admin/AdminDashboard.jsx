@@ -133,6 +133,26 @@ function AdminDashboard() {
       </p>
     </div>
 
+    {/* 💰 REVENUE SNAPSHOT CARD */}
+    <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex-1">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="p-3 bg-green-50 rounded-2xl text-green-600">💸</div>
+        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          Active Pro Users
+        </h4>
+      </div>
+      <p className="text-4xl font-black text-slate-900">
+        {users.filter((u) => u.has_access).length}
+      </p>
+      <p className="text-[10px] font-bold text-slate-400 mt-2">
+        {(
+          (users.filter((u) => u.has_access).length / users.length) *
+          100
+        ).toFixed(1)}
+        % Conversion Rate
+      </p>
+    </div>
+
     <button
       onClick={handleLogout}
       className="bg-slate-200 hover:bg-rose-100 hover:text-rose-600 text-slate-600 px-4 py-2 rounded-xl text-xs font-black transition-all"
@@ -140,6 +160,49 @@ function AdminDashboard() {
       LOGOUT
     </button>
   </header>;
+
+  {
+    /* 🚀 WEBINAR BULK ENROLLER: Place after </header> */
+  }
+  <div className="bg-indigo-900 rounded-[2rem] p-8 text-white mb-8 shadow-2xl">
+    <h3 className="text-2xl font-black mb-2">Webinar Bulk Enroller</h3>
+    <p className="text-indigo-300 text-[10px] font-bold uppercase tracking-widest mb-6">
+      Scale your enrollment in seconds
+    </p>
+
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <textarea
+        value={bulkEmails}
+        onChange={(e) => setBulkEmails(e.target.value)}
+        placeholder="user1@gmail.com, user2@gmail.com..."
+        className="w-full h-32 bg-indigo-800/50 border border-indigo-700 rounded-2xl p-4 text-sm text-indigo-100 placeholder:text-indigo-400 focus:ring-2 ring-white outline-none"
+      />
+
+      <div className="flex flex-col justify-between">
+        <div className="flex gap-4">
+          <button
+            onClick={() => setBulkTrack("BEGINNER")}
+            className={`flex-1 py-4 rounded-2xl border-2 font-black transition-all ${bulkTrack === "BEGINNER" ? "bg-white text-indigo-900 border-white" : "border-indigo-700 text-indigo-300"}`}
+          >
+            BEGINNER
+          </button>
+          <button
+            onClick={() => setBulkTrack("INTERMEDIATE")}
+            className={`flex-1 py-4 rounded-2xl border-2 font-black transition-all ${bulkTrack === "INTERMEDIATE" ? "bg-white text-indigo-900 border-white" : "border-indigo-700 text-indigo-300"}`}
+          >
+            INTERMEDIATE
+          </button>
+        </div>
+
+        <button
+          onClick={handleBulkEnroll}
+          className="w-full py-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl font-black text-lg hover:scale-[1.02] shadow-xl"
+        >
+          GRANT ACCESS NOW 🔓
+        </button>
+      </div>
+    </div>
+  </div>;
 
   const handleResetStats = async () => {
     if (
@@ -162,6 +225,57 @@ function AdminDashboard() {
     if (res.data.ok) {
       alert("Test Stats Reset! You are now Level 1 with 0 XP.");
       window.location.reload();
+    }
+  };
+
+  // 🎯 THE POWER FUNCTIONS: Control users and bulk enrollments
+  const handleUpdateAccess = async (userId, data) => {
+    try {
+      // data is { track: '...' } or { hasAccess: true/false }
+      const response = await axios.patch(
+        `/api/admin/users/${userId}/access`,
+        data,
+      );
+      if (response.data.ok) {
+        // Update the local list so the UI changes instantly
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === userId ? { ...u, ...response.data.user } : u,
+          ),
+        );
+        toast.success("Student updated successfully! ✅");
+      }
+    } catch (err) {
+      console.error("Access update failed:", err);
+      toast.error("Failed to update student access.");
+    }
+  };
+
+  const [bulkEmails, setBulkEmails] = useState(""); // 👈 Add this state at the top with other states
+  const [bulkTrack, setBulkTrack] = useState("INTERMEDIATE");
+
+  const handleBulkEnroll = async () => {
+    if (!bulkEmails.trim())
+      return toast.error("Please enter at least one email.");
+
+    const emailArray = bulkEmails
+      .split(/[\n,]+/)
+      .map((e) => e.trim())
+      .filter((e) => e);
+
+    try {
+      const res = await axios.post("/api/admin/users/bulk-access", {
+        emails: emailArray,
+        track: bulkTrack,
+        plan: "PRO",
+      });
+
+      if (res.data.ok) {
+        toast.success(`Successfully enrolled ${res.data.count} students! 🚀`);
+        setBulkEmails(""); // Clear the box
+      }
+    } catch (err) {
+      toast.error("Bulk enrollment failed. Check the emails.");
     }
   };
 
@@ -303,6 +417,71 @@ function AdminDashboard() {
               Avg XP / Student
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* 🎯 USER MANAGEMENT TABLE (Insert before Curriculum Overview) */}
+      <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm mb-8">
+        <h3 className="text-xl font-black text-slate-900 mb-6">
+          Student Access Control
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-slate-50 text-slate-400 text-xs uppercase tracking-widest">
+                <th className="py-4 px-4">Student</th>
+                <th className="py-4 px-4">Current Track</th>
+                <th className="py-4 px-4">Access Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((student) => (
+                <tr
+                  key={student.id}
+                  className="border-b border-slate-50 hover:bg-slate-50/50"
+                >
+                  <td className="py-4 px-4">
+                    <p className="font-bold text-slate-900">
+                      {student.name || "New Student"}
+                    </p>
+                    <p className="text-[10px] text-slate-400">
+                      {student.email}
+                    </p>
+                  </td>
+                  <td className="py-4 px-4">
+                    <select
+                      value={student.track || "BEGINNER"}
+                      onChange={(e) =>
+                        handleUpdateAccess(student.id, {
+                          track: e.target.value,
+                        })
+                      }
+                      className="text-[10px] font-black border-none bg-slate-100 rounded-lg p-2 focus:ring-2 ring-indigo-500"
+                    >
+                      <option value="BEGINNER">BEGINNER</option>
+                      <option value="INTERMEDIATE">INTERMEDIATE</option>
+                    </select>
+                  </td>
+                  <td className="py-4 px-4">
+                    <button
+                      onClick={() =>
+                        handleUpdateAccess(student.id, {
+                          hasAccess: !student.has_access,
+                        })
+                      }
+                      className={`text-[10px] font-black px-4 py-2 rounded-xl transition-all ${
+                        student.has_access
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-rose-100 text-rose-700 hover:bg-rose-200"
+                      }`}
+                    >
+                      {student.has_access ? "ACTIVE PRO" : "GRANT ACCESS"}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

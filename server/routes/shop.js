@@ -50,4 +50,23 @@ router.post("/purchase-freeze", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/buy-shield", authRequired, async (req, res) => {
+  const userId = req.user.id;
+  const COST = 1000;
+
+  const result = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (user.total_xp < COST) throw new Error("INSUFFICIENT_XP");
+
+    return tx.user.update({
+      where: { id: userId },
+      data: {
+        total_xp: { decrement: COST },
+        shield_count: { increment: 1 },
+      },
+    });
+  });
+  res.json({ ok: true, newXp: result.total_xp, shields: result.shield_count });
+});
+
 export default router;
