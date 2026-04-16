@@ -6,6 +6,11 @@ import requireAdmin from "../middleware/admin.js";
 
 const router = express.Router();
 
+// 🎯 THE DIAGNOSTIC PIPE
+router.get("/test-connection", (req, res) => {
+  res.json({ ok: true, message: "The Admin Pipe is OPEN! 🚀" });
+});
+
 /* ─────────────────────────────────────────────
    HEALTH CHECK
 ────────────────────────────────────────────── */

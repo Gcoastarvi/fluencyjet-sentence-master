@@ -158,6 +158,8 @@ app.use((req, res, next) => {
 
 app.options("*", (req, res) => res.sendStatus(204));
 
+app.use("/api/admin", adminRouter);
+
 /* --------------------------------------------------
    Auth middleware (AFTER cors, BEFORE routes)
 -------------------------------------------------- */
@@ -172,7 +174,6 @@ app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
-app.use("/api/admin", adminRouter);
 // app.use("/api/shop", shopRouter);
 
 // --- Student Progression Routes ---
