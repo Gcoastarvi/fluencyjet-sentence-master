@@ -29,6 +29,21 @@ function AdminDashboard() {
     );
   }, [searchTerm, users]);
 
+  // 🎯 THE LESSON FILTER BRAIN (Fixes the Curriculum Table crash)
+  const filteredLessons = useMemo(() => {
+    const search = (searchTerm || "").toLowerCase();
+    const safeLessons = Array.isArray(lessons) ? lessons : [];
+
+    return safeLessons.filter(
+      (lesson) =>
+        lesson?.tamil_sentence?.toLowerCase().includes(search) ||
+        lesson?.english_mastery_goal?.toLowerCase().includes(search) ||
+        String(lesson?.level || "")
+          .toLowerCase()
+          .includes(search),
+    );
+  }, [searchTerm, lessons]);
+
   const handleBulkDelete = async () => {
     if (
       !window.confirm(
