@@ -41,13 +41,16 @@ const PORT = process.env.PORT || 8080;
 import cors from "cors";
 
 const corsOptions = {
-  origin: true, // 🛡️ Temporary "God Mode" to bypass the wall
+  origin: [
+    "https://fluencyjet-sentence-master-production.up.railway.app",
+    "https://fluencyjet-sentence-master-production-de09.up.railway.app", // 👈 Explicitly trust your current frontend
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"],
 };
 
-app.use(cors(corsOptions)); // 🚀 THE ENGINE IS NOW AT THE TOP
+app.use(cors(corsOptions));
 
 app.set("trust proxy", 1);
 
@@ -178,7 +181,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
-app.use("/api/shop", shopRouter);
+// app.use("/api/shop", shopRouter);
 
 // --- Student Progression Routes ---
 app.use("/api/quizzes", quizzesRouter);
