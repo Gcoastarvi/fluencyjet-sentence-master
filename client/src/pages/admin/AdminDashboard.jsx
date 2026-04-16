@@ -14,9 +14,10 @@ function AdminDashboard() {
   const [broadcastMsg, setBroadcastMsg] = useState("");
   const [loading, setLoading] = useState(true);
   const [bulkEmails, setBulkEmails] = useState("");
+  const [error, setError] = useState("");
   const [isBuying, setIsBuying] = useState(false); // For the shop logic if ever reactivated
   const [bulkTrack, setBulkTrack] = useState("INTERMEDIATE");
-  
+
   // 🎯 SUPER-SAFE LOGIC: We calculate this directly every render
   const safeLessons = Array.isArray(lessons) ? lessons : [];
   const filteredLessons = safeLessons.filter((lesson) => {
@@ -52,28 +53,29 @@ function AdminDashboard() {
   };
 
   useEffect(() => {
-    async function fetchDashboard() {
+    async function loadDashboardData() {
       try {
         setLoading(true);
-        setError("");
+        setError(""); // Now this will work!
 
-        // adminApi.getAdminDashboard already returns the JSON payload
-        const data = await getAdminDashboard();
+        const [dashboardRes, userRes, lessonRes] = await Promise.all([
+          axios.get("/api/admin/dashboard"), // 🎯 Adjust endpoint as needed
+          axios.get("/api/admin/users"),
+          axios.get("/api/admin/lessons"),
+        ]);
 
-        if (!data?.ok) {
-          throw new Error(data?.message || "Dashboard response not ok");
-        }
-
-        setStats(data);
+        // Sync the stats and lists
+        if (dashboardRes.data) setStats(dashboardRes.data);
+        if (userRes.data.ok) setUsers(userRes.data.users || []);
+        if (lessonRes.data.ok) setLessons(lessonRes.data.lessons || []);
       } catch (err) {
-        console.error("Failed to load admin dashboard:", err);
-        setError(err?.message || "Failed to load admin dashboard data.");
+        console.error("Dashboard Load Failed:", err);
+        setError(err.message || "Failed to load admin dashboard data.");
       } finally {
         setLoading(false);
       }
     }
-
-    fetchDashboard();
+    loadDashboardData();
   }, []);
 
   useEffect(() => {
@@ -295,7 +297,7 @@ function AdminDashboard() {
       console.error("Access update failed:", err);
       toast.error("Failed to update student access.");
     }
-  };  
+  };
 
   const handleBulkEnroll = async () => {
     if (!bulkEmails.trim())
