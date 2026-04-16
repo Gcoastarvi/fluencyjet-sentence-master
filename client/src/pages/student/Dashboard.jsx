@@ -7,6 +7,7 @@ import { getDisplayName } from "@/utils/displayName";
 import { getToken } from "@/utils/tokenStore";
 import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
+import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 
 import AvatarFrame from "../../components/student/AvatarFrame";
 
@@ -165,6 +166,7 @@ export const getLeagueInfo = (xp) => {
       icon: "🥉",
       glow: "border-slate-100",
       text: "text-slate-400",
+      perks: ["Standard XP", "Public Leaderboard"],
     };
   if (score <= 15000)
     return {
@@ -172,6 +174,7 @@ export const getLeagueInfo = (xp) => {
       icon: "🥈",
       glow: "league-silver-glow",
       text: "text-silver-prestige",
+      perks: ["1.2x XP Multiplier", "Silver Badge"],
     };
   if (score <= 40000)
     return {
@@ -179,6 +182,7 @@ export const getLeagueInfo = (xp) => {
       icon: "🥇",
       glow: "league-gold-glow",
       text: "text-yellow-500",
+      perks: ["1.5x XP Multiplier", "1 Free Streak Shield/week"],
     };
   if (score <= 80000)
     return {
@@ -383,29 +387,26 @@ export default function Dashboard() {
   const [isBuying, setIsBuying] = useState(false);
 
   const handleBuyShield = async () => {
-    // 🛡️ Guard Clause: Check if user is rich enough
-    if ((summary.totalXP || 0) < 500) {
-      alert("You need 500 XP to buy a Streak Shield! Keep practicing.");
-      return;
-    }
-
+    setIsBuying(true);
     try {
-      // 💸 Step 1: Tell the server to deduct XP and add a freeze
-      const res = await api.post("/user/purchase-shield");
-
-      if (res.data.success) {
-        // 🔊 Step 2: Play the 'Transaction Success' sound
-        const audio = new Audio(
-          "https://www.soundjay.com/buttons/sounds/button-3.mp3",
-        );
-        audio.play().catch(() => {});
-
-        // 🔄 Step 3: Refresh the dashboard data
-        fetchUserSummary();
+      const res = await buyStreakShield(); // Your API call
+      if (res.ok) {
+        // 🎯 Sync the frontend summary with the new count
+        setSummary((prev) => ({
+          ...prev,
+          streakFreezes: res.newCount,
+          totalXP: res.newXp,
+        }));
+        alert("Streak Shield Secured! 🔥");
       }
     } catch (err) {
-      console.error("Economy Error:", err);
-      alert("Marketplace is currently offline. Please try again later.");
+      alert(
+        err.message === "INSUFFICIENT_XP"
+          ? "Not enough XP! Keep practicing."
+          : "Purchase failed.",
+      );
+    } finally {
+      setIsBuying(false);
     }
   };
 
@@ -1279,6 +1280,19 @@ export default function Dashboard() {
         })()}
       </header>
 
+      <div className="mt-4 bg-gradient-to-br from-slate-900 to-indigo-950 p-5 rounded-[2rem] text-white">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-300 mb-3">
+          {currentLeague.name} PERKS
+        </h4>
+        <ul className="space-y-2">
+          {currentLeague.perks.map((perk, i) => (
+            <li key={i} className="flex items-center gap-2 text-xs font-bold">
+              <span className="text-indigo-400">✦</span> {perk}
+            </li>
+          ))}
+        </ul>
+      </div>
+
       {leagueNudge && (
         <div className="mt-4 p-4 bg-indigo-50 rounded-2xl border border-indigo-100 animate-pulse">
           <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
@@ -1404,12 +1418,31 @@ export default function Dashboard() {
                   // Unlock Lesson 1 always; others unlock if previous is > 0%
                   const lessonNum = idx + 1;
 
-                  const isInt =
-                    summary?.tier_level === "intermediate" ||
-                    summary?.plan === "INTERMEDIATE";
+                  const storedTrack =
+                    typeof window !== "undefined"
+                      ? localStorage.getItem("fj_track") || ""
+                      : "";
 
-                  const p = isInt ? "i" : "b";
-                  const d = isInt ? "intermediate" : "beginner";
+                  const pathname =
+                    typeof window !== "undefined"
+                      ? window.location.pathname
+                      : "";
+
+                  const resolvedTrack = pathname.startsWith("/i/")
+                    ? "intermediate"
+                    : pathname.startsWith("/b/")
+                      ? "beginner"
+                      : normalizeTrack(
+                          storedTrack ||
+                            auth?.user?.track ||
+                            summary?.tier_level ||
+                            (summary?.plan === "INTERMEDIATE"
+                              ? "intermediate"
+                              : "beginner"),
+                        );
+
+                  const d = resolvedTrack;
+                  const isInt = resolvedTrack === "intermediate";
 
                   const hasPaidAccess =
                     auth?.user?.has_access === true ||
@@ -1428,7 +1461,9 @@ export default function Dashboard() {
                       key={lesson.id || idx}
                       onClick={() => {
                         if (hasPaidAccess || isFreeLesson) {
-                          navigate(`/${p}/lesson/${lessonNum}?difficulty=${d}`);
+                          navigate(
+                            lessonPathForTrack(resolvedTrack, lessonNum),
+                          );
                           return;
                         }
 
