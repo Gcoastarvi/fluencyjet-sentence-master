@@ -11,6 +11,7 @@ function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [users, setUsers] = useState([]);
 
   // 🎯 SUPER-SAFE LOGIC: We calculate this directly every render
   const safeLessons = Array.isArray(lessons) ? lessons : [];
@@ -61,6 +62,21 @@ function AdminDashboard() {
       }
     }
     loadLessons();
+  }, []);
+
+  // 🎯 THE DATA BRIDGE: Fetches students from your database
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const res = await axios.get("/api/admin/users"); // Ensure this route exists in admin.js
+        if (res.data) {
+          setUsers(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch students:", err);
+      }
+    };
+    fetchStudents();
   }, []);
 
   const handleDelete = async (id) => {
@@ -144,11 +160,14 @@ function AdminDashboard() {
       <p className="text-4xl font-black text-slate-900">
         {users.filter((u) => u.has_access).length}
       </p>
+      {/* 🎯 THE FAIL-SAFE CALCULATION */}
       <p className="text-[10px] font-bold text-slate-400 mt-2">
-        {(
-          (users.filter((u) => u.has_access).length / users.length) *
-          100
-        ).toFixed(1)}
+        {users.length > 0
+          ? (
+              (users.filter((u) => u.has_access).length / users.length) *
+              100
+            ).toFixed(1)
+          : "0.0"}
         % Conversion Rate
       </p>
     </div>
