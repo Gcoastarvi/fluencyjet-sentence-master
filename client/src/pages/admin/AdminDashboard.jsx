@@ -470,7 +470,9 @@ function AdminDashboard() {
         <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-xl mb-8">
           <div className="flex items-center gap-4">
             <div className="flex-1">
+              {/* 🎯 Pass the filtered list and search powers to the component */}
               <UserTableSearch
+                users={filteredUsers}
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
               />
