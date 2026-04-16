@@ -55,6 +55,7 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
         id: true,
         email: true,
         name: true,
+        track: true,
         created_at: true,
         isAdmin: true,
         has_access: true,
@@ -172,23 +173,28 @@ router.patch(
 /* ─────────────────────────────────────────────
    STUDENT BULK ENROL / BULK ACCESS
 ────────────────────────────────────────────── */
-router.post("/users/bulk-access", authRequired, requireAdmin, async (req, res) => {
-  const { emails, track, plan } = req.body; 
-  // 'emails' is an array: ["user1@gmail.com", "user2@gmail.com"]
+router.post(
+  "/users/bulk-access",
+  authRequired,
+  requireAdmin,
+  async (req, res) => {
+    const { emails, track, plan } = req.body;
+    // 'emails' is an array: ["user1@gmail.com", "user2@gmail.com"]
 
-  const results = await prisma.user.updateMany({
-    where: { 
-      email: { in: emails.map(e => e.toLowerCase().trim()) } 
-    },
-    data: { 
-      has_access: true, 
-      plan: plan || "PRO", 
-      track: track || "BEGINNER" 
-    }
-  });
+    const results = await prisma.user.updateMany({
+      where: {
+        email: { in: emails.map((e) => e.toLowerCase().trim()) },
+      },
+      data: {
+        has_access: true,
+        plan: plan || "PRO",
+        track: track || "BEGINNER",
+      },
+    });
 
-  res.json({ ok: true, count: results.count });
-});
+    res.json({ ok: true, count: results.count });
+  },
+);
 
 /* ─────────────────────────────────────────────
    ADMIN PROMOTE / DEMOTE

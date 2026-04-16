@@ -5,6 +5,9 @@ import { getAdminDashboard } from "../../api/adminApi";
 
 import UserTableSearch from "../../components/UserTableSearch";
 
+import axios from "axios"; // 🎯 FIX: Define axios
+import { getAdminLessons } from "../../api/adminApi"; // 🎯 FIX: Define the helper
+
 function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [lessons, setLessons] = useState([]);
