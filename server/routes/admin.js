@@ -1,19 +1,28 @@
 // server/routes/admin.js
 import express from "express";
 import prisma from "../db/client.js";
-import authRequired from "../middleware/authMiddleware.js";
-import requireAdmin from "../middleware/admin.js";
+import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
+// 🎯 FIXED: Pointing to the NEW guard file you created
+import { requireAdmin } from "../middleware/adminGuard.js";
 
-// 🎯 IMPORT YOUR SPECIALIZED TOOLS
-import adminLessonsRouter from "./lessons.js"; // Ensure paths are correct
-import adminExercises from "./exercises.js";
+// 🎯 IMPORT TOOLS (Matching your actual filenames)
+// Note: If your files are named differently, adjust these two lines
+import adminLessonsRouter from "./adminLessons.js";
+import adminExercises from "./adminExercises.js";
+import adminLessonsUpsertRouter from "./adminLessonsUpsert.js"; // 👈 Restoring the 'Upsert' tool
 
 const router = express.Router();
 
-// 🎯 DELEGATE THE WORK (Inside admin.js)
-// This preserves all your pathways like /api/admin/lessons
+// 🎯 DELEGATE THE WORK
+// This ensures /api/admin/lessons and /api/admin/exercises still work perfectly
 router.use("/lessons", authRequired, requireAdmin, adminLessonsRouter);
 router.use("/exercises", authRequired, requireAdmin, adminExercises);
+router.use(
+  "/lessons/upsert",
+  authRequired,
+  requireAdmin,
+  adminLessonsUpsertRouter,
+);
 
 // 🎯 THE DIAGNOSTIC PIPE
 router.get("/test-connection", (req, res) => {
