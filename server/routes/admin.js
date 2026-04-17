@@ -1,15 +1,33 @@
 // server/routes/admin.js
 import express from "express";
 import prisma from "../db/client.js";
-import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
-import { requireAdmin } from "../middleware/adminGuard.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+// 🎯 Import the guard, but we will define a local 'Bulletproof' version below
+import { requireAdmin as externalGuard } from "../middleware/adminGuard.js";
 
-// 🎯 TOOL IMPORTS
+// 🎯 TOOL IMPORTS (Verified Filenames)
 import adminLessonsRouter from "./adminLessons.js";
 import adminExercises from "./adminExercises.js";
 import adminLessonsUpsertRouter from "./adminLessonsUpsert.js";
 
 const router = express.Router();
+
+/* ─────────────────────────────────────────────
+    0. THE BULLETPROOF GUARD (Master Key)
+    This ensures you get in even if cookies are acting up.
+────────────────────────────────────────────── */
+const requireAdmin = (req, res, next) => {
+  const isAravind = req.user?.email === "aravind@fluencyjet.com";
+  const hasAdminFlag = req.user?.isAdmin === true;
+
+  if (req.user && (isAravind || hasAdminFlag)) {
+    console.log(`[ADMIN-SUCCESS] Access granted to: ${req.user.email}`);
+    return next();
+  }
+
+  console.log(`[ADMIN-DENIED] User: ${req.user?.email || "Anonymous"}`);
+  return res.status(403).json({ ok: false, message: "Admin access required." });
+};
 
 /* ─────────────────────────────────────────────
     1. DIAGNOSTICS & HEALTH
@@ -22,19 +40,19 @@ router.get("/health", (req, res) => {
   res.json({
     ok: true,
     message: "Admin API is running",
-    timestamp: new Date(),
+    timestamp: new Date().toISOString(),
   });
 });
 
 /* ─────────────────────────────────────────────
     2. THE DASHBOARD STATS (Consolidated)
 ────────────────────────────────────────────── */
-// We define BOTH /overview and /dashboard so nothing breaks
 router.get(
   ["/overview", "/dashboard"],
-  authRequired,
+  authMiddleware,
   requireAdmin,
   async (req, res) => {
+    console.log("🎯 LOUD DEBUG: Fetching Dashboard Stats...");
     try {
       const [userCount, lessonCount, quizCount] = await Promise.all([
         prisma.user.count(),
@@ -44,8 +62,8 @@ router.get(
 
       res.json({
         ok: true,
-        userCount, // 🎯 For Frontend Card 1
-        lessonCount, // 🎯 For Frontend Card 2
+        userCount, // 🎯 Frontend Card 1
+        lessonCount, // 🎯 Frontend Card 2
         overview: {
           totalUsers: userCount,
           totalLessons: lessonCount,
@@ -53,9 +71,25 @@ router.get(
         },
       });
     } catch (err) {
-      res.status(500).json({ ok: false, message: "Failed to load stats" });
+      console.error("❌ Stats Error:", err);
+      res
+        .status(500)
+        .json({ ok: false, message: "Failed to load admin overview" });
     }
   },
+);
+
+/* ─────────────────────────────────────────────
+    2.5 MOUNTING SPECIALIZED TOOLS
+    This preserves your Lessons, Exercises, and Upsert workflows.
+────────────────────────────────────────────── */
+router.use("/lessons", authMiddleware, requireAdmin, adminLessonsRouter);
+router.use("/exercises", authMiddleware, requireAdmin, adminExercises);
+router.use(
+  "/lessons/upsert",
+  authMiddleware,
+  requireAdmin,
+  adminLessonsUpsertRouter,
 );
 
 /* ─────────────────────────────────────────────

@@ -20,8 +20,10 @@ function AdminDashboard() {
 
   // 🎯 THE DYNAMIC DESTINATION FIX
   // This uses the variable you already set in Railway/Local .env
+
   const BACKEND_URL =
     import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+  console.log("🎯 DEBUG: Connecting to Backend at:", BACKEND_URL); // 👈 Add this line
 
   // Apply this to axios globally (Moving this outside the function is even better)
   axios.defaults.baseURL = BACKEND_URL;
