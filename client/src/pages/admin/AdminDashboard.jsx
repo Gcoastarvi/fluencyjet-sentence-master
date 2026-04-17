@@ -60,17 +60,33 @@ function AdminDashboard() {
   useEffect(() => {
     async function loadDashboardData() {
       try {
-        const [userRes, lessonRes] = await Promise.all([
-          axios.get("/api/admin/users"),
-          axios.get("/api/admin/lessons"),
+        setLoading(true);
+        setError("");
+
+        // 🎯 THE KEY: Grab the token from storage
+        const token =
+          localStorage.getItem("fj_admin_token") ||
+          localStorage.getItem("token");
+        const config = {
+          headers: { Authorization: `Bearer ${token}` },
+        };
+
+        const [userRes, lessonRes, statsRes] = await Promise.all([
+          axios.get("/api/admin/users", config),
+          axios.get("/api/admin/lessons", config),
+          axios.get("/api/admin/dashboard", config),
         ]);
 
-        // 🎯 Logic: Extracting the arrays from the {ok: true, users: []} structure
-        if (userRes.data.ok) setUsers(userRes.data.users || []);
-        if (lessonRes.data.ok) setLessons(lessonRes.data.lessons || []);
+        console.log("🎯 SUCCESS: Data Received via Header!");
+
+        setUsers(userRes.data.users || []);
+        setLessons(lessonRes.data.lessons || []);
+        setStats(statsRes.data);
       } catch (err) {
-        console.error("Critical Fetch Error:", err);
-        toast.error("Failed to load dashboard data.");
+        console.error("Fetch Error:", err);
+        setError("Admin Access Denied. Please log in again.");
+      } finally {
+        setLoading(false);
       }
     }
     loadDashboardData();
