@@ -129,13 +129,30 @@ function AdminDashboard() {
 
         console.log("DEBUG - Users Data:", userRes.data); // 🎯 Check this in your console!
 
-        // 🎯 SMART UNPACKING: Handles both {users:[]} and just []
-        const userData = userRes.data.users || userRes.data;
-        const lessonData = lessonRes.data.lessons || lessonRes.data;
+        // 🎯 1. UNPACK THE DATA
+        const userData = userRes.data.users || [];
+        const lessonData = lessonRes.data.lessons || [];
 
-        setUsers(Array.isArray(userData) ? userData : []);
-        setLessons(Array.isArray(lessonData) ? lessonData : []);
-        if (statsRes.data) setStats(statsRes.data);
+        // 🎯 2. THE MATH: Calculate Engagement Score using xpTotal
+        const totalXP = userData.reduce(
+          (acc, user) => acc + (user.xpTotal || 0),
+          0,
+        );
+        const avgXP = userData.length
+          ? Math.floor(totalXP / userData.length)
+          : 0;
+
+        // 🎯 3. UPDATE THE STATE
+        setUsers(userData);
+        setLessons(lessonData);
+
+        // 🎯 4. MERGE: Combine backend stats with our new frontend math
+        if (statsRes.data) {
+          setStats({
+            ...statsRes.data,
+            avgXP: avgXP, // 👈 This ensures the 'Engagement Score' card wakes up!
+          });
+        }
       } catch (err) {
         console.error("Fetch Error:", err);
         setError("Connection failed. Check if Railway backend is awake.");

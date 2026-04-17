@@ -86,7 +86,6 @@ router.use(
 ────────────────────────────────────────────── */
 // 🎯 THE LOUD HEADQUARTERS
 router.get("/users", authRequired, requireAdmin, async (req, res) => {
-  console.log("🎯 HEADQUARTERS REACHED: Fetching Students..."); // Check Railway Logs for this!
   try {
     const users = await prisma.user.findMany({
       orderBy: { created_at: "desc" },
@@ -97,17 +96,16 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
         username: true,
         track: true,
         has_access: true,
-        total_xp: true,
-        daily_streak: true,
+        xpTotal: true, // 🎯 FIXED: Changed from total_xp
         created_at: true,
         isAdmin: true,
+        // Removed daily_streak as it is not in your User schema
       },
     });
-    console.log(`🎯 SUCCESS: Found ${users.length} Masters`);
     res.json({ ok: true, users });
   } catch (err) {
-    console.error("🎯 ERROR:", err);
-    res.status(500).json({ ok: false, message: "Internal Server Error" });
+    console.error("Admin users error:", err);
+    res.status(500).json({ ok: false, message: "Database Sync Error" });
   }
 });
 
