@@ -63,7 +63,7 @@ function AdminDashboard() {
         setLoading(true);
         setError("");
 
-        // 🎯 THE KEY: Grab the token from storage
+        // 🎯 1. AUTHENTICATION: Grab the token
         const token =
           localStorage.getItem("fj_admin_token") ||
           localStorage.getItem("token");
@@ -71,26 +71,50 @@ function AdminDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         };
 
+        console.log("🚀 MASTER FETCH: Starting authenticated requests...");
+
+        // 🎯 2. THE DATA PULL
         const [userRes, lessonRes, statsRes] = await Promise.all([
           axios.get("/api/admin/users", config),
           axios.get("/api/admin/lessons", config),
           axios.get("/api/admin/dashboard", config),
         ]);
 
-        console.log("🎯 SUCCESS: Data Received via Header!");
+        console.log("🎯 MASTER SUCCESS: All data received!");
 
-        setUsers(userRes.data.users || []);
-        setLessons(lessonRes.data.lessons || []);
-        setStats(statsRes.data);
+        // 🎯 3. UNPACK & CALCULATE
+        const userData = userRes.data.users || [];
+        const lessonData = lessonRes.data.lessons || [];
+
+        // Calculate Engagement using the new 'xpTotal' field
+        const totalXP = userData.reduce(
+          (acc, user) => acc + (user.xpTotal || 0),
+          0,
+        );
+        const avgXP = userData.length
+          ? Math.floor(totalXP / userData.length)
+          : 0;
+
+        // 🎯 4. UPDATE STATE (Single source of truth)
+        setUsers(userData);
+        setLessons(lessonData);
+        setStats({
+          ...statsRes.data,
+          avgXP: avgXP,
+        });
       } catch (err) {
-        console.error("Fetch Error:", err);
-        setError("Admin Access Denied. Please log in again.");
+        console.error("❌ MASTER ERROR:", err);
+        // Only show error if we don't have existing data to fall back on
+        setError(
+          "Admin Access Denied. Please ensure you are logged in as an Admin.",
+        );
       } finally {
         setLoading(false);
       }
     }
+
     loadDashboardData();
-  }, []);
+  }, []); // 🎯 Runs exactly once on page load
 
   const handleBulkDelete = async () => {
     if (
@@ -114,54 +138,6 @@ function AdminDashboard() {
       toast.error("Delete failed.");
     }
   };
-
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        setLoading(true);
-        setError("");
-
-        const [userRes, lessonRes, statsRes] = await Promise.all([
-          axios.get("/api/admin/users"),
-          axios.get("/api/admin/lessons"),
-          axios.get("/api/admin/dashboard"),
-        ]);
-
-        console.log("DEBUG - Users Data:", userRes.data); // 🎯 Check this in your console!
-
-        // 🎯 1. UNPACK THE DATA
-        const userData = userRes.data.users || [];
-        const lessonData = lessonRes.data.lessons || [];
-
-        // 🎯 2. THE MATH: Calculate Engagement Score using xpTotal
-        const totalXP = userData.reduce(
-          (acc, user) => acc + (user.xpTotal || 0),
-          0,
-        );
-        const avgXP = userData.length
-          ? Math.floor(totalXP / userData.length)
-          : 0;
-
-        // 🎯 3. UPDATE THE STATE
-        setUsers(userData);
-        setLessons(lessonData);
-
-        // 🎯 4. MERGE: Combine backend stats with our new frontend math
-        if (statsRes.data) {
-          setStats({
-            ...statsRes.data,
-            avgXP: avgXP, // 👈 This ensures the 'Engagement Score' card wakes up!
-          });
-        }
-      } catch (err) {
-        console.error("Fetch Error:", err);
-        setError("Connection failed. Check if Railway backend is awake.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadDashboardData();
-  }, []);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this lesson?")) return;
