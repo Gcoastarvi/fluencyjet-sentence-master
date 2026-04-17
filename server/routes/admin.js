@@ -1,8 +1,8 @@
 // server/routes/admin.js
 import express from "express";
 import prisma from "../db/client.js";
-// 🎯 FIXED: We import the middleware and name it 'authRequired' to match the rest of your file
-import authRequired from "../middleware/authMiddleware.js";
+// 🎯 THE FIX: Import both names so the 517-line file is happy
+import { authMiddleware, authRequired } from "../middleware/authMiddleware.js";
 
 // 🎯 TOOL IMPORTS
 import adminLessonsRouter from "./adminLessons.js";
@@ -42,10 +42,9 @@ router.get("/health", (req, res) => {
 ────────────────────────────────────────────── */
 router.get(
   ["/overview", "/dashboard"],
-  authMiddleware,
+  authRequired, // 🎯 Ensuring this matches a defined variable
   requireAdmin,
   async (req, res) => {
-    console.log("🎯 LOUD DEBUG: Fetching Dashboard Stats...");
     try {
       const [userCount, lessonCount, quizCount] = await Promise.all([
         prisma.user.count(),
@@ -55,8 +54,8 @@ router.get(
 
       res.json({
         ok: true,
-        userCount, // 🎯 Frontend Card 1
-        lessonCount, // 🎯 Frontend Card 2
+        userCount,
+        lessonCount,
         overview: {
           totalUsers: userCount,
           totalLessons: lessonCount,
@@ -64,10 +63,7 @@ router.get(
         },
       });
     } catch (err) {
-      console.error("❌ Stats Error:", err);
-      res
-        .status(500)
-        .json({ ok: false, message: "Failed to load admin overview" });
+      res.status(500).json({ ok: false, message: "Failed to load stats" });
     }
   },
 );
