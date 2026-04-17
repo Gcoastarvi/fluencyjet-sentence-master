@@ -4,7 +4,16 @@ import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
 import requireAdmin from "../middleware/admin.js";
 
+// 🎯 IMPORT YOUR SPECIALIZED TOOLS
+import adminLessonsRouter from "./lessons.js"; // Ensure paths are correct
+import adminExercises from "./exercises.js";
+
 const router = express.Router();
+
+// 🎯 DELEGATE THE WORK (Inside admin.js)
+// This preserves all your pathways like /api/admin/lessons
+router.use("/lessons", authRequired, requireAdmin, adminLessonsRouter);
+router.use("/exercises", authRequired, requireAdmin, adminExercises);
 
 // 🎯 THE DIAGNOSTIC PIPE
 router.get("/test-connection", (req, res) => {

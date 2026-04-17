@@ -158,8 +158,6 @@ app.use((req, res, next) => {
 
 app.options("*", (req, res) => res.sendStatus(204));
 
-app.use("/api/admin", adminRouter);
-
 /* --------------------------------------------------
    Auth middleware (AFTER cors, BEFORE routes)
 -------------------------------------------------- */
@@ -184,17 +182,8 @@ app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/dashboard", dashboardRouter); // Student Dashboard
 app.use("/api/lessons", lessonsRouter); // Student Lessons
 
-// --- 🎯 ADMIN COMMAND CENTER (Strict Order) ---
-// 1. Auth first
-app.use("/api/admin/auth", adminAuthRouter);
-
-// 2. Static Dashboard SECOND (This fixes the 'Invalid lesson id' error!)
-app.use("/api/admin/dashboard", dashboardRouter);
-
-// 3. Specific Admin Tools THIRD
-app.use("/api/admin/exercises", adminExercises);
-app.use("/api/admin/lessons", adminLessonsRouter);
-app.use("/api/admin/lessons/upsert", adminLessonsUpsertRouter); // Give this its own path to avoid conflicts
+// 🎯 THE HEADQUARTERS: One door, properly authenticated
+app.use("/api/admin", adminRouter);
 
 // -----------------------------
 // Serve React build in production
