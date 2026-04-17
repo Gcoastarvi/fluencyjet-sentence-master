@@ -275,7 +275,7 @@ function AdminDashboard() {
         </div>
 
         <button
-          onClick={handleBulkEnroll}
+          onClick={handleBulkAccess}
           className="w-full py-4 bg-gradient-to-r from-green-400 to-emerald-500 rounded-2xl font-black text-lg hover:scale-[1.02] shadow-xl"
         >
           GRANT ACCESS NOW 🔓
@@ -338,6 +338,7 @@ function AdminDashboard() {
 
   const handleBulkAccess = async () => {
     try {
+      setLoading(true);
       const token =
         localStorage.getItem("fj_admin_token") || localStorage.getItem("token");
       const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -345,15 +346,19 @@ function AdminDashboard() {
       const res = await axios.post(
         "/api/admin/users/bulk-access",
         { emails: bulkEmails, track: bulkTrack },
-        config, // 👈 Important
+        config, // 🎯 The "Security Badge" we added earlier
       );
 
       if (res.data.ok) {
-        toast.success("Bulk access granted!");
-        loadDashboardData();
+        toast.success(`Successfully granted access to students!`);
+        setBulkEmails(""); // Clear the box after success
+        loadDashboardData(); // Refresh the list
       }
     } catch (err) {
-      toast.error("Bulk action failed.");
+      console.error("Bulk access failed:", err);
+      toast.error("Bulk enrollment failed. Check the format.");
+    } finally {
+      setLoading(false);
     }
   };
 
