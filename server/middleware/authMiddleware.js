@@ -1,4 +1,6 @@
+// server/middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
+import { Server } from "node:http";
 
 const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 

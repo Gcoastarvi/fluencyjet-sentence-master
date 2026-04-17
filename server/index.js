@@ -163,6 +163,16 @@ app.options("*", (req, res) => res.sendStatus(204));
 -------------------------------------------------- */
 app.use(authMiddleware);
 
+// 🎯 THE SNIPER: Add this to Line 160
+app.use((req, res, next) => {
+  if (req.url.startsWith("/api/admin")) {
+    console.log(
+      `[ADMIN-DEBUG] Request Path: ${req.url} | Method: ${req.method} | User: ${req.user?.email || "None"}`,
+    );
+  }
+  next();
+});
+
 // 🎯 THE HEADQUARTERS: One door, properly authenticated
 app.use("/api/admin", adminRouter);
 

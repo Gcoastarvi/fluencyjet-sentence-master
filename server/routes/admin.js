@@ -61,7 +61,9 @@ router.get(
 /* ─────────────────────────────────────────────
     3. STUDENT & CURRICULUM DATA
 ────────────────────────────────────────────── */
+// 🎯 THE LOUD HEADQUARTERS
 router.get("/users", authRequired, requireAdmin, async (req, res) => {
+  console.log("🎯 HEADQUARTERS REACHED: Fetching Students..."); // Check Railway Logs for this!
   try {
     const users = await prisma.user.findMany({
       orderBy: { created_at: "desc" },
@@ -78,9 +80,11 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
         isAdmin: true,
       },
     });
+    console.log(`🎯 SUCCESS: Found ${users.length} Masters`);
     res.json({ ok: true, users });
   } catch (err) {
-    res.status(500).json({ ok: false, message: "Failed to fetch users" });
+    console.error("🎯 ERROR:", err);
+    res.status(500).json({ ok: false, message: "Internal Server Error" });
   }
 });
 
