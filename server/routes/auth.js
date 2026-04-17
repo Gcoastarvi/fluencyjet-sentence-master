@@ -123,10 +123,9 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
     // ✅ KEEP cookie pathway (existing behavior)
     res.cookie("fj_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: true, // 🎯 Required for cross-site
+      sameSite: "none", // 🎯 Required for different subdomains
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     // ✅ KEEP returning token (works for localStorage/Bearer)

@@ -78,6 +78,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // ✅ cookies (you already have cookie-parser dependency)
 app.use(cookieParser());
+app.use(express.json());
 
 app.set("etag", false);
 
