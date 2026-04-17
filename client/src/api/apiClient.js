@@ -49,7 +49,8 @@ export async function request(path, options = {}) {
     ...options,
     headers,
     cache: "no-store",
-    credentials: "include",
+    mode: "cors", // 🎯 Added for cross-site
+    credentials: "include", // 🎯 Tells the browser: "Send the fj_token cookie!"
   });
 
   let data = null;

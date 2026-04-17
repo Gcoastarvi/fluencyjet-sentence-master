@@ -1,31 +1,24 @@
 // server/routes/admin.js
 import express from "express";
 import prisma from "../db/client.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
-// 🎯 Import the guard, but we will define a local 'Bulletproof' version below
-import { requireAdmin as externalGuard } from "../middleware/adminGuard.js";
+// 🎯 FIXED: We import the middleware and name it 'authRequired' to match the rest of your file
+import authRequired from "../middleware/authMiddleware.js";
 
-// 🎯 TOOL IMPORTS (Verified Filenames)
+// 🎯 TOOL IMPORTS
 import adminLessonsRouter from "./adminLessons.js";
 import adminExercises from "./adminExercises.js";
 import adminLessonsUpsertRouter from "./adminLessonsUpsert.js";
 
 const router = express.Router();
 
-/* ─────────────────────────────────────────────
-    0. THE BULLETPROOF GUARD (Master Key)
-    This ensures you get in even if cookies are acting up.
-────────────────────────────────────────────── */
+// 🎯 THE INTERNAL SECURITY GUARD (Master Key)
 const requireAdmin = (req, res, next) => {
   const isAravind = req.user?.email === "aravind@fluencyjet.com";
   const hasAdminFlag = req.user?.isAdmin === true;
 
   if (req.user && (isAravind || hasAdminFlag)) {
-    console.log(`[ADMIN-SUCCESS] Access granted to: ${req.user.email}`);
     return next();
   }
-
-  console.log(`[ADMIN-DENIED] User: ${req.user?.email || "Anonymous"}`);
   return res.status(403).json({ ok: false, message: "Admin access required." });
 };
 
