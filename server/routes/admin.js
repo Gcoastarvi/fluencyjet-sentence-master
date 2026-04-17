@@ -2,90 +2,64 @@
 import express from "express";
 import prisma from "../db/client.js";
 import { authMiddleware as authRequired } from "../middleware/authMiddleware.js";
-// 🎯 FIXED: Pointing to the NEW guard file you created
 import { requireAdmin } from "../middleware/adminGuard.js";
 
-// 🎯 IMPORT TOOLS (Matching your actual filenames)
-// Note: If your files are named differently, adjust these two lines
+// 🎯 TOOL IMPORTS
 import adminLessonsRouter from "./adminLessons.js";
 import adminExercises from "./adminExercises.js";
-import adminLessonsUpsertRouter from "./adminLessonsUpsert.js"; // 👈 Restoring the 'Upsert' tool
+import adminLessonsUpsertRouter from "./adminLessonsUpsert.js";
 
 const router = express.Router();
 
-// 🎯 DELEGATE THE WORK
-// This ensures /api/admin/lessons and /api/admin/exercises still work perfectly
-router.use("/lessons", authRequired, requireAdmin, adminLessonsRouter);
-router.use("/exercises", authRequired, requireAdmin, adminExercises);
-router.use(
-  "/lessons/upsert",
-  authRequired,
-  requireAdmin,
-  adminLessonsUpsertRouter,
-);
-
-// 🎯 THE DIAGNOSTIC PIPE
+/* ─────────────────────────────────────────────
+    1. DIAGNOSTICS & HEALTH
+────────────────────────────────────────────── */
 router.get("/test-connection", (req, res) => {
   res.json({ ok: true, message: "The Admin Pipe is OPEN! 🚀" });
 });
 
-/* ─────────────────────────────────────────────
-   HEALTH CHECK
-────────────────────────────────────────────── */
 router.get("/health", (req, res) => {
   res.json({
     ok: true,
     message: "Admin API is running",
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(),
   });
 });
 
 /* ─────────────────────────────────────────────
-   ADMIN OVERVIEW
+    2. THE DASHBOARD STATS (Consolidated)
 ────────────────────────────────────────────── */
-router.get("/overview", authRequired, requireAdmin, async (req, res) => {
-  try {
-    const [userCount, lessonCount, quizCount] = await Promise.all([
-      prisma.user.count(),
-      prisma.lesson.count(),
-      prisma.quiz.count(),
-    ]);
-
-    res.json({
-      ok: true,
-      overview: {
-        totalUsers: userCount,
-        totalLessons: lessonCount,
-        totalQuizzes: quizCount,
-      },
-    });
-  } catch (err) {
-    console.error("Admin overview error:", err);
-    res
-      .status(500)
-      .json({ ok: false, message: "Failed to load admin overview" });
-  }
-});
-
-/* ─────────────────────────────────────────────
-   USER BULK DELETE
-────────────────────────────────────────────── */
-
-router.delete(
-  "/users/bulk-cleanup",
+// We define BOTH /overview and /dashboard so nothing breaks
+router.get(
+  ["/overview", "/dashboard"],
   authRequired,
   requireAdmin,
   async (req, res) => {
-    const { emails } = req.body;
-    await prisma.user.deleteMany({
-      where: { email: { in: emails } },
-    });
-    res.json({ ok: true });
+    try {
+      const [userCount, lessonCount, quizCount] = await Promise.all([
+        prisma.user.count(),
+        prisma.lesson.count(),
+        prisma.quiz.count(),
+      ]);
+
+      res.json({
+        ok: true,
+        userCount, // 🎯 For Frontend Card 1
+        lessonCount, // 🎯 For Frontend Card 2
+        overview: {
+          totalUsers: userCount,
+          totalLessons: lessonCount,
+          totalQuizzes: quizCount,
+        },
+      });
+    } catch (err) {
+      res.status(500).json({ ok: false, message: "Failed to load stats" });
+    }
   },
 );
 
 /* ─────────────────────────────────────────────
-   ADMIN USER LIST
+    3. STUDENT & CURRICULUM DATA
 ────────────────────────────────────────────── */
 router.get("/users", authRequired, requireAdmin, async (req, res) => {
   try {
@@ -95,22 +69,59 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
         id: true,
         email: true,
         name: true,
-        username: true, // 🎯 For the Avatar and Search
-        track: true, // 🎯 For the Beginner/Intermediate dropdown
-        has_access: true, // 🎯 For the Grant Access button
-        total_xp: true, // 🎯 For the "Avg XP / Student" card
-        daily_streak: true, // 🎯 For the student card subtitle
+        username: true,
+        track: true,
+        has_access: true,
+        total_xp: true,
+        daily_streak: true,
         created_at: true,
         isAdmin: true,
       },
     });
-
     res.json({ ok: true, users });
   } catch (err) {
-    console.error("Admin users error:", err);
     res.status(500).json({ ok: false, message: "Failed to fetch users" });
   }
 });
+
+// 🎯 NEW: This fixed the "No lessons found" table error
+router.get("/lessons-list", authRequired, requireAdmin, async (req, res) => {
+  try {
+    const lessons = await prisma.lesson.findMany({ orderBy: { level: "asc" } });
+    res.json({ ok: true, lessons });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: "Failed to fetch lessons" });
+  }
+});
+
+/* ─────────────────────────────────────────────
+    4. ACTION TOOLS (Bulk Delete & Sub-Routers)
+────────────────────────────────────────────── */
+router.delete(
+  "/users/bulk-cleanup",
+  authRequired,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { emails } = req.body;
+      await prisma.user.deleteMany({ where: { email: { in: emails } } });
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ ok: false, message: "Bulk delete failed" });
+    }
+  },
+);
+
+// Mounting sub-tools
+router.use("/lessons", authRequired, requireAdmin, adminLessonsRouter);
+router.use("/exercises", authRequired, requireAdmin, adminExercises);
+router.use(
+  "/lessons/upsert",
+  authRequired,
+  requireAdmin,
+  adminLessonsUpsertRouter,
+);
+
 /* ─────────────────────────────────────────────
    ADMIN USER DETAIL + PLAN TOGGLE
 ────────────────────────────────────────────── */

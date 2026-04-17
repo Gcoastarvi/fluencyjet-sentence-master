@@ -163,6 +163,9 @@ app.options("*", (req, res) => res.sendStatus(204));
 -------------------------------------------------- */
 app.use(authMiddleware);
 
+// 🎯 THE HEADQUARTERS: One door, properly authenticated
+app.use("/api/admin", adminRouter);
+
 /* --------------------------------------------------
    API routes
 -------------------------------------------------- */
@@ -181,9 +184,6 @@ app.use("/api/progress", progressRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/dashboard", dashboardRouter); // Student Dashboard
 app.use("/api/lessons", lessonsRouter); // Student Lessons
-
-// 🎯 THE HEADQUARTERS: One door, properly authenticated
-app.use("/api/admin", adminRouter);
 
 // -----------------------------
 // Serve React build in production
