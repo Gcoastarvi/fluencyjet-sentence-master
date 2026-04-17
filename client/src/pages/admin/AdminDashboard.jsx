@@ -311,48 +311,49 @@ function AdminDashboard() {
   // 🎯 THE POWER FUNCTIONS: Control users and bulk enrollments
   const handleUpdateAccess = async (userId, data) => {
     try {
-      // data is { track: '...' } or { hasAccess: true/false }
+      // 🎯 THE SECURITY BADGE: Grab it from the browser's safe
+      const token =
+        localStorage.getItem("fj_admin_token") || localStorage.getItem("token");
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
+
+      // 🎯 THE REQUEST: Send the update with the badge included
       const response = await axios.patch(
         `/api/admin/users/${userId}/access`,
         data,
+        config, // 👈 This is the missing link!
       );
+
       if (response.data.ok) {
-        // Update the local list so the UI changes instantly
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === userId ? { ...u, ...response.data.user } : u,
-          ),
-        );
-        toast.success("Student updated successfully! ✅");
+        toast.success("Student access updated!");
+        // We call our Master Fetcher again to refresh the list
+        loadDashboardData();
       }
     } catch (err) {
       console.error("Access update failed:", err);
-      toast.error("Failed to update student access.");
+      toast.error("Failed to update access. Check the console.");
     }
   };
 
-  const handleBulkEnroll = async () => {
-    if (!bulkEmails.trim())
-      return toast.error("Please enter at least one email.");
-
-    const emailArray = bulkEmails
-      .split(/[\n,]+/)
-      .map((e) => e.trim())
-      .filter((e) => e);
-
+  const handleBulkAccess = async () => {
     try {
-      const res = await axios.post("/api/admin/users/bulk-access", {
-        emails: emailArray,
-        track: bulkTrack,
-        plan: "PRO",
-      });
+      const token =
+        localStorage.getItem("fj_admin_token") || localStorage.getItem("token");
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      const res = await axios.post(
+        "/api/admin/users/bulk-access",
+        { emails: bulkEmails, track: bulkTrack },
+        config, // 👈 Important
+      );
 
       if (res.data.ok) {
-        toast.success(`Successfully enrolled ${res.data.count} students! 🚀`);
-        setBulkEmails(""); // Clear the box
+        toast.success("Bulk access granted!");
+        loadDashboardData();
       }
     } catch (err) {
-      toast.error("Bulk enrollment failed. Check the emails.");
+      toast.error("Bulk action failed.");
     }
   };
 
