@@ -41,13 +41,30 @@ const PORT = process.env.PORT || 8080;
 // 🎯 SHIFTED CORS BLOCK STARTS HERE
 import cors from "cors";
 
+// 🎯 THE ULTIMATE CORS HANDSHAKE
 const corsOptions = {
-  origin: [
-    "https://fluencyjet-sentence-master-production.up.railway.app",
-    "https://fluencyjet-sentence-master-production-de09.up.railway.app", // 👈 Explicitly trust your current frontend
-  ],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  origin: (origin, callback) => {
+    // 1. Define which URLs we trust
+    const trustedOrigins = [
+      process.env.FRONTEND_URL,
+      "https://fluencyjet-sentence-master-production.up.railway.app",
+      "https://fluencyjet-sentence-master-production-de09.up.railway.app",
+    ];
+
+    // 2. Allow requests with no origin (like mobile apps or curl)
+    // or if the origin is in our trusted list
+    if (
+      !origin ||
+      trustedOrigins.indexOf(origin) !== -1 ||
+      origin.startsWith("http://localhost")
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true, // 👈 Crucial for your fj_token cookie
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // 🎯 Added PATCH
   allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"],
 };
 

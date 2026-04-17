@@ -18,6 +18,15 @@ function AdminDashboard() {
   const [bulkTrack, setBulkTrack] = useState("INTERMEDIATE");
   const [isBuying, setIsBuying] = useState(false);
 
+  // 🎯 THE DYNAMIC DESTINATION FIX
+  // This uses the variable you already set in Railway/Local .env
+  const BACKEND_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+  // Apply this to axios globally (Moving this outside the function is even better)
+  axios.defaults.baseURL = BACKEND_URL;
+  axios.defaults.withCredentials = true;
+
   // 🎯 THE DUAL FILTER BRAIN (Calculates matches instantly)
   const filteredUsers = useMemo(() => {
     const search = (searchTerm || "").toLowerCase().trim();
