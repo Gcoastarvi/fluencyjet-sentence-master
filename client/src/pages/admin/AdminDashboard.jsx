@@ -57,64 +57,48 @@ function AdminDashboard() {
     );
   }, [searchTerm, lessons]);
 
-  useEffect(() => {
-    async function loadDashboardData() {
-      try {
-        setLoading(true);
-        setError("");
+  // 🎯 1. THE MASTER FETCHER (Moved outside so it's accessible everywhere)
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        // 🎯 1. AUTHENTICATION: Grab the token
-        const token =
-          localStorage.getItem("fj_admin_token") ||
-          localStorage.getItem("token");
-        const config = {
-          headers: { Authorization: `Bearer ${token}` },
-        };
+      const token =
+        localStorage.getItem("fj_admin_token") || localStorage.getItem("token");
+      const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        console.log("🚀 MASTER FETCH: Starting authenticated requests...");
+      const [userRes, lessonRes, statsRes] = await Promise.all([
+        axios.get("/api/admin/users", config),
+        axios.get("/api/admin/lessons", config),
+        axios.get("/api/admin/dashboard", config),
+      ]);
 
-        // 🎯 2. THE DATA PULL
-        const [userRes, lessonRes, statsRes] = await Promise.all([
-          axios.get("/api/admin/users", config),
-          axios.get("/api/admin/lessons", config),
-          axios.get("/api/admin/dashboard", config),
-        ]);
+      const userData = userRes.data.users || [];
+      const lessonData = lessonRes.data.lessons || [];
 
-        console.log("🎯 MASTER SUCCESS: All data received!");
+      const totalXP = userData.reduce(
+        (acc, user) => acc + (user.xpTotal || 0),
+        0,
+      );
+      const avgXP = userData.length ? Math.floor(totalXP / userData.length) : 0;
 
-        // 🎯 3. UNPACK & CALCULATE
-        const userData = userRes.data.users || [];
-        const lessonData = lessonRes.data.lessons || [];
-
-        // Calculate Engagement using the new 'xpTotal' field
-        const totalXP = userData.reduce(
-          (acc, user) => acc + (user.xpTotal || 0),
-          0,
-        );
-        const avgXP = userData.length
-          ? Math.floor(totalXP / userData.length)
-          : 0;
-
-        // 🎯 4. UPDATE STATE (Single source of truth)
-        setUsers(userData);
-        setLessons(lessonData);
-        setStats({
-          ...statsRes.data,
-          avgXP: avgXP,
-        });
-      } catch (err) {
-        console.error("❌ MASTER ERROR:", err);
-        // Only show error if we don't have existing data to fall back on
-        setError(
-          "Admin Access Denied. Please ensure you are logged in as an Admin.",
-        );
-      } finally {
-        setLoading(false);
+      setUsers(userData);
+      setLessons(lessonData);
+      if (statsRes.data) {
+        setStats({ ...statsRes.data, avgXP });
       }
+    } catch (err) {
+      console.error("Fetch Error:", err);
+      setError("Connection failed. Check if Railway backend is awake.");
+    } finally {
+      setLoading(false);
     }
+  };
 
+  // 🎯 2. THE AUTO-LOADER (Calls the function once when page opens)
+  useEffect(() => {
     loadDashboardData();
-  }, []); // 🎯 Runs exactly once on page load
+  }, []);
 
   const handleBulkDelete = async () => {
     if (
