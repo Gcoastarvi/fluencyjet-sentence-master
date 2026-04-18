@@ -2,6 +2,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/api/apiClient";
+import { useAuth } from "../../context/AuthContext";
+import { freeAllowsLesson } from "../../lib/accessRules";
 
 // --- local progress helpers (same storage keys used by SentencePractice) ---
 const progressKey = (lid, mode) => `fj_progress:${lid}:${mode}`;
@@ -59,6 +61,22 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
   const [streak, setStreak] = useState(0);
   const [summary, setSummary] = useState({ streakFreezes: 0 });
   const [masteryNote, setMasteryNote] = useState(null);
+
+  const { auth } = useAuth();
+
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const hasManualAccess =
+    auth?.user?.has_access === true ||
+    auth?.has_access === true ||
+    storedUser?.has_access === true ||
+    storedUser?.hasAccess === true;
 
   const getTileProgress = (dayNumber) => {
     const typingProg = readProgress(dayNumber, "typing");
@@ -311,8 +329,11 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
 
       <div className="space-y-4">
         {orderedLessons.map((lesson, index) => {
-          const isUnlocked = unlocked.includes(lesson.id);
           const dayNumber = getDayNumber(lesson, index);
+          const isNormallyUnlocked = unlocked.includes(lesson.id);
+          const isFreeLesson = freeAllowsLesson(dayNumber);
+          const isUnlocked =
+            isNormallyUnlocked || hasManualAccess || isFreeLesson;
 
           // 🎀 Unified Mastery & Progress Calculation
           const { isMastered, bestPct, hasStarted } = (() => {

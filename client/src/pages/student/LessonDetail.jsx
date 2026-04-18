@@ -192,6 +192,14 @@ export default function LessonDetail() {
 
   console.log("🕵️ LessonDetail Context:", { dayNumber, difficulty });
 
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
   const progressUserId =
     auth?.user?.id ||
     auth?.user?.email ||
@@ -304,16 +312,7 @@ export default function LessonDetail() {
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
 
-  const [showTamilHelp, setShowTamilHelp] = useState(false);
-
-  // 🎯 OPTION A: 3 LESSONS FREE // 🎯 THE LOCK PROTECTOR
-  const storedUser = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null");
-    } catch {
-      return null;
-    }
-  })();
+  const [showTamilHelp, setShowTamilHelp] = useState(false);  
 
   const hasManualAccess =
     auth?.user?.has_access === true ||
