@@ -209,6 +209,43 @@ router.get("/users/:id", authRequired, requireAdmin, async (req, res) => {
 });
 
 /* ─────────────────────────────────────────────
+    FIXED ACCESS UPDATE ROUTE
+────────────────────────────────────────────── */
+router.patch(
+  "/users/:id/access",
+  authRequired,
+  requireAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+    const { has_access, track } = req.body;
+
+    try {
+      console.log(
+        `🎯 ATTEMPTING ACCESS UPDATE: User ID ${id} -> Access: ${has_access}, Track: ${track}`,
+      );
+
+      // We use updateMany or find the user first to ensure the ID type matches
+      const updatedUser = await prisma.user.update({
+        where: { id: parseInt(id) }, // 🎯 Ensuring ID is a number
+        data: {
+          has_access: Boolean(has_access),
+          track: track,
+        },
+      });
+
+      console.log(`✅ SUCCESS: Access granted to ${updatedUser.email}`);
+      res.json({ ok: true, user: updatedUser });
+    } catch (err) {
+      console.error("❌ UPDATE CRASHED:", err.message);
+      res.status(500).json({
+        ok: false,
+        message: "Database update failed. Check field names.",
+      });
+    }
+  },
+);
+
+/* ─────────────────────────────────────────────
    Who's Learning List
 ────────────────────────────────────────────── */
 
