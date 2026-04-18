@@ -192,15 +192,6 @@ export default function LessonDetail() {
 
   console.log("🕵️ LessonDetail Context:", { dayNumber, difficulty });
 
-  // 3. USER CONTEXT (The Logic you need to keep)
-  const storedUser = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "null");
-    } catch {
-      return null;
-    }
-  })();
-
   const progressUserId =
     auth?.user?.id ||
     auth?.user?.email ||
@@ -316,7 +307,21 @@ export default function LessonDetail() {
   const [showTamilHelp, setShowTamilHelp] = useState(false);
 
   // 🎯 OPTION A: 3 LESSONS FREE // 🎯 THE LOCK PROTECTOR
-  const isLocked = auth?.user?.has_access === false && Number(dayNumber) > 3;
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const hasManualAccess =
+    auth?.user?.has_access === true ||
+    auth?.has_access === true ||
+    storedUser?.has_access === true ||
+    storedUser?.hasAccess === true;
+
+  const isLocked = Number(dayNumber) > 3 && !hasManualAccess;
 
   useEffect(() => {
     // 🏆 Trigger celebration only when they reach 100%
@@ -367,17 +372,13 @@ export default function LessonDetail() {
       }
     })();
 
-    const isFreeUser =
-      auth?.user?.has_access === false ||
-      auth?.has_access === false ||
-      storedUser?.has_access === false ||
-      storedUser?.hasAccess === false ||
-      (!auth?.user?.has_access &&
-        !auth?.has_access &&
-        !storedUser?.has_access &&
-        !storedUser?.hasAccess);
+    const hasManualAccess =
+      auth?.user?.has_access === true ||
+      auth?.has_access === true ||
+      storedUser?.has_access === true ||
+      storedUser?.hasAccess === true;
 
-    if (!isFreeUser) return;
+    if (hasManualAccess) return;
     if (freeAllowsLesson(lessonNum)) return;
 
     const plan = diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER";

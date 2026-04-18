@@ -1,3 +1,4 @@
+// server/middleware/adminGuard.js
 // 🎯 THE MISSING SECURITY GUARD
 export const requireAdmin = (req, res, next) => {
   // 🎯 ULTIMATE TRICK: The Master Key Bypass

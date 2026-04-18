@@ -55,17 +55,15 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
     const basePath = isIntermediate ? "/i/lesson" : "/b/lesson";
     const difficulty = isIntermediate ? "intermediate" : "beginner";
 
-    const isFreeUser =
-      auth?.user?.has_access === false ||
-      auth?.has_access === false ||
-      storedUser?.has_access === false ||
-      storedUser?.hasAccess === false ||
-      (!auth?.user?.has_access &&
-        !auth?.has_access &&
-        !storedUser?.has_access &&
-        !storedUser?.hasAccess);
+    const hasManualAccess =
+      auth?.user?.has_access === true ||
+      auth?.has_access === true ||
+      storedUser?.has_access === true ||
+      storedUser?.hasAccess === true;
 
-    if (isFreeUser && !freeAllowsLesson(lessonKey)) {
+    const isFreeLesson = freeAllowsLesson(lessonKey);
+
+    if (!hasManualAccess && !isFreeLesson) {
       const plan = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
       navigate(
         `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonKey}&difficulty=${encodeURIComponent(difficulty)}`,

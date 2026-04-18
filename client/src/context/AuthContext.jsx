@@ -88,7 +88,10 @@ export function AuthProvider({ children }) {
           id: data?.id || data?.user_id || data?.userId || null,
           email: data?.email || null,
           plan: data?.plan || "FREE",
+          has_access: data?.has_access ?? false,
           daily_streak: data?.daily_streak || 0,
+          track: data?.track || "BEGINNER",
+          current_unit: data?.current_unit || 1,
         };
         setUser(nextUser);
         persist(storedToken, nextUser);
@@ -137,6 +140,7 @@ export function AuthProvider({ children }) {
       id: data?.id || data?.user_id || data?.userId || null,
       email: data?.email || email,
       plan: data?.plan || "FREE",
+      has_access: data?.has_access ?? false,
       daily_streak: data?.daily_streak || 0,
       // 🎯 THE IDENTITY FIX: Keep the track and unit in memory
       track: data?.track || "BEGINNER",
