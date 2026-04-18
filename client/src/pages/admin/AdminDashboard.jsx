@@ -58,9 +58,9 @@ function AdminDashboard() {
   }, [searchTerm, lessons]);
 
   // 🎯 1. THE MASTER FETCHER (Moved outside so it's accessible everywhere)
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true); // 🎯 Only show spinner on full refresh
       setError("");
 
       const token =
@@ -311,8 +311,7 @@ function AdminDashboard() {
 
       if (response.data.ok) {
         toast.success("Student access updated!");
-        // We call our Master Fetcher again to refresh the list
-        loadDashboardData();
+        loadDashboardData(true); // 👈 Change this to 'true' for a silent refresh
       }
     } catch (err) {
       console.error("Access update failed:", err);
@@ -555,11 +554,13 @@ function AdminDashboard() {
                   </td>
                   <td className="py-4 px-4">
                     <button
-                      onClick={() =>
+                      onClick={(e) => {
+                        e.preventDefault(); // 🎯 Prevents page jump
                         handleUpdateAccess(student.id, {
-                          hasAccess: !student.has_access,
-                        })
-                      }
+                          has_access: !student.has_access, // 🎯 Matches backend schema
+                          track: student.track || "BEGINNER", // 🎯 Ensures track is sent
+                        });
+                      }}
                       className={`text-[10px] font-black px-4 py-2 rounded-xl transition-all ${
                         student.has_access
                           ? "bg-green-100 text-green-700 hover:bg-green-200"

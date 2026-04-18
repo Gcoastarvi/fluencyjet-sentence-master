@@ -219,28 +219,27 @@ router.patch(
     const { id } = req.params;
     const { has_access, track } = req.body;
 
-    try {
-      console.log(
-        `🎯 ATTEMPTING ACCESS UPDATE: User ID ${id} -> Access: ${has_access}, Track: ${track}`,
-      );
+    // 🎯 SAFETY CHECK: Stop the "Blank Envelope" bug
+    if (has_access === undefined || !track) {
+      console.error(`❌ REJECTED: Button sent no data for User ${id}`);
+      return res
+        .status(400)
+        .json({ ok: false, message: "No track or access data provided." });
+    }
 
-      // We use updateMany or find the user first to ensure the ID type matches
+    try {
       const updatedUser = await prisma.user.update({
-        where: { id: parseInt(id) }, // 🎯 Ensuring ID is a number
+        where: { id: parseInt(id) },
         data: {
           has_access: Boolean(has_access),
           track: track,
         },
       });
 
-      console.log(`✅ SUCCESS: Access granted to ${updatedUser.email}`);
+      console.log(`✅ SUCCESS: ${updatedUser.email} is now ${track} PRO!`);
       res.json({ ok: true, user: updatedUser });
     } catch (err) {
-      console.error("❌ UPDATE CRASHED:", err.message);
-      res.status(500).json({
-        ok: false,
-        message: "Database update failed. Check field names.",
-      });
+      res.status(500).json({ ok: false, message: "Update failed" });
     }
   },
 );
