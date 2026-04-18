@@ -138,6 +138,9 @@ export async function loginUser(email, password) {
     JSON.stringify({
       email: res.data.email,
       plan: res.data.plan || "FREE",
+      has_access: res.data.has_access ?? false,
+      track: res.data.track || "BEGINNER",
+      current_unit: res.data.current_unit || 1,
     }),
   );
 

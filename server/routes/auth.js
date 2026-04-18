@@ -71,6 +71,7 @@ router.post("/signup", async (req, res) => {
       token,
       email: user.email,
       plan: user.plan,
+      has_access: !!user.has_access,
       track: user.track,
       current_unit: user.current_unit,
     });
@@ -135,6 +136,7 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
       token,
       email: user.email,
       plan: user.plan,
+      has_access: !!user.has_access,
       track: user.track || "BEGINNER",
       current_unit: user.current_unit || 1,
     });

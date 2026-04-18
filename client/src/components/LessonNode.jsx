@@ -31,12 +31,10 @@ export default function LessonNode({ lesson, displayNum, isLocked }) {
       }
     })();
 
-    const isFreeUser =
-      storedUser?.has_access === false ||
-      storedUser?.hasAccess === false ||
-      (!storedUser?.has_access && !storedUser?.hasAccess);
+    const hasManualAccess =
+      storedUser?.has_access === true || storedUser?.hasAccess === true;
 
-    if (isFreeUser && !freeAllowsLesson(routeId)) {
+    if (!hasManualAccess && !freeAllowsLesson(routeId)) {
       const plan = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
       navigate(
         `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${routeId}&difficulty=${encodeURIComponent(difficulty)}`,
