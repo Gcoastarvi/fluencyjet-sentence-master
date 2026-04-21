@@ -78,6 +78,41 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
     storedUser?.has_access === true ||
     storedUser?.hasAccess === true;
 
+  const effectivePlan = String(
+    auth?.user?.plan || auth?.plan || storedUser?.plan || "FREE",
+  ).toUpperCase();
+
+  const effectiveTrack = String(
+    auth?.user?.track || auth?.track || storedUser?.track || "",
+  ).toUpperCase();
+
+  const currentRouteTrack = String(track || "beginner").toUpperCase();
+
+  const hasTrackAccess =
+    effectivePlan === "PRO" ||
+    effectivePlan === "PAID" ||
+    (hasManualAccess &&
+      (effectivePlan === currentRouteTrack ||
+        effectiveTrack === currentRouteTrack));
+
+  useEffect(() => {
+    if (!hasManualAccess) return;
+    if (hasTrackAccess) return;
+
+    const fallbackPath =
+      effectivePlan === "INTERMEDIATE" || effectiveTrack === "INTERMEDIATE"
+        ? "/i/lessons"
+        : "/b/lessons";
+
+    navigate(fallbackPath, { replace: true });
+  }, [
+    hasManualAccess,
+    hasTrackAccess,
+    effectivePlan,
+    effectiveTrack,
+    navigate,
+  ]);
+
   const getTileProgress = (dayNumber) => {
     const typingProg = readProgress(dayNumber, "typing");
     const reorderProg = readProgress(dayNumber, "reorder");
@@ -333,7 +368,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
           const isNormallyUnlocked = unlocked.includes(lesson.id);
           const isFreeLesson = freeAllowsLesson(dayNumber);
           const isUnlocked =
-            isNormallyUnlocked || hasManualAccess || isFreeLesson;
+            isNormallyUnlocked || hasTrackAccess || isFreeLesson;
 
           // 🎀 Unified Mastery & Progress Calculation
           const { isMastered, bestPct, hasStarted } = (() => {

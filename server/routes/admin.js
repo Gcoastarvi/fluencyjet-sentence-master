@@ -262,17 +262,52 @@ router.patch(
   authRequired,
   requireAdmin,
   async (req, res) => {
-    const { plan, track, hasAccess } = req.body; // 🎯 Added 'track' and 'hasAccess'
+    const { plan, track, hasAccess } = req.body;
 
     try {
+      const existingUser = await prisma.user.findUnique({
+        where: { id: req.params.id },
+        select: {
+          id: true,
+          email: true,
+          track: true,
+          plan: true,
+          has_access: true,
+        },
+      });
+
+      if (!existingUser) {
+        return res.status(404).json({ ok: false, message: "USER_NOT_FOUND" });
+      }
+
+      const normalizedTrack = String(
+        track || existingUser.track || "BEGINNER",
+      ).toUpperCase();
+      const nextHasAccess = hasAccess ?? true;
+
+      const normalizedPlan = nextHasAccess
+        ? String(
+            plan ||
+              (normalizedTrack === "INTERMEDIATE"
+                ? "INTERMEDIATE"
+                : "BEGINNER"),
+          ).toUpperCase()
+        : "FREE";
+
       const updated = await prisma.user.update({
         where: { id: req.params.id },
         data: {
-          plan: plan || "PRO",
-          track: track || "BEGINNER", // 🎯 Sets the level
-          has_access: hasAccess ?? true,
+          plan: normalizedPlan,
+          track: normalizedTrack,
+          has_access: nextHasAccess,
         },
-        select: { id: true, email: true, track: true, has_access: true },
+        select: {
+          id: true,
+          email: true,
+          track: true,
+          plan: true,
+          has_access: true,
+        },
       });
 
       return res.json({ ok: true, user: updated });
@@ -293,7 +328,12 @@ router.post(
   requireAdmin,
   async (req, res) => {
     const { emails, track, plan } = req.body;
-    // 'emails' is an array: ["user1@gmail.com", "user2@gmail.com"]
+
+    const normalizedTrack = String(track || "BEGINNER").toUpperCase();
+    const normalizedPlan = String(
+      plan ||
+        (normalizedTrack === "INTERMEDIATE" ? "INTERMEDIATE" : "BEGINNER"),
+    ).toUpperCase();
 
     const results = await prisma.user.updateMany({
       where: {
@@ -301,8 +341,8 @@ router.post(
       },
       data: {
         has_access: true,
-        plan: plan || "PRO",
-        track: track || "BEGINNER",
+        plan: normalizedPlan,
+        track: normalizedTrack,
       },
     });
 

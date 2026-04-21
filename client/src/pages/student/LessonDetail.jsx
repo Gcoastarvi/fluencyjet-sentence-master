@@ -312,7 +312,7 @@ export default function LessonDetail() {
   const [smartStarting, setSmartStarting] = useState(false);
   const [smartStartMsg, setSmartStartMsg] = useState("");
 
-  const [showTamilHelp, setShowTamilHelp] = useState(false);  
+  const [showTamilHelp, setShowTamilHelp] = useState(false);
 
   const hasManualAccess =
     auth?.user?.has_access === true ||
@@ -320,7 +320,24 @@ export default function LessonDetail() {
     storedUser?.has_access === true ||
     storedUser?.hasAccess === true;
 
-  const isLocked = Number(dayNumber) > 3 && !hasManualAccess;
+  const effectivePlan = String(
+    auth?.user?.plan || auth?.plan || storedUser?.plan || "FREE",
+  ).toUpperCase();
+
+  const effectiveTrack = String(
+    auth?.user?.track || auth?.track || storedUser?.track || "",
+  ).toUpperCase();
+
+  const currentRouteTrack = String(difficulty || "beginner").toUpperCase();
+
+  const hasTrackAccess =
+    effectivePlan === "PRO" ||
+    effectivePlan === "PAID" ||
+    (hasManualAccess &&
+      (effectivePlan === currentRouteTrack ||
+        effectiveTrack === currentRouteTrack));
+
+  const isLocked = Number(dayNumber) > 3 && !hasTrackAccess;
 
   useEffect(() => {
     // 🏆 Trigger celebration only when they reach 100%
@@ -363,21 +380,17 @@ export default function LessonDetail() {
     const lessonNum = Number(dayNumber || lessonId);
     const diff = String(difficulty || "beginner").toLowerCase();
 
-    const storedUser = (() => {
-      try {
-        return JSON.parse(localStorage.getItem("user") || "null");
-      } catch {
-        return null;
-      }
-    })();
+    if (hasManualAccess && !hasTrackAccess) {
+      const fallbackPath =
+        effectivePlan === "INTERMEDIATE" || effectiveTrack === "INTERMEDIATE"
+          ? "/i/lessons"
+          : "/b/lessons";
 
-    const hasManualAccess =
-      auth?.user?.has_access === true ||
-      auth?.has_access === true ||
-      storedUser?.has_access === true ||
-      storedUser?.hasAccess === true;
+      navigate(fallbackPath, { replace: true });
+      return;
+    }
 
-    if (hasManualAccess) return;
+    if (hasTrackAccess) return;
     if (freeAllowsLesson(lessonNum)) return;
 
     const plan = diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER";
@@ -385,7 +398,17 @@ export default function LessonDetail() {
       `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonNum}&difficulty=${encodeURIComponent(diff)}`,
       { replace: true },
     );
-  }, [auth, dayNumber, lessonId, difficulty, navigate]);
+  }, [
+    auth,
+    dayNumber,
+    lessonId,
+    difficulty,
+    navigate,
+    hasManualAccess,
+    hasTrackAccess,
+    effectivePlan,
+    effectiveTrack,
+  ]);
 
   // 192: Add state for User Metadata
   const [userProfile, setUserProfile] = useState(null);

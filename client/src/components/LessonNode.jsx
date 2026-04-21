@@ -34,7 +34,18 @@ export default function LessonNode({ lesson, displayNum, isLocked }) {
     const hasManualAccess =
       storedUser?.has_access === true || storedUser?.hasAccess === true;
 
-    if (!hasManualAccess && !freeAllowsLesson(routeId)) {
+    const effectivePlan = String(storedUser?.plan || "FREE").toUpperCase();
+    const effectiveTrack = String(storedUser?.track || "").toUpperCase();
+    const currentRouteTrack = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
+
+    const hasTrackAccess =
+      effectivePlan === "PRO" ||
+      effectivePlan === "PAID" ||
+      (hasManualAccess &&
+        (effectivePlan === currentRouteTrack ||
+          effectiveTrack === currentRouteTrack));
+
+    if (!hasTrackAccess && !freeAllowsLesson(routeId)) {
       const plan = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
       navigate(
         `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${routeId}&difficulty=${encodeURIComponent(difficulty)}`,

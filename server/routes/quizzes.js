@@ -151,17 +151,18 @@ router.get("/random", authRequired, async (req, res) => {
       adminEmail && String(userRow?.email || "").toLowerCase() === adminEmail;
 
     // full access (admin/pro/all)
+    const hasAccess = !!userRow?.has_access;
+
     const isProAll =
-      !!userRow?.has_access ||
       isAdminByEmail ||
       tier === "pro" ||
       tier === "all" ||
       plan === "pro" ||
       plan === "paid";
 
-    // paid but segregated tiers
-    const isPaidBeginner = plan === "beginner";
-    const isPaidIntermediate = plan === "intermediate";
+    // paid/manual but segregated tiers
+    const isPaidBeginner = hasAccess && plan === "beginner";
+    const isPaidIntermediate = hasAccess && plan === "intermediate";
 
     // ✅ Hard rule: free users only get first N lessons
     const track = getUserTrack(userRow, diff);
@@ -684,18 +685,18 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     const isAdminByEmail =
       adminEmail && String(userRow?.email || "").toLowerCase() === adminEmail;
 
-    // full access (admin/pro/all)
+    const hasAccess = !!userRow?.has_access;
+
     const isProAll =
-      !!userRow?.has_access ||
       isAdminByEmail ||
       tier === "pro" ||
       tier === "all" ||
       plan === "pro" ||
       plan === "paid";
 
-    // paid but segregated tiers
-    const isPaidBeginner = plan === "beginner";
-    const isPaidIntermediate = plan === "intermediate";
+    // paid/manual but segregated tiers
+    const isPaidBeginner = hasAccess && plan === "beginner";
+    const isPaidIntermediate = hasAccess && plan === "intermediate";
 
     const track = getUserTrack(userRow, diff);
     const planForPaywall = planForTrack(track);
