@@ -226,11 +226,16 @@ router.patch(
   authRequired,
   requireAdmin,
   async (req, res) => {
+    const userId = parseInt(req.params.id, 10);
     const { plan, track, hasAccess, has_access } = req.body;
+
+    if (!Number.isInteger(userId)) {
+      return res.status(400).json({ ok: false, message: "INVALID_USER_ID" });
+    }
 
     try {
       const existingUser = await prisma.user.findUnique({
-        where: { id: req.params.id },
+        where: { id: userId },
         select: {
           id: true,
           email: true,
@@ -247,19 +252,25 @@ router.patch(
       const normalizedTrack = String(
         track || existingUser.track || "BEGINNER",
       ).toUpperCase();
+
       const nextHasAccess = hasAccess ?? has_access ?? true;
 
-      const normalizedPlan = nextHasAccess
-        ? String(
-            plan ||
-              (normalizedTrack === "INTERMEDIATE"
-                ? "INTERMEDIATE"
-                : "BEGINNER"),
-          ).toUpperCase()
-        : "FREE";
+      const requestedPlan = String(
+        plan || existingUser.plan || "",
+      ).toUpperCase();
+
+      const normalizedPlan = !nextHasAccess
+        ? "FREE"
+        : requestedPlan === "PRO" ||
+            requestedPlan === "BEGINNER" ||
+            requestedPlan === "INTERMEDIATE"
+          ? requestedPlan
+          : normalizedTrack === "INTERMEDIATE"
+            ? "INTERMEDIATE"
+            : "BEGINNER";
 
       const updated = await prisma.user.update({
-        where: { id: req.params.id },
+        where: { id: userId },
         data: {
           plan: normalizedPlan,
           track: normalizedTrack,
@@ -276,6 +287,7 @@ router.patch(
 
       return res.json({ ok: true, user: updated });
     } catch (err) {
+      console.error("ACCESS_UPDATE_FAILED:", err);
       return res
         .status(500)
         .json({ ok: false, message: "ACCESS_UPDATE_FAILED" });
