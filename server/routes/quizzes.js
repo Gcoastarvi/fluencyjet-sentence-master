@@ -726,10 +726,13 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       query: req.query,
     });
 
-    // ✅ Tier-aware access rules
-    if (!isProAll) {
-      // Paid beginner can ONLY access beginner track (no caps)
-      if (isPaidBeginner && track !== "BEGINNER") {
+      // Paid beginner can access intermediate free lessons only (1-3), not premium intermediate
+      if (
+        isPaidBeginner &&
+        track !== "BEGINNER" &&
+        lessonIdNum &&
+        !freeAllowsLesson(track, lessonIdNum)
+      ) {
         return res.status(403).json(
           paywallResponse({
             lessonId: lessonIdNum,
@@ -739,8 +742,13 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
         );
       }
 
-      // Paid intermediate can ONLY access intermediate track (no caps)
-      if (isPaidIntermediate && track !== "INTERMEDIATE") {
+      // Paid intermediate can access beginner free lessons only (1-3), not premium beginner
+      if (
+        isPaidIntermediate &&
+        track !== "INTERMEDIATE" &&
+        lessonIdNum &&
+        !freeAllowsLesson(track, lessonIdNum)
+      ) {
         return res.status(403).json(
           paywallResponse({
             lessonId: lessonIdNum,
