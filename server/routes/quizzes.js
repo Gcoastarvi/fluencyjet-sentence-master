@@ -177,8 +177,13 @@ router.get("/random", authRequired, async (req, res) => {
 
     // ✅ Tier-aware access rules (RANDOM)
     if (!isProAll) {
-      // Paid beginner can ONLY access beginner track
-      if (isPaidBeginner && track !== "BEGINNER") {
+      // Paid beginner can access intermediate free lessons only (1-3), not premium intermediate
+      if (
+        isPaidBeginner &&
+        track !== "BEGINNER" &&
+        lessonIdNum &&
+        !freeAllowsLesson(track, lessonIdNum)
+      ) {
         return res.status(403).json(
           paywallResponse({
             lessonId: lessonIdNum || 0,
@@ -188,8 +193,13 @@ router.get("/random", authRequired, async (req, res) => {
         );
       }
 
-      // Paid intermediate can ONLY access intermediate track
-      if (isPaidIntermediate && track !== "INTERMEDIATE") {
+      // Paid intermediate can access beginner free lessons only (1-3), not premium beginner
+      if (
+        isPaidIntermediate &&
+        track !== "INTERMEDIATE" &&
+        lessonIdNum &&
+        !freeAllowsLesson(track, lessonIdNum)
+      ) {
         return res.status(403).json(
           paywallResponse({
             lessonId: lessonIdNum || 0,
@@ -726,6 +736,8 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
       query: req.query,
     });
 
+    // ✅ Tier-aware access rules
+    if (!isProAll) {
       // Paid beginner can access intermediate free lessons only (1-3), not premium intermediate
       if (
         isPaidBeginner &&
