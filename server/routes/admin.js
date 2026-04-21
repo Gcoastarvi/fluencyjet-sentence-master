@@ -209,42 +209,6 @@ router.get("/users/:id", authRequired, requireAdmin, async (req, res) => {
 });
 
 /* ─────────────────────────────────────────────
-    FIXED ACCESS UPDATE ROUTE
-────────────────────────────────────────────── */
-router.patch(
-  "/users/:id/access",
-  authRequired,
-  requireAdmin,
-  async (req, res) => {
-    const { id } = req.params;
-    const { has_access, track } = req.body;
-
-    // 🎯 SAFETY CHECK: Stop the "Blank Envelope" bug
-    if (has_access === undefined || !track) {
-      console.error(`❌ REJECTED: Button sent no data for User ${id}`);
-      return res
-        .status(400)
-        .json({ ok: false, message: "No track or access data provided." });
-    }
-
-    try {
-      const updatedUser = await prisma.user.update({
-        where: { id: parseInt(id) },
-        data: {
-          has_access: Boolean(has_access),
-          track: track,
-        },
-      });
-
-      console.log(`✅ SUCCESS: ${updatedUser.email} is now ${track} PRO!`);
-      res.json({ ok: true, user: updatedUser });
-    } catch (err) {
-      res.status(500).json({ ok: false, message: "Update failed" });
-    }
-  },
-);
-
-/* ─────────────────────────────────────────────
    Who's Learning List
 ────────────────────────────────────────────── */
 
