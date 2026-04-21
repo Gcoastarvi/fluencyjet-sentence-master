@@ -390,17 +390,24 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
 
           const goPrimary = () => {
             playClick();
-            const diff = String(
-              lesson?.difficulty || lesson?.lessonLevel || track || "beginner",
-            ).toLowerCase();
+
+            const routeTrack = window.location.pathname.startsWith("/i/")
+              ? "INTERMEDIATE"
+              : "BEGINNER";
+
+            const diff =
+              routeTrack === "INTERMEDIATE" ? "intermediate" : "beginner";
+            const routeBasePath = routeTrack === "INTERMEDIATE" ? "/i" : "/b";
+
             if (!isUnlocked) {
               navigate(
-                `/paywall?plan=${diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER"}&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(diff)}`,
+                `/paywall?plan=${routeTrack}&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(diff)}`,
               );
               return;
             }
+
             navigate(
-              `${basePath}/lesson/${dayNumber}?difficulty=${encodeURIComponent(diff)}`,
+              `${routeBasePath}/lesson/${dayNumber}?difficulty=${encodeURIComponent(diff)}`,
             );
           };
 
