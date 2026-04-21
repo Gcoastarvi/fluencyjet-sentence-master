@@ -380,18 +380,8 @@ export default function LessonDetail() {
     const lessonNum = Number(dayNumber || lessonId);
     const diff = String(difficulty || "beginner").toLowerCase();
 
-    if (hasManualAccess && !hasTrackAccess) {
-      const fallbackPath =
-        effectivePlan === "INTERMEDIATE" || effectiveTrack === "INTERMEDIATE"
-          ? "/i/lessons"
-          : "/b/lessons";
-
-      navigate(fallbackPath, { replace: true });
-      return;
-    }
-
+    if (!hasTrackAccess && freeAllowsLesson(lessonNum)) return;
     if (hasTrackAccess) return;
-    if (freeAllowsLesson(lessonNum)) return;
 
     const plan = diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER";
     navigate(

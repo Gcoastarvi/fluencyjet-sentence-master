@@ -555,10 +555,21 @@ function AdminDashboard() {
                   <td className="py-4 px-4">
                     <button
                       onClick={(e) => {
-                        e.preventDefault(); // 🎯 Prevents page jump
+                        e.preventDefault();
+
+                        const nextTrack = String(
+                          student.track || "BEGINNER",
+                        ).toUpperCase();
+                        const nextHasAccess = !student.has_access;
+
                         handleUpdateAccess(student.id, {
-                          has_access: !student.has_access, // 🎯 Matches backend schema
-                          track: student.track || "BEGINNER", // 🎯 Ensures track is sent
+                          hasAccess: nextHasAccess,
+                          track: nextTrack,
+                          plan: nextHasAccess
+                            ? nextTrack === "INTERMEDIATE"
+                              ? "INTERMEDIATE"
+                              : "BEGINNER"
+                            : "FREE",
                         });
                       }}
                       className={`text-[10px] font-black px-4 py-2 rounded-xl transition-all ${

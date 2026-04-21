@@ -95,24 +95,6 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
       (effectivePlan === currentRouteTrack ||
         effectiveTrack === currentRouteTrack));
 
-  useEffect(() => {
-    if (!hasManualAccess) return;
-    if (hasTrackAccess) return;
-
-    const fallbackPath =
-      effectivePlan === "INTERMEDIATE" || effectiveTrack === "INTERMEDIATE"
-        ? "/i/lessons"
-        : "/b/lessons";
-
-    navigate(fallbackPath, { replace: true });
-  }, [
-    hasManualAccess,
-    hasTrackAccess,
-    effectivePlan,
-    effectiveTrack,
-    navigate,
-  ]);
-
   const getTileProgress = (dayNumber) => {
     const typingProg = readProgress(dayNumber, "typing");
     const reorderProg = readProgress(dayNumber, "reorder");

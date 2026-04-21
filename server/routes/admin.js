@@ -262,7 +262,7 @@ router.patch(
   authRequired,
   requireAdmin,
   async (req, res) => {
-    const { plan, track, hasAccess } = req.body;
+    const { plan, track, hasAccess, has_access } = req.body;
 
     try {
       const existingUser = await prisma.user.findUnique({
@@ -283,7 +283,7 @@ router.patch(
       const normalizedTrack = String(
         track || existingUser.track || "BEGINNER",
       ).toUpperCase();
-      const nextHasAccess = hasAccess ?? true;
+      const nextHasAccess = hasAccess ?? has_access ?? true;
 
       const normalizedPlan = nextHasAccess
         ? String(
