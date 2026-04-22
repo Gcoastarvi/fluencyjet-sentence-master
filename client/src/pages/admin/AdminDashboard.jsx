@@ -542,9 +542,13 @@ function AdminDashboard() {
                     <select
                       value={student.track || "BEGINNER"}
                       onChange={(e) =>
-                        handleUpdateAccess(student.id, {
-                          track: e.target.value,
-                        })
+                        setUsers((prev) =>
+                          prev.map((u) =>
+                            u.id === student.id
+                              ? { ...u, track: e.target.value }
+                              : u,
+                          ),
+                        )
                       }
                       className="text-[10px] font-black border-none bg-slate-100 rounded-lg p-2 focus:ring-2 ring-indigo-500"
                     >
@@ -561,14 +565,19 @@ function AdminDashboard() {
                           student.track || "BEGINNER",
                         ).toUpperCase();
                         const nextHasAccess = !student.has_access;
+                        const nextPlan = String(
+                          student.plan || student.track || "BEGINNER",
+                        ).toUpperCase();
 
                         handleUpdateAccess(student.id, {
                           hasAccess: nextHasAccess,
                           track: nextTrack,
                           plan: nextHasAccess
-                            ? nextTrack === "INTERMEDIATE"
-                              ? "INTERMEDIATE"
-                              : "BEGINNER"
+                            ? nextPlan === "PRO"
+                              ? "PRO"
+                              : nextPlan === "INTERMEDIATE"
+                                ? "INTERMEDIATE"
+                                : "BEGINNER"
                             : "FREE",
                         });
                       }}
@@ -580,6 +589,29 @@ function AdminDashboard() {
                     >
                       {student.has_access ? "ACTIVE PRO" : "GRANT ACCESS"}
                     </button>
+                  </td>
+                  <td className="py-4 px-4">
+                    <select
+                      value={
+                        student.plan === "PRO"
+                          ? "PRO"
+                          : student.plan || student.track || "BEGINNER"
+                      }
+                      onChange={(e) =>
+                        setUsers((prev) =>
+                          prev.map((u) =>
+                            u.id === student.id
+                              ? { ...u, plan: e.target.value }
+                              : u,
+                          ),
+                        )
+                      }
+                      className="text-[10px] font-black border-none bg-slate-100 rounded-lg p-2 focus:ring-2 ring-indigo-500"
+                    >
+                      <option value="BEGINNER">BEGINNER ONLY</option>
+                      <option value="INTERMEDIATE">INTERMEDIATE ONLY</option>
+                      <option value="PRO">BOTH LEVELS</option>
+                    </select>
                   </td>
                 </tr>
               ))}

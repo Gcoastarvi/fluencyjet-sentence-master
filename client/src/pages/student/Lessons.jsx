@@ -95,6 +95,14 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
       (effectivePlan === currentRouteTrack ||
         effectiveTrack === currentRouteTrack));
 
+  useEffect(() => {
+    const routeTrack = window.location.pathname.startsWith("/i/")
+      ? "INTERMEDIATE"
+      : "BEGINNER";
+
+    localStorage.setItem("fj_last_track", routeTrack);
+  }, []);
+
   const getTileProgress = (dayNumber) => {
     const typingProg = readProgress(dayNumber, "typing");
     const reorderProg = readProgress(dayNumber, "reorder");

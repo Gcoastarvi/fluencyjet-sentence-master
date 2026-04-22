@@ -50,6 +50,39 @@ export default function Navbar() {
     navigate("/", { replace: true });
   }
 
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
+  const effectivePlan = String(
+    user?.plan || auth?.user?.plan || auth?.plan || storedUser?.plan || "FREE",
+  ).toUpperCase();
+
+  const effectiveTrack = String(
+    user?.track ||
+      auth?.user?.track ||
+      auth?.track ||
+      storedUser?.track ||
+      "BEGINNER",
+  ).toUpperCase();
+
+  const lastTrack = String(
+    localStorage.getItem("fj_last_track") || effectiveTrack || "BEGINNER",
+  ).toUpperCase();
+
+  const lessonsHref =
+    effectivePlan === "PRO"
+      ? lastTrack === "INTERMEDIATE"
+        ? "/i/lessons"
+        : "/b/lessons"
+      : effectivePlan === "INTERMEDIATE"
+        ? "/i/lessons"
+        : "/b/lessons";
+
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
@@ -125,7 +158,7 @@ export default function Navbar() {
                   {/* 🎯 THE SMART UNIT LABEL */}
                   <Link
                     className="text-sm sm:text-base flex items-center gap-1"
-                    to={trackPath}
+                    to={lessonsHref}
                   >
                     Lessons
                     {user?.current_unit && (
