@@ -39,6 +39,14 @@ export default function Navbar() {
     );
   }
 
+  const getLeagueFromXP = (xp = 0) => {
+    if (xp >= 150000) return "DIAMOND";
+    if (xp >= 100000) return "SAPPHIRE"; // 🎯 This matches your 121k XP!
+    if (xp >= 50000) return "GOLD";
+    if (xp >= 10000) return "SILVER";
+    return "BRONZE";
+  };
+
   const LEAGUE_MAP = {
     BRONZE: { emoji: "🥉", label: "BRONZE" },
     SILVER: { emoji: "🥈", label: "SILVER" },
@@ -93,7 +101,7 @@ export default function Navbar() {
         : "/b/lessons";
 
   // 🎯 Identify current league or default to BRONZE
-  const currentKey = auth?.user?.league?.toUpperCase() || "BRONZE";
+  const currentKey = getLeagueFromXP(auth?.user?.xpTotal);
   const leagueData = LEAGUE_MAP[currentKey] || LEAGUE_MAP.BRONZE;
 
   return (
@@ -107,17 +115,15 @@ export default function Navbar() {
           >
             FluencyJet <span className="font-normal">Sentence Master</span>
           </Link>
-
-          {/* 🥉 Navbar League Badge */}
+          // {/* 🥉 Navbar League Badge */}
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors cursor-help group relative">
-            <span className="text-lg">{leagueData.emoji}</span>{" "}
-            {/* 🎯 Dynamic Emoji */}
+            <span className="text-lg">{leagueData.emoji}</span>
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-slate-400 uppercase leading-none tracking-tighter">
                 League
               </span>
               <span className="text-xs font-black text-slate-700 leading-none mt-0.5">
-                {leagueData.label} {/* 🎯 Dynamic Text */}
+                {leagueData.label}
               </span>
             </div>
             {/* Tooltip on Hover */}
@@ -125,7 +131,6 @@ export default function Navbar() {
               Maintain Top 3 to Promote! 🚀
             </div>
           </div>
-
           {/* 🔥 Clickable Streak Flame Trigger */}
           {user?.daily_streak > 0 && (
             <button
@@ -141,7 +146,6 @@ export default function Navbar() {
               )}
             </button>
           )}
-
           {/* Navigation */}
           {/* 🎯 THE FLEXIBLE NAV: No scrollbars, no cut-offs */}
           <div className="flex items-center gap-2 sm:gap-4 sm:ml-auto min-w-0">
