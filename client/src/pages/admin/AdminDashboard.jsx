@@ -595,7 +595,7 @@ function AdminDashboard() {
                       value={
                         student.plan === "PRO"
                           ? "PRO"
-                          : student.plan || student.track || "BEGINNER"
+                          : student.plan || "BEGINNER"
                       }
                       onChange={(e) =>
                         setUsers((prev) =>

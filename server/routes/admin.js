@@ -95,11 +95,11 @@ router.get("/users", authRequired, requireAdmin, async (req, res) => {
         name: true,
         username: true,
         track: true,
+        plan: true,
         has_access: true,
-        xpTotal: true, // 🎯 FIXED: Changed from total_xp
+        xpTotal: true,
         created_at: true,
         isAdmin: true,
-        // Removed daily_streak as it is not in your User schema
       },
     });
     res.json({ ok: true, users });
