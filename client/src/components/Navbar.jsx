@@ -122,10 +122,10 @@ export default function Navbar() {
             <span className="text-lg">🛡️</span>
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-slate-400 uppercase leading-none tracking-tighter">
-                League
+                .
               </span>
               <span className="text-xs font-black text-slate-500 leading-none mt-0.5">
-                RANKING...
+                .
               </span>
             </div>
             {/* Tooltip on Hover */}
