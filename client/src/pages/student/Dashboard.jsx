@@ -1573,13 +1573,18 @@ export default function Dashboard() {
                   className="flex items-center gap-4 animate-in fade-in slide-in-from-right-4 duration-500"
                   style={{ animationDelay: `${i * 100}ms` }}
                 >
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 shrink-0" />
+                  {/* Dynamic Avatar: Uses initials if possible */}
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 shrink-0 flex items-center justify-center text-[10px] font-bold text-white uppercase">
+                    {event.userName?.charAt(0) || "M"}
+                  </div>
+
                   <div>
                     <p className="text-xs font-black text-slate-900 uppercase tracking-tighter">
-                      {event.user?.name || "A Master"}
+                      {event.userName} {/* 🎯 Real Student Name */}
                     </p>
                     <p className="text-[10px] text-slate-400 font-medium italic">
-                      Earned 50 XP in Level {summary.level}
+                      Earned {event.xp} XP in {event.type}{" "}
+                      {/* 🎯 Real XP and Action */}
                     </p>
                   </div>
                 </div>

@@ -211,6 +211,23 @@ router.get("/summary", authRequired, async (req, res) => {
       orderBy: { earned_at: "desc" },
     });
 
+    // 🎯 THE GLOBAL FEED: Fetching the latest activity from ALL students
+    const globalEvents = await prisma.xpEvent.findMany({
+      take: 10,
+      orderBy: { created_at: "desc" },
+      include: {
+        user: {
+          select: { name: true, username: true }, // 🎯 Grab real names!
+        },
+      },
+    });
+
+    const globalFeed = globalEvents.map((e) => ({
+      userName: e.user?.name || e.user?.username || "A Master",
+      xp: e.xp_delta,
+      type: e.event_type || "Lesson Mastery",
+    }));
+
     return res.json({
       ok: true,
       todayXP,
