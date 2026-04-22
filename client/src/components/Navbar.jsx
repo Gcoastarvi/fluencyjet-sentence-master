@@ -117,15 +117,15 @@ export default function Navbar() {
           >
             FluencyJet <span className="font-normal">Sentence Master</span>
           </Link>
-          {/* 🥉 Navbar League Badge */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors cursor-help group relative">
-            <span className="text-lg">{leagueData.emoji}</span>
+          {/* 🎖️ Navbar League Badge (Greved Out) */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full border border-slate-200 opacity-60 grayscale cursor-not-allowed group relative">
+            <span className="text-lg">🛡️</span>
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-slate-400 uppercase leading-none tracking-tighter">
                 League
               </span>
-              <span className="text-xs font-black text-slate-700 leading-none mt-0.5">
-                {leagueData.label}
+              <span className="text-xs font-black text-slate-500 leading-none mt-0.5">
+                RANKING...
               </span>
             </div>
             {/* Tooltip on Hover */}
