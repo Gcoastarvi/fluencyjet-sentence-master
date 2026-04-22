@@ -101,6 +101,8 @@ export default function Navbar() {
         : "/b/lessons";
 
   // 🎯 Identify current league or default to BRONZE
+  console.log("🕵️ Navbar XP Audit:", auth?.user?.xpTotal);
+
   const currentKey = getLeagueFromXP(auth?.user?.xpTotal);
   const leagueData = LEAGUE_MAP[currentKey] || LEAGUE_MAP.BRONZE;
 
