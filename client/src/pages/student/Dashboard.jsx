@@ -901,9 +901,16 @@ export default function Dashboard() {
             localStorage.setItem("fj_bronze_league_celebrated", "true");
           }
 
-          // 🎯 Handle Global Feed Data from the same summary object
+          // 🎯 1. Handle Your Private History (Personal)
           if (sData.recentActivity) {
-            setGlobalFeed(sData.recentActivity);
+            // Note: If you have a setRecentActivity state, use it here
+            // otherwise, it's already inside setSummary via line 883
+          }
+
+          // 🌍 2. THE FIX: Handle Global Community Feed (Public)
+          if (sData.globalFeed) {
+            setGlobalFeed(sData.globalFeed);
+            console.log("🌐 Global Activity Synced:", sData.globalFeed.length);
           }
         }
       } catch (err) {
