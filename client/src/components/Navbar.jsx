@@ -115,7 +115,7 @@ export default function Navbar() {
           >
             FluencyJet <span className="font-normal">Sentence Master</span>
           </Link>
-          // {/* 🥉 Navbar League Badge */}
+          {/* 🥉 Navbar League Badge */}
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors cursor-help group relative">
             <span className="text-lg">{leagueData.emoji}</span>
             <div className="flex flex-col">
