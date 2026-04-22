@@ -109,7 +109,7 @@ async function ensureProgress(tx, userId) {
       data: {
         user_id: userId,
         xp: 0,
-        streak: 0,        
+        streak: 0,
         updated_at: new Date(),
       },
     });
@@ -196,6 +196,18 @@ router.post("/award", authRequired, async (req, res) => {
     const wk = weekStartUTC(now);
     const mk = monthStartUTC(now);
 
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayYMD = ymdInTZ(yesterday);
+
+    // If they missed yesterday AND haven't practiced today, reset streak to 1
+    if (lastDate !== todayYMD && lastDate !== yesterdayYMD) {
+      await tx.userProgress.update({
+        where: { user_id: userId },
+        data: { streak: 0 }, // Reset to 0 so the increment makes it 1
+      });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
       await ensureProgress(tx, userId);
 
@@ -203,34 +215,48 @@ router.post("/award", authRequired, async (req, res) => {
         data: { user_id: userId, xp_delta: amount, type },
       });
 
-      const user = await tx.user.update({
-        where: { id: userId },
-        data: { xpTotal: { increment: amount } },
-      });
+      // 🎯 THE MASTER UPDATE: XP + STREAK + LIVE FEED
+      const now = new Date();
+      const todayYMD = ymdInTZ(now);
 
-      const prog = await tx.userProgress.update({
-        where: { user_id: userId },
-        data: { xp: { increment: amount }, updated_at: now },
-      });
+      // 1. Calculate Streak Increment
+      let streakIncrement = 0;
+      const lastDate = prog?.last_activity_date
+        ? ymdInTZ(prog.last_activity_date)
+        : null;
 
-      await tx.userWeeklyTotals.upsert({
-        where: { user_id: userId },
-        update: {
-          week_key: wk,
-          month_key: mk,
-          week_xp: { increment: amount },
-          month_xp: { increment: amount },
-          updated_at: now,
-        },
-        create: {
-          user_id: userId,
-          week_key: wk,
-          month_key: mk,
-          week_xp: amount,
-          month_xp: amount,
-          updated_at: now,
-        },
-      });
+      if (lastDate !== todayYMD) {
+        // Only increment if they haven't practiced today
+        streakIncrement = 1;
+      }
+
+      // 2. Perform the Atomic Update
+      const [updatedUser, updatedProg, newEvent] = await tx.$transaction([
+        // A) Update User Totals
+        tx.user.update({
+          where: { id: userId },
+          data: { xpTotal: { increment: amount } },
+        }),
+        // B) Update Progress & Tick Streak
+        tx.userProgress.update({
+          where: { user_id: userId },
+          data: {
+            xp: { increment: amount },
+            streak: streakIncrement > 0 ? { increment: 1 } : undefined, // 🎯 Fixes Nove!
+            last_activity_date: now,
+            updated_at: now,
+          },
+        }),
+        // C) CREATE THE LIVE ACTIVITY EVENT
+        tx.xpEvent.create({
+          data: {
+            user_id: userId,
+            xp_delta: amount,
+            event_type: "Lesson Mastery", // 🎯 Fixes Go/Ichi Visibility!
+            type: makeTypeKey({ mode, isCorrect: true, attemptId }),
+          },
+        }),
+      ]);
 
       return { evt, user, prog };
     });
@@ -271,34 +297,48 @@ router.post("/log", authRequired, async (req, res) => {
         data: { user_id: userId, xp_delta: xpValue, type },
       });
 
-      const user = await tx.user.update({
-        where: { id: userId },
-        data: { xpTotal: { increment: xpValue } },
-      });
+      // 🎯 THE MASTER UPDATE: XP + STREAK + LIVE FEED
+      const now = new Date();
+      const todayYMD = ymdInTZ(now);
 
-      const prog = await tx.userProgress.update({
-        where: { user_id: userId },
-        data: { xp: { increment: xpValue }, updated_at: now },
-      });
+      // 1. Calculate Streak Increment
+      let streakIncrement = 0;
+      const lastDate = prog?.last_activity_date
+        ? ymdInTZ(prog.last_activity_date)
+        : null;
 
-      await tx.userWeeklyTotals.upsert({
-        where: { user_id: userId },
-        update: {
-          week_key: wk,
-          month_key: mk,
-          week_xp: { increment: xpValue },
-          month_xp: { increment: xpValue },
-          updated_at: now,
-        },
-        create: {
-          user_id: userId,
-          week_key: wk,
-          month_key: mk,
-          week_xp: xpValue,
-          month_xp: xpValue,
-          updated_at: now,
-        },
-      });
+      if (lastDate !== todayYMD) {
+        // Only increment if they haven't practiced today
+        streakIncrement = 1;
+      }
+
+      // 2. Perform the Atomic Update
+      const [updatedUser, updatedProg, newEvent] = await tx.$transaction([
+        // A) Update User Totals
+        tx.user.update({
+          where: { id: userId },
+          data: { xpTotal: { increment: amount } },
+        }),
+        // B) Update Progress & Tick Streak
+        tx.userProgress.update({
+          where: { user_id: userId },
+          data: {
+            xp: { increment: amount },
+            streak: streakIncrement > 0 ? { increment: 1 } : undefined, // 🎯 Fixes Nove!
+            last_activity_date: now,
+            updated_at: now,
+          },
+        }),
+        // C) CREATE THE LIVE ACTIVITY EVENT
+        tx.xpEvent.create({
+          data: {
+            user_id: userId,
+            xp_delta: amount,
+            event_type: "Lesson Mastery", // 🎯 Fixes Go/Ichi Visibility!
+            type: makeTypeKey({ mode, isCorrect: true, attemptId }),
+          },
+        }),
+      ]);
 
       return { evt, user, prog };
     });
