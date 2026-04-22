@@ -211,22 +211,34 @@ router.get("/summary", authRequired, async (req, res) => {
       orderBy: { earned_at: "desc" },
     });
 
-    // 🎯 THE GLOBAL FEED: Fetching the latest activity from ALL students
-    const globalEvents = await prisma.xpEvent.findMany({
-      take: 10,
+    /* ─────────────────────────────────────────────
+        🌍 THE DIVERSE GLOBAL FEED (One Slot Per User)
+    ────────────────────────────────────────────── */
+    const rawEvents = await prisma.xpEvent.findMany({
+      take: 40, // 🎯 Fetch more so we have plenty to filter from
       orderBy: { created_at: "desc" },
       include: {
-        user: {
-          select: { name: true, username: true }, // 🎯 Grab real names!
-        },
+        user: { select: { id: true, name: true, username: true } },
       },
     });
 
-    const globalFeed = globalEvents.map((e) => ({
-      userName: e.user?.name || e.user?.username || "A Master",
-      xp: e.xp_delta,
-      type: e.event_type || "Lesson Mastery",
-    }));
+    const seenUsers = new Set();
+    const diverseFeed = [];
+
+    for (const e of rawEvents) {
+      const userId = e.user_id;
+      // 🎯 Only add the user if we haven't seen them in this list yet
+      if (!seenUsers.has(userId) && diverseFeed.length < 5) {
+        seenUsers.add(userId);
+        diverseFeed.push({
+          userName: e.user?.name || e.user?.username || "A Master",
+          xp: e.xp_delta,
+          type: e.event_type || "Lesson Mastery",
+        });
+      }
+    }
+
+    const globalFeed = diverseFeed; // 🎯 This is now a list of 5 DIFFERENT users
 
     // 🎯 THE PRESERVED HANDSHAKE
     return res.json({
