@@ -228,6 +228,7 @@ router.get("/summary", authRequired, async (req, res) => {
       type: e.event_type || "Lesson Mastery",
     }));
 
+    // 🎯 THE PRESERVED HANDSHAKE
     return res.json({
       ok: true,
       todayXP,
@@ -243,6 +244,7 @@ router.get("/summary", authRequired, async (req, res) => {
       streakFreezes,
       earnedBadges,
       recentActivity,
+      globalFeed,
     });
   } catch (err) {
     console.error("❌ Dashboard Error:", err);

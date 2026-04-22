@@ -1580,11 +1580,11 @@ export default function Dashboard() {
 
                   <div>
                     <p className="text-xs font-black text-slate-900 uppercase tracking-tighter">
-                      {event.userName} {/* 🎯 Real Student Name */}
+                      {event.userName} {/* 🎯 Matches backend 'userName' */}
                     </p>
                     <p className="text-[10px] text-slate-400 font-medium italic">
                       Earned {event.xp} XP in {event.type}{" "}
-                      {/* 🎯 Real XP and Action */}
+                      {/* 🎯 Matches backend 'xp' and 'type' */}
                     </p>
                   </div>
                 </div>
