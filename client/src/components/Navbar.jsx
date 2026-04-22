@@ -39,6 +39,15 @@ export default function Navbar() {
     );
   }
 
+  const LEAGUE_MAP = {
+    BRONZE: { emoji: "🥉", label: "BRONZE" },
+    SILVER: { emoji: "🥈", label: "SILVER" },
+    GOLD: { emoji: "🥇", label: "GOLD" },
+    SAPPHIRE: { emoji: "💎", label: "SAPPHIRE" }, // 🎯 Matches your dashboard
+    RUBY: { emoji: "🔴", label: "RUBY" },
+    DIAMOND: { emoji: "💠", label: "DIAMOND" },
+  };
+
   const isAdmin = user?.role === "ADMIN";
 
   function handleLoginClick() {
@@ -83,6 +92,10 @@ export default function Navbar() {
         ? "/i/lessons"
         : "/b/lessons";
 
+  // 🎯 Identify current league or default to BRONZE
+  const currentKey = auth?.user?.league?.toUpperCase() || "BRONZE";
+  const leagueData = LEAGUE_MAP[currentKey] || LEAGUE_MAP.BRONZE;
+
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
@@ -97,16 +110,16 @@ export default function Navbar() {
 
           {/* 🥉 Navbar League Badge */}
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-full border border-slate-100 hover:bg-slate-100 transition-colors cursor-help group relative">
-            <span className="text-lg">🥉</span>
+            <span className="text-lg">{leagueData.emoji}</span>{" "}
+            {/* 🎯 Dynamic Emoji */}
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-slate-400 uppercase leading-none tracking-tighter">
                 League
               </span>
               <span className="text-xs font-black text-slate-700 leading-none mt-0.5">
-                {auth?.user?.league || "BRONZE"}
+                {leagueData.label} {/* 🎯 Dynamic Text */}
               </span>
             </div>
-
             {/* Tooltip on Hover */}
             <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 bg-slate-900 text-white text-[10px] font-bold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
               Maintain Top 3 to Promote! 🚀

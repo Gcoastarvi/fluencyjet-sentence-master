@@ -162,6 +162,7 @@ router.get("/me", authRequired, async (req, res) => {
         has_access: true,
         track: true,
         current_unit: true,
+        league: true,
       },
     });
 
