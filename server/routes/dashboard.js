@@ -42,6 +42,9 @@ async function calculateStreak(userId) {
   const progress = await prisma.userProgress.findUnique({
     where: { user_id: userId },
   });
+
+  if (!progress) return 0;
+
   const lastActive = new Date(progress.updated_at);
   const today = new Date();
 
@@ -121,7 +124,14 @@ router.get("/summary", authRequired, async (req, res) => {
     });
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, name: true, email: true, xpTotal: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        xpTotal: true,
+        daily_streak: true,
+        lastActiveAt: true,
+      },
     });
 
     const computedTotal = await sumXpForRange({ userId });
@@ -192,7 +202,7 @@ router.get("/summary", authRequired, async (req, res) => {
     const levelSize = 1000;
     const level = Math.floor(totalXP / levelSize) + 1;
     const xpToNextLevel = levelSize - (totalXP % levelSize);
-    const streak = Number(progress?.streak ?? 0);
+    const streak = Number(progress?.streak ?? user?.daily_streak ?? 0);
     const streakFreezes = Number(progress?.streak_freezes ?? 0);
 
     const events = await prisma.xpEvent.findMany({

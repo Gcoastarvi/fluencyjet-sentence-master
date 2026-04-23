@@ -970,7 +970,7 @@ export default function Dashboard() {
         totalXP,
         level,
         xpToNextLevel: next,
-        streak: Number(data.streak || 0),
+        streak: Number(data.streak ?? data.daily_streak ?? 0),
         nextBadge: data.nextBadge ?? null,
         pendingLessons: Array.isArray(data.pendingLessons)
           ? data.pendingLessons

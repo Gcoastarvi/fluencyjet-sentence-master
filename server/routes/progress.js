@@ -597,11 +597,36 @@ router.post("/update", authRequired, async (req, res) => {
       // 1) ensure user progress row exists
       const prog = await ensureProgress(tx, userId);
 
-      // streak logic temporarily disabled (schema has streak, but we don't compute it here yet)
       const now = new Date();
-      const newStreak = Number(prog?.streak ?? 0);
 
-      // No streak bonus for now (we’ll re-enable when we add last_activity / daily tracking)
+      const toYMD = (d) => {
+        const dt = new Date(d);
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth() + 1).padStart(2, "0");
+        const day = String(dt.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      };
+
+      const todayYMD = toYMD(now);
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayYMD = toYMD(yesterday);
+
+      const lastActiveYMD = prog?.updated_at ? toYMD(prog.updated_at) : null;
+
+      let newStreak = Number(prog?.streak ?? 0);
+
+      if (!lastActiveYMD) {
+        newStreak = 1;
+      } else if (lastActiveYMD === todayYMD) {
+        newStreak = Math.max(1, Number(prog?.streak ?? 0));
+      } else if (lastActiveYMD === yesterdayYMD) {
+        newStreak = Math.max(1, Number(prog?.streak ?? 0)) + 1;
+      } else {
+        newStreak = 1;
+      }
+
+      // Keep streak bonus off for now
       const streakBonus = 0;
 
       // 3) idempotency key (store in xpEvent.type)
@@ -725,11 +750,24 @@ router.post("/update", authRequired, async (req, res) => {
           data: {
             xpTotal: nextXP,
             league: newLeague,
+            daily_streak: newStreak,
+            lastActiveAt: now,
           },
         });
 
         // 🥂 Optional: Log this for the "Promotion Celebration" later
         console.log(`🚀 User ${userId} promoted to ${newLeague}`);
+      }
+
+      // Keep User table streak fields in sync even when XP/league do not change
+      if (currentXP === nextXP && userToUpdate?.league === newLeague) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            daily_streak: newStreak,
+            lastActiveAt: now,
+          },
+        });
       }
 
       // 4) Update UserProgress (keep cached totals/streak in sync with XpEvent)
