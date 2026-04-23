@@ -255,9 +255,7 @@ router.patch(
 
       const nextHasAccess = hasAccess ?? has_access ?? true;
 
-      const requestedPlan = String(
-        plan || existingUser.plan || "",
-      ).toUpperCase();
+      const requestedPlan = String(plan || "").toUpperCase();
 
       const normalizedPlan = !nextHasAccess
         ? "FREE"
