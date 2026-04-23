@@ -143,7 +143,30 @@ export default function Leaderboard() {
     PERIOD_TABS.find((t) => t.id === period)?.label || "This Week";
 
   const userName = auth?.user?.name || "Learner";
-  const league = "BRONZE";
+  const userLeague =
+    auth?.user?.league ||
+    (auth?.user?.xpTotal > 150000
+      ? "DIAMOND"
+      : auth?.user?.xpTotal > 80000
+        ? "SAPPHIRE"
+        : auth?.user?.xpTotal > 40000
+          ? "EMERALD"
+          : auth?.user?.xpTotal > 15000
+            ? "GOLD"
+            : auth?.user?.xpTotal > 5000
+              ? "SILVER"
+              : "BRONZE");
+
+  const nextLeagueMap = {
+    BRONZE: "SILVER",
+    SILVER: "GOLD",
+    GOLD: "EMERALD",
+    EMERALD: "SAPPHIRE",
+    SAPPHIRE: "DIAMOND",
+    DIAMOND: "DIAMOND",
+  };
+
+  const nextLeague = nextLeagueMap[userLeague] || "SILVER";
 
   const getPromotionStats = () => {
     if (!you || !rows || rows.length < 3)
@@ -250,11 +273,12 @@ export default function Leaderboard() {
               </span>
             </div>
             <h2 className="text-3xl font-black text-white italic uppercase tracking-tighter">
-              Bronze League
+              {userLeague} League
             </h2>
             <p className="text-indigo-200 text-xs font-bold mt-2 flex items-center gap-2">
               🏆 Top 3 players promote to{" "}
-              <span className="text-white underline">Silver League</span> in:
+              <span className="text-white underline">{nextLeague} League</span>{" "}
+              in:
               <span className="bg-indigo-500/50 px-2 py-0.5 rounded text-white font-black animate-pulse">
                 {promoTime}
               </span>
@@ -555,8 +579,8 @@ export default function Leaderboard() {
             </h2>
             <p className="mt-2 text-sm sm:text-base text-white/85">
               Rank #{active?.rank ?? activeIndex + 1} •{" "}
-              {kFormat(active?.xp || 0)} XP • {active?.league || "BRONZE"}{" "}
-              League
+              {kFormat(active?.xp || 0)} XP • {active?.league || userLeague}{" "}
+              League League
             </p>
             <p className="mt-3 text-sm text-white/70">
               Strongest performer {periodLabel.toLowerCase()}.
