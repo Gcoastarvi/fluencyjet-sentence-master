@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
+import confetti from "canvas-confetti";
 
 // Small helper – compact XP formatting like "1.2K"
 function kFormat(xp) {
@@ -65,8 +66,13 @@ export default function Leaderboard() {
     setError("");
     try {
       const res = await api.get(`/leaderboard?period=${activePeriod}`);
-      if (!res.ok) throw new Error(res.error || "Failed to load leaderboard");
-      const data = res.data;
+      const data = res?.data || res;
+
+      if (!data?.ok) {
+        throw new Error(
+          data?.message || data?.error || "Failed to load leaderboard",
+        );
+      }
 
       // 🚀 Promotion Toast Logic
       if (data.you?.rank <= 3 && data.you?.rank !== null) {
@@ -127,17 +133,6 @@ export default function Leaderboard() {
   useEffect(() => {
     loadLeaderboard(period);
   }, [period]);
-
-  {
-    /* 🥉 Updated Banner with Live Timer */
-  }
-  <p className="text-indigo-200 text-xs font-bold mt-2 flex items-center gap-2">
-    🏆 Top 3 players promote to{" "}
-    <span className="text-white underline">Silver League</span> in:
-    <span className="bg-indigo-500/50 px-3 py-1 rounded-full text-white font-black animate-pulse border border-indigo-400/30">
-      {timeLeft}
-    </span>
-  </p>;
 
   const handleTabClick = (tabId) => {
     if (tabId === period) return;
@@ -422,6 +417,7 @@ export default function Leaderboard() {
               periodLabel={activePeriodLabel}
               promoProb={promoProb}
               totalLearners={totalLearners}
+              rows={rows}
             />
           </div>
         </div>
@@ -549,8 +545,43 @@ export default function Leaderboard() {
           }
         }}
       >
-        {/* Dots */}
-        <div className="mt-5 flex justify-center gap-2">
+        <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-xl">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-white/75">
+              Top performer · {periodLabel.toLowerCase()}
+            </p>
+            <h2 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight">
+              {active?.name || "Learner"}
+            </h2>
+            <p className="mt-2 text-sm sm:text-base text-white/85">
+              Rank #{active?.rank ?? activeIndex + 1} •{" "}
+              {kFormat(active?.xp || 0)} XP • {active?.league || "BRONZE"}{" "}
+              League
+            </p>
+            <p className="mt-3 text-sm text-white/70">
+              Strongest performer {periodLabel.toLowerCase()}.
+            </p>
+          </div>
+
+          <div className="shrink-0 rounded-3xl bg-white/10 border border-white/15 px-6 py-5 text-center backdrop-blur-sm">
+            <div className="text-[10px] uppercase tracking-[0.2em] font-black text-white/70">
+              Current Rank
+            </div>
+            <div className="mt-2 text-5xl font-black text-white">
+              #{active?.rank ?? activeIndex + 1}
+            </div>
+            <div className="mt-2 text-sm font-bold text-white/85">
+              {kFormat(active?.xp || 0)} XP
+            </div>
+          </div>
+        </div>
+
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-fuchsia-300/20 blur-3xl" />
+        </div>
+
+        <div className="relative z-10 mt-5 flex justify-center gap-2">
           {entries.map((_, idx) => {
             const isActive = idx === activeIndex;
             return (

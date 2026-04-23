@@ -244,6 +244,8 @@ export default function Dashboard() {
   const [showPromotion, setShowPromotion] = useState(false);
   const [newLeague, setNewLeague] = useState("");
 
+  const [worldRanking, setWorldRanking] = useState([]);
+
   const [summary, setSummary] = useState({
     todayXP: 0,
     yesterdayXP: 0,
@@ -875,6 +877,11 @@ export default function Dashboard() {
         const summaryRes = await api.get("/dashboard/summary");
         const sData = summaryRes?.data ?? summaryRes;
 
+        // 🌍 World Ranking (Top 3)
+        const lbRes = await api.get("/leaderboard?period=all&limit=3");
+        const lbData = lbRes?.data ?? lbRes;
+        const top3 = Array.isArray(lbData?.rows) ? lbData.rows.slice(0, 3) : [];
+
         if (!isMounted) return;
 
         if (sData) {
@@ -903,19 +910,23 @@ export default function Dashboard() {
 
           // 🎯 1. Handle Your Private History (Personal)
           if (sData.recentActivity) {
-            // Note: If you have a setRecentActivity state, use it here
-            // otherwise, it's already inside setSummary via line 883
+            // already merged into summary
           }
 
-          // 🌍 2. THE FIX: Handle Global Community Feed (Public)
+          // 🌍 2. Handle Global Community Feed (Public)
           if (sData.globalFeed) {
             setGlobalFeed(sData.globalFeed);
             console.log("🌐 Global Activity Synced:", sData.globalFeed.length);
           }
         }
+
+        setWorldRanking(top3);
       } catch (err) {
         console.error("Dashboard Sync Error:", err);
-        if (isMounted) setError("Failed to sync your latest progress.");
+        if (isMounted) {
+          setError("Failed to sync your latest progress.");
+          setWorldRanking([]);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -1202,47 +1213,48 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-6">
-            {[
-              {
-                name: "MangoMaster",
-                xp: 1250,
-                rank: 1,
-                color: "bg-amber-100 text-amber-600",
-              },
-              {
-                name: "Admin",
-                xp: 1100,
-                rank: 2,
-                color: "bg-slate-200 text-slate-500",
-              },
-              {
-                name: "You",
-                xp: summary.totalXP || 0,
-                rank: 3,
-                color: "bg-indigo-600 text-white shadow-lg shadow-indigo-200",
-              },
-            ].map((player, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between group cursor-default"
-              >
-                <div className="flex items-center gap-4">
+            {worldRanking.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">
+                No ranking data yet.
+              </p>
+            ) : (
+              worldRanking.map((player, i) => {
+                const isYou =
+                  Number(player?.user_id) === Number(auth?.user?.id);
+
+                const color =
+                  i === 0
+                    ? "bg-amber-100 text-amber-600"
+                    : i === 1
+                      ? "bg-slate-200 text-slate-500"
+                      : isYou
+                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200"
+                        : "bg-orange-100 text-orange-600";
+
+                return (
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-transform group-hover:scale-110 ${player.color}`}
+                    key={player?.user_id || i}
+                    className="flex items-center justify-between group cursor-default"
                   >
-                    {player.rank}
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-transform group-hover:scale-110 ${color}`}
+                      >
+                        {player?.rank ?? i + 1}
+                      </div>
+                      <span
+                        className={`text-sm font-bold ${isYou ? "text-indigo-600" : "text-slate-700"}`}
+                      >
+                        {isYou ? "You" : player?.name || "Learner"}
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-black text-slate-400">
+                      {Number(player?.xp || 0).toLocaleString()} XP
+                    </span>
                   </div>
-                  <span
-                    className={`text-sm font-bold ${player.name === "You" ? "text-indigo-600" : "text-slate-700"}`}
-                  >
-                    {player.name}
-                  </span>
-                </div>
-                <span className="text-[11px] font-black text-slate-400">
-                  {player.xp.toLocaleString()} XP
-                </span>
-              </div>
-            ))}
+                );
+              })
+            )}
           </div>
         </div>
 

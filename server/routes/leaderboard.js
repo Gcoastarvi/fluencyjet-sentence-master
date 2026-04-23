@@ -28,6 +28,11 @@ async function aggregateXP(period, limit = 50) {
     queryWhere = { created_at: { gte: start } };
   } else if (period === "weekly") {
     queryWhere = { created_at: { gte: weekStartUTC(now) } };
+  } else if (period === "monthly") {
+    const start = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+    );
+    queryWhere = { created_at: { gte: start } };
   }
 
   const grouped = await prisma.xpEvent.groupBy({
@@ -41,18 +46,25 @@ async function aggregateXP(period, limit = 50) {
   const userIds = grouped.map((g) => g.user_id);
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
-    select: { id: true, username: true, league: true },
+    select: { id: true, username: true, name: true, email: true, league: true },
   });
 
   const userMap = new Map(users.map((u) => [u.id, u]));
 
-  return grouped.map((g, idx) => ({
-    rank: idx + 1,
-    user_id: g.user_id,
-    name: userMap.get(g.user_id)?.username || "Learner",
-    xp: Number(g._sum.xp_delta || 0),
-    league: userMap.get(g.user_id)?.league || "BRONZE",
-  }));
+  return grouped.map((g, idx) => {
+    const u = userMap.get(g.user_id);
+    return {
+      rank: idx + 1,
+      user_id: g.user_id,
+      name:
+        u?.username ||
+        u?.name ||
+        (u?.email ? u.email.split("@")[0] : null) ||
+        "Learner",
+      xp: Number(g._sum.xp_delta || 0),
+      league: u?.league || "BRONZE",
+    };
+  });
 }
 
 // --- 🏆 The SINGLE Consolidated Route ---
@@ -66,13 +78,24 @@ router.get("/", authMiddleware, async (req, res) => {
       const users = await prisma.user.findMany({
         orderBy: { xpTotal: "desc" },
         take: limit,
-        select: { id: true, username: true, xpTotal: true, league: true },
+        select: {
+          id: true,
+          username: true,
+          name: true,
+          email: true,
+          xpTotal: true,
+          league: true,
+        },
       });
       rows = users.map((u, idx) => ({
         rank: idx + 1,
         user_id: u.id,
-        name: u.username || "Learner",
-        xp: u.xpTotal,
+        name:
+          u.username ||
+          u.name ||
+          (u.email ? u.email.split("@")[0] : null) ||
+          "Learner",
+        xp: Number(u.xpTotal || 0),
         league: u.league || "BRONZE",
       }));
     } else {
