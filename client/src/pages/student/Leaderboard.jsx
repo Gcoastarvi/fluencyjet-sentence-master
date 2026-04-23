@@ -3,7 +3,9 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
-import confetti from "canvas-confetti";
+import("canvas-confetti").then((confetti) => {
+  confetti.default({...});
+});
 
 // Small helper – compact XP formatting like "1.2K"
 function kFormat(xp) {
