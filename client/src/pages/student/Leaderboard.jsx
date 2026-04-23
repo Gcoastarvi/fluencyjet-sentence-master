@@ -145,19 +145,21 @@ export default function Leaderboard() {
     PERIOD_TABS.find((t) => t.id === period)?.label || "This Week";
 
   const userName = auth?.user?.name || "Learner";
+
+  const effectiveXP = Number(you?.xp ?? auth?.user?.xpTotal ?? 0);
+
   const userLeague =
-    auth?.user?.league ||
-    (auth?.user?.xpTotal > 150000
+    effectiveXP > 150000
       ? "DIAMOND"
-      : auth?.user?.xpTotal > 80000
+      : effectiveXP > 80000
         ? "SAPPHIRE"
-        : auth?.user?.xpTotal > 40000
+        : effectiveXP > 40000
           ? "EMERALD"
-          : auth?.user?.xpTotal > 15000
+          : effectiveXP > 15000
             ? "GOLD"
-            : auth?.user?.xpTotal > 5000
+            : effectiveXP > 5000
               ? "SILVER"
-              : "BRONZE");
+              : "BRONZE";
 
   const nextLeagueMap = {
     BRONZE: "SILVER",
