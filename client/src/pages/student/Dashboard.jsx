@@ -279,6 +279,10 @@ export default function Dashboard() {
   // 🎯 THE SLOT MACHINE HOOK
   const [displayXP, setDisplayXP] = useState(0);
 
+  const showShieldWidget =
+    Number(summary?.streak || 0) >= 3 ||
+    Number(summary?.streakFreezes || 0) > 0;
+
   useEffect(() => {
     let start = 0;
     const end = Number(user?.total_xp || 0);
@@ -1166,40 +1170,46 @@ export default function Dashboard() {
         </div>
 
         {/* 🛡️ Streak Freeze Shield Widget */}
-        <div
-          className={`p-5 rounded-[2rem] border-2 mb-4 transition-all duration-500 ${
-            summary.streakFreezes > 0
-              ? "bg-indigo-50 border-indigo-100 shadow-lg shadow-indigo-100/50"
-              : "bg-slate-50 border-slate-100 opacity-60"
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className={`text-2xl ${summary.streakFreezes > 0 ? "animate-bounce" : ""}`}
-              >
-                {summary.streakFreezes > 0 ? "🛡️" : "🔮"}
-              </div>
-              <div>
-                <p className="text-[10px] font-black uppercase text-slate-400">
-                  Streak Shield
-                </p>
-                <p
-                  className={`text-xs font-black ${summary.streakFreezes > 0 ? "text-indigo-600" : "text-slate-900"}`}
+        {showShieldWidget && (
+          <div
+            className={`p-5 rounded-[2rem] border-2 mb-4 transition-all duration-500 ${
+              summary.streakFreezes > 0
+                ? "bg-indigo-50 border-indigo-100 shadow-lg shadow-indigo-100/50"
+                : "bg-slate-50 border-slate-100 opacity-60"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`text-2xl ${summary.streakFreezes > 0 ? "animate-bounce" : ""}`}
                 >
-                  {summary.streakFreezes > 0 ? "PROTECTED" : "INACTIVE"}
-                </p>
+                  {summary.streakFreezes > 0 ? "🛡️" : "🔮"}
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase text-slate-400">
+                    Streak Shield
+                  </p>
+                  <p
+                    className={`text-xs font-black ${summary.streakFreezes > 0 ? "text-indigo-600" : "text-slate-900"}`}
+                  >
+                    {summary.streakFreezes > 0 ? "PROTECTED" : "INACTIVE"}
+                  </p>
+                </div>
               </div>
+              <button
+                onClick={handleBuyShield}
+                disabled={isBuying}
+                className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] font-black hover:scale-105 transition-all disabled:opacity-50"
+              >
+                {isBuying
+                  ? "..."
+                  : summary.streakFreezes > 0
+                    ? "REFILL"
+                    : "BUY"}
+              </button>
             </div>
-            <button
-              onClick={handleBuyShield}
-              disabled={isBuying}
-              className="bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] font-black hover:scale-105 transition-all disabled:opacity-50"
-            >
-              {isBuying ? "..." : summary.streakFreezes > 0 ? "REFILL" : "BUY"}
-            </button>
           </div>
-        </div>
+        )}
 
         {/* 🏆 THE GLOBAL LEADERBOARD */}
         <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm mb-8">
