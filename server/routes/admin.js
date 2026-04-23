@@ -228,6 +228,7 @@ router.patch(
   async (req, res) => {
     const userId = parseInt(req.params.id, 10);
     const { plan, track, hasAccess, has_access } = req.body;
+    console.log("ADMIN ACCESS BODY:", req.body);
 
     if (!Number.isInteger(userId)) {
       return res.status(400).json({ ok: false, message: "INVALID_USER_ID" });
@@ -283,6 +284,7 @@ router.patch(
         },
       });
 
+      console.log("ADMIN ACCESS UPDATED USER:", updated);
       return res.json({ ok: true, user: updated });
     } catch (err) {
       console.error("ACCESS_UPDATE_FAILED:", err);
