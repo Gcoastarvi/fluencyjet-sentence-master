@@ -4,7 +4,7 @@ import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "react-hot-toast";
 import("canvas-confetti").then((confetti) => {
-  confetti.default({...});
+  confetti.default({});
 });
 
 // Small helper – compact XP formatting like "1.2K"
