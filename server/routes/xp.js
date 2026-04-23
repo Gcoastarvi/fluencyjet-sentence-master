@@ -194,7 +194,8 @@ router.post("/award", authRequired, async (req, res) => {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      let prog = await tx.userProgress.findUnique({
+      // 🎯 1. FETCH THE OLD PROGRESS FIRST
+      const oldProg = await tx.userProgress.findUnique({
         where: { user_id: userId },
       });
 
@@ -204,29 +205,27 @@ router.post("/award", authRequired, async (req, res) => {
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayYMD = ymdInTZ(yesterday);
 
-      const lastDate = prog?.last_activity_date
-        ? ymdInTZ(prog.last_activity_date)
+      // Identify when they last practiced BEFORE this update
+      const lastDate = oldProg?.last_activity_date
+        ? ymdInTZ(oldProg.last_activity_date)
         : null;
-      let newStreak = prog?.streak || 0;
+      let newStreak = oldProg?.streak || 0;
 
-      // 🎯 STREAK CALCULATION
+      // 🎯 2. THE STREAK GEARS
       if (newStreak === 0) {
-        newStreak = 1;
+        newStreak = 1; // 💡 If they were at 0, they are now at 1!
       } else if (lastDate !== todayYMD) {
         if (lastDate === yesterdayYMD) {
-          newStreak += 1;
+          newStreak += 1; // 🔥 Consecutive day!
         } else {
-          newStreak = 1;
+          newStreak = 1; // 🔄 Chain broken, start fresh at 1
         }
       }
 
-      // 🎯 THE DUAL-SYNC: Update User AND Progress
+      // 🎯 3. UPDATE EVERYTHING
       const updatedUser = await tx.user.update({
         where: { id: userId },
-        data: {
-          xpTotal: { increment: amount },
-          streak: newStreak, // 🎯 Syncing the streak to the main User table
-        },
+        data: { xpTotal: { increment: amount }, streak: newStreak },
       });
 
       const updatedProg = await tx.userProgress.upsert({
@@ -234,19 +233,17 @@ router.post("/award", authRequired, async (req, res) => {
         update: {
           xp: { increment: amount },
           streak: newStreak,
-          last_activity_date: now,
-          updated_at: now,
+          last_activity_date: now, // 🎯 Marks them as "Done for today"
         },
         create: {
           user_id: userId,
           xp: amount,
           streak: 1,
           last_activity_date: now,
-          updated_at: now,
         },
       });
 
-      // 🎯 THE EVENT LOG: Fixed for XP Display
+      // 🎯 4. LOG THE EVENT (This feeds the Live Activity)
       const evt = await tx.xpEvent.create({
         data: {
           user_id: userId,
@@ -259,12 +256,7 @@ router.post("/award", authRequired, async (req, res) => {
       return { updatedUser, updatedProg, evt };
     });
 
-    res.json({
-      ok: true,
-      xpAwarded: amount,
-      totalXP: result.updatedUser.xpTotal,
-      currentStreak: result.updatedUser.streak,
-    });
+    res.json({ ok: true, currentStreak: result.updatedUser.streak });
   } catch (err) {
     console.error("❌ XP Award Error:", err);
     res.status(500).json({ ok: false, message: "Failed to award XP" });
