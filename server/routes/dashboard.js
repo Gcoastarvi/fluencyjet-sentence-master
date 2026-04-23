@@ -232,7 +232,7 @@ router.get("/summary", authRequired, async (req, res) => {
         seenUsers.add(userId);
         diverseFeed.push({
           userName: e.user?.name || e.user?.username || "A Master",
-          xp: e.xp_delta,
+          xp: Number(e.xp_delta || 0),
           type: e.event_type || "Lesson Mastery",
         });
       }

@@ -194,7 +194,6 @@ router.post("/award", authRequired, async (req, res) => {
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      // 🎯 1. FETCH PROGRESS FIRST (Before ensureProgress changes the date)
       let prog = await tx.userProgress.findUnique({
         where: { user_id: userId },
       });
@@ -210,21 +209,24 @@ router.post("/award", authRequired, async (req, res) => {
         : null;
       let newStreak = prog?.streak || 0;
 
-      // 🎯 2. SELF-HEALING STREAK LOGIC
+      // 🎯 STREAK CALCULATION
       if (newStreak === 0) {
-        newStreak = 1; // 💡 If stuck at 0, always start at 1
+        newStreak = 1;
       } else if (lastDate !== todayYMD) {
         if (lastDate === yesterdayYMD) {
-          newStreak += 1; // Consecutive day
+          newStreak += 1;
         } else {
-          newStreak = 1; // Missed a day, reset to 1
+          newStreak = 1;
         }
       }
 
-      // 🎯 3. ATOMIC UPDATES
+      // 🎯 THE DUAL-SYNC: Update User AND Progress
       const updatedUser = await tx.user.update({
         where: { id: userId },
-        data: { xpTotal: { increment: amount } },
+        data: {
+          xpTotal: { increment: amount },
+          streak: newStreak, // 🎯 Syncing the streak to the main User table
+        },
       });
 
       const updatedProg = await tx.userProgress.upsert({
@@ -244,13 +246,13 @@ router.post("/award", authRequired, async (req, res) => {
         },
       });
 
-      const internalKey = makeTypeKey({ mode, isCorrect: true, attemptId });
+      // 🎯 THE EVENT LOG: Fixed for XP Display
       const evt = await tx.xpEvent.create({
         data: {
           user_id: userId,
-          xp_delta: amount, // 🎯 Ensure this matches 'xp' in your dashboard map
+          xp_delta: amount,
           event_type: "Lesson Mastery",
-          type: internalKey,
+          type: makeTypeKey({ mode, isCorrect: true, attemptId }),
         },
       });
 
@@ -261,7 +263,7 @@ router.post("/award", authRequired, async (req, res) => {
       ok: true,
       xpAwarded: amount,
       totalXP: result.updatedUser.xpTotal,
-      currentStreak: result.updatedProg.streak,
+      currentStreak: result.updatedUser.streak,
     });
   } catch (err) {
     console.error("❌ XP Award Error:", err);
