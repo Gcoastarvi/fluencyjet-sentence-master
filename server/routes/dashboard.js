@@ -222,13 +222,22 @@ router.get("/summary", authRequired, async (req, res) => {
     });
 
     /* ─────────────────────────────────────────────
-        🌍 THE DIVERSE GLOBAL FEED (One Slot Per User)
+        🌍 LIVE ACTIVITY FEED (real XP only, more stable)
     ────────────────────────────────────────────── */
+
+    const liveWindowStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // last 7 days
+
     const rawEvents = await prisma.xpEvent.findMany({
-      take: 40, // 🎯 Fetch more so we have plenty to filter from
+      where: {
+        created_at: { gte: liveWindowStart },
+        xp_delta: { gt: 0 }, // ✅ hide technical 0-XP lock rows
+      },
+      take: 120, // ✅ broader pool so users don’t disappear too quickly
       orderBy: { created_at: "desc" },
       include: {
-        user: { select: { id: true, name: true, username: true } },
+        user: {
+          select: { id: true, name: true, username: true },
+        },
       },
     });
 
@@ -236,19 +245,47 @@ router.get("/summary", authRequired, async (req, res) => {
     const diverseFeed = [];
 
     for (const e of rawEvents) {
-      const userId = e.user_id;
-      // 🎯 Only add the user if we haven't seen them in this list yet
-      if (!seenUsers.has(userId) && diverseFeed.length < 5) {
-        seenUsers.add(userId);
+      const eventUserId = e.user_id;
+      if (!seenUsers.has(eventUserId) && diverseFeed.length < 5) {
+        seenUsers.add(eventUserId);
         diverseFeed.push({
           userName: e.user?.name || e.user?.username || "A Master",
           xp: Number(e.xp_delta || 0),
-          type: e.event_type || "Lesson Mastery",
+          type: "Lesson Mastery",
         });
       }
     }
 
-    const globalFeed = diverseFeed; // 🎯 This is now a list of 5 DIFFERENT users
+    // Fallback: if fewer than 5 active users in the last 7 days,    
+    // fill remaining slots from the most recent positive-XP events overall
+    if (diverseFeed.length < 5) {
+      const fallbackEvents = await prisma.xpEvent.findMany({
+        where: {
+          xp_delta: { gt: 0 },
+        },
+        take: 200,
+        orderBy: { created_at: "desc" },
+        include: {
+          user: {
+            select: { id: true, name: true, username: true },
+          },
+        },
+      });
+
+      for (const e of fallbackEvents) {
+        const eventUserId = e.user_id;
+        if (!seenUsers.has(eventUserId) && diverseFeed.length < 5) {
+          seenUsers.add(eventUserId);
+          diverseFeed.push({
+            userName: e.user?.name || e.user?.username || "A Master",
+            xp: Number(e.xp_delta || 0),
+            type: "Lesson Mastery",
+          });
+        }
+      }
+    }
+
+    const globalFeed = diverseFeed;
 
     // 🎯 THE PRESERVED HANDSHAKE
     return res.json({
