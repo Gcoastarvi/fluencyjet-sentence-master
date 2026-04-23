@@ -193,11 +193,9 @@ router.post("/award", authRequired, async (req, res) => {
       return res.status(400).json({ ok: false, message: "Invalid XP amount" });
     }
 
-    const type = String(req.body?.event || "ADMIN_ADJUST").trim();
-
     const result = await prisma.$transaction(async (tx) => {
-      // 🎯 1. FETCH CURRENT PROGRESS (The fix for Nove's streak)
-      const prog = await tx.userProgress.findUnique({
+      // 🎯 1. FETCH PROGRESS FIRST (Before ensureProgress changes the date)
+      let prog = await tx.userProgress.findUnique({
         where: { user_id: userId },
       });
 
@@ -212,22 +210,23 @@ router.post("/award", authRequired, async (req, res) => {
         : null;
       let newStreak = prog?.streak || 0;
 
-      // 🎯 2. STREAK CALCULATOR
-      if (lastDate !== todayYMD) {
+      // 🎯 2. SELF-HEALING STREAK LOGIC
+      if (newStreak === 0) {
+        newStreak = 1; // 💡 If stuck at 0, always start at 1
+      } else if (lastDate !== todayYMD) {
         if (lastDate === yesterdayYMD) {
-          newStreak += 1; // Consecutive day!
+          newStreak += 1; // Consecutive day
         } else {
-          newStreak = 1; // Started fresh today or missed a day
+          newStreak = 1; // Missed a day, reset to 1
         }
       }
 
-      // 🎯 3. UPDATE USER TOTALS
+      // 🎯 3. ATOMIC UPDATES
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: { xpTotal: { increment: amount } },
       });
 
-      // 🎯 4. UPDATE PROGRESS (Saves the Streak and Date)
       const updatedProg = await tx.userProgress.upsert({
         where: { user_id: userId },
         update: {
@@ -245,14 +244,13 @@ router.post("/award", authRequired, async (req, res) => {
         },
       });
 
-      // 🎯 5. CREATE THE EVENT (The fix for Go appearing in the feed)
       const internalKey = makeTypeKey({ mode, isCorrect: true, attemptId });
       const evt = await tx.xpEvent.create({
         data: {
           user_id: userId,
-          xp_delta: amount,
-          event_type: "Lesson Mastery", // Frontend label
-          type: internalKey, // Unique ID for idempotency
+          xp_delta: amount, // 🎯 Ensure this matches 'xp' in your dashboard map
+          event_type: "Lesson Mastery",
+          type: internalKey,
         },
       });
 
@@ -264,10 +262,9 @@ router.post("/award", authRequired, async (req, res) => {
       xpAwarded: amount,
       totalXP: result.updatedUser.xpTotal,
       currentStreak: result.updatedProg.streak,
-      event: result.evt,
     });
   } catch (err) {
-    console.error("❌ xp/award error:", err);
+    console.error("❌ XP Award Error:", err);
     res.status(500).json({ ok: false, message: "Failed to award XP" });
   }
 });
