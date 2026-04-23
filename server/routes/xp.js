@@ -186,86 +186,84 @@ router.post("/award", authRequired, async (req, res) => {
   try {
     const userId = req.user.id;
     const amount = Math.trunc(Number(req.body?.amount || 0));
+    const mode = req.body?.mode || "lesson";
+    const attemptId = req.body?.attemptId || null;
+
     if (!Number.isFinite(amount) || amount === 0) {
       return res.status(400).json({ ok: false, message: "Invalid XP amount" });
     }
-    const type =
-      String(req.body?.event || "ADMIN_ADJUST").trim() || "ADMIN_ADJUST";
 
-    const now = new Date();
-    const wk = weekStartUTC(now);
-    const mk = monthStartUTC(now);
-
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayYMD = ymdInTZ(yesterday);
-
-    // If they missed yesterday AND haven't practiced today, reset streak to 1
-    if (lastDate !== todayYMD && lastDate !== yesterdayYMD) {
-      await tx.userProgress.update({
-        where: { user_id: userId },
-        data: { streak: 0 }, // Reset to 0 so the increment makes it 1
-      });
-    }
+    const type = String(req.body?.event || "ADMIN_ADJUST").trim();
 
     const result = await prisma.$transaction(async (tx) => {
-      await ensureProgress(tx, userId);
-
-      const evt = await tx.xpEvent.create({
-        data: { user_id: userId, xp_delta: amount, type },
+      // 🎯 1. FETCH CURRENT PROGRESS (The fix for Nove's streak)
+      const prog = await tx.userProgress.findUnique({
+        where: { user_id: userId },
       });
 
-      // 🎯 THE MASTER UPDATE: XP + STREAK + LIVE FEED
       const now = new Date();
       const todayYMD = ymdInTZ(now);
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayYMD = ymdInTZ(yesterday);
 
-      // 1. Calculate Streak Increment
-      let streakIncrement = 0;
       const lastDate = prog?.last_activity_date
         ? ymdInTZ(prog.last_activity_date)
         : null;
+      let newStreak = prog?.streak || 0;
 
+      // 🎯 2. STREAK CALCULATOR
       if (lastDate !== todayYMD) {
-        // Only increment if they haven't practiced today
-        streakIncrement = 1;
+        if (lastDate === yesterdayYMD) {
+          newStreak += 1; // Consecutive day!
+        } else {
+          newStreak = 1; // Started fresh today or missed a day
+        }
       }
 
-      // 2. Perform the Atomic Update
-      const [updatedUser, updatedProg, newEvent] = await tx.$transaction([
-        // A) Update User Totals
-        tx.user.update({
-          where: { id: userId },
-          data: { xpTotal: { increment: amount } },
-        }),
-        // B) Update Progress & Tick Streak
-        tx.userProgress.update({
-          where: { user_id: userId },
-          data: {
-            xp: { increment: amount },
-            streak: streakIncrement > 0 ? { increment: 1 } : undefined, // 🎯 Fixes Nove!
-            last_activity_date: now,
-            updated_at: now,
-          },
-        }),
-        // C) CREATE THE LIVE ACTIVITY EVENT
-        tx.xpEvent.create({
-          data: {
-            user_id: userId,
-            xp_delta: amount,
-            event_type: "Lesson Mastery", // 🎯 Fixes Go/Ichi Visibility!
-            type: makeTypeKey({ mode, isCorrect: true, attemptId }),
-          },
-        }),
-      ]);
+      // 🎯 3. UPDATE USER TOTALS
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: { xpTotal: { increment: amount } },
+      });
 
-      return { evt, user, prog };
+      // 🎯 4. UPDATE PROGRESS (Saves the Streak and Date)
+      const updatedProg = await tx.userProgress.upsert({
+        where: { user_id: userId },
+        update: {
+          xp: { increment: amount },
+          streak: newStreak,
+          last_activity_date: now,
+          updated_at: now,
+        },
+        create: {
+          user_id: userId,
+          xp: amount,
+          streak: 1,
+          last_activity_date: now,
+          updated_at: now,
+        },
+      });
+
+      // 🎯 5. CREATE THE EVENT (The fix for Go appearing in the feed)
+      const internalKey = makeTypeKey({ mode, isCorrect: true, attemptId });
+      const evt = await tx.xpEvent.create({
+        data: {
+          user_id: userId,
+          xp_delta: amount,
+          event_type: "Lesson Mastery", // Frontend label
+          type: internalKey, // Unique ID for idempotency
+        },
+      });
+
+      return { updatedUser, updatedProg, evt };
     });
 
     res.json({
       ok: true,
       xpAwarded: amount,
-      totalXP: safeInt(result.user?.xpTotal, 0),
-      progressXP: safeInt(result.prog?.xp, 0),
+      totalXP: result.updatedUser.xpTotal,
+      currentStreak: result.updatedProg.streak,
       event: result.evt,
     });
   } catch (err) {
