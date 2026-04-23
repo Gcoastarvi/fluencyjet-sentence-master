@@ -796,11 +796,17 @@ export default function LessonDetail() {
 
   async function hasExercises(lid, mode, diff) {
     try {
+      const token =
+        localStorage.getItem("fj_token") || localStorage.getItem("token");
+
       const res = await api.get(
         `/quizzes/by-lesson/${lid}?mode=${encodeURIComponent(
           mode,
         )}&difficulty=${encodeURIComponent(diff || "beginner")}`,
-        { credentials: "include" },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          withCredentials: true,
+        },
       );
 
       // ✅ apiClient returns JSON directly (not axios response)

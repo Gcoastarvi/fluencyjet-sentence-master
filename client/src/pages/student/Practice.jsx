@@ -63,7 +63,9 @@ function Practice() {
         setLoading(true);
         setError("");
 
-        const token = localStorage.getItem("token");
+        const token =
+          localStorage.getItem("fj_token") || localStorage.getItem("token");
+
         if (!token) {
           setError("Not authenticated. Please log in again.");
           setLoading(false);
@@ -77,6 +79,7 @@ function Practice() {
             headers: {
               Authorization: `Bearer ${token}`,
             },
+            credentials: "include",
             signal: controller.signal,
           },
         );
