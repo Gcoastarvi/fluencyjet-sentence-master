@@ -43,10 +43,13 @@ export default function Navbar() {
   }
 
   const getLeagueFromXP = (xp = 0) => {
-    if (xp >= 150000) return "DIAMOND";
-    if (xp >= 100000) return "SAPPHIRE"; // 🎯 This matches your 121k XP!
-    if (xp >= 50000) return "GOLD";
-    if (xp >= 10000) return "SILVER";
+    const total = Number(xp || 0);
+
+    if (total >= 150000) return "DIAMOND";
+    if (total >= 80000) return "SAPPHIRE";
+    if (total >= 40000) return "EMERALD";
+    if (total >= 15000) return "GOLD";
+    if (total >= 5000) return "SILVER";
     return "BRONZE";
   };
 
@@ -54,9 +57,9 @@ export default function Navbar() {
     BRONZE: { emoji: "🥉", label: "BRONZE" },
     SILVER: { emoji: "🥈", label: "SILVER" },
     GOLD: { emoji: "🥇", label: "GOLD" },
-    SAPPHIRE: { emoji: "💎", label: "SAPPHIRE" }, // 🎯 Matches your dashboard
-    RUBY: { emoji: "🔴", label: "RUBY" },
-    DIAMOND: { emoji: "💠", label: "DIAMOND" },
+    EMERALD: { emoji: "🟢", label: "EMERALD" },
+    SAPPHIRE: { emoji: "🔷", label: "SAPPHIRE" },
+    DIAMOND: { emoji: "💎", label: "DIAMOND" },
   };
 
   const isAdmin = user?.role === "ADMIN";
@@ -106,7 +109,8 @@ export default function Navbar() {
   // 🎯 Identify current league or default to BRONZE
   console.log("🕵️ Navbar XP Audit:", auth?.user?.xpTotal);
 
-  const currentKey = getLeagueFromXP(auth?.user?.xpTotal);
+  const displayXP = Number(user?.xpTotal ?? auth?.user?.xpTotal ?? 0);
+  const displayLeague = getLeagueFromXP(displayXP);
   const leagueData = LEAGUE_MAP[currentKey] || LEAGUE_MAP.BRONZE;
 
   return (
@@ -127,20 +131,20 @@ export default function Navbar() {
             title="View leaderboard"
           >
             <span className="text-sm leading-none">
-              {user?.league === "DIAMOND"
+              {displayLeague === "DIAMOND"
                 ? "💎"
-                : user?.league === "SAPPHIRE"
+                : displayLeague === "SAPPHIRE"
                   ? "🔷"
-                  : user?.league === "EMERALD"
+                  : displayLeague === "EMERALD"
                     ? "🟢"
-                    : user?.league === "GOLD"
+                    : displayLeague === "GOLD"
                       ? "🥇"
-                      : user?.league === "SILVER"
+                      : displayLeague === "SILVER"
                         ? "🥈"
                         : "🥉"}
             </span>
             <span className="text-[11px] font-black uppercase tracking-widest text-indigo-700 leading-none">
-              {user?.league || "BRONZE"}
+              {displayLeague}
             </span>
           </Link>
           {/* 🔥 Clickable Streak Flame Trigger */}
