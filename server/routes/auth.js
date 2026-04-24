@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js";
 import { authRequired } from "../middleware/authMiddleware.js";
+import crypto from "crypto";
 
 const router = express.Router();
 
@@ -19,6 +20,14 @@ function signToken(user) {
   return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
     expiresIn: "7d",
   });
+}
+
+function makeResetToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
 
 /* ───────────────────────────────
@@ -145,6 +154,135 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
     return res.status(500).json({ ok: false, message: "Login failed" });
   }
 });
+
+/* ───────────────────────────────
+   FORGET PASSWORD
+─────────────────────────────── */
+
+router.post(
+  "/forgot-password",
+  express.json({ limit: "1mb" }),
+  async (req, res) => {
+    try {
+      let email = normalizeEmail(req.body?.email || "");
+
+      // Always return a neutral success message
+      const successMessage =
+        "If an account exists for that email, reset instructions have been sent.";
+
+      if (!email) {
+        return res.json({ ok: true, message: successMessage });
+      }
+
+      const user = await prisma.user.findUnique({ where: { email } });
+
+      if (!user) {
+        return res.json({ ok: true, message: successMessage });
+      }
+
+      // Optional cleanup of old unused tokens
+      await prisma.passwordResetToken.deleteMany({
+        where: {
+          userId: user.id,
+          OR: [{ usedAt: { not: null } }, { expiresAt: { lt: new Date() } }],
+        },
+      });
+
+      const rawToken = makeResetToken();
+      const tokenHash = hashResetToken(rawToken);
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 mins
+
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        },
+      });
+
+      const resetUrl = `${process.env.APP_URL || "https://fluencyjet.com"}/reset-password?token=${rawToken}`;
+
+      // TODO: replace with real email sending
+      console.log("[FORGOT PASSWORD] Send reset link to:", user.email);
+      console.log("[FORGOT PASSWORD] Reset URL:", resetUrl);
+
+      return res.json({ ok: true, message: successMessage });
+    } catch (err) {
+      console.error("Forgot password error:", err);
+      return res
+        .status(500)
+        .json({ ok: false, message: "Unable to process request right now." });
+    }
+  },
+);
+
+/* ───────────────────────────────
+   RESET PASSWORD
+─────────────────────────────── */
+
+router.post(
+  "/reset-password",
+  express.json({ limit: "1mb" }),
+  async (req, res) => {
+    try {
+      const rawToken = String(req.body?.token || "");
+      const password = String(req.body?.password || "");
+
+      if (!rawToken || !password) {
+        return res.status(400).json({ ok: false, message: "Missing fields" });
+      }
+
+      if (password.length < 8) {
+        return res
+          .status(400)
+          .json({
+            ok: false,
+            message: "Password must be at least 8 characters",
+          });
+      }
+
+      const tokenHash = hashResetToken(rawToken);
+
+      const resetRecord = await prisma.passwordResetToken.findUnique({
+        where: { tokenHash },
+        include: { user: true },
+      });
+
+      if (
+        !resetRecord ||
+        resetRecord.usedAt ||
+        resetRecord.expiresAt < new Date()
+      ) {
+        return res
+          .status(400)
+          .json({ ok: false, message: "Reset link is invalid or expired" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: resetRecord.userId },
+          data: { password: hashedPassword },
+        }),
+        prisma.passwordResetToken.update({
+          where: { id: resetRecord.id },
+          data: { usedAt: new Date() },
+        }),
+      ]);
+
+      return res.json({
+        ok: true,
+        message: "Password updated successfully. Please log in.",
+      });
+    } catch (err) {
+      console.error("Reset password error:", err);
+      return res
+        .status(500)
+        .json({ ok: false, message: "Reset failed. Please try again." });
+    }
+  },
+);
 
 /* ───────────────────────────────
    SESSION CHECK

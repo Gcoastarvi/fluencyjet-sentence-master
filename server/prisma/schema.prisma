@@ -30,8 +30,22 @@ model User {
   weekly       UserWeeklyTotals?
   xp_events    XpEvent[]
   league_history LeagueHistory[]
+  reset_tokens PasswordResetToken[]
   track        String            @default("BEGINNER") 
   current_unit Int               @default(1)
+}
+
+model PasswordResetToken {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model LessonModeProgress {

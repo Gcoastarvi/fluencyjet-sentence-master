@@ -152,12 +152,14 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signin" element={<Navigate to="/login" replace />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/paywall" element={<Paywall />} />
             <Route path="/level-check" element={<LevelCheck />} />
             <Route path="/upgrade" element={<Upgrade />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/admin/curriculum" element={<CurriculumManager />} />
+            <Route path="/admin/curriculum" element={<CurriculumManager />} />            
             {/* 🛡️ UNIFIED LESSON HUB ROUTES */}
             <Route
               path="/b/lessons"
