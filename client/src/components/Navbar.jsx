@@ -111,7 +111,7 @@ export default function Navbar() {
 
   const displayXP = Number(user?.xpTotal ?? auth?.user?.xpTotal ?? 0);
   const displayLeague = getLeagueFromXP(displayXP);
-  const leagueData = LEAGUE_MAP[currentKey] || LEAGUE_MAP.BRONZE;
+  const leagueData = LEAGUE_MAP[displayLeague] || LEAGUE_MAP.BRONZE;
 
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
