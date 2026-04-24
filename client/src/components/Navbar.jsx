@@ -189,8 +189,7 @@ export default function Navbar() {
                       </span>
                     )}
                   </Link>
-
-                  {/* 👤 Profile Link */}                
+                                
                   <Link className="text-sm sm:text-base" to="/leaderboard">
                     Leaderboard
                   </Link>
