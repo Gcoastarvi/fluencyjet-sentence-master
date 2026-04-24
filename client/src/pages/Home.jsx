@@ -8,50 +8,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-white text-slate-950 overflow-hidden">
-      {/* NAVBAR */}
-      <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-[22px] md:text-[24px] leading-none tracking-tight">
-              <span className="font-extrabold text-purple-700">FluencyJet</span>
-              <span className="ml-2 font-medium text-purple-700/90">
-                Sentence Master
-              </span>
-            </span>
-          </Link>
-
-          <nav className="hidden items-center gap-8 text-sm font-semibold text-slate-700 lg:flex">
-            <a href="#how-it-works" className="hover:text-purple-700">
-              How it works
-            </a>
-            <a href="#practice" className="hover:text-purple-700">
-              Practice
-            </a>
-            <a href="#lessons" className="hover:text-purple-700">
-              Lessons
-            </a>
-            <a href="#pricing" className="hover:text-purple-700">
-              Pricing
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              className="hidden rounded-full px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 sm:inline-flex"
-            >
-              Login
-            </Link>
-            <Link
-              to={primaryCta}
-              className="rounded-full bg-yellow-400 px-5 py-3 text-sm font-extrabold text-slate-950 shadow-lg shadow-yellow-300/30 transition hover:-translate-y-0.5 hover:bg-yellow-500"
-            >
-              Start Free
-            </Link>
-          </div>
-        </div>
-      </header>
-
       {/* HERO */}
       <section className="relative">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(109,40,217,0.13),transparent_34%),radial-gradient(circle_at_top_right,rgba(37,99,235,0.11),transparent_30%)]" />
