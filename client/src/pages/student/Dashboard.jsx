@@ -1693,56 +1693,45 @@ export default function Dashboard() {
           onClick={() => setShowLevelModal(false)}
         >
           <div
-            className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto rounded-[2.5rem] sm:rounded-[3rem] bg-white text-center shadow-2xl border border-indigo-100"
+            className="relative w-full max-w-[460px] max-h-[85vh] overflow-y-auto rounded-[2rem] sm:rounded-[2.5rem] bg-white text-center shadow-2xl border border-indigo-100"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
-            <div className="px-6 py-8 sm:px-10 sm:py-10">
-              <div className="text-6xl sm:text-7xl mb-4 sm:mb-5">🏆</div>
+            <div className="px-5 py-6 sm:px-8 sm:py-8">
+              <div className="text-5xl sm:text-6xl mb-3">🏆</div>
 
-              <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tighter leading-none">
+              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter leading-none">
                 LEVEL {summary.level}
-                <br />
-                UNLOCKED!
               </h2>
 
-              <p className="mt-4 text-slate-400 font-bold uppercase tracking-[0.18em] text-[10px] sm:text-xs">
-                You’re getting stronger every session
+              <p className="mt-2 text-[10px] sm:text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                New level unlocked
               </p>
 
-              <p className="mt-5 text-slate-500 font-semibold text-base sm:text-lg leading-relaxed max-w-md mx-auto">
-                Your sentence-making power just moved up a level.
-              </p>
-
-              <div className="mt-8 flex justify-center items-end gap-4 sm:gap-6">
-                <span className="text-4xl sm:text-5xl font-black text-slate-200 line-through">
+              <div className="mt-6 flex justify-center items-end gap-4">
+                <span className="text-3xl sm:text-4xl font-black text-slate-200 line-through">
                   {Math.max((summary.level || 1) - 1, 1)}
                 </span>
 
                 <div className="flex flex-col items-center leading-none">
-                  <span className="text-6xl sm:text-7xl font-black text-indigo-600">
+                  <span className="text-5xl sm:text-6xl font-black text-indigo-600">
                     {summary.level}
                   </span>
-                  <span className="mt-2 text-xs sm:text-sm font-black text-indigo-400 uppercase tracking-[0.18em]">
+                  <span className="mt-2 text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-[0.18em]">
                     Master Level
                   </span>
                 </div>
               </div>
 
-              <div className="mt-8 rounded-3xl bg-indigo-50 border border-indigo-100 px-5 py-4 sm:px-6 sm:py-5">
-                <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.18em] text-indigo-500">
-                  Progress Reward
-                </p>
-                <p className="mt-2 text-slate-600 font-semibold text-base sm:text-lg">
-                  Keep practicing daily to reach Level{" "}
-                  {Number(summary.level || 0) + 1}.
-                </p>
-              </div>
+              <p className="mt-6 text-sm sm:text-base font-semibold text-slate-600">
+                Reach Level {Number(summary.level || 0) + 1} by practicing
+                daily.
+              </p>
 
               <button
                 onClick={() => setShowLevelModal(false)}
-                className="mt-8 w-full py-4 sm:py-5 rounded-2xl bg-slate-900 text-white font-black text-xs sm:text-sm uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+                className="mt-6 w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-xs sm:text-sm uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
               >
                 Keep Climbing →
               </button>
