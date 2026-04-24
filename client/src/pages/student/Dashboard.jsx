@@ -1,5 +1,11 @@
 // client/src/pages/student/Dashboard.jsx
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "@/api/apiClient";
 import { useAuth } from "@/context/AuthContext";
@@ -1682,8 +1688,14 @@ export default function Dashboard() {
         </div>
       )}
       {showLevelModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto rounded-[2.5rem] sm:rounded-[3rem] bg-white text-center shadow-2xl border border-indigo-100">
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+          onClick={() => setShowLevelModal(false)}
+        >
+          <div
+            className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto rounded-[2.5rem] sm:rounded-[3rem] bg-white text-center shadow-2xl border border-indigo-100"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
             <div className="px-6 py-8 sm:px-10 sm:py-10">
@@ -1729,7 +1741,7 @@ export default function Dashboard() {
               </div>
 
               <button
-                onClick={(e) => e.stopPropagation()}
+                onClick={() => setShowLevelModal(false)}
                 className="mt-8 w-full py-4 sm:py-5 rounded-2xl bg-slate-900 text-white font-black text-xs sm:text-sm uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
               >
                 Keep Climbing →
