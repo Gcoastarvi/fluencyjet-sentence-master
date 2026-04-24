@@ -109,7 +109,17 @@ export default function Navbar() {
   // 🎯 Identify current league or default to BRONZE
   console.log("🕵️ Navbar XP Audit:", auth?.user?.xpTotal);
 
-  const displayXP = Number(user?.xpTotal ?? auth?.user?.xpTotal ?? 0);
+  const displayXP = Number(
+    user?.xpTotal ??
+      user?.totalXP ??
+      user?.xp ??
+      user?.xp_total ??
+      auth?.user?.xpTotal ??
+      auth?.user?.totalXP ??
+      auth?.user?.xp ??
+      auth?.user?.xp_total ??
+      0,
+  );
   const displayLeague = getLeagueFromXP(displayXP);
   const leagueData = LEAGUE_MAP[displayLeague] || LEAGUE_MAP.BRONZE;
 
@@ -143,8 +153,9 @@ export default function Navbar() {
                         ? "🥈"
                         : "🥉"}
             </span>
+            <span className="text-sm leading-none">{leagueData.emoji}</span>
             <span className="text-[11px] font-black uppercase tracking-widest text-indigo-700 leading-none">
-              {displayLeague}
+              {leagueData.label}
             </span>
           </Link>
           {/* 🔥 Clickable Streak Flame Trigger */}
