@@ -32,8 +32,11 @@ export default function Navbar() {
   if (loading) {
     return (
       <nav className="flex items-center px-6 py-4 shadow-sm bg-white">
-        <span className="text-purple-700 font-bold text-xl">
-          FluencyJet Sentence Master
+        <span className="text-[22px] md:text-[24px] leading-none tracking-tight">
+          <span className="text-purple-700 font-extrabold">FluencyJet</span>
+          <span className="text-purple-700/90 font-medium ml-2">
+            Sentence Master
+          </span>
         </span>
       </nav>
     );
