@@ -42,26 +42,6 @@ export default function Navbar() {
     );
   }
 
-  const getLeagueFromXP = (xp = 0) => {
-    const total = Number(xp || 0);
-
-    if (total >= 150000) return "DIAMOND";
-    if (total >= 80000) return "SAPPHIRE";
-    if (total >= 40000) return "EMERALD";
-    if (total >= 15000) return "GOLD";
-    if (total >= 5000) return "SILVER";
-    return "BRONZE";
-  };
-
-  const LEAGUE_MAP = {
-    BRONZE: { emoji: "🥉", label: "BRONZE" },
-    SILVER: { emoji: "🥈", label: "SILVER" },
-    GOLD: { emoji: "🥇", label: "GOLD" },
-    EMERALD: { emoji: "🟢", label: "EMERALD" },
-    SAPPHIRE: { emoji: "🔷", label: "SAPPHIRE" },
-    DIAMOND: { emoji: "💎", label: "DIAMOND" },
-  };
-
   const isAdmin = user?.role === "ADMIN";
 
   function handleLoginClick() {
@@ -104,24 +84,7 @@ export default function Navbar() {
         : "/b/lessons"
       : effectivePlan === "INTERMEDIATE"
         ? "/i/lessons"
-        : "/b/lessons";
-
-  // 🎯 Identify current league or default to BRONZE
-  console.log("🕵️ Navbar XP Audit:", auth?.user?.xpTotal);
-
-  const displayXP = Number(
-    user?.xpTotal ??
-      user?.totalXP ??
-      user?.xp ??
-      user?.xp_total ??
-      auth?.user?.xpTotal ??
-      auth?.user?.totalXP ??
-      auth?.user?.xp ??
-      auth?.user?.xp_total ??
-      0,
-  );
-  const displayLeague = getLeagueFromXP(displayXP);
-  const leagueData = LEAGUE_MAP[displayLeague] || LEAGUE_MAP.BRONZE;
+        : "/b/lessons";  
 
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
@@ -134,30 +97,7 @@ export default function Navbar() {
           >
             FluencyJet <span className="font-normal">Sentence Master</span>
           </Link>
-          {/* 🎖️ Compact League Pill */}
-          <Link
-            to="/leaderboard"
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-indigo-100 bg-indigo-50 hover:bg-indigo-100 transition-colors"
-            title="View leaderboard"
-          >
-            <span className="text-sm leading-none">
-              {displayLeague === "DIAMOND"
-                ? "💎"
-                : displayLeague === "SAPPHIRE"
-                  ? "🔷"
-                  : displayLeague === "EMERALD"
-                    ? "🟢"
-                    : displayLeague === "GOLD"
-                      ? "🥇"
-                      : displayLeague === "SILVER"
-                        ? "🥈"
-                        : "🥉"}
-            </span>
-            <span className="text-sm leading-none">{leagueData.emoji}</span>
-            <span className="text-[11px] font-black uppercase tracking-widest text-indigo-700 leading-none">
-              {leagueData.label}
-            </span>
-          </Link>
+      
           {/* 🔥 Clickable Streak Flame Trigger */}
           {user?.daily_streak > 0 && (
             <button
