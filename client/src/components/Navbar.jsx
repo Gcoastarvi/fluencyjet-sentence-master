@@ -84,7 +84,7 @@ export default function Navbar() {
         : "/b/lessons"
       : effectivePlan === "INTERMEDIATE"
         ? "/i/lessons"
-        : "/b/lessons";  
+        : "/b/lessons";
 
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
@@ -97,7 +97,7 @@ export default function Navbar() {
           >
             FluencyJet <span className="font-normal">Sentence Master</span>
           </Link>
-      
+
           {/* 🔥 Clickable Streak Flame Trigger */}
           {user?.daily_streak > 0 && (
             <button
@@ -118,18 +118,19 @@ export default function Navbar() {
           <div className="flex items-center gap-2 sm:gap-4 sm:ml-auto min-w-0">
             {!isAuthenticated && (
               <>
-                <Link
-                  to="/practice"
-                  className="text-sm sm:text-base hover:text-purple-600"
-                >
-                  Free Quiz
-                </Link>
                 <button
                   onClick={handleLoginClick}
-                  className="shrink-0 px-4 py-2 bg-purple-600 text-white rounded-full shadow text-sm sm:text-base"
+                  className="text-sm sm:text-base font-semibold text-slate-900 hover:text-purple-700"
                 >
                   Login
                 </button>
+
+                <Link
+                  to="/level-check"
+                  className="shrink-0 rounded-full bg-yellow-400 px-5 py-3 text-sm sm:text-base font-extrabold text-slate-950 shadow-lg shadow-yellow-300/30 transition hover:-translate-y-0.5 hover:bg-yellow-500"
+                >
+                  Start Free Level Check
+                </Link>
               </>
             )}
 
