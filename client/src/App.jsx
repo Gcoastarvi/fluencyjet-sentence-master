@@ -31,6 +31,8 @@ import Upgrade from "./pages/student/Upgrade";
 import LessonList from "./pages/student/LessonList";
 import Profile from "./pages/student/Profile";
 import Settings from "./pages/student/Settings";
+import ForgotPassword from "./pages/student/ForgotPassword";
+import ResetPassword from "./pages/student/ResetPassword";
 
 // Admin pages
 import Admin from "./pages/admin/Admin.jsx";
@@ -159,7 +161,7 @@ export default function App() {
             <Route path="/upgrade" element={<Upgrade />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
-            <Route path="/admin/curriculum" element={<CurriculumManager />} />            
+            <Route path="/admin/curriculum" element={<CurriculumManager />} />
             {/* 🛡️ UNIFIED LESSON HUB ROUTES */}
             <Route
               path="/b/lessons"
