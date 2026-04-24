@@ -1347,34 +1347,37 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* 📊 FIXED WEEKLY PERFORMANCE GRAPH */}
-      <div className="flex items-end justify-between h-32 gap-3 px-2">
-        {[
-          { day: "M", xp: 45 },
-          { day: "T", xp: 82 },
-          { day: "W", xp: 60 },
-          { day: "T", xp: 95 },
-          { day: "F", xp: 70 },
-          { day: "S", xp: 30 },
-          { day: "S", xp: 15 },
-        ].map((d, i) => (
-          <div
-            key={i}
-            className="flex-1 flex flex-col items-center gap-2 group"
-          >
-            <div
-              className="w-full bg-slate-100 rounded-t-xl relative overflow-hidden transition-all duration-700 hover:bg-indigo-50"
-              /* 🎯 Set a minimum height of 5% so the bars never disappear */
-              style={{ height: `${Math.max(d.xp || 0, 5)}%` }}
-            >
-              <div className="absolute bottom-0 left-0 w-full bg-indigo-500 h-full origin-bottom" />
-            </div>
-            <span className="text-[9px] font-black text-slate-400">
-              {d.day}
-            </span>
+      {false && (
+        <>
+          {/* 📊 FIXED WEEKLY PERFORMANCE GRAPH */}
+          <div className="flex items-end justify-between h-32 gap-3 px-2">
+            {[
+              { day: "M", xp: 45 },
+              { day: "T", xp: 82 },
+              { day: "W", xp: 60 },
+              { day: "T", xp: 95 },
+              { day: "F", xp: 70 },
+              { day: "S", xp: 30 },
+              { day: "S", xp: 15 },
+            ].map((d, i) => (
+              <div
+                key={i}
+                className="flex-1 flex flex-col items-center gap-2 group"
+              >
+                <div
+                  className="w-full bg-slate-100 rounded-t-xl relative overflow-hidden transition-all duration-700 hover:bg-indigo-50"
+                  style={{ height: `${Math.max(d.xp || 0, 5)}%` }}
+                >
+                  <div className="absolute bottom-0 left-0 w-full bg-indigo-500 h-full origin-bottom" />
+                </div>
+                <span className="text-[9px] font-black text-slate-400">
+                  {d.day}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       <main className="max-w-6xl mx-auto px-6 mt-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
         {/* 3. CENTER COLUMN: THE MASTERY PATH */}
