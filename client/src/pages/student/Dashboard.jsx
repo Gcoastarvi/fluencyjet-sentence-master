@@ -1689,49 +1689,49 @@ export default function Dashboard() {
       )}
       {showLevelModal && (
         <div
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300"
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-sm animate-in fade-in duration-200"
           onClick={() => setShowLevelModal(false)}
         >
           <div
-            className="relative w-full max-w-[460px] max-h-[85vh] overflow-y-auto rounded-[2rem] sm:rounded-[2.5rem] bg-white text-center shadow-2xl border border-indigo-100"
+            className="relative w-full max-w-[420px] rounded-[2rem] sm:rounded-[2.5rem] bg-white text-center shadow-2xl border border-indigo-100 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
-            <div className="px-5 py-6 sm:px-8 sm:py-8">
-              <div className="text-5xl sm:text-6xl mb-3">🏆</div>
+            <div className="px-6 py-7 sm:px-8 sm:py-8">
+              <div className="text-5xl sm:text-6xl leading-none mb-4">🏆</div>
 
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tighter leading-none">
+              <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tighter leading-none">
                 LEVEL {summary.level}
               </h2>
 
-              <p className="mt-2 text-[10px] sm:text-xs font-black uppercase tracking-[0.18em] text-slate-400">
-                New level unlocked
+              <p className="mt-3 text-xs sm:text-sm font-black uppercase tracking-[0.22em] text-slate-400">
+                New Level Unlocked
               </p>
 
-              <div className="mt-6 flex justify-center items-end gap-4">
-                <span className="text-3xl sm:text-4xl font-black text-slate-200 line-through">
-                  {Math.max((summary.level || 1) - 1, 1)}
+              <div className="mt-7 flex items-end justify-center gap-4">
+                <span className="text-4xl sm:text-5xl font-black text-slate-200 leading-none">
+                  {Math.max(1, Number(summary.level || 1) - 1)}
                 </span>
 
                 <div className="flex flex-col items-center leading-none">
-                  <span className="text-5xl sm:text-6xl font-black text-indigo-600">
+                  <span className="text-6xl sm:text-7xl font-black text-indigo-600">
                     {summary.level}
                   </span>
-                  <span className="mt-2 text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-[0.18em]">
+                  <span className="mt-2 text-[11px] sm:text-xs font-black text-indigo-400 uppercase tracking-[0.18em]">
                     Master Level
                   </span>
                 </div>
               </div>
 
-              <p className="mt-6 text-sm sm:text-base font-semibold text-slate-600">
+              <p className="mt-7 text-base sm:text-lg font-bold text-slate-600">
                 Reach Level {Number(summary.level || 0) + 1} by practicing
                 daily.
               </p>
 
               <button
                 onClick={() => setShowLevelModal(false)}
-                className="mt-6 w-full py-4 rounded-2xl bg-slate-900 text-white font-black text-xs sm:text-sm uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+                className="mt-7 w-full rounded-2xl bg-slate-900 py-4 text-sm font-black uppercase tracking-[0.22em] text-white shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 Keep Climbing →
               </button>
