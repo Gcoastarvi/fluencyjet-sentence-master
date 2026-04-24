@@ -309,7 +309,9 @@ export default function Dashboard() {
 
   // 🎯 This goes at the top with your other states
   const [showLevelModal, setShowLevelModal] = useState(false);
-  const [prevLevel, setPrevLevel] = useState(0);
+  const [prevLevel, setPrevLevel] = useState(() =>
+    Number(localStorage.getItem("fj_last_seen_level_modal") || 0),
+  );
   const [prevBadgeCount, setPrevBadgeCount] = useState(0);
 
   // 🎯 THE PROGRESS NUDGE CALCULATOR
@@ -767,7 +769,14 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (summary.level > prevLevel && prevLevel !== 0) {
+    const currentLevel = Number(summary?.level || 0);
+    if (!currentLevel) return;
+
+    const lastSeenLevel = Number(
+      localStorage.getItem("fj_last_seen_level_modal") || 0,
+    );
+
+    if (currentLevel > lastSeenLevel) {
       // 🎇 MASSIVE LEVEL UP CELEBRATION
       const duration = 7 * 1000;
       const animationEnd = Date.now() + duration;
@@ -785,12 +794,13 @@ export default function Dashboard() {
         if (timeLeft <= 0) return clearInterval(interval);
 
         const particleCount = 50 * (timeLeft / duration);
-        // Fling confetti from the corners
+
         confetti({
           ...defaults,
           particleCount,
           origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
         });
+
         confetti({
           ...defaults,
           particleCount,
@@ -798,10 +808,11 @@ export default function Dashboard() {
         });
       }, 250);
 
-      setPrevLevel(summary.level);
-      setShowLevelModal(true); // Show the Level Up Modal we built earlier
+      setPrevLevel(currentLevel);
+      setShowLevelModal(true);
+      localStorage.setItem("fj_last_seen_level_modal", String(currentLevel));
     }
-  }, [summary.level]);
+  }, [summary?.level]);
 
   useEffect(() => {
     // 🏁 Check if this is the very first time they land here
@@ -1652,25 +1663,41 @@ export default function Dashboard() {
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
             <div className="text-8xl mb-6 animate-bounce">🏆</div>
+
             <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-2">
-              LEVEL UP!
+              LEVEL {summary.level} UNLOCKED!
             </h2>
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-8">
-              New Mastery Unlocked
+
+            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-3">
+              You’re getting stronger every session
+            </p>
+
+            <p className="text-sm text-slate-500 font-semibold mb-8">
+              Your sentence-making power just moved up a level.
             </p>
 
             <div className="flex justify-center items-center gap-4 mb-10">
               <span className="text-4xl font-black text-slate-200 line-through">
-                {summary.level - 1}
+                {Math.max(1, summary.level - 1)}
               </span>
+
               <div className="flex flex-col items-center">
                 <span className="text-6xl font-black text-indigo-600 animate-in zoom-in spin-in-12 duration-700">
                   {summary.level}
                 </span>
                 <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
-                  {UI_TEXT.ta.master}
+                  Master Level
                 </span>
               </div>
+            </div>
+
+            <div className="mb-8 rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">
+                Progress Reward
+              </p>
+              <p className="text-sm font-bold text-slate-700">
+                Keep practicing daily to reach Level {summary.level + 1}.
+              </p>
             </div>
 
             <button
