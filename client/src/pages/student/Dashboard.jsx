@@ -314,6 +314,8 @@ export default function Dashboard() {
   );
   const [prevBadgeCount, setPrevBadgeCount] = useState(0);
 
+  const levelModalInitRef = useRef(false);
+
   // 🎯 THE PROGRESS NUDGE CALCULATOR
   // 🎯 THE TRUTH FIX: Ensure the UI respects the Database League
   const currentLeague = user?.league?.toUpperCase() || "BRONZE";
@@ -772,46 +774,68 @@ export default function Dashboard() {
     const currentLevel = Number(summary?.level || 0);
     if (!currentLevel) return;
 
-    const lastSeenLevel = Number(
+    const savedLevel = Number(
       localStorage.getItem("fj_last_seen_level_modal") || 0,
     );
 
-    if (currentLevel > lastSeenLevel) {
-      // 🎇 MASSIVE LEVEL UP CELEBRATION
-      const duration = 7 * 1000;
-      const animationEnd = Date.now() + duration;
-      const defaults = {
-        startVelocity: 30,
-        spread: 360,
-        ticks: 60,
-        zIndex: 1000,
-      };
+    // ✅ First dashboard sync: seed the current level silently
+    // so existing users do NOT get a retroactive level-up popup.
+    if (!levelModalInitRef.current) {
+      levelModalInitRef.current = true;
 
-      const randomInRange = (min, max) => Math.random() * (max - min) + min;
+      if (!savedLevel) {
+        setPrevLevel(currentLevel);
+        localStorage.setItem("fj_last_seen_level_modal", String(currentLevel));
+        return;
+      }
 
-      const interval = setInterval(() => {
-        const timeLeft = animationEnd - Date.now();
-        if (timeLeft <= 0) return clearInterval(interval);
+      setPrevLevel(savedLevel);
 
-        const particleCount = 50 * (timeLeft / duration);
-
-        confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
-        });
-
-        confetti({
-          ...defaults,
-          particleCount,
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
-        });
-      }, 250);
-
-      setPrevLevel(currentLevel);
-      setShowLevelModal(true);
-      localStorage.setItem("fj_last_seen_level_modal", String(currentLevel));
+      // If current level is not above saved level, nothing to celebrate.
+      if (currentLevel <= savedLevel) return;
     }
+
+    // ✅ Only celebrate genuine new levels
+    if (currentLevel <= savedLevel) return;
+
+    const duration = 4000;
+    const animationEnd = Date.now() + duration;
+    const defaults = {
+      startVelocity: 28,
+      spread: 360,
+      ticks: 60,
+      zIndex: 1000,
+    };
+
+    const randomInRange = (min, max) => Math.random() * (max - min) + min;
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+      if (timeLeft <= 0) {
+        clearInterval(interval);
+        return;
+      }
+
+      const particleCount = 40 * (timeLeft / duration);
+
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+      });
+
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+      });
+    }, 250);
+
+    setPrevLevel(currentLevel);
+    setShowLevelModal(true);
+    localStorage.setItem("fj_last_seen_level_modal", String(currentLevel));
+
+    return () => clearInterval(interval);
   }, [summary?.level]);
 
   useEffect(() => {
@@ -1658,54 +1682,59 @@ export default function Dashboard() {
         </div>
       )}
       {showLevelModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-2xl animate-in fade-in duration-500">
-          <div className="bg-white rounded-[4rem] p-12 max-w-sm w-full text-center shadow-2xl border-b-8 border-indigo-600 relative overflow-hidden">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto rounded-[2.5rem] sm:rounded-[3rem] bg-white text-center shadow-2xl border border-indigo-100">
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
 
-            <div className="text-8xl mb-6 animate-bounce">🏆</div>
+            <div className="px-6 py-8 sm:px-10 sm:py-10">
+              <div className="text-6xl sm:text-7xl mb-4 sm:mb-5">🏆</div>
 
-            <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-2">
-              LEVEL {summary.level} UNLOCKED!
-            </h2>
+              <h2 className="text-4xl sm:text-5xl font-black text-slate-900 tracking-tighter leading-none">
+                LEVEL {summary.level}
+                <br />
+                UNLOCKED!
+              </h2>
 
-            <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] mb-3">
-              You’re getting stronger every session
-            </p>
+              <p className="mt-4 text-slate-400 font-bold uppercase tracking-[0.18em] text-[10px] sm:text-xs">
+                You’re getting stronger every session
+              </p>
 
-            <p className="text-sm text-slate-500 font-semibold mb-8">
-              Your sentence-making power just moved up a level.
-            </p>
+              <p className="mt-5 text-slate-500 font-semibold text-base sm:text-lg leading-relaxed max-w-md mx-auto">
+                Your sentence-making power just moved up a level.
+              </p>
 
-            <div className="flex justify-center items-center gap-4 mb-10">
-              <span className="text-4xl font-black text-slate-200 line-through">
-                {Math.max(1, summary.level - 1)}
-              </span>
-
-              <div className="flex flex-col items-center">
-                <span className="text-6xl font-black text-indigo-600 animate-in zoom-in spin-in-12 duration-700">
-                  {summary.level}
+              <div className="mt-8 flex justify-center items-end gap-4 sm:gap-6">
+                <span className="text-4xl sm:text-5xl font-black text-slate-200 line-through">
+                  {Math.max((summary.level || 1) - 1, 1)}
                 </span>
-                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">
-                  Master Level
-                </span>
+
+                <div className="flex flex-col items-center leading-none">
+                  <span className="text-6xl sm:text-7xl font-black text-indigo-600">
+                    {summary.level}
+                  </span>
+                  <span className="mt-2 text-xs sm:text-sm font-black text-indigo-400 uppercase tracking-[0.18em]">
+                    Master Level
+                  </span>
+                </div>
               </div>
-            </div>
 
-            <div className="mb-8 rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1">
-                Progress Reward
-              </p>
-              <p className="text-sm font-bold text-slate-700">
-                Keep practicing daily to reach Level {summary.level + 1}.
-              </p>
-            </div>
+              <div className="mt-8 rounded-3xl bg-indigo-50 border border-indigo-100 px-5 py-4 sm:px-6 sm:py-5">
+                <p className="text-[10px] sm:text-xs font-black uppercase tracking-[0.18em] text-indigo-500">
+                  Progress Reward
+                </p>
+                <p className="mt-2 text-slate-600 font-semibold text-base sm:text-lg">
+                  Keep practicing daily to reach Level{" "}
+                  {Number(summary.level || 0) + 1}.
+                </p>
+              </div>
 
-            <button
-              onClick={() => setShowLevelModal(false)}
-              className="w-full py-5 rounded-2xl bg-slate-900 text-white font-black text-xs uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-xl"
-            >
-              Keep Climbing →
-            </button>
+              <button
+                onClick={(e) => e.stopPropagation()}
+                className="mt-8 w-full py-4 sm:py-5 rounded-2xl bg-slate-900 text-white font-black text-xs sm:text-sm uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
+              >
+                Keep Climbing →
+              </button>
+            </div>
           </div>
         </div>
       )}
