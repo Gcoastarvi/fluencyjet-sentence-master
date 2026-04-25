@@ -129,7 +129,7 @@ export default function Navbar() {
                   to="/level-check"
                   className="shrink-0 rounded-full bg-yellow-400 px-5 py-3 text-sm sm:text-base font-extrabold text-slate-950 shadow-lg shadow-yellow-300/30 transition hover:-translate-y-0.5 hover:bg-yellow-500"
                 >
-                  Start Free Level Check
+                  Check My Level
                 </Link>
               </>
             )}

@@ -1,6 +1,7 @@
 //client/src/pages/Home.jsx
 import React from "react";
 import { Link } from "react-router-dom";
+import { trackLevelCheckClick } from "../lib/tracking";
 
 export default function Home() {
   const primaryCta = "/level-check";
@@ -34,6 +35,7 @@ export default function Home() {
             <div className="mt-9 flex flex-col gap-4 sm:flex-row">
               <Link
                 to={primaryCta}
+                onClick={() => trackLevelCheckClick("homepage_nav")}
                 className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/30 transition hover:-translate-y-0.5 hover:bg-yellow-500"
               >
                 Start Free Level Check
@@ -122,6 +124,7 @@ export default function Home() {
           <div className="mt-10 text-center">
             <Link
               to={primaryCta}
+              onClick={() => trackLevelCheckClick("homepage_demo_preview")}
               className="inline-flex h-14 items-center justify-center rounded-full bg-purple-700 px-8 text-base font-extrabold text-white shadow-xl shadow-purple-300/30 transition hover:-translate-y-0.5 hover:bg-purple-800"
             >
               Try a Practice Lesson
@@ -184,6 +187,9 @@ export default function Home() {
                 <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
                   <Link
                     to={primaryCta}
+                    onClick={() =>
+                      trackLevelCheckClick("homepage_level_check_block")
+                    }
                     className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/20 transition hover:-translate-y-0.5 hover:bg-yellow-500"
                   >
                     Find My Starting Level
@@ -252,6 +258,7 @@ export default function Home() {
           <div className="mt-10 text-center">
             <Link
               to={primaryCta}
+              onClick={() => trackLevelCheckClick("homepage_how_it_works")}
               className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/30 transition hover:-translate-y-0.5 hover:bg-yellow-500"
             >
               Start Free Level Check
@@ -467,6 +474,7 @@ export default function Home() {
               ]}
               cta="Start Free"
               to={primaryCta}
+              onClick={() => trackLevelCheckClick("homepage_pricing_free")}
             />
             <PricingCard
               title="Pro"
@@ -532,6 +540,7 @@ export default function Home() {
           <div className="mt-8">
             <Link
               to={primaryCta}
+              onClick={() => trackLevelCheckClick("homepage_final_cta")}
               className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/20 transition hover:-translate-y-0.5 hover:bg-yellow-500"
             >
               Start Free Level Check
@@ -539,6 +548,42 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <footer className="border-t border-slate-200 bg-white px-5 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
+          <div>
+            <p className="text-lg font-black tracking-tight">
+              <span className="text-purple-700">FluencyJet</span>{" "}
+              <span className="font-medium text-purple-700/90">
+                Sentence Master
+              </span>
+            </p>
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              Build English sentences instantly. Speak confidently.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-3 text-sm font-bold text-slate-600">
+            <Link to="/about" className="hover:text-purple-700">
+              About
+            </Link>
+            <Link to="/contact" className="hover:text-purple-700">
+              Contact
+            </Link>
+            <Link to="/privacy-policy" className="hover:text-purple-700">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="hover:text-purple-700">
+              Terms
+            </Link>
+            <Link to="/refund-policy" className="hover:text-purple-700">
+              Refund Policy
+            </Link>
+            <Link to="/disclaimer" className="hover:text-purple-700">
+              Disclaimer
+            </Link>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
@@ -815,7 +860,15 @@ function Testimonial({ text }) {
   );
 }
 
-function PricingCard({ title, description, features, cta, to, featured }) {
+function PricingCard({
+  title,
+  description,
+  features,
+  cta,
+  to,
+  featured,
+  onClick,
+}) {
   return (
     <div
       className={`rounded-[1.75rem] border p-7 shadow-sm ${
@@ -841,6 +894,7 @@ function PricingCard({ title, description, features, cta, to, featured }) {
       </ul>
       <Link
         to={to}
+        onClick={onClick}
         className={`mt-8 inline-flex h-13 w-full items-center justify-center rounded-full px-6 py-4 text-center font-extrabold transition hover:-translate-y-0.5 ${
           featured
             ? "bg-yellow-400 text-slate-950 hover:bg-yellow-500"

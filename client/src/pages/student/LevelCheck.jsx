@@ -5,10 +5,13 @@ import { getToken } from "@/utils/tokenStore";
 import { api } from "@/api/apiClient";
 
 import confetti from "canvas-confetti";
-
 import SentenceBuilder from "@/components/quiz/SentenceBuilder";
-
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
+
+import {
+  trackLevelCheckStart,
+  trackLevelCheckComplete,
+} from "../../lib/tracking";
 
 const TRACK_KEY = "fj_track";
 
@@ -35,6 +38,10 @@ const TRACK_METADATA = {
     bg: "bg-emerald-50",
   },
 };
+
+useEffect(() => {
+  trackLevelCheckStart("level_check_page");
+}, []);
 
 const QUESTIONS = [
   // Beginner-ish (1–5)
@@ -227,6 +234,12 @@ export default function LevelCheck() {
     } catch (err) {
       console.error("❌ Placement sync failed:", err);
     }
+
+    trackLevelCheckComplete({
+      score: finalScore,
+      track,
+      source: "level_check_page",
+    });
 
     try {
       const levelUpSound = new Audio("/sounds/levelup.mp3");

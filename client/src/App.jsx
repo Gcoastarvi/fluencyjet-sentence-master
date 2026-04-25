@@ -48,9 +48,17 @@ import AdminXP from "./pages/admin/AdminXP.jsx";
 import AdminAnalytics from "./pages/admin/AdminAnalytics.jsx";
 import CurriculumManager from "./pages/admin/CurriculumManager";
 
+import About from "./pages/legal/About";
+import Contact from "./pages/legal/Contact";
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import Terms from "./pages/legal/Terms";
+import RefundPolicy from "./pages/legal/RefundPolicy";
+import Disclaimer from "./pages/legal/Disclaimer";
+
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
+import RouteTracker from "./components/RouteTracker";
 
 function MainLayout() {
   return (
@@ -143,6 +151,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <RouteTracker />
         <Routes>
           {/* Admin login (no Navbar) */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -162,6 +171,12 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin/curriculum" element={<CurriculumManager />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/disclaimer" element={<Disclaimer />} />
             {/* 🛡️ UNIFIED LESSON HUB ROUTES */}
             <Route
               path="/b/lessons"
@@ -252,6 +267,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+
             {/* Admin-protected (unchanged) */}
             <Route
               path="/admin"

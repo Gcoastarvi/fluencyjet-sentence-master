@@ -1,15 +1,9 @@
 // client/src/pages/student/Paywall.jsx
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate, useLocation,} from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { getMe } from "../../api/apiClient";
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
-
-/**
- * PAYWALL LOGIC (FINAL – CLEAN)
- * ---------------------------------
- * Source of truth: backend response + JWT token
- * No hacks, no URL checks, no role assumptions
- */
+import { trackPaywallView, trackUpgradeClick } from "../../lib/tracking";
 
 export default function Paywall() {
   const navigate = useNavigate();
@@ -21,6 +15,7 @@ export default function Paywall() {
 
   const [searchParams] = useSearchParams();
   const selectedPlan = (searchParams.get("plan") || "BEGINNER").toUpperCase();
+  const from = searchParams.get("from") || "unknown";
 
   function inferTrack() {
     if (location.pathname.startsWith("/i/")) return "intermediate";
@@ -49,6 +44,20 @@ export default function Paywall() {
 
     return "beginner";
   }
+
+  useEffect(() => {
+    trackPaywallView({
+      plan: selectedPlan,
+      from,
+    });
+  }, [selectedPlan, from]);
+
+  useEffect(() => {
+    trackPaywallView({
+      plan,
+      from,
+    });
+  }, [plan, from]);
 
   useEffect(() => {
     let alive = true;
@@ -153,8 +162,11 @@ export default function Paywall() {
 
         <button
           onClick={() => {
-            const params = new URLSearchParams(window.location.search);
-            const from = params.get("from") || "";
+            trackUpgradeClick({
+              plan: selectedPlan,
+              from,
+            });
+
             navigate(
               `/checkout?plan=${encodeURIComponent(selectedPlan)}&from=${encodeURIComponent(from)}`,
             );
