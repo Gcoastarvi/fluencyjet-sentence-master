@@ -39,10 +39,6 @@ const TRACK_METADATA = {
   },
 };
 
-useEffect(() => {
-  trackLevelCheckStart("level_check_page");
-}, []);
-
 const QUESTIONS = [
   // Beginner-ish (1–5)
   {
@@ -157,6 +153,10 @@ export default function LevelCheck() {
   const [result, setResult] = useState(null); // { score, track }
   const [userName, setUserName] = useState("");
   const [step, setStep] = useState("intro"); // intro, quiz, result
+
+  useEffect(() => {
+    trackLevelCheckStart("level_check_page");
+  }, []);
 
   function goToTrack(track, opts = {}) {
     try {
