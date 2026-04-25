@@ -233,12 +233,10 @@ router.post(
       }
 
       if (password.length < 8) {
-        return res
-          .status(400)
-          .json({
-            ok: false,
-            message: "Password must be at least 8 characters",
-          });
+        return res.status(400).json({
+          ok: false,
+          message: "Password must be at least 8 characters",
+        });
       }
 
       const tokenHash = hashResetToken(rawToken);
@@ -280,6 +278,70 @@ router.post(
       return res
         .status(500)
         .json({ ok: false, message: "Reset failed. Please try again." });
+    }
+  },
+);
+
+/* ───────────────────────────────
+   PASSWORD RESET LINK GENERATOR
+─────────────────────────────── */
+
+router.post(
+  "/admin/generate-reset-link",
+  express.json({ limit: "1mb" }),
+  async (req, res) => {
+    try {
+      const adminSecret = String(req.body?.adminSecret || "");
+      let email = normalizeEmail(req.body?.email || "");
+
+      if (!adminSecret || adminSecret !== process.env.ADMIN_RESET_SECRET) {
+        return res.status(403).json({ ok: false, message: "Forbidden" });
+      }
+
+      if (!email) {
+        return res
+          .status(400)
+          .json({ ok: false, message: "Email is required" });
+      }
+
+      const user = await prisma.user.findUnique({ where: { email } });
+
+      if (!user) {
+        return res.status(404).json({ ok: false, message: "User not found" });
+      }
+
+      await prisma.passwordResetToken.deleteMany({
+        where: {
+          userId: user.id,
+          OR: [{ usedAt: { not: null } }, { expiresAt: { lt: new Date() } }],
+        },
+      });
+
+      const rawToken = makeResetToken();
+      const tokenHash = hashResetToken(rawToken);
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 30);
+
+      await prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        },
+      });
+
+      const resetUrl = `${process.env.APP_URL || "https://fluencyjet.com"}/reset-password?token=${rawToken}`;
+
+      return res.json({
+        ok: true,
+        email: user.email,
+        resetUrl,
+        expiresAt,
+      });
+    } catch (err) {
+      console.error("Admin generate reset link error:", err);
+      return res
+        .status(500)
+        .json({ ok: false, message: "Unable to generate reset link" });
     }
   },
 );
