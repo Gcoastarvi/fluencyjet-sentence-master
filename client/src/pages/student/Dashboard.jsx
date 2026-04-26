@@ -572,11 +572,19 @@ export default function Dashboard() {
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const rawText = await res.text();
+
+      let data = {};
+      try {
+        data = JSON.parse(rawText);
+      } catch (err) {
+        data = {};
+      }
 
       console.log("[AVATAR SAVE DEBUG]", {
         status: res.status,
         ok: res.ok,
+        rawText,
         data,
         selectedAvatar,
         tokenExists: Boolean(token),
@@ -584,7 +592,8 @@ export default function Dashboard() {
 
       if (!res.ok || !data?.ok) {
         throw new Error(
-          data?.message || `Avatar update failed with status ${res.status}`,
+          data?.message ||
+            `Avatar update failed with status ${res.status}. Raw response: ${rawText.slice(0, 120)}`,
         );
       }
       const updatedUser = {
