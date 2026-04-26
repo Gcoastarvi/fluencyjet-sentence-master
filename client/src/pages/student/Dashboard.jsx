@@ -1200,6 +1200,70 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-12 transition-all duration-500">
+      {showAvatarPicker && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 px-4">
+          <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                  Choose your avatar
+                </h3>
+                <p className="text-xs font-semibold text-slate-400 mt-1">
+                  Pick a friendly profile image for your FluencyJet dashboard.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAvatarPicker(false)}
+                className="h-9 w-9 rounded-full bg-slate-100 text-slate-500 font-black"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="grid grid-cols-4 gap-3">
+              {AVATAR_OPTIONS.map((avatar) => (
+                <button
+                  type="button"
+                  key={avatar}
+                  onClick={() => setSelectedAvatar(avatar)}
+                  className={`rounded-2xl p-1 transition-all ${
+                    selectedAvatar === avatar
+                      ? "ring-4 ring-indigo-200 border-2 border-indigo-600"
+                      : "border border-slate-200 hover:border-indigo-300"
+                  }`}
+                >
+                  <img
+                    src={avatar}
+                    alt="Avatar option"
+                    className="h-16 w-16 rounded-full object-cover mx-auto"
+                  />
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowAvatarPicker(false)}
+                className="rounded-2xl border border-slate-200 px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-500"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={saveAvatar}
+                disabled={savingAvatar}
+                className="rounded-2xl bg-indigo-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-60"
+              >
+                {savingAvatar ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
         /* Target the specific top bar by its text content if needed */
         div:has(> span:contains("Dashboard")), 
@@ -1261,11 +1325,18 @@ export default function Dashboard() {
 
             <button
               type="button"
-              onClick={() => setShowAvatarPicker(true)}
+              onClick={() => {
+                console.log("[AVATAR PICKER] button clicked");
+                setShowAvatarPicker(true);
+              }}
               className="mt-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700"
             >
               Change Avatar
             </button>
+
+            <p className="text-[10px] text-red-500">
+              Picker: {showAvatarPicker ? "OPEN" : "CLOSED"}
+            </p>
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
@@ -2208,70 +2279,6 @@ export default function Dashboard() {
               >
                 Continue My Journey
               </button>
-            </div>
-          </div>
-        )}
-        {showAvatarPicker && (
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 px-4">
-            <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
-              <div className="flex items-start justify-between gap-4 mb-5">
-                <div>
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                    Choose your avatar
-                  </h3>
-                  <p className="text-xs font-semibold text-slate-400 mt-1">
-                    Pick a friendly profile image for your FluencyJet dashboard.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowAvatarPicker(false)}
-                  className="h-9 w-9 rounded-full bg-slate-100 text-slate-500 font-black"
-                >
-                  ×
-                </button>
-              </div>
-
-              <div className="grid grid-cols-4 gap-3">
-                {AVATAR_OPTIONS.map((avatar) => (
-                  <button
-                    type="button"
-                    key={avatar}
-                    onClick={() => setSelectedAvatar(avatar)}
-                    className={`rounded-2xl p-1 transition-all ${
-                      selectedAvatar === avatar
-                        ? "ring-4 ring-indigo-200 border-2 border-indigo-600"
-                        : "border border-slate-200 hover:border-indigo-300"
-                    }`}
-                  >
-                    <img
-                      src={avatar}
-                      alt="Avatar option"
-                      className="h-16 w-16 rounded-full object-cover mx-auto"
-                    />
-                  </button>
-                ))}
-              </div>
-
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAvatarPicker(false)}
-                  className="rounded-2xl border border-slate-200 px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-500"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={saveAvatar}
-                  disabled={savingAvatar}
-                  className="rounded-2xl bg-indigo-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-60"
-                >
-                  {savingAvatar ? "Saving..." : "Save"}
-                </button>
-              </div>
             </div>
           </div>
         )}
