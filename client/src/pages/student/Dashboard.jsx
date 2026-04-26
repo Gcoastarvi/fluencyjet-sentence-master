@@ -1182,16 +1182,19 @@ export default function Dashboard() {
           <div
             className={`p-1 rounded-full transition-all duration-1000 ${resolvedXP > 5000 ? "frame-silver-pro" : ""}`}
           >
-            <div
-              className={
-                resolvedXP > 1100 ? "rank-master-glow rounded-full" : ""
-              }
-            >
-              <AvatarFrame
-                src={auth?.user?.avatar_url}
-                league={resolvedLeague}
-                size="lg"
-              />
+            <div className={resolvedXP > 1100 ? "rank-master-glow rounded-full" : ""}>
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-white border border-slate-100 shadow-sm">
+                {auth?.user?.avatar_url ? (
+                  <img
+                    src={auth?.user?.avatar_url}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-3xl">
+                    🙂
+                  </div>
+                )}
             </div>
           </div>
           <div>

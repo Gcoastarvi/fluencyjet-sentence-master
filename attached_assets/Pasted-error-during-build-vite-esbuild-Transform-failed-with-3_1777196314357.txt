@@ -1,0 +1,41 @@
+error during build:
+[vite:esbuild] Transform failed with 3 errors:
+/home/runner/workspace/client/src/pages/student/Dashboard.jsx:1359:8: ERROR: Unexpected closing "header" tag does not match opening "div" tag
+/home/runner/workspace/client/src/pages/student/Dashboard.jsx:2056:6: ERROR: Unexpected closing "div" tag does not match opening "header" tag
+/home/runner/workspace/client/src/pages/student/Dashboard.jsx:2061:4: ERROR: Unexpected "if"
+file: /home/runner/workspace/client/src/pages/student/Dashboard.jsx:1359:8
+
+Unexpected closing "header" tag does not match opening "div" tag
+1357|            );
+1358|          })()}
+1359|        </header>
+   |          ^
+1360|  
+1361|        <div className="mt-4 bg-gradient-to-br from-slate-900 to-indigo-950 p-5 rounded-[2rem] text-white">
+
+Unexpected closing "div" tag does not match opening "header" tag
+2054|          </div>
+2055|        )}
+2056|      </div>
+   |        ^
+2057|    );
+2058|  
+
+Unexpected "if"
+2059|    // 统一 Promotion Modal - Place at the very bottom of Dashboard.jsx
+2060|    function PromotionModal({ isOpen, type, league, onClose }) {
+2061|      if (!isOpen) return null;
+   |      ^
+2062|  
+2063|      const content = {
+
+    at failureErrorWithLog (/home/runner/workspace/client/node_modules/esbuild/lib/main.js:1472:15)
+    at /home/runner/workspace/client/node_modules/esbuild/lib/main.js:755:50
+    at responseCallbacks.<computed> (/home/runner/workspace/client/node_modules/esbuild/lib/main.js:622:9)
+    at handleIncomingPacket (/home/runner/workspace/client/node_modules/esbuild/lib/main.js:677:12)
+    at Socket.readFromStdout (/home/runner/workspace/client/node_modules/esbuild/lib/main.js:600:7)
+    at Socket.emit (node:events:519:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
