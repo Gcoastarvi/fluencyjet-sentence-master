@@ -562,21 +562,37 @@ export default function Dashboard() {
 
       console.log("[AVATAR SAVE DEBUG]", response);
 
+      const savedUser = response?.data?.user || {};
+
       const updatedUser = {
         ...(auth?.user || {}),
-        ...(response?.data?.user || {}),
-        avatar_url: response?.data?.user?.avatar_url || selectedAvatar,
+        ...savedUser,
+        avatar_url: savedUser?.avatar_url || selectedAvatar,
       };
-
-      console.log("[AUTH AVATAR DEBUG]", {
-        userId,
-        avatar_url,
-      });
 
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
-      setShowAvatarPicker(false);
+      // Also update common auth storage shapes safely, without using undefined userId
+      const existingAuthRaw = localStorage.getItem("auth");
+      if (existingAuthRaw) {
+        try {
+          const existingAuth = JSON.parse(existingAuthRaw);
+          localStorage.setItem(
+            "auth",
+            JSON.stringify({
+              ...existingAuth,
+              user: {
+                ...(existingAuth?.user || {}),
+                ...updatedUser,
+              },
+            }),
+          );
+        } catch (err) {
+          console.warn("Could not update auth localStorage avatar", err);
+        }
+      }
 
+      setShowAvatarPicker(false);
       window.location.reload();
     } catch (error) {
       console.error("Failed to save avatar:", error);
