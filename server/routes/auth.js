@@ -225,6 +225,12 @@ router.patch("/avatar", authRequired, async (req, res) => {
     const userId = req.user?.id;
     const { avatar_url } = req.body;
 
+    console.log("[AUTH AVATAR DEBUG]", {
+      userId,
+      body: req.body,
+      avatar_url,
+    });
+
     if (!userId) {
       return res.status(401).json({
         ok: false,

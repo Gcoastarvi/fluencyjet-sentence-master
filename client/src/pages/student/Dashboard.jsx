@@ -556,7 +556,10 @@ export default function Dashboard() {
     try {
       setSavingAvatar(true);
 
-      const token = getToken();
+      const token =
+        getToken?.() ||
+        localStorage.getItem("fj_token") ||
+        localStorage.getItem("token");
 
       const res = await fetch("/api/auth/avatar", {
         method: "PATCH",
@@ -571,10 +574,19 @@ export default function Dashboard() {
 
       const data = await res.json().catch(() => ({}));
 
-      if (!res.ok || !data?.ok) {
-        throw new Error(data?.message || "Avatar update failed");
-      }
+      console.log("[AVATAR SAVE DEBUG]", {
+        status: res.status,
+        ok: res.ok,
+        data,
+        selectedAvatar,
+        tokenExists: Boolean(token),
+      });
 
+      if (!res.ok || !data?.ok) {
+        throw new Error(
+          data?.message || `Avatar update failed with status ${res.status}`,
+        );
+      }
       const updatedUser = {
         ...(auth?.user || {}),
         ...(data?.user || {}),
