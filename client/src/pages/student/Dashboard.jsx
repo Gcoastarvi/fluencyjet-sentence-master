@@ -285,28 +285,68 @@ export default function Dashboard() {
   // 🎯 THE SLOT MACHINE HOOK
   const [displayXP, setDisplayXP] = useState(0);
 
+  const safeNumber = (value, fallback = 0) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  };
+
+  const resolvedXP = safeNumber(
+    summary?.xpTotal ??
+      summary?.totalXP ??
+      user?.xpTotal ??
+      user?.total_xp ??
+      auth?.user?.xpTotal ??
+      auth?.user?.total_xp ??
+      0,
+  );
+
+  const resolvedLeagueInfo = getLeagueInfo(resolvedXP);
+
+  const resolvedLeague = String(
+    resolvedLeagueInfo?.name ||
+      resolvedLeagueInfo?.league ||
+      summary?.league ||
+      user?.league ||
+      auth?.user?.league ||
+      "BRONZE",
+  ).toUpperCase();
+
   const showShieldWidget =
     Number(summary?.streak || 0) >= 3 ||
     Number(summary?.streakFreezes || 0) > 0;
 
   useEffect(() => {
-    let start = 0;
-    const end = Number(user?.total_xp || 0);
+    const end = resolvedXP;
+
+    if (!end) {
+      setDisplayXP(0);
+      return;
+    }
+
+    let start = Number(displayXP || 0);
+
     if (start === end) return;
 
-    let totalMiliseconds = 2000; // 2 second animation
-    let timer = setInterval(() => {
-      start += Math.ceil(end / 50); // Increment speed
-      if (start >= end) {
-        clearInterval(timer);
+    const duration = 1000;
+    const steps = 30;
+    const increment = (end - start) / steps;
+    let current = start;
+    let tick = 0;
+
+    const timer = setInterval(() => {
+      tick += 1;
+      current += increment;
+
+      if (tick >= steps) {
         setDisplayXP(end);
+        clearInterval(timer);
       } else {
-        setDisplayXP(start);
+        setDisplayXP(Math.max(0, Math.round(current)));
       }
-    }, 30);
+    }, duration / steps);
 
     return () => clearInterval(timer);
-  }, [user?.total_xp]);
+  }, [resolvedXP]);
 
   // JSX for the XP Card:
   <span className="text-indigo-600 font-black">
@@ -324,7 +364,7 @@ export default function Dashboard() {
 
   // 🎯 THE PROGRESS NUDGE CALCULATOR
   // 🎯 THE TRUTH FIX: Ensure the UI respects the Database League
-  const currentLeague = user?.league?.toUpperCase() || "BRONZE";
+  const currentLeague = resolvedLeagueInfo;
 
   const leagueNudge = useMemo(() => {
     // 🎯 THE UNIFIER: Look in both places just in case
@@ -338,27 +378,6 @@ export default function Dashboard() {
       return { next: "DIAMOND", diff: 150000 - xp, goal: 150000 };
     return null;
   }, [user, summary]); // 👈 Added both as dependencies
-
-  useEffect(() => {
-    let start = displayXP;
-    const end = summary.totalXP || 0;
-    if (start === end) return;
-
-    const duration = 1000; // 1 second animation
-    const stepTime = Math.abs(Math.floor(duration / (end - start || 1)));
-
-    const timer = setInterval(() => {
-      start += Math.ceil((end - start) / 10); // Move in 10% chunks
-      if (start >= end) {
-        setDisplayXP(end);
-        clearInterval(timer);
-      } else {
-        setDisplayXP(start);
-      }
-    }, 50);
-
-    return () => clearInterval(timer);
-  }, [summary.totalXP]);
 
   const playXP = () => {
     const audio = new Audio("/sounds/xp.mp3");
@@ -679,30 +698,16 @@ export default function Dashboard() {
   }, [summary.totalXP]);
 
   useEffect(() => {
-    const currentLeague = getLeagueInfo(
-      user?.totalXP || user?.total_xp || 0,
-    ).name;
     const lastSeenLeague = localStorage.getItem("last_notified_league");
 
-    // 🥂 THE TRIGGER: If DB league is higher than the last one we saw
-    if (lastSeenLeague && currentLeague !== lastSeenLeague) {
-      setCelebrationData(getLeagueInfo(user?.totalXP || user?.total_xp || 0));
-      setShowCelebration(true);
-
-      // Confetti Cannon
-      confetti({
-        particleCount: 150,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ["#6366f1", "#a855f7", "#ec4899"],
-      });
+    if (lastSeenLeague && resolvedLeague && resolvedLeague !== lastSeenLeague) {
+      setCelebrationData(resolvedLeagueInfo);
     }
 
-    // Update memory for next time
-    if (currentLeague) {
-      localStorage.setItem("last_notified_league", currentLeague);
+    if (resolvedLeague) {
+      localStorage.setItem("last_notified_league", resolvedLeague);
     }
-  }, [user?.totalXP]);
+  }, [resolvedLeague, resolvedXP]);
 
   // 129: Corrected loadMe with async wrapper
   const loadMe = useCallback(async () => {
@@ -1175,16 +1180,16 @@ export default function Dashboard() {
 
         <div className="flex items-center gap-6">
           <div
-            className={`p-1 rounded-full transition-all duration-1000 ${(summary.xpTotal || 0) > 5000 ? "frame-silver-pro" : ""}`}
+            className={`p-1 rounded-full transition-all duration-1000 ${resolvedXP > 5000 ? "frame-silver-pro" : ""}`}
           >
             <div
               className={
-                summary.totalXP > 1100 ? "rank-master-glow rounded-full" : ""
+                resolvedXP > 1100 ? "rank-master-glow rounded-full" : ""
               }
             >
               <AvatarFrame
                 src={auth?.user?.avatar_url}
-                league={summary.league || "BRONZE"}
+                league={resolvedLeague}
                 size="lg"
               />
             </div>
@@ -2092,7 +2097,7 @@ export default function Dashboard() {
         <PromotionModal
           isOpen={showPromotionModal}
           type={milestoneType}
-          league={summary.league}
+          league={resolvedLeague}
           onClose={() => setShowPromotionModal(false)}
         />
         {showPromotion && (
