@@ -556,21 +556,35 @@ export default function Dashboard() {
     try {
       setSavingAvatar(true);
 
-      const response = await api.patch("/auth/avatar", {
-        avatar_url: selectedAvatar,
+      const token = getToken();
+
+      const res = await fetch("/api/auth/avatar", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          avatar_url: selectedAvatar,
+        }),
       });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.message || "Avatar update failed");
+      }
 
       const updatedUser = {
         ...(auth?.user || {}),
-        ...(response?.data?.user || {}),
-        avatar_url: response?.data?.user?.avatar_url || selectedAvatar,
+        ...(data?.user || {}),
+        avatar_url: data?.user?.avatar_url || selectedAvatar,
       };
 
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
       setShowAvatarPicker(false);
 
-      // Simple MVP-safe refresh so dashboard re-reads latest auth/local user data
       window.location.reload();
     } catch (error) {
       console.error("Failed to save avatar:", error);
@@ -1326,17 +1340,12 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={() => {
-                console.log("[AVATAR PICKER] button clicked");
                 setShowAvatarPicker(true);
               }}
               className="mt-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700"
             >
               Change Avatar
             </button>
-
-            <p className="text-[10px] text-red-500">
-              Picker: {showAvatarPicker ? "OPEN" : "CLOSED"}
-            </p>
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
