@@ -220,14 +220,13 @@ router.post(
    AVATAR UPDATE
 ─────────────────────────────── */
 
-router.patch("/avatar", authRequired, async (req, res) => {
+async function updateAvatarHandler(req, res) {
   try {
     const userId = req.user?.id;
     const { avatar_url } = req.body;
 
     console.log("[AUTH AVATAR DEBUG]", {
       userId,
-      body: req.body,
       avatar_url,
     });
 
@@ -281,7 +280,10 @@ router.patch("/avatar", authRequired, async (req, res) => {
       message: "Failed to update avatar",
     });
   }
-});
+}
+
+router.post("/avatar", authRequired, updateAvatarHandler);
+router.patch("/avatar", authRequired, updateAvatarHandler);
 
 /* ───────────────────────────────
    RESET PASSWORD

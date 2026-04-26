@@ -556,51 +556,22 @@ export default function Dashboard() {
     try {
       setSavingAvatar(true);
 
-      const token =
-        getToken?.() ||
-        localStorage.getItem("fj_token") ||
-        localStorage.getItem("token");
-
-      const res = await fetch("/api/auth/avatar", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          avatar_url: selectedAvatar,
-        }),
+      const response = await api.post("/auth/avatar", {
+        avatar_url: selectedAvatar,
       });
 
-      const rawText = await res.text();
+      console.log("[AVATAR SAVE DEBUG]", response);
 
-      let data = {};
-      try {
-        data = JSON.parse(rawText);
-      } catch (err) {
-        data = {};
-      }
-
-      console.log("[AVATAR SAVE DEBUG]", {
-        status: res.status,
-        ok: res.ok,
-        rawText,
-        data,
-        selectedAvatar,
-        tokenExists: Boolean(token),
-      });
-
-      if (!res.ok || !data?.ok) {
-        throw new Error(
-          data?.message ||
-            `Avatar update failed with status ${res.status}. Raw response: ${rawText.slice(0, 120)}`,
-        );
-      }
       const updatedUser = {
         ...(auth?.user || {}),
-        ...(data?.user || {}),
-        avatar_url: data?.user?.avatar_url || selectedAvatar,
+        ...(response?.data?.user || {}),
+        avatar_url: response?.data?.user?.avatar_url || selectedAvatar,
       };
+
+      console.log("[AUTH AVATAR DEBUG]", {
+        userId,
+        avatar_url,
+      });
 
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
