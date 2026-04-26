@@ -1201,7 +1201,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-12 transition-all duration-500">
       {showAvatarPicker && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 px-4">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/50 px-4">
           <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
