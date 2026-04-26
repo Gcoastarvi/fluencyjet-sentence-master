@@ -15,8 +15,6 @@ import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 
-import AvatarFrame from "../../components/student/AvatarFrame";
-
 const UI_TEXT = {
   en: {
     home: "Home",
@@ -104,6 +102,23 @@ const LEVELS = [
   { level: 4, xp: 10000 },
   { level: 5, xp: 50000 },
   { level: 6, xp: 100000 },
+];
+
+const DEFAULT_AVATAR = "/avatars/avatar-01.png";
+
+const AVATAR_OPTIONS = [
+  "/avatars/avatar-01.png",
+  "/avatars/avatar-02.png",
+  "/avatars/avatar-03.png",
+  "/avatars/avatar-04.png",
+  "/avatars/avatar-05.png",
+  "/avatars/avatar-06.png",
+  "/avatars/avatar-07.png",
+  "/avatars/avatar-08.png",
+  "/avatars/avatar-09.png",
+  "/avatars/avatar-10.png",
+  "/avatars/avatar-11.png",
+  "/avatars/avatar-12.png",
 ];
 
 const lang = "en"; // Switch to 'en' but we will show BOTH labels for accessibility
@@ -310,6 +325,17 @@ export default function Dashboard() {
       auth?.user?.league ||
       "BRONZE",
   ).toUpperCase();
+
+  const currentAvatar =
+    auth?.user?.avatar_url || user?.avatar_url || DEFAULT_AVATAR;
+
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+
+  useEffect(() => {
+    setSelectedAvatar(currentAvatar);
+  }, [currentAvatar]);
 
   const showShieldWidget =
     Number(summary?.streak || 0) >= 3 ||
@@ -523,6 +549,36 @@ export default function Dashboard() {
       console.error("Shield Purchase Failed", err);
     }
   };
+
+  async function saveAvatar() {
+    if (!selectedAvatar) return;
+
+    try {
+      setSavingAvatar(true);
+
+      const response = await api.patch("/auth/avatar", {
+        avatar_url: selectedAvatar,
+      });
+
+      const updatedUser = {
+        ...(auth?.user || {}),
+        ...(response?.data?.user || {}),
+        avatar_url: response?.data?.user?.avatar_url || selectedAvatar,
+      };
+
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      setShowAvatarPicker(false);
+
+      // Simple MVP-safe refresh so dashboard re-reads latest auth/local user data
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to save avatar:", error);
+      alert("Could not save avatar. Please try again.");
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
 
   // ⚡ Real-Time Stats Refresher
   useEffect(() => {
@@ -1179,23 +1235,37 @@ export default function Dashboard() {
         </nav>
 
         <div className="flex items-center gap-6">
-          <div
-            className={`p-1 rounded-full transition-all duration-1000 ${resolvedXP > 5000 ? "frame-silver-pro" : ""}`}
-          >
-            <div className={resolvedXP > 1100 ? "rank-master-glow rounded-full" : ""}>
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-white border border-slate-100 shadow-sm">
-                {auth?.user?.avatar_url ? (
+          <div className="flex flex-col items-center">
+            <div
+              className={`p-1 rounded-full transition-all duration-1000 ${
+                resolvedXP > 5000 ? "frame-silver-pro" : ""
+              }`}
+            >
+              <div
+                className={
+                  resolvedXP > 1100 ? "rank-master-glow rounded-full" : ""
+                }
+              >
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-white border border-slate-100 shadow-sm">
                   <img
-                    src={auth?.user?.avatar_url}
+                    src={currentAvatar}
                     alt="Profile"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = DEFAULT_AVATAR;
+                    }}
                   />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl">
-                    🙂
-                  </div>
-                )}
+                </div>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAvatarPicker(true)}
+              className="mt-2 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700"
+            >
+              Change Avatar
+            </button>
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter">
@@ -1846,7 +1916,7 @@ export default function Dashboard() {
 
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-xl relative z-10">
                 <img
-                  src={auth?.user?.avatar_url}
+                  src={currentAvatar}
                   className="w-full h-full object-cover"
                   alt="Profile"
                 />
@@ -2138,6 +2208,70 @@ export default function Dashboard() {
               >
                 Continue My Journey
               </button>
+            </div>
+          </div>
+        )}
+        {showAvatarPicker && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/50 px-4">
+            <div className="w-full max-w-md rounded-[2rem] bg-white p-6 shadow-2xl">
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">
+                    Choose your avatar
+                  </h3>
+                  <p className="text-xs font-semibold text-slate-400 mt-1">
+                    Pick a friendly profile image for your FluencyJet dashboard.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPicker(false)}
+                  className="h-9 w-9 rounded-full bg-slate-100 text-slate-500 font-black"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-3">
+                {AVATAR_OPTIONS.map((avatar) => (
+                  <button
+                    type="button"
+                    key={avatar}
+                    onClick={() => setSelectedAvatar(avatar)}
+                    className={`rounded-2xl p-1 transition-all ${
+                      selectedAvatar === avatar
+                        ? "ring-4 ring-indigo-200 border-2 border-indigo-600"
+                        : "border border-slate-200 hover:border-indigo-300"
+                    }`}
+                  >
+                    <img
+                      src={avatar}
+                      alt="Avatar option"
+                      className="h-16 w-16 rounded-full object-cover mx-auto"
+                    />
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAvatarPicker(false)}
+                  className="rounded-2xl border border-slate-200 px-5 py-3 text-xs font-black uppercase tracking-widest text-slate-500"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={saveAvatar}
+                  disabled={savingAvatar}
+                  className="rounded-2xl bg-indigo-600 px-5 py-3 text-xs font-black uppercase tracking-widest text-white disabled:opacity-60"
+                >
+                  {savingAvatar ? "Saving..." : "Save"}
+                </button>
+              </div>
             </div>
           </div>
         )}

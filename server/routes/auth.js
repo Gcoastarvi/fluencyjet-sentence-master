@@ -217,6 +217,67 @@ router.post(
 );
 
 /* ───────────────────────────────
+   AVATAR UPDATE
+─────────────────────────────── */
+
+router.patch("/avatar", authRequired, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { avatar_url } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        ok: false,
+        message: "Unauthorized",
+      });
+    }
+
+    if (!avatar_url || typeof avatar_url !== "string") {
+      return res.status(400).json({
+        ok: false,
+        message: "avatar_url is required",
+      });
+    }
+
+    const allowedPrefix = "/avatars/";
+
+    if (!avatar_url.startsWith(allowedPrefix)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid avatar path",
+      });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { avatar_url },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        track: true,
+        plan: true,
+        has_access: true,
+        avatar_url: true,
+        xpTotal: true,
+        daily_streak: true,
+      },
+    });
+
+    return res.json({
+      ok: true,
+      user,
+    });
+  } catch (error) {
+    console.error("[AUTH AVATAR UPDATE ERROR]", error);
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to update avatar",
+    });
+  }
+});
+
+/* ───────────────────────────────
    RESET PASSWORD
 ─────────────────────────────── */
 
