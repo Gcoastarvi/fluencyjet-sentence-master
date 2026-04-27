@@ -818,6 +818,23 @@ export default function Dashboard() {
         "Learner";
 
       setUserName(name);
+      const meUser = {
+        ...(data?.user || {}),
+        email: data?.user?.email || data?.email || null,
+        name,
+        plan: data?.user?.plan || data?.plan || "FREE",
+        has_access: Boolean(data?.user?.has_access ?? data?.has_access),
+        track: data?.user?.track || data?.track || "BEGINNER",
+        current_unit: data?.user?.current_unit || data?.current_unit || 1,
+        avatar_url:
+          data?.user?.avatar_url ||
+          data?.avatar_url ||
+          storedUser?.avatar_url ||
+          "/avatars/avatar-01.png",
+      };
+
+      localStorage.setItem("user", JSON.stringify(meUser));
+      
       return data;
     } catch (err) {
       console.error("loadMe error:", err);

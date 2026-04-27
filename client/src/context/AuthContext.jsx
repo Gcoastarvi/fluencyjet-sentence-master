@@ -83,15 +83,22 @@ export function AuthProvider({ children }) {
 
       if (cancelled) return;
 
-      if (ok && data?.email) {
+      if (ok && (data?.email || data?.user?.email)) {
         const nextUser = {
-          id: data?.id || data?.user_id || data?.userId || null,
-          email: data?.email || null,
-          plan: data?.plan || "FREE",
-          has_access: data?.has_access ?? false,
-          daily_streak: data?.daily_streak || 0,
-          track: data?.track || "BEGINNER",
-          current_unit: data?.current_unit || 1,
+          ...(data?.user || {}),
+          id:
+            data?.user?.id || data?.id || data?.user_id || data?.userId || null,
+          name: data?.user?.name || data?.name || null,
+          email: data?.user?.email || data?.email || null,
+          plan: data?.user?.plan || data?.plan || "FREE",
+          has_access: Boolean(data?.user?.has_access ?? data?.has_access),
+          daily_streak: data?.user?.daily_streak || data?.daily_streak || 0,
+          track: data?.user?.track || data?.track || "BEGINNER",
+          current_unit: data?.user?.current_unit || data?.current_unit || 1,
+          avatar_url:
+            data?.user?.avatar_url ||
+            data?.avatar_url ||
+            "/avatars/avatar-01.png",
         };
         setUser(nextUser);
         persist(storedToken, nextUser);
@@ -137,14 +144,17 @@ export function AuthProvider({ children }) {
     }
 
     const nextUser = {
-      id: data?.id || data?.user_id || data?.userId || null,
-      email: data?.email || email,
-      plan: data?.plan || "FREE",
-      has_access: data?.has_access ?? false,
-      daily_streak: data?.daily_streak || 0,
-      // 🎯 THE IDENTITY FIX: Keep the track and unit in memory
-      track: data?.track || "BEGINNER",
-      current_unit: data?.current_unit || 1,
+      ...(data?.user || {}),
+      id: data?.user?.id || data?.id || data?.user_id || data?.userId || null,
+      name: data?.user?.name || data?.name || null,
+      email: data?.user?.email || data?.email || email,
+      plan: data?.user?.plan || data?.plan || "FREE",
+      has_access: Boolean(data?.user?.has_access ?? data?.has_access),
+      daily_streak: data?.user?.daily_streak || data?.daily_streak || 0,
+      track: data?.user?.track || data?.track || "BEGINNER",
+      current_unit: data?.user?.current_unit || data?.current_unit || 1,
+      avatar_url:
+        data?.user?.avatar_url || data?.avatar_url || "/avatars/avatar-01.png",
     };
 
     setToken(nextToken);
