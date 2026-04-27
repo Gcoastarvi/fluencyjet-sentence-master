@@ -26,7 +26,7 @@ const UI_TEXT = {
     master: "Master",
     streak: "Daily Streak",
     newAchievement: "New Medal Unlocked!",
-    finishLessons: "Finish 3 Lessons",
+    finishLessons: "Complete 3 Lessons",
     close: "Got it!",
   },
   ta: {
