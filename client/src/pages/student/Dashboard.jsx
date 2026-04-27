@@ -326,12 +326,25 @@ export default function Dashboard() {
       "BRONZE",
   ).toUpperCase();
 
+  const storedUser = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+      return {};
+    }
+  })();
+
   const currentAvatar =
-    auth?.user?.avatar_url || user?.avatar_url || DEFAULT_AVATAR;
+    localAvatar ||
+    auth?.user?.avatar_url ||
+    user?.avatar_url ||
+    storedUser?.avatar_url ||
+    DEFAULT_AVATAR;
 
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [localAvatar, setLocalAvatar] = useState(null);
 
   useEffect(() => {
     setSelectedAvatar(currentAvatar);
@@ -571,8 +584,8 @@ export default function Dashboard() {
       };
 
       localStorage.setItem("user", JSON.stringify(updatedUser));
+      setLocalAvatar(updatedUser.avatar_url);
 
-      // Also update common auth storage shapes safely, without using undefined userId
       const existingAuthRaw = localStorage.getItem("auth");
       if (existingAuthRaw) {
         try {
@@ -593,7 +606,6 @@ export default function Dashboard() {
       }
 
       setShowAvatarPicker(false);
-      window.location.reload();
     } catch (error) {
       console.error("Failed to save avatar:", error);
       alert("Could not save avatar. Please try again.");

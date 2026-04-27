@@ -59,8 +59,9 @@ router.post("/signup", async (req, res) => {
         email,
         password: hashedPassword,
         plan: "FREE",
-        track: (track || "BEGINNER").toUpperCase(), // 🎯 THE SYNC FIX
+        track: (track || "BEGINNER").toUpperCase(),
         current_unit: 1,
+        avatar_url: "/avatars/avatar-01.png",
       },
     });
 
@@ -83,6 +84,17 @@ router.post("/signup", async (req, res) => {
       has_access: !!user.has_access,
       track: user.track,
       current_unit: user.current_unit,
+      avatar_url: user.avatar_url || null,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        has_access: !!user.has_access,
+        track: user.track,
+        current_unit: user.current_unit,
+        avatar_url: user.avatar_url || null,
+      },
     });
   } catch (err) {
     console.error("Signup error:", err);
@@ -148,6 +160,17 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
       has_access: !!user.has_access,
       track: user.track || "BEGINNER",
       current_unit: user.current_unit || 1,
+      avatar_url: user.avatar_url || null,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        plan: user.plan,
+        has_access: !!user.has_access,
+        track: user.track || "BEGINNER",
+        current_unit: user.current_unit || 1,
+        avatar_url: user.avatar_url || null,
+      },
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -431,6 +454,7 @@ router.get("/me", authRequired, async (req, res) => {
         has_access: true,
         track: true,
         current_unit: true,
+        avatar_url: true,
         xpTotal: true,
         league: true,
       },
@@ -446,7 +470,11 @@ router.get("/me", authRequired, async (req, res) => {
       current_unit: u.current_unit || 1,
       tier_level: u.tier_level || null,
       has_access: !!u.has_access,
-      user: u, // optional, but helpful
+      avatar_url: u.avatar_url || null,
+      user: {
+        ...u,
+        avatar_url: u.avatar_url || null,
+      },
     });
   } catch (err) {
     return res.status(401).json({ ok: false, message: "Unauthorized" });
