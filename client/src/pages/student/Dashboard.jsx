@@ -334,6 +334,8 @@ export default function Dashboard() {
     }
   })();
 
+  const [localAvatar, setLocalAvatar] = useState(null);
+
   const currentAvatar =
     localAvatar ||
     auth?.user?.avatar_url ||
@@ -344,7 +346,6 @@ export default function Dashboard() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState(currentAvatar);
   const [savingAvatar, setSavingAvatar] = useState(false);
-  const [localAvatar, setLocalAvatar] = useState(null);
 
   useEffect(() => {
     setSelectedAvatar(currentAvatar);
