@@ -834,7 +834,7 @@ export default function Dashboard() {
       };
 
       localStorage.setItem("user", JSON.stringify(meUser));
-      
+
       return data;
     } catch (err) {
       console.error("loadMe error:", err);
@@ -1950,11 +1950,14 @@ export default function Dashboard() {
         {navItems.map((item) => (
           <button
             key={item.label}
-            onClick={() =>
-              item.label === "My Progress" || item.label === "Profile"
-                ? handleOpenProfile()
-                : navigate(item.path)
-            }
+            onClick={() => {
+              if (item.label === "My Progress" || item.label === "Profile") {
+                handleOpenProfile();
+                return;
+              }
+
+              navigate(item.path);
+            }}
             className="flex flex-col items-center gap-1 group transition-all"
           >
             <span className="text-xl group-active:scale-125 transition-transform">
@@ -2024,7 +2027,7 @@ export default function Dashboard() {
                   /* 🎯 Animation Logic: Starts at 289 (empty) and transitions to value */
                   strokeDashoffset={
                     isProfileOpen
-                      ? 289 - Math.min((summary.totalXP % 1000) / 1000, 1) * 289
+                      ? 289 - Math.min((resolvedXP % 1000) / 1000, 1) * 289
                       : 289
                   }
                   strokeLinecap="round"
@@ -2039,10 +2042,24 @@ export default function Dashboard() {
                   alt="Profile"
                 />
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  setTimeout(() => setShowAvatarPicker(true), 250);
+                }}
+                className="mt-3 text-[10px] font-black uppercase tracking-widest text-indigo-600 hover:text-indigo-700"
+              >
+                Change Avatar
+              </button>
             </div>
 
             <h2 className="text-2xl font-black text-slate-900">
-              {auth?.user?.name}
+              {auth?.user?.name ||
+                user?.name ||
+                auth?.user?.email?.split("@")?.[0] ||
+                user?.email?.split("@")?.[0] ||
+                "Learner"}
             </h2>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
               Level {summary.level} {UI_TEXT.en.master} • {UI_TEXT.ta.master}
@@ -2059,7 +2076,8 @@ export default function Dashboard() {
                   {UI_TEXT.en.streak} • {UI_TEXT.ta.streak}
                 </p>
                 <p className="text-xl font-black text-orange-600">
-                  {summary.streak || 1} {summary.streak === 1 ? "DAY" : "DAYS"}
+                  {summary.streak || 0}{" "}
+                  {(summary.streak || 0) === 1 ? "DAY" : "DAYS"}
                 </p>
               </div>
             </div>
@@ -2103,95 +2121,34 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-2 gap-4 w-full mb-8">
-              <div className="bg-slate-50 p-4 rounded-2xl text-center">
+              <div className="bg-slate-50 p-4 rounded-2xl text-center border border-slate-100">
                 <p className="text-[10px] font-black text-slate-400 uppercase">
                   Total XP
                 </p>
                 <p className="text-lg font-black text-indigo-600">
-                  ⭐ {summary.totalXP}
+                  ⭐ {resolvedXP.toLocaleString()}
                 </p>
               </div>
-              <div className="bg-slate-50 p-4 rounded-2xl text-center">
+
+              <div className="bg-slate-50 p-4 rounded-2xl text-center border border-slate-100">
                 <p className="text-[10px] font-black text-slate-400 uppercase">
                   League
                 </p>
-                <p className="text-lg font-black text-amber-600">🥉 Bronze</p>
+                <p className="text-lg font-black text-indigo-600">
+                  💎 {resolvedLeagueInfo?.name || resolvedLeague || "Bronze"}
+                </p>
               </div>
             </div>
 
-            {/* 🎖️ BADGE GALLERY */}
-            <div className="w-full mb-10">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  My Medals
-                </h3>
-                <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                  {summary.earnedBadges?.length || 1} Unlocked
-                </span>
-              </div>
+            <div className="w-full mb-10 bg-indigo-50 border border-indigo-100 rounded-[2rem] p-5 text-left">
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">
+                Progress Snapshot
+              </p>
 
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  {
-                    id: "streak_7",
-                    icon: "🔥",
-                    label: "7 Day Warrior",
-                    locked: summary.streak < 7,
-                  },
-                  {
-                    id: "xp_100k",
-                    icon: "💎",
-                    label: "100K Club",
-                    locked: (summary.totalXP || 0) < 100000,
-                  },
-                  {
-                    id: "lesson_50",
-                    icon: "🎯",
-                    label: "Half Century",
-                    locked: (summary.completedLessons || 0) < 50,
-                  },
-                  {
-                    id: "first_shield",
-                    icon: "🛡️",
-                    label: "Protected",
-                    locked: (summary.streakFreezes || 0) === 0,
-                  },
-                  {
-                    id: "night_owl",
-                    icon: "🦉",
-                    label: "Night Owl",
-                    locked: true,
-                  }, // For future logic
-                  {
-                    id: "early_bird",
-                    icon: "🌅",
-                    label: "Early Bird",
-                    locked: true,
-                  }, // For future logic
-                ].map((badge) => (
-                  <div
-                    key={badge.id}
-                    className="flex flex-col items-center gap-2"
-                  >
-                    <div
-                      className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl transition-all duration-500 border-2 ${
-                        badge.locked
-                          ? "bg-slate-50 border-slate-100 grayscale opacity-40"
-                          : "bg-white border-indigo-100 shadow-lg shadow-indigo-100/50 scale-110"
-                      }`}
-                    >
-                      {badge.icon}
-                    </div>
-                    <span
-                      className={`text-[8px] font-black uppercase tracking-tighter text-center leading-tight ${
-                        badge.locked ? "text-slate-300" : "text-indigo-600"
-                      }`}
-                    >
-                      {badge.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm font-bold text-slate-700 leading-relaxed">
+                Keep completing lessons daily to increase your XP, maintain your
+                streak, and move to higher leagues.
+              </p>
             </div>
 
             <button
