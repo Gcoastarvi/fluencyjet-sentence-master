@@ -224,23 +224,7 @@ export default function LessonDetail() {
   );
 
   const [isSharing, setIsSharing] = useState(false);
-  const [missedBanner, setMissedBanner] = useState(null);
-
-  useEffect(() => {
-    // 🥂 THE PERSONALIZED WELCOME HOOK
-    const rawUser = localStorage.getItem("user");
-    if (rawUser) {
-      try {
-        const user = JSON.parse(rawUser);
-        if (user.name) {
-          // 🎯 This shows a real popup to the user
-          alert(`Welcome, ${user.name}! Coach Aravind is ready for you.`);
-        }
-      } catch (e) {
-        console.error("User data parse error");
-      }
-    }
-  }, []);
+  const [missedBanner, setMissedBanner] = useState(null); 
 
   // 🎯 4. Effects (The Actions)
   useEffect(() => {
