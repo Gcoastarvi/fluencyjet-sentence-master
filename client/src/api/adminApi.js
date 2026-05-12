@@ -283,3 +283,7 @@ import { request } from "./apiClient";
 export async function getLesson(id) {
   return request(`/api/admin/lessons/${id}`);
 }
+
+export async function getAdminLessons() {
+  return fetchLessons();
+}
