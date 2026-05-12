@@ -232,6 +232,136 @@ export default function SentencePractice() {
     }
   }
 
+  function cleanupRecordingStream() {
+    try {
+      const stream = recordingStreamRef.current;
+      if (stream && typeof stream.getTracks === "function") {
+        stream.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {}
+        });
+      }
+    } catch {}
+
+    recordingStreamRef.current = null;
+  }
+
+  function resetVoiceRecording() {
+    try {
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {}
+
+    cleanupRecordingStream();
+
+    try {
+      if (recordedAudioUrl) {
+        URL.revokeObjectURL(recordedAudioUrl);
+      }
+    } catch {}
+
+    mediaRecorderRef.current = null;
+    recordingChunksRef.current = [];
+    setIsRecording(false);
+    setRecordedAudioUrl("");
+    setMicError("");
+  }
+
+  async function startVoiceRecording() {
+    try {
+      setMicError("");
+
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        setMicError("Microphone recording is not supported in this browser.");
+        return;
+      }
+
+      // Stop TTS before recording so the model voice is not captured.
+      stopTTS();
+
+      // Clear previous recording before starting a new one.
+      try {
+        if (recordedAudioUrl) {
+          URL.revokeObjectURL(recordedAudioUrl);
+        }
+      } catch {}
+      setRecordedAudioUrl("");
+      recordingChunksRef.current = [];
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordingChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        try {
+          const blob = new Blob(recordingChunksRef.current, {
+            type: "audio/webm",
+          });
+          const url = URL.createObjectURL(blob);
+          setRecordedAudioUrl(url);
+        } catch {
+          setMicError("Could not prepare your recording. Please try again.");
+        } finally {
+          cleanupRecordingStream();
+          setIsRecording(false);
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("[FluentVoice] microphone error", err);
+      cleanupRecordingStream();
+      setIsRecording(false);
+
+      if (
+        err?.name === "NotAllowedError" ||
+        err?.name === "PermissionDeniedError"
+      ) {
+        setMicError(
+          "Microphone permission was denied. Please allow microphone access and try again.",
+        );
+      } else {
+        setMicError(
+          "Could not start recording. Please check your microphone and try again.",
+        );
+      }
+    }
+  }
+
+  function stopVoiceRecording() {
+    try {
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {
+      setIsRecording(false);
+      cleanupRecordingStream();
+    }
+  }
+
+  function playMyRecording() {
+    try {
+      if (!recordedAudioUrl) return;
+      const audio = new Audio(recordedAudioUrl);
+      audio.play().catch(() => {
+        setMicError("Could not play your recording. Please try again.");
+      });
+    } catch {
+      setMicError("Could not play your recording. Please try again.");
+    }
+  }
+
   function seededShuffle(arr, seedStr) {
     const a = [...arr];
     // Simple deterministic hash
@@ -344,6 +474,15 @@ export default function SentencePractice() {
 
   const audioSubmitRef = useRef(new Set()); // per-question "already submitted"
   const [audioSubmitting, setAudioSubmitting] = useState(false); // UX: disable button while saving
+
+  // 🎙 Fluent Voice recording state — browser memory only, no backend upload
+  const mediaRecorderRef = useRef(null);
+  const recordingChunksRef = useRef([]);
+  const recordingStreamRef = useRef(null);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedAudioUrl, setRecordedAudioUrl] = useState("");
+  const [micError, setMicError] = useState("");
 
   const nextIndex = currentIndex + 1;
 
@@ -483,7 +622,21 @@ export default function SentencePractice() {
     if (safeMode !== "audio") return;
     stopTTS();
     setRevealEnglish(false);
-  }, [currentIndex, safeMode]);
+
+    if (audioVariant === "repeat") {
+      resetVoiceRecording();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, safeMode, audioVariant]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        resetVoiceRecording();
+      } catch {}
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!showXPToast) return;
@@ -1551,7 +1704,7 @@ export default function SentencePractice() {
 
     // ✅ anti-abuse: must press Play first
     if (!audioGateOpen) {
-      setFeedback("▶ Tap Play first, then click “I repeated it ✅”");
+      setFeedback("▶ Tap Listen first, then click “I spoke it well ✅”");
       return;
     }
 
@@ -1598,7 +1751,7 @@ export default function SentencePractice() {
       if (result?.ok && awarded > 0) {
         triggerXPToast(awarded);
         playSfx("correct");
-        setFeedback(`✅ Great! +${awarded} XP`);
+        setFeedback(`✅ Great speaking practice! +${awarded} XP`);
       } else if (result?.ok && awarded === 0) {
         // Deduped / already awarded / or server chose 0 — don't punish the user
         setFeedback("✅ Saved!");
@@ -2033,6 +2186,9 @@ export default function SentencePractice() {
     } catch {}
     try {
       stopTTS?.();
+    } catch {}
+    try {
+      resetVoiceRecording?.();
     } catch {}
     try {
       resetAudioGate?.();
@@ -2496,13 +2652,13 @@ export default function SentencePractice() {
         <button
           type="button"
           onClick={() => onGoVariant("repeat")}
-          className={`min-w-[96px] rounded-xl px-4 py-2 text-sm font-semibold transition ${
+          className={`min-w-[136px] rounded-xl px-4 py-2 text-sm font-semibold transition ${
             audioVariant === "repeat"
               ? "bg-slate-900 text-white shadow-sm"
               : "text-slate-700 hover:bg-white"
           }`}
         >
-          Repeat
+          Repeat & Shadow
         </button>
 
         <button
@@ -2732,17 +2888,17 @@ export default function SentencePractice() {
       };
     }
 
-    // ===== AUDIO REPEAT =====
+    // ===== AUDIO REPEAT / SHADOW =====
     if (safeMode === "audio" && audioVariant === "repeat") {
       return {
         show: true,
         primary: {
-          label: "I repeated it ✅",
-          onClick: firePrimary("I repeated it ✅", onAudioRepeated),
+          label: "I spoke it well ✅",
+          onClick: firePrimary("I spoke it well ✅", onAudioRepeated),
           disabled: !audioGateOpen,
         },
         secondary: [],
-        hintText: audioGateOpen ? undefined : "Click Play & Listen ✅",
+        hintText: audioGateOpen ? undefined : "Click Listen first ✅",
       };
     }
 
@@ -2765,6 +2921,9 @@ export default function SentencePractice() {
     try {
       if (typeof stopTTS === "function") stopTTS();
       else if (typeof stop === "function") stop();
+    } catch {}
+    try {
+      resetVoiceRecording();
     } catch {}
     try {
       setRevealEnglish(false);
@@ -3087,6 +3246,7 @@ export default function SentencePractice() {
         {safeMode === "audio" && audioVariant === "repeat" && (
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className={`h-1 w-full rounded-t-2xl ${A.bar}`} />
+
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
@@ -3094,20 +3254,29 @@ export default function SentencePractice() {
                 </h2>
 
                 <div className="mt-1 text-sm text-slate-600">
-                  Listen and repeat. Then mark it done.
+                  Listen first. Repeat after the speaker. Then shadow with the
+                  audio. Record your voice and compare.
                 </div>
 
                 {/* Status pills */}
-                {!audioGateOpen && (
+                {!audioGateOpen && status !== "correct" && (
                   <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
-                    Listen & Repeat ✅
+                    Step 1: Listen first ✅
                   </div>
                 )}
+
+                {audioGateOpen && status !== "correct" && (
+                  <div className="mt-3 inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-800">
+                    Now repeat, shadow, record, and compare 🎙
+                  </div>
+                )}
+
                 {status === "correct" && (
                   <div className="mt-3 inline-flex items-center rounded-full border border-emerald-300 bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-900">
-                    Done ✅
+                    Spoken practice completed ✅
                   </div>
                 )}
+
                 {/* Repeat / Dictation toggle */}
                 <div className="mt-4 flex flex-wrap items-center gap-3">
                   <AudioVariantToggle
@@ -3119,6 +3288,7 @@ export default function SentencePractice() {
                     type="button"
                     onClick={() => {
                       stopTTS();
+                      resetVoiceRecording();
                       setRevealEnglish(false);
                       resetAudioGate();
                     }}
@@ -3133,54 +3303,29 @@ export default function SentencePractice() {
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="text-xs font-semibold text-slate-600">
-                    Repeat this sentence
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Fluent Voice Practice
+                  </div>
+                  <div className="mt-2 text-sm font-bold text-slate-800">
+                    Listen → Repeat → Shadow → Record → Compare
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
-                    Tap Play → repeat aloud → mark it done.
+                    Goal: say the sentence clearly, naturally, and confidently.
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRevealEnglish((v) => !v)}
-                    className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
-                      revealEnglish
-                        ? "border-indigo-200 bg-indigo-50 text-indigo-800"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                    }`}
-                    disabled={!current}
-                  >
-                    {revealEnglish ? "Hide English" : "Reveal English"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClick();
-                      openAudioGateAfter(1800);
-                      speakTTS(englishFull);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
-                    disabled={!englishFull}
-                  >
-                    <span className="text-base">▶</span>
-                    {isSpeaking ? "Playing…" : "Play"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClick();
-                      stopTTS();
-                      resetAudioGate();
-                    }}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Stop
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setRevealEnglish((v) => !v)}
+                  className={`rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                    revealEnglish
+                      ? "border-indigo-200 bg-indigo-50 text-indigo-800"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  }`}
+                  disabled={!current}
+                >
+                  {revealEnglish ? "Hide English" : "Reveal English"}
+                </button>
               </div>
 
               {revealEnglish && (
@@ -3193,12 +3338,168 @@ export default function SentencePractice() {
                   </div>
                 </div>
               )}
+
+              {/* Step buttons */}
+              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-5">
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <div className="text-xs font-bold text-slate-500">Step 1</div>
+                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+                    Listen
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClick();
+                      openAudioGateAfter(1800);
+                      speakTTS(englishFull);
+                    }}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                    disabled={!englishFull}
+                  >
+                    <span className="text-base">▶</span>
+                    {isSpeaking ? "Playing…" : "Listen"}
+                  </button>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <div className="text-xs font-bold text-slate-500">Step 2</div>
+                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+                    Repeat
+                  </div>
+                  <div className="mt-3 rounded-xl bg-slate-50 p-2 text-xs text-slate-600">
+                    Repeat the sentence aloud after listening.
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <div className="text-xs font-bold text-slate-500">Step 3</div>
+                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+                    Shadow
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClick();
+                      openAudioGateAfter(1800);
+                      speakTTS(englishFull);
+                    }}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    disabled={!englishFull}
+                  >
+                    ⚡ Shadow
+                  </button>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <div className="text-xs font-bold text-slate-500">Step 4</div>
+                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+                    Record
+                  </div>
+
+                  {!isRecording ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        startVoiceRecording();
+                      }}
+                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                      disabled={!current}
+                    >
+                      🎙 Record
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        stopVoiceRecording();
+                      }}
+                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+                    >
+                      ■ Stop
+                    </button>
+                  )}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                  <div className="text-xs font-bold text-slate-500">Step 5</div>
+                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+                    Compare
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClick();
+                      playMyRecording();
+                    }}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    disabled={!recordedAudioUrl}
+                  >
+                    ▶ My Voice
+                  </button>
+                </div>
+              </div>
+
+              {micError && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+                  {micError}
+                </div>
+              )}
+
+              {recordedAudioUrl && (
+                <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+                  <div className="text-sm font-bold text-emerald-900">
+                    Recording ready ✅
+                  </div>
+                  <div className="mt-1 text-xs text-emerald-800">
+                    Play your voice, compare it with the original, then try
+                    again if needed.
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        speakTTS(englishFull);
+                      }}
+                      className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                      disabled={!englishFull}
+                    >
+                      ▶ Original
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        playMyRecording();
+                      }}
+                      className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50"
+                    >
+                      ▶ My Voice
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClick();
+                        resetVoiceRecording();
+                      }}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      🔁 Try Again
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Controls */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <label className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-                <div className="text-xs text-slate-500 mb-1">Rate</div>
+                <div className="mb-1 text-xs text-slate-500">Rate</div>
                 <input
                   type="range"
                   min="0.6"
@@ -3208,13 +3509,13 @@ export default function SentencePractice() {
                   onChange={(e) => setTtsRate(Number(e.target.value))}
                   className="w-full"
                 />
-                <div className="text-xs text-slate-700 font-semibold mt-1">
+                <div className="mt-1 text-xs font-semibold text-slate-700">
                   {ttsRate.toFixed(2)}
                 </div>
               </label>
 
               <label className="rounded-2xl border border-slate-200 bg-white p-3 text-sm">
-                <div className="text-xs text-slate-500 mb-1">Accent</div>
+                <div className="mb-1 text-xs text-slate-500">Accent</div>
                 <select
                   value={ttsLang}
                   onChange={(e) => setTtsLang(e.target.value)}
@@ -3239,7 +3540,7 @@ export default function SentencePractice() {
                       audioSubmitting
                     }
                   >
-                    {audioSubmitting ? "⏳ Saving..." : "I repeated it ✅"}
+                    {audioSubmitting ? "⏳ Saving..." : "I spoke it well ✅"}
                   </button>
                 )}
               </div>
