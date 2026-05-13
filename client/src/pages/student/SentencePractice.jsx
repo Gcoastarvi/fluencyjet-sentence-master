@@ -309,6 +309,7 @@ export default function SentencePractice() {
           });
           const url = URL.createObjectURL(blob);
           setRecordedAudioUrl(url);
+          setVoiceStep(VOICE_STEPS.COMPARE);
         } catch {
           setMicError("Could not prepare your recording. Please try again.");
         } finally {
@@ -1741,6 +1742,18 @@ export default function SentencePractice() {
     }
   }
 
+  function handleRepeatDoneOnly() {
+    if (!current) return;
+
+    if (!audioGateOpen) {
+      setFeedback("▶ Tap Listen first, then repeat the sentence aloud.");
+      return;
+    }
+
+    setFeedback("✅ Good. Now shadow the sentence with the audio.");
+    setVoiceStep(VOICE_STEPS.SHADOW);
+  }
+
   async function handleAudioRepeated() {
     if (!current) return;
     if (status === "correct") return;
@@ -1793,20 +1806,17 @@ export default function SentencePractice() {
       // ✅ mark submitted once the server responds OK (even if deduped to 0)
       if (result?.ok) {
         audioSubmitRef.current.add(submitKey);
+        setStatus("correct");
+        setVoiceStep(VOICE_STEPS.DONE);
       }
-      setStatus("correct");
-
-      setVoiceStep(VOICE_STEPS.SHADOW);
 
       if (result?.ok && awarded > 0) {
         triggerXPToast(awarded);
         playSfx("correct");
         setFeedback(`✅ Great speaking practice! +${awarded} XP`);
       } else if (result?.ok && awarded === 0) {
-        // Deduped / already awarded / or server chose 0 — don't punish the user
         setFeedback("✅ Saved!");
       } else {
-        // only real failure should block
         console.error("[AUDIO/repeat] awardXPEvent failed", result);
         setStatus("idle");
         setFeedback("⚠️ Couldn’t save. Please try again.");
@@ -2061,7 +2071,7 @@ export default function SentencePractice() {
         const attemptNumber = attempts + 1;
 
         setStatus("correct");
-        setFeedback("✅ Correct!");
+        setFeedback("50� Correct!");
 
         // ✅ SFX
         try {
@@ -2833,6 +2843,13 @@ export default function SentencePractice() {
     onAudioRepeated,
     onPlayAudio,
     onResetAudio,
+
+    onRepeatDone,
+    voiceStep,
+    isRecording,
+    recordedAudioUrl,
+    startVoiceRecording,
+    stopVoiceRecording,
   }) {
     if (!show) return { show: false, primary: null, secondary: [] };
 
@@ -2940,15 +2957,86 @@ export default function SentencePractice() {
 
     // ===== AUDIO REPEAT / SHADOW =====
     if (safeMode === "audio" && audioVariant === "repeat") {
+      if (voiceStep === VOICE_STEPS.LISTEN) {
+        return {
+          show: true,
+          primary: {
+            label: "Listen first ▶",
+            onClick: firePrimary("Listen first ▶", onPlayAudio),
+            disabled: false,
+          },
+          secondary: [],
+          hintText: "Step 1: Listen to the model sentence",
+        };
+      }
+
+      if (voiceStep === VOICE_STEPS.REPEAT) {
+        return {
+          show: true,
+          primary: {
+            label: "I repeated it ✅",
+            onClick: firePrimary("I repeated it ✅", onRepeatDone),
+            disabled: !audioGateOpen,
+          },
+          secondary: [],
+          hintText: audioGateOpen
+            ? "Step 2: Repeat aloud, then continue"
+            : "Click Listen first ✅",
+        };
+      }
+
+      if (voiceStep === VOICE_STEPS.SHADOW) {
+        return {
+          show: true,
+          primary: {
+            label: "Continue to Record 🎙",
+            onClick: firePrimary("Continue to Record 🎙", () =>
+              setVoiceStep(VOICE_STEPS.RECORD),
+            ),
+            disabled: false,
+          },
+          secondary: [],
+          hintText: "Step 3: Shadow with the audio",
+        };
+      }
+
+      if (voiceStep === VOICE_STEPS.RECORD) {
+        return {
+          show: true,
+          primary: {
+            label: isRecording ? "Stop Recording ■" : "Start Recording 🎙",
+            onClick: firePrimary(
+              isRecording ? "Stop Recording ■" : "Start Recording 🎙",
+              isRecording ? stopVoiceRecording : startVoiceRecording,
+            ),
+            disabled: false,
+          },
+          secondary: [],
+          hintText: "Step 4: Record your voice",
+        };
+      }
+
+      if (voiceStep === VOICE_STEPS.COMPARE) {
+        return {
+          show: true,
+          primary: {
+            label: "I spoke it well ✅",
+            onClick: firePrimary("I spoke it well ✅", onAudioRepeated),
+            disabled: !recordedAudioUrl || audioSubmitting,
+          },
+          secondary: [],
+          hintText: "Step 5: Compare your voice with the model",
+        };
+      }
+
       return {
         show: true,
         primary: {
-          label: "I spoke it well ✅",
-          onClick: firePrimary("I spoke it well ✅", onAudioRepeated),
-          disabled: !audioGateOpen,
+          label: "Next",
+          onClick: firePrimary("Next", onAudioRepeated),
+          disabled: audioSubmitting,
         },
         secondary: [],
-        hintText: audioGateOpen ? undefined : "Click Listen first ✅",
       };
     }
 
@@ -3004,6 +3092,13 @@ export default function SentencePractice() {
     onAudioRepeated: handleAudioRepeated,
     onPlayAudio: playAudioSafe,
     onResetAudio: resetAudioSafe,
+
+    onRepeatDone: handleRepeatDoneOnly,
+    voiceStep,
+    isRecording,
+    recordedAudioUrl,
+    startVoiceRecording,
+    stopVoiceRecording,
   });
 
   const setAudioVariantInUrl = (v) => {
@@ -3352,14 +3447,14 @@ export default function SentencePractice() {
                     </div>
 
                     <button
-                      onClick={startRecording}
+                      onClick={startVoiceRecording}
                       className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg"
                     >
                       Start Recording
                     </button>
 
                     <button
-                      onClick={stopRecording}
+                      onClick={stopVoiceRecording}
                       className="mt-3 ml-2 px-4 py-2 bg-gray-800 text-white rounded-lg"
                     >
                       Stop
@@ -3376,17 +3471,17 @@ export default function SentencePractice() {
 
                     <audio
                       controls
-                      src={userRecording}
+                      src={recordedAudioUrl}
                       className="mt-3 w-full"
                     />
 
                     <button
-                      onClick={() => {
-                        setVoiceStep(VOICE_STEPS.DONE);
-                      }}
+                      type="button"
+                      onClick={handleAudioRepeated}
                       className="mt-3 px-4 py-2 bg-green-700 text-white rounded-lg"
+                      disabled={!recordedAudioUrl || audioSubmitting}
                     >
-                      I Spoke It Well ✅
+                      {audioSubmitting ? "⏳ Saving..." : "I Spoke It Well ✅"}
                     </button>
                   </div>
                 )}
@@ -3485,6 +3580,7 @@ export default function SentencePractice() {
                       playClick();
                       openAudioGateAfter(1800);
                       speakTTS(englishFull);
+                      setVoiceStep(VOICE_STEPS.REPEAT);
                     }}
                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
                     disabled={!englishFull}
@@ -3513,7 +3609,6 @@ export default function SentencePractice() {
                     type="button"
                     onClick={() => {
                       playClick();
-                      openAudioGateAfter(1800);
                       speakTTS(englishFull);
                     }}
                     className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
@@ -3666,14 +3761,9 @@ export default function SentencePractice() {
                     type="button"
                     onClick={handleAudioRepeated}
                     className="w-full rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-                    disabled={
-                      !current ||
-                      status === "correct" ||
-                      !audioGateOpen ||
-                      audioSubmitting
-                    }
+                    disabled={!recordedAudioUrl || audioSubmitting}
                   >
-                    {audioSubmitting ? "⏳ Saving..." : "I spoke it well ✅"}
+                    {audioSubmitting ? "⏳ Saving..." : "I Spoke It Well ✅"}
                   </button>
                 )}
               </div>
