@@ -339,6 +339,36 @@ export default function SentencePractice() {
     }
   }
 
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const recorder = new MediaRecorder(stream);
+      setMediaRecorder(recorder);
+
+      const chunks = [];
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const url = URL.createObjectURL(blob);
+        setUserRecording(url);
+        setVoiceStep(VOICE_STEPS.COMPARE);
+      };
+
+      recorder.start();
+      setAudioChunks(chunks);
+    } catch (err) {
+      alert("Microphone access denied");
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+    }
+  }
+
   function stopVoiceRecording() {
     try {
       if (mediaRecorderRef.current?.state === "recording") {
@@ -457,6 +487,24 @@ export default function SentencePractice() {
     audio: undefined,
   });
 
+  // ===============================
+  // FLUENT VOICE STATE ENGINE
+  // ===============================
+
+  const VOICE_STEPS = {
+    LISTEN: "listen",
+    REPEAT: "repeat",
+    SHADOW: "shadow",
+    RECORD: "record",
+    COMPARE: "compare",
+    DONE: "done",
+  };
+
+  const [voiceStep, setVoiceStep] = useState(VOICE_STEPS.LISTEN);
+  const [userRecording, setUserRecording] = useState(null);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [audioChunks, setAudioChunks] = useState([]);
+
   const location = useLocation();
   const lessonIdFromQuery = Number(
     new URLSearchParams(location.search).get("lessonId"),
@@ -468,6 +516,11 @@ export default function SentencePractice() {
     setIsComplete(false);
     setShowCompleteModal(false);
     setLoadError("");
+
+    // 🔥 RESET VOICE ENGINE PER QUESTION CHANGE
+    setVoiceStep(VOICE_STEPS.LISTEN);
+    setAudioChunks([]);
+    setUserRecording(null);
   }, [safeMode, lid, difficulty]);
 
   const xpInFlightRef = useRef(false);
@@ -1744,9 +1797,9 @@ export default function SentencePractice() {
       if (result?.ok) {
         audioSubmitRef.current.add(submitKey);
       }
-
-      // ✅ always treat Repeat as success UI (no "wrong")
       setStatus("correct");
+
+      setVoiceStep(VOICE_STEPS.SHADOW);
 
       if (result?.ok && awarded > 0) {
         triggerXPToast(awarded);
@@ -3171,7 +3224,10 @@ export default function SentencePractice() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => speakTTS(englishFull)}
+                      onClick={() => {
+                        speakTTS(englishFull);
+                        setVoiceStep(VOICE_STEPS.REPEAT);
+                      }}
                       className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
                       disabled={!englishFull}
                     >
@@ -3257,6 +3313,86 @@ export default function SentencePractice() {
                   Listen first. Repeat after the speaker. Then shadow with the
                   audio. Record your voice and compare.
                 </div>
+
+                {/* SHADOW UI */}
+                {voiceStep === VOICE_STEPS.SHADOW && (
+                  <div className="mt-4 p-4 rounded-xl border bg-yellow-50">
+                    <div className="text-sm font-bold text-yellow-800">
+                      🟡 Shadow Mode
+                    </div>
+
+                    <div className="text-xs text-gray-600 mt-1">
+                      Listen again and speak along with the audio in real time.
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        speakTTS(englishFull);
+                      }}
+                      className="mt-3 px-4 py-2 bg-black text-white rounded-lg"
+                    >
+                      ▶ Start Shadowing
+                    </button>
+
+                    <button
+                      onClick={() => setVoiceStep(VOICE_STEPS.RECORD)}
+                      className="mt-3 ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg"
+                    >
+                      Continue to Record
+                    </button>
+                  </div>
+                )}
+
+                {/* RECORD UI BLOCK */}
+                {voiceStep === VOICE_STEPS.RECORD && (
+                  <div className="mt-4 p-4 rounded-xl border bg-blue-50">
+                    <div className="text-sm font-bold text-blue-800">
+                      🎙 Record Yourself
+                    </div>
+
+                    <div className="text-xs text-gray-600 mt-1">
+                      Speak the sentence clearly after shadowing.
+                    </div>
+
+                    <button
+                      onClick={startRecording}
+                      className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg"
+                    >
+                      Start Recording
+                    </button>
+
+                    <button
+                      onClick={stopRecording}
+                      className="mt-3 ml-2 px-4 py-2 bg-gray-800 text-white rounded-lg"
+                    >
+                      Stop
+                    </button>
+                  </div>
+                )}
+
+                {/* COMPARE UI */}
+                {voiceStep === VOICE_STEPS.COMPARE && (
+                  <div className="mt-4 p-4 rounded-xl border bg-green-50">
+                    <div className="text-sm font-bold text-green-800">
+                      ⚖️ Compare Your Voice
+                    </div>
+
+                    <audio
+                      controls
+                      src={userRecording}
+                      className="mt-3 w-full"
+                    />
+
+                    <button
+                      onClick={() => {
+                        setVoiceStep(VOICE_STEPS.DONE);
+                      }}
+                      className="mt-3 px-4 py-2 bg-green-700 text-white rounded-lg"
+                    >
+                      I Spoke It Well ✅
+                    </button>
+                  </div>
+                )}
 
                 {/* Status pills */}
                 {!audioGateOpen && status !== "correct" && (
