@@ -538,11 +538,8 @@ export default function SentencePractice() {
   const [micError, setMicError] = useState("");
 
   const nextIndex = currentIndex + 1;
-
   const resumeIndexRef = useRef(null);
-
   const resumeAppliedRef = useRef(false);
-
   const resumeWantedRef = useRef(false);
 
   // ✅ Derived (must be AFTER useState declarations)
