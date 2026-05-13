@@ -3592,12 +3592,28 @@ export default function SentencePractice() {
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-3">
                   <div className="text-xs font-bold text-slate-500">Step 2</div>
+
                   <div className="mt-1 text-sm font-extrabold text-slate-900">
                     Repeat
                   </div>
-                  <div className="mt-3 rounded-xl bg-slate-50 p-2 text-xs text-slate-600">
+
+                  <div className="mt-2 rounded-xl bg-slate-50 p-2 text-xs text-slate-600">
                     Repeat the sentence aloud after listening.
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClick();
+                      handleRepeatDoneOnly();
+                    }}
+                    className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                    disabled={
+                      !audioGateOpen || voiceStep === VOICE_STEPS.LISTEN
+                    }
+                  >
+                    I Repeated It ✅
+                  </button>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-3">
@@ -4038,4 +4054,3 @@ export default function SentencePractice() {
   );
 }
 // DISK_MARKER_1770108265
- 
