@@ -1751,7 +1751,7 @@ export default function SentencePractice() {
     }
 
     setFeedback("✅ Good. Now shadow the sentence with the audio.");
-    setVoiceStep(VOICE_STEPS.SHADOW);
+    setVoiceStep(VOICE_STEPS.RECORD);
   }
 
   async function handleAudioRepeated() {
@@ -2983,22 +2983,7 @@ export default function SentencePractice() {
             ? "Step 2: Repeat aloud, then continue"
             : "Click Listen first ✅",
         };
-      }
-
-      if (voiceStep === VOICE_STEPS.SHADOW) {
-        return {
-          show: true,
-          primary: {
-            label: "Continue to Record 🎙",
-            onClick: firePrimary("Continue to Record 🎙", () =>
-              setVoiceStep(VOICE_STEPS.RECORD),
-            ),
-            disabled: false,
-          },
-          secondary: [],
-          hintText: "Step 3: Shadow with the audio",
-        };
-      }
+      }      
 
       if (voiceStep === VOICE_STEPS.RECORD) {
         return {
@@ -3402,89 +3387,9 @@ export default function SentencePractice() {
                 </h2>
 
                 <div className="mt-1 text-sm text-slate-600">
-                  Listen first. Repeat after the speaker. Then shadow with the
-                  audio. Record your voice and compare.
+                  Listen, repeat aloud, record your voice, and compare it with
+                  the model.
                 </div>
-
-                {/* SHADOW UI */}
-                {voiceStep === VOICE_STEPS.SHADOW && (
-                  <div className="mt-4 p-4 rounded-xl border bg-yellow-50">
-                    <div className="text-sm font-bold text-yellow-800">
-                      🟡 Shadow Mode
-                    </div>
-
-                    <div className="text-xs text-gray-600 mt-1">
-                      Listen again and speak along with the audio in real time.
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        speakTTS(englishFull);
-                      }}
-                      className="mt-3 px-4 py-2 bg-black text-white rounded-lg"
-                    >
-                      ▶ Start Shadowing
-                    </button>
-
-                    <button
-                      onClick={() => setVoiceStep(VOICE_STEPS.RECORD)}
-                      className="mt-3 ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg"
-                    >
-                      Continue to Record
-                    </button>
-                  </div>
-                )}
-
-                {/* RECORD UI BLOCK */}
-                {voiceStep === VOICE_STEPS.RECORD && (
-                  <div className="mt-4 p-4 rounded-xl border bg-blue-50">
-                    <div className="text-sm font-bold text-blue-800">
-                      🎙 Record Yourself
-                    </div>
-
-                    <div className="text-xs text-gray-600 mt-1">
-                      Speak the sentence clearly after shadowing.
-                    </div>
-
-                    <button
-                      onClick={startVoiceRecording}
-                      className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg"
-                    >
-                      Start Recording
-                    </button>
-
-                    <button
-                      onClick={stopVoiceRecording}
-                      className="mt-3 ml-2 px-4 py-2 bg-gray-800 text-white rounded-lg"
-                    >
-                      Stop
-                    </button>
-                  </div>
-                )}
-
-                {/* COMPARE UI */}
-                {voiceStep === VOICE_STEPS.COMPARE && (
-                  <div className="mt-4 p-4 rounded-xl border bg-green-50">
-                    <div className="text-sm font-bold text-green-800">
-                      ⚖️ Compare Your Voice
-                    </div>
-
-                    <audio
-                      controls
-                      src={recordedAudioUrl}
-                      className="mt-3 w-full"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={handleAudioRepeated}
-                      className="mt-3 px-4 py-2 bg-green-700 text-white rounded-lg"
-                      disabled={!recordedAudioUrl || audioSubmitting}
-                    >
-                      {audioSubmitting ? "⏳ Saving..." : "I Spoke It Well ✅"}
-                    </button>
-                  </div>
-                )}
 
                 {/* Status pills */}
                 {!audioGateOpen && status !== "correct" && (
@@ -3535,7 +3440,7 @@ export default function SentencePractice() {
                     Fluent Voice Practice
                   </div>
                   <div className="mt-2 text-sm font-bold text-slate-800">
-                    Listen → Repeat → Shadow → Record → Compare
+                    Listen → Repeat → Record → Compare
                   </div>
                   <div className="mt-1 text-xs text-slate-500">
                     Goal: say the sentence clearly, naturally, and confidently.
@@ -3568,12 +3473,27 @@ export default function SentencePractice() {
               )}
 
               {/* Step buttons */}
-              <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-5">
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-bold text-slate-500">Step 1</div>
-                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {/* Step 1: Listen */}
+                <div
+                  className={`rounded-2xl border p-4 shadow-sm transition ${
+                    voiceStep === VOICE_STEPS.LISTEN
+                      ? "border-slate-900 bg-slate-50"
+                      : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Step 1
+                  </div>
+
+                  <div className="mt-1 text-xl font-extrabold text-slate-900">
                     Listen
                   </div>
+
+                  <div className="mt-2 text-sm text-slate-600">
+                    Listen to the model sentence carefully.
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -3582,23 +3502,32 @@ export default function SentencePractice() {
                       speakTTS(englishFull);
                       setVoiceStep(VOICE_STEPS.REPEAT);
                     }}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-base font-bold text-white hover:opacity-90 disabled:opacity-50"
                     disabled={!englishFull}
                   >
-                    <span className="text-base">▶</span>
-                    {isSpeaking ? "Playing…" : "Listen"}
+                    ▶ Listen
                   </button>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-bold text-slate-500">Step 2</div>
+                {/* Step 2: Repeat */}
+                <div
+                  className={`rounded-2xl border p-4 shadow-sm transition ${
+                    voiceStep === VOICE_STEPS.REPEAT
+                      ? "border-emerald-300 bg-emerald-50"
+                      : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Step 2
+                  </div>
 
-                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+                  <div className="mt-1 text-xl font-extrabold text-slate-900">
                     Repeat
                   </div>
 
-                  <div className="mt-2 rounded-xl bg-slate-50 p-2 text-xs text-slate-600">
-                    Repeat the sentence aloud after listening.
+                  <div className="mt-2 text-sm text-slate-600">
+                    Repeat aloud after listening. For extra practice, play the
+                    audio again and speak along.
                   </div>
 
                   <button
@@ -3607,7 +3536,7 @@ export default function SentencePractice() {
                       playClick();
                       handleRepeatDoneOnly();
                     }}
-                    className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
                     disabled={
                       !audioGateOpen || voiceStep === VOICE_STEPS.LISTEN
                     }
@@ -3616,28 +3545,24 @@ export default function SentencePractice() {
                   </button>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-bold text-slate-500">Step 3</div>
-                  <div className="mt-1 text-sm font-extrabold text-slate-900">
-                    Shadow
+                {/* Step 3: Record */}
+                <div
+                  className={`rounded-2xl border p-4 shadow-sm transition ${
+                    voiceStep === VOICE_STEPS.RECORD
+                      ? "border-emerald-300 bg-emerald-50"
+                      : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Step 3
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClick();
-                      speakTTS(englishFull);
-                    }}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                    disabled={!englishFull}
-                  >
-                    ⚡ Shadow
-                  </button>
-                </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-bold text-slate-500">Step 4</div>
-                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+                  <div className="mt-1 text-xl font-extrabold text-slate-900">
                     Record
+                  </div>
+
+                  <div className="mt-2 text-sm text-slate-600">
+                    Record yourself saying the sentence clearly.
                   </div>
 
                   {!isRecording ? (
@@ -3647,8 +3572,8 @@ export default function SentencePractice() {
                         playClick();
                         startVoiceRecording();
                       }}
-                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
-                      disabled={!current}
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-base font-bold text-white hover:bg-emerald-700 disabled:opacity-50"
+                      disabled={voiceStep !== VOICE_STEPS.RECORD}
                     >
                       🎙 Record
                     </button>
@@ -3659,17 +3584,31 @@ export default function SentencePractice() {
                         playClick();
                         stopVoiceRecording();
                       }}
-                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-3 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 py-3 text-base font-bold text-white hover:bg-rose-700"
                     >
                       ■ Stop
                     </button>
                   )}
                 </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-3">
-                  <div className="text-xs font-bold text-slate-500">Step 5</div>
-                  <div className="mt-1 text-sm font-extrabold text-slate-900">
+                {/* Step 4: Compare */}
+                <div
+                  className={`rounded-2xl border p-4 shadow-sm transition ${
+                    voiceStep === VOICE_STEPS.COMPARE
+                      ? "border-emerald-300 bg-emerald-50"
+                      : "border-slate-200 bg-white"
+                  }`}
+                >
+                  <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Step 4
+                  </div>
+
+                  <div className="mt-1 text-xl font-extrabold text-slate-900">
                     Compare
+                  </div>
+
+                  <div className="mt-2 text-sm text-slate-600">
+                    Listen to your voice and compare it with the original.
                   </div>
 
                   <button
@@ -3678,7 +3617,7 @@ export default function SentencePractice() {
                       playClick();
                       playMyRecording();
                     }}
-                    className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-base font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                     disabled={!recordedAudioUrl}
                   >
                     ▶ My Voice
