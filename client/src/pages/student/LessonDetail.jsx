@@ -9,14 +9,11 @@ import {
 } from "react-router-dom";
 
 import { api } from "../../api/apiClient";
-
 import { LESSON_TEACH } from "../../content/lessonTeach";
-
 import { MODE_UI, uiFor } from "../../lib/modeUi";
-
 import { track } from "../../lib/track";
-
 import { toPng } from "html-to-image";
+import { lessonMeta } from "@/data/lessonMeta";
 
 import AchievementCard from "@/components/student/AchievementCard";
 import Certificate from "@/components/student/Certificate";
@@ -224,7 +221,7 @@ export default function LessonDetail() {
   );
 
   const [isSharing, setIsSharing] = useState(false);
-  const [missedBanner, setMissedBanner] = useState(null); 
+  const [missedBanner, setMissedBanner] = useState(null);
 
   // 🎯 4. Effects (The Actions)
   useEffect(() => {
@@ -615,6 +612,23 @@ export default function LessonDetail() {
     if (total <= 0) return false; // if no items, don ��t nag
     return completed < total;
   }
+
+  const levelKey = String(difficulty || "beginner").toLowerCase();
+  const lessonNumber = Number(displayNum || lessonId || 1);
+
+  const meta = lessonMeta?.[levelKey]?.[lessonNumber];
+
+  const lessonTitle = meta?.title || `Lesson ${lessonNumber}`;
+
+  const lessonOutcome =
+    meta?.outcome ||
+    "Master useful sentence structures through active practice.";
+
+  const lessonTamilOutcome =
+    meta?.tamilOutcome ||
+    "இந்த பாடத்தின் வாக்கிய அமைப்புகளைப் பயிற்சி மூலம் தேர்ச்சி பெறுங்கள்.";
+
+  const lessonPatterns = Array.isArray(meta?.patterns) ? meta.patterns : [];
 
   // --- Safe Continue (guards stale session + adds q=) ---
   const totalsByMode = {
@@ -1186,39 +1200,49 @@ export default function LessonDetail() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-6 pt-10">
-        {/* 2. DUAL-LANGUAGE CONCEPT CARD (Creative Solution) */}
+      <main className="mx-auto max-w-3xl px-6 pt-10">
+        {/* 2. LESSON OUTCOME CARD */}
         <section className="mb-8 group">
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10 text-4xl font-black">
+          <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-sm">
+            <div className="absolute right-0 top-0 p-4 text-4xl font-black text-slate-900 opacity-10">
               அ
             </div>
 
-            <h1 className="text-4xl font-black text-slate-900 mb-6 tracking-tight">
-              Lesson {displayNum || lessonId}
-            </h1>
+            <div className="relative z-10">
+              <div className="mb-4 inline-flex rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white">
+                Lesson {lessonNumber} · {levelKey}
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-              <div className="space-y-2">
-                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">
-                  English Goal
-                </span>
-                <p className="text-sm font-bold text-slate-700 leading-relaxed italic">
-                  "
-                  {lesson?.english_mastery_goal ||
-                    "Master these sentence structures through active practice."}
-                  "
+              <h1 className="text-4xl font-black tracking-tight text-slate-900">
+                {lessonTitle}
+              </h1>
+
+              <p className="mt-4 text-base font-bold leading-relaxed text-slate-700">
+                {lessonOutcome}
+              </p>
+
+              <div className="mt-5 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                  Tamil Support
+                </div>
+
+                <p className="mt-2 text-base font-bold leading-relaxed text-slate-800">
+                  {lessonTamilOutcome}
                 </p>
               </div>
-              <div className="space-y-2 border-t pt-4 md:border-t-0 md:pt-0 md:border-l md:pl-6">
-                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
-                  Tamil Translation
-                </span>
-                <p className="text-sm font-bold text-slate-700 leading-relaxed">
-                  {lesson?.tamil_sentence ||
-                    "இந்த பாடத்தின் வாக்கிய அமைப்புகளைப் பயிற்சி மூலம் தேர்ச்சி பெறுங்கள்."}
-                </p>
-              </div>
+
+              {lessonPatterns.length > 0 && (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {lessonPatterns.map((pattern) => (
+                    <span
+                      key={pattern}
+                      className="rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-extrabold text-indigo-800"
+                    >
+                      {pattern}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </section>
