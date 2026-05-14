@@ -3157,7 +3157,7 @@ export default function SentencePractice() {
       )}
       {/* Main content wrapper (DO NOT close this here) */}
       <div
-        className={`mx-auto max-w-xl px-4 pt-4 ${stickyCfg.show ? "pb-28" : "pb-10"}`}
+        className={`mx-auto max-w-4xl px-4 pt-4 ${stickyCfg.show ? "pb-40" : "pb-10"}`}
       >
         {/* 🧩 CLOZE UI */}
         {safeMode === "cloze" && (
@@ -3433,7 +3433,7 @@ export default function SentencePractice() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -3473,10 +3473,10 @@ export default function SentencePractice() {
               )}
 
               {/* Step buttons */}
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Step 1: Listen */}
                 <div
-                  className={`rounded-2xl border p-3 shadow-sm transition ${
+                  className={`rounded-3xl border p-5 shadow-sm transition ${
                     voiceStep === VOICE_STEPS.LISTEN
                       ? "border-slate-900 bg-slate-50"
                       : "border-slate-200 bg-white"
@@ -3511,7 +3511,7 @@ export default function SentencePractice() {
 
                 {/* Step 2: Repeat */}
                 <div
-                  className={`rounded-2xl border p-3 shadow-sm transition ${
+                  className={`rounded-3xl border p-5 shadow-sm transition ${
                     voiceStep === VOICE_STEPS.REPEAT
                       ? "border-emerald-300 bg-emerald-50"
                       : "border-slate-200 bg-white"
@@ -3546,7 +3546,7 @@ export default function SentencePractice() {
 
                 {/* Step 3: Record */}
                 <div
-                  className={`rounded-2xl border p-3 shadow-sm transition ${
+                  className={`rounded-3xl border p-5 shadow-sm transition ${
                     voiceStep === VOICE_STEPS.RECORD
                       ? "border-emerald-300 bg-emerald-50"
                       : "border-slate-200 bg-white"
@@ -3592,7 +3592,7 @@ export default function SentencePractice() {
 
                 {/* Step 4: Compare */}
                 <div
-                  className={`rounded-2xl border p-3 shadow-sm transition ${
+                  className={`rounded-3xl border p-5 shadow-sm transition ${
                     voiceStep === VOICE_STEPS.COMPARE
                       ? "border-emerald-300 bg-emerald-50"
                       : "border-slate-200 bg-white"
