@@ -1,3 +1,4 @@
+// client/src/pages/student/LevelCheck.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -39,64 +40,91 @@ const TRACK_METADATA = {
   },
 };
 
-const QUESTIONS = [
-  // Beginner-ish (1–5)
+const LEVEL_CHECK_QUESTIONS = [
   {
     id: 1,
     level: "beginner",
+    skill: "Simple Present",
     q: "Choose the correct sentence:",
+    qTa: "சரியான ஆங்கில வாக்கியத்தை தேர்வு செய்யுங்கள்:",
     options: [
       "He go to school.",
       "He goes to school.",
       "He going to school.",
-      "He gone to school.",
+      "He is go to school.",
     ],
     answer: 1,
+    wrongMessage:
+      "Don’t worry. This helps us choose the right lessons for you.",
+    wrongMessageTa:
+      "கவலைப்பட வேண்டாம். உங்களுக்கு சரியான பாடங்களை தேர்வு செய்ய இது உதவும்.",
   },
   {
     id: 2,
     level: "beginner",
+    skill: "Word Order",
     q: "Choose the correct word order:",
+    qTa: "சரியான word order-ஐ தேர்வு செய்யுங்கள்:",
     options: [
       "Coffee I want.",
       "I coffee want.",
       "I want coffee.",
-      "Want I coffee.",
+      "Want coffee I.",
     ],
     answer: 2,
+    wrongMessage: "Good attempt. We’ll help you build correct sentence order.",
+    wrongMessageTa:
+      "நல்ல முயற்சி. சரியான sentence order அமைக்க நாங்கள் உதவுவோம்.",
   },
   {
     id: 3,
     level: "beginner",
+    skill: "Be Verb",
     q: "Fill in the blank: I ___ a teacher.",
+    qTa: "காலியிடத்தை நிரப்புங்கள்: I ___ a teacher.",
     options: ["is", "are", "am", "be"],
     answer: 2,
+    wrongMessage: "No problem. Small grammar gaps can be fixed with practice.",
+    wrongMessageTa:
+      "பரவாயில்லை. சிறிய grammar gaps-ஐ practice மூலம் சரிசெய்யலாம்.",
   },
   {
     id: 4,
     level: "beginner",
+    skill: "Questions",
     q: "Choose the correct question:",
+    qTa: "சரியான கேள்வி வாக்கியத்தை தேர்வு செய்யுங்கள்:",
     options: [
       "Where you are going?",
       "Where are you going?",
-      "Where going you are?",
-      "Where you going are?",
+      "Where you going?",
+      "Where are going you?",
     ],
     answer: 1,
+    wrongMessage:
+      "Don’t worry. Question patterns become easy with daily drills.",
+    wrongMessageTa:
+      "கவலைப்பட வேண்டாம். Daily drills மூலம் question patterns எளிதாகிவிடும்.",
   },
   {
     id: 5,
     level: "beginner",
+    skill: "Negative Sentences",
     q: "Pick the correct option: She ___ like tea.",
+    qTa: "சரியான option-ஐ தேர்வு செய்யுங்கள்: She ___ like tea.",
     options: ["don't", "doesn't", "isn't", "aren't"],
     answer: 1,
+    wrongMessage: "Good try. We’ll help you master negatives clearly.",
+    wrongMessageTa:
+      "நல்ல முயற்சி. Negative sentences-ஐ தெளிவாக கற்றுக்கொள்ள உதவுவோம்.",
   },
 
-  // Intermediate-ish (6–10)
   {
     id: 6,
     level: "intermediate",
+    skill: "Past Tense",
     q: "Choose the correct sentence:",
+    qTa: "சரியான ஆங்கில வாக்கியத்தை தேர்வு செய்யுங்கள்:",
     options: [
       "I have seen him yesterday.",
       "I saw him yesterday.",
@@ -104,44 +132,71 @@ const QUESTIONS = [
       "I seen him yesterday.",
     ],
     answer: 1,
+    wrongMessage:
+      "No issue. Past tense accuracy improves quickly with practice.",
+    wrongMessageTa:
+      "பிரச்சனை இல்லை. Practice மூலம் past tense accuracy வேகமாக மேம்படும்.",
   },
   {
     id: 7,
     level: "intermediate",
+    skill: "Conditionals",
     q: "Fill in the blank: If I had time, I ___ help you.",
+    qTa: "காலியிடத்தை நிரப்புங்கள்: If I had time, I ___ help you.",
     options: ["will", "would", "am", "can"],
     answer: 1,
+    wrongMessage:
+      "Good attempt. We’ll help you understand advanced patterns step by step.",
+    wrongMessageTa:
+      "நல்ல முயற்சி. Advanced patterns-ஐ படிப்படியாக புரியவைக்கிறோம்.",
   },
   {
     id: 8,
     level: "intermediate",
+    skill: "Duration",
     q: "Choose the correct sentence:",
+    qTa: "சரியான ஆங்கில வாக்கியத்தை தேர்வு செய்யுங்கள்:",
     options: [
       "She has been working here since 2 years.",
       "She is working here since 2 years.",
       "She has been working here for 2 years.",
-      "She working here for 2 years.",
+      "She works here since 2 years.",
     ],
     answer: 2,
+    wrongMessage:
+      "Don’t worry. These are common mistakes, and we can fix them.",
+    wrongMessageTa:
+      "கவலைப்பட வேண்டாம். இவை common mistakes. இதை நிச்சயம் சரிசெய்யலாம்.",
   },
   {
     id: 9,
     level: "intermediate",
+    skill: "Prepositions",
     q: "Pick the correct preposition: I’m interested ___ learning English.",
+    qTa: "சரியான preposition-ஐ தேர்வு செய்யுங்கள்: I’m interested ___ learning English.",
     options: ["on", "in", "at", "for"],
     answer: 1,
+    wrongMessage:
+      "Good try. Prepositions become natural after repeated practice.",
+    wrongMessageTa:
+      "நல்ல முயற்சி. Repeated practice மூலம் prepositions இயல்பாக வரும்.",
   },
   {
     id: 10,
     level: "intermediate",
-    q: "Choose the best sentence:",
+    skill: "Natural English",
+    q: "Choose the most natural sentence:",
+    qTa: "மிகவும் இயல்பான English sentence-ஐ தேர்வு செய்யுங்கள்:",
     options: [
       "Can you suggest me a book?",
       "Can you suggest a book to me?",
       "Can you suggesting a book?",
-      "Can you suggested me a book?",
+      "Can you suggest one book for me?",
     ],
     answer: 1,
+    wrongMessage: "No problem. FluencyJet will help you sound more natural.",
+    wrongMessageTa:
+      "பிரச்சனை இல்லை. FluencyJet உங்கள் English-ஐ இன்னும் natural-ஆக மாற்றும்.",
   },
 ];
 
@@ -328,7 +383,7 @@ export default function LevelCheck() {
                 </div>
               </div>
 
-              {/* 251: Right Column - Finalized Start Action */}
+              {/* Right Column - Finalized Start Action */}
               <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-8 text-center border border-slate-100 shadow-inner">
                 {/* Decorative Background Element */}
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-violet-100/30 blur-2xl" />
