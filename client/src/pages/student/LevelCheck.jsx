@@ -18,9 +18,9 @@ const TRACK_KEY = "fj_track";
 
 const TRACK_METADATA = {
   beginner: {
-    title: "Beginner",
-    label: "Solid Foundations",
-    labelTa: "வலுவான அடித்தளம்",
+    resultTitle: "Beginner",
+    title: "Solid Foundations",
+    titleTa: "வலுவான அடித்தளம்",
     description:
       "Great start! You need more practice with basic sentence patterns, word order, questions, and daily English sentences. We’ll help you build confidence step by step.",
     descriptionTa:
@@ -31,9 +31,9 @@ const TRACK_METADATA = {
   },
 
   intermediate: {
-    title: "Intermediate",
-    label: "Natural Flow",
-    labelTa: "இயல்பான பேச்சு ஓட்டம்",
+    resultTitle: "Intermediate",
+    title: "Natural Flow",
+    titleTa: "இயல்பான பேச்சு ஓட்டம்",
     description:
       "Great! You already understand many sentence patterns. Now let’s make your English faster, clearer, and more natural.",
     descriptionTa:
@@ -44,9 +44,9 @@ const TRACK_METADATA = {
   },
 
   advanced: {
-    title: "Advanced",
-    label: "Fluent Mastery",
-    labelTa: "சரளமான ஆங்கில திறன்",
+    resultTitle: "Advanced",
+    title: "Fluent Mastery",
+    titleTa: "சரளமான ஆங்கில திறன்",
     description:
       "Excellent! Your English structure is strong. We’ll now help you speak with more confidence, natural expressions, and professional fluency.",
     descriptionTa:
@@ -285,7 +285,19 @@ export default function LevelCheck() {
       const selected = answers[q.id];
       return total + (selected === q.answer ? 1 : 0);
     }, 0);
-    const track = finalScore >= 5 ? "intermediate" : "beginner";
+
+    const beginnerCorrect = QUESTIONS.filter(
+      (q) => q.level === "beginner",
+    ).reduce((total, q) => total + (answers[q.id] === q.answer ? 1 : 0), 0);
+
+    const intermediateCorrect = QUESTIONS.filter(
+      (q) => q.level === "intermediate",
+    ).reduce((total, q) => total + (answers[q.id] === q.answer ? 1 : 0), 0);
+
+    const track =
+      beginnerCorrect >= 4 && intermediateCorrect >= 3
+        ? "intermediate"
+        : "beginner";
 
     console.log("[LEVEL CHECK]", { answers, finalScore, track });
 
@@ -468,8 +480,8 @@ export default function LevelCheck() {
                       Finding Your Level
                     </div>
 
-                    <div className="mt-1 text-sm font-medium text-slate-400">
-                      உங்கள் English level-ஐ கண்டறிகிறோம்
+                    <div className="mt-1 text-sm font-medium text-slate-400 font-tamil">
+                      உங்கள் English level-ஐ கண்டுபிடிக்கிறோம்
                     </div>
                     <h2 className="text-xl font-extrabold text-slate-900">
                       Question {idx + 1}{" "}
@@ -503,14 +515,19 @@ export default function LevelCheck() {
                 <div className="inline-block px-3 py-1 rounded-md bg-violet-50 text-violet-700 text-[10px] font-bold uppercase tracking-widest mb-4">
                   Grammar & Structure
                 </div>
+
                 <h3 className="text-2xl font-black text-slate-800 leading-tight px-4">
                   {QUESTIONS[idx].q}
                 </h3>
+
+                {QUESTIONS[idx].qTa && (
+                  <p className="mt-2 px-4 text-base font-semibold leading-relaxed text-slate-500 font-tamil">
+                    {QUESTIONS[idx].qTa}
+                  </p>
+                )}
               </div>
 
               {/* Option Grid */}
-              {/* 386: Option Grid with Sound Feedback */}
-              {/* 389: Smart Question Content Switcher */}
               <div className="w-full">
                 {QUESTIONS[idx].type === "reorder" ? (
                   <SentenceBuilder
@@ -569,8 +586,24 @@ export default function LevelCheck() {
                 )}
               </div>
 
-              {/* 382: Refined Navigation - Forward Only */}
-              {/* 421: Compact & Polished Navigation */}
+              {/* Friendly Feedback After Selection */}
+              {QUESTIONS[idx].type !== "reorder" &&
+                answers[QUESTIONS[idx].id] !== undefined &&
+                answers[QUESTIONS[idx].id] !== QUESTIONS[idx].answer && (
+                  <div className="mt-5 mx-auto max-w-sm rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3 text-center shadow-sm">
+                    <p className="text-sm font-semibold text-violet-800">
+                      {QUESTIONS[idx].wrongMessage ||
+                        "Don’t worry. This helps us choose the right lessons for you."}
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium leading-relaxed text-violet-700 font-tamil">
+                      {QUESTIONS[idx].wrongMessageTa ||
+                        "கவலைப்பட வேண்டாம். உங்களுக்கு சரியான பாடங்களை தேர்வு செய்ய இது உதவும்."}
+                    </p>
+                  </div>
+                )}
+
+              {/* Compact & Polished Navigation */}
               <div className="mt-8 flex justify-center pt-6 border-t border-slate-100/60">
                 {idx < QUESTIONS.length - 1 ? (
                   <button
@@ -606,117 +639,122 @@ export default function LevelCheck() {
             </div>
           )}
 
-              {/* Shareable Result Card */}
-              {mode === "result" && (
-      <>
-                <div className="py-6 text-center">
-                  {(() => {
-                    const track = normalizeTrack(
-                      result?.track || (score >= 5 ? "intermediate" : "beginner"),
-                    );
+          {/* Shareable Result Card */}
+          {mode === "result" && (
+            <>
+              <div className="py-6 text-center">
+                {(() => {
+                  const track = normalizeTrack(
+                    result?.track || (score >= 5 ? "intermediate" : "beginner"),
+                  );
 
-                    const meta = TRACK_METADATA[track] || TRACK_METADATA.beginner;
+                  const meta = TRACK_METADATA[track] || TRACK_METADATA.beginner;
 
-                    return (
-                      <>
-                        {/* Badge Header */}
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold uppercase tracking-widest mb-6 border border-emerald-100">
-                          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                          Assessment Verified
+                  return (
+                    <>
+                      {/* Badge Header */}
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold uppercase tracking-widest mb-6 border border-emerald-100">
+                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Assessment Verified
+                      </div>
+
+                      <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">
+                        Proficiency Level
+                      </h2>
+
+                      <p className="mb-4 text-sm font-semibold text-slate-400 font-tamil">
+                        உங்கள் English level கண்டறியப்பட்டது
+                      </p>
+
+                      {/* Dynamic Result Visual */}
+                      <div className="relative inline-block mb-8">
+                        <div className="absolute inset-0 bg-violet-400 blur-3xl opacity-20 animate-pulse" />
+                        <div className="relative bg-white border-2 border-violet-100 rounded-3xl px-12 py-8 shadow-2xl shadow-violet-100">
+                          <h1 className="text-6xl font-black text-violet-600 capitalize leading-none tracking-tight">
+                            {meta.resultTitle || track}
+                          </h1>
+                        </div>
+                      </div>
+
+                      {/* Score Breakdown Tiles */}
+                      <div className="max-w-md mx-auto grid grid-cols-2 gap-4 mb-8">
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            Accuracy
+                          </div>
+                          <div className="text-xl font-bold text-slate-800">
+                            {score >= 7
+                              ? "High"
+                              : score >= 4
+                                ? "Good"
+                                : "Building"}
+                          </div>
                         </div>
 
-                        <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">
-                          Proficiency Level
-                        </h2>
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            Path
+                          </div>
+                          <div className="text-xl font-bold text-slate-800 capitalize">
+                            {track}
+                          </div>
+                        </div>
+                      </div>
 
-                        <p className="mb-4 text-sm font-semibold text-slate-400 font-tamil">
-                          உங்கள் English level கண்டறியப்பட்டது
+                      {/* Personalized Level Feedback */}
+                      <div
+                        className={`mb-10 p-6 rounded-3xl border ${meta.bg || "bg-slate-50"} border-opacity-50 inline-block max-w-md mx-auto shadow-sm`}
+                      >
+                        <h3
+                          className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${meta.color || "text-slate-600"}`}
+                        >
+                          {meta.title || "Your Result"}
+                        </h3>
+
+                        {meta.titleTa && (
+                          <p className="mb-3 text-sm font-bold text-slate-500 font-tamil">
+                            {meta.titleTa}
+                          </p>
+                        )}
+
+                        <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                          {meta.description ||
+                            "Your level assessment is ready."}
                         </p>
 
-                        {/* Dynamic Result Visual */}
-                        <div className="relative inline-block mb-8">
-                          <div className="absolute inset-0 bg-violet-400 blur-3xl opacity-20 animate-pulse" />
-                          <div className="relative bg-white border-2 border-violet-100 rounded-3xl px-12 py-8 shadow-2xl shadow-violet-100">
-                            <h1 className="text-6xl font-black text-violet-600 capitalize leading-none tracking-tight">
-                              {meta.resultTitle || track}
-                            </h1>
-                          </div>
-                        </div>
-
-                        {/* Score Breakdown Tiles */}
-                        <div className="max-w-md mx-auto grid grid-cols-2 gap-4 mb-8">
-                          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
-                              Accuracy
-                            </div>
-                            <div className="text-xl font-bold text-slate-800">
-                              {score >= 7 ? "High" : score >= 4 ? "Good" : "Building"}
-                            </div>
-                          </div>
-
-                          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
-                            <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
-                              Path
-                            </div>
-                            <div className="text-xl font-bold text-slate-800 capitalize">
-                              {track}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Personalized Level Feedback */}
-                        <div
-                          className={`mb-10 p-6 rounded-3xl border ${meta.bg || "bg-slate-50"} border-opacity-50 inline-block max-w-md mx-auto shadow-sm`}
-                        >
-                          <h3
-                            className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${meta.color || "text-slate-600"}`}
-                          >
-                            {meta.title || "Your Result"}
-                          </h3>
-
-                          {meta.titleTa && (
-                            <p className="mb-3 text-sm font-bold text-slate-500 font-tamil">
-                              {meta.titleTa}
-                            </p>
-                          )}
-
-                          <p className="text-slate-600 text-sm leading-relaxed font-medium">
-                            {meta.description || "Your level assessment is ready."}
+                        {meta.descriptionTa && (
+                          <p className="mt-3 text-[15px] leading-relaxed text-slate-500 font-tamil">
+                            {meta.descriptionTa}
                           </p>
+                        )}
 
-                          {meta.descriptionTa && (
-                            <p className="mt-3 text-[15px] leading-relaxed text-slate-500 font-tamil">
-                              {meta.descriptionTa}
-                            </p>
-                          )}
-
-                          <div className="mt-5 rounded-2xl bg-white/70 px-4 py-3 text-sm font-bold text-violet-700">
-                            Your learning path is ready.
-                            <div className="mt-1 font-tamil text-slate-600">
-                              உங்கள் learning path தயார்.
-                            </div>
+                        <div className="mt-5 rounded-2xl bg-white/70 px-4 py-3 text-sm font-bold text-violet-700">
+                          Your learning path is ready.
+                          <div className="mt-1 font-tamil text-slate-600">
+                            உங்கள் learning path தயார்.
                           </div>
                         </div>
+                      </div>
 
-                        {/* Primary Action */}
-                        <div className="flex flex-col gap-4 max-w-sm mx-auto">
-                          <button
-                            onClick={() => {
-                              const next = lessonPathForTrack(track, 1);
-                              const encodedNext = encodeURIComponent(next);
+                      {/* Primary Action */}
+                      <div className="flex flex-col gap-4 max-w-sm mx-auto">
+                        <button
+                          onClick={() => {
+                            const next = lessonPathForTrack(track, 1);
+                            const encodedNext = encodeURIComponent(next);
 
-                              window.location.href = `/signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName || "")}`;
-                            }}
-                            className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
-                          >
-                            <span>{meta.cta || "Start My Lessons"}</span>
-                            <span className="text-xl">→</span>
-                          </button>
-                        </div>
-                      </>
-                    );
-                  })()}
-                </div>
+                            window.location.href = `/signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName || "")}`;
+                          }}
+                          className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                          <span>{meta.cta || "Start My Lessons"}</span>
+                          <span className="text-xl">→</span>
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
 
               {/* Shareable Footer */}
               <div className="mt-16 pt-8 border-t border-slate-100 flex justify-between items-center text-slate-300">
@@ -727,8 +765,7 @@ export default function LevelCheck() {
                   FJ-ENGINE V1.0
                 </span>
               </div>
-          </>
-            </div>
+            </>
           )}
         </div>
       </div>
