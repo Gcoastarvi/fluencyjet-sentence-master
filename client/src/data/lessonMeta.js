@@ -873,5 +873,195 @@ export const lessonMeta = {
     },
   },
 
-  intermediate: {},
+  intermediate: {
+    1: {
+      title: "Upgrade Your Self-Introduction",
+      outcome:
+        "You can give a stronger and more complete personal introduction.",
+      tamilOutcome:
+        "நீங்கள் வலிமையான மற்றும் முழுமையான சுய அறிமுகம் கொடுக்க முடியும்.",
+      patterns: [
+        "I’m currently...",
+        "I have experience in...",
+        "My goal is...",
+      ],
+    },
+    2: {
+      title: "Talk About Your Background Naturally",
+      outcome: "You can explain where you come from and where you are based.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் பின்னணி மற்றும் இருப்பிடத்தை இயல்பாக விளக்க முடியும்.",
+      patterns: ["I come from...", "I grew up in...", "I’m based in..."],
+    },
+    3: {
+      title: "Describe Your Job Role Clearly",
+      outcome: "You can explain your work and responsibilities clearly.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் வேலை மற்றும் பொறுப்புகளை தெளிவாக விளக்க முடியும்.",
+      patterns: [
+        "I work as...",
+        "I’m responsible for...",
+        "My role involves...",
+      ],
+    },
+    4: {
+      title: "Talk About Your Strengths",
+      outcome: "You can speak about your skills and strengths confidently.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் திறன்கள் மற்றும் பலங்களை நம்பிக்கையுடன் பேச முடியும்.",
+      patterns: ["I’m good at...", "I know how to...", "I can handle..."],
+    },
+    5: {
+      title: "Talk About Your Experience",
+      outcome: "You can speak about your work experience naturally.",
+      tamilOutcome: "நீங்கள் உங்கள் வேலை அனுபவத்தை இயல்பாக பேச முடியும்.",
+      patterns: [
+        "I’ve worked in...",
+        "I’ve handled...",
+        "I’ve been part of...",
+      ],
+    },
+    6: {
+      title: "Explain Your Future Goals",
+      outcome: "You can talk about your plans, goals, and dreams.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் திட்டங்கள், இலக்குகள், கனவுகள் பற்றி பேச முடியும்.",
+      patterns: ["I’m planning to...", "I hope to...", "I aim to..."],
+    },
+    7: {
+      title: "Describe Yourself Professionally",
+      outcome:
+        "You can describe your personality in a positive professional way.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் குணங்களை தொழில்முறையாகவும் நேர்மறையாகவும் விவரிக்க முடியும்.",
+      patterns: ["I’m reliable.", "I’m proactive.", "I’m detail-oriented."],
+    },
+    8: {
+      title: "Talk About Strengths Humbly",
+      outcome: "You can sound confident without sounding boastful.",
+      tamilOutcome: "நீங்கள் பெருமை பேசாமல் நம்பிக்கையுடன் பேச முடியும்.",
+      patterns: [
+        "One of my strengths is...",
+        "I’m quite good at...",
+        "I try to...",
+      ],
+    },
+    9: {
+      title: "Introduce Someone Professionally",
+      outcome:
+        "You can introduce a colleague or contact in a professional way.",
+      tamilOutcome:
+        "நீங்கள் சக ஊழியர் அல்லது தொடர்பை தொழில்முறையாக அறிமுகப்படுத்த முடியும்.",
+      patterns: [
+        "Let me introduce...",
+        "This is my colleague...",
+        "He is responsible for...",
+      ],
+    },
+    10: {
+      title: "Give a Polished Professional Introduction",
+      outcome: "You can give a clear 90-second professional introduction.",
+      tamilOutcome:
+        "நீங்கள் தெளிவான 90 விநாடி தொழில்முறை அறிமுகம் கொடுக்க முடியும்.",
+      patterns: ["I’m currently...", "I’ve worked in...", "My goal is..."],
+    },
+    11: {
+      title: "Start the Workday Naturally",
+      outcome:
+        "You can begin office conversations with natural greetings and small talk.",
+      tamilOutcome: "நீங்கள் அலுவலக உரையாடலை இயல்பாக தொடங்க முடியும்.",
+      patterns: [
+        "Good morning...",
+        "How was your...?",
+        "Hope you’re doing well.",
+      ],
+    },
+    12: {
+      title: "Ask for Work Updates Professionally",
+      outcome: "You can ask for task updates in a clear and professional way.",
+      tamilOutcome:
+        "நீங்கள் வேலை அப்டேட்டை தெளிவாகவும் தொழில்முறையாகவும் கேட்க முடியும்.",
+      patterns: [
+        "How is it going?",
+        "Any update on...?",
+        "Where are we with...?",
+      ],
+    },
+    13: {
+      title: "Give Clear Work Updates",
+      outcome: "You can report your work progress confidently.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் வேலை முன்னேற்றத்தை நம்பிக்கையுடன் சொல்ல முடியும்.",
+      patterns: ["I’ve finished...", "I’m working on...", "I’ll complete..."],
+    },
+    14: {
+      title: "Explain Task Status Clearly",
+      outcome: "You can say whether a task is on track, delayed, or pending.",
+      tamilOutcome:
+        "ஒரு வேலை சரியாக செல்கிறதா, தாமதமா, நிலுவையிலா என்று சொல்ல முடியும்.",
+      patterns: ["It’s on track.", "It’s delayed.", "It’s still pending."],
+    },
+    15: {
+      title: "Make Professional Requests",
+      outcome: "You can ask for help or action politely at work.",
+      tamilOutcome:
+        "நீங்கள் வேலை இடத்தில் உதவி அல்லது செயலை மரியாதையாக கேட்க முடியும்.",
+      patterns: [
+        "Could you please...?",
+        "Would it be possible to...?",
+        "Can you help me with...?",
+      ],
+    },
+    16: {
+      title: "Say No Politely at Work",
+      outcome: "You can decline requests professionally without sounding rude.",
+      tamilOutcome:
+        "நீங்கள் மரியாதையாகவும் தொழில்முறையாகவும் இல்லை என்று சொல்ல முடியும்.",
+      patterns: [
+        "I’m afraid I can’t...",
+        "I won’t be able to...",
+        "Maybe we can...",
+      ],
+    },
+    17: {
+      title: "Follow Up Smoothly",
+      outcome: "You can follow up without sounding pushy.",
+      tamilOutcome: "நீங்கள் அழுத்தமாக தோன்றாமல் மென்மையாக பின்தொடர முடியும்.",
+      patterns: [
+        "Just checking in...",
+        "Gentle reminder...",
+        "Any update on...?",
+      ],
+    },
+    18: {
+      title: "Set Expectations Clearly",
+      outcome: "You can avoid confusion by clearly aligning expectations.",
+      tamilOutcome:
+        "நீங்கள் எதிர்பார்ப்புகளை தெளிவுபடுத்தி குழப்பத்தை தவிர்க்க முடியும்.",
+      patterns: [
+        "I want to make sure...",
+        "Let’s be aligned on...",
+        "To clarify...",
+      ],
+    },
+    19: {
+      title: "Collaborate With Your Team",
+      outcome: "You can discuss teamwork and divide tasks clearly.",
+      tamilOutcome:
+        "நீங்கள் குழுவுடன் வேலைப் பகிர்வு பற்றி தெளிவாக பேச முடியும்.",
+      patterns: [
+        "Let’s divide the work.",
+        "I’ll handle...",
+        "Can you take care of...?",
+      ],
+    },
+    20: {
+      title: "Handle a Full Workday Conversation",
+      outcome: "You can manage office conversations from morning to evening.",
+      tamilOutcome:
+        "நீங்கள் காலை முதல் மாலை வரை அலுவலக உரையாடல்களை நடத்த முடியும்.",
+      patterns: ["Any update on...?", "I’m working on...", "Let’s divide..."],
+    },
+    
+  },
 };
