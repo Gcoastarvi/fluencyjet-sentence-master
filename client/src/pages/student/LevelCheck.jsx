@@ -200,6 +200,8 @@ const LEVEL_CHECK_QUESTIONS = [
   },
 ];
 
+const QUESTIONS = LEVEL_CHECK_QUESTIONS;
+
 export default function LevelCheck() {
   const navigate = useNavigate();
   const [mode, setMode] = useState("pick"); // "pick" | "quiz" | "result"
