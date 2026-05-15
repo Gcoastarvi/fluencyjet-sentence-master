@@ -370,7 +370,7 @@ export default function LevelCheck() {
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        Takes 2 minutes
+                        Just 2 minutes
                       </div>
                       <div className="flex gap-1.5">
                         {[...Array(5)].map((_, i) => (
