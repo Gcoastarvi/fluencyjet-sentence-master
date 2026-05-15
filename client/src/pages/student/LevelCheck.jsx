@@ -349,11 +349,17 @@ export default function LevelCheck() {
                   <div className="absolute -top-1 left-6 h-3 w-3 rotate-45 border-l border-t border-violet-100 bg-violet-50" />
                   <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-5 shadow-sm backdrop-blur-sm">
                     <p className="text-[15px] leading-relaxed text-violet-900">
-                      "I’ll help you find your current level. It’s just{" "}
+                      "I’ll help you find the right English practice path for
+                      you. It’s just{" "}
                       <span className="font-bold underline decoration-violet-300 underline-offset-4">
                         10 quick questions
                       </span>
                       ."
+                    </p>
+
+                    <p className="mt-2 text-[14px] leading-relaxed text-violet-700">
+                      உங்களுக்கு சரியான English practice path-ஐ கண்டுபிடிக்க
+                      உதவுகிறேன்.
                     </p>
                     <div className="mt-4 flex items-center justify-between border-t border-violet-100/50 pt-3">
                       <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-500">
@@ -392,7 +398,7 @@ export default function LevelCheck() {
 
                 <div className="relative">
                   <div className="mb-6 text-sm font-semibold uppercase tracking-widest text-slate-400">
-                    Ready to start?
+                    Your fluency path starts here
                   </div>
 
                   <button
@@ -403,7 +409,7 @@ export default function LevelCheck() {
                     }}
                     className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-8 py-5 text-xl font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
                   >
-                    <span>Start Level Test</span>
+                    <span>Find My English Level</span>
                     <svg
                       className="h-6 w-6 transition-transform group-hover:translate-x-2"
                       fill="none"
@@ -422,11 +428,11 @@ export default function LevelCheck() {
                   <div className="mt-8 flex items-center justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-                      10 Questions
+                      10 Quick Questions
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      Instant Result
+                      Instant Level Result
                     </div>
                   </div>
                 </div>
@@ -441,9 +447,13 @@ export default function LevelCheck() {
               <div className="mb-12">
                 <div className="flex justify-between items-end mb-3">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-violet-500 uppercase tracking-[0.2em] mb-1">
-                      Assessment in Progress
-                    </span>
+                    <div className="text-xs font-bold uppercase tracking-[0.35em] text-violet-500">
+                      Finding Your Level
+                    </div>
+
+                    <div className="mt-1 text-sm font-medium text-slate-400">
+                      உங்கள் English level-ஐ கண்டறிகிறோம்
+                    </div>
                     <h2 className="text-xl font-extrabold text-slate-900">
                       Question {idx + 1}{" "}
                       <span className="text-slate-400 font-medium">
