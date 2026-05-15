@@ -608,6 +608,7 @@ export default function LevelCheck() {
 
               {/* Shareable Result Card */}
               {mode === "result" && (
+      <>
                 <div className="py-6 text-center">
                   {(() => {
                     const track = normalizeTrack(
@@ -726,6 +727,7 @@ export default function LevelCheck() {
                   FJ-ENGINE V1.0
                 </span>
               </div>
+          </>
             </div>
           )}
         </div>
