@@ -879,7 +879,7 @@ export const lessonMeta = {
       outcome:
         "You can give a stronger and more complete personal introduction.",
       tamilOutcome:
-        "நீங்கள் வலிமையான மற்றும் முழுமையான சுய அறிமுகம் கொடுக்க முடியும்.",
+        "நீங்கள் வலி��� ���ையான மற்றும் முழுமையான சுய அறிமுகம் கொடுக்க முடியும்.",
       patterns: [
         "I’m currently...",
         "I have experience in...",
@@ -1062,6 +1062,923 @@ export const lessonMeta = {
         "நீங்கள் காலை முதல் மாலை வரை அலுவலக உரையாடல்களை நடத்த முடியும்.",
       patterns: ["Any update on...?", "I’m working on...", "Let’s divide..."],
     },
-    
+    21: {
+      title: "Ask Better Follow-Up Questions",
+      outcome:
+        "You can continue conversations with natural follow-up questions.",
+      tamilOutcome:
+        "நீங்கள் இயல்பான follow-up கேள்விகளால் உரையாடலை தொடர முடியும்.",
+      patterns: [
+        "What happened next?",
+        "How did you feel?",
+        "What did you do then?",
+      ],
+    },
+    22: {
+      title: "Ask for Clarification Professionally",
+      outcome: "You can ask someone to explain clearly when you feel confused.",
+      tamilOutcome: "குழப்பமாக இருக்கும் போது தெளிவாக விளக்கச் சொல்ல முடியும்.",
+      patterns: [
+        "Could you clarify that?",
+        "What do you mean by...?",
+        "Can you explain that again?",
+      ],
+    },
+    23: {
+      title: "Ask Someone to Repeat or Slow Down",
+      outcome: "You can handle fast English by asking politely.",
+      tamilOutcome: "வேகமான ஆங்கிலத்தை மரியாதையாக கேட்டு சமாளிக்க முடியும்.",
+      patterns: [
+        "Could you repeat that?",
+        "Could you say that again?",
+        "Could you speak slowly?",
+      ],
+    },
+    24: {
+      title: "Confirm Your Understanding",
+      outcome: "You can confirm meaning and avoid misunderstandings.",
+      tamilOutcome:
+        "நீங்கள் அர்த்தத்தை உறுதி செய்து தவறான புரிதலை தவிர்க்க முடியும்.",
+      patterns: ["So you mean...", "Just to confirm...", "Do you mean...?"],
+    },
+    25: {
+      title: "Check Important Details",
+      outcome:
+        "You can ask for exact details like time, quantity, and deadline.",
+      tamilOutcome:
+        "நீங்கள் நேரம், அளவு, கடைசி தேதி போன்ற விவரங்களை தெளிவாக கேட்க முடியும்.",
+      patterns: ["When exactly?", "How many...?", "By when...?"],
+    },
+    26: {
+      title: "Ask Politely With Indirect Questions",
+      outcome: "You can ask questions in a softer and more professional way.",
+      tamilOutcome:
+        "நீங்கள் கேள்விகளை மென்மையாகவும் தொழில்முறையாகவும் கேட்க முடியும்.",
+      patterns: [
+        "Could you tell me where...?",
+        "Do you know if...?",
+        "Can you let me know...?",
+      ],
+    },
+    27: {
+      title: "Sound Conversational With Question Tags",
+      outcome:
+        "You can make your speech sound more natural and conversational.",
+      tamilOutcome: "நீங்கள் உங்கள் பேச்சை இன்னும் இயல்பாக மாற்ற முடியும்.",
+      patterns: ["Isn’t it?", "Don’t you?", "Right?"],
+    },
+    28: {
+      title: "Respond Without Freezing",
+      outcome: "You can buy thinking time and respond smoothly.",
+      tamilOutcome:
+        "நீங்கள் யோசிக்க நேரம் எடுத்து தடுமாறாமல் பதில் சொல்ல முடியும்.",
+      patterns: [
+        "Let me think...",
+        "That’s a good question.",
+        "Give me a second.",
+      ],
+    },
+    29: {
+      title: "Keep the Conversation Going",
+      outcome: "You can extend conversations without awkward silence.",
+      tamilOutcome: "நீங்கள் அமைதி ஏற்படாமல் உரையாடலை தொடர முடியும்.",
+      patterns: ["That reminds me...", "Speaking of...", "By the way..."],
+    },
+    30: {
+      title: "Handle a 5-Minute Q&A Conversation",
+      outcome: "You can ask, answer, clarify, and follow up in a conversation.",
+      tamilOutcome:
+        "நீங்கள் கேட்டு, பதில் சொல்லி, தெளிவுபடுத்தி, follow-up செய்ய முடியும்.",
+      patterns: [
+        "Just to confirm...",
+        "Could you clarify...?",
+        "What happened next?",
+      ],
+    },
+    31: {
+      title: "Talk About Routines and Facts",
+      outcome: "You can speak about daily habits and general truths clearly.",
+      tamilOutcome:
+        "நீங்கள் தினசரி பழக்கங்கள் மற்றும் பொதுவான உண்மைகள் பற்றி தெளிவாக பேச முடியும்.",
+      patterns: ["I usually...", "I always...", "Every day, I..."],
+    },
+    32: {
+      title: "Talk About Current Actions",
+      outcome: "You can describe what is happening now.",
+      tamilOutcome: "இப்போது என்ன நடக்கிறது என்பதை நீங்கள் விவரிக்க முடியும்.",
+      patterns: [
+        "I am currently...",
+        "At the moment, I’m...",
+        "We are working on...",
+      ],
+    },
+    33: {
+      title: "Use Daily and Now Correctly",
+      outcome:
+        "You can avoid common mistakes between routine and current action.",
+      tamilOutcome:
+        "நீங்கள் வழக்கம் மற்றும் இப்போதைய செயலை குழப்பாமல் பேச முடியும்.",
+      patterns: ["I work every day.", "I am working now.", "Usually, I..."],
+    },
+    34: {
+      title: "Talk About Completed Past Actions",
+      outcome: "You can explain what happened yesterday or before.",
+      tamilOutcome: "நேற்று அல்லது முன்பு நடந்ததை நீங்கள் விளக்க முடியும்.",
+      patterns: ["Yesterday, I...", "I finished...", "I went to..."],
+    },
+    35: {
+      title: "Describe What Was Happening",
+      outcome: "You can describe background actions in the past.",
+      tamilOutcome:
+        "கடந்த காலத்தில் நடந்து கொண்டிருந்த செயல்களை நீங்கள் விவரிக்க முடியும்.",
+      patterns: [
+        "I was working...",
+        "We were discussing...",
+        "It was happening...",
+      ],
+    },
+    36: {
+      title: "Talk About Experience and Results",
+      outcome: "You can speak about life experience and completed results.",
+      tamilOutcome:
+        "நீங்கள் அனுபவம் மற்றும் முடிந்த செயல்களின் விளைவு பற்றி பேச முடியும்.",
+      patterns: [
+        "I have worked...",
+        "I have completed...",
+        "I have already...",
+      ],
+    },
+    37: {
+      title: "Talk About Duration With Since and For",
+      outcome: "You can explain how long something has been continuing.",
+      tamilOutcome:
+        "ஒரு செயல் எவ்வளவு காலமாக தொடர்கிறது என்று நீங்கள் விளக்க முடியும்.",
+      patterns: [
+        "I have been working...",
+        "Since 2020...",
+        "For three years...",
+      ],
+    },
+    38: {
+      title: "Explain Earlier Past Actions",
+      outcome: "You can explain what happened before another past action.",
+      tamilOutcome:
+        "கடந்த காலத்தில் இன்னொரு செயலுக்கு முன் நடந்ததை நீங்கள் விளக்க முடியும்.",
+      patterns: [
+        "I had finished...",
+        "Before that, I had...",
+        "By then, we had...",
+      ],
+    },
+    39: {
+      title: "Talk About the Future Clearly",
+      outcome: "You can speak about plans, predictions, and possibilities.",
+      tamilOutcome:
+        "நீங்கள் திட்டங்கள், கணிப்புகள், வாய்ப்புகள் பற்றி தெளிவாக பேச முடியும்.",
+      patterns: ["I’m going to...", "I will...", "I might..."],
+    },
+    40: {
+      title: "Switch Tenses Without Confusion",
+      outcome:
+        "You can talk about past, present, future, and experience clearly.",
+      tamilOutcome:
+        "நீங்கள் கடந்த காலம், நிகழ்காலம், எதிர்காலம், அனுபவம் பற்றி குழப்பமின்றி பேச முடியும்.",
+      patterns: ["I usually...", "I have already...", "I’m going to..."],
+    },
+    41: {
+      title: "Give a Strong Interview Intro",
+      outcome: "You can answer “Tell me about yourself” with confidence.",
+      tamilOutcome:
+        "நீங்கள் நேர்காணலில் உங்களை நம்பிக்கையுடன் அறிமுகப்படுத்த முடியும்.",
+      patterns: [
+        "I’m currently...",
+        "I have experience in...",
+        "My key strengths are...",
+      ],
+    },
+    42: {
+      title: "Explain Why You Want the Job",
+      outcome: "You can explain your interest in a role clearly.",
+      tamilOutcome:
+        "நீங்கள் ஒரு வேலைக்கு ஏன் ஆர்வமாக இருக்கிறீர்கள் என்று தெளிவாக சொல்ல முடியும்.",
+      patterns: [
+        "I’m interested in this role because...",
+        "This opportunity matches...",
+        "I’m excited about...",
+      ],
+    },
+    43: {
+      title: "Answer Strength Questions With Impact",
+      outcome: "You can talk about your strengths with examples.",
+      tamilOutcome: "நீங்கள் உங்கள் பலங்களை உதாரணங்களுடன் சொல்ல முடியும்.",
+      patterns: [
+        "One of my strengths is...",
+        "For example...",
+        "This helped me...",
+      ],
+    },
+    44: {
+      title: "Handle Weakness Questions Smartly",
+      outcome: "You can answer weakness questions honestly and professionally.",
+      tamilOutcome:
+        "நீங்கள் பலவீனம் பற்றிய கேள்விகளுக்கு நேர்மையாகவும் தொழில்முறையாகவும் பதில் சொல்ல முடியும்.",
+      patterns: [
+        "I’m working on...",
+        "I’ve improved by...",
+        "I’m trying to...",
+      ],
+    },
+    45: {
+      title: "Tell a Professional Challenge Story",
+      outcome: "You can explain a challenge using a clear story structure.",
+      tamilOutcome: "நீங்கள் ஒரு சவாலை தெளிவான கதை அமைப்பில் விளக்க முடியும்.",
+      patterns: [
+        "The situation was...",
+        "I took action by...",
+        "The result was...",
+      ],
+    },
+    46: {
+      title: "Explain Your Work History",
+      outcome: "You can describe your past responsibilities and experience.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் முந்தைய பொறுப்புகள் மற்றும் அனுபவத்தை விளக்க முடியும்.",
+      patterns: [
+        "I have handled...",
+        "I was responsible for...",
+        "I worked on...",
+      ],
+    },
+    47: {
+      title: "Talk About Career Ambition",
+      outcome: "You can explain your five-year career goals naturally.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் ஐந்து ஆண்டு தொழில் இலக்குகளை இயல்பாக விளக்க முடியும்.",
+      patterns: [
+        "In five years...",
+        "I see myself...",
+        "I want to grow into...",
+      ],
+    },
+    48: {
+      title: "Discuss Salary Politely",
+      outcome: "You can talk about salary expectations in a professional way.",
+      tamilOutcome: "நீங்கள் சம்பள எதிர்பார்ப்பை தொழில்முறையாக பேச முடியும்.",
+      patterns: [
+        "I was expecting...",
+        "Based on my experience...",
+        "I’m open to discussing...",
+      ],
+    },
+    49: {
+      title: "Ask Smart Interview Questions",
+      outcome: "You can ask useful questions at the end of an interview.",
+      tamilOutcome:
+        "நீங்கள் நேர்காணல் முடிவில் பயனுள்ள கேள்விகள் கேட்க முடியும்.",
+      patterns: [
+        "I’d like to know...",
+        "Could you tell me more about...?",
+        "What are the next steps?",
+      ],
+    },
+    50: {
+      title: "Complete a Mock Interview",
+      outcome: "You can answer common interview questions confidently.",
+      tamilOutcome:
+        "நீங்கள் பொதுவான நேர்காணல் கேள்விகளுக்கு நம்பிக்கையுடன் பதில் சொல்ல முடியும்.",
+      patterns: [
+        "I’m currently...",
+        "One of my strengths is...",
+        "I’d like to know...",
+      ],
+    },
+    51: {
+      title: "Start a Meeting Confidently",
+      outcome: "You can open a meeting and set the tone clearly.",
+      tamilOutcome: "நீங்கள் கூட்டத்தை நம்பிக்கையுடன் தொடங்க முடியும்.",
+      patterns: [
+        "Shall we get started?",
+        "Let’s begin with...",
+        "Today, we’ll discuss...",
+      ],
+    },
+    52: {
+      title: "Share Quick Meeting Updates",
+      outcome: "You can give short and clear updates in meetings.",
+      tamilOutcome:
+        "நீங்கள் கூட்டத்தில் சுருக்கமாகவும் தெளிவாகவும் அப்டேட் கொடுக்க முடியும்.",
+      patterns: [
+        "Here’s a quick update...",
+        "I’ve completed...",
+        "I’m currently working on...",
+      ],
+    },
+    53: {
+      title: "Agree and Add to Ideas",
+      outcome: "You can agree and build on someone’s idea naturally.",
+      tamilOutcome:
+        "நீங்கள் ஒருவரின் யோசனையை ஏற்று அதில் மேலும் சேர்த்து பேச முடியும்.",
+      patterns: [
+        "I agree with...",
+        "Building on that...",
+        "That’s a good point...",
+      ],
+    },
+    54: {
+      title: "Disagree Respectfully",
+      outcome: "You can share a different opinion without sounding rude.",
+      tamilOutcome: "நீங்கள் மரியாதையாக வேறுபட்ட கருத்தை சொல்ல முடியும்.",
+      patterns: [
+        "I see your point, however...",
+        "I understand, but...",
+        "Maybe we can consider...",
+      ],
+    },
+    55: {
+      title: "Interrupt Politely in Discussions",
+      outcome: "You can enter a discussion politely and confidently.",
+      tamilOutcome: "நீங்கள் உரையாடலில் மரியாதையாக இடையில் பேச முடியும்.",
+      patterns: [
+        "Could I just add something?",
+        "May I jump in?",
+        "Can I share one point?",
+      ],
+    },
+    56: {
+      title: "Include Others in a Meeting",
+      outcome:
+        "You can ask for everyone’s opinion and encourage participation.",
+      tamilOutcome:
+        "நீங்கள் அனைவரின் கருத்தையும் கேட்டு கலந்துரையாடலை ஊக்குவிக்க முடியும்.",
+      patterns: [
+        "What does everyone think?",
+        "Any thoughts on this?",
+        "Would you like to add...?",
+      ],
+    },
+    57: {
+      title: "Summarise a Discussion Clearly",
+      outcome: "You can recap key points at the end of a discussion.",
+      tamilOutcome:
+        "நீங்கள் கலந்துரையாடலின் முக்கிய அம்சங்களை தெளிவாக சுருக்க முடியும்.",
+      patterns: ["To summarise...", "The key points are...", "We agreed to..."],
+    },
+    58: {
+      title: "Present an Idea Clearly",
+      outcome: "You can structure a short presentation with a clear flow.",
+      tamilOutcome:
+        "நீங்கள் ஒரு சிறிய விளக்க உரையை தெளிவான அமைப்பில் வழங்க முடியும்.",
+      patterns: [
+        "First, I’ll explain...",
+        "The main point is...",
+        "To conclude...",
+      ],
+    },
+    59: {
+      title: "Handle Q&A Confidently",
+      outcome: "You can respond to questions during a presentation.",
+      tamilOutcome:
+        "நீங்கள் விளக்க உரையின் போது கேள்விகளுக்கு நம்பிக்கையுடன் பதில் சொல்ல முடியும்.",
+      patterns: [
+        "That’s a great question.",
+        "Let me explain...",
+        "To answer that...",
+      ],
+    },
+    60: {
+      title: "Present and Respond",
+      outcome: "You can give a short presentation and handle basic Q&A.",
+      tamilOutcome:
+        "நீங்கள் சிறிய விளக்க உரை வழங்கி கேள்விகளுக்கு பதில் சொல்ல முடியும்.",
+      patterns: [
+        "First, I’ll explain...",
+        "To summarise...",
+        "That’s a great question.",
+      ],
+    },
+    61: {
+      title: "Start Emails Professionally",
+      outcome: "You can open professional emails in a warm and clear way.",
+      tamilOutcome: "நீங்கள் தொழில்முறை மின்னஞ்சலை மரியாதையாக தொடங்க முடியும்.",
+      patterns: [
+        "I hope you’re doing well.",
+        "I’m writing to...",
+        "Hope this finds you well.",
+      ],
+    },
+    62: {
+      title: "Write Clear Email Subject Lines",
+      outcome:
+        "You can write useful subject lines that show the purpose clearly.",
+      tamilOutcome:
+        "நீங்கள் நோக்கம் தெளிவாக தெரியும் subject lines எழுத முடியும்.",
+      patterns: ["Update on...", "Request for...", "Follow-up on..."],
+    },
+    63: {
+      title: "Make Requests by Email",
+      outcome: "You can request information or action clearly by email.",
+      tamilOutcome:
+        "நீங்கள் மின்னஞ்சலில் தகவல் அல்லது செயலை தெளிவாக கேட்க முடியும்.",
+      patterns: [
+        "Could you please...?",
+        "Would it be possible to...?",
+        "Please let me know...",
+      ],
+    },
+    64: {
+      title: "Follow Up Politely by Email",
+      outcome: "You can follow up without sounding impatient or rude.",
+      tamilOutcome:
+        "நீங்கள் அவசரப்படுத்துவது போல இல்லாமல் மரியாதையாக follow-up செய்ய முடியும்.",
+      patterns: [
+        "Just following up...",
+        "Gentle reminder...",
+        "When you get a chance...",
+      ],
+    },
+    65: {
+      title: "Decline Requests Professionally",
+      outcome: "You can say no in emails politely and professionally.",
+      tamilOutcome:
+        "நீங்கள் மின்னஞ்சலில் மரியாதையாக இல்லை என்று சொல்ல முடியும்.",
+      patterns: [
+        "Unfortunately...",
+        "I’m afraid we can’t...",
+        "At this time...",
+      ],
+    },
+    66: {
+      title: "Write Professional Chat Messages",
+      outcome: "You can write short and clear WhatsApp or Slack messages.",
+      tamilOutcome:
+        "நீங்கள் WhatsApp அல்லது Slack-ல் சுருக்கமான தெளிவான செய்திகளை எழுத முடியும்.",
+      patterns: [
+        "Quick update...",
+        "Can you please...?",
+        "Thanks for the update.",
+      ],
+    },
+    67: {
+      title: "Write Meeting Summaries",
+      outcome: "You can send clear recaps with action items after meetings.",
+      tamilOutcome:
+        "நீங்கள் கூட்டத்திற்குப் பிறகு action items உடன் தெளிவான சுருக்கம் அனுப்ப முடியும்.",
+      patterns: [
+        "Here’s a quick recap...",
+        "Action items are...",
+        "Next steps are...",
+      ],
+    },
+    68: {
+      title: "Handle Professional Phone Calls",
+      outcome: "You can open and close work calls politely.",
+      tamilOutcome:
+        "நீங்கள் வேலை தொடர்பான அழைப்புகளை மரியாதையாக தொடங்கி முடிக்க முடியும்.",
+      patterns: ["May I speak to...?", "This is...", "Thanks for your time."],
+    },
+    69: {
+      title: "Handle Online Meetings",
+      outcome: "You can manage common video meeting situations in English.",
+      tamilOutcome:
+        "நீங்கள் ஆன்லைன் கூட்டங்களில் பொதுவான சூழ்நிலைகளை ஆங்கிலத்தில் சமாளிக்க முடியும்.",
+      patterns: [
+        "Can you hear me?",
+        "I’ll share my screen.",
+        "You’re on mute.",
+      ],
+    },
+    70: {
+      title: "Communicate Across Channels",
+      outcome: "You can handle email, chat, calls, and video meetings clearly.",
+      tamilOutcome:
+        "நீங்கள் email, chat, call, video meeting-ல் தெளிவாக தொடர்பு கொள்ள முடியும்.",
+      patterns: ["Could you please...?", "Quick update...", "Can you hear me?"],
+    },
+    71: {
+      title: "Express Basic Opinions",
+      outcome: "You can share your opinion clearly in simple English.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் கருத்தை எளிய ஆங்கிலத்தில் தெளிவாக சொல்ல முடியும்.",
+      patterns: ["I think...", "I believe...", "In my opinion..."],
+    },
+    72: {
+      title: "Share Mature Viewpoints",
+      outcome: "You can express your viewpoint in a more mature way.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் பார்வையை இன்னும் முதிர்ச்சியாக சொல்ல முடியும்.",
+      patterns: [
+        "From my perspective...",
+        "The way I see it...",
+        "In my view...",
+      ],
+    },
+    73: {
+      title: "Support Your Opinion With Reasons",
+      outcome: "You can explain why you feel or think something.",
+      tamilOutcome:
+        "நீங்கள் ஏன் அப்படி நினைக்கிறீர்கள் என்பதை காரணத்துடன் விளக்க முடியும்.",
+      patterns: ["Because...", "Since...", "The reason is..."],
+    },
+    74: {
+      title: "Make Opinions Clearer With Examples",
+      outcome:
+        "You can use examples to make your opinion easier to understand.",
+      tamilOutcome:
+        "நீங்கள் உதாரணங்களால் உங்கள் கருத்தை தெளிவாக விளக்க முடியும்.",
+      patterns: ["For example...", "For instance...", "A good example is..."],
+    },
+    75: {
+      title: "Agree Naturally",
+      outcome: "You can agree strongly or softly in a natural way.",
+      tamilOutcome:
+        "நீங்கள் இயல்பாக வலுவாகவும் மென்மையாகவும் சம்மதிக்க முடியும்.",
+      patterns: ["Exactly.", "I completely agree.", "I agree to some extent."],
+    },
+    76: {
+      title: "Disagree Without Offending",
+      outcome: "You can disagree politely and respectfully.",
+      tamilOutcome:
+        "நீங்கள் மரியாதையாகவும் யாரையும் புண்படுத்தாமல் வேறுபட்ட கருத்தை சொல்ல முடியும்.",
+      patterns: [
+        "I see your point, but...",
+        "I understand, however...",
+        "I’m not sure about that.",
+      ],
+    },
+    77: {
+      title: "Discuss Both Sides",
+      outcome: "You can compare two sides of an argument clearly.",
+      tamilOutcome:
+        "நீங்கள் ஒரு விஷயத்தின் இரு பக்கங்களையும் தெளிவாக விவாதிக்க முடியும்.",
+      patterns: [
+        "On the other hand...",
+        "Having said that...",
+        "Another point is...",
+      ],
+    },
+    78: {
+      title: "Give Nuanced Opinions",
+      outcome:
+        "You can avoid black-and-white answers and speak more thoughtfully.",
+      tamilOutcome:
+        "நீங்கள் ஒரே மாதிரி பதில்கள் இல்லாமல் சிந்தித்து கருத்து சொல்ல முடியும்.",
+      patterns: ["It depends.", "In some cases...", "It depends on..."],
+    },
+    79: {
+      title: "Discuss Possibilities With If",
+      outcome: "You can talk about possible results using simple conditionals.",
+      tamilOutcome:
+        "நீங்கள் if பயன்படுத்தி சாத்தியமான முடிவுகளைப் பற்றி பேச முடியும்.",
+      patterns: ["If we do this...", "If this happens...", "We can..."],
+    },
+    80: {
+      title: "Give a 3-Point Opinion Talk",
+      outcome: "You can give an opinion with reasons and examples.",
+      tamilOutcome:
+        "நீங்கள் காரணங்கள் மற்றும் உதாரணங்களுடன் உங்கள் கருத்தை சொல்ல முடியும்.",
+      patterns: ["In my opinion...", "The reason is...", "For example..."],
+    },
+    81: {
+      title: "Understand Good Story Flow",
+      outcome:
+        "You can organize a story with a clear beginning, middle, and end.",
+      tamilOutcome:
+        "நீங்கள் கதையை தொடக்கம், நடுப்பு, முடிவு என தெளிவாக அமைக்க முடியும்.",
+      patterns: ["At the beginning...", "In the middle...", "In the end..."],
+    },
+    82: {
+      title: "Start a Story Naturally",
+      outcome: "You can begin a story in a natural and interesting way.",
+      tamilOutcome: "நீங்கள் கதையை இயல்பாகவும் ஆர்வமாகவும் தொடங்க முடியும்.",
+      patterns: [
+        "So what happened was...",
+        "Let me tell you what happened.",
+        "It all started when...",
+      ],
+    },
+    83: {
+      title: "Set the Scene Clearly",
+      outcome: "You can give context before telling the main event.",
+      tamilOutcome:
+        "முக்கிய நிகழ்வுக்கு முன் சூழ்நிலையை நீங்கள் தெளிவாக சொல்ல முடியும்.",
+      patterns: [
+        "It was a Monday morning...",
+        "I was at...",
+        "We were getting ready to...",
+      ],
+    },
+    84: {
+      title: "Make Stories More Engaging",
+      outcome: "You can build tension and make your story more interesting.",
+      tamilOutcome: "நீங்கள் கதையை இன்னும் சுவாரஸ்யமாக சொல்ல முடியும்.",
+      patterns: ["Suddenly...", "Out of nowhere...", "At that moment..."],
+    },
+    85: {
+      title: "Explain Past Sequence in Stories",
+      outcome: "You can show what happened before another past event.",
+      tamilOutcome:
+        "கடந்த நிகழ்வுக்கு முன் நடந்ததை நீங்கள் கதையில் விளக்க முடியும்.",
+      patterns: ["I had already...", "Before that, I had...", "By the time..."],
+    },
+    86: {
+      title: "Keep Your Story Flowing",
+      outcome: "You can connect story events smoothly using time connectors.",
+      tamilOutcome:
+        "நீங்கள் நேர இணைப்புச் சொற்களால் கதையை தொடர்ச்சியாக சொல்ல முடியும்.",
+      patterns: ["Then...", "After that...", "Meanwhile..."],
+    },
+    87: {
+      title: "Add Emotion and Personality",
+      outcome: "You can make stories memorable by adding feelings.",
+      tamilOutcome:
+        "நீங்கள் உணர்வுகளை சேர்த்து கதையை நினைவில் நிற்கும் வகையில் சொல்ல முடியும்.",
+      patterns: [
+        "I was shocked.",
+        "I felt relieved.",
+        "I couldn’t believe it.",
+      ],
+    },
+    88: {
+      title: "Report What People Said",
+      outcome: "You can include what others said in your story.",
+      tamilOutcome:
+        "நீங்கள் கதையில் மற்றவர்கள் சொன்னதை சேர்த்து சொல்ல முடியும்.",
+      patterns: ["He said...", "She told me...", "They asked me..."],
+    },
+    89: {
+      title: "Tell a Professional Challenge Story",
+      outcome: "You can tell a work challenge story with structure and impact.",
+      tamilOutcome:
+        "நீங்கள் வேலை சவால் கதையை அமைப்புடனும் தாக்கத்துடனும் சொல்ல முடியும்.",
+      patterns: [
+        "The situation was...",
+        "I took action by...",
+        "The result was...",
+      ],
+    },
+    90: {
+      title: "Tell a Full 3-Minute Story",
+      outcome: "You can tell a complete story with flow, emotion, and clarity.",
+      tamilOutcome:
+        "நீங்கள் ஓட்டம், உணர்வு, தெளிவுடன் முழு கதையை சொல்ல முடியும்.",
+      patterns: ["It all started when...", "Suddenly...", "In the end..."],
+    },
+    91: {
+      title: "Explain a Problem Clearly",
+      outcome: "You can identify and explain a problem in a clear way.",
+      tamilOutcome:
+        "நீங்கள் ஒரு பிரச்சனையை தெளிவாக அடையாளம் கண்டு விளக்க முடியும்.",
+      patterns: ["The issue is...", "The problem is...", "We are facing..."],
+    },
+    92: {
+      title: "Explain the Cause",
+      outcome: "You can explain why a problem happened.",
+      tamilOutcome: "ஒரு பிரச்சனை ஏன் நடந்தது என்று நீங்கள் விளக்க முடியும்.",
+      patterns: [
+        "It happened because...",
+        "The reason is...",
+        "This was caused by...",
+      ],
+    },
+    93: {
+      title: "Offer Practical Solutions",
+      outcome: "You can suggest solutions in a professional way.",
+      tamilOutcome: "நீங்கள் தொழில்முறையாக தீர்வுகளை பரிந்துரைக்க முடியும்.",
+      patterns: ["I suggest...", "What if we...?", "We could try..."],
+    },
+    94: {
+      title: "Ask for More Time",
+      outcome: "You can request a deadline extension politely.",
+      tamilOutcome: "நீங்கள் காலக்கெடு நீட்டிப்பை மரியாதையாக கேட்க முடியும்.",
+      patterns: [
+        "Could we extend the deadline?",
+        "Can we get more time?",
+        "Would it be possible to...?",
+      ],
+    },
+    95: {
+      title: "Set Realistic Expectations",
+      outcome: "You can explain limits and timelines honestly.",
+      tamilOutcome:
+        "நீங்கள் வரம்புகள் மற்றும் காலஅளவை நேர்மையாக விளக்க முடியும்.",
+      patterns: [
+        "I want to be transparent...",
+        "Realistically...",
+        "To set expectations...",
+      ],
+    },
+    96: {
+      title: "Handle Complaints Calmly",
+      outcome: "You can respond to complaints in a calm and professional way.",
+      tamilOutcome:
+        "நீங்கள் புகார்களுக்கு அமைதியாகவும் தொழில்முறையாகவும் பதில் சொல்ல முடியும்.",
+      patterns: [
+        "I understand your concern.",
+        "I’m sorry about that.",
+        "Let me check this...",
+      ],
+    },
+    97: {
+      title: "Push Back Politely",
+      outcome: "You can disagree constructively without creating tension.",
+      tamilOutcome:
+        "நீங்கள் பதற்றம் இல்லாமல் கட்டுமானமாக வேறுபட்ட கருத்தை சொல்ல முடியும்.",
+      patterns: [
+        "Could we look at this differently?",
+        "I see your point, but...",
+        "Another option is...",
+      ],
+    },
+    98: {
+      title: "Deliver Bad News Professionally",
+      outcome: "You can share difficult news with care and clarity.",
+      tamilOutcome:
+        "நீங்கள் கடினமான செய்தியை கவனமாகவும் தெளிவாகவும் சொல்ல முடியும்.",
+      patterns: [
+        "I’m afraid there’s an issue.",
+        "Unfortunately...",
+        "I wanted to let you know...",
+      ],
+    },
+    99: {
+      title: "Explain Issues Professionally",
+      outcome: "You can use passive voice to explain problems professionally.",
+      tamilOutcome:
+        "நீங்கள் passive voice பயன்படுத்தி பிரச்சனைகளை தொழில்முறையாக விளக்க முடியும்.",
+      patterns: [
+        "It was delayed.",
+        "It has been fixed.",
+        "It is being checked.",
+      ],
+    },
+    100: {
+      title: "Solve Problems Through Roleplay",
+      outcome: "You can explain an issue, give reasons, and offer solutions.",
+      tamilOutcome:
+        "நீங்கள் பிரச்சனையை விளக்கி, காரணம் சொல்லி, தீர்வு வழங்க முடியும்.",
+      patterns: ["The issue is...", "It happened because...", "I suggest..."],
+    },
+    101: {
+      title: "Sound Natural With Contractions",
+      outcome: "You can use common short forms in daily speaking.",
+      tamilOutcome:
+        "நீங்கள் தினசரி பேச்சில் பொதுவான சுருக்க வடிவங்களை பயன்படுத்த முடியும்.",
+      patterns: ["I’m...", "I’ve...", "I’ll..."],
+    },
+    102: {
+      title: "Speak Smoothly With Natural Fillers",
+      outcome: "You can use simple fillers to speak more smoothly.",
+      tamilOutcome: "நீங்கள் எளிய fillers பயன்படுத்தி மென்மையாக பேச முடியும்.",
+      patterns: ["Well...", "So...", "Actually..."],
+    },
+    103: {
+      title: "Think Out Loud Without Freezing",
+      outcome: "You can avoid silence while thinking during a conversation.",
+      tamilOutcome:
+        "நீங்கள் யோசிக்கும் போது அமைதியாக நின்றுவிடாமல் பேச முடியும்.",
+      patterns: [
+        "Let me think...",
+        "How do I put this?",
+        "Give me a second...",
+      ],
+    },
+    104: {
+      title: "Restart and Self-Correct Smoothly",
+      outcome: "You can correct your sentence naturally while speaking.",
+      tamilOutcome:
+        "நீங்கள் பேசும்போது உங்கள் வாக்கியத்தை இயல்பாக திருத்த முடியும்.",
+      patterns: ["What I mean is...", "Let me rephrase...", "I mean..."],
+    },
+    105: {
+      title: "Sound Less Harsh",
+      outcome: "You can soften your speech and sound more polite.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் பேச்சை மென்மையாகவும் மரியாதையாகவும் மாற்ற முடியும்.",
+      patterns: ["Kind of...", "Sort of...", "A bit..."],
+    },
+    106: {
+      title: "Sound Natural and Polite",
+      outcome: "You can express ideas in a softer and more balanced way.",
+      tamilOutcome:
+        "நீங்கள் கருத்துகளை மென்மையாகவும் சமநிலையுடனும் சொல்ல முடியும்.",
+      patterns: ["To be fair...", "Honestly...", "In a way..."],
+    },
+    107: {
+      title: "React Naturally in Conversations",
+      outcome: "You can respond naturally when someone speaks to you.",
+      tamilOutcome: "யாராவது பேசும்போது நீங்கள் இயல்பாக பதில் சொல்ல முடியும்.",
+      patterns: ["That makes sense.", "Fair enough.", "I see what you mean."],
+    },
+    108: {
+      title: "Understand Common Phrasal Verbs",
+      outcome: "You can use common phrasal verbs in daily work conversations.",
+      tamilOutcome:
+        "நீங்கள் தினசரி வேலை உரையாடலில் பொதுவான phrasal verbs பயன்படுத்த முடியும்.",
+      patterns: ["Get back to...", "Follow up on...", "Look into..."],
+    },
+    109: {
+      title: "Fix Common Indian English Mistakes",
+      outcome: "You can avoid common errors and speak more natural English.",
+      tamilOutcome:
+        "நீங்கள் பொதுவான தவறுகளை தவிர்த்து இயல்பான ஆங்கிலத்தில் பேச முடியும்.",
+      patterns: ["Discuss...", "Reply to...", "Move forward..."],
+    },
+    110: {
+      title: "Speak Without Sounding Robotic",
+      outcome: "You can have a natural 5-minute conversation with better flow.",
+      tamilOutcome:
+        "நீங்கள் நல்ல ஓட்டத்துடன் இயல்பான 5 நிமிட உரையாடல் பேச முடியும்.",
+      patterns: ["Well...", "What I mean is...", "That makes sense."],
+    },
+    111: {
+      title: "Master Your Professional Introduction",
+      outcome:
+        "You can give a polished professional introduction with confidence.",
+      tamilOutcome:
+        "நீங்கள் நம்பிக்கையுடன் தொழில்முறை சுய அறிமுகம் கொடுக்க முடியும்.",
+      patterns: ["I’m currently...", "I’m responsible for...", "My goal is..."],
+    },
+    112: {
+      title: "Handle Daily Office Conversations",
+      outcome: "You can manage common workplace conversations naturally.",
+      tamilOutcome: "நீங்கள் தினசரி அலுவலக உரையாடல்களை இயல்பாக நடத்த முடியும்.",
+      patterns: [
+        "Any update on...?",
+        "I’m working on...",
+        "Could you please...?",
+      ],
+    },
+    113: {
+      title: "Master Tense Switching",
+      outcome:
+        "You can talk about past, present, future, experience, and duration clearly.",
+      tamilOutcome: "நீங்கள் காலங்களை குழப்பமின்றி தெளிவாக பேச முடியும்.",
+      patterns: ["I worked...", "I’m working...", "I’ve been working..."],
+    },
+    114: {
+      title: "Complete an Interview Simulation",
+      outcome: "You can answer key interview questions confidently.",
+      tamilOutcome:
+        "நீங்கள் முக்கிய நேர்காணல் கேள்விகளுக்கு நம்பிக்கையுடன் பதில் சொல்ல முடியும்.",
+      patterns: [
+        "Tell me about yourself.",
+        "One of my strengths is...",
+        "I’m looking for...",
+      ],
+    },
+    115: {
+      title: "Participate in a Meeting",
+      outcome: "You can share updates, opinions, and questions in a meeting.",
+      tamilOutcome:
+        "நீங்கள் கூட்டத்தில் அப்டேட், கருத்து, கேள்விகளை பகிர முடியும்.",
+      patterns: [
+        "Here’s a quick update...",
+        "I agree with...",
+        "Could I add something?",
+      ],
+    },
+    116: {
+      title: "Communicate Across Channels",
+      outcome: "You can handle email, chat, phone calls, and online meetings.",
+      tamilOutcome:
+        "நீங்கள் email, chat, phone call, online meeting-ல் தெளிவாக தொடர்பு கொள்ள முடியும்.",
+      patterns: [
+        "Could you please...?",
+        "Just following up...",
+        "Can you hear me?",
+      ],
+    },
+    117: {
+      title: "Discuss Opinions With Reasons",
+      outcome: "You can discuss a topic with reasons, examples, and balance.",
+      tamilOutcome:
+        "நீங்கள் காரணங்கள், உதாரணங்கள், சமநிலையுடன் ஒரு தலைப்பை விவாதிக்க முடியும்.",
+      patterns: ["In my opinion...", "The reason is...", "For example..."],
+    },
+    118: {
+      title: "Tell a Personal or Professional Story",
+      outcome: "You can tell a clear story with flow, emotion, and structure.",
+      tamilOutcome:
+        "நீங்கள் ஓட்டம், உணர்வு, அமைப்புடன் தெளிவான கதையை சொல்ல முடியும்.",
+      patterns: ["It all started when...", "Suddenly...", "In the end..."],
+    },
+    119: {
+      title: "Solve Problems Through Conversation",
+      outcome: "You can explain an issue and propose a practical solution.",
+      tamilOutcome:
+        "நீங்கள் பிரச்சனையை விளக்கி நடைமுறை தீர்வை முன்மொழிய முடியும்.",
+      patterns: ["The issue is...", "It happened because...", "I suggest..."],
+    },
+    120: {
+      title: "Give a 5-Minute Unscripted Talk",
+      outcome: "You can speak freely and measure your fluency growth.",
+      tamilOutcome:
+        "நீங்கள் சுதந்திரமாக பேசி உங்கள் fluency வளர்ச்சியை மதிப்பிட முடியும்.",
+      patterns: [
+        "I’d like to talk about...",
+        "One important point is...",
+        "To conclude...",
+      ],
+    },
   },
 };
