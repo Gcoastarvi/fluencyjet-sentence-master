@@ -586,7 +586,9 @@ export default function LevelCheck() {
                 )}
               </div>
 
-              {/* Friendly Feedback After Selection */}
+              {/*
+              Friendly Feedback After Selection - temporarily hidden
+
               {QUESTIONS[idx].type !== "reorder" &&
                 answers[QUESTIONS[idx].id] !== undefined &&
                 answers[QUESTIONS[idx].id] !== QUESTIONS[idx].answer && (
@@ -602,6 +604,7 @@ export default function LevelCheck() {
                     </p>
                   </div>
                 )}
+              */}
 
               {/* Compact & Polished Navigation */}
               <div className="mt-8 flex justify-center pt-6 border-t border-slate-100/60">
