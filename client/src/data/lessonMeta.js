@@ -80,18 +80,33 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் வேலை இடத்தில் உங்களுக்கு பிடித்ததை சொல்ல முடியும்.",
       patterns: ["I like...", "I like working...", "I like using..."],
+      video: {
+        provider: "vimeo",
+        id: "1189314375",
+        ratio: "9:16",
+      },
     },
     12: {
       title: "Talk About a Colleague’s Routine",
       outcome: "You can speak about what another person does.",
       tamilOutcome: "நீங்கள் மற்றொருவர் என்ன செய்கிறார் என்று சொல்ல முடியும்.",
       patterns: ["He likes...", "She works...", "He uses..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998492",
+        ratio: "9:16",
+      },
     },
     13: {
       title: "Talk About Food and Drinks",
       outcome: "You can speak about eating, drinking, and office breaks.",
       tamilOutcome: "நீங்கள் உணவு, பானம், அலுவலக இடைவேளை பற்றி பேச முடியும்.",
       patterns: ["I eat...", "I drink...", "I have..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     14: {
       title: "Say What You Don’t Do",
@@ -576,7 +591,7 @@ export const lessonMeta = {
       title: "Manage Time and Appointments in English",
       outcome: "You can manage schedules, time, and appointments in English.",
       tamilOutcome:
-        "நீங்கள் நேரம், அட்டவணை, அப்பாயிண்ட்மெண்ட்களை ஆங்கிலத்தில் நிர்வகிக்க முடியும்.",
+        "நீங்கள் நேரம், அட்டவணை, அப்பாயிண்ட்மெண்  �்களை ஆங்கிலத்தில் நிர்வகிக்க முடியும்.",
       patterns: ["What time...?", "When is...?", "Can I come at...?"],
     },
     81: {
@@ -868,7 +883,7 @@ export const lessonMeta = {
       outcome:
         "You can introduce yourself, speak about work, and handle daily situations.",
       tamilOutcome:
-        "நீங்கள் உங்களை அறிமுகப்படுத்தி, வேலை மற்றும் தினசரி சூழ்நிலைகள் பற்றி பேச முடியும்.",
+        "நீங்கள் உங்களை அறிமுகப்படுத்தி, வேலை மற்றும் தினசரி சூழ்நிலைகள் பற்றி பேச முடியுமfy�.",
       patterns: ["I am...", "I can...", "I need to..."],
     },
   },
@@ -1212,7 +1227,7 @@ export const lessonMeta = {
       title: "Talk About Duration With Since and For",
       outcome: "You can explain how long something has been continuing.",
       tamilOutcome:
-        "ஒரு செயல் எவ்வளவு காலமாக தொடர்கிறது என்று நீங்கள் விளக்க முடியும்.",
+        "ஒரு செயல் எவ்வளவு காலமாக தொடர்கிறது w��ன்று நீங்கள் விளக்க முடியும்.",
       patterns: [
         "I have been working...",
         "Since 2020...",

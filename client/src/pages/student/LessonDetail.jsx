@@ -807,7 +807,7 @@ export default function LessonDetail() {
         },
       );
 
-      // ✅ apiClient returns JSON directly (not axios response)
+      // s(� apiClient returns JSON directly (not axios response)
       const data = res?.data ?? res;
 
       if (!data || data.ok !== true) return false;
@@ -1175,7 +1175,14 @@ export default function LessonDetail() {
   const streak = userProfile?.daily_streak || 0;
 
   // 🎯 DATA NORMALIZATION: Moved here so 'lesson' is guaranteed to be available
-  const videoUrl = lesson?.videoUrl || lesson?.video_url || "";
+  const legacyVideoUrl = lesson?.videoUrl || lesson?.video_url || "";
+  const lessonVideo = meta?.video || teach?.video;
+
+  const videoUrl = lessonVideo?.id
+    ? lessonVideo.provider === "vimeo"
+      ? `https://player.vimeo.com/video/${lessonVideo.id}`
+      : `https://www.youtube-nocookie.com/embed/${lessonVideo.id}`
+    : legacyVideoUrl;
   const description = lesson?.description || lesson?.desc || "";
 
   return (
@@ -1247,22 +1254,21 @@ export default function LessonDetail() {
           </div>
         </section>
 
-        {/* 3. VIDEO GUIDE (Cinematic Placeholder) */}
+        {/* 3. VIDEO GUIDE */}
         <section className="mb-10">
-          <div className="aspect-video w-full rounded-[2.5rem] bg-slate-900 shadow-2xl border-4 border-white overflow-hidden relative group">
-            {videoUrl || teach?.video?.id ? (
-              <iframe
-                className="w-full h-full"
-                src={
-                  videoUrl ||
-                  (teach?.video?.provider === "vimeo"
-                    ? `https://player.vimeo.com/video/${teach.video.id}`
-                    : `https://www.youtube-nocookie.com/embed/${teach.video.id}`)
-                }
-                allowFullScreen
-              />
+          <div className="w-full rounded-[2.5rem] bg-slate-900 shadow-2xl border-4 border-white overflow-hidden relative group">
+            {videoUrl ? (
+              <div className="relative mx-auto aspect-[9/16] max-h-[640px] w-full max-w-sm bg-black">
+                <iframe
+                  className="absolute inset-0 h-full w-full"
+                  src={videoUrl}
+                  title={`${meta?.title || lesson?.title || "Lesson"} video guide`}
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/40">
+              <div className="aspect-video flex flex-col items-center justify-center text-white/40">
                 <span className="text-4xl mb-2">🎬</span>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em]">
                   Video Guide Coming Soon
