@@ -245,12 +245,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்களிடம் உள்ள கருவிகள் மற்றும் வசதிகள் பற்றி சொல்ல முடியும்.",
       patterns: ["I have...", "I have a...", "I have some..."],
+      video: {
+        provider: "vimeo",
+        id: "1193144536",
+        ratio: "9:16",
+      },
     },
     22: {
       title: "Describe What Others Have",
       outcome: "You can say what another person has.",
       tamilOutcome: "நீங்கள் மற்றொருவரிடம் என்ன உள்ளது என்று சொல்ல முடியும்.",
       patterns: ["He has...", "She has...", "It has..."],
+      video: {
+        provider: "vimeo",
+        id: "1193146317",
+        ratio: "9:16",
+      },
     },
     23: {
       title: "Locate Office Items",
@@ -258,6 +268,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் அலுவலக பொருட்கள் எங்கு உள்ளன என்று சொல்ல முடியும்.",
       patterns: ["It is in...", "It is on...", "It is under..."],
+      video: {
+        provider: "vimeo",
+        id: "1193146337",
+        ratio: "9:16",
+      },
     },
     24: {
       title: "Give Simple Location Details",
@@ -265,12 +280,22 @@ export const lessonMeta = {
       tamilOutcome:
         "ஒரு பொருள் எங்கு வைக்கப்பட்டுள்ளது என்று நீங்கள் சொல்ல முடியும்.",
       patterns: ["It is next to...", "It is behind...", "It is near..."],
+      video: {
+        provider: "vimeo",
+        id: "1193146361",
+        ratio: "9:16",
+      },
     },
     25: {
       title: "Refer to Documents and Objects",
       outcome: "You can point to one thing and talk about it.",
       tamilOutcome: "நீங்கள் ஒரு பொருளைக் காட்டி அதைப் பற்றி பேச முடியும்.",
       patterns: ["This is...", "That is...", "This document is..."],
+      video: {
+        provider: "vimeo",
+        id: "1193146412",
+        ratio: "9:16",
+      },
     },
     26: {
       title: "Talk About Files and Products",
@@ -278,24 +303,44 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் அருகில் அல்லது தொலைவில் உள்ள பல பொருட்கள் பற்றி பேச முடியும்.",
       patterns: ["These are...", "Those are...", "These files are..."],
+      video: {
+        provider: "vimeo",
+        id: "1193148681",
+        ratio: "9:16",
+      },
     },
     27: {
       title: "Ask About Ownership",
       outcome: "You can ask who owns something.",
       tamilOutcome: "ஒரு பொருள் யாருடையது என்று நீங்கள் கேட்க முடியும்.",
       patterns: ["Whose is this?", "Whose file is this?", "It is Ram’s..."],
+      video: {
+        provider: "vimeo",
+        id: "1193148751",
+        ratio: "9:16",
+      },
     },
     28: {
       title: "Find Lost Office Items",
       outcome: "You can describe and ask about lost items.",
       tamilOutcome: "நீங்கள் காணாமல் போன பொருட்களை விவரித்து கேட்க முடியும்.",
       patterns: ["I lost...", "It is a...", "Have you seen...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193148812",
+        ratio: "9:16",
+      },
     },
     29: {
       title: "Describe Your Desk or Office Setup",
       outcome: "You can describe your workspace clearly.",
       tamilOutcome: "நீங்கள் உங்கள் வேலை இடத்தை தெளிவாக விவரிக்க முடியும்.",
       patterns: ["On my desk...", "Next to my...", "Behind the..."],
+      video: {
+        provider: "vimeo",
+        id: "1193148874",
+        ratio: "9:16",
+      },
     },
     30: {
       title: "Explain Your Workspace Clearly",
@@ -303,6 +348,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் மேசை, கருவிகள், அலுவலக பொருட்கள் பற்றி தெளிவாக பேச முடியும்.",
       patterns: ["I have...", "It is on...", "These are..."],
+      video: {
+        provider: "vimeo",
+        id: "1193148903",
+        ratio: "9:16",
+      },
     },
     31: {
       title: "Describe Products and Designs",
@@ -311,6 +361,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நிறம் மற்றும் வடிவம் பயன்படுத்தி பொருட்கள், ஆவணங்கள், டிசைன்களை விவரிக்க முடியும்.",
       patterns: ["The red...", "It is round.", "This design is..."],
+      video: {
+        provider: "vimeo",
+        id: "1193156682",
+        ratio: "9:16",
+      },
     },
     32: {
       title: "Talk About People and Relationships",
@@ -318,6 +373,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் குடும்பம் மற்றும் உறவுகள் பற்றி மரியாதையாக பேச முடியும்.",
       patterns: ["My father is...", "My mother is...", "He is my..."],
+      video: {
+        provider: "vimeo",
+        id: "1193157311",
+        ratio: "9:16",
+      },
     },
     33: {
       title: "Describe Size and Quality",
@@ -325,6 +385,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் அளவு, தரம், வணிகத் தேவைகள் பற்றி எளிதாக சொல்ல முடியும்.",
       patterns: ["It is big.", "It is small.", "We need a..."],
+      video: {
+        provider: "vimeo",
+        id: "1193157351",
+        ratio: "9:16",
+      },
     },
     34: {
       title: "Express Work Feelings Professionally",
@@ -332,12 +397,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் வேலை இடத்தில் எப்படி உணர்கிறீர்கள் என்று எளிதாக சொல்ல முடியும்.",
       patterns: ["I am excited.", "I feel tired.", "I am worried about..."],
+      video: {
+        provider: "vimeo",
+        id: "1193157405",
+        ratio: "9:16",
+      },
     },
     35: {
       title: "Describe People Politely",
       outcome: "You can describe a person’s appearance carefully.",
       tamilOutcome: "நீங்கள் ஒருவரின் தோற்றத்தை மரியாதையாக விவரிக்க முடியும்.",
       patterns: ["He has...", "She has...", "He looks..."],
+      video: {
+        provider: "vimeo",
+        id: "1193157467",
+        ratio: "9:16",
+      },
     },
     36: {
       title: "Emphasize Ideas Naturally",
@@ -345,6 +420,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் எளிய வார்த்தைகளால் உங்கள் கருத்துகளை வலிமையாக சொல்ல முடியும்.",
       patterns: ["It is very...", "It is so...", "I am very..."],
+      video: {
+        provider: "vimeo",
+        id: "1193159110",
+        ratio: "9:16",
+      },
     },
     37: {
       title: "Make Professional Small Talk",
@@ -352,6 +432,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் வேலை இடத்தில் எளிய சமூக கேள்விகள் கேட்டு பதில் சொல்ல முடியும்.",
       patterns: ["How are you?", "How is work?", "I am doing well."],
+      video: {
+        provider: "vimeo",
+        id: "1193159151",
+        ratio: "9:16",
+      },
     },
     38: {
       title: "Meet a Colleague or Business Contact",
@@ -359,6 +444,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒரு வேலை தொடர்பை வரவேற்று உங்களை அறிமுகப்படுத்த முடியும்.",
       patterns: ["Nice to meet you.", "This is...", "I work with..."],
+      video: {
+        provider: "vimeo",
+        id: "1193159998",
+        ratio: "9:16",
+      },
     },
     39: {
       title: "Describe an Ideal Team Member",
@@ -366,6 +456,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒரு நல்ல குழு உறுப்பினர் அல்லது வேட்பாளர் பற்றி விவரிக்க முடியும்.",
       patterns: ["He is very...", "She is good at...", "We need someone..."],
+      video: {
+        provider: "vimeo",
+        id: "1193159808",
+        ratio: "9:16",
+      },
     },
     40: {
       title: "Describe People and Situations Clearly",
@@ -373,18 +468,33 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் மனிதர்கள், உணர்வுகள், சூழ்நிலைகளை தெளிவாக விவரிக்க முடியும்.",
       patterns: ["He is...", "I feel...", "It is very..."],
+      video: {
+        provider: "vimeo",
+        id: "1193160095",
+        ratio: "9:16",
+      },
     },
     41: {
       title: "Talk About What You Can Do",
       outcome: "You can speak about your basic abilities.",
       tamilOutcome: "நீங்கள் செய்யக்கூடிய விஷயங்களை எளிதாக சொல்ல முடியும்.",
       patterns: ["I can...", "I can do...", "I can handle..."],
+      video: {
+        provider: "vimeo",
+        id: "1193161740",
+        ratio: "9:16",
+      },
     },
     42: {
       title: "Say What You Cannot Do Yet",
       outcome: "You can say what you cannot do now.",
       tamilOutcome: "நீங்கள் இப்போது செய்ய முடியாததை சொல்ல முடியும்.",
       patterns: ["I can’t...", "I can’t do...", "I can’t handle..."],
+      video: {
+        provider: "vimeo",
+        id: "1193161794",
+        ratio: "9:16",
+      },
     },
     43: {
       title: "Ask for Help Politely at Work",
@@ -395,6 +505,11 @@ export const lessonMeta = {
         "Can you check...?",
         "Can you explain...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193161841",
+        ratio: "9:16",
+      },
     },
     44: {
       title: "Ask for Permission Professionally",
@@ -402,6 +517,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் எளிய தொழில்முறை ஆங்கிலத்தில் அனுமதி கேட்க முடியும்.",
       patterns: ["Can I...?", "Can I use...?", "Can I take...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193161945",
+        ratio: "9:16",
+      },
     },
     45: {
       title: "Talk About Languages and Skills",
@@ -409,6 +529,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் அறிந்த மொழிகள் மற்றும் திறன்கள் பற்றி பேச முடியும்.",
       patterns: ["I can speak...", "I can use...", "I know how to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193161974",
+        ratio: "9:16",
+      },
     },
     46: {
       title: "Describe How Well You Do Something",
@@ -416,6 +541,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒரு செயலை எவ்வளவு நன்றாக செய்கிறீர்கள் என்று சொல்ல முடியும்.",
       patterns: ["I do it well.", "I speak well.", "I don’t do it well."],
+      video: {
+        provider: "vimeo",
+        id: "1193183510",
+        ratio: "9:16",
+      },
     },
     47: {
       title: "Talk About General Facts and Abilities",
@@ -423,6 +553,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் எளிய உண்மைகள் மற்றும் இயல்பான திறன்கள் பற்றி பேச முடியும்.",
       patterns: ["Birds can...", "Fish can...", "People can..."],
+      video: {
+        provider: "vimeo",
+        id: "1193183566",
+        ratio: "9:16",
+      },
     },
     48: {
       title: "Present Your Skills in an Interview",
@@ -430,6 +565,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் வேலை நேர்காணலில் உங்கள் திறன்கள் பற்றி பேச முடியும்.",
       patterns: ["I can...", "I am good at...", "I have experience in..."],
+      video: {
+        provider: "vimeo",
+        id: "1193183647",
+        ratio: "9:16",
+      },
     },
     49: {
       title: "Build Skill Confidence",
@@ -437,6 +577,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் செய்யக்கூடியதும் செய்ய முடியாததும் பற்றி நம்பிக்கையுடன் பேச முடியும்.",
       patterns: ["I can...", "I can’t...", "I want to learn..."],
+      video: {
+        provider: "vimeo",
+        id: "1193183721",
+        ratio: "9:16",
+      },
     },
     50: {
       title: "Speak About Skills and Permission",
@@ -445,12 +590,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் திறன்கள் பற்றி பேசவும், உதவி மற்றும் அனுமதி கேட்கவும் முடியும்.",
       patterns: ["I can...", "Can you...?", "Can I...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193183770",
+        ratio: "9:16",
+      },
     },
     51: {
       title: "Say What You Are Doing Now",
       outcome: "You can talk about actions happening right now.",
       tamilOutcome: "நீங்கள் இப்போது நடக்கும் செயல்கள் பற்றி சொல்ல முடியும்.",
       patterns: ["I am working...", "I am checking...", "I am waiting..."],
+      video: {
+        provider: "vimeo",
+        id: "1193183814",
+        ratio: "9:16",
+      },
     },
     52: {
       title: "Talk About What Others Are Doing",
@@ -462,6 +617,11 @@ export const lessonMeta = {
         "She is talking...",
         "They are checking...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193183982",
+        ratio: "9:16",
+      },
     },
     53: {
       title: "Ask About Current Activities",
@@ -469,6 +629,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் மக்கள் இப்போது என்ன செய்கிறார்கள் என்று கேட்க முடியும்.",
       patterns: ["Are they working?", "Is he coming?", "Is she speaking?"],
+      video: {
+        provider: "vimeo",
+        id: "1193184074",
+        ratio: "9:16",
+      },
     },
     54: {
       title: "Say What Is Not Happening Now",
@@ -476,6 +641,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் அல்லது மற்றவர்கள் இப்போது செய்யாததை சொல்ல முடியும்.",
       patterns: ["I am not...", "We aren’t...", "They aren’t..."],
+      video: {
+        provider: "vimeo",
+        id: "1193184111",
+        ratio: "9:16",
+      },
     },
     55: {
       title: "Talk About Weather and Travel Conditions",
@@ -483,6 +653,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் வானிலை மற்றும் பயண நிலையை எளிதாக விவரிக்க முடியும்.",
       patterns: ["It is raining.", "It is sunny.", "It is very cold."],
+      video: {
+        provider: "vimeo",
+        id: "1193184172",
+        ratio: "9:16",
+      },
     },
     56: {
       title: "Describe What People Are Wearing",
@@ -490,6 +665,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உடைகளை மரியாதையாகவும் தொழில்முறையாகவும் விவரிக்க முடியும்.",
       patterns: ["I am wearing...", "He is wearing...", "She is wearing..."],
+      video: {
+        provider: "vimeo",
+        id: "1193164475",
+        ratio: "9:16",
+      },
     },
     57: {
       title: "Avoid Action and State Verb Mistakes",
@@ -497,6 +677,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் செயல் வினைச்சொற்கள் மற்றும் நிலை வினைச்சொற்களை சரியாக பயன்படுத்த முடியும்.",
       patterns: ["I like...", "I am eating...", "I know..."],
+      video: {
+        provider: "vimeo",
+        id: "1193164623",
+        ratio: "9:16",
+      },
     },
     58: {
       title: "Explain What Is Happening on a Call",
@@ -508,6 +693,11 @@ export const lessonMeta = {
         "I am checking...",
         "It is happening now.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193164691",
+        ratio: "9:16",
+      },
     },
     59: {
       title: "Describe Many Actions Live",
@@ -515,6 +705,11 @@ export const lessonMeta = {
       tamilOutcome:
         "உங்களைச் சுற்றி நடக்கும் பல செயல்களை நீங்கள் விவரிக்க முடியும்.",
       patterns: ["People are...", "Someone is...", "They are..."],
+      video: {
+        provider: "vimeo",
+        id: "1193165153",
+        ratio: "9:16",
+      },
     },
     60: {
       title: "Give Real-Time Updates Clearly",
@@ -526,6 +721,11 @@ export const lessonMeta = {
         "We are checking...",
         "They are waiting...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193165234",
+        ratio: "9:16",
+      },
     },
     61: {
       title: "Talk About Basic Needs",
@@ -536,12 +736,22 @@ export const lessonMeta = {
         "Do you have any...?",
         "I don’t have any...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193165255",
+        ratio: "9:16",
+      },
     },
     62: {
       title: "Say What Is Available or Missing",
       outcome: "You can say what is there and what is not there.",
       tamilOutcome: "எது இருக்கிறது, எது இல்லை என்று நீங்கள் சொல்ல முடியும்.",
       patterns: ["There is...", "There are...", "There isn’t any..."],
+      video: {
+        provider: "vimeo",
+        id: "1193165424",
+        ratio: "9:16",
+      },
     },
     63: {
       title: "Ask About Quantity Clearly",
@@ -549,6 +759,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் அளவு மற்றும் எண்ணிக்கை பற்றி தெளிவாக கேட்க முடியும்.",
       patterns: ["How much...?", "How many...?", "Do we have enough...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193165507",
+        ratio: "9:16",
+      },
     },
     64: {
       title: "Talk About Large Amounts",
@@ -560,6 +775,11 @@ export const lessonMeta = {
         "We have a lot of...",
         "I need a lot of...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193165554",
+        ratio: "9:16",
+      },
     },
     65: {
       title: "Talk About Food and Daily Needs",
@@ -567,6 +787,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் பழங்கள், காய்கறிகள், தினசரி பொருட்கள் பற்றி கேட்க முடியும்.",
       patterns: ["I need an...", "I want some...", "Do you have...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193165566",
+        ratio: "9:16",
+      },
     },
     66: {
       title: "Use Quantity Phrases",
@@ -574,12 +799,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தினசரி சூழ்நிலைகளில் அளவு சொற்களை பயன்படுத்த முடியும்.",
       patterns: ["A cup of...", "A bottle of...", "A packet of..."],
+      video: {
+        provider: "vimeo",
+        id: "1193188762",
+        ratio: "9:16",
+      },
     },
     67: {
       title: "Ask About Prices and Costs",
       outcome: "You can ask and talk about prices clearly.",
       tamilOutcome: "நீங்கள் விலை மற்றும் செலவு பற்றி தெளிவாக கேட்க முடியும்.",
       patterns: ["How much is it?", "How much does it cost?", "It costs..."],
+      video: {
+        provider: "vimeo",
+        id: "1193188858",
+        ratio: "9:16",
+      },
     },
     68: {
       title: "Shop and Confirm Items",
@@ -587,12 +822,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் மளிகைக் கடையில் பொருட்களை கேட்டு, வாங்கி, உறுதி செய்ய முடியும்.",
       patterns: ["Do you have...?", "I need some...", "How much is...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193188889",
+        ratio: "9:16",
+      },
     },
     69: {
       title: "Plan With Quantity and Needs",
       outcome: "You can talk about ingredients, needs, and quantities.",
       tamilOutcome: "நீங்கள் பொருட்கள், தேவைகள், அளவுகள் பற்றி பேச முடியும்.",
       patterns: ["We need...", "Add some...", "How many...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193188997",
+        ratio: "9:16",
+      },
     },
     70: {
       title: "Talk About Needs, Quantity, and Price",
@@ -600,6 +845,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தேவைகள், அளவுகள், விலைகள் பற்றி ஆங்கிலத்தில் பேச முடியும்.",
       patterns: ["I need some...", "How much is...?", "There are a lot of..."],
+      video: {
+        provider: "vimeo",
+        id: "1193189069",
+        ratio: "9:16",
+      },
     },
     71: {
       title: "Use Numbers in Daily Work Conversations",
@@ -607,12 +857,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தினசரி வேலை உரையாடல்களில் எண்களை தெளிவாக பயன்படுத்த முடியும்.",
       patterns: ["I need...", "There are...", "My number is..."],
+      video: {
+        provider: "vimeo",
+        id: "1193189080",
+        ratio: "9:16",
+      },
     },
     72: {
       title: "Tell and Ask the Time Clearly",
       outcome: "You can ask and say the time confidently.",
       tamilOutcome: "நீங்கள் நேரத்தை நம்பிக்கையுடன் கேட்டு சொல்ல முடியும்.",
       patterns: ["What time is it?", "It is...", "At..."],
+      video: {
+        provider: "vimeo",
+        id: "1193189285",
+        ratio: "9:16",
+      },
     },
     73: {
       title: "Talk About Days, Months, and Plans",
@@ -620,6 +880,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நாட்கள், மாதங்கள், எளிய திட்டங்கள் பற்றி பேச முடியும்.",
       patterns: ["On Monday...", "In July...", "Next week..."],
+      video: {
+        provider: "vimeo",
+        id: "1193189350",
+        ratio: "9:16",
+      },
     },
     74: {
       title: "Use Dates, Rankings, and Order",
@@ -627,6 +892,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் முதல், இரண்டாவது, மூன்றாவது போன்ற வரிசை சொற்களை பயன்படுத்த முடியும்.",
       patterns: ["First...", "Second...", "The first meeting..."],
+      video: {
+        provider: "vimeo",
+        id: "1193189453",
+        ratio: "9:16",
+      },
     },
     75: {
       title: "Ask and Confirm Schedules",
@@ -634,13 +904,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒரு விஷயம் எப்போது நடக்கிறது என்று கேட்டு நேரத்தை உறுதி செய்ய முடியும்.",
       patterns: ["When is...?", "When do we...?", "Is it at...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193189497",
+        ratio: "9:16",
+      },
     },
     76: {
       title: "Talk About Being Early, Late, and On Time",
       outcome: "You can talk about time management in simple English.",
-      tamilOutcome:
-        "நீங்கள் நேர மேலாண்மை பற்றி ஆங்கிலத்தில் பேச முடியும்.",
+      tamilOutcome: "நீங்கள் நேர மேலாண்மை பற்றி ஆங்கிலத்தில் பேச முடியும்.",
       patterns: ["I am early.", "I am late.", "I am on time."],
+      video: {
+        provider: "vimeo",
+        id: "1193219391",
+        ratio: "9:16",
+      },
     },
     77: {
       title: "Explain Steps in the Right Order",
@@ -648,6 +927,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒரு விஷயத்திற்கு முன் மற்றும் பின் என்ன நடக்கிறது என்று விளக்க முடியும்.",
       patterns: ["Before...", "After...", "First, then..."],
+      video: {
+        provider: "vimeo",
+        id: "1193219509",
+        ratio: "9:16",
+      },
     },
     78: {
       title: "Book and Confirm an Appointment",
@@ -659,6 +943,11 @@ export const lessonMeta = {
         "Is the doctor available?",
         "Can I come at...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193219680",
+        ratio: "9:16",
+      },
     },
     79: {
       title: "Plan Your Schedule Clearly",
@@ -666,6 +955,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தேதிகள், நேரங்கள், திட்டங்கள் பற்றி சேர்த்து பேச முடியும்.",
       patterns: ["On Monday at...", "Before the meeting...", "After work..."],
+      video: {
+        provider: "vimeo",
+        id: "1193219693",
+        ratio: "9:16",
+      },
     },
     80: {
       title: "Manage Time and Appointments in English",
@@ -673,25 +967,45 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நேரம், அட்டவணை, அப்பாயிண்ட்மெண்  �்களை ஆங்கிலத்தில் நிர்வகிக்க முடியும்.",
       patterns: ["What time...?", "When is...?", "Can I come at...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193219812",
+        ratio: "9:16",
+      },
     },
     81: {
       title: "Talk About the Past",
       outcome: "You can talk about past identity and situations.",
       tamilOutcome:
-        "நீங்கள் கடந்த கால அடையாளம் மற்றும் சூழ்நிலைகள் பற்றி பேச முடியும்.",
+        "நீங்கள் கடந்த கால அடையாளம் மற���றும் சூழ்நிலைகள் பற்றி பேச முடியும்.",
       patterns: ["I was...", "You were...", "We were..."],
+      video: {
+        provider: "vimeo",
+        id: "1193219828",
+        ratio: "9:16",
+      },
     },
     82: {
       title: "Say What Was Not True in the Past",
       outcome: "You can say what was not true before.",
       tamilOutcome: "முன்பு உண்மை இல்லாததை நீங்கள் சொல்ல முடியும்.",
       patterns: ["I wasn’t...", "They weren’t...", "It wasn’t..."],
+      video: {
+        provider: "vimeo",
+        id: "1193219977",
+        ratio: "9:16",
+      },
     },
     83: {
       title: "Ask About Past Situations",
       outcome: "You can ask simple questions about the past.",
       tamilOutcome: "நீங்கள் கடந்த காலம் பற்றி எளிய கேள்விகள் கேட்க முடியும்.",
       patterns: ["Were you there?", "Was he there?", "Were they ready?"],
+      video: {
+        provider: "vimeo",
+        id: "1193220102",
+        ratio: "9:16",
+      },
     },
     84: {
       title: "Use Past Time Words Clearly",
@@ -699,6 +1013,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் பேசும்போது கடந்த கால நேர வார்த்தைகளை பயன்படுத்த முடியும்.",
       patterns: ["Yesterday...", "Last week...", "Last month..."],
+      video: {
+        provider: "vimeo",
+        id: "1193220161",
+        ratio: "9:16",
+      },
     },
     85: {
       title: "Talk About Your Background",
@@ -706,6 +1025,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் பிறந்த இடம் மற்றும் வளர்ந்த இடம் பற்றி பேச முடியும்.",
       patterns: ["I was born in...", "I was raised in...", "I grew up in..."],
+      video: {
+        provider: "vimeo",
+        id: "1193220225",
+        ratio: "9:16",
+      },
     },
     86: {
       title: "Share Opinions About Past Events",
@@ -713,24 +1037,44 @@ export const lessonMeta = {
       tamilOutcome:
         "கடந்த நிகழ்வு எப்படி இருந்தது என்று நீங்கள் சொல்ல முடியும்.",
       patterns: ["It was good.", "It was difficult.", "How was it?"],
+      video: {
+        provider: "vimeo",
+        id: "1193223407",
+        ratio: "9:16",
+      },
     },
     87: {
       title: "Say What Was Available",
       outcome: "You can talk about what was there before.",
       tamilOutcome: "முன்பு என்ன இருந்தது என்று நீங்கள் சொல்ல முடியும்.",
       patterns: ["There was...", "There were...", "There wasn’t..."],
+      video: {
+        provider: "vimeo",
+        id: "1193223483",
+        ratio: "9:16",
+      },
     },
     88: {
       title: "Talk About a Vacation",
       outcome: "You can describe a past trip in simple English.",
       tamilOutcome: "நீங்கள் கடந்த பயணம் பற்றி எளிய ஆங்கிலத்தில் பேச முடியும்.",
       patterns: ["I was in...", "It was...", "There were..."],
+      video: {
+        provider: "vimeo",
+        id: "1193223678",
+        ratio: "9:16",
+      },
     },
     89: {
       title: "Talk About Past Facts",
       outcome: "You can speak about simple facts from the past.",
       tamilOutcome: "நீங்கள் கடந்த கால உண்மைகள் பற்றி எளிதாக பேச முடியும்.",
       patterns: ["It was...", "They were...", "There was..."],
+      video: {
+        provider: "vimeo",
+        id: "1193252660",
+        ratio: "9:16",
+      },
     },
     90: {
       title: "Speak About Past Experiences",
@@ -738,6 +1082,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கடந்த இடங்கள், நிகழ்வுகள், அனுபவங்கள் பற்றி பேச முடியும்.",
       patterns: ["I was...", "It was...", "There were..."],
+      video: {
+        provider: "vimeo",
+        id: "1193223805",
+        ratio: "9:16",
+      },
     },
     91: {
       title: "Talk About Completed Actions",
@@ -745,6 +1094,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கடந்த காலத்தில் முடித்த செயல்கள் பற்றி பேச முடியும்.",
       patterns: ["I worked...", "I played...", "I finished..."],
+      video: {
+        provider: "vimeo",
+        id: "1193252795",
+        ratio: "9:16",
+      },
     },
     92: {
       title: "Use Common Past Action Verbs",
@@ -752,12 +1106,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தினசரி பேச்சில் பொதுவான கடந்த கால வினைச்சொற்களை பயன்படுத்த முடியும்.",
       patterns: ["I went...", "I ate...", "I saw..."],
+      video: {
+        provider: "vimeo",
+        id: "1193252889",
+        ratio: "9:16",
+      },
     },
     93: {
       title: "Say What Did Not Happen",
       outcome: "You can say what you did not do in the past.",
       tamilOutcome: "நீங்கள் கடந்த காலத்தில் செய்யாததை சொல்ல முடியும்.",
       patterns: ["I didn’t...", "He didn’t...", "They didn’t..."],
+      video: {
+        provider: "vimeo",
+        id: "1193252957",
+        ratio: "9:16",
+      },
     },
     94: {
       title: "Ask About Completed Tasks and Events",
@@ -765,6 +1129,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கடந்த செயல்கள் பற்றி எளிய கேள்விகள் கேட்க முடியும்.",
       patterns: ["Did you...?", "Did he...?", "Did they...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193253021",
+        ratio: "9:16",
+      },
     },
     95: {
       title: "Give Short Past Answers",
@@ -772,6 +1141,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கடந்த கால கேள்விகளுக்கு தெளிவாகவும் விரைவாகவும் பதில் சொல்ல முடியும்.",
       patterns: ["Yes, I did.", "No, I didn’t.", "Yes, we did."],
+      video: {
+        provider: "vimeo",
+        id: "1193253144",
+        ratio: "9:16",
+      },
     },
     96: {
       title: "Explain Events in Order",
@@ -779,12 +1153,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கடந்த நிகழ்வுகளை சரியான வரிசையில் விளக்க முடியும்.",
       patterns: ["First...", "Then...", "Finally..."],
+      video: {
+        provider: "vimeo",
+        id: "1193253232",
+        ratio: "9:16",
+      },
     },
     97: {
       title: "Say When Something Happened",
       outcome: "You can say when something happened in the past.",
       tamilOutcome: "ஒரு விஷயம் எப்போது நடந்தது என்று நீங்கள் சொல்ல முடியும்.",
       patterns: ["Three days ago...", "A week ago...", "Long ago..."],
+      video: {
+        provider: "vimeo",
+        id: "1193253318",
+        ratio: "9:16",
+      },
     },
     98: {
       title: "Explain What Happened",
@@ -792,6 +1176,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒரு சம்பவம் அல்லது பிரச்சனையை தெளிவாக விளக்க முடியும்.",
       patterns: ["What happened?", "I saw...", "Then I..."],
+      video: {
+        provider: "vimeo",
+        id: "1193253471",
+        ratio: "9:16",
+      },
     },
     99: {
       title: "Tell a Workday Story",
@@ -799,6 +1188,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் நாள் பற்றி ஒரு சிறிய கதையாக சொல்ல முடியும்.",
       patterns: ["Last night...", "First I...", "Then I..."],
+      video: {
+        provider: "vimeo",
+        id: "1193253591",
+        ratio: "9:16",
+      },
     },
     100: {
       title: "Report Past Actions Clearly",
@@ -806,12 +1200,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கடந்த செயல்கள் மற்றும் நிகழ்வுகளை ஆங்கிலத்தில் தெளிவாக சொல்ல முடியும்.",
       patterns: ["I worked...", "I didn’t...", "Did you...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193253650",
+        ratio: "9:16",
+      },
     },
     101: {
       title: "Talk About Your Future Plans",
       outcome: "You can speak about what you are going to do.",
       tamilOutcome: "நீங்கள் என்ன செய்யப் போகிறீர்கள் என்று பேச முடியும்.",
       patterns: ["I am going to...", "I’m going to...", "We are going to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193259521",
+        ratio: "9:16",
+      },
     },
     102: {
       title: "Ask About Someone’s Plans",
@@ -823,6 +1227,11 @@ export const lessonMeta = {
         "Is he going to...?",
         "Are they going to...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193259991",
+        ratio: "9:16",
+      },
     },
     103: {
       title: "Make Simple Predictions",
@@ -833,6 +1242,11 @@ export const lessonMeta = {
         "It’s going to rain.",
         "I think it will...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193260100",
+        ratio: "9:16",
+      },
     },
     104: {
       title: "Use Future Time Words Clearly",
@@ -840,6 +1254,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நேர வார்த்தைகளுடன் எதிர்கால செயல்களை பேச முடியும்.",
       patterns: ["Tonight...", "Tomorrow...", "Next week..."],
+      video: {
+        provider: "vimeo",
+        id: "1193260173",
+        ratio: "9:16",
+      },
     },
     105: {
       title: "Talk About Travel Plans",
@@ -851,6 +1270,11 @@ export const lessonMeta = {
         "I’m going to travel to...",
         "I’m going with...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193260248",
+        ratio: "9:16",
+      },
     },
     106: {
       title: "Use Informal Future English",
@@ -858,18 +1282,33 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் எளிய அன்றாட எதிர்கால பேச்சை புரிந்து பயன்படுத்த முடியும்.",
       patterns: ["I’m gonna...", "Are you gonna...?", "We’re gonna..."],
+      video: {
+        provider: "vimeo",
+        id: "1193260379",
+        ratio: "9:16",
+      },
     },
     107: {
       title: "Talk About Wants, Needs, and Priorities",
       outcome: "You can say what you want, need, and must do first.",
       tamilOutcome: "நீங்கள் விருப்பம், தேவை, முன்னுரிமை பற்றி சொல்ல முடியும்.",
       patterns: ["I want to...", "I need to...", "I have to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193260394",
+        ratio: "9:16",
+      },
     },
     108: {
       title: "Plan an Event",
       outcome: "You can discuss simple plans for an event.",
       tamilOutcome: "நீங்கள் ஒரு நிகழ்ச்சிக்கான எளிய திட்டங்களை பேச முடியும்.",
       patterns: ["We are going to...", "We need to...", "Let’s plan..."],
+      video: {
+        provider: "vimeo",
+        id: "1193260498",
+        ratio: "9:16",
+      },
     },
     109: {
       title: "Talk About Career Goals",
@@ -880,6 +1319,11 @@ export const lessonMeta = {
         "I’m going to become...",
         "I want to improve...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193260602",
+        ratio: "9:16",
+      },
     },
     110: {
       title: "Discuss Plans and Next Steps",
@@ -887,6 +1331,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் எதிர்கால திட்டங்கள், இலக்குகள், அடுத்த படிகள் பற்றி பேச முடியும்.",
       patterns: ["I’m going to...", "I need to...", "Next, I will..."],
+      video: {
+        provider: "vimeo",
+        id: "1193260656",
+        ratio: "9:16",
+      },
     },
     111: {
       title: "Compare Two Options Clearly",
@@ -894,6 +1343,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் இரண்டு மனிதர்கள், இடங்கள் அல்லது பொருட்களை தெளிவாக ஒப்பிட முடியும்.",
       patterns: ["Bigger than...", "Cheaper than...", "Better than..."],
+      video: {
+        provider: "vimeo",
+        id: "1193264482",
+        ratio: "9:16",
+      },
     },
     112: {
       title: "Talk About the Best Option",
@@ -901,6 +1355,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் சிறந்த, பெரிய, பயனுள்ள விருப்பம் பற்றி பேச முடியும்.",
       patterns: ["The biggest...", "The best...", "The most useful..."],
+      video: {
+        provider: "vimeo",
+        id: "1193264570",
+        ratio: "9:16",
+      },
     },
     113: {
       title: "Compare Important Qualities",
@@ -912,13 +1371,23 @@ export const lessonMeta = {
         "More useful than...",
         "The most comfortable...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193264704",
+        ratio: "9:16",
+      },
     },
     114: {
       title: "Use Better and Best Correctly",
       outcome: "You can use good, better, and best in daily speaking.",
       tamilOutcome:
-        "நீங்கள் good, better, best-ஐ தினசரி பேச்சில் சரியாக பயன்படுத்த முடியும்.",
+        "நீங்கள் good, better, best-ஐ ���ினசரி பேச்சில் சரியாக பயன்படுத்த முடியும்.",
       patterns: ["It is good.", "This is better.", "That is the best."],
+      video: {
+        provider: "vimeo",
+        id: "1193264804",
+        ratio: "9:16",
+      },
     },
     115: {
       title: "Say Two Things Are Similar",
@@ -926,6 +1395,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் இரண்டு விஷயங்கள் சமம் அல்லது ஒரே மாதிரி என்று சொல்ல முடியும்.",
       patterns: ["As good as...", "As big as...", "As useful as..."],
+      video: {
+        provider: "vimeo",
+        id: "1193264947",
+        ratio: "9:16",
+      },
     },
     116: {
       title: "Give and Follow Simple Directions",
@@ -933,12 +1407,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் எளிய வழிமுறைகளை சொல்லவும் புரிந்துகொள்ளவும் முடியும்.",
       patterns: ["Turn left.", "Go straight.", "It is near..."],
+      video: {
+        provider: "vimeo",
+        id: "1193265051",
+        ratio: "9:16",
+      },
     },
     117: {
       title: "Make Simple Suggestions Politely",
       outcome: "You can suggest ideas in a polite way.",
       tamilOutcome: "நீங்கள் யோசனைகளை மரியாதையாக பரிந்துரைக்க முடியும்.",
       patterns: ["Why don’t we...?", "Let’s...", "We can..."],
+      video: {
+        provider: "vimeo",
+        id: "1193265183",
+        ratio: "9:16",
+      },
     },
     118: {
       title: "Compare Rooms at a Hotel",
@@ -950,6 +1434,11 @@ export const lessonMeta = {
         "Do you have a better...?",
         "Which room is...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193265318",
+        ratio: "9:16",
+      },
     },
     119: {
       title: "Complete a Workplace English Challenge",
@@ -957,6 +1446,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் வேலை சூழ்நிலைகளில் பல காலங்கள் மற்றும் patterns பயன்படுத்த முடியும்.",
       patterns: ["I worked...", "I am working...", "I’m going to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193265462",
+        ratio: "9:16",
+      },
     },
     120: {
       title: "Complete Final English Mastery",
@@ -965,6 +1459,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்களை அறிமுகப்படுத்தி, வேலை மற்றும் தினசரி சூழ்நிலைகள் பற்றி பேச முடியுமfy�.",
       patterns: ["I am...", "I can...", "I need to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193265498",
+        ratio: "9:16",
+      },
     },
   },
 
@@ -974,12 +1473,17 @@ export const lessonMeta = {
       outcome:
         "You can give a stronger and more complete personal introduction.",
       tamilOutcome:
-        "நீங்கள் வலி��� ���ையான மற்றும் முழுமையான சுய அறிமுகம் கொடுக்க முடியும்.",
+        "நீங்கள் வலிமையான மற்றும் முழுமையான சுய அறிமுகம் கொடுக்க முடியும்.",
       patterns: [
         "I’m currently...",
         "I have experience in...",
         "My goal is...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193292365",
+        ratio: "9:16",
+      },
     },
     2: {
       title: "Talk About Your Background Naturally",
@@ -987,6 +1491,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் பின்னணி மற்றும் இருப்பிடத்தை இயல்பாக விளக்க முடியும்.",
       patterns: ["I come from...", "I grew up in...", "I’m based in..."],
+      video: {
+        provider: "vimeo",
+        id: "1193292402",
+        ratio: "9:16",
+      },
     },
     3: {
       title: "Describe Your Job Role Clearly",
@@ -998,6 +1507,11 @@ export const lessonMeta = {
         "I’m responsible for...",
         "My role involves...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     4: {
       title: "Talk About Your Strengths",
@@ -1005,6 +1519,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் திறன்கள் மற்றும் பலங்களை நம்பிக்கையுடன் பேச முடியும்.",
       patterns: ["I’m good at...", "I know how to...", "I can handle..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     5: {
       title: "Talk About Your Experience",
@@ -1015,6 +1534,11 @@ export const lessonMeta = {
         "I’ve handled...",
         "I’ve been part of...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193292488",
+        ratio: "9:16",
+      },
     },
     6: {
       title: "Explain Your Future Goals",
@@ -1022,6 +1546,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் திட்டங்கள், இலக்குகள், கனவுகள் பற்றி பேச முடியும்.",
       patterns: ["I’m planning to...", "I hope to...", "I aim to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193292786",
+        ratio: "9:16",
+      },
     },
     7: {
       title: "Describe Yourself Professionally",
@@ -1030,6 +1559,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் குணங்களை தொழில்முறையாகவும் நேர்மறையாகவும் விவரிக்க முடியும்.",
       patterns: ["I’m reliable.", "I’m proactive.", "I’m detail-oriented."],
+      video: {
+        provider: "vimeo",
+        id: "1193292843",
+        ratio: "9:16",
+      },
     },
     8: {
       title: "Talk About Strengths Humbly",
@@ -1040,18 +1574,28 @@ export const lessonMeta = {
         "I’m quite good at...",
         "I try to...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193292908",
+        ratio: "9:16",
+      },
     },
     9: {
       title: "Introduce Someone Professionally",
       outcome:
         "You can introduce a colleague or contact in a professional way.",
       tamilOutcome:
-        "நீங்கள் சக ஊழியர் அல்லது தொடர்பை தொழில்முறையாக அறிமுகப்படுத்த முடியும்.",
+        "நீங்கள் சக ஊழியர் அல்லது தொடர்பை தொழில்முறையாக அறிமுகப்படுத்த மு���ிய ��ம்.",
       patterns: [
         "Let me introduce...",
         "This is my colleague...",
         "He is responsible for...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193292953",
+        ratio: "9:16",
+      },
     },
     10: {
       title: "Give a Polished Professional Introduction",
@@ -1059,6 +1603,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தெளிவான 90 விநாடி தொழில்முறை அறிமுகம் கொடுக்க முடியும்.",
       patterns: ["I’m currently...", "I’ve worked in...", "My goal is..."],
+      video: {
+        provider: "vimeo",
+        id: "1193292997",
+        ratio: "9:16",
+      },
     },
     11: {
       title: "Start the Workday Naturally",
@@ -1070,6 +1619,11 @@ export const lessonMeta = {
         "How was your...?",
         "Hope you’re doing well.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193308392",
+        ratio: "9:16",
+      },
     },
     12: {
       title: "Ask for Work Updates Professionally",
@@ -1081,6 +1635,11 @@ export const lessonMeta = {
         "Any update on...?",
         "Where are we with...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193308488",
+        ratio: "9:16",
+      },
     },
     13: {
       title: "Give Clear Work Updates",
@@ -1088,6 +1647,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் வேலை முன்னேற்றத்தை நம்பிக்கையுடன் சொல்ல முடியும்.",
       patterns: ["I’ve finished...", "I’m working on...", "I’ll complete..."],
+      video: {
+        provider: "vimeo",
+        id: "1193308553",
+        ratio: "9:16",
+      },
     },
     14: {
       title: "Explain Task Status Clearly",
@@ -1095,6 +1659,11 @@ export const lessonMeta = {
       tamilOutcome:
         "ஒரு வேலை சரியாக செல்கிறதா, தாமதமா, நிலுவையிலா என்று சொல்ல முடியும்.",
       patterns: ["It’s on track.", "It’s delayed.", "It’s still pending."],
+      video: {
+        provider: "vimeo",
+        id: "1193308713",
+        ratio: "9:16",
+      },
     },
     15: {
       title: "Make Professional Requests",
@@ -1106,6 +1675,11 @@ export const lessonMeta = {
         "Would it be possible to...?",
         "Can you help me with...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     16: {
       title: "Say No Politely at Work",
@@ -1117,6 +1691,11 @@ export const lessonMeta = {
         "I won’t be able to...",
         "Maybe we can...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     17: {
       title: "Follow Up Smoothly",
@@ -1127,6 +1706,11 @@ export const lessonMeta = {
         "Gentle reminder...",
         "Any update on...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     18: {
       title: "Set Expectations Clearly",
@@ -1138,6 +1722,11 @@ export const lessonMeta = {
         "Let’s be aligned on...",
         "To clarify...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193308783",
+        ratio: "9:16",
+      },
     },
     19: {
       title: "Collaborate With Your Team",
@@ -1149,6 +1738,11 @@ export const lessonMeta = {
         "I’ll handle...",
         "Can you take care of...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193308950",
+        ratio: "9:16",
+      },
     },
     20: {
       title: "Handle a Full Workday Conversation",
@@ -1156,6 +1750,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் காலை முதல் மாலை வரை அலுவலக உரையாடல்களை நடத்த முடியும்.",
       patterns: ["Any update on...?", "I’m working on...", "Let’s divide..."],
+      video: {
+        provider: "vimeo",
+        id: "1193308981",
+        ratio: "9:16",
+      },
     },
     21: {
       title: "Ask Better Follow-Up Questions",
@@ -1168,6 +1767,11 @@ export const lessonMeta = {
         "How did you feel?",
         "What did you do then?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193465163",
+        ratio: "9:16",
+      },
     },
     22: {
       title: "Ask for Clarification Professionally",
@@ -1178,6 +1782,11 @@ export const lessonMeta = {
         "What do you mean by...?",
         "Can you explain that again?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193465181",
+        ratio: "9:16",
+      },
     },
     23: {
       title: "Ask Someone to Repeat or Slow Down",
@@ -1188,13 +1797,23 @@ export const lessonMeta = {
         "Could you say that again?",
         "Could you speak slowly?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193465200",
+        ratio: "9:16",
+      },
     },
     24: {
       title: "Confirm Your Understanding",
       outcome: "You can confirm meaning and avoid misunderstandings.",
       tamilOutcome:
-        "நீங்கள் அர்த்தத்தை உறுதி செய்து தவறான புரிதலை தவிர்க்க முடியும்.",
+        "நீங்கள் அர்த்தத்தை உறுதி செய்து ���வறான புரிதலை தவிர்க்க முடியும்.",
       patterns: ["So you mean...", "Just to confirm...", "Do you mean...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193465237",
+        ratio: "9:16",
+      },
     },
     25: {
       title: "Check Important Details",
@@ -1203,6 +1822,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நேரம், அளவு, கடைசி தேதி போன்ற விவரங்களை தெளிவாக கேட்க முடியும்.",
       patterns: ["When exactly?", "How many...?", "By when...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193465279",
+        ratio: "9:16",
+      },
     },
     26: {
       title: "Ask Politely With Indirect Questions",
@@ -1214,6 +1838,11 @@ export const lessonMeta = {
         "Do you know if...?",
         "Can you let me know...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193465310",
+        ratio: "9:16",
+      },
     },
     27: {
       title: "Sound Conversational With Question Tags",
@@ -1221,6 +1850,11 @@ export const lessonMeta = {
         "You can make your speech sound more natural and conversational.",
       tamilOutcome: "நீங்கள் உங்கள் பேச்சை இன்னும் இயல்பாக மாற்ற முடியும்.",
       patterns: ["Isn’t it?", "Don’t you?", "Right?"],
+      video: {
+        provider: "vimeo",
+        id: "1193465348",
+        ratio: "9:16",
+      },
     },
     28: {
       title: "Respond Without Freezing",
@@ -1232,12 +1866,22 @@ export const lessonMeta = {
         "That’s a good question.",
         "Give me a second.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193465407",
+        ratio: "9:16",
+      },
     },
     29: {
       title: "Keep the Conversation Going",
       outcome: "You can extend conversations without awkward silence.",
       tamilOutcome: "நீங்கள் அமைதி ஏற்படாமல் உரையாடலை தொடர முடியும்.",
       patterns: ["That reminds me...", "Speaking of...", "By the way..."],
+      video: {
+        provider: "vimeo",
+        id: "1193465408",
+        ratio: "9:16",
+      },
     },
     30: {
       title: "Handle a 5-Minute Q&A Conversation",
@@ -1249,6 +1893,11 @@ export const lessonMeta = {
         "Could you clarify...?",
         "What happened next?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193465447",
+        ratio: "9:16",
+      },
     },
     31: {
       title: "Talk About Routines and Facts",
@@ -1256,6 +1905,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தினசரி பழக்கங்கள் மற்றும் பொதுவான உண்மைகள் பற்றி தெளிவாக பேச முடியும்.",
       patterns: ["I usually...", "I always...", "Every day, I..."],
+      video: {
+        provider: "vimeo",
+        id: "1193468842",
+        ratio: "9:16",
+      },
     },
     32: {
       title: "Talk About Current Actions",
@@ -1266,6 +1920,11 @@ export const lessonMeta = {
         "At the moment, I’m...",
         "We are working on...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193468881",
+        ratio: "9:16",
+      },
     },
     33: {
       title: "Use Daily and Now Correctly",
@@ -1274,12 +1933,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் வழக்கம் மற்றும் இப்போதைய செயலை குழப்பாமல் பேச முடியும்.",
       patterns: ["I work every day.", "I am working now.", "Usually, I..."],
+      video: {
+        provider: "vimeo",
+        id: "1193468900",
+        ratio: "9:16",
+      },
     },
     34: {
       title: "Talk About Completed Past Actions",
       outcome: "You can explain what happened yesterday or before.",
       tamilOutcome: "நேற்று அல்லது முன்பு நடந்ததை நீங்கள் விளக்க முடியும்.",
       patterns: ["Yesterday, I...", "I finished...", "I went to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193468957",
+        ratio: "9:16",
+      },
     },
     35: {
       title: "Describe What Was Happening",
@@ -1291,6 +1960,11 @@ export const lessonMeta = {
         "We were discussing...",
         "It was happening...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193468992",
+        ratio: "9:16",
+      },
     },
     36: {
       title: "Talk About Experience and Results",
@@ -1302,6 +1976,11 @@ export const lessonMeta = {
         "I have completed...",
         "I have already...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193469008",
+        ratio: "9:16",
+      },
     },
     37: {
       title: "Talk About Duration With Since and For",
@@ -1313,6 +1992,11 @@ export const lessonMeta = {
         "Since 2020...",
         "For three years...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193469056",
+        ratio: "9:16",
+      },
     },
     38: {
       title: "Explain Earlier Past Actions",
@@ -1324,13 +2008,23 @@ export const lessonMeta = {
         "Before that, I had...",
         "By then, we had...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193469089",
+        ratio: "9:16",
+      },
     },
     39: {
       title: "Talk About the Future Clearly",
       outcome: "You can speak about plans, predictions, and possibilities.",
       tamilOutcome:
-        "நீங்கள் திட்டங்கள், கணிப்புகள், வாய்ப்புகள் பற்றி தெளிவாக பேச முடியும்.",
+        "நீங்கள் திட்டங்கள், கணிப்புகள், வாய்ப்புகள் பற்றி தெளிவாde� பேச முடியும்.",
       patterns: ["I’m going to...", "I will...", "I might..."],
+      video: {
+        provider: "vimeo",
+        id: "1193469100",
+        ratio: "9:16",
+      },
     },
     40: {
       title: "Switch Tenses Without Confusion",
@@ -1339,6 +2033,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கடந்த காலம், நிகழ்காலம், எதிர்காலம், அனுபவம் பற்றி குழப்பமின்றி பேச முடியும்.",
       patterns: ["I usually...", "I have already...", "I’m going to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193469135",
+        ratio: "9:16",
+      },
     },
     41: {
       title: "Give a Strong Interview Intro",
@@ -1350,6 +2049,11 @@ export const lessonMeta = {
         "I have experience in...",
         "My key strengths are...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471497",
+        ratio: "9:16",
+      },
     },
     42: {
       title: "Explain Why You Want the Job",
@@ -1361,6 +2065,11 @@ export const lessonMeta = {
         "This opportunity matches...",
         "I’m excited about...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471579",
+        ratio: "9:16",
+      },
     },
     43: {
       title: "Answer Strength Questions With Impact",
@@ -1371,6 +2080,11 @@ export const lessonMeta = {
         "For example...",
         "This helped me...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471618",
+        ratio: "9:16",
+      },
     },
     44: {
       title: "Handle Weakness Questions Smartly",
@@ -1382,6 +2096,11 @@ export const lessonMeta = {
         "I’ve improved by...",
         "I’m trying to...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471700",
+        ratio: "9:16",
+      },
     },
     45: {
       title: "Tell a Professional Challenge Story",
@@ -1392,6 +2111,11 @@ export const lessonMeta = {
         "I took action by...",
         "The result was...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471686",
+        ratio: "9:16",
+      },
     },
     46: {
       title: "Explain Your Work History",
@@ -1403,6 +2127,11 @@ export const lessonMeta = {
         "I was responsible for...",
         "I worked on...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471761",
+        ratio: "9:16",
+      },
     },
     47: {
       title: "Talk About Career Ambition",
@@ -1414,6 +2143,11 @@ export const lessonMeta = {
         "I see myself...",
         "I want to grow into...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471864",
+        ratio: "9:16",
+      },
     },
     48: {
       title: "Discuss Salary Politely",
@@ -1424,6 +2158,11 @@ export const lessonMeta = {
         "Based on my experience...",
         "I’m open to discussing...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471892",
+        ratio: "9:16",
+      },
     },
     49: {
       title: "Ask Smart Interview Questions",
@@ -1435,6 +2174,11 @@ export const lessonMeta = {
         "Could you tell me more about...?",
         "What are the next steps?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193472044",
+        ratio: "9:16",
+      },
     },
     50: {
       title: "Complete a Mock Interview",
@@ -1446,6 +2190,11 @@ export const lessonMeta = {
         "One of my strengths is...",
         "I’d like to know...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193471950",
+        ratio: "9:16",
+      },
     },
     51: {
       title: "Start a Meeting Confidently",
@@ -1456,6 +2205,11 @@ export const lessonMeta = {
         "Let’s begin with...",
         "Today, we’ll discuss...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193474832",
+        ratio: "9:16",
+      },
     },
     52: {
       title: "Share Quick Meeting Updates",
@@ -1467,6 +2221,11 @@ export const lessonMeta = {
         "I’ve completed...",
         "I’m currently working on...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193474879",
+        ratio: "9:16",
+      },
     },
     53: {
       title: "Agree and Add to Ideas",
@@ -1478,6 +2237,11 @@ export const lessonMeta = {
         "Building on that...",
         "That’s a good point...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193474922",
+        ratio: "9:16",
+      },
     },
     54: {
       title: "Disagree Respectfully",
@@ -1488,6 +2252,11 @@ export const lessonMeta = {
         "I understand, but...",
         "Maybe we can consider...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193475007",
+        ratio: "9:16",
+      },
     },
     55: {
       title: "Interrupt Politely in Discussions",
@@ -1498,6 +2267,11 @@ export const lessonMeta = {
         "May I jump in?",
         "Can I share one point?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193475043",
+        ratio: "9:16",
+      },
     },
     56: {
       title: "Include Others in a Meeting",
@@ -1510,6 +2284,11 @@ export const lessonMeta = {
         "Any thoughts on this?",
         "Would you like to add...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193475169",
+        ratio: "9:16",
+      },
     },
     57: {
       title: "Summarise a Discussion Clearly",
@@ -1517,6 +2296,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கலந்துரையாடலின் முக்கிய அம்சங்களை தெளிவாக சுருக்க முடியும்.",
       patterns: ["To summarise...", "The key points are...", "We agreed to..."],
+      video: {
+        provider: "vimeo",
+        id: "1193475168",
+        ratio: "9:16",
+      },
     },
     58: {
       title: "Present an Idea Clearly",
@@ -1528,6 +2312,11 @@ export const lessonMeta = {
         "The main point is...",
         "To conclude...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193475238",
+        ratio: "9:16",
+      },
     },
     59: {
       title: "Handle Q&A Confidently",
@@ -1539,6 +2328,11 @@ export const lessonMeta = {
         "Let me explain...",
         "To answer that...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193475280",
+        ratio: "9:16",
+      },
     },
     60: {
       title: "Present and Respond",
@@ -1550,6 +2344,11 @@ export const lessonMeta = {
         "To summarise...",
         "That’s a great question.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193475352",
+        ratio: "9:16",
+      },
     },
     61: {
       title: "Start Emails Professionally",
@@ -1560,6 +2359,11 @@ export const lessonMeta = {
         "I’m writing to...",
         "Hope this finds you well.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193477139",
+        ratio: "9:16",
+      },
     },
     62: {
       title: "Write Clear Email Subject Lines",
@@ -1568,6 +2372,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நோக்கம் தெளிவாக தெரியும் subject lines எழுத முடியும்.",
       patterns: ["Update on...", "Request for...", "Follow-up on..."],
+      video: {
+        provider: "vimeo",
+        id: "1193477162",
+        ratio: "9:16",
+      },
     },
     63: {
       title: "Make Requests by Email",
@@ -1579,6 +2388,11 @@ export const lessonMeta = {
         "Would it be possible to...?",
         "Please let me know...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193477193",
+        ratio: "9:16",
+      },
     },
     64: {
       title: "Follow Up Politely by Email",
@@ -1590,6 +2404,11 @@ export const lessonMeta = {
         "Gentle reminder...",
         "When you get a chance...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193477213",
+        ratio: "9:16",
+      },
     },
     65: {
       title: "Decline Requests Professionally",
@@ -1601,6 +2420,11 @@ export const lessonMeta = {
         "I’m afraid we can’t...",
         "At this time...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193477243",
+        ratio: "9:16",
+      },
     },
     66: {
       title: "Write Professional Chat Messages",
@@ -1612,6 +2436,11 @@ export const lessonMeta = {
         "Can you please...?",
         "Thanks for the update.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193477326",
+        ratio: "9:16",
+      },
     },
     67: {
       title: "Write Meeting Summaries",
@@ -1623,13 +2452,23 @@ export const lessonMeta = {
         "Action items are...",
         "Next steps are...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193477351",
+        ratio: "9:16",
+      },
     },
     68: {
       title: "Handle Professional Phone Calls",
       outcome: "You can open and close work calls politely.",
       tamilOutcome:
-        "நீங்கள் வேலை தொடர்பான அழைப்புகளை மரியாதையாக தொடங்கி முடிக்க முடியும்.",
+        "நீங்கள் வேலை தொடர்பான அழைப்புகள��� மரியாதையாக தொடங்கி முடிக்க முடியும்.",
       patterns: ["May I speak to...?", "This is...", "Thanks for your time."],
+      video: {
+        provider: "vimeo",
+        id: "1193477383",
+        ratio: "9:16",
+      },
     },
     69: {
       title: "Handle Online Meetings",
@@ -1641,6 +2480,11 @@ export const lessonMeta = {
         "I’ll share my screen.",
         "You’re on mute.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193477418",
+        ratio: "9:16",
+      },
     },
     70: {
       title: "Communicate Across Channels",
@@ -1648,6 +2492,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் email, chat, call, video meeting-ல் தெளிவாக தொடர்பு கொள்ள முடியும்.",
       patterns: ["Could you please...?", "Quick update...", "Can you hear me?"],
+      video: {
+        provider: "vimeo",
+        id: "1193477496",
+        ratio: "9:16",
+      },
     },
     71: {
       title: "Express Basic Opinions",
@@ -1655,6 +2504,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் கருத்தை எளிய ஆங்கிலத்தில் தெளிவாக சொல்ல முடியும்.",
       patterns: ["I think...", "I believe...", "In my opinion..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     72: {
       title: "Share Mature Viewpoints",
@@ -1666,6 +2520,11 @@ export const lessonMeta = {
         "The way I see it...",
         "In my view...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     73: {
       title: "Support Your Opinion With Reasons",
@@ -1673,6 +2532,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஏன் அப்படி நினைக்கிறீர்கள் என்பதை காரணத்துடன் விளக்க முடியும்.",
       patterns: ["Because...", "Since...", "The reason is..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     74: {
       title: "Make Opinions Clearer With Examples",
@@ -1681,6 +2545,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உதாரணங்களால் உங்கள் கருத்தை தெளிவாக விளக்க முடியும்.",
       patterns: ["For example...", "For instance...", "A good example is..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     75: {
       title: "Agree Naturally",
@@ -1688,6 +2557,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் இயல்பாக வலுவாகவும் மென்மையாகவும் சம்மதிக்க முடியும்.",
       patterns: ["Exactly.", "I completely agree.", "I agree to some extent."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     76: {
       title: "Disagree Without Offending",
@@ -1699,6 +2573,11 @@ export const lessonMeta = {
         "I understand, however...",
         "I’m not sure about that.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     77: {
       title: "Discuss Both Sides",
@@ -1710,6 +2589,11 @@ export const lessonMeta = {
         "Having said that...",
         "Another point is...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     78: {
       title: "Give Nuanced Opinions",
@@ -1718,6 +2602,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒரே மாதிரி பதில்கள் இல்லாமல் சிந்தித்து கருத்து சொல்ல முடியும்.",
       patterns: ["It depends.", "In some cases...", "It depends on..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     79: {
       title: "Discuss Possibilities With If",
@@ -1725,6 +2614,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் if பயன்படுத்தி சாத்தியமான முடிவுகளைப் பற்றி பேச முடியும்.",
       patterns: ["If we do this...", "If this happens...", "We can..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     80: {
       title: "Give a 3-Point Opinion Talk",
@@ -1732,6 +2626,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் காரணங்கள் மற்றும் உதாரணங்களுடன் உங்கள் கருத்தை சொல்ல முடியும்.",
       patterns: ["In my opinion...", "The reason is...", "For example..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     81: {
       title: "Understand Good Story Flow",
@@ -1740,6 +2639,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கதையை தொடக்கம், நடுப்பு, முடிவு என தெளிவாக அமைக்க முடியும்.",
       patterns: ["At the beginning...", "In the middle...", "In the end..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     82: {
       title: "Start a Story Naturally",
@@ -1750,23 +2654,38 @@ export const lessonMeta = {
         "Let me tell you what happened.",
         "It all started when...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     83: {
       title: "Set the Scene Clearly",
       outcome: "You can give context before telling the main event.",
       tamilOutcome:
-        "முக்கிய நிகழ்வுக்கு முன் சூழ்நிலையை நீங்கள் தெளிவாக சொல்ல முடியும்.",
+        "முக்கிய நிகழ்வுக்கு முன் சூழ்நிலையை நீங்கள் தெளிவாக சொல்ல முடி  �ும்.",
       patterns: [
         "It was a Monday morning...",
         "I was at...",
         "We were getting ready to...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     84: {
       title: "Make Stories More Engaging",
       outcome: "You can build tension and make your story more interesting.",
       tamilOutcome: "நீங்கள் கதையை இன்னும் சுவாரஸ்யமாக சொல்ல முடியும்.",
       patterns: ["Suddenly...", "Out of nowhere...", "At that moment..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     85: {
       title: "Explain Past Sequence in Stories",
@@ -1774,6 +2693,11 @@ export const lessonMeta = {
       tamilOutcome:
         "கடந்த நிகழ்வுக்கு முன் நடந்ததை நீங்கள் கதையில் விளக்க முடியும்.",
       patterns: ["I had already...", "Before that, I had...", "By the time..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     86: {
       title: "Keep Your Story Flowing",
@@ -1781,6 +2705,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நேர இணைப்புச் சொற்களால் கதையை தொடர்ச்சியாக சொல்ல முடியும்.",
       patterns: ["Then...", "After that...", "Meanwhile..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     87: {
       title: "Add Emotion and Personality",
@@ -1792,6 +2721,11 @@ export const lessonMeta = {
         "I felt relieved.",
         "I couldn’t believe it.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     88: {
       title: "Report What People Said",
@@ -1799,6 +2733,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கதையில் மற்றவர்கள் சொன்னதை சேர்த்து சொல்ல முடியும்.",
       patterns: ["He said...", "She told me...", "They asked me..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     89: {
       title: "Tell a Professional Challenge Story",
@@ -1810,6 +2749,11 @@ export const lessonMeta = {
         "I took action by...",
         "The result was...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     90: {
       title: "Tell a Full 3-Minute Story",
@@ -1817,6 +2761,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஓட்டம், உணர்வு, தெளிவுடன் முழு கதையை சொல்ல முடியும்.",
       patterns: ["It all started when...", "Suddenly...", "In the end..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     91: {
       title: "Explain a Problem Clearly",
@@ -1824,6 +2773,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒரு பிரச்சனையை தெளிவாக அடையாளம் கண்டு விளக்க முடியும்.",
       patterns: ["The issue is...", "The problem is...", "We are facing..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     92: {
       title: "Explain the Cause",
@@ -1834,12 +2788,22 @@ export const lessonMeta = {
         "The reason is...",
         "This was caused by...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     93: {
       title: "Offer Practical Solutions",
       outcome: "You can suggest solutions in a professional way.",
       tamilOutcome: "நீங்கள் தொழில்முறையாக தீர்வுகளை பரிந்துரைக்க முடியும்.",
       patterns: ["I suggest...", "What if we...?", "We could try..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     94: {
       title: "Ask for More Time",
@@ -1850,6 +2814,11 @@ export const lessonMeta = {
         "Can we get more time?",
         "Would it be possible to...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     95: {
       title: "Set Realistic Expectations",
@@ -1861,6 +2830,11 @@ export const lessonMeta = {
         "Realistically...",
         "To set expectations...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     96: {
       title: "Handle Complaints Calmly",
@@ -1872,6 +2846,11 @@ export const lessonMeta = {
         "I’m sorry about that.",
         "Let me check this...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     97: {
       title: "Push Back Politely",
@@ -1883,6 +2862,11 @@ export const lessonMeta = {
         "I see your point, but...",
         "Another option is...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     98: {
       title: "Deliver Bad News Professionally",
@@ -1894,6 +2878,11 @@ export const lessonMeta = {
         "Unfortunately...",
         "I wanted to let you know...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     99: {
       title: "Explain Issues Professionally",
@@ -1905,6 +2894,11 @@ export const lessonMeta = {
         "It has been fixed.",
         "It is being checked.",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     100: {
       title: "Solve Problems Through Roleplay",
@@ -1912,6 +2906,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் பிரச்சனையை விளக்கி, காரணம் சொல்லி, தீர்வு வழங்க முடியும்.",
       patterns: ["The issue is...", "It happened because...", "I suggest..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     101: {
       title: "Sound Natural With Contractions",
@@ -1919,12 +2918,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தினசரி பேச்சில் பொதுவான சுருக்க வடிவங்களை பயன்படுத்த முடியும்.",
       patterns: ["I’m...", "I’ve...", "I’ll..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     102: {
       title: "Speak Smoothly With Natural Fillers",
       outcome: "You can use simple fillers to speak more smoothly.",
       tamilOutcome: "நீங்கள் எளிய fillers பயன்படுத்தி மென்மையாக பேச முடியும்.",
       patterns: ["Well...", "So...", "Actually..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     103: {
       title: "Think Out Loud Without Freezing",
@@ -1936,6 +2945,11 @@ export const lessonMeta = {
         "How do I put this?",
         "Give me a second...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     104: {
       title: "Restart and Self-Correct Smoothly",
@@ -1943,6 +2957,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் பேசும்போது உங்கள் வாக்கியத்தை இயல்பாக திருத்த முடியும்.",
       patterns: ["What I mean is...", "Let me rephrase...", "I mean..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     105: {
       title: "Sound Less Harsh",
@@ -1950,6 +2969,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் பேச்சை மென்மையாகவும் மரியாதையாகவும் மாற்ற முடியும்.",
       patterns: ["Kind of...", "Sort of...", "A bit..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     106: {
       title: "Sound Natural and Polite",
@@ -1957,12 +2981,22 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் கருத்துகளை மென்மையாகவும் சமநிலையுடனும் சொல்ல முடியும்.",
       patterns: ["To be fair...", "Honestly...", "In a way..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     107: {
       title: "React Naturally in Conversations",
       outcome: "You can respond naturally when someone speaks to you.",
       tamilOutcome: "யாராவது பேசும்போது நீங்கள் இயல்பாக பதில் சொல்ல முடியும்.",
       patterns: ["That makes sense.", "Fair enough.", "I see what you mean."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     108: {
       title: "Understand Common Phrasal Verbs",
@@ -1970,6 +3004,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தினசரி வேலை உரையாடலில் பொதுவான phrasal verbs பயன்படுத்த முடியும்.",
       patterns: ["Get back to...", "Follow up on...", "Look into..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     109: {
       title: "Fix Common Indian English Mistakes",
@@ -1977,6 +3016,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் பொதுவான தவறுகளை தவிர்த்து இயல்பான ஆங்கிலத்தில் பேச முடியும்.",
       patterns: ["Discuss...", "Reply to...", "Move forward..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     110: {
       title: "Speak Without Sounding Robotic",
@@ -1984,6 +3028,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நல்ல ஓட்டத்துடன் இயல்பான 5 நிமிட உரையாடல் பேச முடியும்.",
       patterns: ["Well...", "What I mean is...", "That makes sense."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     111: {
       title: "Master Your Professional Introduction",
@@ -1992,6 +3041,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் நம்பிக்கையுடன் தொழில்முறை சுய அறிமுகம் கொடுக்க முடியும்.",
       patterns: ["I’m currently...", "I’m responsible for...", "My goal is..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     112: {
       title: "Handle Daily Office Conversations",
@@ -2002,6 +3056,11 @@ export const lessonMeta = {
         "I’m working on...",
         "Could you please...?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     113: {
       title: "Master Tense Switching",
@@ -2009,6 +3068,11 @@ export const lessonMeta = {
         "You can talk about past, present, future, experience, and duration clearly.",
       tamilOutcome: "நீங்கள் காலங்களை குழப்பமின்றி தெளிவாக பேச முடியும்.",
       patterns: ["I worked...", "I’m working...", "I’ve been working..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     114: {
       title: "Complete an Interview Simulation",
@@ -2020,6 +3084,11 @@ export const lessonMeta = {
         "One of my strengths is...",
         "I’m looking for...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     115: {
       title: "Participate in a Meeting",
@@ -2031,6 +3100,11 @@ export const lessonMeta = {
         "I agree with...",
         "Could I add something?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     116: {
       title: "Communicate Across Channels",
@@ -2042,6 +3116,11 @@ export const lessonMeta = {
         "Just following up...",
         "Can you hear me?",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     117: {
       title: "Discuss Opinions With Reasons",
@@ -2049,6 +3128,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் காரணங்கள், உதாரணங்கள், சமநிலையுடன் ஒரு தலைப்பை விவாதிக்க முடியும்.",
       patterns: ["In my opinion...", "The reason is...", "For example..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     118: {
       title: "Tell a Personal or Professional Story",
@@ -2056,6 +3140,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஓட்டம், உணர்வு, அமைப்புடன் தெளிவான கதையை சொல்ல முடியும்.",
       patterns: ["It all started when...", "Suddenly...", "In the end..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     119: {
       title: "Solve Problems Through Conversation",
@@ -2063,6 +3152,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் பிரச்சனையை விளக்கி நடைமுறை தீர்வை முன்மொழிய முடியும்.",
       patterns: ["The issue is...", "It happened because...", "I suggest..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     120: {
       title: "Give a 5-Minute Unscripted Talk",
@@ -2074,6 +3168,11 @@ export const lessonMeta = {
         "One important point is...",
         "To conclude...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
   },
 };
