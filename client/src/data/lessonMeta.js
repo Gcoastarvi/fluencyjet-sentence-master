@@ -639,8 +639,7 @@ export const lessonMeta = {
       title: "Talk About Being Early, Late, and On Time",
       outcome: "You can talk about time management in simple English.",
       tamilOutcome:
-        "நீங்கள் நேர மேலாண்மை பற்றி எ
-��ிய ஆங்கிலத்தில் பேச முடியும்.",
+        "நீங்கள் நேர மேலாண்மை பற்றி ஆங்கிலத்தில் பேச முடியும்.",
       patterns: ["I am early.", "I am late.", "I am on time."],
     },
     77: {
