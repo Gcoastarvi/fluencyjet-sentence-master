@@ -7,6 +7,11 @@ export const lessonMeta = {
       tamilOutcome:
         "உங்களைப் பற்றி எளிய ஆங்கில வாக்கியங்களில் பேச கற்றுக்கொள்ளுங்கள்.",
       patterns: ["I am...", "I am from...", "I am a..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     2: {
       title: "I Want, I Need, I Like",
@@ -14,6 +19,11 @@ export const lessonMeta = {
       tamilOutcome:
         "எனக்கு வேண்டும், தேவை, பிடிக்கும் என்பதை ஆங்கிலத்தில் சொல்ல கற்றுக்கொள்ளுங்கள்.",
       patterns: ["I want...", "I need...", "I like..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     3: {
       title: "WH Questions",
@@ -21,6 +31,11 @@ export const lessonMeta = {
       tamilOutcome:
         "தினசரி உரையாடல்களில் எளிய கேள்விகளை கேட்க கற்றுக்கொள்ளுங்கள்.",
       patterns: ["Who...?", "What...?", "Where...?"],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     4: {
       title: "Say What You Are Not",
@@ -28,6 +43,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்களைப் பற்றிய தவறான தகவலை திருத்தி சொல்ல முடியும்.",
       patterns: ["I am not...", "I’m not a...", "I’m not from..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     5: {
       title: "Ask About Roles and Identity",
@@ -35,6 +55,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் ஒருவரின் வேலை அல்லது அடையாளம் பற்றி கேட்க முடியும்.",
       patterns: ["Are you...?", "Are you a...?", "Are you from...?"],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     6: {
       title: "Speak Naturally With Short Forms",
@@ -48,6 +73,11 @@ export const lessonMeta = {
       outcome: "You can ask who someone is in the workplace.",
       tamilOutcome: "நீங்கள் வேலை இடத்தில் ஒருவர் யார் என்று கேட்க முடியும்.",
       patterns: ["Who is he?", "Who is she?", "Who are they?"],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     8: {
       title: "Check In at the Airport",
@@ -59,6 +89,11 @@ export const lessonMeta = {
         "I’m travelling to...",
         "I have a booking...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     9: {
       title: "Give a Professional Self-Introduction",
@@ -66,6 +101,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் வேலை மற்றும் அடையாளத்துடன் உங்களை அறிமுகப்படுத்த முடியும்.",
       patterns: ["I am...", "I work as...", "I am from..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     10: {
       title: "Introduce Yourself With Confidence",
@@ -73,6 +113,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் தெளிவாகவும் நம்பிக்கையுடனும் சுய அறிமுகம் கொடுக்க முடியும்.",
       patterns: ["I’m...", "I am a...", "I work as..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998909",
+        ratio: "9:16",
+      },
     },
     11: {
       title: "Talk About Work Preferences",
@@ -113,6 +158,11 @@ export const lessonMeta = {
       outcome: "You can say what you or others don’t do.",
       tamilOutcome: "நீங்கள் அல்லது மற்றவர்கள் செய்யாததை சொல்ல முடியும்.",
       patterns: ["I don’t...", "He doesn’t...", "She doesn’t..."],
+      video: {
+        provider: "vimeo",
+        id: "1192998988",
+        ratio: "9:16",
+      },
     },
     15: {
       title: "Ask Simple Work Questions",
@@ -120,6 +170,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் வேலை பழக்கங்கள் பற்றி எளிய கேள்விகள் கேட்க முடியும்.",
       patterns: ["Do you...?", "Do you work...?", "Do you use...?"],
+      video: {
+        provider: "vimeo",
+        id: "1192999024",
+        ratio: "9:16",
+      },
     },
     16: {
       title: "Describe Your Workday",
@@ -130,6 +185,11 @@ export const lessonMeta = {
         "I start work at...",
         "I finish work at...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1193144204",
+        ratio: "9:16",
+      },
     },
     17: {
       title: "Talk About Habits and Reliability",
@@ -137,6 +197,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் எவ்வளவு அடிக்கடி செய்கிறீர்கள் என்று சொல்ல முடியும்.",
       patterns: ["I always...", "I never...", "I usually..."],
+      video: {
+        provider: "vimeo",
+        id: "1193144328",
+        ratio: "9:16",
+      },
     },
     18: {
       title: "Order Coffee Politely",
@@ -144,6 +209,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் காபி அல்லது சிற்றுண்டியை மரியாதையாக ஆர்டர் செய்ய முடியும்.",
       patterns: ["I want...", "I’d like...", "Can I have...?"],
+      video: {
+        provider: "vimeo",
+        id: "1193144367",
+        ratio: "9:16",
+      },
     },
     19: {
       title: "Describe a Busy Workday",
@@ -151,6 +221,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் பிஸியான நாளைப் பற்றி நீளமான வாக்கியங்களில் பேச முடியும்.",
       patterns: ["I wake up at...", "I always...", "After work..."],
+      video: {
+        provider: "vimeo",
+        id: "1193144413",
+        ratio: "9:16",
+      },
     },
     20: {
       title: "Explain Your Daily Work Routine",
@@ -158,6 +233,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் உங்கள் முழு வேலை நாள் வழக்கத்தை ஆங்கிலத்தில் விளக்க முடியும்.",
       patterns: ["I start work at...", "I usually...", "I finish work at..."],
+      video: {
+        provider: "vimeo",
+        id: "1193144469",
+        ratio: "9:16",
+      },
     },
     21: {
       title: "Talk About Tools and Resources",
@@ -559,7 +639,8 @@ export const lessonMeta = {
       title: "Talk About Being Early, Late, and On Time",
       outcome: "You can talk about time management in simple English.",
       tamilOutcome:
-        "நீங்கள் நேர மேலாண்மை பற்றி எளிய ஆங்கிலத்தில் பேச முடியும்.",
+        "நீங்கள் நேர மேலாண்மை பற்றி எ
+��ிய ஆங்கிலத்தில் பேச முடியும்.",
       patterns: ["I am early.", "I am late.", "I am on time."],
     },
     77: {
