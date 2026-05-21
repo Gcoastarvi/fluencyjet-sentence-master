@@ -134,13 +134,13 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
             Lesson {lessonKey}
           </div>
 
-          <h3 className="text-2xl md:text-3xl font-black text-slate-950 leading-tight">
+          <h3 className="text-2xl md:text-[28px] font-black text-slate-950 leading-tight">
             {cardTitle}
           </h3>
 
           {tamilOutcome && (
             <div className="mt-5 rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
-              <p className="text-lg md:text-xl font-bold leading-relaxed text-slate-800 font-tamil">
+              <p className="text-lg md:text-[19px] font-bold leading-relaxed text-slate-800 font-tamil">
                 {tamilOutcome}
               </p>
             </div>
@@ -181,7 +181,7 @@ function ModeChip({ label, value, color }) {
   };
   return (
     <div
-      className={`px-5 py-2.5 rounded-full border text-base md:text-lg font-black ${colors[color]}`}
+      className={`px-5 py-2.5 rounded-full border text-base md:text-[17px] font-black ${colors[color]}`}
     >
       {label} • {value}%
     </div>
