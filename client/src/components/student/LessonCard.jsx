@@ -130,7 +130,7 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex-1">
-          <div className="mb-4 text-2xl md:text-3xl font-black uppercase tracking-[0.18em] text-slate-800">
+          <div className="mb-3 text-lg md:text-xl font-black uppercase tracking-[0.22em] text-slate-600">
             Lesson {lessonKey}
           </div>
 
