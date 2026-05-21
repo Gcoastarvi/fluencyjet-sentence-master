@@ -131,22 +131,17 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex-1">
-          <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <div className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-slate-500">
             Lesson {lessonKey}
           </div>
 
-          <h3 className="text-xl font-black text-slate-900">{cardTitle}</h3>
-
-          <p className="text-sm font-medium text-slate-500 mt-1">
-            {cardOutcome}
-          </p>
+          <h3 className="text-2xl md:text-3xl font-black text-slate-950 leading-tight">
+            {cardTitle}
+          </h3>
 
           {tamilOutcome && (
-            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
-                Tamil Support
-              </div>
-              <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-700 font-tamil">
+            <div className="mt-5 rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
+              <p className="text-lg md:text-xl font-bold leading-relaxed text-slate-800 font-tamil">
                 {tamilOutcome}
               </p>
             </div>
@@ -166,7 +161,7 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
           )}
 
           {/* 📊 Mode Chips Row */}
-          <div className="flex flex-wrap gap-2 mt-4">
+          <div className="flex flex-wrap gap-3 mt-5">
             <ModeChip label="Typing" value={typingProg} color="orange" />
             <ModeChip label="Reorder" value={reorderProg} color="indigo" />
             <ModeChip label="Audio" value={audioProg} color="emerald" />
@@ -176,7 +171,7 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
             <button
               onClick={handleClick}
               disabled={isLocked}
-              className={`px-8 py-3 rounded-2xl font-black text-sm transition-all ${
+              className={`px-9 py-4 rounded-2xl font-black text-base transition-all ${
                 isLocked
                   ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                   : "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95"
@@ -200,7 +195,7 @@ function ModeChip({ label, value, color }) {
   };
   return (
     <div
-      className={`px-3 py-1 rounded-full border text-[11px] font-bold ${colors[color]}`}
+      className={`px-4 py-2 rounded-full border text-sm md:text-base font-extrabold ${colors[color]}`}
     >
       {label} • {value}%
     </div>
