@@ -56,16 +56,6 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
   const tamilOutcome = meta?.tamilOutcome;
   const patterns = meta?.patterns || [];
 
-  console.log("[LessonCard progress debug]", {
-    title: lesson?.title,
-    displayNum,
-    lessonId: lesson?.id,
-    dayNumber: lesson?.day_number,
-    lessonKey,
-    progressUserId,
-    reorder: readProgress(progressUserId, lessonKey, "reorder"),
-  });
-
   const typingProg = pct(readProgress(progressUserId, lessonKey, "typing"));
   const reorderProg = pct(readProgress(progressUserId, lessonKey, "reorder"));
   const audioProg = pct(readProgress(progressUserId, lessonKey, "audio"));
@@ -119,21 +109,6 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
     });
   };
 
-  console.log("[LessonCard progress debug]", {
-    title: lesson?.title,
-    displayNum,
-    lessonId: lesson?.id,
-    dayNumber: lesson?.day_number,
-    lessonKey,
-    progressUserId,
-    typing: readProgress(progressUserId, lessonKey, "typing"),
-    reorder: readProgress(progressUserId, lessonKey, "reorder"),
-    audio: readProgress(progressUserId, lessonKey, "audio"),
-    progressKeys: Object.keys(localStorage)
-      .filter((k) => k.startsWith("fj_progress"))
-      .sort(),
-  });
-
   return (
     <div
       className={`relative bg-white rounded-[2.5rem] border p-6 mb-4 transition-all 
@@ -160,9 +135,7 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
             Lesson {lessonKey}
           </div>
 
-          <h3 className="text-xl font-black text-slate-900">
-            {cardTitle}
-          </h3>
+          <h3 className="text-xl font-black text-slate-900">{cardTitle}</h3>
 
           <p className="text-sm font-medium text-slate-500 mt-1">
             {cardOutcome}
@@ -199,18 +172,19 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
             <ModeChip label="Audio" value={audioProg} color="emerald" />
           </div>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleClick}
-            disabled={isLocked}
-            className={`px-8 py-3 rounded-2xl font-black text-sm transition-all ${
-              isLocked
-                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                : "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95"
-            }`}
-          >
-            {isLocked ? "Locked 🔒" : isStarted ? "Continue →" : "Start →"}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleClick}
+              disabled={isLocked}
+              className={`px-8 py-3 rounded-2xl font-black text-sm transition-all ${
+                isLocked
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  : "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95"
+              }`}
+            >
+              {isLocked ? "Locked 🔒" : isStarted ? "Continue →" : "Start →"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
