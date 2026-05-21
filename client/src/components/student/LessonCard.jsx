@@ -3,6 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 
 import { readProgress, pct } from "@/lib/progressStore";
+import { lessonMeta } from "@/data/lessonMeta";
 
 import { useAuth } from "../../context/AuthContext";
 import { freeAllowsLesson } from "../../lib/accessRules";
@@ -30,6 +31,30 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
     null;
 
   const lessonKey = Number(lesson.day_number || displayNum || lesson.id || 0);
+
+  const isIntermediateRoute = window.location.pathname.startsWith("/i/");
+  const levelKey = isIntermediateRoute ? "intermediate" : "beginner";
+
+  const meta = lessonMeta?.[levelKey]?.[lessonKey];
+
+  const rawLessonTitle = lesson?.title || "";
+  const isGenericLessonTitle =
+    rawLessonTitle === `Lesson ${lessonKey}` ||
+    rawLessonTitle === `Lesson ${displayNum}`;
+
+  const cardTitle =
+    meta?.title ||
+    (!isGenericLessonTitle && rawLessonTitle
+      ? rawLessonTitle
+      : `Lesson ${lessonKey}`);
+
+  const cardOutcome =
+    meta?.outcome ||
+    lesson?.description ||
+    "Master these sentence structures through active practice.";
+
+  const tamilOutcome = meta?.tamilOutcome;
+  const patterns = meta?.patterns || [];
 
   console.log("[LessonCard progress debug]", {
     title: lesson?.title,
@@ -131,13 +156,41 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex-1">
+          <div className="mb-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            Lesson {lessonKey}
+          </div>
+
           <h3 className="text-xl font-black text-slate-900">
-            Lesson {displayNum}: {lesson.title || `Mastery Path ${displayNum}`}
+            {cardTitle}
           </h3>
-          <p className="text-sm font-medium text-slate-400 mt-1">
-            {lesson.description ||
-              "Master these sentence structures through active practice."}
+
+          <p className="text-sm font-medium text-slate-500 mt-1">
+            {cardOutcome}
           </p>
+
+          {tamilOutcome && (
+            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                Tamil Support
+              </div>
+              <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-700 font-tamil">
+                {tamilOutcome}
+              </p>
+            </div>
+          )}
+
+          {patterns.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {patterns.map((pattern) => (
+                <span
+                  key={pattern}
+                  className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700"
+                >
+                  {pattern}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* 📊 Mode Chips Row */}
           <div className="flex flex-wrap gap-2 mt-4">
@@ -145,7 +198,6 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
             <ModeChip label="Reorder" value={reorderProg} color="indigo" />
             <ModeChip label="Audio" value={audioProg} color="emerald" />
           </div>
-        </div>
 
         <div className="flex items-center gap-4">
           <button
