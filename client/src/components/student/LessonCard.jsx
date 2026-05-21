@@ -54,7 +54,6 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
     "Master these sentence structures through active practice.";
 
   const tamilOutcome = meta?.tamilOutcome;
-  const patterns = meta?.patterns || [];
 
   const typingProg = pct(readProgress(progressUserId, lessonKey, "typing"));
   const reorderProg = pct(readProgress(progressUserId, lessonKey, "reorder"));
@@ -131,7 +130,7 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex-1">
-          <div className="mb-3 text-sm font-black uppercase tracking-[0.28em] text-slate-500">
+          <div className="mb-4 text-2xl md:text-3xl font-black uppercase tracking-[0.18em] text-slate-800">
             Lesson {lessonKey}
           </div>
 
@@ -144,19 +143,6 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
               <p className="text-lg md:text-xl font-bold leading-relaxed text-slate-800 font-tamil">
                 {tamilOutcome}
               </p>
-            </div>
-          )}
-
-          {patterns.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {patterns.map((pattern) => (
-                <span
-                  key={pattern}
-                  className="rounded-full border border-violet-100 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700"
-                >
-                  {pattern}
-                </span>
-              ))}
             </div>
           )}
 
@@ -195,7 +181,7 @@ function ModeChip({ label, value, color }) {
   };
   return (
     <div
-      className={`px-4 py-2 rounded-full border text-sm md:text-base font-extrabold ${colors[color]}`}
+      className={`px-5 py-2.5 rounded-full border text-base md:text-lg font-black ${colors[color]}`}
     >
       {label} • {value}%
     </div>
