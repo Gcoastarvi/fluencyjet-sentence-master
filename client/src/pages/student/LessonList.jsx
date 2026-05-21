@@ -321,31 +321,21 @@ export default function LessonList({ difficulty }) {
   const unitOneProgress = useMemo(() => {
     if (!modules || modules.length === 0) return 0;
 
-    // 1. Grab the current active Unit (usually the first one)
-    const activeModule = modules[0];
-    const lessons = activeModule?.lessons || [];
+    const unitOne = modules.find((m) => Number(m.id) === 1) || modules[0];
+    const unitLessons = unitOne?.lessons || [];
 
-    if (lessons.length === 0) return 0;
+    if (unitLessons.length === 0) return 0;
 
-    // 2. Sum up progress by checking every possible naming convention
-    const total = lessons.reduce((acc, lesson) => {
-      // Check for 'progress' object or 'percentage' field
-      const p = lesson.progress || {};
-      const typing = Number(p.typing || 0);
-      const reorder = Number(p.reorder || 0);
-      const audio = Number(p.audio || 0);
+    const total = unitLessons.reduce((sum, lesson) => {
+      const lessonNumber = Number(
+        lesson.day_number || lesson.dayNumber || lesson.lessonId || lesson.id,
+      );
 
-      // Use the stored percentage if the individual modes are missing
-      const lessonAvg =
-        typing + reorder + audio > 0
-          ? (typing + reorder + audio) / 3
-          : Number(lesson.percentage || 0);
-
-      return acc + lessonAvg;
+      return sum + overallLessonPct(progressUserId, lessonNumber);
     }, 0);
 
-    return Math.round(total / lessons.length);
-  }, [modules]);
+    return Math.round(total / unitLessons.length);
+  }, [modules, progressUserId]);
 
   const [showLeagueIntro, setShowLeagueIntro] = useState(() => {
     return !localStorage.getItem("league_intro_seen");
@@ -398,13 +388,18 @@ export default function LessonList({ difficulty }) {
               </button>
             ) : (
               <span className="text-xs font-black text-indigo-600">
-                {Math.round(
-                  (lessons.filter(
-                    (l) => overallLessonPct(progressUserId, l.id) >= 100,
-                  ).length /
-                    lessons.length) *
-                    100,
-                )}
+                {lessons.length > 0
+                  ? Math.round(
+                      lessons.reduce((sum, l) => {
+                        const lessonNumber = Number(
+                          l.day_number || l.dayNumber || l.id,
+                        );
+                        return (
+                          sum + overallLessonPct(progressUserId, lessonNumber)
+                        );
+                      }, 0) / lessons.length,
+                    )
+                  : 0}
                 % Overall
               </span>
             )}
@@ -418,7 +413,7 @@ export default function LessonList({ difficulty }) {
             />
           </div>
           <p className="text-[10px] font-bold text-slate-400 text-right">
-            {unitOneProgress}% of Unit 1 Mastered
+            Unit 1 Progress: {unitOneProgress}%
           </p>
 
           {/* 🎯 UPDATED: Smart Navigation Pill Menu */}
@@ -555,8 +550,7 @@ export default function LessonList({ difficulty }) {
           ))}
         </div>
 
-        {/* 🎯 Right Column: Daily Mission Sidebar (4/12 space) */}
-        {/* 242: 🎯 Right Column: Daily Mission Sidebar */}
+        {/* 🎯 Right Column: Daily Mission Sidebar */}
         <aside className="lg:col-span-4 space-y-6">
           <div className="sticky top-32 bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden">
             {/* 🏆 UNIT MASTERED CELEBRATION OVERLAY */}
