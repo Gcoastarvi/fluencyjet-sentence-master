@@ -317,6 +317,18 @@ export default function LessonList({ difficulty }) {
     }));
   }, [lessons]);
 
+  const getLessonNumber = (lesson, fallbackNumber) =>
+    Number(
+      lesson?.day_number ||
+        lesson?.dayNumber ||
+        lesson?.lessonNumber ||
+        lesson?.lesson_number ||
+        lesson?.orderIndex ||
+        fallbackNumber ||
+        lesson?.id ||
+        0,
+    );
+
   // 🎯 THE SAFE UNIT PROGRESS CALCULATOR
   const unitOneProgress = useMemo(() => {
     if (!modules || modules.length === 0) return 0;
@@ -326,11 +338,8 @@ export default function LessonList({ difficulty }) {
 
     if (unitLessons.length === 0) return 0;
 
-    const total = unitLessons.reduce((sum, lesson) => {
-      const lessonNumber = Number(
-        lesson.day_number || lesson.dayNumber || lesson.lessonId || lesson.id,
-      );
-
+    const total = unitLessons.reduce((sum, lesson, index) => {
+      const lessonNumber = getLessonNumber(lesson, index + 1);
       return sum + overallLessonPct(progressUserId, lessonNumber);
     }, 0);
 
@@ -390,10 +399,8 @@ export default function LessonList({ difficulty }) {
               <span className="text-xs font-black text-indigo-600">
                 {lessons.length > 0
                   ? Math.round(
-                      lessons.reduce((sum, l) => {
-                        const lessonNumber = Number(
-                          l.day_number || l.dayNumber || l.id,
-                        );
+                      lessons.reduce((sum, lesson, index) => {
+                        const lessonNumber = getLessonNumber(lesson, index + 1);
                         return (
                           sum + overallLessonPct(progressUserId, lessonNumber)
                         );
