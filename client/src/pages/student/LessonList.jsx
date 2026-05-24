@@ -384,7 +384,11 @@ export default function LessonList({ difficulty }) {
               <h3 className="text-[10px] font-black uppercase text-indigo-600 tracking-widest">
                 Current Progress
               </h3>
-              <p className="text-sm font-bold text-slate-900">Module Mastery</p>
+              <p className="text-sm font-bold text-slate-900">
+                {window.location.pathname.startsWith("/i/")
+                  ? "Intermediate Journey"
+                  : "Beginner Journey"}
+              </p>
             </div>
 
             {/* 👑 Smart Upgrade Button or Progress % */}
