@@ -9,7 +9,7 @@ export const lessonMeta = {
       patterns: ["I am...", "I am from...", "I am a..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194920934",
         ratio: "9:16",
       },
     },
@@ -21,7 +21,7 @@ export const lessonMeta = {
       patterns: ["I want...", "I need...", "I like..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194920950",
         ratio: "9:16",
       },
     },
@@ -33,7 +33,7 @@ export const lessonMeta = {
       patterns: ["Who...?", "What...?", "Where...?"],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194920983",
         ratio: "9:16",
       },
     },
@@ -45,7 +45,7 @@ export const lessonMeta = {
       patterns: ["I am not...", "I’m not a...", "I’m not from..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194920998",
         ratio: "9:16",
       },
     },
@@ -57,7 +57,7 @@ export const lessonMeta = {
       patterns: ["Are you...?", "Are you a...?", "Are you from...?"],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194920999",
         ratio: "9:16",
       },
     },
@@ -67,6 +67,11 @@ export const lessonMeta = {
       tamilOutcome:
         "நீங்கள் இயல்பான பேச்சில் சுருக்க வடிவங்களைப் பயன்படுத்த முடியும்.",
       patterns: ["I’m...", "You’re...", "He’s..."],
+      video: {
+        provider: "vimeo",
+        id: "1194923920",
+        ratio: "9:16",
+      },
     },
     7: {
       title: "Ask About People at Work",
@@ -75,7 +80,7 @@ export const lessonMeta = {
       patterns: ["Who is he?", "Who is she?", "Who are they?"],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194923941",
         ratio: "9:16",
       },
     },
@@ -91,7 +96,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194923975",
         ratio: "9:16",
       },
     },
@@ -103,7 +108,7 @@ export const lessonMeta = {
       patterns: ["I am...", "I work as...", "I am from..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194923992",
         ratio: "9:16",
       },
     },
@@ -115,7 +120,7 @@ export const lessonMeta = {
       patterns: ["I’m...", "I am a...", "I work as..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194924010",
         ratio: "9:16",
       },
     },
@@ -785,7 +790,7 @@ export const lessonMeta = {
       title: "Talk About Food and Daily Needs",
       outcome: "You can ask for fruits, vegetables, and daily items.",
       tamilOutcome:
-        "நீங்கள் பழங்கள், காய்கறிகள், தினசரி பொருட்கள் பற்றி கேட்க முடியும்.",
+        "நீங்கள் பழங்கள், காய்கறிகள், தினசரs�� பொருட்கள் பற்றி கேட்க முடியும்.",
       patterns: ["I need an...", "I want some...", "Do you have...?"],
       video: {
         provider: "vimeo",
@@ -1481,7 +1486,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1193292365",
+        id: "1194960524",
         ratio: "9:16",
       },
     },
@@ -1493,7 +1498,7 @@ export const lessonMeta = {
       patterns: ["I come from...", "I grew up in...", "I’m based in..."],
       video: {
         provider: "vimeo",
-        id: "1193292402",
+        id: "1194960549",
         ratio: "9:16",
       },
     },
@@ -1509,7 +1514,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194960860",
         ratio: "9:16",
       },
     },
@@ -1521,7 +1526,7 @@ export const lessonMeta = {
       patterns: ["I’m good at...", "I know how to...", "I can handle..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194960875",
         ratio: "9:16",
       },
     },
@@ -1585,7 +1590,7 @@ export const lessonMeta = {
       outcome:
         "You can introduce a colleague or contact in a professional way.",
       tamilOutcome:
-        "நீங்கள் சக ஊழியர் அல்லது தொடர்பை தொழில்முறையாக அறிமுகப்படுத்த மு���ிய ��ம்.",
+        "நீங்கள் சக ஊழியர் அல்லது தொடர்s��ை தொழில்முறையாக அறிமுகப்படுத்த மு�஽���ிய ��ம்.",
       patterns: [
         "Let me introduce...",
         "This is my colleague...",
@@ -1677,7 +1682,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194961794",
         ratio: "9:16",
       },
     },
@@ -1693,7 +1698,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194961818",
         ratio: "9:16",
       },
     },
@@ -1708,7 +1713,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1193308783",
         ratio: "9:16",
       },
     },
@@ -1724,7 +1729,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1193308783",
+        id: "1194961844",
         ratio: "9:16",
       },
     },
@@ -2506,7 +2511,7 @@ export const lessonMeta = {
       patterns: ["I think...", "I believe...", "In my opinion..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194963418",
         ratio: "9:16",
       },
     },
@@ -2522,7 +2527,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194963449",
         ratio: "9:16",
       },
     },
@@ -2534,7 +2539,7 @@ export const lessonMeta = {
       patterns: ["Because...", "Since...", "The reason is..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194963467",
         ratio: "9:16",
       },
     },
@@ -2547,7 +2552,7 @@ export const lessonMeta = {
       patterns: ["For example...", "For instance...", "A good example is..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194963497",
         ratio: "9:16",
       },
     },
@@ -2559,7 +2564,7 @@ export const lessonMeta = {
       patterns: ["Exactly.", "I completely agree.", "I agree to some extent."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194963529",
         ratio: "9:16",
       },
     },
@@ -2575,7 +2580,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194964889",
         ratio: "9:16",
       },
     },
@@ -2591,7 +2596,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194964907",
         ratio: "9:16",
       },
     },
@@ -2604,7 +2609,7 @@ export const lessonMeta = {
       patterns: ["It depends.", "In some cases...", "It depends on..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194964937",
         ratio: "9:16",
       },
     },
@@ -2616,7 +2621,7 @@ export const lessonMeta = {
       patterns: ["If we do this...", "If this happens...", "We can..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194964960",
         ratio: "9:16",
       },
     },
@@ -2628,7 +2633,7 @@ export const lessonMeta = {
       patterns: ["In my opinion...", "The reason is...", "For example..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194964969",
         ratio: "9:16",
       },
     },
@@ -2641,7 +2646,7 @@ export const lessonMeta = {
       patterns: ["At the beginning...", "In the middle...", "In the end..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194996382",
         ratio: "9:16",
       },
     },
@@ -2656,7 +2661,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194996419",
         ratio: "9:16",
       },
     },
@@ -2672,7 +2677,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194996469",
         ratio: "9:16",
       },
     },
@@ -2683,7 +2688,7 @@ export const lessonMeta = {
       patterns: ["Suddenly...", "Out of nowhere...", "At that moment..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194996515",
         ratio: "9:16",
       },
     },
@@ -2695,7 +2700,7 @@ export const lessonMeta = {
       patterns: ["I had already...", "Before that, I had...", "By the time..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1194996674",
         ratio: "9:16",
       },
     },
@@ -2707,7 +2712,7 @@ export const lessonMeta = {
       patterns: ["Then...", "After that...", "Meanwhile..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066295",
         ratio: "9:16",
       },
     },
@@ -2723,7 +2728,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066290",
         ratio: "9:16",
       },
     },
@@ -2735,7 +2740,7 @@ export const lessonMeta = {
       patterns: ["He said...", "She told me...", "They asked me..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066308",
         ratio: "9:16",
       },
     },
@@ -2751,7 +2756,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066337",
         ratio: "9:16",
       },
     },
@@ -2763,7 +2768,7 @@ export const lessonMeta = {
       patterns: ["It all started when...", "Suddenly...", "In the end..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066340",
         ratio: "9:16",
       },
     },
@@ -2775,7 +2780,7 @@ export const lessonMeta = {
       patterns: ["The issue is...", "The problem is...", "We are facing..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066904",
         ratio: "9:16",
       },
     },
@@ -2790,7 +2795,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066910",
         ratio: "9:16",
       },
     },
@@ -2801,7 +2806,7 @@ export const lessonMeta = {
       patterns: ["I suggest...", "What if we...?", "We could try..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066917",
         ratio: "9:16",
       },
     },
@@ -2816,7 +2821,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066941",
         ratio: "9:16",
       },
     },
@@ -2832,7 +2837,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195066947",
         ratio: "9:16",
       },
     },
@@ -2848,7 +2853,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195067401",
         ratio: "9:16",
       },
     },
@@ -2864,7 +2869,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195067412",
         ratio: "9:16",
       },
     },
