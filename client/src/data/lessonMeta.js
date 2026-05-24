@@ -2880,7 +2880,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195130913",
         ratio: "9:16",
       },
     },
@@ -2896,7 +2896,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195130950",
         ratio: "9:16",
       },
     },
@@ -2908,7 +2908,7 @@ export const lessonMeta = {
       patterns: ["The issue is...", "It happened because...", "I suggest..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195130974",
         ratio: "9:16",
       },
     },
@@ -2920,7 +2920,7 @@ export const lessonMeta = {
       patterns: ["I’m...", "I’ve...", "I’ll..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195131815",
         ratio: "9:16",
       },
     },
@@ -2931,7 +2931,7 @@ export const lessonMeta = {
       patterns: ["Well...", "So...", "Actually..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195131834",
         ratio: "9:16",
       },
     },
@@ -2947,7 +2947,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195131865",
         ratio: "9:16",
       },
     },
@@ -2959,7 +2959,7 @@ export const lessonMeta = {
       patterns: ["What I mean is...", "Let me rephrase...", "I mean..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195131915",
         ratio: "9:16",
       },
     },
@@ -2971,7 +2971,7 @@ export const lessonMeta = {
       patterns: ["Kind of...", "Sort of...", "A bit..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195131922",
         ratio: "9:16",
       },
     },
@@ -2983,7 +2983,7 @@ export const lessonMeta = {
       patterns: ["To be fair...", "Honestly...", "In a way..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195134643",
         ratio: "9:16",
       },
     },
@@ -2994,7 +2994,7 @@ export const lessonMeta = {
       patterns: ["That makes sense.", "Fair enough.", "I see what you mean."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195134659",
         ratio: "9:16",
       },
     },
@@ -3006,7 +3006,7 @@ export const lessonMeta = {
       patterns: ["Get back to...", "Follow up on...", "Look into..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195134713",
         ratio: "9:16",
       },
     },
@@ -3018,7 +3018,7 @@ export const lessonMeta = {
       patterns: ["Discuss...", "Reply to...", "Move forward..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195134752",
         ratio: "9:16",
       },
     },
@@ -3030,7 +3030,7 @@ export const lessonMeta = {
       patterns: ["Well...", "What I mean is...", "That makes sense."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195134774",
         ratio: "9:16",
       },
     },
@@ -3043,7 +3043,7 @@ export const lessonMeta = {
       patterns: ["I’m currently...", "I’m responsible for...", "My goal is..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195135681",
         ratio: "9:16",
       },
     },
@@ -3058,7 +3058,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195135712",
         ratio: "9:16",
       },
     },
@@ -3070,7 +3070,7 @@ export const lessonMeta = {
       patterns: ["I worked...", "I’m working...", "I’ve been working..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195135750",
         ratio: "9:16",
       },
     },
@@ -3086,7 +3086,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195135783",
         ratio: "9:16",
       },
     },
@@ -3102,7 +3102,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195135810",
         ratio: "9:16",
       },
     },
@@ -3118,7 +3118,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195137059",
         ratio: "9:16",
       },
     },
@@ -3130,7 +3130,7 @@ export const lessonMeta = {
       patterns: ["In my opinion...", "The reason is...", "For example..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195137087",
         ratio: "9:16",
       },
     },
@@ -3142,7 +3142,7 @@ export const lessonMeta = {
       patterns: ["It all started when...", "Suddenly...", "In the end..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195137131",
         ratio: "9:16",
       },
     },
@@ -3154,7 +3154,7 @@ export const lessonMeta = {
       patterns: ["The issue is...", "It happened because...", "I suggest..."],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195137148",
         ratio: "9:16",
       },
     },
@@ -3170,7 +3170,7 @@ export const lessonMeta = {
       ],
       video: {
         provider: "vimeo",
-        id: "1192998909",
+        id: "1195137198",
         ratio: "9:16",
       },
     },
