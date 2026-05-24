@@ -3,10 +3,10 @@ export const lessonMeta = {
   beginner: {
     1: {
       title: "Talk About Yourself",
-      outcome: "Speak simple sentences about who you are.",
+      outcome: "You can introduce yourself with your name, role, and place.",
       tamilOutcome:
-        "உங்களைப் பற்றி எளிய ஆங்கில வாக்கியங்களில் பேச கற்றுக்கொள்ளுங்கள்.",
-      patterns: ["I am...", "I am from...", "I am a..."],
+        "நீங்கள் உங்கள் பெயர், வேலை, இடம் சேர்த்து உங்களை அறிமுகப்படுத்த முடியும்.",
+      patterns: ["My name is...", "I am...", "I am from..."],
       video: {
         provider: "vimeo",
         id: "1194920934",
@@ -14,11 +14,10 @@ export const lessonMeta = {
       },
     },
     2: {
-      title: "I Want, I Need, I Like",
-      outcome: "Express your needs, wants, and likes clearly.",
-      tamilOutcome:
-        "எனக்கு வேண்டும், தேவை, பிடிக்கும் என்பதை ஆங்கிலத்தில் சொல்ல கற்றுக்கொள்ளுங்கள்.",
-      patterns: ["I want...", "I need...", "I like..."],
+      title: "Talk About Your Daily Routine",
+      outcome: "You can speak about your daily routine clearly.",
+      tamilOutcome: "நீங்கள் உங்கள் தினசரி வழக்கத்தை தெளிவாக பேச முடியும்.",
+      patterns: ["I wake up...", "I go...", "I work..."],
       video: {
         provider: "vimeo",
         id: "1194920950",
@@ -26,11 +25,11 @@ export const lessonMeta = {
       },
     },
     3: {
-      title: "WH Questions",
-      outcome: "Ask simple questions in daily conversations.",
+      title: "Create 1000s of Sentences",
+      outcome: "You can say your wants, needs, and likes confidently.",
       tamilOutcome:
-        "தினசரி உரையாடல்களில் எளிய கேள்விகளை கேட்க கற்றுக்கொள்ளுங்கள்.",
-      patterns: ["Who...?", "What...?", "Where...?"],
+        "நீங்கள் உங்கள் விருப்பம், தேவை, பிடித்தவை பற்றி நம்பிக்கையுடன் சொல்ல முடியும்.",
+      patterns: ["I want...", "I need...", "I like..."],
       video: {
         provider: "vimeo",
         id: "1194920983",
@@ -38,11 +37,11 @@ export const lessonMeta = {
       },
     },
     4: {
-      title: "Say What You Are Not",
-      outcome: "You can correct wrong information about yourself.",
+      title: "Say Who You Are Professionally",
+      outcome: "You can talk about your job or role in simple English.",
       tamilOutcome:
-        "நீங்கள் உங்களைப் பற்றிய தவறான தகவலை திருத்தி சொல்ல முடியும்.",
-      patterns: ["I am not...", "I’m not a...", "I’m not from..."],
+        "நீங்கள் உங்கள் வேலை அல்லது பொறுப்பை எளிய ஆங்கிலத்தில் சொல்ல முடியும்.",
+      patterns: ["I am a...", "I am an...", "I’m a..."],
       video: {
         provider: "vimeo",
         id: "1194920998",
@@ -50,11 +49,10 @@ export const lessonMeta = {
       },
     },
     5: {
-      title: "Ask About Roles and Identity",
-      outcome: "You can ask simple questions about someone’s role.",
-      tamilOutcome:
-        "நீங்கள் ஒருவரின் வேலை அல்லது அடையாளம் பற்றி கேட்க முடியும்.",
-      patterns: ["Are you...?", "Are you a...?", "Are you from...?"],
+      title: "Talk About Your Team",
+      outcome: "You can talk about people, groups, and teams.",
+      tamilOutcome: "நீங்கள் மனிதர்கள், குழுக்கள், அணிகள் பற்றி பேச முடியும்.",
+      patterns: ["You are...", "We are...", "They are..."],
       video: {
         provider: "vimeo",
         id: "1194920999",
@@ -62,11 +60,11 @@ export const lessonMeta = {
       },
     },
     6: {
-      title: "Speak Naturally With Short Forms",
-      outcome: "You can use short forms in natural speaking.",
+      title: "Introduce Colleagues and Companies",
+      outcome: "You can introduce another person or company.",
       tamilOutcome:
-        "நீங்கள் இயல்பான பேச்சில் சுருக்க வடிவங்களைப் பயன்படுத்த முடியும்.",
-      patterns: ["I’m...", "You’re...", "He’s..."],
+        "நீங்கள் மற்றொருவரையோ நிறுவனத்தையோ அறிமுகப்படுத்த முடியும்.",
+      patterns: ["He is...", "She is...", "It is..."],
       video: {
         provider: "vimeo",
         id: "1194923920",
@@ -74,10 +72,10 @@ export const lessonMeta = {
       },
     },
     7: {
-      title: "Ask About People at Work",
-      outcome: "You can ask who someone is in the workplace.",
-      tamilOutcome: "நீங்கள் வேலை இடத்தில் ஒருவர் யார் என்று கேட்க முடியும்.",
-      patterns: ["Who is he?", "Who is she?", "Who are they?"],
+      title: "Correct Wrong Information Politely",
+      outcome: "You can say what is not true and correct it politely.",
+      tamilOutcome: "நீங்கள் தவறான தகவலை மரியாதையாக திருத்தி சொல்ல முடியும்.",
+      patterns: ["I am not...", "I’m not a...", "Actually, I am..."],
       video: {
         provider: "vimeo",
         id: "1194923941",
@@ -85,15 +83,11 @@ export const lessonMeta = {
       },
     },
     8: {
-      title: "Check In at the Airport",
-      outcome: "You can speak during a simple business travel check-in.",
+      title: "Ask About Roles and People",
+      outcome: "You can ask simple identity questions about people.",
       tamilOutcome:
-        "நீங்கள் விமான நிலையத்தில் எளிய செக்-இன் உரையாடல் பேச முடியும்.",
-      patterns: [
-        "I am here for...",
-        "I’m travelling to...",
-        "I have a booking...",
-      ],
+        "நீங்கள் மனிதர்கள் பற்றி எளிய அடையாள கேள்விகள் கேட்க முடியும்.",
+      patterns: ["Are you...?", "Who is he?", "Who is she?"],
       video: {
         provider: "vimeo",
         id: "1194923975",
@@ -101,11 +95,11 @@ export const lessonMeta = {
       },
     },
     9: {
-      title: "Give a Professional Self-Introduction",
-      outcome: "You can introduce yourself with role and identity details.",
+      title: "Speak Naturally With Short Forms",
+      outcome: "You can use short forms and sound more natural.",
       tamilOutcome:
-        "நீங்கள் உங்கள் வேலை மற்றும் அடையாளத்துடன் உங்களை அறிமுகப்படுத்த முடியும்.",
-      patterns: ["I am...", "I work as...", "I am from..."],
+        "நீங்கள் short forms பயன்படுத்தி இன்னும் இயல்பாக பேச முடியும்.",
+      patterns: ["I’m...", "You’re...", "They’re..."],
       video: {
         provider: "vimeo",
         id: "1194923992",
@@ -113,11 +107,12 @@ export const lessonMeta = {
       },
     },
     10: {
-      title: "Introduce Yourself With Confidence",
-      outcome: "You can give a clear and confident self-introduction.",
+      title: "Professional Self-Introduction Challenge",
+      outcome:
+        "You can introduce yourself confidently in real-life situations.",
       tamilOutcome:
-        "நீங்கள் தெளிவாகவும் நம்பிக்கையுடனும் சுய அறிமுகம் கொடுக்க முடியும்.",
-      patterns: ["I’m...", "I am a...", "I work as..."],
+        "நீங்கள் உண்மையான சூழ்நிலைகளில் உங்களை நம்பிக்கையுடன் அறிமுகப்படுத்த முடியும்.",
+      patterns: ["I’m here for...", "My name is...", "I work as..."],
       video: {
         provider: "vimeo",
         id: "1194924010",
@@ -790,7 +785,7 @@ export const lessonMeta = {
       title: "Talk About Food and Daily Needs",
       outcome: "You can ask for fruits, vegetables, and daily items.",
       tamilOutcome:
-        "நீங்கள் பழங்கள், காய்கறிகள், தினசரs�� பொருட்கள் பற்றி கேட்க முடியும்.",
+        "நீங்கள் பழங���கள், காய்���றிகள், தின���ரs�� பொ���ுட்கள் பற்றி கேட்க முடிt��ும்.",
       patterns: ["I need an...", "I want some...", "Do you have...?"],
       video: {
         provider: "vimeo",
@@ -1477,8 +1472,7 @@ export const lessonMeta = {
       title: "Upgrade Your Self-Introduction",
       outcome:
         "You can give a stronger and more complete personal introduction.",
-      tamilOutcome:
-        "நீங்கள் வலிமையான மற்றும் முழுமையான சுய அறிமுகம் கொடுக்க முடியும்.",
+      tamilOutcome: "வேற லெவல் Self Intro குடுங்க .",
       patterns: [
         "I’m currently...",
         "I have experience in...",
@@ -1491,18 +1485,6 @@ export const lessonMeta = {
       },
     },
     2: {
-      title: "Talk About Your Background Naturally",
-      outcome: "You can explain where you come from and where you are based.",
-      tamilOutcome:
-        "நீங்கள் உங்கள் பின்னணி மற்றும் இருப்பிடத்தை இயல்பாக விளக்க முடியும்.",
-      patterns: ["I come from...", "I grew up in...", "I’m based in..."],
-      video: {
-        provider: "vimeo",
-        id: "1194960549",
-        ratio: "9:16",
-      },
-    },
-    3: {
       title: "Describe Your Job Role Clearly",
       outcome: "You can explain your work and responsibilities clearly.",
       tamilOutcome:
@@ -1512,6 +1494,19 @@ export const lessonMeta = {
         "I’m responsible for...",
         "My role involves...",
       ],
+      video: {
+        provider: "vimeo",
+        id: "1194960549",
+        ratio: "9:16",
+      },
+    },
+    3: {
+      title: "Create Sentences With 4 Powerful Patterns",
+      outcome:
+        "You can speak about your routine, effort, wants, and hopes instantly.",
+      tamilOutcome:
+        "நீங்கள் உங்கள் வழக்கம், முயற்சி, விருப்பம், நம்பிக்கை பற்றி உடனே பேச முடியும்.",
+      patterns: ["I usually...", "I’m trying to...", "I hope to..."],
       video: {
         provider: "vimeo",
         id: "1194960860",
@@ -1590,7 +1585,7 @@ export const lessonMeta = {
       outcome:
         "You can introduce a colleague or contact in a professional way.",
       tamilOutcome:
-        "நீங்கள் சக ஊழியர் அல்லது தொடர்s��ை தொழில்முறையாக அறிமுகப்படுத்த மு�஽���ிய ��ம்.",
+        "நீங்கள் சக ஊழியர் அல்லது தொடர்பை தொழில்முறையாக ��������ிமுகப்படுத்த முடியும்.",
       patterns: [
         "Let me introduce...",
         "This is my colleague...",
