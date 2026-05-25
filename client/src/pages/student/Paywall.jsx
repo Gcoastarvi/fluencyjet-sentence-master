@@ -4,6 +4,7 @@ import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { getMe } from "../../api/apiClient";
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 import { trackPaywallView, trackUpgradeClick } from "../../lib/tracking";
+import WebinarInviteCard from "../../components/student/WebinarInviteCard";
 
 export default function Paywall() {
   const navigate = useNavigate();
@@ -140,6 +141,10 @@ export default function Paywall() {
     );
   }
 
+  const paywallTrack = inferTrack();
+  const lessonMatch = String(from || "").match(/lesson_(\d+)/);
+  const paywallLessonNumber = lessonMatch ? Number(lessonMatch[1]) : 4;
+
   // FREE USER PAYWALL
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -175,6 +180,13 @@ export default function Paywall() {
         >
           Upgrade Now
         </button>
+
+        <WebinarInviteCard
+          variant="paywall"
+          lessonNumber={paywallLessonNumber}
+          track={paywallTrack}
+          source={`paywall_lesson_${paywallLessonNumber}`}
+        />
 
         {/* 🎯 THE ULTIMATE TRACK ANCHOR */}
         <button
