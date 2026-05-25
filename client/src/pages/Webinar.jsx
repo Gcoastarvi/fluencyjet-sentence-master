@@ -18,10 +18,11 @@ export default function Webinar() {
     return "FluencyJet learner";
   }, [source]);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     const form = new FormData(e.currentTarget);
+
     const payload = {
       name: form.get("name"),
       phone: form.get("phone"),
@@ -33,8 +34,24 @@ export default function Webinar() {
       contextLabel,
     };
 
-    console.log("[webinar-registration-placeholder]", payload);
-    setSubmitted(true);
+    try {
+      await fetch(
+        "https://script.google.com/macros/s/AKfycbwA3QURJ2X-D_Ww4GfhteuUxghA7PLfHuHf7hlrlWEKrCBiShAtqpPLgFwneJP2fn-V/exec",
+        {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Webinar registration failed:", error);
+      alert("Something went wrong. Please try again.");
+    }
   }
 
   return (
@@ -55,12 +72,14 @@ export default function Webinar() {
               </h1>
 
               <p className="mt-5 text-lg font-semibold leading-relaxed text-slate-600 md:text-xl">
-                Learn how to speak English without translating in your mind — using the FluencyJet sentence-building method.
+                Learn how to speak English without translating in your mind —
+                using the FluencyJet sentence-building method.
               </p>
 
               <div className="mt-6 rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
                 <p className="font-tamil text-lg font-bold leading-relaxed text-slate-800">
-                  தமிழில் நினைத்து English-க்கு translate செய்யாமல் பேசுவது எப்படி என்று என் free live class-ல் கற்றுக்கொள்ளுங்கள்.
+                  தமிழில் நினைத்து English-க்கு translate செய்யாமல் பேசுவது
+                  எப்படி என்று என் free live class-ல் கற்றுக்கொள்ளுங்கள்.
                 </p>
               </div>
 
@@ -81,7 +100,10 @@ export default function Webinar() {
               </div>
             </div>
 
-            <div id="register" className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-2xl shadow-slate-200/70">
+            <div
+              id="register"
+              className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-2xl shadow-slate-200/70"
+            >
               {!submitted ? (
                 <>
                   <div className="mb-5">
@@ -143,10 +165,14 @@ export default function Webinar() {
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
                       >
                         <option value="">Select your goal</option>
-                        <option value="job_interview">Job / Interview English</option>
+                        <option value="job_interview">
+                          Job / Interview English
+                        </option>
                         <option value="workplace">Workplace English</option>
                         <option value="daily_life">Daily Life English</option>
-                        <option value="sentence_formation">Grammar & Sentence Formation</option>
+                        <option value="sentence_formation">
+                          Grammar & Sentence Formation
+                        </option>
                         <option value="confidence">Speaking Confidence</option>
                       </select>
                     </div>
@@ -158,8 +184,9 @@ export default function Webinar() {
                       Reserve My Free Seat
                     </button>
 
-                    <p className="text-center text-xs font-semibold text-slate-400">
-                      We will send the class details on WhatsApp.
+                    <p className="text-center text-[11px] font-semibold leading-relaxed text-slate-400">
+                      By registering, you agree to receive class updates on
+                      WhatsApp.
                     </p>
                   </form>
                 </>
@@ -175,7 +202,8 @@ export default function Webinar() {
                     We’ll send the Zoom link on WhatsApp before the live class.
                   </p>
                   <p className="font-tamil mt-4 text-base font-bold leading-relaxed text-slate-700">
-                    நீங்கள் register செய்துவிட்டீர்கள். Zoom link-ஐ live class-க்கு முன் WhatsApp-ல் அனுப்புகிறோம்.
+                    நீங்கள் register செய்துவிட்டீர்கள். Zoom link-ஐ live
+                    class-க்கு முன் WhatsApp-ல் அனுப்புகிறோம்.
                   </p>
 
                   <Link
@@ -207,11 +235,16 @@ export default function Webinar() {
               ta: "FluencyJet மூலம் தினமும் speaking confidence பெறுவது எப்படி",
             },
           ].map((item) => (
-            <div key={item.title} className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg shadow-slate-100">
+            <div
+              key={item.title}
+              className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg shadow-slate-100"
+            >
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-xl">
                 ✓
               </div>
-              <h3 className="text-xl font-black text-slate-950">{item.title}</h3>
+              <h3 className="text-xl font-black text-slate-950">
+                {item.title}
+              </h3>
               <p className="font-tamil mt-3 text-base font-bold leading-relaxed text-slate-600">
                 {item.ta}
               </p>
@@ -227,8 +260,13 @@ export default function Webinar() {
               Who is this for?
             </p>
             <ul className="mt-5 space-y-3 text-base font-bold text-slate-700">
-              <li>• Tamil speakers who understand English but struggle to speak</li>
-              <li>• Students, job seekers, professionals, business owners, and homemakers</li>
+              <li>
+                • Tamil speakers who understand English but struggle to speak
+              </li>
+              <li>
+                • Students, job seekers, professionals, business owners, and
+                homemakers
+              </li>
               <li>• Anyone who wants to speak simple English confidently</li>
             </ul>
           </div>
@@ -241,7 +279,8 @@ export default function Webinar() {
               Aravind • English Coach
             </h3>
             <p className="mt-3 text-base font-semibold leading-relaxed text-slate-600">
-              Language teacher, memory trainer, FluencyJet founder, and Guinness World Record holder in memory.
+              Language teacher, memory trainer, FluencyJet founder, and Guinness
+              World Record holder in memory.
             </p>
             <p className="font-tamil mt-3 text-base font-bold leading-relaxed text-slate-700">
               English Coach Aravind நடத்தும் live class.
@@ -255,10 +294,19 @@ export default function Webinar() {
         <div className="space-y-4">
           {[
             ["Is this class free?", "Yes, this live class is free."],
-            ["Will the class be in Tamil or English?", "The class will be in simple English with Tamil explanation."],
-            ["Will I get the Zoom link?", "Yes, we will send the Zoom link on WhatsApp before the class."],
+            [
+              "Will the class be in Tamil or English?",
+              "The class will be in simple English with Tamil explanation.",
+            ],
+            [
+              "Will I get the Zoom link?",
+              "Yes, we will send the Zoom link on WhatsApp before the class.",
+            ],
           ].map(([q, a]) => (
-            <div key={q} className="rounded-3xl border border-slate-100 bg-white p-6">
+            <div
+              key={q}
+              className="rounded-3xl border border-slate-100 bg-white p-6"
+            >
               <h3 className="font-black text-slate-950">{q}</h3>
               <p className="mt-2 font-semibold text-slate-600">{a}</p>
             </div>
