@@ -15,6 +15,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Student pages
 import Home from "./pages/Home";
+import Webinar from "./pages/Webinar";
 import Dashboard from "./pages/student/Dashboard.jsx";
 import LessonDetail from "./pages/student/LessonDetail.jsx";
 import LessonQuiz from "./pages/student/LessonQuiz.jsx";
@@ -163,6 +164,7 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signin" element={<Navigate to="/login" replace />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/webinar" element={<Webinar />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/paywall" element={<Paywall />} />
