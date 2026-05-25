@@ -49,6 +49,8 @@ const corsOptions = {
       process.env.FRONTEND_URL,
       "https://fluencyjet-sentence-master-production.up.railway.app",
       "https://fluencyjet-sentence-master-production-de09.up.railway.app",
+      "https://www.fluencyjet.com",
+      "https://fluencyjet.com",
     ];
 
     // 2. Allow requests with no origin (like mobile apps or curl)
