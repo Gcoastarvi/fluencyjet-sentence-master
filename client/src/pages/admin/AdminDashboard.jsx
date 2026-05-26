@@ -11,6 +11,7 @@ function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [accessSearch, setAccessSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [broadcastMsg, setBroadcastMsg] = useState("");
@@ -41,6 +42,24 @@ function AdminDashboard() {
       return emailMatch || nameMatch || userMatch;
     });
   }, [searchTerm, users]);
+
+  const filteredAccessUsers = useMemo(() => {
+    const search = (accessSearch || "").toLowerCase().trim();
+    if (!search) return users;
+
+    return (users || []).filter((u) => {
+      const emailMatch = String(u.email || "")
+        .toLowerCase()
+        .includes(search);
+      const nameMatch = String(u.name || "")
+        .toLowerCase()
+        .includes(search);
+      const userMatch = String(u.username || "")
+        .toLowerCase()
+        .includes(search);
+      return emailMatch || nameMatch || userMatch;
+    });
+  }, [accessSearch, users]);
 
   // 🎯 THE LESSON FILTER BRAIN (Fixes the Curriculum Table crash)
   const filteredLessons = useMemo(() => {
@@ -512,9 +531,41 @@ function AdminDashboard() {
 
       {/* 🎯 USER MANAGEMENT TABLE (Insert before Curriculum Overview) */}
       <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm mb-8">
-        <h3 className="text-xl font-black text-slate-900 mb-6">
-          Student Access Control
-        </h3>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+          <div>
+            <h3 className="text-xl font-black text-slate-900">
+              Student Access Control
+            </h3>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              Grant access and manage student level permissions
+            </p>
+          </div>
+
+          <span className="text-[10px] font-black px-4 py-2 bg-indigo-100 text-indigo-600 rounded-full shadow-sm">
+            Showing {filteredAccessUsers.length} of {users.length} Students
+          </span>
+        </div>
+
+        <div className="mb-6 rounded-2xl bg-slate-50 px-5 py-4 border border-slate-100">
+          <div className="flex items-center gap-3">
+            <span className="text-slate-400">🔍</span>
+            <input
+              value={accessSearch}
+              onChange={(e) => setAccessSearch(e.target.value)}
+              placeholder="Search student by name or email..."
+              className="w-full bg-transparent text-sm font-bold text-slate-800 outline-none placeholder:text-slate-400"
+            />
+            {accessSearch && (
+              <button
+                type="button"
+                onClick={() => setAccessSearch("")}
+                className="rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-600 hover:bg-slate-300"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -522,10 +573,11 @@ function AdminDashboard() {
                 <th className="py-4 px-4">Student</th>
                 <th className="py-4 px-4">Current Track</th>
                 <th className="py-4 px-4">Access Status</th>
+                <th className="py-4 px-4">Access Level</th>
               </tr>
             </thead>
             <tbody>
-              {users.map((student) => (
+              {filteredAccessUsers.map((student) => (
                 <tr
                   key={student.id}
                   className="border-b border-slate-50 hover:bg-slate-50/50"
@@ -615,6 +667,15 @@ function AdminDashboard() {
                   </td>
                 </tr>
               ))}
+              {filteredAccessUsers.length === 0 && (
+                <tr>
+                  <td colSpan="4" className="py-10 text-center">
+                    <p className="text-sm font-bold text-slate-400">
+                      No student found for “{accessSearch}”
+                    </p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
