@@ -14,6 +14,7 @@ import { getToken } from "@/utils/tokenStore";
 import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
+import { lessonMeta } from "@/data/lessonMeta";
 
 const UI_TEXT = {
   en: {
@@ -1717,6 +1718,20 @@ export default function Dashboard() {
                   const d = resolvedTrack;
                   const isInt = resolvedTrack === "intermediate";
 
+                  const meta = lessonMeta?.[resolvedTrack]?.[lessonNum];
+
+                  const rawLessonTitle = lesson?.title || "";
+                  const isGenericLessonTitle =
+                    rawLessonTitle === `Lesson ${lessonNum}` ||
+                    rawLessonTitle.toLowerCase() ===
+                      `lesson ${lessonNum}`.toLowerCase();
+
+                  const dashboardLessonTitle =
+                    meta?.title ||
+                    (!isGenericLessonTitle && rawLessonTitle
+                      ? rawLessonTitle
+                      : `Lesson ${lessonNum}`);
+
                   const hasPaidAccess =
                     auth?.user?.has_access === true ||
                     auth?.has_access === true ||
@@ -1757,7 +1772,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex-1">
                           <h3 className="font-black text-slate-900 leading-tight mb-1">
-                            {lesson.title || `Mastery ${idx + 1}`}
+                            {dashboardLessonTitle}
                           </h3>
                           <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                             <div
