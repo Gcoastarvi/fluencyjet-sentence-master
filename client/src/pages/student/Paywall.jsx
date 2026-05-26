@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { getMe } from "../../api/apiClient";
-import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
-import { trackPaywallView, trackUpgradeClick } from "../../lib/tracking";
+import { normalizeTrack } from "../../lib/trackRoutes";
+import { trackPaywallView } from "../../lib/tracking";
 import WebinarInviteCard from "../../components/student/WebinarInviteCard";
 
 export default function Paywall() {
@@ -145,41 +145,32 @@ export default function Paywall() {
   const lessonMatch = String(from || "").match(/lesson_(\d+)/);
   const paywallLessonNumber = lessonMatch ? Number(lessonMatch[1]) : 4;
 
-  // FREE USER PAYWALL
+  // FREE USER WEBINAR-FIRST GATE
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white shadow-lg rounded-xl p-8 max-w-md w-full">
-        <h1 className="text-2xl font-bold text-center mb-4">
-          Upgrade to Unlock Full Access 🚀
-        </h1>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-10">
+      <div className="bg-white shadow-2xl shadow-slate-200/70 rounded-[2rem] p-6 sm:p-8 max-w-md w-full border border-slate-100">
+        <div className="text-center">
+          <div className="inline-flex rounded-full bg-violet-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.22em] text-violet-700">
+            Free Live Class
+          </div>
 
-        <p className="text-gray-600 text-center mb-6">
-          You’re currently on the <b>FREE</b> plan. Unlock all sentence
-          exercises, XP boosts, and progress tracking.
-        </p>
+          <h1 className="mt-5 text-2xl sm:text-3xl font-black text-slate-950 leading-tight">
+            Continue Your English Journey with Live Guidance
+          </h1>
 
-        <ul className="space-y-3 mb-6 text-sm text-gray-700">
-          <li>✅ Unlimited sentence practice</li>
-          <li>✅ XP, streaks & leaderboard</li>
-          <li>✅ Advanced lessons</li>
-          <li>✅ Lifetime access</li>
-        </ul>
+          <p className="mt-4 text-sm sm:text-base font-semibold leading-relaxed text-slate-600">
+            You’ve completed the free starter lessons. Before unlocking more
+            lessons, join my free live class and understand the full FluencyJet
+            roadmap.
+          </p>
 
-        <button
-          onClick={() => {
-            trackUpgradeClick({
-              plan: selectedPlan,
-              from,
-            });
-
-            navigate(
-              `/checkout?plan=${encodeURIComponent(selectedPlan)}&from=${encodeURIComponent(from)}`,
-            );
-          }}
-          className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold"
-        >
-          Upgrade Now
-        </button>
+          <div className="mt-5 rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
+            <p className="font-tamil text-base sm:text-lg font-bold leading-relaxed text-slate-800">
+              மேலும் lessons தொடர்வதற்கு முன், என் free live class-ல் சேர்ந்து
+              முழு English fluency roadmap-ஐ புரிந்துகொள்ளுங்கள்.
+            </p>
+          </div>
+        </div>
 
         <WebinarInviteCard
           variant="paywall"
@@ -187,21 +178,6 @@ export default function Paywall() {
           track={paywallTrack}
           source={`paywall_lesson_${paywallLessonNumber}`}
         />
-
-        {/* 🎯 THE ULTIMATE TRACK ANCHOR */}
-        <button
-          onClick={() => {
-            const params = new URLSearchParams(window.location.search);
-            const from = params.get("from") || "lesson_1";
-            const lid = from.split("_")[1] || "1";
-
-            const track = inferTrack();
-            navigate(lessonPathForTrack(track, Number(lid)), { replace: true });
-          }}
-          className="w-full mt-3 py-2 text-sm text-gray-500 hover:underline"
-        >
-          Continue with Free Access
-        </button>
       </div>
     </div>
   );
