@@ -15,6 +15,7 @@ import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 import { lessonMeta } from "@/data/lessonMeta";
+import { overallLessonPct } from "@/lib/progressStore";
 
 const UI_TEXT = {
   en: {
@@ -1246,6 +1247,22 @@ export default function Dashboard() {
     }
   }, [summary.uniqueDays]);
 
+  const progressUserId =
+    auth?.user?.id ||
+    auth?.user?.email ||
+    auth?.id ||
+    auth?.email ||
+    summary?.id ||
+    summary?.email ||
+    (() => {
+      try {
+        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+        return storedUser?.id || storedUser?.email || null;
+      } catch {
+        return null;
+      }
+    })();
+
   const radius = 24;
   const circumference = 2 * Math.PI * radius;
   const progressPercent = Math.min((summary.totalXP || 0) / 1000, 1);
@@ -1682,17 +1699,13 @@ export default function Dashboard() {
               {Array.isArray(lessons) && lessons.length > 0 ? (
                 lessons.map((lesson, idx) => {
                   // 🛡️ Use the real progress from your API (seen in your curl output)
-                  const typingProg = Number(lesson.progress?.typing || 0);
-                  const reorderProg = Number(lesson.progress?.reorder || 0);
-                  const audioProg = Number(lesson.progress?.audio || 0);
-
-                  const avgProgress = Math.round(
-                    (typingProg + reorderProg + audioProg) / 3,
-                  );
-                  const isCompleted = avgProgress === 100;
-
-                  // Unlock Lesson 1 always; others unlock if previous is > 0%
+                  // Use the same local progress source as the lesson cards
                   const lessonNum = idx + 1;
+                  const avgProgress = overallLessonPct(
+                    progressUserId,
+                    lessonNum,
+                  );
+                  const isCompleted = avgProgress >= 100;
 
                   const storedTrack =
                     typeof window !== "undefined"
