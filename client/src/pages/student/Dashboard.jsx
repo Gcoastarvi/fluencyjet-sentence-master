@@ -1682,10 +1682,12 @@ export default function Dashboard() {
               {Array.isArray(lessons) && lessons.length > 0 ? (
                 lessons.map((lesson, idx) => {
                   // 🛡️ Use the real progress from your API (seen in your curl output)
-                  const typingProg = lesson.progress?.typing || 0;
-                  const reorderProg = lesson.progress?.reorder || 0;
+                  const typingProg = Number(lesson.progress?.typing || 0);
+                  const reorderProg = Number(lesson.progress?.reorder || 0);
+                  const audioProg = Number(lesson.progress?.audio || 0);
+
                   const avgProgress = Math.round(
-                    (typingProg + reorderProg) / 2,
+                    (typingProg + reorderProg + audioProg) / 3,
                   );
                   const isCompleted = avgProgress === 100;
 
@@ -1774,11 +1776,17 @@ export default function Dashboard() {
                           <h3 className="font-black text-slate-900 leading-tight mb-1">
                             {dashboardLessonTitle}
                           </h3>
-                          <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-indigo-500 transition-all duration-1000"
-                              style={{ width: `${avgProgress}%` }}
-                            />
+                          <div className="mt-2 flex items-center gap-3">
+                            <div className="h-2 flex-1 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all duration-1000"
+                                style={{ width: `${avgProgress}%` }}
+                              />
+                            </div>
+
+                            <span className="text-[10px] font-black text-slate-400">
+                              {avgProgress}%
+                            </span>
                           </div>
                         </div>
                       </div>
