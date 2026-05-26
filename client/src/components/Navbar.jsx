@@ -77,14 +77,25 @@ export default function Navbar() {
     localStorage.getItem("fj_last_track") || effectiveTrack || "BEGINNER",
   ).toUpperCase();
 
+  const currentPath =
+    typeof window !== "undefined" ? window.location.pathname : "";
+
+  const currentSearch =
+    typeof window !== "undefined" ? window.location.search : "";
+
+  const currentDifficulty = new URLSearchParams(currentSearch).get(
+    "difficulty",
+  );
+
+  const currentRouteTrack =
+    currentPath.startsWith("/i/") || currentDifficulty === "intermediate"
+      ? "INTERMEDIATE"
+      : currentPath.startsWith("/b/") || currentDifficulty === "beginner"
+        ? "BEGINNER"
+        : lastTrack || effectiveTrack || "BEGINNER";
+
   const lessonsHref =
-    effectivePlan === "PRO"
-      ? lastTrack === "INTERMEDIATE"
-        ? "/i/lessons"
-        : "/b/lessons"
-      : effectivePlan === "INTERMEDIATE"
-        ? "/i/lessons"
-        : "/b/lessons";
+    currentRouteTrack === "INTERMEDIATE" ? "/i/lessons" : "/b/lessons";
 
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">

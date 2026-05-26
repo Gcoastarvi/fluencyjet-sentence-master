@@ -35,15 +35,12 @@ export default function LessonNode({ lesson, displayNum, isLocked }) {
       storedUser?.has_access === true || storedUser?.hasAccess === true;
 
     const effectivePlan = String(storedUser?.plan || "FREE").toUpperCase();
-    const effectiveTrack = String(storedUser?.track || "").toUpperCase();
     const currentRouteTrack = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
 
     const hasTrackAccess =
       effectivePlan === "PRO" ||
       effectivePlan === "PAID" ||
-      (hasManualAccess &&
-        (effectivePlan === currentRouteTrack ||
-          effectiveTrack === currentRouteTrack));
+      (hasManualAccess && effectivePlan === currentRouteTrack);
 
     if (!hasTrackAccess && !freeAllowsLesson(routeId)) {
       const plan = isIntermediate ? "INTERMEDIATE" : "BEGINNER";

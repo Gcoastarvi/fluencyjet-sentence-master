@@ -73,10 +73,6 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
       auth?.user?.plan || auth?.plan || storedUser?.plan || "FREE",
     ).toUpperCase();
 
-    const effectiveTrack = String(
-      auth?.user?.track || auth?.track || storedUser?.track || "",
-    ).toUpperCase();
-
     const currentRouteTrack = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
 
     const hasManualAccess =
@@ -88,9 +84,7 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
     const hasTrackAccess =
       effectivePlan === "PRO" ||
       effectivePlan === "PAID" ||
-      (hasManualAccess &&
-        (effectivePlan === currentRouteTrack ||
-          effectiveTrack === currentRouteTrack));
+      (hasManualAccess && effectivePlan === currentRouteTrack);
 
     const isFreeLesson = freeAllowsLesson(lessonKey);
 

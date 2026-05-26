@@ -82,18 +82,12 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
     auth?.user?.plan || auth?.plan || storedUser?.plan || "FREE",
   ).toUpperCase();
 
-  const effectiveTrack = String(
-    auth?.user?.track || auth?.track || storedUser?.track || "",
-  ).toUpperCase();
-
   const currentRouteTrack = String(track || "beginner").toUpperCase();
 
   const hasTrackAccess =
     effectivePlan === "PRO" ||
     effectivePlan === "PAID" ||
-    (hasManualAccess &&
-      (effectivePlan === currentRouteTrack ||
-        effectiveTrack === currentRouteTrack));
+    (hasManualAccess && effectivePlan === currentRouteTrack);
 
   useEffect(() => {
     const routeTrack = window.location.pathname.startsWith("/i/")

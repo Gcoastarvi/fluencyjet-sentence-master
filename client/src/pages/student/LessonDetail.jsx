@@ -305,18 +305,12 @@ export default function LessonDetail() {
     auth?.user?.plan || auth?.plan || storedUser?.plan || "FREE",
   ).toUpperCase();
 
-  const effectiveTrack = String(
-    auth?.user?.track || auth?.track || storedUser?.track || "",
-  ).toUpperCase();
-
   const currentRouteTrack = String(difficulty || "beginner").toUpperCase();
 
   const hasTrackAccess =
     effectivePlan === "PRO" ||
     effectivePlan === "PAID" ||
-    (hasManualAccess &&
-      (effectivePlan === currentRouteTrack ||
-        effectiveTrack === currentRouteTrack));
+    (hasManualAccess && effectivePlan === currentRouteTrack);
 
   const isLocked = Number(dayNumber) > 3 && !hasTrackAccess;
 
@@ -378,7 +372,6 @@ export default function LessonDetail() {
     hasManualAccess,
     hasTrackAccess,
     effectivePlan,
-    effectiveTrack,
   ]);
 
   // 192: Add state for User Metadata

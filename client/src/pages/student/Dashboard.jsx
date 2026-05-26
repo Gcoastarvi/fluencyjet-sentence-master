@@ -1356,13 +1356,21 @@ export default function Dashboard() {
         <nav className="hidden md:flex absolute top-4 right-6 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
           {/* 🎯 THE DASHBOARD NAV FIX (Wrapped in curly braces to prevent text leak) */}
           <button
-            onClick={() =>
+            onClick={() => {
+              const storedTrack =
+                typeof window !== "undefined"
+                  ? localStorage.getItem("fj_track") ||
+                    localStorage.getItem("fj_last_track")
+                  : "";
+
+              const resolvedTrack = normalizeTrack(
+                user?.track || auth?.user?.track || storedTrack || "beginner",
+              );
+
               navigate(
-                user?.track?.toLowerCase() === "intermediate" // Changed from auth?.user to just user for consistency
-                  ? "/i/lessons"
-                  : "/b/lessons",
-              )
-            }
+                resolvedTrack === "intermediate" ? "/i/lessons" : "/b/lessons",
+              );
+            }}
           >
             Lessons
           </button>
