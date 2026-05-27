@@ -228,6 +228,11 @@ export default function LessonList({ difficulty }) {
         // 🎯 Dig into the correct object property based on your console log
         const incomingData = response?.data || [];
 
+        const extractLastNumber = (value) => {
+          const matches = String(value || "").match(/\d+/g);
+          return matches?.length ? Number(matches[matches.length - 1]) : 0;
+        };
+
         const getSafeLessonNumber = (lesson, fallbackNumber) => {
           const directNumber = Number(
             lesson?.day_number ||
@@ -242,12 +247,11 @@ export default function LessonList({ difficulty }) {
             return directNumber;
           }
 
-          const text = `${lesson?.slug || ""} ${lesson?.title || ""}`;
-          const matches = text.match(/\d+/g);
+          const slugNumber = extractLastNumber(lesson?.slug);
+          if (slugNumber > 0) return slugNumber;
 
-          if (matches?.length) {
-            return Number(matches[matches.length - 1]);
-          }
+          const titleNumber = extractLastNumber(lesson?.title);
+          if (titleNumber > 0) return titleNumber;
 
           return Number(fallbackNumber || 0);
         };
