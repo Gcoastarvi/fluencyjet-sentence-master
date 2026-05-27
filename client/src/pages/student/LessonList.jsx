@@ -228,8 +228,32 @@ export default function LessonList({ difficulty }) {
         // 🎯 Dig into the correct object property based on your console log
         const incomingData = response?.data || [];
 
-        if (Array.isArray(incomingData) && incomingData.length > 0) {
-          setLessons(incomingData);
+        const getSafeLessonNumber = (lesson, fallbackNumber) =>
+          Number(
+            lesson?.day_number ||
+              lesson?.dayNumber ||
+              lesson?.lessonNumber ||
+              lesson?.lesson_number ||
+              lesson?.orderIndex ||
+              fallbackNumber ||
+              0,
+          );
+
+        const cleanedData = Array.isArray(incomingData)
+          ? incomingData
+              .filter((lesson, index) => {
+                const lessonNumber = getSafeLessonNumber(lesson, index + 1);
+                return lessonNumber >= 1 && lessonNumber <= 120;
+              })
+              .sort((a, b) => {
+                const aNum = getSafeLessonNumber(a, 9999);
+                const bNum = getSafeLessonNumber(b, 9999);
+                return aNum - bNum;
+              })
+          : [];
+
+        if (cleanedData.length > 0) {
+          setLessons(cleanedData);
         } else {
           console.warn(
             "No lessons found in the 'lessons' array for:",
