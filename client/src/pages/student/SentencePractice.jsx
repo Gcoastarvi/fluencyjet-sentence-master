@@ -596,17 +596,6 @@ export default function SentencePractice() {
     audio.play().catch(() => {});
   };
 
-  // ✅ Auto-hide XP toast + reset earnedXP
-  useEffect(() => {
-    if (!showXPToast) return;
-
-    const t = setTimeout(() => {
-      setShowXPToast(false);
-    }, 1400);
-
-    return () => clearTimeout(t);
-  }, [showXPToast]);
-
   function openAudioGateAfter(ms = 1800) {
     setAudioGateOpen(false);
     if (audioGateTimerRef.current) clearTimeout(audioGateTimerRef.current);
@@ -625,22 +614,26 @@ export default function SentencePractice() {
     const n = Number(xp || 0);
     if (!n) return;
 
-    // ✅ drive both: green banner + toast
     setEarnedXP(n);
     setShowXPToast(true);
     setXpToastPhase("enter");
 
-    // allow first paint, then mark shown
-    requestAnimationFrame(() => setXpToastPhase("shown"));
+    window.clearTimeout(window.__fjXpToastShownTimer);
+    window.clearTimeout(window.__fjXpToastExitTimer);
+    window.clearTimeout(window.__fjXpToastHideTimer);
 
-    // hold, then animate out
-    setTimeout(() => setXpToastPhase("exit"), 2200);
+    window.__fjXpToastShownTimer = window.setTimeout(() => {
+      setXpToastPhase("shown");
+    }, 50);
 
-    // after exit animation completes, unmount
-    setTimeout(() => {
+    window.__fjXpToastExitTimer = window.setTimeout(() => {
+      setXpToastPhase("exit");
+    }, 1800);
+
+    window.__fjXpToastHideTimer = window.setTimeout(() => {
       setShowXPToast(false);
       setXpToastPhase("hidden");
-    }, 1700);
+    }, 2150);
   }
 
   useEffect(() => {
@@ -689,16 +682,6 @@ export default function SentencePractice() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!showXPToast) return;
-
-    const t = setTimeout(() => {
-      setShowXPToast(false);
-    }, 1500);
-
-    return () => clearTimeout(t);
-  }, [showXPToast]);
 
   // -------------------
   // effects
@@ -3843,13 +3826,13 @@ export default function SentencePractice() {
         {showXPToast && (
           <div
             className={[
-              "fixed top-24 right-6 z-50 rounded-xl px-4 py-2 text-white shadow-lg",
-              "transition-all duration-200 ease-out",
-              xpToastPhase === "enter"
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-2",
-              // optional: match your brand purple
-              "bg-purple-600",
+              "fixed top-24 right-6 z-50 rounded-2xl px-5 py-3 text-white shadow-2xl shadow-purple-200",
+              "font-black text-lg tracking-wide",
+              "transition-all duration-300 ease-out",
+              xpToastPhase === "enter" || xpToastPhase === "shown"
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 -translate-y-2 scale-95",
+              "bg-gradient-to-r from-violet-600 to-purple-600",
             ].join(" ")}
           >
             +{earnedXP} XP ✨
