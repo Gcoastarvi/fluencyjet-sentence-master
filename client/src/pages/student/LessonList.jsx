@@ -228,29 +228,47 @@ export default function LessonList({ difficulty }) {
         // 🎯 Dig into the correct object property based on your console log
         const incomingData = response?.data || [];
 
-        const getSafeLessonNumber = (lesson, fallbackNumber) =>
-          Number(
+        const getSafeLessonNumber = (lesson, fallbackNumber) => {
+          const directNumber = Number(
             lesson?.day_number ||
               lesson?.dayNumber ||
               lesson?.lessonNumber ||
               lesson?.lesson_number ||
               lesson?.orderIndex ||
-              fallbackNumber ||
               0,
           );
 
-        const cleanedData = Array.isArray(incomingData)
-          ? incomingData
-              .filter((lesson, index) => {
-                const lessonNumber = getSafeLessonNumber(lesson, index + 1);
-                return lessonNumber >= 1 && lessonNumber <= 120;
-              })
-              .sort((a, b) => {
-                const aNum = getSafeLessonNumber(a, 9999);
-                const bNum = getSafeLessonNumber(b, 9999);
-                return aNum - bNum;
-              })
-          : [];
+          if (Number.isFinite(directNumber) && directNumber > 0) {
+            return directNumber;
+          }
+
+          const text = `${lesson?.slug || ""} ${lesson?.title || ""}`;
+          const matches = text.match(/\d+/g);
+
+          if (matches?.length) {
+            return Number(matches[matches.length - 1]);
+          }
+
+          return Number(fallbackNumber || 0);
+        };
+
+        const lessonByNumber = new Map();
+
+        if (Array.isArray(incomingData)) {
+          incomingData.forEach((lesson, index) => {
+            const lessonNumber = getSafeLessonNumber(lesson, index + 1);
+
+            if (lessonNumber >= 1 && lessonNumber <= 120) {
+              if (!lessonByNumber.has(lessonNumber)) {
+                lessonByNumber.set(lessonNumber, lesson);
+              }
+            }
+          });
+        }
+
+        const cleanedData = Array.from(lessonByNumber.entries())
+          .sort(([aNum], [bNum]) => aNum - bNum)
+          .map(([, lesson]) => lesson);
 
         if (cleanedData.length > 0) {
           setLessons(cleanedData);
