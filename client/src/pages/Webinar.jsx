@@ -334,37 +334,81 @@ export default function Webinar() {
 
       {showRest && (
         <>
-          <section className="mx-auto max-w-6xl px-6 py-12">
-            <div className="grid gap-6 md:grid-cols-3">
+          <section className="mx-auto max-w-7xl px-5 py-16 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-sm font-black uppercase tracking-[0.25em] text-violet-700">
+                What You’ll Learn
+              </p>
+              <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                A simple method to build English sentences faster
+              </h2>
+              <p className="mt-5 text-lg font-semibold leading-8 text-slate-600">
+                This free class is designed to help Tamil speakers understand
+                why they hesitate and how to practise English sentence-making
+                the right way.
+              </p>
+            </div>
+
+            <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {[
                 {
-                  title: "Why grammar alone is not enough",
-                  ta: "Grammar தெரிந்தும் ஏன் பலரால் பேச முடியவில்லை",
+                  title: "Stop translating in your mind",
+                  text: "Understand why Tamil-to-English translation slows your speaking.",
+                  ta: "தமிழிலிருந்து English-க்கு translate செய்வதை எப்படி குறைப்பது.",
                 },
                 {
-                  title: "How to build sentences automatically",
-                  ta: "English sentences-ஐ automatic-ஆக உருவாக்குவது எப்படி",
+                  title: "Build sentences with simple patterns",
+                  text: "Learn how to create many useful English sentences from one pattern.",
+                  ta: "ஒரு simple pattern மூலம் பல sentences உருவாக்குவது எப்படி.",
                 },
                 {
-                  title: "How to practice daily with FluencyJet",
-                  ta: "FluencyJet மூலம் தினமும் speaking confidence பெறுவது எப்படி",
+                  title: "Speak without freezing",
+                  text: "Train your brain to recall sentence structures faster while speaking.",
+                  ta: "பேசும்போது sentence உடனே வர training செய்வது எப்படி.",
                 },
-              ].map((item) => (
+                {
+                  title: "Use grammar practically",
+                  text: "Learn grammar as speaking patterns, not confusing rules.",
+                  ta: "Grammar-ஐ rules போல இல்லாமல் speaking pattern போல கற்றுக்கொள்ளுங்கள்.",
+                },
+                {
+                  title: "Practise daily with FluencyJet",
+                  text: "See how reorder, typing, audio practice, XP, and streaks build fluency.",
+                  ta: "FluencyJet app மூலம் தினமும் practice செய்வது எப்படி.",
+                },
+                {
+                  title: "Create your fluency path",
+                  text: "Know what to practise after the class so you don’t feel lost again.",
+                  ta: "Class முடிந்த பிறகு என்ன practice செய்ய வேண்டும் என்று தெரிந்துகொள்ளுங்கள்.",
+                },
+              ].map((item, index) => (
                 <div
                   key={item.title}
-                  className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg shadow-slate-100"
+                  className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-xl shadow-slate-100 transition hover:-translate-y-1 hover:shadow-2xl"
                 >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-xl">
-                    ✓
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-lg font-black text-violet-700">
+                    {index + 1}
                   </div>
-                  <h3 className="text-xl font-black text-slate-950">
+                  <h3 className="text-xl font-black leading-snug text-slate-950">
                     {item.title}
                   </h3>
-                  <p className="font-tamil mt-3 text-base font-bold leading-relaxed text-slate-600">
+                  <p className="mt-3 text-base font-semibold leading-7 text-slate-600">
+                    {item.text}
+                  </p>
+                  <p className="font-tamil mt-4 text-base font-bold leading-7 text-slate-700">
                     {item.ta}
                   </p>
                 </div>
               ))}
+            </div>
+
+            <div className="mt-10 text-center">
+              <a
+                href="#register"
+                className="inline-flex h-14 items-center justify-center rounded-2xl bg-violet-700 px-8 text-base font-black text-white shadow-xl shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-800"
+              >
+                Reserve My Free Seat
+              </a>
             </div>
           </section>
 
@@ -404,6 +448,27 @@ export default function Webinar() {
                   English Coach Aravind நடத்தும் live class.
                 </p>
               </div>
+            </div>
+          </section>
+
+          <section className="mx-auto max-w-7xl px-5 pb-16 sm:px-6 lg:px-8">
+            <div className="rounded-[2rem] bg-gradient-to-br from-violet-800 to-slate-950 px-6 py-10 text-center text-white shadow-2xl shadow-violet-200 sm:px-10">
+              <p className="text-sm font-black uppercase tracking-[0.25em] text-yellow-300">
+                Free Live Zoom Class
+              </p>
+              <h2 className="mx-auto mt-4 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">
+                Ready to stop translating and start forming English sentences
+                faster?
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300">
+                Register now and get the Zoom link on WhatsApp.
+              </p>
+              <a
+                href="#register"
+                className="mt-7 inline-flex h-14 items-center justify-center rounded-2xl bg-yellow-400 px-8 text-base font-black text-slate-950 shadow-xl shadow-yellow-500/20 hover:bg-yellow-300"
+              >
+                Reserve My Free Seat →
+              </a>
             </div>
           </section>
 
