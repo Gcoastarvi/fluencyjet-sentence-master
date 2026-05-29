@@ -7,6 +7,13 @@ export default function Home() {
   const primaryCta = "/level-check";
   const lessonsPath = "/b/lessons";
 
+  const [showRest, setShowRest] = React.useState(false);
+
+  React.useEffect(() => {
+    const t = setTimeout(() => setShowRest(true), 800);
+    return () => clearTimeout(t);
+  }, []);
+
   return (
     <main className="min-h-screen bg-white text-slate-950 overflow-hidden">
       {/* HERO */}
@@ -133,421 +140,425 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SOLUTION */}
-      <section className="bg-gradient-to-b from-white to-slate-50 py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="The solution"
-            title="Sentence Master trains the missing skill: sentence formation."
-            subtitle="Fluency improves when your brain repeatedly builds correct sentence patterns. Every practice mode is designed to make sentence-making faster and more natural."
-          />
+      {showRest && (
+        <>
+          {/* SOLUTION */}
+          <section className="bg-gradient-to-b from-white to-slate-50 py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="The solution"
+                title="Sentence Master trains the missing skill: sentence formation."
+                subtitle="Fluency improves when your brain repeatedly builds correct sentence patterns. Every practice mode is designed to make sentence-making faster and more natural."
+              />
 
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <FeatureCard
-              icon="↔"
-              title="Reorder Practice"
-              text="Fix word order and understand sentence structure naturally."
-            />
-            <FeatureCard
-              icon="⌨"
-              title="Typing Practice"
-              text="Build sentences from memory and improve recall speed."
-            />
-            <FeatureCard
-              icon="🎙"
-              title="Audio Practice"
-              text="Repeat useful patterns and train your speaking confidence."
-            />
-            <FeatureCard
-              icon="⚡"
-              title="XP & Streaks"
-              text="Stay consistent with rewards, progress, and daily momentum."
-            />
-          </div>
-        </div>
-      </section>
+              <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <FeatureCard
+                  icon="↔"
+                  title="Reorder Practice"
+                  text="Fix word order and understand sentence structure naturally."
+                />
+                <FeatureCard
+                  icon="⌨"
+                  title="Typing Practice"
+                  text="Build sentences from memory and improve recall speed."
+                />
+                <FeatureCard
+                  icon="🎙"
+                  title="Audio Practice"
+                  text="Repeat useful patterns and train your speaking confidence."
+                />
+                <FeatureCard
+                  icon="⚡"
+                  title="XP & Streaks"
+                  text="Stay consistent with rewards, progress, and daily momentum."
+                />
+              </div>
+            </div>
+          </section>
 
-      {/* LEVEL CHECK */}
-      <section className="py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-purple-950 via-purple-700 to-blue-600 p-8 text-white shadow-2xl shadow-purple-300/40 sm:p-12 lg:p-16">
-            <div className="grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+          {/* LEVEL CHECK */}
+          <section className="py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <div className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-purple-950 via-purple-700 to-blue-600 p-8 text-white shadow-2xl shadow-purple-300/40 sm:p-12 lg:p-16">
+                <div className="grid items-center gap-10 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div>
+                    <p className="mb-4 text-sm font-extrabold uppercase tracking-[0.25em] text-purple-100">
+                      Free diagnosis
+                    </p>
+                    <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+                      Not sure where to start?
+                    </h2>
+                    <p className="mt-5 max-w-2xl text-lg leading-8 text-purple-50">
+                      Take a quick level check and get your recommended practice
+                      path — Beginner or Intermediate.
+                    </p>
+
+                    <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <Link
+                        to={primaryCta}
+                        onClick={() =>
+                          trackLevelCheckClick("homepage_level_check_block")
+                        }
+                        className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/20 transition hover:-translate-y-0.5 hover:bg-yellow-500"
+                      >
+                        Find My Starting Level
+                      </Link>
+                      <span className="text-sm font-semibold text-purple-100">
+                        Free • Quick • No pressure
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-white/20 bg-white/12 p-6 backdrop-blur">
+                    <div className="rounded-2xl bg-white p-5 text-slate-900 shadow-xl">
+                      <p className="text-sm font-extrabold text-purple-700">
+                        Level Check
+                      </p>
+                      <h3 className="mt-2 text-2xl font-black">
+                        Get your practice path
+                      </h3>
+                      <div className="mt-5 space-y-3">
+                        <MiniCheck text="10 simple questions" />
+                        <MiniCheck text="Beginner / Intermediate result" />
+                        <MiniCheck text="Recommended first lesson" />
+                      </div>
+                      <div className="mt-6 rounded-2xl bg-purple-50 p-4 text-sm font-bold text-purple-800">
+                        Your path: Beginner Track → Lesson 1
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* HOW IT WORKS */}
+          <section id="how-it-works" className="bg-slate-50 py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="How it works"
+                title="Your daily path to sentence fluency"
+                subtitle="A simple practice system that helps you start correctly, practice daily, and track real progress."
+              />
+
+              <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                <StepCard
+                  number="01"
+                  title="Check your level"
+                  text="Start with a quick diagnosis and get the right track."
+                />
+                <StepCard
+                  number="02"
+                  title="Practice sentence patterns"
+                  text="Use guided exercises based on real spoken English."
+                />
+                <StepCard
+                  number="03"
+                  title="Build automatic recall"
+                  text="Repeat useful patterns until sentences come faster."
+                />
+                <StepCard
+                  number="04"
+                  title="Track progress"
+                  text="Earn XP, complete lessons, and build your streak."
+                />
+              </div>
+
+              <div className="mt-10 text-center">
+                <Link
+                  to={primaryCta}
+                  onClick={() => trackLevelCheckClick("homepage_how_it_works")}
+                  className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/30 transition hover:-translate-y-0.5 hover:bg-yellow-500"
+                >
+                  Start Free Level Check
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* TRANSFORMATION */}
+          <section className="py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="Transformation"
+                title="From slow translation to confident speaking"
+                subtitle="Sentence Master is designed to move you from “I know English but I can’t speak” to “I can form sentences faster and respond with confidence.”"
+              />
+
+              <div className="mt-12 grid gap-6 lg:grid-cols-2">
+                <BeforeAfterCard
+                  type="Before"
+                  quote="I understand English, but I get stuck while speaking."
+                  points={[
+                    "Slow sentence formation",
+                    "Fear of wrong grammar",
+                    "Too much translation",
+                    "Low confidence",
+                  ]}
+                />
+                <BeforeAfterCard
+                  type="After"
+                  quote="I can build simple sentences quickly and speak with more confidence."
+                  points={[
+                    "Faster sentence recall",
+                    "Better word order",
+                    "More daily practice",
+                    "Stronger speaking confidence",
+                  ]}
+                  positive
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* WHY IT WORKS */}
+          <section className="bg-gradient-to-b from-slate-50 to-white py-20 sm:py-24">
+            <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-6 lg:grid-cols-2 lg:px-8">
               <div>
-                <p className="mb-4 text-sm font-extrabold uppercase tracking-[0.25em] text-purple-100">
-                  Free diagnosis
+                <p className="text-sm font-extrabold uppercase tracking-[0.25em] text-purple-700">
+                  Why it works
                 </p>
-                <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
-                  Not sure where to start?
+                <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                  Fluency comes from active sentence practice.
                 </h2>
-                <p className="mt-5 max-w-2xl text-lg leading-8 text-purple-50">
-                  Take a quick level check and get your recommended practice
-                  path — Beginner or Intermediate.
+                <p className="mt-6 text-lg leading-8 text-slate-600">
+                  Grammar knowledge is useful, but speaking needs speed.
+                  Sentence Master trains you to recall patterns, arrange words,
+                  and produce sentences actively — the same skill you need in
+                  real conversations.
                 </p>
-
-                <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-                  <Link
-                    to={primaryCta}
-                    onClick={() =>
-                      trackLevelCheckClick("homepage_level_check_block")
-                    }
-                    className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/20 transition hover:-translate-y-0.5 hover:bg-yellow-500"
-                  >
-                    Find My Starting Level
-                  </Link>
-                  <span className="text-sm font-semibold text-purple-100">
-                    Free • Quick • No pressure
-                  </span>
-                </div>
               </div>
 
-              <div className="rounded-[1.5rem] border border-white/20 bg-white/12 p-6 backdrop-blur">
-                <div className="rounded-2xl bg-white p-5 text-slate-900 shadow-xl">
-                  <p className="text-sm font-extrabold text-purple-700">
-                    Level Check
+              <div className="grid gap-4">
+                <MethodCard
+                  title="Active recall"
+                  text="You produce answers instead of passively watching."
+                />
+                <MethodCard
+                  title="Pattern repetition"
+                  text="You repeat useful sentence structures until they feel natural."
+                />
+                <MethodCard
+                  title="Real-life usage"
+                  text="Lessons are based on daily speaking situations."
+                />
+                <MethodCard
+                  title="Daily consistency"
+                  text="XP, streaks, and progress make practice easier to continue."
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* LESSON PATH */}
+          <section id="lessons" className="py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="Lesson path"
+                title="Start simple. Grow into real communication."
+                subtitle="Begin with basic sentence patterns, then progress into daily situations, questions, answers, and real conversations."
+              />
+
+              <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                <LessonCard title="Identity" text="I am… / You are… / He is…" />
+                <LessonCard
+                  title="Daily Life"
+                  text="I wake up… / I go… / I need…"
+                />
+                <LessonCard
+                  title="Questions"
+                  text="What is…? / Where is…? / Can I…?"
+                />
+                <LessonCard
+                  title="Real Situations"
+                  text="Shopping, travel, work, study, and daily conversation"
+                />
+              </div>
+
+              <div className="mt-10 text-center">
+                <Link
+                  to={lessonsPath}
+                  className="inline-flex h-14 items-center justify-center rounded-full border border-purple-200 bg-white px-8 text-base font-extrabold text-purple-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-purple-50"
+                >
+                  Explore Lessons
+                </Link>
+              </div>
+            </div>
+          </section>
+
+          {/* GAMIFICATION */}
+          <section className="bg-slate-950 py-20 text-white sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <SectionHeaderDark
+                eyebrow="Motivation system"
+                title="Stay motivated every day."
+                subtitle="Earn XP, protect your streak, complete lessons, and see your progress grow — one practice session at a time."
+              />
+
+              <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                <GameCard
+                  title="XP rewards"
+                  text="Get instant feedback and points for correct practice."
+                />
+                <GameCard
+                  title="Daily streaks"
+                  text="Build a habit with small wins every day."
+                />
+                <GameCard
+                  title="Progress tracking"
+                  text="Know exactly how far you have improved."
+                />
+                <GameCard
+                  title="Leaderboard"
+                  text="Stay inspired by friendly competition."
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* TRUST */}
+          <section className="py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+                <div>
+                  <p className="text-sm font-extrabold uppercase tracking-[0.25em] text-purple-700">
+                    Trust
                   </p>
-                  <h3 className="mt-2 text-2xl font-black">
-                    Get your practice path
-                  </h3>
-                  <div className="mt-5 space-y-3">
-                    <MiniCheck text="10 simple questions" />
-                    <MiniCheck text="Beginner / Intermediate result" />
-                    <MiniCheck text="Recommended first lesson" />
+                  <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
+                    Built by a language coach who understands learning speed.
+                  </h2>
+                  <p className="mt-6 text-lg leading-8 text-slate-600">
+                    FluencyJet is created by an experienced language teacher,
+                    memory trainer, and coach who has trained thousands of
+                    learners to learn faster and communicate better.
+                  </p>
+
+                  <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                    <CredCard
+                      title="Guinness World Record"
+                      text="Memory training credibility"
+                    />
+                    <CredCard
+                      title="35,000+ students"
+                      text="Trained through learning programs"
+                    />
+                    <CredCard
+                      title="Language coach"
+                      text="Practical English and fluency focus"
+                    />
+                    <CredCard
+                      title="Memory method"
+                      text="Designed for faster learning"
+                    />
                   </div>
-                  <div className="mt-6 rounded-2xl bg-purple-50 p-4 text-sm font-bold text-purple-800">
-                    Your path: Beginner Track → Lesson 1
-                  </div>
+                </div>
+
+                <div className="grid gap-5">
+                  <Testimonial text="Before this, I knew words but struggled to speak. Sentence practice helped me form sentences faster." />
+                  <Testimonial text="This is not like a normal grammar class. I actually practice making sentences." />
+                  <Testimonial text="The XP and daily lessons helped me stay consistent." />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* HOW IT WORKS */}
-      <section id="how-it-works" className="bg-slate-50 py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="How it works"
-            title="Your daily path to sentence fluency"
-            subtitle="A simple practice system that helps you start correctly, practice daily, and track real progress."
-          />
+          {/* PRICING */}
+          <section id="pricing" className="bg-slate-50 py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="Pricing"
+                title="Start free. Upgrade when you are ready."
+                subtitle="Take your level check and try your first lessons free. Unlock more practice, advanced lessons, and full progress features when you are ready."
+              />
 
-          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            <StepCard
-              number="01"
-              title="Check your level"
-              text="Start with a quick diagnosis and get the right track."
-            />
-            <StepCard
-              number="02"
-              title="Practice sentence patterns"
-              text="Use guided exercises based on real spoken English."
-            />
-            <StepCard
-              number="03"
-              title="Build automatic recall"
-              text="Repeat useful patterns until sentences come faster."
-            />
-            <StepCard
-              number="04"
-              title="Track progress"
-              text="Earn XP, complete lessons, and build your streak."
-            />
-          </div>
-
-          <div className="mt-10 text-center">
-            <Link
-              to={primaryCta}
-              onClick={() => trackLevelCheckClick("homepage_how_it_works")}
-              className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/30 transition hover:-translate-y-0.5 hover:bg-yellow-500"
-            >
-              Start Free Level Check
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* TRANSFORMATION */}
-      <section className="py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="Transformation"
-            title="From slow translation to confident speaking"
-            subtitle="Sentence Master is designed to move you from “I know English but I can’t speak” to “I can form sentences faster and respond with confidence.”"
-          />
-
-          <div className="mt-12 grid gap-6 lg:grid-cols-2">
-            <BeforeAfterCard
-              type="Before"
-              quote="I understand English, but I get stuck while speaking."
-              points={[
-                "Slow sentence formation",
-                "Fear of wrong grammar",
-                "Too much translation",
-                "Low confidence",
-              ]}
-            />
-            <BeforeAfterCard
-              type="After"
-              quote="I can build simple sentences quickly and speak with more confidence."
-              points={[
-                "Faster sentence recall",
-                "Better word order",
-                "More daily practice",
-                "Stronger speaking confidence",
-              ]}
-              positive
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* WHY IT WORKS */}
-      <section className="bg-gradient-to-b from-slate-50 to-white py-20 sm:py-24">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 sm:px-6 lg:grid-cols-2 lg:px-8">
-          <div>
-            <p className="text-sm font-extrabold uppercase tracking-[0.25em] text-purple-700">
-              Why it works
-            </p>
-            <h2 className="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              Fluency comes from active sentence practice.
-            </h2>
-            <p className="mt-6 text-lg leading-8 text-slate-600">
-              Grammar knowledge is useful, but speaking needs speed. Sentence
-              Master trains you to recall patterns, arrange words, and produce
-              sentences actively — the same skill you need in real
-              conversations.
-            </p>
-          </div>
-
-          <div className="grid gap-4">
-            <MethodCard
-              title="Active recall"
-              text="You produce answers instead of passively watching."
-            />
-            <MethodCard
-              title="Pattern repetition"
-              text="You repeat useful sentence structures until they feel natural."
-            />
-            <MethodCard
-              title="Real-life usage"
-              text="Lessons are based on daily speaking situations."
-            />
-            <MethodCard
-              title="Daily consistency"
-              text="XP, streaks, and progress make practice easier to continue."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* LESSON PATH */}
-      <section id="lessons" className="py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="Lesson path"
-            title="Start simple. Grow into real communication."
-            subtitle="Begin with basic sentence patterns, then progress into daily situations, questions, answers, and real conversations."
-          />
-
-          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            <LessonCard title="Identity" text="I am… / You are… / He is…" />
-            <LessonCard
-              title="Daily Life"
-              text="I wake up… / I go… / I need…"
-            />
-            <LessonCard
-              title="Questions"
-              text="What is…? / Where is…? / Can I…?"
-            />
-            <LessonCard
-              title="Real Situations"
-              text="Shopping, travel, work, study, and daily conversation"
-            />
-          </div>
-
-          <div className="mt-10 text-center">
-            <Link
-              to={lessonsPath}
-              className="inline-flex h-14 items-center justify-center rounded-full border border-purple-200 bg-white px-8 text-base font-extrabold text-purple-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-purple-50"
-            >
-              Explore Lessons
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* GAMIFICATION */}
-      <section className="bg-slate-950 py-20 text-white sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionHeaderDark
-            eyebrow="Motivation system"
-            title="Stay motivated every day."
-            subtitle="Earn XP, protect your streak, complete lessons, and see your progress grow — one practice session at a time."
-          />
-
-          <div className="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            <GameCard
-              title="XP rewards"
-              text="Get instant feedback and points for correct practice."
-            />
-            <GameCard
-              title="Daily streaks"
-              text="Build a habit with small wins every day."
-            />
-            <GameCard
-              title="Progress tracking"
-              text="Know exactly how far you have improved."
-            />
-            <GameCard
-              title="Leaderboard"
-              text="Stay inspired by friendly competition."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* TRUST */}
-      <section className="py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr]">
-            <div>
-              <p className="text-sm font-extrabold uppercase tracking-[0.25em] text-purple-700">
-                Trust
-              </p>
-              <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
-                Built by a language coach who understands learning speed.
-              </h2>
-              <p className="mt-6 text-lg leading-8 text-slate-600">
-                FluencyJet is created by an experienced language teacher, memory
-                trainer, and coach who has trained thousands of learners to
-                learn faster and communicate better.
-              </p>
-
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                <CredCard
-                  title="Guinness World Record"
-                  text="Memory training credibility"
+              <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-2">
+                <PricingCard
+                  title="Free"
+                  description="Start your journey and discover your level."
+                  features={[
+                    "Level check",
+                    "Starter lessons",
+                    "Basic practice",
+                    "Progress preview",
+                  ]}
+                  cta="Start Free"
+                  to={primaryCta}
+                  onClick={() => trackLevelCheckClick("homepage_pricing_free")}
                 />
-                <CredCard
-                  title="35,000+ students"
-                  text="Trained through learning programs"
-                />
-                <CredCard
-                  title="Language coach"
-                  text="Practical English and fluency focus"
-                />
-                <CredCard
-                  title="Memory method"
-                  text="Designed for faster learning"
+                <PricingCard
+                  title="Pro"
+                  description="Unlock the complete sentence practice system."
+                  features={[
+                    "Full lesson access",
+                    "All practice modes",
+                    "XP, streaks, leaderboard",
+                    "Beginner + Intermediate tracks",
+                  ]}
+                  cta="Upgrade to Pro"
+                  to="/pricing"
+                  featured
                 />
               </div>
             </div>
+          </section>
 
-            <div className="grid gap-5">
-              <Testimonial text="Before this, I knew words but struggled to speak. Sentence practice helped me form sentences faster." />
-              <Testimonial text="This is not like a normal grammar class. I actually practice making sentences." />
-              <Testimonial text="The XP and daily lessons helped me stay consistent." />
+          {/* FAQ */}
+          <section className="py-20 sm:py-24">
+            <div className="mx-auto max-w-4xl px-5 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="FAQ"
+                title="Questions learners ask before starting"
+                subtitle="Simple answers to help you begin with confidence."
+              />
+
+              <div className="mt-10 divide-y divide-slate-200 rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
+                <FaqItem
+                  q="Is this a grammar course?"
+                  a="No. Grammar is included, but the main focus is sentence formation and spoken English practice."
+                />
+                <FaqItem
+                  q="Is this useful for beginners?"
+                  a="Yes. The level check helps you start with the right track."
+                />
+                <FaqItem
+                  q="Will this improve speaking?"
+                  a="It helps you practice the sentence-building skill needed for speaking. With daily practice, you can reduce hesitation and improve confidence."
+                />
+                <FaqItem
+                  q="How long should I practice daily?"
+                  a="Start with 10–15 minutes a day. Consistency is more important than long sessions."
+                />
+                <FaqItem
+                  q="Can I use it on mobile?"
+                  a="Yes. The experience is designed for mobile-first practice."
+                />
+              </div>
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
 
-      {/* PRICING */}
-      <section id="pricing" className="bg-slate-50 py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="Pricing"
-            title="Start free. Upgrade when you are ready."
-            subtitle="Take your level check and try your first lessons free. Unlock more practice, advanced lessons, and full progress features when you are ready."
-          />
-
-          <div className="mx-auto mt-12 grid max-w-5xl gap-6 lg:grid-cols-2">
-            <PricingCard
-              title="Free"
-              description="Start your journey and discover your level."
-              features={[
-                "Level check",
-                "Starter lessons",
-                "Basic practice",
-                "Progress preview",
-              ]}
-              cta="Start Free"
-              to={primaryCta}
-              onClick={() => trackLevelCheckClick("homepage_pricing_free")}
-            />
-            <PricingCard
-              title="Pro"
-              description="Unlock the complete sentence practice system."
-              features={[
-                "Full lesson access",
-                "All practice modes",
-                "XP, streaks, leaderboard",
-                "Beginner + Intermediate tracks",
-              ]}
-              cta="Upgrade to Pro"
-              to="/pricing"
-              featured
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="py-20 sm:py-24">
-        <div className="mx-auto max-w-4xl px-5 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="FAQ"
-            title="Questions learners ask before starting"
-            subtitle="Simple answers to help you begin with confidence."
-          />
-
-          <div className="mt-10 divide-y divide-slate-200 rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
-            <FaqItem
-              q="Is this a grammar course?"
-              a="No. Grammar is included, but the main focus is sentence formation and spoken English practice."
-            />
-            <FaqItem
-              q="Is this useful for beginners?"
-              a="Yes. The level check helps you start with the right track."
-            />
-            <FaqItem
-              q="Will this improve speaking?"
-              a="It helps you practice the sentence-building skill needed for speaking. With daily practice, you can reduce hesitation and improve confidence."
-            />
-            <FaqItem
-              q="How long should I practice daily?"
-              a="Start with 10–15 minutes a day. Consistency is more important than long sessions."
-            />
-            <FaqItem
-              q="Can I use it on mobile?"
-              a="Yes. The experience is designed for mobile-first practice."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* FINAL CTA */}
-      <section className="px-5 pb-20 sm:px-6 sm:pb-24 lg:px-8">
-        <div className="mx-auto max-w-7xl rounded-[2rem] bg-gradient-to-br from-purple-950 via-purple-700 to-blue-600 px-6 py-16 text-center text-white shadow-2xl shadow-purple-300/40 sm:px-12 lg:px-20">
-          <h2 className="mx-auto max-w-3xl text-4xl font-black tracking-tight sm:text-5xl">
-            Ready to speak English with more confidence?
-          </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-purple-50">
-            Start with a quick level check and get your recommended practice
-            path.
-          </p>
-          <div className="mt-8">
-            <Link
-              to={primaryCta}
-              onClick={() => trackLevelCheckClick("homepage_final_cta")}
-              className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/20 transition hover:-translate-y-0.5 hover:bg-yellow-500"
-            >
-              Start Free Level Check
-            </Link>
-          </div>
-        </div>
-      </section>
+          {/* FINAL CTA */}
+          <section className="px-5 pb-20 sm:px-6 sm:pb-24 lg:px-8">
+            <div className="mx-auto max-w-7xl rounded-[2rem] bg-gradient-to-br from-purple-950 via-purple-700 to-blue-600 px-6 py-16 text-center text-white shadow-2xl shadow-purple-300/40 sm:px-12 lg:px-20">
+              <h2 className="mx-auto max-w-3xl text-4xl font-black tracking-tight sm:text-5xl">
+                Ready to speak English with more confidence?
+              </h2>
+              <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-purple-50">
+                Start with a quick level check and get your recommended practice
+                path.
+              </p>
+              <div className="mt-8">
+                <Link
+                  to={primaryCta}
+                  onClick={() => trackLevelCheckClick("homepage_final_cta")}
+                  className="inline-flex h-14 items-center justify-center rounded-full bg-yellow-400 px-8 text-base font-extrabold text-slate-950 shadow-xl shadow-yellow-300/20 transition hover:-translate-y-0.5 hover:bg-yellow-500"
+                >
+                  Start Free Level Check
+                </Link>
+              </div>
+            </div>
+          </section>
+        </>
+      )}
       <footer className="border-t border-slate-200 bg-white px-5 py-10 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
           <div>

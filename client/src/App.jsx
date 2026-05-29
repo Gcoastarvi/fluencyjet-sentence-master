@@ -1,3 +1,4 @@
+// client/src/App.jsx
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,53 +9,58 @@ import {
   useLocation,
 } from "react-router-dom";
 
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 
 import Navbar from "./components/Navbar";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 
-// Student pages
-import Home from "./pages/Home";
-import Webinar from "./pages/Webinar";
-import Dashboard from "./pages/student/Dashboard.jsx";
-import LessonDetail from "./pages/student/LessonDetail.jsx";
-import LessonQuiz from "./pages/student/LessonQuiz.jsx";
-import Leaderboard from "./pages/student/Leaderboard.jsx";
-import Login from "./pages/student/Login.jsx";
-import Signup from "./pages/student/Signup.jsx";
-import Practice from "./pages/student/Practice.jsx";
-import TypingQuiz from "./pages/student/TypingQuiz.jsx";
-import SentencePractice from "./pages/student/SentencePractice.jsx";
-import Paywall from "./pages/student/Paywall.jsx";
-import Checkout from "./pages/student/Checkout.jsx";
-import LevelCheck from "./pages/student/LevelCheck";
-import Upgrade from "./pages/student/Upgrade";
-import LessonList from "./pages/student/LessonList";
-import Profile from "./pages/student/Profile";
-import Settings from "./pages/student/Settings";
-import ForgotPassword from "./pages/student/ForgotPassword";
-import ResetPassword from "./pages/student/ResetPassword";
+// Student pages - lazy loaded
+const Home = lazy(() => import("./pages/Home"));
+const Webinar = lazy(() => import("./pages/Webinar"));
+const Dashboard = lazy(() => import("./pages/student/Dashboard.jsx"));
+const LessonDetail = lazy(() => import("./pages/student/LessonDetail.jsx"));
+const LessonQuiz = lazy(() => import("./pages/student/LessonQuiz.jsx"));
+const Leaderboard = lazy(() => import("./pages/student/Leaderboard.jsx"));
+const Login = lazy(() => import("./pages/student/Login.jsx"));
+const Signup = lazy(() => import("./pages/student/Signup.jsx"));
+const Practice = lazy(() => import("./pages/student/Practice.jsx"));
+const TypingQuiz = lazy(() => import("./pages/student/TypingQuiz.jsx"));
+const SentencePractice = lazy(
+  () => import("./pages/student/SentencePractice.jsx"),
+);
+const Paywall = lazy(() => import("./pages/student/Paywall.jsx"));
+const Checkout = lazy(() => import("./pages/student/Checkout.jsx"));
+const LevelCheck = lazy(() => import("./pages/student/LevelCheck"));
+const Upgrade = lazy(() => import("./pages/student/Upgrade"));
+const LessonList = lazy(() => import("./pages/student/LessonList"));
+const Profile = lazy(() => import("./pages/student/Profile"));
+const Settings = lazy(() => import("./pages/student/Settings"));
+const ForgotPassword = lazy(() => import("./pages/student/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/student/ResetPassword"));
 
-// Admin pages
-import Admin from "./pages/admin/Admin.jsx";
-import AdminLogin from "./pages/admin/AdminLogin.jsx";
-import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
-import AdminLessons from "./pages/admin/AdminLessons.jsx";
-import AdminLessonCreate from "./pages/admin/AdminLessonCreate.jsx";
-import AdminLessonEdit from "./pages/admin/AdminLessonEdit.jsx";
-import AdminQuizzes from "./pages/admin/AdminQuizzes.jsx";
-import AdminUsers from "./pages/admin/AdminUsers.jsx";
-import AdminUserDetail from "./pages/admin/AdminUserDetail.jsx";
-import AdminXP from "./pages/admin/AdminXP.jsx";
-import AdminAnalytics from "./pages/admin/AdminAnalytics.jsx";
-import CurriculumManager from "./pages/admin/CurriculumManager";
+// Admin pages - lazy loaded
+const Admin = lazy(() => import("./pages/admin/Admin.jsx"));
+const AdminLogin = lazy(() => import("./pages/admin/AdminLogin.jsx"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
+const AdminLessons = lazy(() => import("./pages/admin/AdminLessons.jsx"));
+const AdminLessonCreate = lazy(
+  () => import("./pages/admin/AdminLessonCreate.jsx"),
+);
+const AdminLessonEdit = lazy(() => import("./pages/admin/AdminLessonEdit.jsx"));
+const AdminQuizzes = lazy(() => import("./pages/admin/AdminQuizzes.jsx"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers.jsx"));
+const AdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail.jsx"));
+const AdminXP = lazy(() => import("./pages/admin/AdminXP.jsx"));
+const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics.jsx"));
+const CurriculumManager = lazy(() => import("./pages/admin/CurriculumManager"));
 
-import About from "./pages/legal/About";
-import Contact from "./pages/legal/Contact";
-import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
-import Terms from "./pages/legal/Terms";
-import RefundPolicy from "./pages/legal/RefundPolicy";
-import Disclaimer from "./pages/legal/Disclaimer";
+// Legal pages - lazy loaded
+const About = lazy(() => import("./pages/legal/About"));
+const Contact = lazy(() => import("./pages/legal/Contact"));
+const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
+const Terms = lazy(() => import("./pages/legal/Terms"));
+const RefundPolicy = lazy(() => import("./pages/legal/RefundPolicy"));
+const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -153,233 +159,238 @@ export default function App() {
     <AuthProvider>
       <Router>
         <RouteTracker />
-        <Routes>
-          {/* Admin login (no Navbar) */}
-          <Route path="/admin/login" element={<AdminLogin />} />
+        <Suspense fallback={<div className="min-h-screen bg-white" />}>
+          <Routes>
+            {/* Admin login (no Navbar) */}
+            <Route path="/admin/login" element={<AdminLogin />} />
 
-          {/* All other pages share Navbar */}
-          <Route element={<MainLayout />}>
-            {/* Public */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signin" element={<Navigate to="/login" replace />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/webinar" element={<Webinar />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/paywall" element={<Paywall />} />
-            <Route path="/level-check" element={<LevelCheck />} />
-            <Route path="/upgrade" element={<Upgrade />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/admin/curriculum" element={<CurriculumManager />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/refund-policy" element={<RefundPolicy />} />
-            <Route path="/disclaimer" element={<Disclaimer />} />
-            {/* 🛡️ UNIFIED LESSON HUB ROUTES */}
-            <Route
-              path="/b/lessons"
-              element={
-                <ProtectedRoute>
-                  <LessonList difficulty="basic" />
-                </ProtectedRoute>
-              }
-            />
+            {/* All other pages share Navbar */}
+            <Route element={<MainLayout />}>
+              {/* Public */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/signin"
+                element={<Navigate to="/login" replace />}
+              />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/webinar" element={<Webinar />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/paywall" element={<Paywall />} />
+              <Route path="/level-check" element={<LevelCheck />} />
+              <Route path="/upgrade" element={<Upgrade />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/admin/curriculum" element={<CurriculumManager />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
+              {/* 🛡️ UNIFIED LESSON HUB ROUTES */}
+              <Route
+                path="/b/lessons"
+                element={
+                  <ProtectedRoute>
+                    <LessonList difficulty="basic" />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path="/i/lessons"
-              element={
-                <ProtectedRoute>
-                  <LessonList difficulty="intermediate" />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path="/i/lessons"
+                element={
+                  <ProtectedRoute>
+                    <LessonList difficulty="intermediate" />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* keep diagnostic as alias → level-check */}
-            <Route
-              path="/diagnostic"
-              element={<Navigate to="/level-check" replace />}
-            />
-            <Route
-              path="/diagnostic/result"
-              element={<Navigate to="/level-check" replace />}
-            />
+              {/* keep diagnostic as alias → level-check */}
+              <Route
+                path="/diagnostic"
+                element={<Navigate to="/level-check" replace />}
+              />
+              <Route
+                path="/diagnostic/result"
+                element={<Navigate to="/level-check" replace />}
+              />
 
-            {/* lessons redirect based on fj_track */}
-            <Route path="/lessons" element={<LessonsRedirect />} />
+              {/* lessons redirect based on fj_track */}
+              <Route path="/lessons" element={<LessonsRedirect />} />
 
-            {/* legacy route (IMPORTANT) */}
-            <Route path="/lesson/:lessonId" element={<LessonRedirect />} />
+              {/* legacy route (IMPORTANT) */}
+              <Route path="/lesson/:lessonId" element={<LessonRedirect />} />
 
-            {/* practice entry (redirect only). Actual practice is protected below */}
-            <Route
-              path="/practice"
-              element={<Navigate to="/practice/reorder" replace />}
-            />
+              {/* practice entry (redirect only). Actual practice is protected below */}
+              <Route
+                path="/practice"
+                element={<Navigate to="/practice/reorder" replace />}
+              />
 
-            {/* Student-protected */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/quiz/:lessonId"
-              element={
-                <ProtectedRoute>
-                  <LessonQuiz />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/leaderboard"
-              element={
-                <ProtectedRoute>
-                  <Leaderboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/practice"
-              element={
-                <ProtectedRoute>
-                  <Practice />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/typing-quiz"
-              element={
-                <ProtectedRoute>
-                  <TypingQuiz />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute>
-                  <Checkout />
-                </ProtectedRoute>
-              }
-            />
+              {/* Student-protected */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/quiz/:lessonId"
+                element={
+                  <ProtectedRoute>
+                    <LessonQuiz />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/leaderboard"
+                element={
+                  <ProtectedRoute>
+                    <Leaderboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/practice"
+                element={
+                  <ProtectedRoute>
+                    <Practice />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/typing-quiz"
+                element={
+                  <ProtectedRoute>
+                    <TypingQuiz />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute>
+                    <Checkout />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Admin-protected (unchanged) */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedAdminRoute>
-                  <Admin />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminDashboard />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/lessons"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminLessons />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/lessons/new"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminLessonCreate />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/lessons/:lessonId"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminLessonEdit />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/quizzes"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminQuizzes />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminUsers />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/users/:userId"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminUserDetail />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/xp"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminXP />
-                </ProtectedAdminRoute>
-              }
-            />
-            <Route
-              path="/admin/analytics"
-              element={
-                <ProtectedAdminRoute>
-                  <AdminAnalytics />
-                </ProtectedAdminRoute>
-              }
-            />
-            {/* 📖 Updated Individual Lesson Routes */}
-            <Route
-              path="/b/lesson/:lessonId"
-              element={
-                <ProtectedRoute>
-                  <LessonDetail difficulty="beginner" />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/i/lesson/:lessonId"
-              element={
-                <ProtectedRoute>
-                  <LessonDetail difficulty="intermediate" />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/practice/:mode"
-              element={
-                <ProtectedRoute>
-                  <SentencePractice />
-                </ProtectedRoute>
-              }
-            />
-            {/* Fallback */}
-            <Route path="*" element={<Home />} />
-          </Route>
-        </Routes>
+              {/* Admin-protected (unchanged) */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedAdminRoute>
+                    <Admin />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminDashboard />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/lessons"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminLessons />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/lessons/new"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminLessonCreate />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/lessons/:lessonId"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminLessonEdit />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/quizzes"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminQuizzes />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminUsers />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/users/:userId"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminUserDetail />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/xp"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminXP />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/analytics"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminAnalytics />
+                  </ProtectedAdminRoute>
+                }
+              />
+              {/* 📖 Updated Individual Lesson Routes */}
+              <Route
+                path="/b/lesson/:lessonId"
+                element={
+                  <ProtectedRoute>
+                    <LessonDetail difficulty="beginner" />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/i/lesson/:lessonId"
+                element={
+                  <ProtectedRoute>
+                    <LessonDetail difficulty="intermediate" />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/practice/:mode"
+                element={
+                  <ProtectedRoute>
+                    <SentencePractice />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Fallback */}
+              <Route path="*" element={<Home />} />
+            </Route>
+          </Routes>
+        </Suspense>
       </Router>
     </AuthProvider>
   );
