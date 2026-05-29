@@ -64,73 +64,157 @@ export default function Webinar() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
-      <section className="relative overflow-hidden bg-white">
-        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-violet-200/40 blur-3xl" />
-        <div className="absolute top-40 -left-20 h-64 w-64 rounded-full bg-emerald-100/70 blur-3xl" />
+      <section className="relative overflow-hidden bg-[#07111f] text-white">
+        {/* Premium background effects */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(124,58,237,0.42),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.22),transparent_34%)]" />
+        <div className="absolute -right-28 top-10 h-80 w-80 rounded-full bg-violet-500/20 blur-3xl" />
+        <div className="absolute -left-28 bottom-0 h-80 w-80 rounded-full bg-emerald-400/10 blur-3xl" />
 
-        <div className="relative mx-auto max-w-6xl px-6 py-12 md:py-20">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+        <div className="relative mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8 lg:py-16">
+          <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            {/* LEFT: Promise + credibility */}
             <div>
-              <div className="mb-5 inline-flex rounded-full border border-violet-100 bg-violet-50 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-violet-700">
-                Free Live Zoom Class
+              <div className="inline-flex items-center gap-2 rounded-full border border-violet-300/30 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.22em] text-violet-100 backdrop-blur">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                Free Live Zoom Class for Tamil Speakers
               </div>
 
-              <h1 className="text-4xl font-black leading-tight tracking-tight text-slate-950 md:text-6xl">
-                Join My Free Live English Fluency Class
+              <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
+                Speak English Without Translating in Your Mind
               </h1>
 
-              <p className="mt-5 text-lg font-semibold leading-relaxed text-slate-600 md:text-xl">
-                Learn how to speak English without translating in your mind —
-                using the FluencyJet sentence-building method.
+              <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-slate-200 sm:text-xl">
+                Join my free live class and learn the FluencyJet
+                sentence-building method to form English sentences faster,
+                reduce hesitation, and speak with more confidence.
               </p>
 
-              <div className="mt-6 rounded-3xl border border-emerald-100 bg-emerald-50 p-5">
-                <p className="font-tamil text-lg font-bold leading-relaxed text-slate-800">
+              <div className="mt-6 rounded-[1.5rem] border border-emerald-300/20 bg-emerald-300/10 p-5 backdrop-blur">
+                <p className="font-tamil text-base font-bold leading-8 text-emerald-50 sm:text-lg">
                   தமிழில் நினைத்து English-க்கு translate செய்யாமல் பேசுவது
-                  எப்படி என்று என் free live class-ல் கற்றுக்கொள்ளுங்கள்.
+                  எப்படி என்று simple-ஆக கற்றுக்கொள்ளுங்கள்.
                 </p>
               </div>
 
-              <div className="mt-8 flex flex-wrap gap-3">
+              {/* Coach credibility card */}
+              <div className="mt-6 flex items-center gap-4 rounded-[1.5rem] border border-white/10 bg-white/10 p-4 backdrop-blur">
+                <img
+                  src="/avatar-fallback.png"
+                  alt="Aravind, FluencyJet English Coach"
+                  width="72"
+                  height="72"
+                  loading="eager"
+                  decoding="async"
+                  className="h-16 w-16 rounded-2xl object-cover ring-2 ring-white/20 sm:h-[72px] sm:w-[72px]"
+                />
+
+                <div>
+                  <p className="text-base font-black text-white sm:text-lg">
+                    Aravind • English Coach & Memory Trainer
+                  </p>
+                  <p className="mt-1 text-sm font-bold leading-6 text-slate-300">
+                    Guinness World Record holder • Founder of FluencyJet •
+                    35,000+ students trained
+                  </p>
+                </div>
+              </div>
+
+              {/* Fast trust badges */}
+              <div className="mt-6 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
+                  <p className="text-lg font-black text-yellow-300">Free</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-300">
+                    Live Class
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
+                  <p className="text-lg font-black text-emerald-300">Tamil</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-300">
+                    Explanation
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
+                  <p className="text-lg font-black text-violet-200">Method</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-300">
+                    Sentence First
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
+                  <p className="text-lg font-black text-blue-200">Zoom</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-300">
+                    Link on WhatsApp
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#register"
-                  className="rounded-2xl bg-violet-600 px-8 py-4 text-base font-black text-white shadow-xl shadow-violet-200 transition hover:-translate-y-1 hover:bg-violet-700"
+                  className="inline-flex h-14 items-center justify-center rounded-2xl bg-yellow-400 px-7 text-base font-black text-slate-950 shadow-xl shadow-yellow-500/20 transition hover:-translate-y-0.5 hover:bg-yellow-300"
                 >
                   Reserve My Free Seat →
                 </a>
 
                 <Link
                   to={track === "intermediate" ? "/i/lessons" : "/b/lessons"}
-                  className="rounded-2xl border border-slate-200 bg-white px-8 py-4 text-base font-black text-slate-700 transition hover:bg-slate-50"
+                  className="inline-flex h-14 items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-7 text-base font-black text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15"
                 >
                   Continue Learning
                 </Link>
               </div>
             </div>
 
+            {/* RIGHT: Registration form */}
             <div
               id="register"
-              className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-2xl shadow-slate-200/70"
+              className="rounded-[2rem] border border-white/10 bg-white p-5 text-slate-950 shadow-2xl shadow-violet-950/30 sm:p-6 lg:p-7"
             >
               {!submitted ? (
                 <>
                   <div className="mb-5">
-                    <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600">
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">
                       Register Now
                     </p>
-                    <h2 className="mt-2 text-2xl font-black text-slate-950">
+                    <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
                       Get the Zoom link on WhatsApp
                     </h2>
-                    <p className="mt-2 text-sm font-semibold text-slate-600">
+                    <p className="mt-2 text-sm font-bold text-slate-600">
                       Source: {contextLabel}
                     </p>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-2xl bg-violet-50 p-3">
+                        <p className="text-lg font-black text-violet-700">
+                          35K+
+                        </p>
+                        <p className="text-[11px] font-bold text-slate-600">
+                          Students
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-emerald-50 p-3">
+                        <p className="text-lg font-black text-emerald-700">
+                          Live
+                        </p>
+                        <p className="text-[11px] font-bold text-slate-600">
+                          Zoom
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-yellow-50 p-3">
+                        <p className="text-lg font-black text-yellow-700">
+                          Free
+                        </p>
+                        <p className="text-[11px] font-bold text-slate-600">
+                          Seat
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                       <label
                         htmlFor="webinar-name"
-                        className="mb-1 block text-sm font-bold text-slate-700"
+                        className="mb-1 block text-sm font-bold text-slate-800"
                       >
                         Name
                       </label>
@@ -138,7 +222,7 @@ export default function Webinar() {
                         id="webinar-name"
                         name="name"
                         required
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                         placeholder="Your name"
                       />
                     </div>
@@ -146,7 +230,7 @@ export default function Webinar() {
                     <div>
                       <label
                         htmlFor="webinar-phone"
-                        className="mb-1 block text-sm font-bold text-slate-700"
+                        className="mb-1 block text-sm font-bold text-slate-800"
                       >
                         WhatsApp Number
                       </label>
@@ -155,7 +239,7 @@ export default function Webinar() {
                         name="phone"
                         type="tel"
                         required
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                         placeholder="Your WhatsApp number"
                       />
                     </div>
@@ -163,15 +247,15 @@ export default function Webinar() {
                     <div>
                       <label
                         htmlFor="webinar-email"
-                        className="mb-1 block text-sm font-bold text-slate-700"
+                        className="mb-1 block text-sm font-bold text-slate-800"
                       >
-                        Email
+                        Email <span className="text-slate-500">(optional)</span>
                       </label>
                       <input
                         id="webinar-email"
                         name="email"
                         type="email"
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                         placeholder="Your email"
                       />
                     </div>
@@ -179,15 +263,15 @@ export default function Webinar() {
                     <div>
                       <label
                         htmlFor="webinar-goal"
-                        className="mb-1 block text-sm font-bold text-slate-700"
+                        className="mb-1 block text-sm font-bold text-slate-800"
                       >
-                        Main English Goal
+                        Main English Goal{" "}
+                        <span className="text-slate-500">(optional)</span>
                       </label>
                       <select
                         id="webinar-goal"
                         name="goal"
-                        required
-                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-950 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                       >
                         <option value="">Select your goal</option>
                         <option value="job_interview">
@@ -204,10 +288,14 @@ export default function Webinar() {
 
                     <button
                       type="submit"
-                      className="w-full rounded-2xl bg-violet-600 px-8 py-4 text-lg font-black text-white shadow-xl shadow-violet-200 transition hover:bg-violet-700"
+                      className="w-full rounded-2xl bg-violet-700 px-8 py-4 text-lg font-black text-white shadow-xl shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-800"
                     >
                       Reserve My Free Seat
                     </button>
+
+                    <p className="text-center text-sm font-bold text-violet-700">
+                      Limited free Zoom seats available for this batch.
+                    </p>
 
                     <p className="text-center text-xs font-semibold leading-relaxed text-slate-600">
                       By registering, you agree to receive class updates on
@@ -233,7 +321,7 @@ export default function Webinar() {
 
                   <Link
                     to={track === "intermediate" ? "/i/lessons" : "/b/lessons"}
-                    className="mt-8 inline-flex rounded-2xl bg-violet-600 px-8 py-4 text-base font-black text-white shadow-xl shadow-violet-200"
+                    className="mt-8 inline-flex rounded-2xl bg-violet-700 px-8 py-4 text-base font-black text-white shadow-xl shadow-violet-200"
                   >
                     Continue Learning →
                   </Link>
