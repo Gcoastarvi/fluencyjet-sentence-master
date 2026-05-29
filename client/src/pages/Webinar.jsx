@@ -17,6 +17,8 @@ export default function Webinar() {
   const track = searchParams.get("track") || "";
   const lesson = searchParams.get("lesson") || "";
 
+  const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/YOUR_GROUP_INVITE_LINK";
+
   const contextLabel = useMemo(() => {
     if (source.includes("lesson_3")) return "Free Starter Path completed";
     if (source.includes("lesson_2")) return "Lesson 2 completed";
@@ -56,6 +58,10 @@ export default function Webinar() {
       );
 
       setSubmitted(true);
+
+      setTimeout(() => {
+        window.location.href = WHATSAPP_GROUP_URL;
+      }, 1200);
     } catch (error) {
       console.error("Webinar registration failed:", error);
       alert("Something went wrong. Please try again.");
@@ -176,7 +182,7 @@ export default function Webinar() {
                       Register Now
                     </p>
                     <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-                      Get the Zoom link on WhatsApp
+                      Join the WhatsApp group to get the Zoom link
                     </h2>
                     <p className="mt-2 text-sm font-bold text-slate-600">
                       Source: {contextLabel}
@@ -290,16 +296,17 @@ export default function Webinar() {
                       type="submit"
                       className="w-full rounded-2xl bg-violet-700 px-8 py-4 text-lg font-black text-white shadow-xl shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-800"
                     >
-                      Reserve My Free Seat
+                      Reserve My Free Seat & Join WhatsApp Group
                     </button>
 
                     <p className="text-center text-sm font-bold text-violet-700">
-                      Limited free Zoom seats available for this batch.
+                      After registration, you’ll be redirected to our WhatsApp
+                      group.
                     </p>
 
                     <p className="text-center text-xs font-semibold leading-relaxed text-slate-600">
-                      By registering, you agree to receive class updates on
-                      WhatsApp.
+                      The Zoom link and class reminders will be shared inside
+                      the WhatsApp group.
                     </p>
                   </form>
                 </>
@@ -312,12 +319,20 @@ export default function Webinar() {
                     You’re registered!
                   </h2>
                   <p className="mt-3 text-base font-semibold leading-relaxed text-slate-600">
-                    We’ll send the Zoom link on WhatsApp before the live class.
+                    Redirecting you to the WhatsApp group now. The Zoom link
+                    will be shared inside the group before the class.
                   </p>
                   <p className="font-tamil mt-4 text-base font-bold leading-relaxed text-slate-700">
-                    நீங்கள் register செய்துவிட்டீர்கள். Zoom link-ஐ live
-                    class-க்கு முன் WhatsApp-ல் அனுப்புகிறோம்.
+                    இப்போது உங்களை WhatsApp group-க்கு அழைத்துச் செல்கிறோம்.
+                    Zoom link group-ல் share செய்யப்படும்.
                   </p>
+
+                  <a
+                    href={WHATSAPP_GROUP_URL}
+                    className="mt-6 inline-flex rounded-2xl bg-emerald-600 px-8 py-4 text-base font-black text-white shadow-xl shadow-emerald-200"
+                  >
+                    Join WhatsApp Group →
+                  </a>
 
                   <Link
                     to={track === "intermediate" ? "/i/lessons" : "/b/lessons"}
