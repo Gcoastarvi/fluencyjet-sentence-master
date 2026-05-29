@@ -1,9 +1,17 @@
-import React, { useMemo, useState } from "react";
+// client/src/pages/Webinar.jsx
+import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 
 export default function Webinar() {
   const [searchParams] = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
+
+  const [showRest, setShowRest] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowRest(true), 700);
+    return () => clearTimeout(t);
+  }, []);
 
   const source = searchParams.get("source") || "direct";
   const track = searchParams.get("track") || "";
@@ -113,17 +121,21 @@ export default function Webinar() {
                     <h2 className="mt-2 text-2xl font-black text-slate-950">
                       Get the Zoom link on WhatsApp
                     </h2>
-                    <p className="mt-2 text-sm font-semibold text-slate-500">
+                    <p className="mt-2 text-sm font-semibold text-slate-600">
                       Source: {contextLabel}
                     </p>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label className="mb-1 block text-sm font-bold text-slate-700">
+                      <label
+                        htmlFor="webinar-name"
+                        className="mb-1 block text-sm font-bold text-slate-700"
+                      >
                         Name
                       </label>
                       <input
+                        id="webinar-name"
                         name="name"
                         required
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
@@ -132,11 +144,16 @@ export default function Webinar() {
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-bold text-slate-700">
+                      <label
+                        htmlFor="webinar-phone"
+                        className="mb-1 block text-sm font-bold text-slate-700"
+                      >
                         WhatsApp Number
                       </label>
                       <input
+                        id="webinar-phone"
                         name="phone"
+                        type="tel"
                         required
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
                         placeholder="Your WhatsApp number"
@@ -144,10 +161,14 @@ export default function Webinar() {
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-bold text-slate-700">
+                      <label
+                        htmlFor="webinar-email"
+                        className="mb-1 block text-sm font-bold text-slate-700"
+                      >
                         Email
                       </label>
                       <input
+                        id="webinar-email"
                         name="email"
                         type="email"
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
@@ -156,10 +177,14 @@ export default function Webinar() {
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-bold text-slate-700">
+                      <label
+                        htmlFor="webinar-goal"
+                        className="mb-1 block text-sm font-bold text-slate-700"
+                      >
                         Main English Goal
                       </label>
                       <select
+                        id="webinar-goal"
                         name="goal"
                         required
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold outline-none focus:border-violet-400 focus:bg-white"
@@ -184,7 +209,7 @@ export default function Webinar() {
                       Reserve My Free Seat
                     </button>
 
-                    <p className="text-center text-[11px] font-semibold leading-relaxed text-slate-400">
+                    <p className="text-center text-xs font-semibold leading-relaxed text-slate-600">
                       By registering, you agree to receive class updates on
                       WhatsApp.
                     </p>
@@ -219,100 +244,107 @@ export default function Webinar() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-12">
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            {
-              title: "Why grammar alone is not enough",
-              ta: "Grammar தெரிந்தும் ஏன் பலரால் பேச முடியவில்லை",
-            },
-            {
-              title: "How to build sentences automatically",
-              ta: "English sentences-ஐ automatic-ஆக உருவாக்குவது எப்படி",
-            },
-            {
-              title: "How to practice daily with FluencyJet",
-              ta: "FluencyJet மூலம் தினமும் speaking confidence பெறுவது எப்படி",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg shadow-slate-100"
-            >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-xl">
-                ✓
+      {showRest && (
+        <>
+          <section className="mx-auto max-w-6xl px-6 py-12">
+            <div className="grid gap-6 md:grid-cols-3">
+              {[
+                {
+                  title: "Why grammar alone is not enough",
+                  ta: "Grammar தெரிந்தும் ஏன் பலரால் பேச முடியவில்லை",
+                },
+                {
+                  title: "How to build sentences automatically",
+                  ta: "English sentences-ஐ automatic-ஆக உருவாக்குவது எப்படி",
+                },
+                {
+                  title: "How to practice daily with FluencyJet",
+                  ta: "FluencyJet மூலம் தினமும் speaking confidence பெறுவது எப்படி",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg shadow-slate-100"
+                >
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-xl">
+                    ✓
+                  </div>
+                  <h3 className="text-xl font-black text-slate-950">
+                    {item.title}
+                  </h3>
+                  <p className="font-tamil mt-3 text-base font-bold leading-relaxed text-slate-600">
+                    {item.ta}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="mx-auto max-w-6xl px-6 pb-16">
+            <div className="grid gap-8 lg:grid-cols-2">
+              <div className="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-lg shadow-slate-100">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600">
+                  Who is this for?
+                </p>
+                <ul className="mt-5 space-y-3 text-base font-bold text-slate-700">
+                  <li>
+                    • Tamil speakers who understand English but struggle to
+                    speak
+                  </li>
+                  <li>
+                    • Students, job seekers, professionals, business owners, and
+                    homemakers
+                  </li>
+                  <li>
+                    • Anyone who wants to speak simple English confidently
+                  </li>
+                </ul>
               </div>
-              <h3 className="text-xl font-black text-slate-950">
-                {item.title}
-              </h3>
-              <p className="font-tamil mt-3 text-base font-bold leading-relaxed text-slate-600">
-                {item.ta}
-              </p>
+
+              <div className="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-lg shadow-slate-100">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600">
+                  Your Coach
+                </p>
+                <h3 className="mt-4 text-2xl font-black text-slate-950">
+                  Aravind • English Coach
+                </h3>
+                <p className="mt-3 text-base font-semibold leading-relaxed text-slate-600">
+                  Language teacher, memory trainer, FluencyJet founder, and
+                  Guinness World Record holder in memory.
+                </p>
+                <p className="font-tamil mt-3 text-base font-bold leading-relaxed text-slate-700">
+                  English Coach Aravind நடத்தும் live class.
+                </p>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
 
-      <section className="mx-auto max-w-6xl px-6 pb-16">
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-lg shadow-slate-100">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600">
-              Who is this for?
-            </p>
-            <ul className="mt-5 space-y-3 text-base font-bold text-slate-700">
-              <li>
-                • Tamil speakers who understand English but struggle to speak
-              </li>
-              <li>
-                • Students, job seekers, professionals, business owners, and
-                homemakers
-              </li>
-              <li>• Anyone who wants to speak simple English confidently</li>
-            </ul>
-          </div>
-
-          <div className="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-lg shadow-slate-100">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600">
-              Your Coach
-            </p>
-            <h3 className="mt-4 text-2xl font-black text-slate-950">
-              Aravind • English Coach
-            </h3>
-            <p className="mt-3 text-base font-semibold leading-relaxed text-slate-600">
-              Language teacher, memory trainer, FluencyJet founder, and Guinness
-              World Record holder in memory.
-            </p>
-            <p className="font-tamil mt-3 text-base font-bold leading-relaxed text-slate-700">
-              English Coach Aravind நடத்தும் live class.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-4xl px-6 pb-20">
-        <h2 className="mb-6 text-3xl font-black text-slate-950">FAQ</h2>
-        <div className="space-y-4">
-          {[
-            ["Is this class free?", "Yes, this live class is free."],
-            [
-              "Will the class be in Tamil or English?",
-              "The class will be in simple English with Tamil explanation.",
-            ],
-            [
-              "Will I get the Zoom link?",
-              "Yes, we will send the Zoom link on WhatsApp before the class.",
-            ],
-          ].map(([q, a]) => (
-            <div
-              key={q}
-              className="rounded-3xl border border-slate-100 bg-white p-6"
-            >
-              <h3 className="font-black text-slate-950">{q}</h3>
-              <p className="mt-2 font-semibold text-slate-600">{a}</p>
+          <section className="mx-auto max-w-4xl px-6 pb-20">
+            <h2 className="mb-6 text-3xl font-black text-slate-950">FAQ</h2>
+            <div className="space-y-4">
+              {[
+                ["Is this class free?", "Yes, this live class is free."],
+                [
+                  "Will the class be in Tamil or English?",
+                  "The class will be in simple English with Tamil explanation.",
+                ],
+                [
+                  "Will I get the Zoom link?",
+                  "Yes, we will send the Zoom link on WhatsApp before the class.",
+                ],
+              ].map(([q, a]) => (
+                <div
+                  key={q}
+                  className="rounded-3xl border border-slate-100 bg-white p-6"
+                >
+                  <h3 className="font-black text-slate-950">{q}</h3>
+                  <p className="mt-2 font-semibold text-slate-600">{a}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
+        </>
+      )}
     </div>
   );
 }
