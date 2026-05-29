@@ -476,7 +476,8 @@ export default function Webinar() {
                 faster?
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300">
-                Register now and get the Zoom link on WhatsApp.
+                Register now, join the WhatsApp group, and get the Zoom link
+                before the live class.
               </p>
               <a
                 href="#register"
@@ -500,6 +501,14 @@ export default function Webinar() {
                   "Will I get the Zoom link?",
                   "Yes, we will send the Zoom link on WhatsApp before the class.",
                 ],
+                [
+                  "Do I need to join the WhatsApp group?",
+                  "Yes. After registration, you will be redirected to the WhatsApp group. The Zoom link and class reminders will be shared inside the group.",
+                ],
+                [
+                  "What happens after the free class?",
+                  "You can continue practising English sentence formation inside the FluencyJet web app using guided lessons, reorder practice, typing practice, audio practice, XP, and streaks.",
+                ],
               ].map(([q, a]) => (
                 <div
                   key={q}
@@ -513,6 +522,25 @@ export default function Webinar() {
           </section>
         </>
       )}
+      <footer className="border-t border-slate-200 bg-white px-5 py-8 text-center sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <p className="text-xs font-semibold leading-6 text-slate-500">
+            This site is not a part of the Facebook website or Meta Platforms,
+            Inc. Additionally, this site is not endorsed by Facebook or Meta in
+            any way. Facebook is a trademark of Meta Platforms, Inc.
+          </p>
+
+          <p className="mt-4 text-xs font-semibold leading-6 text-slate-500">
+            Results from this class may vary from person to person. Fluency
+            improvement depends on your current level, consistency, and daily
+            practice.
+          </p>
+
+          <p className="mt-4 text-xs font-bold text-slate-600">
+            © {new Date().getFullYear()} FluencyJet. All rights reserved.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
