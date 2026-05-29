@@ -66,7 +66,13 @@ export default function Home() {
             </div>
           </div>
 
-          <HeroMockup />
+          <div className="block md:hidden">
+            <HeroMockupLite />
+          </div>
+
+          <div className="hidden md:block">
+            <HeroMockup />
+          </div>
         </div>
       </section>
 
@@ -636,6 +642,45 @@ function TrustStat({ number, label }) {
       <div className="text-xs font-bold uppercase tracking-wide text-slate-500">
         {label}
       </div>
+    </div>
+  );
+}
+
+function HeroMockupLite() {
+  return (
+    <div className="mx-auto w-full max-w-sm rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-xl shadow-purple-100/50">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-widest text-purple-700">
+            Lesson 1
+          </p>
+          <h2 className="mt-1 text-lg font-black text-slate-950">
+            I am… Jobs & Roles
+          </h2>
+        </div>
+
+        <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-black text-purple-700">
+          Beginner
+        </span>
+      </div>
+
+      <div className="mt-5 rounded-2xl bg-purple-50 p-4">
+        <p className="text-sm font-bold text-slate-500">Tamil prompt</p>
+        <p className="mt-1 text-lg font-black text-slate-950">
+          நான் ஒரு ஆசிரியர்.
+        </p>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-green-200 bg-green-50 p-4">
+        <p className="text-sm font-black text-green-700">Correct answer</p>
+        <p className="mt-1 text-lg font-black text-slate-950">
+          I am a teacher.
+        </p>
+      </div>
+
+      <button className="mt-5 h-12 w-full rounded-full bg-yellow-400 text-sm font-black text-slate-950">
+        Continue Practice
+      </button>
     </div>
   );
 }
