@@ -2,11 +2,24 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 
+function trackGA(eventName, params = {}) {
+  try {
+    window.gtag?.("event", eventName, params);
+  } catch {}
+}
+
+function trackMeta(eventName, params = {}) {
+  try {
+    window.fbq?.("trackCustom", eventName, params);
+  } catch {}
+}
+
 export default function Webinar() {
   const [searchParams] = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
 
   const [showRest, setShowRest] = useState(false);
+  const [formStarted, setFormStarted] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setShowRest(true), 700);
@@ -44,6 +57,19 @@ export default function Webinar() {
       contextLabel,
     };
 
+    React.useEffect(() => {
+      const params = {
+        page: "webinar",
+        source,
+        track,
+        lesson,
+        context_label: contextLabel,
+      };
+
+      trackGA("webinar_page_view", params);
+      trackMeta("WebinarPageView", params);
+    }, [source, track, lesson, contextLabel]);
+
     try {
       await fetch(
         "https://script.google.com/macros/s/AKfycbwA3QURJ2X-D_Ww4GfhteuUxghA7PLfHuHf7hlrlWEKrCBiShAtqpPLgFwneJP2fn-V/exec",
@@ -59,13 +85,63 @@ export default function Webinar() {
 
       setSubmitted(true);
 
+      const submitParams = {
+        source,
+        track,
+        lesson,
+        context_label: contextLabel,
+        goal: payload.goal || "not_selected",
+      };
+
+      trackGA("webinar_form_submit", submitParams);
+      trackMeta("WebinarFormSubmit", submitParams);
+
       setTimeout(() => {
+        const redirectParams = {
+          source,
+          track,
+          lesson,
+          context_label: contextLabel,
+        };
+
+        trackGA("webinar_whatsapp_redirect", redirectParams);
+        trackMeta("WebinarWhatsAppRedirect", redirectParams);
+
         window.location.href = WHATSAPP_GROUP_URL;
       }, 1200);
     } catch (error) {
       console.error("Webinar registration failed:", error);
       alert("Something went wrong. Please try again.");
     }
+  }
+
+  function handleFormStart() {
+    if (formStarted) return;
+
+    setFormStarted(true);
+
+    const params = {
+      source,
+      track,
+      lesson,
+      context_label: contextLabel,
+    };
+
+    trackGA("webinar_form_start", params);
+    trackMeta("WebinarFormStart", params);
+  }
+
+  function handleCtaClick(location) {
+    const params = {
+      location,
+      source,
+      track,
+      lesson,
+      context_label: contextLabel,
+    };
+
+    trackGA("webinar_cta_click", params);
+    trackMeta("WebinarCTAClick", params);
   }
 
   return (
@@ -156,6 +232,7 @@ export default function Webinar() {
               <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                 <a
                   href="#register"
+                  onClick={() => handleCtaClick("hero")}
                   className="inline-flex h-14 items-center justify-center rounded-2xl bg-yellow-400 px-7 text-base font-black text-slate-950 shadow-xl shadow-yellow-500/20 transition hover:-translate-y-0.5 hover:bg-yellow-300"
                 >
                   Reserve My Free Seat →
@@ -228,6 +305,7 @@ export default function Webinar() {
                         id="webinar-name"
                         name="name"
                         required
+                        onFocus={handleFormStart}
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                         placeholder="Your name"
                       />
@@ -245,6 +323,7 @@ export default function Webinar() {
                         name="phone"
                         type="tel"
                         required
+                        onFocus={handleFormStart}
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                         placeholder="Your WhatsApp number"
                       />
@@ -261,6 +340,7 @@ export default function Webinar() {
                         id="webinar-email"
                         name="email"
                         type="email"
+                        onFocus={handleFormStart}
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                         placeholder="Your email"
                       />
@@ -277,6 +357,7 @@ export default function Webinar() {
                       <select
                         id="webinar-goal"
                         name="goal"
+                        onFocus={handleFormStart}
                         className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-semibold text-slate-950 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
                       >
                         <option value="">Select your goal</option>
@@ -329,6 +410,17 @@ export default function Webinar() {
 
                   <a
                     href={WHATSAPP_GROUP_URL}
+                    onClick={() => {
+                      const params = {
+                        source,
+                        track,
+                        lesson,
+                        context_label: contextLabel,
+                      };
+
+                      trackGA("webinar_whatsapp_manual_click", params);
+                      trackMeta("WebinarWhatsAppManualClick", params);
+                    }}
                     className="mt-6 inline-flex rounded-2xl bg-emerald-600 px-8 py-4 text-base font-black text-white shadow-xl shadow-emerald-200"
                   >
                     Join WhatsApp Group →
@@ -420,6 +512,7 @@ export default function Webinar() {
             <div className="mt-10 text-center">
               <a
                 href="#register"
+                onClick={() => handleCtaClick("what_youll_learn")}
                 className="inline-flex h-14 items-center justify-center rounded-2xl bg-violet-700 px-8 text-base font-black text-white shadow-xl shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-800"
               >
                 Reserve My Free Seat
@@ -481,6 +574,7 @@ export default function Webinar() {
               </p>
               <a
                 href="#register"
+                onClick={() => handleCtaClick("mid_page_cta")}
                 className="mt-7 inline-flex h-14 items-center justify-center rounded-2xl bg-yellow-400 px-8 text-base font-black text-slate-950 shadow-xl shadow-yellow-500/20 hover:bg-yellow-300"
               >
                 Reserve My Free Seat →
