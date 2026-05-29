@@ -70,78 +70,78 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PROBLEM */}
-      <section className="bg-slate-50 py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="The real problem"
-            title="You know English… but sentences don’t come quickly?"
-            subtitle="Many learners know words and grammar rules, but speaking becomes difficult because sentence formation is not automatic yet."
-          />
-
-          <div className="mt-12 grid gap-5 md:grid-cols-2">
-            <ProblemCard
-              title="I translate in my mind"
-              text="You think in your mother tongue first, then try to convert it into English."
-            />
-            <ProblemCard
-              title="I know words, but I freeze"
-              text="The vocabulary is there, but the sentence does not come at the right time."
-            />
-            <ProblemCard
-              title="My sentence order feels wrong"
-              text="You are unsure whether your English sounds correct."
-            />
-            <ProblemCard
-              title="I need practice, not more theory"
-              text="You want to speak better through daily practical training."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* DEMO PREVIEW */}
-      <section id="practice" className="py-20 sm:py-24">
-        <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-          <SectionHeader
-            eyebrow="See the product"
-            title="See how sentence practice works."
-            subtitle="You don’t just watch lessons. You build sentences, correct word order, type answers, speak aloud, and earn XP as you improve."
-          />
-
-          <div className="mt-12 grid gap-6 lg:grid-cols-3">
-            <AppScreen
-              badge="Lesson"
-              title="Choose your daily lesson"
-              body="Start with simple patterns and move step by step."
-            />
-            <AppScreen
-              badge="Practice"
-              title="Build the sentence"
-              body="Reorder, type, repeat, and train sentence recall."
-              highlighted
-            />
-            <AppScreen
-              badge="Progress"
-              title="Earn XP and streaks"
-              body="Get instant feedback and stay motivated daily."
-            />
-          </div>
-
-          <div className="mt-10 text-center">
-            <Link
-              to={primaryCta}
-              onClick={() => trackLevelCheckClick("homepage_demo_preview")}
-              className="inline-flex h-14 items-center justify-center rounded-full bg-purple-700 px-8 text-base font-extrabold text-white shadow-xl shadow-purple-300/30 transition hover:-translate-y-0.5 hover:bg-purple-800"
-            >
-              Try a Practice Lesson
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {showRest && (
         <>
+          {/* PROBLEM */}
+          <section className="bg-slate-50 py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="The real problem"
+                title="You know English… but sentences don’t come quickly?"
+                subtitle="Many learners know words and grammar rules, but speaking becomes difficult because sentence formation is not automatic yet."
+              />
+
+              <div className="mt-12 grid gap-5 md:grid-cols-2">
+                <ProblemCard
+                  title="I translate in my mind"
+                  text="You think in your mother tongue first, then try to convert it into English."
+                />
+                <ProblemCard
+                  title="I know words, but I freeze"
+                  text="The vocabulary is there, but the sentence does not come at the right time."
+                />
+                <ProblemCard
+                  title="My sentence order feels wrong"
+                  text="You are unsure whether your English sounds correct."
+                />
+                <ProblemCard
+                  title="I need practice, not more theory"
+                  text="You want to speak better through daily practical training."
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* DEMO PREVIEW */}
+          <section id="practice" className="py-20 sm:py-24">
+            <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+              <SectionHeader
+                eyebrow="See the product"
+                title="See how sentence practice works."
+                subtitle="You don’t just watch lessons. You build sentences, correct word order, type answers, speak aloud, and earn XP as you improve."
+              />
+
+              <div className="mt-12 grid gap-6 lg:grid-cols-3">
+                <AppScreen
+                  badge="Lesson"
+                  title="Choose your daily lesson"
+                  body="Start with simple patterns and move step by step."
+                />
+                <AppScreen
+                  badge="Practice"
+                  title="Build the sentence"
+                  body="Reorder, type, repeat, and train sentence recall."
+                  highlighted
+                />
+                <AppScreen
+                  badge="Progress"
+                  title="Earn XP and streaks"
+                  body="Get instant feedback and stay motivated daily."
+                />
+              </div>
+
+              <div className="mt-10 text-center">
+                <Link
+                  to={primaryCta}
+                  onClick={() => trackLevelCheckClick("homepage_demo_preview")}
+                  className="inline-flex h-14 items-center justify-center rounded-full bg-purple-700 px-8 text-base font-extrabold text-white shadow-xl shadow-purple-300/30 transition hover:-translate-y-0.5 hover:bg-purple-800"
+                >
+                  Try a Practice Lesson
+                </Link>
+              </div>
+            </div>
+          </section>
+
           {/* SOLUTION */}
           <section className="bg-gradient-to-b from-white to-slate-50 py-20 sm:py-24">
             <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
