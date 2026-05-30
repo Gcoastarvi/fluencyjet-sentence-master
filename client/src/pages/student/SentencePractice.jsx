@@ -2324,6 +2324,39 @@ export default function SentencePractice() {
     const difficulty = diffRaw === "intermediate" ? "intermediate" : "beginner";
     const base = difficulty === "intermediate" ? "/i" : "/b";
 
+    const currentLessonNumber = Number(lid || 1);
+
+    const storedUser = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("user") || "null");
+      } catch {
+        return null;
+      }
+    })();
+
+    const progressUserId =
+      auth?.user?.id ||
+      auth?.user?.email ||
+      auth?.id ||
+      auth?.email ||
+      storedUser?.id ||
+      storedUser?.email ||
+      null;
+
+    const completedQuizCount = ["typing", "reorder", "audio"].filter(
+      (modeName) =>
+        pct(readProgress(progressUserId, currentLessonNumber, modeName)) >= 100,
+    ).length;
+
+    const quizCompletionText =
+      completedQuizCount >= 3
+        ? `Lesson ${currentLessonNumber}: All 3 Quizzes Completed 🎉`
+        : completedQuizCount === 2
+          ? `Lesson ${currentLessonNumber}: 2 Quizzes Completed`
+          : completedQuizCount === 1
+            ? `Lesson ${currentLessonNumber}: 1 Quiz Completed`
+            : `Lesson ${currentLessonNumber}: Quiz Completed`;
+
     return (
       <div className="min-h-screen bg-slate-50 px-4 py-8">
         <div className="mx-auto max-w-3xl">
@@ -2342,7 +2375,7 @@ export default function SentencePractice() {
                   🎉 Great job!
                 </h1>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-600">
-                  Nice work. Keep improving with just 10 minutes a day.
+                  {quizCompletionText}
                 </p>
               </div>
 
@@ -2372,7 +2405,7 @@ export default function SentencePractice() {
                 {/* CTA 2 + CTA 3: Try another mode */}
                 <div className="mt-2">
                   <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Try another practice
+                    Practice Lesson {currentLessonNumber} More
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -2423,11 +2456,11 @@ export default function SentencePractice() {
                           }`}
                         />
                         <div className="text-sm font-bold text-slate-900">
-                          {uiFor(fallbackMode).title}
+                          👉 Grammar Quiz
                         </div>
                       </div>
                       <div className="mt-2 text-sm text-slate-600">
-                        Quick 2-minute boost →
+                        Click here to arrange the sentence →
                       </div>
                     </button>
 
@@ -2464,11 +2497,11 @@ export default function SentencePractice() {
                           }`}
                         />
                         <div className="text-sm font-bold text-slate-900">
-                          Listening Dictation
+                          👉 Audio Quiz
                         </div>
                       </div>
                       <div className="mt-2 text-sm text-slate-600">
-                        Listen and type the sentence →
+                        Click here to listen and type →
                       </div>
                     </button>
                   </div>
