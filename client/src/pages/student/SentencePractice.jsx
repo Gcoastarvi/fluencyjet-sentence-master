@@ -2342,7 +2342,7 @@ export default function SentencePractice() {
                   🎉 Great job!
                 </h1>
                 <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-600">
-                  Nice work. Keep improving with just 10 minutes a day. a day.
+                  Nice work. Keep improving with just 10 minutes a day.
                 </p>
               </div>
 
