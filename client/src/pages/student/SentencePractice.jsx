@@ -14,7 +14,6 @@ import PromptCard from "@/components/student/PromptCard";
 import { readProgress, writeProgress, pct } from "@/lib/progressStore";
 
 import { useAuth } from "../../context/AuthContext";
-import WebinarInviteCard from "../../components/student/WebinarInviteCard";
 
 // ===== helpers (reorder/typing normalization) =====
 const norm = (v) =>
@@ -2346,13 +2345,6 @@ export default function SentencePractice() {
                   Nice work. Keep improving with just 10 minutes a day. a day.
                 </p>
               </div>
-
-              {[1, 2, 3].includes(Number(lid)) && (
-                <WebinarInviteCard
-                  lessonNumber={Number(lid)}
-                  track={difficulty}
-                />
-              )}
 
               {/* CTAs */}
               <div className="mt-7 grid gap-3">
