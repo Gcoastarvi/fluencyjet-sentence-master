@@ -2511,7 +2511,7 @@ export default function SentencePractice() {
                 {nextLessonId ? (
                   <button
                     type="button"
-                    className="w-full rounded-2xl border border-indigo-200 bg-indigo-600 px-6 py-5 text-lg font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-5 text-lg font-black text-slate-800 shadow-sm hover:bg-white"
                     onClick={() => {
                       track("practice_cta_clicked", {
                         lessonId: Number(lid) || 0,
