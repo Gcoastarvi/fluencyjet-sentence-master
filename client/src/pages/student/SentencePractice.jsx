@@ -2460,7 +2460,7 @@ export default function SentencePractice() {
                         </div>
                       </div>
                       <div className="mt-2 text-sm text-slate-600">
-                        Click here to arrange the sentence →
+                        Click here →
                       </div>
                     </button>
 
@@ -2501,7 +2501,7 @@ export default function SentencePractice() {
                         </div>
                       </div>
                       <div className="mt-2 text-sm text-slate-600">
-                        Click here to listen and type →
+                        Click here →
                       </div>
                     </button>
                   </div>
