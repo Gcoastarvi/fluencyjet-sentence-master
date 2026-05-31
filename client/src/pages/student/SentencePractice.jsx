@@ -2342,7 +2342,7 @@ export default function SentencePractice() {
 
     const quizCards = [
       {
-        title: "Grammar Quiz",
+        title: "Quick English",
         subtitle: "Arrange the sentence",
         actionText: "Try now →",
         icon: "🧩",
@@ -2360,7 +2360,7 @@ export default function SentencePractice() {
         onClick: () => goToQuiz("audio", "repeat"),
       },
       {
-        title: "Typing Quiz",
+        title: "Grammar Genius",
         subtitle: "Type the answer",
         actionText: "Try now →",
         icon: "⌨️",
@@ -2369,7 +2369,7 @@ export default function SentencePractice() {
         onClick: () => goToQuiz("typing"),
       },
       {
-        title: "Dictation Quiz",
+        title: "Listening Quiz",
         subtitle: "Listen and type",
         actionText: "Try now →",
         icon: "✍️",
