@@ -2437,7 +2437,7 @@ export default function SentencePractice() {
                 {/* CTA 1: Back to same lesson */}
                 <button
                   type="button"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-5 text-lg font-black text-slate-800 shadow-sm hover:bg-slate-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-5 text-lg font-black text-slate-800 shadow-sm transition hover:bg-slate-100"
                   onClick={() => {
                     track("practice_cta_clicked", {
                       lessonId: Number(lid) || 0,
@@ -2452,7 +2452,7 @@ export default function SentencePractice() {
                     );
                   }}
                 >
-                  Back to Lesson {lid || 1}
+                  ← Back to Lesson {currentLessonNumber}
                 </button>
 
                 {/* CTA 2: Practice this lesson more */}
@@ -2509,7 +2509,7 @@ export default function SentencePractice() {
                 {nextLessonId ? (
                   <button
                     type="button"
-                    className="w-full rounded-2xl border border-indigo-200 bg-indigo-50 px-6 py-5 text-lg font-black text-indigo-700 shadow-sm hover:bg-indigo-100"
+                    className="w-full rounded-2xl border border-indigo-200 bg-indigo-50 px-6 py-5 text-lg font-black text-indigo-700 shadow-sm transition hover:bg-indigo-100"
                     onClick={() => {
                       track("practice_cta_clicked", {
                         lessonId: Number(lid) || 0,
@@ -2534,10 +2534,10 @@ export default function SentencePractice() {
                 {/* CTA 5: Leaderboard */}
                 <button
                   type="button"
-                  className="w-full rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5 text-base font-black text-amber-700 shadow-sm hover:bg-amber-100"
+                  className="w-full rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5 text-base font-black text-amber-700 shadow-sm transition hover:bg-amber-100"
                   onClick={() => navigate("/leaderboard")}
                 >
-                  View Leaderboard
+                  🏆 View Leaderboard
                 </button>
               </div>
             </div>
