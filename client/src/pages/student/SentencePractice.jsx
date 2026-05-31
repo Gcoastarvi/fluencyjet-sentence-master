@@ -2368,13 +2368,13 @@ export default function SentencePractice() {
 
             <div className="p-6 sm:p-9">
               <div className="text-center">
-                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                <div className="text-sm sm:text-base font-black uppercase tracking-[0.22em] text-slate-600">
                   Session complete
                 </div>
-                <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+                <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
                   🎉 Great job!
                 </h1>
-                <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-slate-600">
+                <p className="mx-auto mt-4 max-w-xl text-lg sm:text-xl font-extrabold leading-8 text-slate-800">
                   {quizCompletionText}
                 </p>
               </div>
@@ -2384,7 +2384,7 @@ export default function SentencePractice() {
                 {/* CTA 1: Back to same lesson */}
                 <button
                   type="button"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-6 py-4 text-base font-semibold text-slate-900 shadow-sm hover:bg-slate-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-6 py-5 text-lg font-black text-slate-950 shadow-sm hover:bg-slate-100"
                   onClick={() => {
                     track("practice_cta_clicked", {
                       lessonId: Number(lid) || 0,
@@ -2404,14 +2404,14 @@ export default function SentencePractice() {
 
                 {/* CTA 2 + CTA 3: Try another mode */}
                 <div className="mt-2">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <div className="mb-3 text-sm sm:text-base font-black uppercase tracking-[0.16em] text-slate-600">
                     Practice Lesson {currentLessonNumber} More
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-6 py-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
+                      className="w-full rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-6 py-6 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
                       onClick={() => {
                         playClick();
 
@@ -2455,11 +2455,11 @@ export default function SentencePractice() {
                             MODE_ACCENT?.[fallbackMode]?.bar || "bg-slate-500"
                           }`}
                         />
-                        <div className="text-sm font-bold text-slate-900">
+                        <div className="text-lg font-black text-slate-950">
                           👉 Grammar Quiz
                         </div>
                       </div>
-                      <div className="mt-2 text-sm text-slate-600">
+                      <div className="mt-3 text-base font-extrabold text-slate-700">
                         Click here →
                       </div>
                     </button>
@@ -2496,11 +2496,11 @@ export default function SentencePractice() {
                             MODE_ACCENT?.audio?.bar || "bg-slate-500"
                           }`}
                         />
-                        <div className="text-sm font-bold text-slate-900">
+                        <div className="text-lg font-black text-slate-950">
                           👉 Audio Quiz
                         </div>
                       </div>
-                      <div className="mt-2 text-sm text-slate-600">
+                      <div className="mt-3 text-base font-extrabold text-slate-700">
                         Click here →
                       </div>
                     </button>
@@ -2511,7 +2511,7 @@ export default function SentencePractice() {
                 {nextLessonId ? (
                   <button
                     type="button"
-                    className="w-full rounded-2xl border border-slate-300 bg-slate-50 px-6 py-3.5 text-sm font-semibold text-slate-900 shadow-sm hover:bg-white"
+                    className="w-full rounded-2xl border border-indigo-200 bg-indigo-600 px-6 py-5 text-lg font-black text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700"
                     onClick={() => {
                       track("practice_cta_clicked", {
                         lessonId: Number(lid) || 0,
@@ -2536,10 +2536,10 @@ export default function SentencePractice() {
                 {/* CTA 5: Leaderboard */}
                 <button
                   type="button"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-5 text-base font-black text-slate-700 shadow-sm hover:bg-white"
                   onClick={() => navigate("/leaderboard")}
                 >
-                  View leaderboard
+                  View Leaderboard
                 </button>
               </div>
             </div>
