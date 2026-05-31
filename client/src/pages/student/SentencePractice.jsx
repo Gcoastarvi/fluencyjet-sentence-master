@@ -2326,6 +2326,59 @@ export default function SentencePractice() {
 
     const currentLessonNumber = Number(lid || 1);
 
+    const goToQuiz = (mode, variant = "") => {
+      const qs = new URLSearchParams();
+      qs.set("lessonId", String(currentLessonNumber));
+      qs.set("difficulty", difficulty);
+      qs.set("q", "0");
+      qs.set("restart", String(Date.now()));
+
+      if (variant) {
+        qs.set("variant", variant);
+      }
+
+      navigate(`/practice/${mode}?${qs.toString()}`);
+    };
+
+    const quizCards = [
+      {
+        title: "Grammar Quiz",
+        subtitle: "Arrange the sentence",
+        actionText: "Try now →",
+        icon: "🧩",
+        dot: "bg-violet-500",
+        card: "border-violet-200 bg-violet-50 text-violet-900 hover:border-violet-300",
+        onClick: () => goToQuiz("reorder"),
+      },
+      {
+        title: "Audio Repeat",
+        subtitle: "Listen and speak",
+        actionText: "Try now →",
+        icon: "🎧",
+        dot: "bg-emerald-500",
+        card: "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-300",
+        onClick: () => goToQuiz("audio", "repeat"),
+      },
+      {
+        title: "Typing Quiz",
+        subtitle: "Type the answer",
+        actionText: "Try now →",
+        icon: "⌨️",
+        dot: "bg-orange-500",
+        card: "border-orange-200 bg-orange-50 text-orange-900 hover:border-orange-300",
+        onClick: () => goToQuiz("typing"),
+      },
+      {
+        title: "Dictation Quiz",
+        subtitle: "Listen and type",
+        actionText: "Try now →",
+        icon: "✍️",
+        dot: "bg-rose-500",
+        card: "border-rose-200 bg-rose-50 text-rose-900 hover:border-rose-300",
+        onClick: () => goToQuiz("audio", "dictation"),
+      },
+    ];
+
     const storedUser = (() => {
       try {
         return JSON.parse(localStorage.getItem("user") || "null");
@@ -2402,108 +2455,53 @@ export default function SentencePractice() {
                   Back to Lesson {lid || 1}
                 </button>
 
-                {/* CTA 2 + CTA 3: Try another mode */}
-                <div className="mt-2">
-                  <div className="mb-3 text-sm sm:text-base font-black uppercase tracking-[0.16em] text-slate-600">
+                {/* CTA 2: Practice this lesson more */}
+                <div className="mt-6">
+                  <div className="mb-4 text-sm sm:text-base font-black uppercase tracking-[0.18em] text-slate-600">
                     Practice Lesson {currentLessonNumber} More
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-6 py-6 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
-                      onClick={() => {
-                        playClick();
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {quizCards.map((card) => (
+                      <button
+                        key={card.title}
+                        type="button"
+                        onClick={() => {
+                          playClick();
+                          card.onClick();
+                        }}
+                        className={[
+                          "w-full rounded-2xl border p-6 text-left shadow-sm transition-all",
+                          "hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]",
+                          card.card,
+                        ].join(" ")}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="text-3xl leading-none">
+                            {card.icon}
+                          </div>
 
-                        const targetMode = fallbackMode;
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`h-3 w-3 rounded-full ${card.dot}`}
+                              />
+                              <h3 className="text-lg font-black">
+                                {card.title}
+                              </h3>
+                            </div>
 
-                        track("mode_switched", {
-                          lessonId: Number(lid) || 0,
-                          difficulty,
-                          fromMode: safeMode,
-                          toMode: targetMode,
-                          source: "session_complete",
-                          ...(targetMode === "audio"
-                            ? { audioVariant: "repeat" }
-                            : {}),
-                        });
+                            <p className="mt-2 text-base font-bold opacity-80">
+                              {card.subtitle}
+                            </p>
 
-                        if (targetMode === "audio") {
-                          setAudioVariant("repeat");
-                          navigate(
-                            `/practice/audio?lessonId=${encodeURIComponent(
-                              lid || 1,
-                            )}&difficulty=${encodeURIComponent(
-                              difficulty,
-                            )}&variant=repeat&q=0&restart=${Date.now()}`,
-                          );
-                          return;
-                        }
-
-                        navigate(
-                          `/practice/${targetMode}?lessonId=${encodeURIComponent(
-                            lid || 1,
-                          )}&difficulty=${encodeURIComponent(
-                            difficulty,
-                          )}&q=0&restart=${Date.now()}`,
-                        );
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`h-2.5 w-2.5 rounded-full ${
-                            MODE_ACCENT?.[fallbackMode]?.bar || "bg-slate-500"
-                          }`}
-                        />
-                        <div className="text-lg font-black text-slate-950">
-                          👉 Grammar Quiz
+                            <p className="mt-4 text-base font-black">
+                              {card.actionText}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="mt-3 text-base font-extrabold text-slate-700">
-                        Click here →
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="w-full rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white px-6 py-5 text-left shadow-sm transition hover:border-slate-300 hover:shadow-md"
-                      onClick={() => {
-                        playClick();
-
-                        setAudioVariant("dictation");
-
-                        track("mode_switched", {
-                          lessonId: Number(lid) || 0,
-                          difficulty,
-                          fromMode: safeMode,
-                          toMode: "audio",
-                          source: "session_complete_dictation",
-                          audioVariant: "dictation",
-                        });
-
-                        navigate(
-                          `/practice/audio?lessonId=${encodeURIComponent(
-                            lid || 1,
-                          )}&difficulty=${encodeURIComponent(
-                            difficulty,
-                          )}&variant=dictation&q=0&restart=${Date.now()}`,
-                        );
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`h-2.5 w-2.5 rounded-full ${
-                            MODE_ACCENT?.audio?.bar || "bg-slate-500"
-                          }`}
-                        />
-                        <div className="text-lg font-black text-slate-950">
-                          👉 Audio Quiz
-                        </div>
-                      </div>
-                      <div className="mt-3 text-base font-extrabold text-slate-700">
-                        Click here →
-                      </div>
-                    </button>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
