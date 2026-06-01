@@ -1299,7 +1299,7 @@ export default function LessonDetail() {
             <p className="text-center text-xs sm:text-sm font-black text-indigo-600 uppercase tracking-[0.26em] mb-8">
               {continueHref
                 ? "Continue from where you stopped"
-                : "Click below to start"}
+                : "Click to start"}
             </p>
 
             {/* 🎯 Clickable Quiz Shortcuts */}
