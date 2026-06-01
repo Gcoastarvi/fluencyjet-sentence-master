@@ -1299,51 +1299,81 @@ export default function LessonDetail() {
               {continueHref ? "RESUME MASTERY" : "START PRACTICE"}
             </button>
 
-            <p className="text-center text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-8">
+            <p className="text-center text-xs sm:text-sm font-black text-indigo-600 uppercase tracking-[0.26em] mb-8">
               {continueHref
-                ? "Continuing from where you left off"
-                : "Standard Learning Path Enabled"}
+                ? "Continue from where you stopped"
+                : "Click below to start"}
             </p>
 
-            {/* 🎯 NEW: Quick Mode Switcher (The Choice Layer) */}
-            <div className="flex justify-center gap-6 border-t border-slate-50 pt-8">
+            {/* 🎯 Clickable Quiz Shortcuts */}
+            <div className="grid grid-cols-3 gap-4 border-t border-slate-100 pt-8">
               {["reorder", "typing", "audio"].map((m) => {
-                const isDone =
-                  pct(
-                    m === "reorder"
-                      ? reorderProg
-                      : m === "typing"
-                        ? typingProg
-                        : audioProg,
-                  ) === 100;
+                const modePercent = pct(
+                  m === "reorder"
+                    ? reorderProg
+                    : m === "typing"
+                      ? typingProg
+                      : audioProg,
+                );
+
+                const isDone = modePercent === 100;
                 const config = MODE_CONFIG[m] || {};
                 const icon = config.icon || "🧩";
                 const label = config.title || m;
-                const subText = config.sub || "";
+                const tamil = config.tamil || "";
 
-                m === "reorder" ? "Logic" : m === "typing" ? "Speed" : "Audio";
+                const modeStyle =
+                  m === "reorder"
+                    ? {
+                        box: isDone
+                          ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                          : "bg-violet-50 border-violet-200 text-violet-700 group-hover:bg-violet-100",
+                        title: isDone ? "text-emerald-700" : "text-violet-700",
+                      }
+                    : m === "typing"
+                      ? {
+                          box: isDone
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            : "bg-amber-50 border-amber-200 text-amber-700 group-hover:bg-amber-100",
+                          title: isDone ? "text-emerald-700" : "text-amber-700",
+                        }
+                      : {
+                          box: isDone
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                            : "bg-emerald-50 border-emerald-200 text-emerald-700 group-hover:bg-emerald-100",
+                          title: isDone
+                            ? "text-emerald-700"
+                            : "text-emerald-700",
+                        };
 
                 return (
                   modeAvail[m] && (
                     <button
                       key={m}
                       onClick={() => startMode(m)}
-                      className="flex flex-col items-center gap-2 group transition-all"
+                      className="group flex flex-col items-center gap-3 rounded-2xl p-2 transition-all hover:-translate-y-0.5"
                     >
                       <div
-                        className={`h-14 w-14 rounded-2xl flex items-center justify-center text-xl transition-all shadow-sm border 
-                              ${isDone ? "bg-emerald-50 border-emerald-100" : "bg-slate-50 border-slate-100 group-hover:bg-white group-hover:border-indigo-200"}`}
+                        className={`h-16 w-16 rounded-2xl flex items-center justify-center text-2xl transition-all shadow-sm border ${modeStyle.box}`}
                       >
                         {isDone ? "✅" : icon}
                       </div>
-                      <span
-                        className={`text-[10px] font-black uppercase tracking-widest ${isDone ? "text-emerald-500" : "text-slate-400"}`}
-                      >
-                        {label}
-                      </span>
-                      <span className="text-[8px] font-bold text-slate-300 italic -mt-1">
-                        {config.tamil}
-                      </span>
+
+                      <div className="text-center">
+                        <div
+                          className={`text-xs sm:text-sm font-black uppercase tracking-wide leading-tight ${modeStyle.title}`}
+                        >
+                          {label}
+                        </div>
+
+                        <div className="mt-1 text-[11px] sm:text-xs font-extrabold text-slate-500 leading-snug">
+                          {tamil}
+                        </div>
+
+                        <div className="mt-2 text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-indigo-600">
+                          Start →
+                        </div>
+                      </div>
                     </button>
                   )
                 );
@@ -1353,50 +1383,120 @@ export default function LessonDetail() {
         </section>
 
         {/* 5. SKILL PROGRESS BARS */}
-        <div className="space-y-4 mb-10">
-          {["typing", "reorder", "audio"].map(
-            (m) =>
-              modeAvail[m] && (
-                <div
+        <section className="mb-10">
+          <div className="mb-4 flex items-end justify-between px-1">
+            <h3 className="text-sm sm:text-base font-black uppercase tracking-[0.18em] text-indigo-700">
+              Your Progress
+            </h3>
+
+            <span className="text-xs sm:text-sm font-black text-slate-500">
+              {Math.round(
+                (pct(typingProg) + pct(reorderProg) + pct(audioProg)) / 3,
+              )}
+              % overall
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            {["reorder", "typing", "audio"].map((m) => {
+              if (!modeAvail[m]) return null;
+
+              const modePercent = pct(
+                m === "typing"
+                  ? typingProg
+                  : m === "reorder"
+                    ? reorderProg
+                    : audioProg,
+              );
+
+              const config = MODE_CONFIG[m] || {};
+              const icon = config.icon || "🧩";
+              const label = config.title || m;
+              const tamil = config.tamil || "";
+
+              const modeTone =
+                m === "reorder"
+                  ? {
+                      iconBox: "bg-violet-100 text-violet-700",
+                      bar: "bg-violet-500",
+                      percent: "text-violet-700",
+                      badge: "bg-violet-100 text-violet-700",
+                    }
+                  : m === "typing"
+                    ? {
+                        iconBox: "bg-amber-100 text-amber-700",
+                        bar: "bg-amber-500",
+                        percent: "text-amber-700",
+                        badge: "bg-amber-100 text-amber-700",
+                      }
+                    : {
+                        iconBox: "bg-emerald-100 text-emerald-700",
+                        bar: "bg-emerald-500",
+                        percent: "text-emerald-700",
+                        badge: "bg-emerald-100 text-emerald-700",
+                      };
+
+              const statusText =
+                modePercent >= 100
+                  ? "Completed"
+                  : modePercent > 0
+                    ? "In progress"
+                    : "Not started";
+
+              return (
+                <button
                   key={m}
-                  className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between"
+                  type="button"
+                  onClick={() => startMode(m)}
+                  className="w-full rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md text-left"
                 >
-                  <span className="text-xl">{MODE_CONFIG[m]?.icon}</span>
-                  <div className="flex-1 px-4">
-                    <div className="flex justify-between items-end mb-1">
-                      <div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                          {MODE_CONFIG[m]?.title}
-                        </span>
-                        <p className="text-[9px] font-bold text-slate-300 italic -mt-0.5">
-                          {MODE_CONFIG[m]?.tamil}
-                        </p>
-                      </div>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`h-14 w-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${modeTone.iconBox}`}
+                    >
+                      {icon}
                     </div>
 
-                    <div className="h-1.5 w-full bg-slate-50 rounded-full border border-slate-100 overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-500 transition-all duration-1000"
-                        style={{
-                          width: `${pct(m === "typing" ? typingProg : m === "reorder" ? reorderProg : audioProg)}%`,
-                        }}
-                      />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h4 className="text-base sm:text-lg font-black text-slate-950 leading-tight">
+                            {label}
+                          </h4>
+
+                          <p className="mt-1 text-xs sm:text-sm font-extrabold text-slate-500 leading-snug">
+                            {tamil}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`text-sm sm:text-base font-black ${modeTone.percent}`}
+                        >
+                          {modePercent}%
+                        </span>
+                      </div>
+
+                      <div className="mt-3 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-1000 ${modeTone.bar}`}
+                          style={{ width: `${modePercent}%` }}
+                        />
+                      </div>
+
+                      <div className="mt-2">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wide ${modeTone.badge}`}
+                        >
+                          {statusText}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <span className="text-[11px] font-black text-slate-900">
-                    {pct(
-                      m === "typing"
-                        ? typingProg
-                        : m === "reorder"
-                          ? reorderProg
-                          : audioProg,
-                    )}
-                    %
-                  </span>
-                </div>
-              ),
-          )}
-        </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       </main>
     </div>
   );
