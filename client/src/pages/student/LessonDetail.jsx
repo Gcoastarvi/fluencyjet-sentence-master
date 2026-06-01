@@ -40,19 +40,16 @@ const MODE_CONFIG = {
   reorder: {
     title: uiFor("reorder").title,
     sub: "Think Fast & Smart",
-    tamil: "வேகமாக சிந்திக்க",
     icon: "⚡",
   },
   typing: {
     title: uiFor("typing").title,
     sub: "Office Writing Pro",
-    tamil: "அலுவலக எழுத்துமுறை",
     icon: "⌨️",
   },
   audio: {
     title: uiFor("audio").title,
     sub: "Speak with Confidence",
-    tamil: "சரளமாக பேச",
     icon: "🎧",
   },
 };
