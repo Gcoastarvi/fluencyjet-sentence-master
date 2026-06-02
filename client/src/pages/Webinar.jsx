@@ -214,6 +214,28 @@ export default function Webinar() {
               </div>
 
               {/* Fast trust badges */}
+              {/* Date and time block */}
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[1.25rem] border border-yellow-300/20 bg-yellow-300/10 p-4 backdrop-blur">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-200">
+                    Live Class Date
+                  </p>
+                  <p className="mt-2 text-xl font-black text-white">
+                    {WEBINAR_DATE}
+                  </p>
+                </div>
+
+                <div className="rounded-[1.25rem] border border-emerald-300/20 bg-emerald-300/10 p-4 backdrop-blur">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">
+                    Class Time
+                  </p>
+                  <p className="mt-2 text-xl font-black text-white">
+                    {WEBINAR_TIME}
+                  </p>
+                </div>
+              </div>
+
+              {/* Fast trust badges */}
               <div className="mt-6 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
                   <p className="text-lg font-black text-yellow-300">Free</p>
@@ -221,37 +243,21 @@ export default function Webinar() {
                     Live Class
                   </p>
                 </div>
+
                 <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
                   <p className="text-lg font-black text-emerald-300">Tamil</p>
                   <p className="text-[11px] font-bold uppercase tracking-wide text-slate-300">
                     Explanation
                   </p>
                 </div>
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[1.25rem] border border-yellow-300/20 bg-yellow-300/10 p-4 backdrop-blur">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-200">
-                      Live Class Date
-                    </p>
-                    <p className="mt-2 text-xl font-black text-white">
-                      {WEBINAR_DATE}
-                    </p>
-                  </div>
 
-                  <div className="rounded-[1.25rem] border border-emerald-300/20 bg-emerald-300/10 p-4 backdrop-blur">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">
-                      Class Time
-                    </p>
-                    <p className="mt-2 text-xl font-black text-white">
-                      {WEBINAR_TIME}
-                    </p>
-                  </div>
-                </div>
                 <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
                   <p className="text-lg font-black text-violet-200">Method</p>
                   <p className="text-[11px] font-bold uppercase tracking-wide text-slate-300">
                     Sentence First
                   </p>
                 </div>
+
                 <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
                   <p className="text-lg font-black text-blue-200">Zoom</p>
                   <p className="text-[11px] font-bold uppercase tracking-wide text-slate-300">
