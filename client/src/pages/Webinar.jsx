@@ -1,6 +1,7 @@
 // client/src/pages/Webinar.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
+import { trackMetaStandard } from "../lib/tracking";
 
 function trackGA(eventName, params = {}) {
   try {
@@ -73,8 +74,6 @@ export default function Webinar() {
     trackGA("webinar_form_submit", submitParams);
     trackMeta("WebinarFormSubmit", submitParams);
 
-    setSubmitted(true);
-
     try {
       await Promise.race([
         fetch(
@@ -87,6 +86,21 @@ export default function Webinar() {
         ),
         new Promise((resolve) => setTimeout(resolve, 1200)),
       ]);
+
+      setSubmitted(true);
+
+      trackGA("webinar_registration_complete", {
+        ...submitParams,
+        status: "success",
+      });
+
+      trackMetaStandard("CompleteRegistration", {
+        content_name: "FluencyJet Sentence Master Webinar",
+        content_category: "webinar_registration",
+        source: "webinar_page",
+        track: track || "unknown",
+        goal: payload.goal || "not_selected",
+      });
     } catch (error) {
       console.error("Webinar registration failed:", error);
     } finally {
