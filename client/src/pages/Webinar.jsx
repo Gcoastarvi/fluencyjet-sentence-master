@@ -564,18 +564,13 @@ export default function Webinar() {
               <p className="text-sm font-black uppercase tracking-[0.25em] text-yellow-300">
                 Free Live Zoom Class
               </p>
-              <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
-                Speak English Without Fear, Hesitation, or Confusion
-              </h1>
-
-              <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-slate-200 sm:text-xl">
-                Build sentences faster using my Ultimate Memory Method and the
-                FluencyJet Sentence Master App.
-              </p>
-
-              <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300 sm:text-lg">
-                A step-by-step live masterclass for learners who know English
-                words but struggle to speak fluently.
+              <h2 className="mx-auto mt-4 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">
+                Ready to stop translating and start forming English sentences
+                faster?
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300">
+                Register now, join the WhatsApp group, and get the Zoom link
+                before the live class.
               </p>
               <a
                 href="#register"
