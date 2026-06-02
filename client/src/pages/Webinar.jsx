@@ -612,7 +612,7 @@ export default function Webinar() {
               </p>
 
               <h2 className="mx-auto mt-4 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">
-                Ready to speak English without fear, hesitation, or self-doubt?
+                Ready to speak English without fear, Confusion, or self-doubt?
               </h2>
 
               <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300">
