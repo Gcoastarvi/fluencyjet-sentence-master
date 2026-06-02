@@ -610,21 +610,23 @@ export default function Webinar() {
               <p className="text-sm font-black uppercase tracking-[0.25em] text-yellow-300">
                 Free Live Zoom Class
               </p>
+
               <h2 className="mx-auto mt-4 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">
-                Ready to stop translating and start forming English sentences
-                faster?
+                Ready to speak English without fear, hesitation, or self-doubt?
               </h2>
+
               <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300">
-                Register now for {WEBINAR_DATE} at {WEBINAR_TIME}, join the
-                WhatsApp group, and get the Zoom link before the live class.
-                before the live class.
+                Register for {WEBINAR_DATE} at {WEBINAR_TIME}, join the WhatsApp
+                group, and learn how to build confident English sentences using
+                my memory method.
               </p>
+
               <a
                 href="#register"
                 onClick={() => handleCtaClick("mid_page_cta")}
                 className="mt-7 inline-flex h-14 items-center justify-center rounded-2xl bg-yellow-400 px-8 text-base font-black text-slate-950 shadow-xl shadow-yellow-500/20 hover:bg-yellow-300"
               >
-                Reserve My Free Seat →
+                Reserve My Free Seat & Join the Group →
               </a>
             </div>
           </section>
