@@ -32,6 +32,9 @@ export default function Webinar() {
 
   const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/YOUR_GROUP_INVITE_LINK";
 
+  const WEBINAR_DATE = "Sunday, 9 June";
+  const WEBINAR_TIME = "7:00 PM to 8:30 PM IST";
+
   const contextLabel = useMemo(() => {
     if (source.includes("lesson_3")) return "Free Starter Path completed";
     if (source.includes("lesson_2")) return "Lesson 2 completed";
@@ -224,6 +227,25 @@ export default function Webinar() {
                     Explanation
                   </p>
                 </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[1.25rem] border border-yellow-300/20 bg-yellow-300/10 p-4 backdrop-blur">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-yellow-200">
+                      Live Class Date
+                    </p>
+                    <p className="mt-2 text-xl font-black text-white">
+                      {WEBINAR_DATE}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[1.25rem] border border-emerald-300/20 bg-emerald-300/10 p-4 backdrop-blur">
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-200">
+                      Class Time
+                    </p>
+                    <p className="mt-2 text-xl font-black text-white">
+                      {WEBINAR_TIME}
+                    </p>
+                  </div>
+                </div>
                 <div className="rounded-2xl border border-white/10 bg-white/10 p-3 text-center backdrop-blur">
                   <p className="text-lg font-black text-violet-200">Method</p>
                   <p className="text-[11px] font-bold uppercase tracking-wide text-slate-300">
@@ -273,6 +295,15 @@ export default function Webinar() {
                     <p className="mt-2 text-sm font-bold text-slate-600">
                       Source: {contextLabel}
                     </p>
+
+                    <div className="mt-4 rounded-2xl border border-violet-100 bg-violet-50 p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">
+                        Upcoming Live Webinar
+                      </p>
+                      <p className="mt-2 text-base font-black text-slate-950">
+                        {WEBINAR_DATE} • {WEBINAR_TIME}
+                      </p>
+                    </div>
 
                     <div className="mt-4 grid grid-cols-3 gap-2 text-center">
                       <div className="rounded-2xl bg-violet-50 p-3">
@@ -578,7 +609,8 @@ export default function Webinar() {
                 faster?
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300">
-                Register now, join the WhatsApp group, and get the Zoom link
+                Register now for {WEBINAR_DATE} at {WEBINAR_TIME}, join the
+                WhatsApp group, and get the Zoom link before the live class.
                 before the live class.
               </p>
               <a
