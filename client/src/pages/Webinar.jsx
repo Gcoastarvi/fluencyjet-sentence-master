@@ -162,19 +162,29 @@ export default function Webinar() {
               </div>
 
               <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
-                Speak English Without Translating in Your Mind
+                Speak English Without Fear, Hesitation, or Confusion
               </h1>
 
+              <p className="mt-5 max-w-3xl text-2xl font-black leading-tight text-emerald-300 sm:text-3xl">
+                No Fear. No Confusion. Just Confident Sentences.
+              </p>
+
               <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-slate-200 sm:text-xl">
-                Join my free live class and learn the FluencyJet
-                sentence-building method to form English sentences faster,
-                reduce hesitation, and speak with more confidence.
+                Build sentences faster using my Ultimate Memory Method and the
+                FluencyJet Sentence Master App.
+              </p>
+
+              <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300 sm:text-lg">
+                A step-by-step live masterclass for learners who know English
+                words but struggle to speak fluently.
               </p>
 
               <div className="mt-6 rounded-[1.5rem] border border-emerald-300/20 bg-emerald-300/10 p-5 backdrop-blur">
                 <p className="font-tamil text-base font-bold leading-8 text-emerald-50 sm:text-lg">
-                  தமிழில் நினைத்து English-க்கு translate செய்யாமல் பேசுவது
-                  எப்படி என்று simple-ஆக கற்றுக்கொள்ளுங்கள்.
+                  English words தெரிந்தும் பேசும்போது fear, hesitation,
+                  confusion வருகிறதா? Simple sentence patterns மூலம்
+                  confident-ஆக பேசுவது எப்படி என்று இந்த free live class-ல்
+                  கற்றுக்கொள்ளுங்கள்.
                 </p>
               </div>
 
