@@ -162,11 +162,11 @@ export default function Webinar() {
               </div>
 
               <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
-                Speak English Without Fear, Hesitation, or Confusion
+                Speak English Without Fear, Hesitation, or Self-Doubt
               </h1>
 
               <p className="mt-5 max-w-3xl text-2xl font-black leading-tight text-emerald-300 sm:text-3xl">
-                No Fear. No Confusion. Just Confident Sentences.
+                No Fear. No Confusion. Just Results.
               </p>
 
               <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-slate-200 sm:text-xl">
@@ -181,10 +181,9 @@ export default function Webinar() {
 
               <div className="mt-6 rounded-[1.5rem] border border-emerald-300/20 bg-emerald-300/10 p-5 backdrop-blur">
                 <p className="font-tamil text-base font-bold leading-8 text-emerald-50 sm:text-lg">
-                  English words தெரிந்தும் பேசும்போது fear, hesitation,
-                  confusion வருகிறதா? Simple sentence patterns மூலம்
-                  confident-ஆக பேசுவது எப்படி என்று இந்த free live class-ல்
-                  கற்றுக்கொள்ளுங்கள்.
+                  English words தெரிந்தும் பேசும்போது பயம், தயக்கம், குழப்பம்
+                  வருகிறதா? Simple sentence patterns மூலம் confident-ஆக பேசுவது
+                  எப்படி என்று இந்த free live class-ல் கற்றுக்கொள்ளுங்கள்.
                 </p>
               </div>
 
