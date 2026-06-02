@@ -165,7 +165,7 @@ export default function Webinar() {
               </div>
 
               <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[1.02] tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
-                Speak English Without Fear, Hesitation, or Self-Doubt
+                Speak English Without Fear, Confusion, or Self-Doubt
               </h1>
 
               <p className="mt-5 max-w-3xl text-2xl font-black leading-tight text-emerald-300 sm:text-3xl">
@@ -612,7 +612,7 @@ export default function Webinar() {
               </p>
 
               <h2 className="mx-auto mt-4 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">
-                Ready to speak English without fear, Confusion, or self-doubt?
+                Ready to speak English without fear, hesitation, or self-doubt?
               </h2>
 
               <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-300">
