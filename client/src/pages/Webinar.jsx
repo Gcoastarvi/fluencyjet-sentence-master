@@ -50,71 +50,59 @@ export default function Webinar() {
     const form = new FormData(e.currentTarget);
 
     const payload = {
-      name: form.get("name"),
-      phone: form.get("phone"),
-      email: form.get("email"),
-      goal: form.get("goal"),
+      name: form.get("name") || "",
+      phone: form.get("phone") || "",
+      email: form.get("email") || "",
+      goal: form.get("goal") || "",
       source,
       track,
       lesson,
       contextLabel,
+      page: "webinar",
+      submittedAt: new Date().toISOString(),
     };
 
-    React.useEffect(() => {
-      const params = {
-        page: "webinar",
-        source,
-        track,
-        lesson,
-        context_label: contextLabel,
-      };
+    const submitParams = {
+      source,
+      track,
+      lesson,
+      context_label: contextLabel,
+      goal: payload.goal || "not_selected",
+    };
 
-      trackGA("webinar_page_view", params);
-      trackMeta("WebinarPageView", params);
-    }, [source, track, lesson, contextLabel]);
+    trackGA("webinar_form_submit", submitParams);
+    trackMeta("WebinarFormSubmit", submitParams);
+
+    setSubmitted(true);
 
     try {
-      await fetch(
-        "https://script.google.com/macros/s/AKfycbwA3QURJ2X-D_Ww4GfhteuUxghA7PLfHuHf7hlrlWEKrCBiShAtqpPLgFwneJP2fn-V/exec",
-        {
-          method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "application/json",
+      await Promise.race([
+        fetch(
+          "https://script.google.com/macros/s/AKfycbwA3QURJ2X-D_Ww4GfhteuUxghA7PLfHuHf7hlrlWEKrCBiShAtqpPLgFwneJP2fn-V/exec",
+          {
+            method: "POST",
+            mode: "no-cors",
+            body: JSON.stringify(payload),
           },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      setSubmitted(true);
-
-      const submitParams = {
+        ),
+        new Promise((resolve) => setTimeout(resolve, 1200)),
+      ]);
+    } catch (error) {
+      console.error("Webinar registration failed:", error);
+    } finally {
+      const redirectParams = {
         source,
         track,
         lesson,
         context_label: contextLabel,
-        goal: payload.goal || "not_selected",
       };
 
-      trackGA("webinar_form_submit", submitParams);
-      trackMeta("WebinarFormSubmit", submitParams);
+      trackGA("webinar_whatsapp_redirect", redirectParams);
+      trackMeta("WebinarWhatsAppRedirect", redirectParams);
 
       setTimeout(() => {
-        const redirectParams = {
-          source,
-          track,
-          lesson,
-          context_label: contextLabel,
-        };
-
-        trackGA("webinar_whatsapp_redirect", redirectParams);
-        trackMeta("WebinarWhatsAppRedirect", redirectParams);
-
         window.location.href = WHATSAPP_GROUP_URL;
-      }, 1200);
-    } catch (error) {
-      console.error("Webinar registration failed:", error);
-      alert("Something went wrong. Please try again.");
+      }, 600);
     }
   }
 
