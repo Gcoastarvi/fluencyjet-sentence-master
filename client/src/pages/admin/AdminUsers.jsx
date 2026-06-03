@@ -90,7 +90,7 @@ const AdminUsers = () => {
 
   async function handleResetPassword(user) {
     const newPassword = window.prompt(
-      `Enter new temporary password for ${user.name || user.email}`,
+      `Enter new temporary password for ${user.name || "User"} (${user.email})`,
     );
 
     if (!newPassword) return;
@@ -100,7 +100,11 @@ const AdminUsers = () => {
       return;
     }
 
-    if (!window.confirm(`Reset password for ${user.name || user.email}?`)) {
+    if (
+      !window.confirm(
+        `Reset password for ${user.name || "User"} (${user.email})?`,
+      )
+    ) {
       return;
     }
 
