@@ -3,6 +3,7 @@ import express from "express";
 import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
 import requireAdmin from "../middleware/admin.js";
+import bcrypt from "bcryptjs";
 
 const router = express.Router();
 
@@ -154,6 +155,54 @@ router.patch("/:id/access", authRequired, requireAdmin, async (req, res) => {
     return res
       .status(500)
       .json({ ok: false, message: "Failed to update user access" });
+  }
+});
+
+router.patch("/:id/reset-password", async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+    const { newPassword } = req.body;
+
+    if (!userId || Number.isNaN(userId)) {
+      return res.status(400).json({
+        ok: false,
+        message: "Invalid user id",
+      });
+    }
+
+    if (!newPassword || String(newPassword).trim().length < 6) {
+      return res.status(400).json({
+        ok: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(String(newPassword).trim(), 10);
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    return res.json({
+      ok: true,
+      message: "Password reset successfully",
+      user,
+    });
+  } catch (error) {
+    console.error("Admin reset password failed:", error);
+
+    return res.status(500).json({
+      ok: false,
+      message: "Failed to reset password",
+    });
   }
 });
 

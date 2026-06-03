@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import * as adminApi from "../../api/adminApi";
+import API from "../../api/apiClient";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
 
 const AdminUsers = () => {
@@ -88,6 +88,45 @@ const AdminUsers = () => {
     }
   };
 
+  async function handleResetPassword(user) {
+    const newPassword = window.prompt(
+      `Enter new temporary password for ${user.name || user.email}`,
+    );
+
+    if (!newPassword) return;
+
+    if (newPassword.trim().length < 6) {
+      alert("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (!window.confirm(`Reset password for ${user.name || user.email}?`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("fj_admin_token");
+
+      const res = await API.patch(
+        `/api/admin/users/${user.id}/reset-password`,
+        { newPassword: newPassword.trim() },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (res.data.ok) {
+        alert(`Password reset successful for ${user.email}`);
+      } else {
+        alert(res.data.message || "Password reset failed.");
+      }
+    } catch (error) {
+      console.error("Password reset failed:", error);
+      alert(
+        error?.response?.data?.message ||
+          "Password reset failed. Please try again.",
+      );
+    }
+  }
+
   if (loading) {
     return (
       <div className="p-6 text-lg font-semibold text-gray-600">
@@ -168,6 +207,14 @@ const AdminUsers = () => {
                         {u.has_access ? "Active" : "Blocked"}
                       </button>
                     </td>
+
+                    <button
+                      type="button"
+                      onClick={() => handleResetPassword(u)}
+                      className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-700"
+                    >
+                      Reset Password
+                    </button>
 
                     {/* Actions */}
                     <td className="text-center">
