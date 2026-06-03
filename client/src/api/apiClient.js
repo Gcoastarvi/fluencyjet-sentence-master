@@ -114,6 +114,13 @@ export const api = {
       body: body instanceof FormData ? body : JSON.stringify(body ?? {}),
     }),
 
+  patch: (path, body, options = {}) =>
+    request(path, {
+      ...options,
+      method: "PATCH",
+      body: body instanceof FormData ? body : JSON.stringify(body ?? {}),
+    }),
+
   del: (path, options = {}) => request(path, { ...options, method: "DELETE" }),
 };
 
