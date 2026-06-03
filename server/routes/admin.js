@@ -8,6 +8,7 @@ import { authMiddleware, authRequired } from "../middleware/authMiddleware.js";
 import adminLessonsRouter from "./adminLessons.js";
 import adminExercises from "./adminExercises.js";
 import adminLessonsUpsertRouter from "./adminLessonsUpsert.js";
+import adminUsersRouter from "./adminUsers.js";
 
 const router = express.Router();
 
@@ -584,5 +585,7 @@ router.get("/analytics", authRequired, requireAdmin, async (req, res) => {
 });
 
 /* ───────────────────────────────────────────── */
+
+router.use("/users", adminUsersRouter);
 
 export default router;
