@@ -11,7 +11,7 @@ const AdminUsers = () => {
     try {
       const token = localStorage.getItem("fj_admin_token");
 
-      const res = await API.get("/api/admin/users", {
+      const res = await API.get("/admin/users", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -39,7 +39,7 @@ const AdminUsers = () => {
       const token = localStorage.getItem("fj_admin_token");
 
       const res = await API.patch(
-        `/api/admin/users/${userId}/access`,
+        `/admin/users/${userId}/access`,
         { has_access: !currentAccess },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -68,7 +68,7 @@ const AdminUsers = () => {
       const token = localStorage.getItem("fj_admin_token");
 
       const res = await API.patch(
-        `/api/admin/users/${userId}/access`,
+        `/admin/users/${userId}/access`,
         { tier_level: newTier },
         { headers: { Authorization: `Bearer ${token}` } },
       );
@@ -108,7 +108,7 @@ const AdminUsers = () => {
       const token = localStorage.getItem("fj_admin_token");
 
       const res = await API.patch(
-        `/api/admin/users/${user.id}/reset-password`,
+        `/admin/users/${user.id}/reset-password`,
         { newPassword: newPassword.trim() },
         { headers: { Authorization: `Bearer ${token}` } },
       );
