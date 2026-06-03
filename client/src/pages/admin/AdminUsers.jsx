@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import API from "../../api/apiClient";
+import { api as API } from "../../api/apiClient";
 import ProtectedAdminRoute from "../../components/ProtectedAdminRoute";
 
 const AdminUsers = () => {
