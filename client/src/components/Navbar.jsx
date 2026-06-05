@@ -171,7 +171,7 @@ export default function Navbar() {
                   {/* 🎯 Hide Upgrade if user has paid access */}
                   {!auth?.has_access && (
                     <Link
-                      to="/upgrade"
+                      to="/webinar"
                       className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"
                     >
                       Upgrade
