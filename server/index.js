@@ -42,31 +42,42 @@ const PORT = process.env.PORT || 8080;
 import cors from "cors";
 
 // 🎯 THE ULTIMATE CORS HANDSHAKE
+const envCorsOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const trustedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.APP_URL,
+  "https://www.fluencyjet.com",
+  "https://api.fluencyjet.com",
+  "https://fluencyjet.com",
+  "https://fluencyjet-sentence-master-production.up.railway.app",
+  "https://fluencyjet-sentence-master-production-de09.up.railway.app",
+  ...envCorsOrigins,
+].filter(Boolean);
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // 1. Define which URLs we trust
-    const trustedOrigins = [
-      process.env.FRONTEND_URL,
-      "https://fluencyjet-sentence-master-production.up.railway.app",
-      "https://fluencyjet-sentence-master-production-de09.up.railway.app",
-      "https://www.fluencyjet.com",
-      "https://fluencyjet.com",
-    ];
-
-    // 2. Allow requests with no origin (like mobile apps or curl)
-    // or if the origin is in our trusted list
-    if (
-      !origin ||
-      trustedOrigins.indexOf(origin) !== -1 ||
-      origin.startsWith("http://localhost")
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+    // Allow requests with no origin like curl, health checks, mobile apps
+    if (!origin) {
+      return callback(null, true);
     }
+
+    if (
+      trustedOrigins.includes(origin) ||
+      origin.startsWith("http://localhost") ||
+      origin.startsWith("http://127.0.0.1")
+    ) {
+      return callback(null, true);
+    }
+
+    console.warn("Blocked by CORS:", origin);
+    return callback(new Error(`Not allowed by CORS: ${origin}`));
   },
-  credentials: true, // 👈 Crucial for your fj_token cookie
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // 🎯 Added PATCH
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "Cache-Control", "Pragma"],
 };
 
