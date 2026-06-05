@@ -33,7 +33,7 @@ export default function Webinar() {
 
   const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/KL0O6mla2bN6dDWekku9CC";
 
-  const WEBINAR_DATE = "Sunday, 9 June";
+  const WEBINAR_DATE = "Sunday, 7 June";
   const WEBINAR_TIME = "11:00 AM to 12:30 PM IST";
 
   const contextLabel = useMemo(() => {
