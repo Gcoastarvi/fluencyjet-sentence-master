@@ -5,4 +5,4 @@
 export const API_BASE =
   import.meta.env.MODE === "development"
     ? "http://localhost:8080"
-    : "https://fluencyjet-sentence-master-production.up.railway.app";
+    : "https://api.fluencyjet.com";

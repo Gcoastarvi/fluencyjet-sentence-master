@@ -11,7 +11,7 @@ import { api } from "@/api/apiClient";
  */
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL ||
-  "https://fluencyjet-sentence-master-production.up.railway.app";
+  "https://api.fluencyjet.com";
 
 /** All admin endpoints live under /api/admin */
 const ADMIN_API_BASE = `${API_BASE_URL}/api/admin`;

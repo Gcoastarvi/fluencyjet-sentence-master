@@ -1,3 +1,3 @@
 export const API_BASE_URL =
   import.meta.env.VITE_API_URL ||
-  "https://fluencyjet-sentence-master-production.up.railway.app";
+  "https://api.fluencyjet.com";
