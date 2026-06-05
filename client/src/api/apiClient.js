@@ -2,16 +2,9 @@
 // FINAL SAFE VERSION — NO TOP-LEVEL AWAIT
 import { getToken, setToken } from "@/utils/tokenStore";
 
-const isLocalhost =
-  typeof window !== "undefined" &&
-  ["localhost", "127.0.0.1"].includes(window.location.hostname);
+const RAW_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
-const RAW_BASE =
-  isLocalhost && import.meta.env.VITE_API_BASE_URL
-    ? import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, "")
-    : "";
-
-// ✅ Production-safe default: always use same origin on live site
+// ✅ Monolith-safe default: same origin
 const origin =
   typeof window !== "undefined" && window.location?.origin
     ? window.location.origin
