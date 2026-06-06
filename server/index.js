@@ -145,6 +145,14 @@ const ALLOW_HEADERS =
   "Content-Type, Authorization, Cache-Control, Pragma, If-None-Match";
 const ALLOW_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: true,
+    service: "fluencyjet-api",
+    time: new Date().toISOString(),
+  });
+});
+
 app.post("/api/admin/reset-leagues", async (req, res) => {
   // 🛡️ Simple security check
   if (req.headers.authorization !== `Bearer ${process.env.ADMIN_SECRET}`) {
