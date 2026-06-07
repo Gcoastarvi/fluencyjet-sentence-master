@@ -182,3 +182,27 @@ export async function getLessonProgressSummary() {
 export async function saveLessonModeProgress(payload) {
   return api.post("/progress/lesson-mode", payload);
 }
+
+export async function smartSignup(payload) {
+  const res = await api.post("/funnel/smart-signup", payload);
+
+  const token = res.data?.token;
+  if (token) setToken(token);
+
+  return res.data;
+}
+
+export async function registerWebinar(payload = {}) {
+  const res = await api.post("/funnel/register-webinar", payload);
+  return res.data;
+}
+
+export async function logFunnelEvent(event, payload = {}) {
+  try {
+    const res = await api.post("/funnel/event", { event, payload });
+    return res.data;
+  } catch (err) {
+    console.warn("Funnel event log failed:", err);
+    return { ok: false };
+  }
+}

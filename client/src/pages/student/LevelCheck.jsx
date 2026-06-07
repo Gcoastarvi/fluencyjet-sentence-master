@@ -251,9 +251,10 @@ export default function LevelCheck() {
 
     if (opts && opts.startLesson1) {
       if (!token) {
-        navigate(`/signup?next=${encodeURIComponent(lessonHubUrl)}`, {
-          replace: true,
-        });
+        navigate(
+          `/smart-signup?next=${encodeURIComponent(lessonHubUrl)}&track=${track}`,
+          { replace: true },
+        );
         return;
       }
 
@@ -262,7 +263,10 @@ export default function LevelCheck() {
     }
 
     if (!token) {
-      navigate(`/signup?next=${encodeURIComponent(target)}`, { replace: true });
+      navigate(
+        `/smart-signup?next=${encodeURIComponent(target)}&track=${track}`,
+        { replace: true },
+      );
       return;
     }
 
@@ -732,9 +736,11 @@ export default function LevelCheck() {
                         )}
 
                         <div className="mt-5 rounded-2xl bg-white/70 px-4 py-3 text-sm font-bold text-violet-700">
-                          Your learning path is ready.
+                          Your free FluencyJet account and live class seat are
+                          ready to unlock.
                           <div className="mt-1 font-tamil text-slate-600">
-                            உங்கள் learning path தயார்.
+                            உங்கள் free account மற்றும் live class seat unlock
+                            செய்ய தயாராக உள்ளது.
                           </div>
                         </div>
                       </div>
@@ -746,11 +752,25 @@ export default function LevelCheck() {
                             const next = lessonPathForTrack(track, 1);
                             const encodedNext = encodeURIComponent(next);
 
-                            window.location.href = `/signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName || "")}`;
+                            try {
+                              sessionStorage.setItem(
+                                "fj_level_result",
+                                JSON.stringify({
+                                  level: meta.resultTitle || track,
+                                  level_check_result: meta.resultTitle || track,
+                                  track,
+                                  score,
+                                  completedAt: new Date().toISOString(),
+                                }),
+                              );
+                              localStorage.setItem("fj_track", track);
+                            } catch {}
+
+                            window.location.href = `/smart-signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName || "")}`;
                           }}
                           className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
                         >
-                          <span>{meta.cta || "Start My Lessons"}</span>
+                          <span>Create Free Account + Reserve My Seat</span>
                           <span className="text-xl">→</span>
                         </button>
                       </div>

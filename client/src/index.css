@@ -1071,3 +1071,19 @@ body {
   animation: flameFlicker 1.5s infinite ease-in-out;
   display: inline-block;
 }
+
+.fj-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgb(226 232 240);
+  background: white;
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  color: rgb(15 23 42);
+  outline: none;
+}
+
+.fj-input:focus {
+  border-color: rgb(79 70 229);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.16);
+}

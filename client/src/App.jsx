@@ -13,6 +13,8 @@ import { useEffect, lazy, Suspense } from "react";
 
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
+import SmartSignup from "./pages/student/SmartSignup";
+import Activation from "./pages/student/Activation";
 
 // Student pages - lazy loaded
 const Home = lazy(() => import("./pages/Home"));
@@ -174,6 +176,8 @@ export default function App() {
                 element={<Navigate to="/login" replace />}
               />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/smart-signup" element={<SmartSignup />} />
+              <Route path="/activation" element={<Activation />} />
               <Route path="/webinar" element={<Webinar />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />

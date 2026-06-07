@@ -154,3 +154,41 @@ export function trackPurchase({ value, currency = "INR", plan } = {}) {
     content_category: plan || "unknown",
   });
 }
+
+export function trackSmartSignupCompleted({
+  track,
+  source = "smart_signup",
+} = {}) {
+  trackEvent("SignupCompleted", { track, source });
+  trackEvent("WebinarRegistered", { track, source });
+
+  trackMetaStandard("CompleteRegistration", {
+    content_name: "FluencyJet Smart Signup",
+    content_category: "webinar_registration",
+    source,
+    track,
+  });
+
+  trackMetaStandard("Lead", {
+    content_name: "FluencyJet Live Class",
+    content_category: "webinar_registration",
+    source,
+    track,
+  });
+}
+
+export function trackWhatsAppJoinClicked({ source = "activation" } = {}) {
+  trackEvent("WhatsAppJoinClicked", { source });
+  trackMetaStandard("Lead", {
+    content_name: "WhatsApp Group Join",
+    source,
+  });
+}
+
+export function trackAppTrialStarted({ source = "activation", track } = {}) {
+  trackEvent("AppTrialStarted", { source, track });
+}
+
+export function trackDemoVideoViewed({ source = "lesson_onboarding" } = {}) {
+  trackEvent("DemoVideoViewed", { source });
+}
