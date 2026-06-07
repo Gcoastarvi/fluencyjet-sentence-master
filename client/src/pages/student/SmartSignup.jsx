@@ -109,11 +109,11 @@ export default function SmartSignup() {
   const [email, setEmail] = useState(storedUser?.email || "");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [password, setPassword] = useState("");
-  const [currentStatus, setCurrentStatus] = useState("");
+  const [currentStatus] = useState("Not specified");
   const [mainGoal, setMainGoal] = useState("");
-  const [practiceCommitment, setPracticeCommitment] = useState("");
-  const [reserveSeat, setReserveSeat] = useState(true);
-  const [whatsappConsent, setWhatsappConsent] = useState(true);
+  const [practiceCommitment] = useState("Yes, I can practise 15 minutes daily");
+  const [reserveSeat] = useState(true);
+  const [whatsappConsent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -231,7 +231,7 @@ export default function SmartSignup() {
 
         <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl">
           <h2 className="text-2xl font-black text-slate-950">
-            Create Free Account + Reserve My Seat
+            Create Free App Account + Free Live Class
           </h2>
           <p className="mt-2 text-sm font-medium text-slate-600">
             One simple step to unlock your app access and live class seat.
@@ -278,27 +278,11 @@ export default function SmartSignup() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  placeholder="Create password"
+                  placeholder="Create App password"
                   className="fj-input"
                 />
               </Field>
             </div>
-
-            <Field label="Current status">
-              <select
-                value={currentStatus}
-                onChange={(e) => setCurrentStatus(e.target.value)}
-                required
-                className="fj-input"
-              >
-                <option value="">Select your status</option>
-                {STATUS_OPTIONS.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </Field>
 
             <Field label="Main goal">
               <select
@@ -316,42 +300,6 @@ export default function SmartSignup() {
               </select>
             </Field>
 
-            <Field label="Daily practice commitment">
-              <select
-                value={practiceCommitment}
-                onChange={(e) => setPracticeCommitment(e.target.value)}
-                required
-                className="fj-input"
-              >
-                <option value="">Select one option</option>
-                {COMMITMENT_OPTIONS.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
-            <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
-              <input
-                type="checkbox"
-                checked={reserveSeat}
-                onChange={(e) => setReserveSeat(e.target.checked)}
-                className="mt-1"
-              />
-              Reserve my free seat for the live class
-            </label>
-
-            <label className="flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-700">
-              <input
-                type="checkbox"
-                checked={whatsappConsent}
-                onChange={(e) => setWhatsappConsent(e.target.checked)}
-                className="mt-1"
-              />
-              Send me app access and class reminders on WhatsApp
-            </label>
-
             {error && (
               <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
                 {error}
@@ -365,7 +313,7 @@ export default function SmartSignup() {
             >
               {loading
                 ? "Creating your access..."
-                : "Create Free Account + Reserve My Seat"}
+                : "Create Free App Account + Free Live Class"}
             </button>
 
             <p className="text-center text-xs font-medium text-slate-500">
