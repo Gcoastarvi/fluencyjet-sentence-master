@@ -97,6 +97,13 @@ export default function Navbar() {
   const lessonsHref =
     currentRouteTrack === "INTERMEDIATE" ? "/i/lessons" : "/b/lessons";
 
+  const isPaidUser =
+    auth?.has_access === true ||
+    auth?.user?.has_access === true ||
+    String(auth?.plan || "").toUpperCase() === "PRO" ||
+    String(auth?.user?.plan || "").toUpperCase() === "PRO" ||
+    String(auth?.user?.tier_level || "").toLowerCase() === "pro";
+
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
       <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6">
@@ -169,7 +176,7 @@ export default function Navbar() {
                   </Link>
 
                   {/* 🎯 Hide Upgrade if user has paid access */}
-                  {!auth?.has_access && (
+                  {!isPaidUser && (
                     <Link
                       to="/webinar"
                       className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"
