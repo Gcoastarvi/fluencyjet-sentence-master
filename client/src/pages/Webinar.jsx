@@ -31,10 +31,10 @@ export default function Webinar() {
   const track = searchParams.get("track") || "";
   const lesson = searchParams.get("lesson") || "";
 
-  const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/KL0O6mla2bN6dDWekku9CC";
+  const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/IRN8bQBcpaM969apitCNIX";
 
-  const WEBINAR_DATE = "Sunday, 7 June";
-  const WEBINAR_TIME = "11:00 AM to 12:30 PM IST";
+  const WEBINAR_DATE = "Wednesday, 10 June";
+  const WEBINAR_TIME = "8:00 PM to 9:30 PM IST";
 
   const contextLabel = useMemo(() => {
     if (source.includes("lesson_3")) return "Free Starter Path completed";
