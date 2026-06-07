@@ -8,41 +8,65 @@ datasource db {
 }
 
 model User {
-  id           Int               @id @default(autoincrement())
-  name         String?           @db.VarChar(100)
-  email        String            @unique @db.VarChar(191)
-  username     String?           @unique @db.VarChar(50)
-  password     String
-  avatar_url   String?
-  has_access   Boolean           @default(false)
-  tier_level   String            @default("free")
-  created_at   DateTime          @default(now())
-  isAdmin      Boolean           @default(false)
-  lastActiveAt DateTime?
-  xpTotal      Int               @default(0)
-  league       String            @default("BRONZE")
-  daily_streak Int               @default(0)
-  plan         String            @default("FREE")
-  payments     Payment[]
-  user_badges  UserBadge[]
-  profile      UserProfile?
-  progress     UserProgress?
-  weekly       UserWeeklyTotals?
-  xp_events    XpEvent[]
-  league_history LeagueHistory[]
-  reset_tokens PasswordResetToken[]
-  track        String            @default("BEGINNER") 
-  current_unit Int               @default(1)
+  id                       Int                  @id @default(autoincrement())
+  name                     String?              @db.VarChar(100)
+  email                    String               @unique @db.VarChar(191)
+  username                 String?              @unique @db.VarChar(50)
+  password                 String
+  avatar_url               String?
+  has_access               Boolean              @default(false)
+  tier_level               String               @default("free")
+  created_at               DateTime             @default(now())
+  isAdmin                  Boolean              @default(false)
+  lastActiveAt             DateTime?
+  xpTotal                  Int                  @default(0)
+  league                   String               @default("BRONZE")
+  daily_streak             Int                  @default(0)
+  plan                     String               @default("FREE")
+  payments                 Payment[]
+  user_badges              UserBadge[]
+  profile                  UserProfile?
+  progress                 UserProgress?
+  weekly                   UserWeeklyTotals?
+  xp_events                XpEvent[]
+  league_history           LeagueHistory[]
+  reset_tokens             PasswordResetToken[]
+  track                    String               @default("BEGINNER")
+  current_unit             Int                  @default(1)
+  level_check_result       String?
+  level_check_score        Int?
+  level_check_completed_at DateTime?
+
+  whatsapp_number     String? @db.VarChar(30)
+  current_status      String? @db.VarChar(80)
+  main_goal           String? @db.VarChar(120)
+  practice_commitment String? @db.VarChar(120)
+
+  webinar_registered    Boolean   @default(false)
+  webinar_registered_at DateTime?
+
+  utm_source   String? @db.VarChar(150)
+  utm_medium   String? @db.VarChar(150)
+  utm_campaign String? @db.VarChar(200)
+  utm_content  String? @db.VarChar(200)
+  utm_term     String? @db.VarChar(200)
+  source       String? @db.VarChar(150)
+  campaign     String? @db.VarChar(200)
+  adset        String? @db.VarChar(200)
+  ad           String? @db.VarChar(200)
+
+  activation_completed      Boolean   @default(false)
+  last_demo_video_viewed_at DateTime?
 }
 
 model PasswordResetToken {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  user       User     @relation(fields: [userId], references: [id])
-  tokenHash  String   @unique
-  expiresAt  DateTime
-  usedAt     DateTime?
-  createdAt  DateTime @default(now())
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
 
   @@index([userId])
   @@index([expiresAt])
@@ -89,9 +113,9 @@ model LeagueHistory {
   id          Int      @id @default(autoincrement())
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
-  leagueName  String   // e.g., "BRONZE"
-  rank        Int      // e.g., 1
-  xpEarned    Int      // XP earned during that specific week
+  leagueName  String // e.g., "BRONZE"
+  rank        Int // e.g., 1
+  xpEarned    Int // XP earned during that specific week
   seasonEnded DateTime @default(now())
 
   @@index([userId])

@@ -15,6 +15,7 @@ dotenv.config({ path: path.join(__dirname, "..", ".env") });
 // Routes
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
+import funnelRouter from "./routes/funnel.js";
 import billingRouter from "./routes/billing.js";
 import diagnosticRoutes from "./routes/diagnostic.js";
 import quizzesRouter from "./routes/quizzes.js";
@@ -221,6 +222,7 @@ app.use("/api/admin", adminRouter);
 // --- Standard API Routes ---
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/funnel", funnelRouter);
 app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
