@@ -275,15 +275,24 @@ export default function SmartSignup() {
             Level Check Completed
           </div>
 
-          <h1 className="mt-5 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">
-            Your English Speaking Level:
-            <span className="block text-indigo-700">{resultLabel}</span>
-          </h1>
+                      <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
+              {signupCopy.title}:
+              <span className="block text-indigo-700">{levelDisplayName}</span>
+            </h1>
 
-          <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
-            Create your free FluencyJet account and reserve your free live class
-            seat.
-          </p>
+            <div className="mt-4 rounded-3xl border border-indigo-100 bg-indigo-50 p-5">
+              <p className="text-sm font-black uppercase tracking-widest text-indigo-700">
+                Your Fluency Diagnosis
+              </p>
+              <p className="mt-2 text-base font-bold leading-relaxed text-slate-700">
+                {signupCopy.diagnosis}
+              </p>
+            </div>
+
+            <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
+              Create your free FluencyJet account and reserve your free live class
+              seat.
+            </p>
 
           <div className="mt-6 space-y-3 rounded-3xl bg-indigo-950 p-5 text-white">
             <p className="text-sm font-bold uppercase tracking-widest text-indigo-200">
