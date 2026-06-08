@@ -16,6 +16,15 @@ import { AuthProvider } from "./context/AuthContext";
 import SmartSignup from "./pages/student/SmartSignup";
 import Activation from "./pages/student/Activation";
 
+import Dashboard from "./pages/student/Dashboard.jsx";
+import LessonDetail from "./pages/student/LessonDetail.jsx";
+import LessonQuiz from "./pages/student/LessonQuiz.jsx";
+import Leaderboard from "./pages/student/Leaderboard.jsx";
+import Practice from "./pages/student/Practice.jsx";
+import TypingQuiz from "./pages/student/TypingQuiz.jsx";
+import SentencePractice from "./pages/student/SentencePractice.jsx";
+import LessonList from "./pages/student/LessonList";
+
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
@@ -23,12 +32,14 @@ import RouteTracker from "./components/RouteTracker";
 
 function PageLoader() {
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-yellow-400" />
-        <p className="text-lg font-bold">Loading FluencyJet...</p>
-        <p className="mt-1 text-sm text-white/60">
-          Preparing your practice page
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+      <div className="rounded-3xl bg-white px-8 py-7 shadow-sm border border-slate-100 text-center">
+        <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+        <p className="text-base font-extrabold text-slate-900">
+          Loading FluencyJet...
+        </p>
+        <p className="mt-1 text-sm font-medium text-slate-500">
+          Please wait a moment
         </p>
       </div>
     </div>
@@ -38,22 +49,22 @@ function PageLoader() {
 // Student pages - lazy loaded
 const Home = lazy(() => import("./pages/Home"));
 const Webinar = lazy(() => import("./pages/Webinar"));
-const Dashboard = lazy(() => import("./pages/student/Dashboard.jsx"));
-const LessonDetail = lazy(() => import("./pages/student/LessonDetail.jsx"));
-const LessonQuiz = lazy(() => import("./pages/student/LessonQuiz.jsx"));
-const Leaderboard = lazy(() => import("./pages/student/Leaderboard.jsx"));
+// const Dashboard = lazy(() => import("./pages/student/Dashboard.jsx"));
+// const LessonDetail = lazy(() => import("./pages/student/LessonDetail.jsx"));
+// const LessonQuiz = lazy(() => import("./pages/student/LessonQuiz.jsx"));
+// const Leaderboard = lazy(() => import("./pages/student/Leaderboard.jsx"));
 const Login = lazy(() => import("./pages/student/Login.jsx"));
 const Signup = lazy(() => import("./pages/student/Signup.jsx"));
-const Practice = lazy(() => import("./pages/student/Practice.jsx"));
-const TypingQuiz = lazy(() => import("./pages/student/TypingQuiz.jsx"));
-const SentencePractice = lazy(
-  () => import("./pages/student/SentencePractice.jsx"),
-);
+// const Practice = lazy(() => import("./pages/student/Practice.jsx"));
+// const TypingQuiz = lazy(() => import("./pages/student/TypingQuiz.jsx"));
+// const SentencePractice = lazy(
+// () => import("./pages/student/SentencePractice.jsx"),
+// );
 const Paywall = lazy(() => import("./pages/student/Paywall.jsx"));
 const Checkout = lazy(() => import("./pages/student/Checkout.jsx"));
 const LevelCheck = lazy(() => import("./pages/student/LevelCheck"));
 const Upgrade = lazy(() => import("./pages/student/Upgrade"));
-const LessonList = lazy(() => import("./pages/student/LessonList"));
+// const LessonList = lazy(() => import("./pages/student/LessonList"));
 const Profile = lazy(() => import("./pages/student/Profile"));
 const Settings = lazy(() => import("./pages/student/Settings"));
 const ForgotPassword = lazy(() => import("./pages/student/ForgotPassword"));
