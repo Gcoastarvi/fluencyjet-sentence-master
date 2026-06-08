@@ -42,8 +42,9 @@ export async function request(path, options = {}) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  headers.set("Cache-Control", "no-store");
-  headers.set("Pragma", "no-cache");
+  // Do not add Cache-Control / Pragma request headers here.
+  // Cross-origin custom request headers can trigger extra CORS preflight.
+  // Backend already controls API response caching.
 
   const res = await fetch(url, {
     ...options,
