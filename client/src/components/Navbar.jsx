@@ -55,7 +55,10 @@ export default function Navbar() {
 
   const storedUser = (() => {
     try {
-      return JSON.parse(localStorage.getItem("user") || "null");
+      return (
+        JSON.parse(localStorage.getItem("user") || "null") ||
+        JSON.parse(localStorage.getItem("fj_user") || "null")
+      );
     } catch {
       return null;
     }
@@ -98,11 +101,19 @@ export default function Navbar() {
     currentRouteTrack === "INTERMEDIATE" ? "/i/lessons" : "/b/lessons";
 
   const isPaidUser =
+    user?.has_access === true ||
+    user?.hasAccess === true ||
     auth?.has_access === true ||
+    auth?.hasAccess === true ||
     auth?.user?.has_access === true ||
-    String(auth?.plan || "").toUpperCase() === "PRO" ||
-    String(auth?.user?.plan || "").toUpperCase() === "PRO" ||
-    String(auth?.user?.tier_level || "").toLowerCase() === "pro";
+    auth?.user?.hasAccess === true ||
+    storedUser?.has_access === true ||
+    storedUser?.hasAccess === true ||
+    effectivePlan === "PRO" ||
+    effectivePlan === "LIFETIME" ||
+    String(user?.tier_level || "").toLowerCase() === "pro" ||
+    String(auth?.user?.tier_level || "").toLowerCase() === "pro" ||
+    String(storedUser?.tier_level || "").toLowerCase() === "pro";
 
   return (
     <nav className="w-full bg-white shadow-sm overflow-x-hidden">
