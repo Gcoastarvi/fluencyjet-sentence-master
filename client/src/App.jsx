@@ -16,6 +16,25 @@ import { AuthProvider } from "./context/AuthContext";
 import SmartSignup from "./pages/student/SmartSignup";
 import Activation from "./pages/student/Activation";
 
+// Route guards
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
+import RouteTracker from "./components/RouteTracker";
+
+function PageLoader() {
+  return (
+    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6">
+      <div className="text-center">
+        <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-yellow-400" />
+        <p className="text-lg font-bold">Loading FluencyJet...</p>
+        <p className="mt-1 text-sm text-white/60">
+          Preparing your practice page
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // Student pages - lazy loaded
 const Home = lazy(() => import("./pages/Home"));
 const Webinar = lazy(() => import("./pages/Webinar"));
@@ -63,11 +82,6 @@ const PrivacyPolicy = lazy(() => import("./pages/legal/PrivacyPolicy"));
 const Terms = lazy(() => import("./pages/legal/Terms"));
 const RefundPolicy = lazy(() => import("./pages/legal/RefundPolicy"));
 const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
-
-// Route guards
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
-import RouteTracker from "./components/RouteTracker";
 
 function MainLayout() {
   return (
@@ -161,7 +175,7 @@ export default function App() {
     <AuthProvider>
       <Router>
         <RouteTracker />
-        <Suspense fallback={<div className="min-h-screen bg-white" />}>
+        <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Admin login (no Navbar) */}
             <Route path="/admin/login" element={<AdminLogin />} />
