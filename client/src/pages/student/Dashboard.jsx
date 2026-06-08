@@ -511,7 +511,7 @@ export default function Dashboard() {
   const handleLessonComplete = async (lessonId, xpEarned) => {
     try {
       // 1. Tell the backend we finished
-      await api.post("/api/xp/add", {
+      await api.post("/xp/add", {
         xp: xpEarned,
         type: "LESSON_COMPLETED",
         lessonId: lessonId,
@@ -617,10 +617,17 @@ export default function Dashboard() {
     }
   }
 
-  // ⚡ Real-Time Stats Refresher
+  // ⚡ Refresh stats only when user returns to the tab, not again on initial mount
   useEffect(() => {
-    // 🎯 Function to fetch latest stats
+    let lastRefreshAt = 0;
+
     const refreshStats = async () => {
+      const now = Date.now();
+
+      // Prevent repeated refresh bursts
+      if (now - lastRefreshAt < 10000) return;
+      lastRefreshAt = now;
+
       try {
         const response = await api.get("/dashboard/summary");
         const data = response?.data ?? response;
@@ -634,11 +641,7 @@ export default function Dashboard() {
       }
     };
 
-    // 🔄 Refresh whenever the user brings the tab back to focus
     window.addEventListener("focus", refreshStats);
-
-    // Also refresh once on mount
-    refreshStats();
 
     return () => window.removeEventListener("focus", refreshStats);
   }, []);
@@ -696,15 +699,34 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchLessons = async () => {
       try {
+        const CACHE_KEY = "fj_dashboard_lessons_cache_v1";
+
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setLessons(parsed);
+          }
+        }
+
         const res = await api.get("/lessons");
-        console.log("🛠️ API DEBUG: Lessons Received ->", res.data); // Add this!
-        if (res.data && res.data.length > 0) {
-          setLessons(res.data);
+        const data = res?.data ?? res;
+
+        const lessonRows = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.lessons)
+            ? data.lessons
+            : [];
+
+        if (lessonRows.length > 0) {
+          setLessons(lessonRows);
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify(lessonRows));
         }
       } catch (err) {
         console.error("MISSION CRITICAL: Lesson Fetch Failed", err);
       }
     };
+
     fetchLessons();
   }, []);
 
