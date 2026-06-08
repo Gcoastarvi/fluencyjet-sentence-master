@@ -548,7 +548,7 @@ export default function LevelCheck() {
                     <div className="font-bold text-slate-900 leading-tight">
                       Aravind • English Coach & Memory Trainer
                     </div>
-                    <div className="text-xs font-medium text-violet-600">
+                    <div className="text-xs font-semibold leading-relaxed text-violet-600">
                       Guinness World Record Holder • 35,000+ Students Trained
                     </div>
                   </div>
@@ -602,7 +602,7 @@ export default function LevelCheck() {
               </div>
 
               {/* Right Column - Finalized Start Action */}
-              <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-8 text-center border border-slate-100 shadow-inner">
+              <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-6 text-center border border-slate-100 shadow-inner sm:p-8">
                 {/* Decorative Background Element */}
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-violet-100/30 blur-2xl" />
 
@@ -611,11 +611,11 @@ export default function LevelCheck() {
                       {segment.badge}
                     </div>
 
-                    <h1 className="mb-4 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">
+                    <h1 className="mb-4 text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl lg:text-[2.45rem]">
                       {segment.headline}
                     </h1>
 
-                    <p className="mb-6 text-base font-semibold leading-relaxed text-slate-600">
+                    <p className="mb-5 text-sm font-semibold leading-relaxed text-slate-600 sm:text-base">
                       {segment.subheadline}
                     </p>
 
@@ -629,7 +629,7 @@ export default function LevelCheck() {
                       setMode("quiz");
                       setStep("quiz");
                     }}
-                    className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-8 py-5 text-xl font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
+                    className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-6 py-4 text-base font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95 sm:text-lg"
                   >
                     <span>{segment.cta}</span>
                     <svg
