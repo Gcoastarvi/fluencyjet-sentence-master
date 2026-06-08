@@ -1655,35 +1655,34 @@ export default function SentencePractice() {
       // 1) UI feedback immediately
       playSfx("correct");
       setStatus("correct");
+      triggerXPToast(xp);
 
-      // 2) Commit XP to backend using universal pipeline
-      try {
-        const result = await awardXPEvent({
-          xp,
-          event: "exercise_correct",
-          mode: "reorder", // ✅ IMPORTANT: literal, avoids TS issues
-          lessonId: Number(lessonId),
-          exerciseId: current?.id,
+      // 2) Sync XP to backend in background
+      awardXPEvent({
+        xp,
+        event: "exercise_correct",
+        mode: "reorder",
+        lessonId: Number(lessonId),
+        exerciseId: current?.id,
+      })
+        .then((result) => {
+          const awarded = Number(result?.awarded ?? 0) || 0;
+
+          if (!result?.ok) {
+            console.error("[XP] reorder: XP sync failed", result);
+          } else if (awarded <= 0) {
+            console.warn("[XP] reorder: XP already awarded or deduped", result);
+          }
+        })
+        .catch((e) => {
+          console.error("[XP] reorder awardXPEvent failed", e);
         });
 
-        const awarded = Number(result?.awarded ?? 0) || 0;
-
-        if (result?.ok && awarded > 0) {
-          triggerXPToast(awarded);
-        } else {
-          console.error("[XP] reorder: XP not awarded", result);
-        }
-
-        // 3) Completion bonus only on last question
-        if (currentIndex + 1 >= totalQuestions) {
-          try {
-            await awardCompletionBonus("reorder");
-          } catch (e) {
-            console.error("[XP] reorder completion bonus failed", e);
-          }
-        }
-      } catch (e) {
-        console.error("[XP] reorder awardXPEvent failed", e);
+      // 3) Completion bonus only on last question
+      if (currentIndex + 1 >= totalQuestions) {
+        awardCompletionBonus("reorder").catch((e) => {
+          console.error("[XP] reorder completion bonus failed", e);
+        });
       }
 
       // important: stop here; do NOT fall through to wrong
@@ -1769,42 +1768,51 @@ export default function SentencePractice() {
     const attemptNumber = attempts + 1;
 
     try {
-      const result = await awardXPEvent({
-        attemptId: `audio-repeat-${current.id}-${attemptNumber}`,
+      // ✅ Instant UI feedback
+      audioSubmitRef.current.add(submitKey);
+      setStatus("correct");
+      setVoiceStep(VOICE_STEPS.DONE);
+      triggerXPToast(150);
+      playSfx("correct");
+      setFeedback("✅ Great speaking practice! +150 XP");
+
+      const currentId = current && current.id ? current.id : "unknown";
+
+      // ✅ Backend sync continues in background
+      awardXPEvent({
+        attemptId: `audio-repeat-${currentId}-${attemptNumber}`,
         attemptNo: attemptNumber,
         xp: 150,
         event: "exercise_correct",
         lessonId: lid || 0,
         mode: "audio",
         practiceType: "audio",
-        exerciseId: current.id,
-        questionId: `repeat_${current.id}`,
+        exerciseId: current && current.id ? current.id : undefined,
+        questionId: `repeat_${currentId}`,
         meta: { audioVariant: "repeat" },
         completedQuiz: false,
         isCorrect: true,
-      });
+      })
+        .then((result) => {
+          const awarded = Number((result && result.awarded) || 0) || 0;
 
-      const awarded = Number(result?.awarded ?? 0) || 0;
+          if (!result || result.ok !== true) {
+            console.error("[AUDIO/repeat] XP sync failed", result);
+            return;
+          }
 
-      // ✅ mark submitted once the server responds OK (even if deduped to 0)
-      if (result?.ok) {
-        audioSubmitRef.current.add(submitKey);
-        setStatus("correct");
-        setVoiceStep(VOICE_STEPS.DONE);
-      }
+          if (awarded <= 0) {
+            console.warn(
+              "[AUDIO/repeat] XP already awarded or deduped",
+              result,
+            );
+          }
+        })
+        .catch((err) => {
+          console.error("[AUDIO/repeat] awardXPEvent failed", err);
+        });
 
-      if (result?.ok && awarded > 0) {
-        triggerXPToast(awarded);
-        playSfx("correct");
-        setFeedback(`✅ Great speaking practice! +${awarded} XP`);
-      } else if (result?.ok && awarded === 0) {
-        setFeedback("✅ Saved!");
-      } else {
-        console.error("[AUDIO/repeat] awardXPEvent failed", result);
-        setStatus("idle");
-        setFeedback("⚠️ Couldn’t save. Please try again.");
-        return;
-      }
+      resetAudioGate();
 
       resetAudioGate();
 
@@ -1917,36 +1925,51 @@ export default function SentencePractice() {
           return;
         }
 
-        const xpDelta = Number(current?.xp ?? 150) || 150;
+        const xpDelta = Number((current && current.xp) || 150) || 150;
 
-        const result = await awardXPEvent({
+        // ✅ Instant XP feedback
+        triggerXPToast(xpDelta);
+
+        const xpModeForTyping = safeMode === "audio" ? "audio" : "typing";
+
+        const xpMetaForTyping =
+          safeMode === "audio" && audioVariant === "dictation"
+            ? { audioVariant: "dictation" }
+            : {};
+
+        // ✅ Backend sync continues in background
+        awardXPEvent({
           attemptId: `${qid}-${attemptNumber}`,
           attemptNo: attemptNumber,
           questionId: qid,
-
           xp: xpDelta,
           event: "exercise_correct",
-
-          mode: safeMode === "audio" ? "audio" : "typing",
-          practiceType: safeMode === "audio" ? "audio" : "typing",
-
+          mode: xpModeForTyping,
+          practiceType: xpModeForTyping,
           lessonId: Number(lessonId),
-          exerciseId: current?.id,
-          meta:
-            safeMode === "audio" && audioVariant === "dictation"
-              ? { audioVariant: "dictation" }
-              : {},
+          exerciseId: current ? current.id : undefined,
+          meta: xpMetaForTyping,
           completedQuiz: false,
           isCorrect: true,
-        });
+        })
+          .then((result) => {
+            const awarded = Number((result && result.awarded) || 0) || 0;
 
-        const awarded = Number(result?.awarded ?? 0) || 0;
+            if (!result || result.ok !== true) {
+              console.error("[XP] typing: XP sync failed", result);
+              return;
+            }
 
-        if (result?.ok && awarded > 0) {
-          triggerXPToast(awarded);
-        } else {
-          console.error("[XP] typing: XP not awarded", result);
-        }
+            if (awarded <= 0) {
+              console.warn(
+                "[XP] typing: XP already awarded or deduped",
+                result,
+              );
+            }
+          })
+          .catch((err) => {
+            console.error("[XP] typing awardXPEvent failed", err);
+          });
 
         if (progressUserId) {
           const prev = readProgress(progressUserId, lid, "typing");
@@ -2061,22 +2084,63 @@ export default function SentencePractice() {
           playCorrect?.();
         } catch {}
 
-        const xpDelta = Number(current?.xp ?? 80) || 80;
+        if (isCorrect) {
+          const attemptNumber = attempts + 1;
 
-        const result = await awardXPEvent({
-          xp: xpDelta,
-          event: "exercise_correct",
-          mode: xpMode, // keep your mapping if xpMode is "typing"
-          lessonId: Number(lessonId),
-          exerciseId: current?.id,
-        });
+          setStatus("correct");
+          setFeedback("50� Correct!");
 
-        const awarded = Number(result?.awarded ?? 0) || 0;
+          // ✅ SFX
+          try {
+            playCorrect?.();
+          } catch {}
 
-        if (result?.ok && awarded > 0) {
-          triggerXPToast(awarded);
-        } else {
-          console.error("[XP] cloze: XP not awarded", result);
+          const xpDelta = Number(current && current.xp ? current.xp : 80) || 80;
+
+          // ✅ Instant XP feedback
+          triggerXPToast(xpDelta);
+
+          // ✅ Backend sync continues safely
+          awardXPEvent({
+            xp: xpDelta,
+            event: "exercise_correct",
+            mode: xpMode,
+            lessonId: Number(lessonId),
+            exerciseId: current ? current.id : undefined,
+          })
+            .then((result) => {
+              const awarded = Number((result && result.awarded) || 0) || 0;
+
+              if (!result || result.ok !== true) {
+                console.error("[XP] cloze: XP sync failed", result);
+                return;
+              }
+
+              if (awarded <= 0) {
+                console.warn(
+                  "[XP] cloze: XP already awarded or deduped",
+                  result,
+                );
+              }
+            })
+            .catch((err) => {
+              console.error("[XP] cloze awardXPEvent failed", err);
+            });
+
+          // i�� Update progress (Cloze)
+          if (progressUserId) {
+            writeProgress(progressUserId, lessonId, "cloze", {
+              total: lessonExercises.length,
+              completed: Math.min(lessonExercises.length, currentIndex + 1),
+              updatedAt: Date.now(),
+            });
+          }
+
+          setTimeout(() => {
+            loadNextQuestion();
+          }, 900);
+
+          return;
         }
 
         // i�� Update progress (Cloze)
@@ -2116,7 +2180,13 @@ export default function SentencePractice() {
       try {
         const xpDelta = Number(current?.xp ?? 100) || 100;
 
-        const result = await awardXPEvent({
+        // ✅ Show XP immediately
+        triggerXPToast(xpDelta);
+        playSfx("correct");
+        setFeedback("✅ Correct!");
+
+        // ✅ Sync XP in background
+        awardXPEvent({
           attemptId: `reorder_${current?.id}-${attemptNumber}`,
           attemptNo: attemptNumber,
           questionId: `reorder_${current?.id}`,
@@ -2129,35 +2199,42 @@ export default function SentencePractice() {
           meta: {},
           completedQuiz: false,
           isCorrect: true,
-        });
+        })
+          .then((result) => {
+            const awarded = Number(result?.awarded ?? 0) || 0;
 
-        const awarded = Number(result?.awarded ?? 0) || 0;
-
-        if (result?.ok && awarded > 0) {
-          triggerXPToast(awarded);
-          playSfx("correct");
-          setFeedback("✅ Correct!");
-        } else {
-          console.error("[XP] reorder: XP not awarded", result);
-          setFeedback("✅ Correct! (XP not awarded)");
-        }
+            if (!result?.ok) {
+              console.error("[XP] reorder sync failed", result);
+            } else if (awarded <= 0) {
+              console.warn("[XP] reorder already awarded or deduped", result);
+            }
+          })
+          .catch((err) => {
+            console.error("[XP] reorder awardXPEvent failed", err);
+          });
 
         const isLastQuestion =
           currentIndex >= (lessonExercises?.length || 0) - 1;
-        if (isLastQuestion) {
-          const bonus = await awardCompletionBonus("reorder");
-          setCompletionXp(Number(bonus?.awarded ?? 300) || 300);
-          setCompletionMode("reorder");
-          // Don't show old modal if session-complete screen is about to show
-          const willHitSessionComplete =
-            totalQuestions > 0 && currentIndex + 1 >= totalQuestions;
 
-          if (!willHitSessionComplete) {
-            setShowCompleteModal(true);
-          }
+        if (isLastQuestion) {
+          awardCompletionBonus("reorder")
+            .then((bonus) => {
+              setCompletionXp(Number(bonus?.awarded ?? 300) || 300);
+              setCompletionMode("reorder");
+
+              const willHitSessionComplete =
+                totalQuestions > 0 && currentIndex + 1 >= totalQuestions;
+
+              if (!willHitSessionComplete) {
+                setShowCompleteModal(true);
+              }
+            })
+            .catch((err) => {
+              console.error("[XP] reorder completion bonus failed", err);
+            });
         }
       } catch (err) {
-        console.error("[XP] reorder awardXPEvent/completion failed", err);
+        console.error("[XP] reorder instant feedback failed", err);
       }
 
       // Update lesson progress (Reorder)
