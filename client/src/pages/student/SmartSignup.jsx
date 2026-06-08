@@ -29,6 +29,52 @@ const COMMITMENT_OPTIONS = [
   "Not sure",
 ];
 
+const SMART_SIGNUP_SEGMENTS = {
+  work: {
+    title: "Your Workplace Speaking Level",
+    diagnosis:
+      "Your main challenge may be sentence formation speed in meetings, calls, and office conversations.",
+  },
+  interview: {
+    title: "Your Interview English Level",
+    diagnosis:
+      "You need to practise self-introduction, answer patterns, and confidence-building sentence structures.",
+  },
+  business: {
+    title: "Your Business English Confidence Level",
+    diagnosis:
+      "You need simple sentence patterns for customers, clients, and business conversations.",
+  },
+  students: {
+    title: "Your Student/Career English Level",
+    diagnosis:
+      "You need sentence patterns for presentations, interviews, and classroom confidence.",
+  },
+  daily: {
+    title: "Your Daily English Speaking Level",
+    diagnosis:
+      "You need simple sentence patterns for daily conversations, shopping, travel, phone calls, and social situations.",
+  },
+  general: {
+    title: "Your English Speaking Level",
+    diagnosis:
+      "You need simple sentence-making practice to speak English with more confidence.",
+  },
+};
+
+function getSmartSignupSegmentCopy(segment) {
+  return SMART_SIGNUP_SEGMENTS[segment] || SMART_SIGNUP_SEGMENTS.general;
+}
+
+function getLevelDisplayName(resultLabel) {
+  const value = String(resultLabel || "").toLowerCase();
+
+  if (value.includes("intermediate")) return "Intermediate Flow";
+  if (value.includes("advanced")) return "Advanced Fluency";
+
+  return "Beginner Foundation";
+}
+
 function getStoredLevel() {
   try {
     const raw = sessionStorage.getItem("fj_level_result");
@@ -130,6 +176,8 @@ export default function SmartSignup() {
     null;
 
   const segment = getInitialSegment(searchParams, storedLevel);
+  const signupCopy = getSmartSignupSegmentCopy(segment);
+  const levelDisplayName = getLevelDisplayName(resultLabel);
 
   const [name, setName] = useState(
     searchParams.get("name") || storedUser?.name || "",
