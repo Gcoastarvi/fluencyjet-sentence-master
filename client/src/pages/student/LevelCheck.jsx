@@ -1,6 +1,6 @@
 // client/src/pages/student/LevelCheck.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { getToken } from "@/utils/tokenStore";
 import { api } from "@/api/apiClient";
@@ -56,6 +56,134 @@ const TRACK_METADATA = {
     cta: "Start Advanced Practice",
   },
 };
+
+
+const LEVEL_CHECK_SEGMENTS = {
+  work: {
+    key: "work",
+    headline: "Find Your Workplace English Speaking Level",
+    subheadline:
+      "For Tamil speakers who understand English but struggle to speak clearly in meetings, calls, office discussions, and professional conversations.",
+    cta: "Check My Workplace English Level",
+    defaultGoal: "Speak at work",
+    badge: "Workplace English Diagnosis",
+    whoFor:
+      "For working professionals who want to speak better in meetings, calls, and office discussions.",
+    resultLabelPrefix: "Your workplace speaking level is",
+    resultDiagnosis:
+      "Your main challenge may be sentence formation speed in meetings, calls, and office conversations.",
+  },
+  interview: {
+    key: "interview",
+    headline: "Find Your Interview English Confidence Level",
+    subheadline:
+      "Check how ready you are to answer self-introduction, strengths, experience, and basic interview questions in English.",
+    cta: "Check My Interview English Level",
+    defaultGoal: "Clear interview",
+    badge: "Interview English Diagnosis",
+    whoFor:
+      "For job seekers and freshers who want to answer interviews confidently.",
+    resultLabelPrefix: "Your interview English level is",
+    resultDiagnosis:
+      "You need to practise self-introduction, answer patterns, and confidence-building sentence structures.",
+  },
+  business: {
+    key: "business",
+    headline: "Find Your Business English Confidence Level",
+    subheadline:
+      "For business owners who want to speak more confidently with customers, clients, staff, suppliers, and business contacts.",
+    cta: "Check My Business English Level",
+    defaultGoal: "Speak with customers",
+    badge: "Business English Diagnosis",
+    whoFor:
+      "For business owners who speak with customers, clients, staff, suppliers, and business contacts.",
+    resultLabelPrefix: "Your business English confidence level is",
+    resultDiagnosis:
+      "You need simple sentence patterns for customers, clients, and business conversations.",
+  },
+  students: {
+    key: "students",
+    headline: "Find Your English Speaking Level for Studies and Career",
+    subheadline:
+      "For students and freshers who want to speak English confidently in class, interviews, presentations, and future job situations.",
+    cta: "Check My Student English Level",
+    defaultGoal: "Improve confidence",
+    badge: "Student English Diagnosis",
+    whoFor:
+      "For students and freshers who want confidence for class, presentations, interviews, and career.",
+    resultLabelPrefix: "Your student/career English level is",
+    resultDiagnosis:
+      "You need sentence patterns for presentations, interviews, and classroom confidence.",
+  },
+  daily: {
+    key: "daily",
+    headline: "Find Your Daily English Speaking Level",
+    subheadline:
+      "For Tamil speakers who want to speak simple English confidently in daily life, travel, family, shopping, phone calls, and social situations.",
+    cta: "Check My Daily English Level",
+    defaultGoal: "Daily conversation",
+    badge: "Daily English Diagnosis",
+    whoFor:
+      "For general learners who want to speak simple English in daily life.",
+    resultLabelPrefix: "Your daily English speaking level is",
+    resultDiagnosis:
+      "You need simple sentence patterns for daily conversations, shopping, travel, phone calls, and social situations.",
+  },
+  general: {
+    key: "general",
+    headline: "Find Your English Speaking Level",
+    subheadline:
+      "For Tamil speakers who know English words but struggle to speak confidently.",
+    cta: "Find My English Level",
+    defaultGoal: "Build sentences faster",
+    badge: "English Level Diagnosis",
+    whoFor:
+      "For Tamil speakers who want to build English sentences faster.",
+    resultLabelPrefix: "Your English speaking level is",
+    resultDiagnosis:
+      "You need simple sentence-making practice to speak English with more confidence.",
+  },
+};
+
+function getSegmentConfig(search) {
+  const params = new URLSearchParams(search || "");
+  const key = params.get("segment");
+  return LEVEL_CHECK_SEGMENTS[key] || LEVEL_CHECK_SEGMENTS.general;
+}
+
+function appendLevelCheckParams(url, data = {}) {
+  try {
+    const finalUrl = new URL(url, window.location.origin);
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        finalUrl.searchParams.set(key, String(value));
+      }
+    });
+
+    const currentParams = new URLSearchParams(window.location.search);
+    [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_content",
+      "utm_term",
+      "source",
+      "campaign",
+      "adset",
+      "ad",
+    ].forEach((key) => {
+      const value = currentParams.get(key);
+      if (value && !finalUrl.searchParams.get(key)) {
+        finalUrl.searchParams.set(key, value);
+      }
+    });
+
+    return finalUrl.pathname + finalUrl.search;
+  } catch {
+    return url;
+  }
+}
 
 const LEVEL_CHECK_QUESTIONS = [
   {
@@ -221,6 +349,11 @@ const QUESTIONS = LEVEL_CHECK_QUESTIONS;
 
 export default function LevelCheck() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const segment = useMemo(
+    () => getSegmentConfig(location.search),
+    [location.search],
+  );
   const [mode, setMode] = useState("pick"); // "pick" | "quiz" | "result"
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({}); // { [questionId]: optionIndex }
@@ -252,7 +385,17 @@ export default function LevelCheck() {
     if (opts && opts.startLesson1) {
       if (!token) {
         navigate(
-          `/smart-signup?next=${encodeURIComponent(lessonHubUrl)}&track=${track}`,
+          appendLevelCheckParams("/smart-signup", {
+              next: lessonHubUrl,
+              track,
+              segment: segment.key,
+              goal: segment.defaultGoal,
+              level:
+                track === "intermediate" || track === "advanced"
+                  ? "Intermediate"
+                  : "Beginner",
+              score: result?.score,
+            }),
           { replace: true },
         );
         return;
@@ -264,7 +407,17 @@ export default function LevelCheck() {
 
     if (!token) {
       navigate(
-        `/smart-signup?next=${encodeURIComponent(target)}&track=${track}`,
+        appendLevelCheckParams("/smart-signup", {
+            next: target,
+            track,
+            segment: segment.key,
+            goal: segment.defaultGoal,
+            level:
+              track === "intermediate" || track === "advanced"
+                ? "Intermediate"
+                : "Beginner",
+            score: result?.score,
+          }),
         { replace: true },
       );
       return;
@@ -305,8 +458,32 @@ export default function LevelCheck() {
 
     console.log("[LEVEL CHECK]", { answers, finalScore, track });
 
-    setResult({ score: finalScore, track });
-    setMode("result");
+    const levelLabel =
+        track === "intermediate" || track === "advanced"
+          ? "Intermediate"
+          : "Beginner";
+
+      const levelResultPayload = {
+        score: finalScore,
+        track,
+        level: levelLabel,
+        segment: segment.key,
+        main_goal: segment.defaultGoal,
+        result_diagnosis: segment.resultDiagnosis,
+      };
+
+      setResult(levelResultPayload);
+
+      try {
+        sessionStorage.setItem(
+          "fj_level_result",
+          JSON.stringify(levelResultPayload),
+        );
+        localStorage.setItem("fj_level_segment", segment.key);
+        localStorage.setItem("fj_main_goal", segment.defaultGoal);
+      } catch {}
+
+      setMode("result");
     setStep("result");
 
     try {
@@ -369,10 +546,10 @@ export default function LevelCheck() {
                   </div>
                   <div className="text-left">
                     <div className="font-bold text-slate-900 leading-tight">
-                      Aravind • English Coach
+                      Aravind • English Coach & Memory Trainer
                     </div>
                     <div className="text-xs font-medium text-violet-600">
-                      FluencyJet Expert
+                      Guinness World Record Holder • 35,000+ Students Trained
                     </div>
                   </div>
                 </div>
@@ -430,9 +607,21 @@ export default function LevelCheck() {
                 <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-violet-100/30 blur-2xl" />
 
                 <div className="relative">
-                  <div className="mb-6 text-sm font-semibold uppercase tracking-widest text-slate-400">
-                    Your fluency path starts here
-                  </div>
+                  <div className="mb-3 text-sm font-semibold uppercase tracking-widest text-slate-400">
+                      {segment.badge}
+                    </div>
+
+                    <h1 className="mb-4 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">
+                      {segment.headline}
+                    </h1>
+
+                    <p className="mb-6 text-base font-semibold leading-relaxed text-slate-600">
+                      {segment.subheadline}
+                    </p>
+
+                    <p className="mb-6 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold leading-relaxed text-violet-700">
+                      {segment.whoFor}
+                    </p>
 
                   <button
                     type="button"
@@ -442,7 +631,7 @@ export default function LevelCheck() {
                     }}
                     className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-8 py-5 text-xl font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
                   >
-                    <span>Find My English Level</span>
+                    <span>{segment.cta}</span>
                     <svg
                       className="h-6 w-6 transition-transform group-hover:translate-x-2"
                       fill="none"
@@ -468,6 +657,11 @@ export default function LevelCheck() {
                       Instant Level Result
                     </div>
                   </div>
+
+                    <div className="mt-5 grid gap-2 text-left text-sm font-semibold text-slate-600">
+                      <div>✅ Free app practice path</div>
+                      <div>✅ Free live class invitation</div>
+                    </div>
                 </div>
               </div>
             </div>

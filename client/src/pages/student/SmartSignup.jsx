@@ -80,6 +80,28 @@ function normalizeTrack(value) {
   return "BEGINNER";
 }
 
+function getInitialMainGoal(searchParams, storedLevel) {
+  const goalFromUrl = searchParams.get("goal");
+  const goalFromStorage =
+    storedLevel?.main_goal ||
+    storedLevel?.default_goal ||
+    storedLevel?.goal ||
+    localStorage.getItem("fj_main_goal");
+
+  const goal = goalFromUrl || goalFromStorage || "";
+
+  return GOAL_OPTIONS.includes(goal) ? goal : "";
+}
+
+function getInitialSegment(searchParams, storedLevel) {
+  return (
+    searchParams.get("segment") ||
+    storedLevel?.segment ||
+    localStorage.getItem("fj_level_segment") ||
+    "general"
+  );
+}
+
 export default function SmartSignup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -101,7 +123,13 @@ export default function SmartSignup() {
     searchParams.get("level") ||
     (initialTrack === "INTERMEDIATE" ? "Intermediate" : "Beginner");
 
-  const score = storedLevel?.score ?? storedLevel?.level_check_score ?? null;
+  const score =
+    storedLevel?.score ??
+    storedLevel?.level_check_score ??
+    searchParams.get("score") ??
+    null;
+
+  const segment = getInitialSegment(searchParams, storedLevel);
 
   const [name, setName] = useState(
     searchParams.get("name") || storedUser?.name || "",
@@ -110,7 +138,9 @@ export default function SmartSignup() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [password, setPassword] = useState("");
   const [currentStatus] = useState("Not specified");
-  const [mainGoal, setMainGoal] = useState("");
+  const [mainGoal, setMainGoal] = useState(() =>
+    getInitialMainGoal(searchParams, storedLevel),
+  );
   const [practiceCommitment] = useState("Yes, I can practise 15 minutes daily");
   const [reserveSeat] = useState(true);
   const [whatsappConsent] = useState(true);
@@ -134,7 +164,8 @@ export default function SmartSignup() {
         password,
         current_status: currentStatus,
         main_goal: mainGoal,
-        practice_commitment: practiceCommitment,
+          segment,
+          practice_commitment: practiceCommitment,
         reserve_seat: reserveSeat,
         whatsapp_consent: whatsappConsent,
         track: initialTrack,
@@ -236,6 +267,10 @@ export default function SmartSignup() {
           <p className="mt-2 text-sm font-medium text-slate-600">
             One simple step to unlock your app access and live class seat.
           </p>
+
+            <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-800">
+              Recommended goal: {mainGoal || "Build sentences faster"}
+            </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
