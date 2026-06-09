@@ -1,10 +1,24 @@
 // client/src/components/Navbar.jsx
 // 🎯 STEP 1: ADD THIS MISSING IMPORT (Vital for line 8)
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
+  const location = useLocation();
+
+  const funnelHiddenPaths = [
+    "/level-check",
+    "/smart-signup",
+    "/activation",
+    "/webinar",
+  ];
+
+  const shouldHideNavbar = funnelHiddenPaths.some((path) =>
+    location.pathname === path || location.pathname.startsWith(path + "/"),
+  );
+
+  if (shouldHideNavbar) return null;
   const { user, auth, logout, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const storedTrack =

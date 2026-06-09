@@ -3429,7 +3429,7 @@ export default function SentencePractice() {
                   {(typingWordBank || []).map((w, idx) => (
                     <span
                       key={`${w}_${idx}`}
-                      className="select-none rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-[18px] font-extrabold text-slate-600 shadow-sm sm:text-[19px]"
+                      className="select-none rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-[18px] font-extrabold text-slate-800 shadow-sm sm:text-[19px]"
                     >
                       {w}
                     </span>
