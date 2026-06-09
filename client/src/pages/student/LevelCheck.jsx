@@ -374,7 +374,7 @@ function getPremiumHeroCopy(segment) {
       badge: "Business English Diagnosis",
       highlight: "Business English Confidence Level",
       banner: "For business owners who want to speak confidently with customers, clients, staff, and suppliers.",
-      cta: "Start My Free Business Check",
+      cta: "Start My Free Business English Check",
       quote:
         "I’ll help you discover your business English confidence level in just 10 quick questions.",
       icon: "🤝",
@@ -383,7 +383,7 @@ function getPremiumHeroCopy(segment) {
       badge: "Study & Career English Diagnosis",
       highlight: "Study & Career English Confidence Level",
       banner: "For students and freshers who want confidence for studies, presentations, interviews, and career.",
-      cta: "Start My Free Student Check",
+      cta: "Start My Free Student English Check",
       quote:
         "I’ll help you find the right English path for your studies and career. It’s just 10 quick questions.",
       icon: "🎓",
@@ -392,7 +392,7 @@ function getPremiumHeroCopy(segment) {
       badge: "Daily English Fluency Diagnosis",
       highlight: "Daily Conversation Fluency Level",
       banner: "For Tamil speakers who want to speak confidently in daily life, travel, shopping, phone calls, and social situations.",
-      cta: "Start My Free Daily Check",
+      cta: "Start My Free Daily English Check",
       quote:
         "I’ll help you discover your daily conversation level in just 10 quick questions.",
       icon: "💬",
@@ -419,15 +419,15 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
       <div className="bg-violet-950 px-4 py-3 text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-4 text-sm font-bold sm:gap-7">
           <span className="flex items-center gap-2">
-            <span className="text-yellow-300">★</span> 4.8 App Rating
+            <span className="text-emerald-400">✓</span> Free 2-Minute Level Check
           </span>
           <span className="hidden text-violet-300 sm:inline">|</span>
           <span className="flex items-center gap-2">
-            <span className="text-emerald-400">●</span> 35,000+ Students Trained
+            <span className="text-emerald-400">✓</span> Instant Result
           </span>
           <span className="hidden text-violet-300 sm:inline">|</span>
           <span className="flex items-center gap-2">
-            <span className="text-yellow-300">★</span> Guinness World Record Holder
+            <span className="text-emerald-400">✓</span> No Signup Required to Check
           </span>
         </div>
       </div>
@@ -575,7 +575,7 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
                 ✓ Free live class invite
               </div>
               <div className="rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-black text-violet-700">
-                ✓ Personalized report
+                ✓ Personalized practice path
               </div>
             </div>
           </div>
@@ -619,10 +619,10 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
 
       <section className="bg-gradient-to-r from-violet-600 to-violet-900 px-5 py-8 text-center text-white">
         <p className="text-xl font-black">
-          🕒 2,341 people checked their level this week
+          🕒 Your free practice path is ready after the level check
         </p>
         <p className="mt-2 text-sm font-semibold text-violet-100">
-          Check your level now and unlock your free practice path.
+          Take the 2-minute check, get your result, and start practising your first sentences.
         </p>
       </section>
 
@@ -630,6 +630,11 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
         <p>FluencyJet — Speak English with Confidence</p>
         <p className="mt-1 text-slate-500">
           Your data is safe. No spam, ever.
+        </p>
+        <p className="mx-auto mt-4 max-w-3xl text-xs leading-relaxed text-slate-600">
+          This site is not a part of the Facebook website or Meta Platforms, Inc.
+          Additionally, this site is NOT endorsed by Facebook or Meta in any way.
+          FACEBOOK is a trademark of Meta Platforms, Inc.
         </p>
       </footer>
     </div>
