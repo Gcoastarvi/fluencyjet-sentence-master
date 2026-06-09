@@ -3818,34 +3818,39 @@ export default function SentencePractice() {
 
         {/* REORDER UI */}
         {safeMode === "reorder" && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className={`h-1 w-full rounded-t-2xl ${A.bar}`} />
-            <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:p-6">
+            <div className={`h-1.5 w-full rounded-full ${A.bar}`} />
+
+            <div className="mb-5 mt-3 flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+                <h2 className="text-[22px] font-black tracking-tight text-slate-950 sm:text-2xl">
                   {uiFor("reorder").title}
                 </h2>
+
+                <p className="mt-1 text-sm font-bold text-slate-500">
+                  Build the English sentence
+                </p>
 
                 {/* Status pills */}
                 {(status === "wrong" ||
                   (typeof wrongIndexes !== "undefined" &&
                     Array.isArray(wrongIndexes) &&
                     wrongIndexes.length > 0)) && (
-                  <div className="mt-3 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                  <div className="mt-3 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
                     Not quite — try again
                   </div>
                 )}
 
                 {status === "reveal" && (
                   <div
-                    className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${A.border} ${A.soft} ${A.text}`}
+                    className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${A.border} ${A.soft} ${A.text}`}
                   >
                     Answer shown
                   </div>
                 )}
 
                 {status === "correct" && (
-                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                     Correct ✅
                   </div>
                 )}
@@ -3853,21 +3858,22 @@ export default function SentencePractice() {
             </div>
 
             {/* Answer Area */}
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 min-h-[72px] flex flex-wrap gap-2">
+            <div className="mt-4 flex min-h-[96px] flex-wrap content-start gap-3 rounded-[1.5rem] border border-dashed border-indigo-200 bg-gradient-to-br from-indigo-50/80 via-white to-white p-5 shadow-inner">
               {Array.isArray(answer) && answer.length === 0 && (
-                <div className="w-full text-sm font-semibold text-slate-400">
-                  Tap the words below to build the sentence
+                <div className="flex w-full items-center text-[15px] font-black text-slate-400 sm:text-base">
+                  Tap words in the correct order
                 </div>
               )}
+
               {answer.map((word, index) => {
                 const isWrong = wrongIndexes.includes(index);
                 return (
                   <span
                     key={`${word}-${index}`}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                    className={`rounded-2xl px-5 py-3 text-[20px] font-black shadow-md transition-transform active:scale-[0.98] sm:text-[22px] ${
                       isWrong
-                        ? "bg-rose-100 text-rose-800 border border-rose-200"
-                        : `${A.border} ${A.soft} ${A.text} shadow-sm transition-transform active:scale-[0.98]`
+                        ? "border border-rose-200 bg-rose-100 text-rose-800"
+                        : "border border-indigo-100 bg-white text-indigo-950"
                     }`}
                   >
                     {word}
@@ -3877,14 +3883,14 @@ export default function SentencePractice() {
             </div>
 
             {/* Tile Bank */}
-            <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
               {tiles.map((word, index) => (
                 <button
                   key={`${word}-${index}`}
                   type="button"
                   onClick={() => addToAnswer(word)}
                   disabled={status === "correct" || status === "reveal"}
-                  className={`px-4 py-2 rounded-full border ${A.border} ${A.soft} ${A.text} shadow-sm transition hover:brightness-[0.98] hover:shadow active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40`}
+                  className={`rounded-2xl border px-5 py-3 text-[19px] font-extrabold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 sm:text-[20px] ${A.border} ${A.soft} ${A.text}`}
                 >
                   {word}
                 </button>
@@ -3896,7 +3902,7 @@ export default function SentencePractice() {
               <button
                 type="button"
                 onClick={checkReorderAnswer}
-                className="mt-4 w-full rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white hover:opacity-90"
+                className="mt-5 w-full rounded-2xl bg-indigo-600 py-4 text-base font-black text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700 active:scale-[0.99]"
               >
                 Check Answer
               </button>
