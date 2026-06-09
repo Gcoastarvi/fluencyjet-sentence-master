@@ -3321,37 +3321,40 @@ export default function SentencePractice() {
         {/* ⌨️ TYPING UI */}
         {(safeMode === "typing" ||
           (safeMode === "audio" && audioVariant === "dictation")) && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className={`h-1 w-full rounded-t-2xl ${A.bar}`} />
-            <div className="mb-4">
+          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:p-6">
+            <div className={`h-1.5 w-full rounded-full ${A.bar}`} />
+
+            <div className="mb-5 mt-3">
               <div className="min-w-0">
-                <h2 className="text-xl font-extrabold tracking-tight text-slate-900">
+                <h2 className="text-[22px] font-black tracking-tight text-slate-950 sm:text-2xl">
                   {safeMode === "audio" && audioVariant === "dictation"
                     ? "Listening Dictation"
                     : uiFor(safeMode).title}
                 </h2>
 
-                {safeMode === "audio" && audioVariant === "dictation" ? (
-                  <div className="mt-1 text-sm text-slate-600">
-                    Listen once. Type what you hear.
-                  </div>
-                ) : null}
+                <p className="mt-1 text-sm font-bold text-slate-500">
+                  {safeMode === "audio" && audioVariant === "dictation"
+                    ? "Listen carefully and type the sentence"
+                    : "Type the full English sentence"}
+                </p>
 
                 {/* Status pills */}
                 {status === "wrong" && (
-                  <div className="mt-3 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                  <div className="mt-3 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
                     Try again
                   </div>
                 )}
+
                 {status === "reveal" && (
                   <div
-                    className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${A.border} ${A.soft} ${A.text}`}
+                    className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${A.border} ${A.soft} ${A.text}`}
                   >
                     Answer shown — try typing it now
                   </div>
                 )}
+
                 {status === "correct" && (
-                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                     Nice! ✅
                   </div>
                 )}
@@ -3368,7 +3371,7 @@ export default function SentencePractice() {
                 <button
                   type="button"
                   onClick={() => setTypedAnswer("")}
-                  className="shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  className="shrink-0 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow"
                   disabled={status === "correct"}
                 >
                   Clear
@@ -3378,13 +3381,13 @@ export default function SentencePractice() {
 
             {/* 🔊 Audio Dictation Controls (only when audio + dictation) */}
             {safeMode === "audio" && audioVariant === "dictation" && (
-              <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-5 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4 shadow-inner">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-600">
+                    <div className="text-xs font-black uppercase tracking-wide text-slate-500">
                       Dictation controls
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-sm font-semibold text-slate-600">
                       Tap play once. Then type what you heard.
                     </div>
                   </div>
@@ -3396,7 +3399,7 @@ export default function SentencePractice() {
                         speakTTS(englishFull);
                         setVoiceStep(VOICE_STEPS.REPEAT);
                       }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
                       disabled={!englishFull}
                     >
                       <span className="text-base">▶</span>
@@ -3406,7 +3409,7 @@ export default function SentencePractice() {
                     <button
                       type="button"
                       onClick={() => stopTTS()}
-                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                      className="rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50"
                     >
                       Stop
                     </button>
@@ -3417,16 +3420,16 @@ export default function SentencePractice() {
 
             {/* Word Bank (hint only — not clickable) */}
             {safeMode === "typing" && (
-              <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-3">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Word Bank (hint only)
+              <div className="mb-5 rounded-[1.5rem] border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-white p-5 shadow-sm">
+                <div className="mb-3 text-xs font-black uppercase tracking-[0.12em] text-slate-500">
+                  Word Bank <span className="text-slate-400">(Hint Only)</span>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {(typingWordBank || []).map((w, idx) => (
                     <span
                       key={`${w}_${idx}`}
-                      className="select-none rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600 shadow-sm opacity-90"
+                      className="select-none rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-[18px] font-extrabold text-slate-600 shadow-sm sm:text-[19px]"
                     >
                       {w}
                     </span>
@@ -3434,20 +3437,24 @@ export default function SentencePractice() {
                 </div>
               </div>
             )}
+
             {/* Input */}
-            <textarea
-              value={typedAnswer}
-              onChange={(e) => setTypedAnswer(e.target.value)}
-              placeholder="Type the full English sentence here..."
-              className="w-full p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-              rows={3}
-              disabled={status === "correct"}
-            />
-            <div className="flex items-center gap-3 mt-3">
+            <div className="rounded-[1.5rem] border border-indigo-100 bg-gradient-to-br from-indigo-50/70 via-white to-white p-4 shadow-inner">
+              <textarea
+                value={typedAnswer}
+                onChange={(e) => setTypedAnswer(e.target.value)}
+                placeholder="Type the full English sentence here..."
+                className="min-h-[130px] w-full resize-none rounded-2xl border border-slate-200 bg-white px-5 py-4 text-[20px] font-bold leading-relaxed text-slate-950 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-indigo-100 sm:text-[22px]"
+                rows={3}
+                disabled={status === "correct"}
+              />
+            </div>
+
+            <div className="mt-4 flex items-center gap-3">
               {!stickyCfg.show && (
                 <button
                   onClick={checkAnswer}
-                  className="px-4 py-2 rounded-xl bg-slate-900 text-white hover:opacity-90"
+                  className="rounded-2xl bg-orange-500 px-6 py-3 text-base font-black text-white shadow-lg shadow-orange-100 transition hover:bg-orange-600 active:scale-[0.98]"
                   disabled={status === "correct" || status === "reveal"}
                 >
                   Submit
@@ -3457,7 +3464,7 @@ export default function SentencePractice() {
               {!stickyCfg.show && (
                 <button
                   onClick={() => setStatus("reveal")}
-                  className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                  className="rounded-2xl border border-slate-200 bg-white px-6 py-3 text-base font-black text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow"
                   disabled={status === "correct" || status === "reveal"}
                 >
                   Show Answer
