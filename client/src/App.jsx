@@ -97,9 +97,22 @@ const RefundPolicy = lazy(() => import("./pages/legal/RefundPolicy"));
 const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
 
 function MainLayout() {
+  const location = useLocation();
+
+  const hideNavbarPaths = [
+    "/level-check",
+    "/smart-signup",
+    "/activation",
+    "/webinar",
+  ];
+
+  const shouldHideNavbar = hideNavbarPaths.some((path) =>
+    location.pathname === path || location.pathname.startsWith(path + "/"),
+  );
+
   return (
     <>
-      <Navbar />
+      {!shouldHideNavbar && <Navbar />}
       <main className="app-main">
         <Outlet />
       </main>
