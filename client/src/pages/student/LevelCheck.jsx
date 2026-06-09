@@ -818,146 +818,17 @@ export default function LevelCheck() {
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-white via-slate-50 to-violet-50/40 py-10">
       <div className="mx-auto max-w-4xl px-4">
         <div className="rounded-3xl border border-slate-200 bg-white/75 p-6 shadow-sm backdrop-blur">
-          {mode === "pick" && (
-            <div className="grid gap-8 md:grid-cols-2 mt-8">
-              {/* Left: Coach Info */}
-              <div className="flex flex-col items-center text-center md:items-start md:text-left">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <img
-                      src="/coach.jpg"
-                      alt="Coach Aravind"
-                      className="h-16 w-16 rounded-full border-2 border-violet-100 object-cover shadow-sm bg-slate-100"
-                      onError={(e) => {
-                        e.currentTarget.src = "/avatar-fallback.png";
-                      }}
-                    />
-                    <div className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500"></div>
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-slate-900 leading-tight">
-                      Aravind • English Coach & Memory Trainer
-                    </div>
-                    <div className="text-xs font-semibold leading-relaxed text-violet-600">
-                      Guinness World Record Holder • 35,000+ Students Trained
-                    </div>
-                  </div>
-                </div>
+            {mode === "pick" && (
+              <PremiumLevelCheckIntro
+                segment={segment}
+                onStart={() => {
+                  setMode("quiz");
+                  setStep("quiz");
+                }}
+              />
+            )}
 
-                {/* Conversational "Coach" Bubble */}
-                <div className="relative mt-6 w-full">
-                  <div className="absolute -top-1 left-6 h-3 w-3 rotate-45 border-l border-t border-violet-100 bg-violet-50" />
-                  <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-5 shadow-sm backdrop-blur-sm">
-                    <p className="text-[15px] leading-relaxed text-violet-900">
-                      "I’ll help you find the right English practice path for
-                      you. It’s just{" "}
-                      <span className="font-bold underline decoration-violet-300 underline-offset-4">
-                        10 quick questions
-                      </span>
-                      ."
-                    </p>
-
-                    <p className="mt-2 text-[14px] leading-relaxed text-violet-700">
-                      உங்களுக்கு சரியான English practice path-ஐ கண்டுபிடிக்க
-                      உதவுகிறேன்.
-                    </p>
-                    <div className="mt-4 flex items-center justify-between border-t border-violet-100/50 pt-3">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-500">
-                        <svg
-                          className="h-3.5 w-3.5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        Just 2 minutes
-                      </div>
-                      <div className="flex gap-1.5">
-                        {[...Array(5)].map((_, i) => (
-                          <div
-                            key={i}
-                            className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-violet-400" : "bg-slate-200"}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column - Finalized Start Action */}
-              <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-6 text-center border border-slate-100 shadow-inner sm:p-8">
-                {/* Decorative Background Element */}
-                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-violet-100/30 blur-2xl" />
-
-                <div className="relative">
-                  <div className="mb-3 text-sm font-semibold uppercase tracking-widest text-slate-400">
-                      {segment.badge}
-                    </div>
-
-                    <h1 className="mb-4 text-2xl font-black leading-tight tracking-tight text-slate-950 sm:text-3xl lg:text-[2.45rem]">
-                      {segment.headline}
-                    </h1>
-
-                    <p className="mb-5 text-sm font-semibold leading-relaxed text-slate-600 sm:text-base">
-                      {segment.subheadline}
-                    </p>
-
-                    <p className="mb-6 rounded-2xl border border-violet-100 bg-white px-4 py-3 text-sm font-bold leading-relaxed text-violet-700">
-                      {segment.whoFor}
-                    </p>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode("quiz");
-                      setStep("quiz");
-                    }}
-                    className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-6 py-4 text-base font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95 sm:text-lg"
-                  >
-                    <span>{segment.cta}</span>
-                    <svg
-                      className="h-6 w-6 transition-transform group-hover:translate-x-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2.5"
-                        d="M13 7l5 5m0 0l-5 5m5-5H6"
-                      />
-                    </svg>
-                  </button>
-
-                  <div className="mt-8 flex items-center justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-                      10 Quick Questions
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      Instant Level Result
-                    </div>
-                  </div>
-
-                    <div className="mt-5 grid gap-2 text-left text-sm font-semibold text-slate-600">
-                      <div>✅ Free app practice path</div>
-                      <div>✅ Free live class invitation</div>
-                    </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 290: Refined Quiz Interface */}
+            {/* 290: Refined Quiz Interface */}
           {mode === "quiz" && (
             <div className="max-w-md mx-auto py-8 flex flex-col items-center">
               {/* Top Progress Header */}
