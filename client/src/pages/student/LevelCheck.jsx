@@ -347,6 +347,296 @@ const LEVEL_CHECK_QUESTIONS = [
 
 const QUESTIONS = LEVEL_CHECK_QUESTIONS;
 
+
+function getPremiumHeroCopy(segment) {
+  const key = segment?.key || "general";
+
+  const map = {
+    work: {
+      badge: "Workplace English Diagnosis",
+      highlight: "Workplace English Confidence Level",
+      banner: "For working professionals who want to communicate better in meetings, calls, and office discussions.",
+      cta: "Start My Free Workplace Check",
+      quote:
+        "I’ll help you check how ready you are for meetings, calls, and workplace conversations. It’s just 10 quick questions.",
+      icon: "🏢",
+    },
+    interview: {
+      badge: "Interview English Diagnosis",
+      highlight: "Interview English Confidence Level",
+      banner: "For job seekers and freshers who want to answer interviews confidently.",
+      cta: "Start My Free Interview Check",
+      quote:
+        "I’ll help you find the right English practice path for interviews. It’s just 10 quick questions.",
+      icon: "💼",
+    },
+    business: {
+      badge: "Business English Diagnosis",
+      highlight: "Business English Confidence Level",
+      banner: "For business owners who want to speak confidently with customers, clients, staff, and suppliers.",
+      cta: "Start My Free Business Check",
+      quote:
+        "I’ll help you discover your business English confidence level in just 10 quick questions.",
+      icon: "🤝",
+    },
+    students: {
+      badge: "Study & Career English Diagnosis",
+      highlight: "Study & Career English Confidence Level",
+      banner: "For students and freshers who want confidence for studies, presentations, interviews, and career.",
+      cta: "Start My Free Student Check",
+      quote:
+        "I’ll help you find the right English path for your studies and career. It’s just 10 quick questions.",
+      icon: "🎓",
+    },
+    daily: {
+      badge: "Daily English Fluency Diagnosis",
+      highlight: "Daily Conversation Fluency Level",
+      banner: "For Tamil speakers who want to speak confidently in daily life, travel, shopping, phone calls, and social situations.",
+      cta: "Start My Free Daily Check",
+      quote:
+        "I’ll help you discover your daily conversation level in just 10 quick questions.",
+      icon: "💬",
+    },
+    general: {
+      badge: "English Level Diagnosis",
+      highlight: "English Speaking Confidence Level",
+      banner: "For Tamil speakers who know English words but struggle to speak confidently.",
+      cta: "Start My Free Level Check",
+      quote:
+        "I’ll help you find the right English practice path for you. It’s just 10 quick questions.",
+      icon: "🚀",
+    },
+  };
+
+  return map[key] || map.general;
+}
+
+function PremiumLevelCheckIntro({ segment, onStart }) {
+  const hero = getPremiumHeroCopy(segment);
+
+  return (
+    <div className="-mx-6 -my-6 overflow-hidden rounded-3xl bg-white">
+      <div className="bg-violet-950 px-4 py-3 text-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-4 text-sm font-bold sm:gap-7">
+          <span className="flex items-center gap-2">
+            <span className="text-yellow-300">★</span> 4.8 App Rating
+          </span>
+          <span className="hidden text-violet-300 sm:inline">|</span>
+          <span className="flex items-center gap-2">
+            <span className="text-emerald-400">●</span> 35,000+ Students Trained
+          </span>
+          <span className="hidden text-violet-300 sm:inline">|</span>
+          <span className="flex items-center gap-2">
+            <span className="text-yellow-300">★</span> Guinness World Record Holder
+          </span>
+        </div>
+      </div>
+
+      <section className="bg-gradient-to-br from-white via-violet-50 to-violet-100 px-5 py-8 sm:px-8 lg:px-10">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-5">
+            <div className="rounded-[2rem] border border-white/70 bg-white/85 p-6 shadow-xl shadow-violet-100 backdrop-blur">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <img
+                    src="/coach.jpg"
+                    alt="Coach Aravind"
+                    className="h-20 w-20 rounded-full border-4 border-violet-200 object-cover shadow-md"
+                    onError={(e) => {
+                      e.currentTarget.src = "/avatar-fallback.png";
+                    }}
+                  />
+                  <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-4 border-white bg-emerald-500 text-xs font-black text-white">
+                    ✓
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-black text-slate-950">Aravind</h3>
+                  <p className="mt-1 text-sm font-bold text-violet-700">
+                    English Coach & Memory Trainer
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-3xl border border-violet-100 bg-white p-5 shadow-md">
+                <p className="text-base font-semibold leading-relaxed text-slate-700">
+                  “{hero.quote.replace("10 quick questions", "")}
+                  <span className="font-black text-violet-700">
+                    10 quick questions
+                  </span>
+                  .”
+                </p>
+                <p className="mt-3 text-sm font-bold leading-relaxed text-violet-700">
+                  உங்களுக்கு சரியான English practice path-ஐ கண்டுபிடிக்க உதவுகிறேன்.
+                </p>
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
+                  <div className="text-2xl">⭐</div>
+                  <p className="mt-2 text-xs font-bold text-slate-500">
+                    Guinness Record
+                  </p>
+                  <p className="text-base font-black text-slate-900">Holder</p>
+                </div>
+                <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
+                  <div className="text-2xl">👥</div>
+                  <p className="mt-2 text-xs font-bold text-slate-500">
+                    Students
+                  </p>
+                  <p className="text-base font-black text-slate-900">35,000+</p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-black text-slate-600">
+                  <span className="text-violet-600">◷</span> Just 2 minutes
+                </div>
+                <div className="flex gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-violet-600" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-violet-300" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-violet-200" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-slate-200" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-100 px-4 py-2">
+              <span className="h-2 w-2 rounded-full bg-violet-600" />
+              <span className="text-xs font-black uppercase tracking-[0.22em] text-violet-700">
+                {hero.badge}
+              </span>
+            </div>
+
+            <h1 className="mt-6 text-4xl font-black leading-[1.03] tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              Find Your
+              <span className="block bg-gradient-to-r from-violet-600 to-violet-800 bg-clip-text text-transparent">
+                {hero.highlight}
+              </span>
+            </h1>
+
+            <p className="mt-6 max-w-2xl text-lg font-semibold leading-relaxed text-slate-600 sm:text-xl">
+              {segment.subheadline}
+            </p>
+
+            <div className="mt-6 max-w-2xl rounded-3xl border-l-4 border-violet-600 bg-white/70 p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-2xl">
+                  {hero.icon}
+                </div>
+                <p className="text-base font-black leading-relaxed text-violet-800">
+                  {hero.banner}
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-6 flex items-center gap-2 text-sm font-bold text-slate-500">
+              <span className="text-emerald-500">●</span>
+              Takes only 2 minutes • No signup required to check
+            </p>
+
+            <button
+              type="button"
+              onClick={onStart}
+              className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-3xl bg-gradient-to-r from-violet-600 to-violet-800 px-8 py-5 text-lg font-black text-white shadow-2xl shadow-violet-200 transition hover:-translate-y-0.5 hover:shadow-violet-300 active:scale-[0.98] sm:w-auto sm:text-xl"
+            >
+              {hero.cta}
+              <span className="text-2xl">→</span>
+            </button>
+
+            <div className="mt-8 grid max-w-2xl grid-cols-3 items-start gap-3 text-center">
+              {[
+                ["1", "Take Quiz", "2 mins"],
+                ["2", "Get Result", "Instant"],
+                ["3", "Start Free", "Practice"],
+              ].map(([num, title, sub], index) => (
+                <div key={num} className="relative">
+                  {index < 2 && (
+                    <div className="absolute left-[62%] top-6 hidden h-1 w-[75%] rounded-full bg-gradient-to-r from-violet-600 to-violet-300 sm:block" />
+                  )}
+                  <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-violet-300 bg-violet-100 text-lg font-black text-violet-700">
+                    {num}
+                  </div>
+                  <p className="mt-2 text-sm font-black text-slate-800">{title}</p>
+                  <p className="text-xs font-medium text-slate-500">{sub}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <div className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">
+                ✓ Free app practice path
+              </div>
+              <div className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-black text-blue-700">
+                ✓ Free live class invite
+              </div>
+              <div className="rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-black text-violet-700">
+                ✓ Personalized report
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-5 py-14 sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <div className="text-center">
+            <h2 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+              What You Get After the Check
+            </h2>
+            <p className="mt-3 text-lg font-medium text-slate-600">
+              Not just a score. A personalized roadmap to fluency.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["📊", "Instant Level Report", "Know your speaking level immediately."],
+              ["🗺️", "Personalized Path", "Get a practice path based on your level and goal."],
+              ["📱", "Free App Access", "Start practising with curated sample lessons."],
+              ["🎥", "Live Class Invite", "Reserve your free live class seat."],
+            ].map(([icon, title, desc]) => (
+              <div
+                key={title}
+                className="rounded-3xl border border-slate-100 bg-gradient-to-br from-violet-50 to-white p-6 text-center shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-3xl shadow-sm">
+                  {icon}
+                </div>
+                <h3 className="mt-5 text-lg font-black text-slate-950">{title}</h3>
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600">
+                  {desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-gradient-to-r from-violet-600 to-violet-900 px-5 py-8 text-center text-white">
+        <p className="text-xl font-black">
+          🕒 2,341 people checked their level this week
+        </p>
+        <p className="mt-2 text-sm font-semibold text-violet-100">
+          Check your level now and unlock your free practice path.
+        </p>
+      </section>
+
+      <footer className="bg-slate-950 px-5 py-8 text-center text-sm font-medium text-slate-400">
+        <p>FluencyJet — Speak English with Confidence</p>
+        <p className="mt-1 text-slate-500">
+          Your data is safe. No spam, ever.
+        </p>
+      </footer>
+    </div>
+  );
+}
+
+
 export default function LevelCheck() {
   const navigate = useNavigate();
   const location = useLocation();
