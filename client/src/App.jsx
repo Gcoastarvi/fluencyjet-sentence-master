@@ -26,6 +26,7 @@ import SentencePractice from "./pages/student/SentencePractice.jsx";
 import LessonList from "./pages/student/LessonList";
 import Home from "./pages/Home";
 import Login from "./pages/student/Login.jsx";
+import JoinWebinar from "./pages/JoinWebinar";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -219,6 +220,7 @@ export default function App() {
               <Route path="/smart-signup" element={<SmartSignup />} />
               <Route path="/activation" element={<Activation />} />
               <Route path="/webinar" element={<Webinar />} />
+              <Route path="/join-webinar" element={<JoinWebinar />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/paywall" element={<Paywall />} />

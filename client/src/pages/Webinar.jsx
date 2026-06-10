@@ -31,7 +31,7 @@ export default function Webinar() {
   const track = searchParams.get("track") || "";
   const lesson = searchParams.get("lesson") || "";
 
-  const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/IRN8bQBcpaM969apitCNIX";
+  const WHATSAPP_GROUP_URL = "/join-webinar";
 
   const WEBINAR_DATE = "Wednesday, 10 June";
   const WEBINAR_TIME = "8:00 PM to 9:30 PM IST";
