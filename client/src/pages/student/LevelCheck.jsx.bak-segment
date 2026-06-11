@@ -1,0 +1,797 @@
+// client/src/pages/student/LevelCheck.jsx
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import { getToken } from "@/utils/tokenStore";
+import { api } from "@/api/apiClient";
+
+import confetti from "canvas-confetti";
+import SentenceBuilder from "@/components/quiz/SentenceBuilder";
+import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
+
+import {
+  trackLevelCheckStart,
+  trackLevelCheckComplete,
+} from "../../lib/tracking";
+
+const TRACK_KEY = "fj_track";
+
+const TRACK_METADATA = {
+  beginner: {
+    resultTitle: "Beginner",
+    title: "Solid Foundations",
+    titleTa: "வலுவான அடித்தளம்",
+    description:
+      "Great start! You need more practice with basic sentence patterns, word order, questions, and daily English sentences. We’ll help you build confidence step by step.",
+    descriptionTa:
+      "அருமையான தொடக்கம்! Basic sentence patterns, word order, questions, daily English sentences-ல் இன்னும் practice தேவை. நாங்கள் உங்களை படிப்படியாக confidence உடன் பேச உதவுவோம்.",
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    cta: "Start Beginner Lessons",
+  },
+
+  intermediate: {
+    resultTitle: "Intermediate",
+    title: "Natural Flow",
+    titleTa: "இயல்பான பேச்சு ஓட்டம்",
+    description:
+      "Great! You already understand many sentence patterns. Now let’s make your English faster, clearer, and more natural.",
+    descriptionTa:
+      "அருமை! உங்களுக்கு பல sentence patterns புரிகிறது. இனி உங்கள் English-ஐ வேகமாகவும், தெளிவாகவும், இயல்பாகவும் மாற்றலாம்.",
+    color: "text-violet-600",
+    bg: "bg-violet-50",
+    cta: "Start Intermediate Lessons",
+  },
+
+  advanced: {
+    resultTitle: "Advanced",
+    title: "Fluent Mastery",
+    titleTa: "சரளமான ஆங்கில திறன்",
+    description:
+      "Excellent! Your English structure is strong. We’ll now help you speak with more confidence, natural expressions, and professional fluency.",
+    descriptionTa:
+      "மிகவும் சிறப்பு! உங்கள் English structure வலுவாக உள்ளது. இனி அதிக confidence, natural expressions, professional fluency உடன் பேச உதவுவோம்.",
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    cta: "Start Advanced Practice",
+  },
+};
+
+const LEVEL_CHECK_QUESTIONS = [
+  {
+    id: 1,
+    level: "beginner",
+    skill: "Simple Present",
+    q: "Choose the correct sentence:",
+    qTa: "சரியான ஆங்கில வாக்கியத்தை தேர்வு செய்யுங்கள்:",
+    options: [
+      "He go to school.",
+      "He goes to school.",
+      "He going to school.",
+      "He is go to school.",
+    ],
+    answer: 1,
+    wrongMessage:
+      "Don’t worry. This helps us choose the right lessons for you.",
+    wrongMessageTa:
+      "கவலைப்பட வேண்டாம். உங்களுக்கு சரியான பாடங்களை தேர்வு செய்ய இது உதவும்.",
+  },
+  {
+    id: 2,
+    level: "beginner",
+    skill: "Word Order",
+    q: "Choose the correct word order:",
+    qTa: "சரியான word order-ஐ தேர்வு செய்யுங்கள்:",
+    options: [
+      "Coffee I want.",
+      "I coffee want.",
+      "I want coffee.",
+      "Want coffee I.",
+    ],
+    answer: 2,
+    wrongMessage: "Good attempt. We’ll help you build correct sentence order.",
+    wrongMessageTa:
+      "நல்ல முயற்சி. சரியான sentence order அமைக்க நாங்கள் உதவுவோம்.",
+  },
+  {
+    id: 3,
+    level: "beginner",
+    skill: "Be Verb",
+    q: "Fill in the blank: I ___ a teacher.",
+    qTa: "காலியிடத்தை நிரப்புங்கள்: I ___ a teacher.",
+    options: ["is", "are", "am", "be"],
+    answer: 2,
+    wrongMessage: "No problem. Small grammar gaps can be fixed with practice.",
+    wrongMessageTa:
+      "பரவாயில்லை. சிறிய grammar gaps-ஐ practice மூலம் சரிசெய்யலாம்.",
+  },
+  {
+    id: 4,
+    level: "beginner",
+    skill: "Questions",
+    q: "Choose the correct question:",
+    qTa: "சரியான கேள்வி வாக்கியத்தை தேர்வு செய்யுங்கள்:",
+    options: [
+      "Where you are going?",
+      "Where are you going?",
+      "Where you going?",
+      "Where are going you?",
+    ],
+    answer: 1,
+    wrongMessage:
+      "Don’t worry. Question patterns become easy with daily drills.",
+    wrongMessageTa:
+      "கவலைப்பட வேண்டாம். Daily drills மூலம் question patterns எளிதாகிவிடும்.",
+  },
+  {
+    id: 5,
+    level: "beginner",
+    skill: "Negative Sentences",
+    q: "Pick the correct option: She ___ like tea.",
+    qTa: "சரியான option-ஐ தேர்வு செய்யுங்கள்: She ___ like tea.",
+    options: ["don't", "doesn't", "isn't", "aren't"],
+    answer: 1,
+    wrongMessage: "Good try. We’ll help you master negatives clearly.",
+    wrongMessageTa:
+      "நல்ல முயற்சி. Negative sentences-ஐ தெளிவாக கற்றுக்கொள்ள உதவுவோம்.",
+  },
+
+  {
+    id: 6,
+    level: "intermediate",
+    skill: "Past Tense",
+    q: "Choose the correct sentence:",
+    qTa: "சரியான ஆங்கில வாக்கியத்தை தேர்வு செய்யுங்கள்:",
+    options: [
+      "I have seen him yesterday.",
+      "I saw him yesterday.",
+      "I have saw him yesterday.",
+      "I seen him yesterday.",
+    ],
+    answer: 1,
+    wrongMessage:
+      "No issue. Past tense accuracy improves quickly with practice.",
+    wrongMessageTa:
+      "பிரச்சனை இல்லை. Practice மூலம் past tense accuracy வேகமாக மேம்படும்.",
+  },
+  {
+    id: 7,
+    level: "intermediate",
+    skill: "Conditionals",
+    q: "Fill in the blank: If I had time, I ___ help you.",
+    qTa: "காலியிடத்தை நிரப்புங்கள்: If I had time, I ___ help you.",
+    options: ["will", "would", "am", "can"],
+    answer: 1,
+    wrongMessage:
+      "Good attempt. We’ll help you understand advanced patterns step by step.",
+    wrongMessageTa:
+      "நல்ல முயற்சி. Advanced patterns-ஐ படிப்படியாக புரியவைக்கிறோம்.",
+  },
+  {
+    id: 8,
+    level: "intermediate",
+    skill: "Duration",
+    q: "Choose the correct sentence:",
+    qTa: "சரியான ஆங்கில வாக்கியத்தை தேர்வு செய்யுங்கள்:",
+    options: [
+      "She has been working here since 2 years.",
+      "She is working here since 2 years.",
+      "She has been working here for 2 years.",
+      "She works here since 2 years.",
+    ],
+    answer: 2,
+    wrongMessage:
+      "Don’t worry. These are common mistakes, and we can fix them.",
+    wrongMessageTa:
+      "கவலைப்பட வேண்டாம். இவை common mistakes. இதை நிச்சயம் சரிசெய்யலாம்.",
+  },
+  {
+    id: 9,
+    level: "intermediate",
+    skill: "Prepositions",
+    q: "Pick the correct preposition: I’m interested ___ learning English.",
+    qTa: "சரியான preposition-ஐ தேர்வு செய்யுங்கள்: I’m interested ___ learning English.",
+    options: ["on", "in", "at", "for"],
+    answer: 1,
+    wrongMessage:
+      "Good try. Prepositions become natural after repeated practice.",
+    wrongMessageTa:
+      "நul�்ல முயற்சி. Repeated practice மூலம் prepositions இயல்பாக வரும்.",
+  },
+  {
+    id: 10,
+    level: "intermediate",
+    skill: "Natural English",
+    q: "Choose the most natural sentence:",
+    qTa: "மிகவும் இயல்பான English sentence-ஐ தேர்வு செய்யுங்கள்:",
+    options: [
+      "Can you suggest me a book?",
+      "Can you suggest a book to me?",
+      "Can you suggesting a book?",
+      "Can you suggest one book for me?",
+    ],
+    answer: 1,
+    wrongMessage: "No problem. FluencyJet will help you sound more natural.",
+    wrongMessageTa:
+      "பிரச்சனை இல்லை. FluencyJet உங்கள் English-ஐ இன்னும் natural-ஆக மாற்றும்.",
+  },
+];
+
+const QUESTIONS = LEVEL_CHECK_QUESTIONS;
+
+export default function LevelCheck() {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState("pick"); // "pick" | "quiz" | "result"
+  const [idx, setIdx] = useState(0);
+  const [answers, setAnswers] = useState({}); // { [questionId]: optionIndex }
+  const [result, setResult] = useState(null); // { score, track }
+  const [userName, setUserName] = useState("");
+  const [step, setStep] = useState("intro"); // intro, quiz, result
+
+  useEffect(() => {
+    trackLevelCheckStart("level_check_page");
+  }, []);
+
+  function goToTrack(track, opts = {}) {
+    try {
+      localStorage.setItem(TRACK_KEY, track);
+
+      const raw = localStorage.getItem("user");
+      const u = raw ? JSON.parse(raw) : {};
+      localStorage.setItem("user", JSON.stringify({ ...u, track }));
+    } catch {}
+
+    const token = getToken();
+
+    const isHighPath = track === "intermediate" || track === "advanced";
+    const difficulty = isHighPath ? "intermediate" : "beginner";
+    const base = isHighPath ? "/i" : "/b";
+    const lessonHubUrl = `${base}/lesson/1?difficulty=${difficulty}`;
+    const target = lessonHubUrl;
+
+    if (opts && opts.startLesson1) {
+      if (!token) {
+        navigate(
+          `/smart-signup?next=${encodeURIComponent(lessonHubUrl)}&track=${track}`,
+          { replace: true },
+        );
+        return;
+      }
+
+      navigate(lessonHubUrl, { replace: true });
+      return;
+    }
+
+    if (!token) {
+      navigate(
+        `/smart-signup?next=${encodeURIComponent(target)}&track=${track}`,
+        { replace: true },
+      );
+      return;
+    }
+
+    navigate(target, { replace: true });
+  }
+
+  const current = QUESTIONS[idx];
+
+  const score = useMemo(() => {
+    let s = 0;
+    for (const q of QUESTIONS) {
+      const a = answers[q.id];
+      if (typeof a === "number" && a === q.answer) s += 1;
+    }
+    return s;
+  }, [answers]);
+
+  async function finishQuiz() {
+    const finalScore = QUESTIONS.reduce((total, q) => {
+      const selected = answers[q.id];
+      return total + (selected === q.answer ? 1 : 0);
+    }, 0);
+
+    const beginnerCorrect = QUESTIONS.filter(
+      (q) => q.level === "beginner",
+    ).reduce((total, q) => total + (answers[q.id] === q.answer ? 1 : 0), 0);
+
+    const intermediateCorrect = QUESTIONS.filter(
+      (q) => q.level === "intermediate",
+    ).reduce((total, q) => total + (answers[q.id] === q.answer ? 1 : 0), 0);
+
+    const track =
+      beginnerCorrect >= 4 && intermediateCorrect >= 3
+        ? "intermediate"
+        : "beginner";
+
+    console.log("[LEVEL CHECK]", { answers, finalScore, track });
+
+    setResult({ score: finalScore, track });
+    setMode("result");
+    setStep("result");
+
+    try {
+      localStorage.setItem("fj_track", track);
+    } catch {}
+
+    try {
+      const response = await api.post("/quizzes/sync-placement", {
+        track: track.toUpperCase(),
+      });
+
+      if (response.data?.ok) {
+        console.log("[SYNC] Profile successfully updated to:", track);
+      }
+    } catch (err) {
+      console.error("❌ Placement sync failed:", err);
+    }
+
+    trackLevelCheckComplete({
+      score: finalScore,
+      track,
+      source: "level_check_page",
+    });
+
+    try {
+      const levelUpSound = new Audio("/sounds/levelup.mp3");
+      levelUpSound.volume = 0.5;
+      levelUpSound.play().catch(() => {});
+    } catch {}
+
+    try {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ["#8b5cf6", "#a78bfa", "#c4b5fd"],
+      });
+    } catch {}
+  }
+
+  return (
+    <div className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-white via-slate-50 to-violet-50/40 py-10">
+      <div className="mx-auto max-w-4xl px-4">
+        <div className="rounded-3xl border border-slate-200 bg-white/75 p-6 shadow-sm backdrop-blur">
+          {mode === "pick" && (
+            <div className="grid gap-8 md:grid-cols-2 mt-8">
+              {/* Left: Coach Info */}
+              <div className="flex flex-col items-center text-center md:items-start md:text-left">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <img
+                      src="/coach.jpg"
+                      alt="Coach Aravind"
+                      className="h-16 w-16 rounded-full border-2 border-violet-100 object-cover shadow-sm bg-slate-100"
+                      onError={(e) => {
+                        e.currentTarget.src = "/avatar-fallback.png";
+                      }}
+                    />
+                    <div className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-green-500"></div>
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold text-slate-900 leading-tight">
+                      Aravind • English Coach
+                    </div>
+                    <div className="text-xs font-medium text-violet-600">
+                      FluencyJet Expert
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conversational "Coach" Bubble */}
+                <div className="relative mt-6 w-full">
+                  <div className="absolute -top-1 left-6 h-3 w-3 rotate-45 border-l border-t border-violet-100 bg-violet-50" />
+                  <div className="rounded-2xl border border-violet-100 bg-violet-50/50 p-5 shadow-sm backdrop-blur-sm">
+                    <p className="text-[15px] leading-relaxed text-violet-900">
+                      "I’ll help you find the right English practice path for
+                      you. It’s just{" "}
+                      <span className="font-bold underline decoration-violet-300 underline-offset-4">
+                        10 quick questions
+                      </span>
+                      ."
+                    </p>
+
+                    <p className="mt-2 text-[14px] leading-relaxed text-violet-700">
+                      உங்களுக்கு சரியான English practice path-ஐ கண்டுபிடிக்க
+                      உதவுகிறேன்.
+                    </p>
+                    <div className="mt-4 flex items-center justify-between border-t border-violet-100/50 pt-3">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-500">
+                        <svg
+                          className="h-3.5 w-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Just 2 minutes
+                      </div>
+                      <div className="flex gap-1.5">
+                        {[...Array(5)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`h-1.5 w-1.5 rounded-full ${i === 0 ? "bg-violet-400" : "bg-slate-200"}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Finalized Start Action */}
+              <div className="relative flex flex-col justify-center rounded-3xl bg-slate-50/50 p-8 text-center border border-slate-100 shadow-inner">
+                {/* Decorative Background Element */}
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-violet-100/30 blur-2xl" />
+
+                <div className="relative">
+                  <div className="mb-6 text-sm font-semibold uppercase tracking-widest text-slate-400">
+                    Your fluency path starts here
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("quiz");
+                      setStep("quiz");
+                    }}
+                    className="group relative w-full flex items-center justify-center gap-3 rounded-2xl bg-violet-600 px-8 py-5 text-xl font-extrabold text-white shadow-xl shadow-violet-200 transition-all hover:-translate-y-1 hover:bg-violet-700 hover:shadow-violet-300 active:scale-95"
+                  >
+                    <span>Find My English Level</span>
+                    <svg
+                      className="h-6 w-6 transition-transform group-hover:translate-x-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2.5"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </button>
+
+                  <div className="mt-8 flex items-center justify-center gap-6 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-violet-400" />
+                      10 Quick Questions
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                      Instant Level Result
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 290: Refined Quiz Interface */}
+          {mode === "quiz" && (
+            <div className="max-w-md mx-auto py-8 flex flex-col items-center">
+              {/* Top Progress Header */}
+              <div className="mb-12">
+                <div className="flex justify-between items-end mb-3">
+                  <div className="flex flex-col">
+                    <div className="text-xs font-bold uppercase tracking-[0.35em] text-violet-500">
+                      Finding Your Level
+                    </div>
+
+                    <div className="mt-1 text-sm font-medium text-slate-400 font-tamil">
+                      உங்கள் English level-ஐ கண்டுபிடிக்கிறோம்
+                    </div>
+                    <h2 className="text-xl font-extrabold text-slate-900">
+                      Question {idx + 1}{" "}
+                      <span className="text-slate-400 font-medium">
+                        / {QUESTIONS.length}
+                      </span>
+                    </h2>
+                  </div>
+                  <div className="text-right">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <div className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+                      Live Analysis
+                    </span>
+                  </div>
+                </div>
+
+                {/* Smooth Progress Bar */}
+                <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-violet-400 to-violet-600 transition-all duration-500 ease-out rounded-full"
+                    style={{
+                      width: `${((idx + 1) / QUESTIONS.length) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Question Text */}
+              {/* Tightened Question Text */}
+              <div className="mb-6 text-center">
+                <div className="inline-block px-3 py-1 rounded-md bg-violet-50 text-violet-700 text-[10px] font-bold uppercase tracking-widest mb-4">
+                  Grammar & Structure
+                </div>
+
+                <h3 className="text-2xl font-black text-slate-800 leading-tight px-4">
+                  {QUESTIONS[idx].q}
+                </h3>
+
+                {QUESTIONS[idx].qTa && (
+                  <p className="mt-2 px-4 text-base font-semibold leading-relaxed text-slate-500 font-tamil">
+                    {QUESTIONS[idx].qTa}
+                  </p>
+                )}
+              </div>
+
+              {/* Option Grid */}
+              <div className="w-full">
+                {QUESTIONS[idx].type === "reorder" ? (
+                  <SentenceBuilder
+                    key={QUESTIONS[idx].id}
+                    correctSentence={QUESTIONS[idx].correctAnswer}
+                    onCorrect={() => {
+                      const audio = new Audio("/sounds/correct.mp3");
+                      audio.play().catch(() => {});
+                      // Set the answer in state to enable the "Next" button
+                      setAnswers((a) => ({ ...a, [QUESTIONS[idx].id]: true }));
+                    }}
+                    accentColor="violet"
+                  />
+                ) : (
+                  /* Standard Multiple Choice Grid */
+                  <div className="grid gap-3 w-full max-w-sm mx-auto">
+                    {QUESTIONS[idx].options.map((opt, optIdx) => {
+                      const isSelected = answers[QUESTIONS[idx].id] === optIdx;
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => {
+                            const clickSound = new Audio("/sounds/correct.mp3");
+                            clickSound.volume = 0.4;
+                            clickSound.play().catch(() => {});
+                            setAnswers((a) => ({
+                              ...a,
+                              [QUESTIONS[idx].id]: optIdx,
+                            }));
+                          }}
+                          className={`group relative flex items-center gap-4 p-5 text-left rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] ${
+                            isSelected
+                              ? "border-violet-600 bg-violet-50 shadow-md translate-x-1"
+                              : "border-slate-100 bg-white hover:border-violet-200 hover:bg-slate-50/50 hover:-translate-y-0.5"
+                          }`}
+                        >
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 font-bold transition-all ${
+                              isSelected
+                                ? "border-violet-600 bg-violet-600 text-white shadow-lg shadow-violet-200"
+                                : "border-slate-100 bg-slate-50 text-slate-400 group-hover:border-violet-200 group-hover:text-violet-600"
+                            }`}
+                          >
+                            {String.fromCharCode(65 + optIdx)}
+                          </div>
+                          <span
+                            className={`text-lg font-medium ${isSelected ? "text-violet-900" : "text-slate-700"}`}
+                          >
+                            {opt}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/*
+              Friendly Feedback After Selection - temporarily hidden
+
+              {QUESTIONS[idx].type !== "reorder" &&
+                answers[QUESTIONS[idx].id] !== undefined &&
+                answers[QUESTIONS[idx].id] !== QUESTIONS[idx].answer && (
+                  <div className="mt-5 mx-auto max-w-sm rounded-2xl border border-violet-100 bg-violet-50/70 px-4 py-3 text-center shadow-sm">
+                    <p className="text-sm font-semibold text-violet-800">
+                      {QUESTIONS[idx].wrongMessage ||
+                        "Don’t worry. This helps us choose the right lessons for you."}
+                    </p>
+
+                    <p className="mt-1 text-sm font-medium leading-relaxed text-violet-700 font-tamil">
+                      {QUESTIONS[idx].wrongMessageTa ||
+                        "கவலைப்பட வேண்டாம். உங்களுக்கு சரியான பாடங்களை தேர்வு செய்ய இது உதவும்."}
+                    </p>
+                  </div>
+                )}
+              */}
+
+              {/* Compact & Polished Navigation */}
+              <div className="mt-8 flex justify-center pt-6 border-t border-slate-100/60">
+                {idx < QUESTIONS.length - 1 ? (
+                  <button
+                    onClick={() => setIdx((i) => i + 1)}
+                    disabled={answers[QUESTIONS[idx].id] === undefined}
+                    className="group flex items-center gap-3 bg-slate-900 text-white px-10 py-4 rounded-xl font-bold shadow-lg hover:bg-slate-800 disabled:opacity-30 transition-all active:scale-95"
+                  >
+                    Next Question
+                    <svg
+                      className="h-5 w-5 transition-transform group-hover:translate-x-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2.5"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </button>
+                ) : (
+                  <button
+                    onClick={finishQuiz}
+                    disabled={answers[QUESTIONS[idx].id] === undefined}
+                    className="bg-violet-600 text-white px-12 py-4 rounded-2xl font-black text-lg shadow-xl shadow-violet-200 hover:bg-violet-700 hover:-translate-y-1 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    Calculate Level
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Shareable Result Card */}
+          {mode === "result" && (
+            <>
+              <div className="py-6 text-center">
+                {(() => {
+                  const track = normalizeTrack(
+                    result?.track || (score >= 5 ? "intermediate" : "beginner"),
+                  );
+
+                  const meta = TRACK_METADATA[track] || TRACK_METADATA.beginner;
+
+                  return (
+                    <>
+                      {/* Badge Header */}
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold uppercase tracking-widest mb-6 border border-emerald-100">
+                        <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                        Assessment Verified
+                      </div>
+
+                      <h2 className="text-sm font-bold text-slate-400 uppercase tracking-[0.3em] mb-1">
+                        Proficiency Level
+                      </h2>
+
+                      <p className="mb-4 text-sm font-semibold text-slate-400 font-tamil">
+                        உங்கள் English level கண்டறியப்பட்டது
+                      </p>
+
+                      {/* Dynamic Result Visual */}
+                      <div className="relative inline-block mb-8">
+                        <div className="absolute inset-0 bg-violet-400 blur-3xl opacity-20 animate-pulse" />
+                        <div className="relative bg-white border-2 border-violet-100 rounded-3xl px-12 py-8 shadow-2xl shadow-violet-100">
+                          <h1 className="text-6xl font-black text-violet-600 capitalize leading-none tracking-tight">
+                            {meta.resultTitle || track}
+                          </h1>
+                        </div>
+                      </div>
+
+                      {/* Score Breakdown Tiles */}
+                      <div className="max-w-md mx-auto grid grid-cols-2 gap-4 mb-8">
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            Accuracy
+                          </div>
+                          <div className="text-xl font-bold text-slate-800">
+                            {score >= 7
+                              ? "High"
+                              : score >= 4
+                                ? "Good"
+                                : "Building"}
+                          </div>
+                        </div>
+
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 text-center">
+                          <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            Path
+                          </div>
+                          <div className="text-xl font-bold text-slate-800 capitalize">
+                            {track}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Personalized Level Feedback */}
+                      <div
+                        className={`mb-10 p-6 rounded-3xl border ${meta.bg || "bg-slate-50"} border-opacity-50 inline-block max-w-md mx-auto shadow-sm`}
+                      >
+                        <h3
+                          className={`text-xs font-black uppercase tracking-[0.2em] mb-1 ${meta.color || "text-slate-600"}`}
+                        >
+                          {meta.title || "Your Result"}
+                        </h3>
+
+                        {meta.titleTa && (
+                          <p className="mb-3 text-sm font-bold text-slate-500 font-tamil">
+                            {meta.titleTa}
+                          </p>
+                        )}
+
+                        <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                          {meta.description ||
+                            "Your level assessment is ready."}
+                        </p>
+
+                        {meta.descriptionTa && (
+                          <p className="mt-3 text-[15px] leading-relaxed text-slate-500 font-tamil">
+                            {meta.descriptionTa}
+                          </p>
+                        )}
+
+                        <div className="mt-5 rounded-2xl bg-white/70 px-4 py-3 text-sm font-bold text-violet-700">
+                          Your free FluencyJet account and live class seat are
+                          ready to unlock.
+                          <div className="mt-1 font-tamil text-slate-600">
+                            உங்கள் free account மற்றும் live class seat unlock
+                            செய்ய தயாராக உள்ளது.
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Primary Action */}
+                      <div className="flex flex-col gap-4 max-w-sm mx-auto">
+                        <button
+                          onClick={() => {
+                            const next = lessonPathForTrack(track, 1);
+                            const encodedNext = encodeURIComponent(next);
+
+                            try {
+                              sessionStorage.setItem(
+                                "fj_level_result",
+                                JSON.stringify({
+                                  level: meta.resultTitle || track,
+                                  level_check_result: meta.resultTitle || track,
+                                  track,
+                                  score,
+                                  completedAt: new Date().toISOString(),
+                                }),
+                              );
+                              localStorage.setItem("fj_track", track);
+                            } catch {}
+
+                            window.location.href = `/smart-signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName || "")}`;
+                          }}
+                          className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
+                        >
+                          <span>Create Free Account + Reserve My Seat</span>
+                          <span className="text-xl">→</span>
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Shareable Footer */}
+              <div className="mt-16 pt-8 border-t border-slate-100 flex justify-between items-center text-slate-300">
+                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest">
+                  Verified by FluencyJet AI
+                </div>
+                <span className="text-[9px] font-medium uppercase tracking-[0.2em] opacity-60">
+                  FJ-ENGINE V1.0
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

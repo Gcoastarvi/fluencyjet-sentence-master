@@ -26,13 +26,11 @@ import SentencePractice from "./pages/student/SentencePractice.jsx";
 import LessonList from "./pages/student/LessonList";
 import Home from "./pages/Home";
 import Login from "./pages/student/Login.jsx";
-import JoinWebinar from "./pages/JoinWebinar";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import RouteTracker from "./components/RouteTracker";
-import Webinar from "./pages/Webinar";
 
 function PageLoader() {
   return (
@@ -52,7 +50,7 @@ function PageLoader() {
 
 // Student pages - lazy loaded
 // const Home = lazy(() => import("./pages/Home"));
-// const Webinar = lazy(() => import("./pages/Webinar"));
+const Webinar = lazy(() => import("./pages/Webinar"));
 // const Dashboard = lazy(() => import("./pages/student/Dashboard.jsx"));
 // const LessonDetail = lazy(() => import("./pages/student/LessonDetail.jsx"));
 // const LessonQuiz = lazy(() => import("./pages/student/LessonQuiz.jsx"));
@@ -99,23 +97,9 @@ const RefundPolicy = lazy(() => import("./pages/legal/RefundPolicy"));
 const Disclaimer = lazy(() => import("./pages/legal/Disclaimer"));
 
 function MainLayout() {
-  const location = useLocation();
-
-  const hideNavbarPaths = [
-    "/level-check",
-    "/smart-signup",
-    "/activation",
-    "/webinar",
-  ];
-
-  const shouldHideNavbar = hideNavbarPaths.some(
-    (path) =>
-      location.pathname === path || location.pathname.startsWith(path + "/"),
-  );
-
   return (
     <>
-      {!shouldHideNavbar && <Navbar />}
+      <Navbar />
       <main className="app-main">
         <Outlet />
       </main>
@@ -222,7 +206,6 @@ export default function App() {
               <Route path="/smart-signup" element={<SmartSignup />} />
               <Route path="/activation" element={<Activation />} />
               <Route path="/webinar" element={<Webinar />} />
-              <Route path="/join-webinar" element={<JoinWebinar />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/paywall" element={<Paywall />} />
