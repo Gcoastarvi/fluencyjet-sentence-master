@@ -220,76 +220,114 @@ export default function LessonList({ difficulty }) {
   // 🎯 4. Data Fetching (Starting your original useEffect)
 
   useEffect(() => {
-    const fetchLessons = async () => {
-      try {
-        setLoading(true);
-        const response = await api.api.get(`/lessons?difficulty=${difficulty}`);
+    let isMounted = true;
 
-        // 🎯 Dig into the correct object property based on your console log
-        const incomingData = response?.data || [];
+    const extractLastNumber = (value) => {
+      const matches = String(value || "").match(/\d+/g);
+      return matches && matches.length
+        ? Number(matches[matches.length - 1])
+        : 0;
+    };
 
-        const extractLastNumber = (value) => {
-          const matches = String(value || "").match(/\d+/g);
-          return matches?.length ? Number(matches[matches.length - 1]) : 0;
-        };
+    const getSafeLessonNumber = (lesson, fallbackNumber) => {
+      const directNumber = Number(
+        (lesson && lesson.day_number) ||
+          (lesson && lesson.dayNumber) ||
+          (lesson && lesson.lessonNumber) ||
+          (lesson && lesson.lesson_number) ||
+          (lesson && lesson.orderIndex) ||
+          0,
+      );
 
-        const getSafeLessonNumber = (lesson, fallbackNumber) => {
-          const directNumber = Number(
-            lesson?.day_number ||
-              lesson?.dayNumber ||
-              lesson?.lessonNumber ||
-              lesson?.lesson_number ||
-              lesson?.orderIndex ||
-              0,
-          );
+      if (Number.isFinite(directNumber) && directNumber > 0) {
+        return directNumber;
+      }
 
-          if (Number.isFinite(directNumber) && directNumber > 0) {
-            return directNumber;
-          }
+      const slugNumber = extractLastNumber(lesson && lesson.slug);
+      if (slugNumber > 0) return slugNumber;
 
-          const slugNumber = extractLastNumber(lesson?.slug);
-          if (slugNumber > 0) return slugNumber;
+      const titleNumber = extractLastNumber(lesson && lesson.title);
+      if (titleNumber > 0) return titleNumber;
 
-          const titleNumber = extractLastNumber(lesson?.title);
-          if (titleNumber > 0) return titleNumber;
+      return Number(fallbackNumber || 0);
+    };
 
-          return Number(fallbackNumber || 0);
-        };
+    const cleanLessons = (incomingData) => {
+      const lessonByNumber = new Map();
 
-        const lessonByNumber = new Map();
+      if (Array.isArray(incomingData)) {
+        incomingData.forEach((lesson, index) => {
+          const lessonNumber = getSafeLessonNumber(lesson, index + 1);
 
-        if (Array.isArray(incomingData)) {
-          incomingData.forEach((lesson, index) => {
-            const lessonNumber = getSafeLessonNumber(lesson, index + 1);
-
-            if (lessonNumber >= 1 && lessonNumber <= 120) {
-              if (!lessonByNumber.has(lessonNumber)) {
-                lessonByNumber.set(lessonNumber, lesson);
-              }
+          if (lessonNumber >= 1 && lessonNumber <= 120) {
+            if (!lessonByNumber.has(lessonNumber)) {
+              lessonByNumber.set(lessonNumber, lesson);
             }
-          });
+          }
+        });
+      }
+
+      return Array.from(lessonByNumber.entries())
+        .sort(([aNum], [bNum]) => aNum - bNum)
+        .map(([, lesson]) => lesson);
+    };
+
+    const fetchLessons = async () => {
+      const CACHE_KEY = `fj_lessons_cache_${difficulty}`;
+
+      try {
+        // ✅ 1. Show cached lessons immediately
+        const cached = sessionStorage.getItem(CACHE_KEY);
+
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            const cachedLessons = cleanLessons(parsed);
+
+            if (isMounted && cachedLessons.length > 0) {
+              setLessons(cachedLessons);
+              setLoading(false);
+            }
+          } catch (cacheErr) {
+            console.warn("Lesson cache parse failed:", cacheErr);
+          }
+        } else {
+          setLoading(true);
         }
 
-        const cleanedData = Array.from(lessonByNumber.entries())
-          .sort(([aNum], [bNum]) => aNum - bNum)
-          .map(([, lesson]) => lesson);
+        // ✅ 2. Refresh from backend in background
+        const response = await api.api.get(`/lessons?difficulty=${difficulty}`);
+
+        const incomingData = response && response.data ? response.data : [];
+        const cleanedData = cleanLessons(incomingData);
+
+        if (!isMounted) return;
 
         if (cleanedData.length > 0) {
           setLessons(cleanedData);
+          sessionStorage.setItem(CACHE_KEY, JSON.stringify(cleanedData));
         } else {
-          console.warn(
-            "No lessons found in the 'lessons' array for:",
-            difficulty,
-          );
-          setLessons([]);
+          console.warn("No lessons found for:", difficulty);
+
+          // Only clear lessons if there was no cache already shown
+          if (!cached) {
+            setLessons([]);
+          }
         }
       } catch (err) {
         console.error("Fetch failed:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
+
     fetchLessons();
+
+    return () => {
+      isMounted = false;
+    };
   }, [difficulty]);
 
   useEffect(() => {
