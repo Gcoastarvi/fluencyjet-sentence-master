@@ -27,6 +27,8 @@ import LessonList from "./pages/student/LessonList";
 import Home from "./pages/Home";
 import Login from "./pages/student/Login.jsx";
 import JoinWebinar from "./pages/JoinWebinar";
+import LevelCheck from "./pages/student/LevelCheck";
+import AdminLessons from "./pages/admin/AdminLessons.jsx";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -66,7 +68,7 @@ const Signup = lazy(() => import("./pages/student/Signup.jsx"));
 // );
 const Paywall = lazy(() => import("./pages/student/Paywall.jsx"));
 const Checkout = lazy(() => import("./pages/student/Checkout.jsx"));
-const LevelCheck = lazy(() => import("./pages/student/LevelCheck"));
+// const LevelCheck = lazy(() => import("./pages/student/LevelCheck"));
 const Upgrade = lazy(() => import("./pages/student/Upgrade"));
 // const LessonList = lazy(() => import("./pages/student/LessonList"));
 const Profile = lazy(() => import("./pages/student/Profile"));
@@ -78,7 +80,7 @@ const ResetPassword = lazy(() => import("./pages/student/ResetPassword"));
 const Admin = lazy(() => import("./pages/admin/Admin.jsx"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin.jsx"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
-const AdminLessons = lazy(() => import("./pages/admin/AdminLessons.jsx"));
+// const AdminLessons = lazy(() => import("./pages/admin/AdminLessons.jsx"));
 const AdminLessonCreate = lazy(
   () => import("./pages/admin/AdminLessonCreate.jsx"),
 );
