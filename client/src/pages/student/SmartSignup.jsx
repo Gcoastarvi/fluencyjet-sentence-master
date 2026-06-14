@@ -1,9 +1,12 @@
 // client/src/pages/student/SmartSignup.jsx
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { smartSignup } from "@/api/apiClient";
 import { setToken } from "@/utils/tokenStore";
-import { trackSmartSignupCompleted } from "@/lib/tracking";
+import {
+  trackSmartSignupView,
+  trackSmartSignupCompleted,
+} from "@/lib/tracking";
 
 const STATUS_OPTIONS = [
   "Student",
@@ -197,6 +200,15 @@ export default function SmartSignup() {
 
   const next = searchParams.get("next") || "/activation";
 
+  useEffect(() => {
+    trackSmartSignupView({
+      track: initialTrack,
+      segment,
+      main_goal: mainGoal,
+      source: "smart_signup",
+    });
+  }, [initialTrack, segment, mainGoal]);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -252,9 +264,11 @@ export default function SmartSignup() {
       );
 
       trackSmartSignupCompleted({
-        track: userPayload.track || initialTrack,
-        source: "smart_signup",
-      });
+          track: userPayload.track || initialTrack,
+          segment,
+          main_goal: mainGoal,
+          source: "smart_signup",
+        });
 
       window.location.href = res.redirect || next || "/activation";
     } catch (err) {

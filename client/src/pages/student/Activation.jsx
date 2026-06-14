@@ -1,7 +1,11 @@
 // client/src/pages/student/Activation.jsx
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { trackAppTrialStarted, trackWhatsAppJoinClicked } from "@/lib/tracking";
+import {
+  trackActivationView,
+  trackAppTrialStarted,
+  trackWhatsAppJoinClicked,
+} from "@/lib/tracking";
 
 const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/KL0O6mla2bN6dDWekku9CC";
 
@@ -21,15 +25,27 @@ export default function Activation() {
     user?.track || localStorage.getItem("fj_track") || "BEGINNER",
   ).toUpperCase();
 
+  const segment = String(
+    user?.segment || localStorage.getItem("fj_level_segment") || "general",
+  );
+
+  useEffect(() => {
+    trackActivationView({
+      track,
+      segment,
+      source: "activation",
+    });
+  }, [track, segment]);
+
   const practicePath = track === "INTERMEDIATE" ? "/i/lessons" : "/b/lessons";
 
   function joinWhatsApp() {
-    trackWhatsAppJoinClicked({ source: "activation" });
+    trackWhatsAppJoinClicked({ source: "activation", track, segment });
     window.open(WHATSAPP_GROUP_URL, "_blank", "noopener,noreferrer");
   }
 
   function startPractice() {
-    trackAppTrialStarted({ source: "activation", track });
+    trackAppTrialStarted({ source: "activation", track, segment });
     navigate(practicePath);
   }
 

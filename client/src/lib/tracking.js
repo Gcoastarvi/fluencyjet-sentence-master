@@ -67,18 +67,58 @@ export function trackLevelCheckClick(source = "unknown") {
   trackEvent("LevelCheckClick", { source });
 }
 
-export function trackLevelCheckStart(source = "level_check_page") {
-  trackEvent("level_check_start", { source });
-  trackEvent("LevelCheckStart", { source });
+function normalizeTrackingArgs(input, fallbackSource = "unknown") {
+  if (input && typeof input === "object") return input;
+  return { source: input || fallbackSource };
+}
+
+export function trackLevelCheckView(input = {}) {
+  const params = normalizeTrackingArgs(input, "level_check_page");
+
+  trackEvent("ViewLevelCheck", params);
+
+  trackMetaStandard("ViewContent", {
+    content_name: "FluencyJet Level Check",
+    content_category: params.segment || "general",
+    source: params.source || "level_check_page",
+    segment: params.segment || "general",
+  });
+}
+
+export function trackLevelCheckStart(input = "level_check_page") {
+  const params = normalizeTrackingArgs(input, "level_check_page");
+
+  trackEvent("level_check_start", params);
+  trackEvent("StartLevelCheck", params);
 }
 
 export function trackLevelCheckComplete({
   score,
   track,
+  segment = "general",
+  main_goal,
   source = "level_check_page",
 } = {}) {
-  trackEvent("level_check_complete", { score, track, source });
-  trackEvent("LevelCheckComplete", { score, track, source });
+  const params = {
+    score,
+    track,
+    segment,
+    main_goal,
+    source,
+  };
+
+  trackEvent("level_check_complete", params);
+  trackEvent("CompleteLevelCheck", params);
+
+  trackMetaStandard("Lead", {
+    content_name: "FluencyJet Level Check Completed",
+    content_category: segment || "general",
+    source,
+    segment,
+    main_goal,
+    track,
+    score,
+  });
 }
 
 export function trackSignupComplete({ method = "email", track } = {}) {
@@ -155,38 +195,74 @@ export function trackPurchase({ value, currency = "INR", plan } = {}) {
   });
 }
 
-export function trackSmartSignupCompleted({
+export function trackSmartSignupView({
   track,
+  segment = "general",
+  main_goal,
   source = "smart_signup",
 } = {}) {
-  trackEvent("SignupCompleted", { track, source });
-  trackEvent("WebinarRegistered", { track, source });
+  trackEvent("ViewSmartSignup", { track, segment, main_goal, source });
+
+  trackMetaStandard("ViewContent", {
+    content_name: "FluencyJet Smart Signup",
+    content_category: segment || "general",
+    source,
+    segment,
+    main_goal,
+    track,
+  });
+}
+
+export function trackSmartSignupCompleted({
+  track,
+  segment = "general",
+  main_goal,
+  source = "smart_signup",
+} = {}) {
+  const params = { track, segment, main_goal, source };
+
+  trackEvent("SignupCompleted", params);
+  trackEvent("WebinarRegistered", params);
 
   trackMetaStandard("CompleteRegistration", {
     content_name: "FluencyJet Smart Signup",
     content_category: "webinar_registration",
     source,
-    track,
-  });
-
-  trackMetaStandard("Lead", {
-    content_name: "FluencyJet Live Class",
-    content_category: "webinar_registration",
-    source,
+    segment,
+    main_goal,
     track,
   });
 }
 
-export function trackWhatsAppJoinClicked({ source = "activation" } = {}) {
-  trackEvent("WhatsAppJoinClicked", { source });
-  trackMetaStandard("Lead", {
+export function trackActivationView({
+  track,
+  segment = "general",
+  source = "activation",
+} = {}) {
+  trackEvent("ViewActivation", { track, segment, source });
+}
+
+export function trackWhatsAppJoinClicked({
+  source = "activation",
+  track,
+  segment = "general",
+} = {}) {
+  trackEvent("WhatsAppJoinClicked", { source, track, segment });
+
+  trackMetaStandard("Contact", {
     content_name: "WhatsApp Group Join",
     source,
+    track,
+    segment,
   });
 }
 
-export function trackAppTrialStarted({ source = "activation", track } = {}) {
-  trackEvent("AppTrialStarted", { source, track });
+export function trackAppTrialStarted({
+  source = "activation",
+  track,
+  segment = "general",
+} = {}) {
+  trackEvent("AppTrialStarted", { source, track, segment });
 }
 
 export function trackDemoVideoViewed({ source = "lesson_onboarding" } = {}) {

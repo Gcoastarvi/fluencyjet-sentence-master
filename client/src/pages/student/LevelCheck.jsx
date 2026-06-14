@@ -10,6 +10,7 @@ import SentenceBuilder from "@/components/quiz/SentenceBuilder";
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 
 import {
+  trackLevelCheckView,
   trackLevelCheckStart,
   trackLevelCheckComplete,
 } from "../../lib/tracking";
@@ -873,8 +874,12 @@ export default function LevelCheck() {
   const [step, setStep] = useState("intro"); // intro, quiz, result
 
   useEffect(() => {
-    trackLevelCheckStart("level_check_page");
-  }, []);
+    trackLevelCheckView({
+      source: "level_check_page",
+      segment: segment.key,
+      main_goal: segment.defaultGoal,
+    });
+  }, [segment.key, segment.defaultGoal]);
 
   function goToTrack(track, opts = {}) {
     try {
@@ -1016,6 +1021,8 @@ export default function LevelCheck() {
     trackLevelCheckComplete({
       score: finalScore,
       track,
+      segment: segment.key,
+      main_goal: segment.defaultGoal,
       source: "level_check_page",
     });
 
@@ -1043,6 +1050,11 @@ export default function LevelCheck() {
               <PremiumLevelCheckIntro
                 segment={segment}
                 onStart={() => {
+                  trackLevelCheckStart({
+                    source: "level_check_page",
+                    segment: segment.key,
+                    main_goal: segment.defaultGoal,
+                  });
                   setMode("quiz");
                   setStep("quiz");
                 }}
