@@ -40,21 +40,21 @@ const app = express();
 const PORT = process.env.PORT || 8080;
 
 // ✅ Slow API timing logs
-app.use((req, res, next) => {
-  const start = Date.now();
+// app.use((req, res, next) => {
+//  const start = Date.now();
 
-  res.on("finish", () => {
-    const ms = Date.now() - start;
+//  res.on("finish", () => {
+//    const ms = Date.now() - start;
 
-    if (req.originalUrl.startsWith("/api") && ms > 300) {
-      console.log(
-        `[SLOW API] ${req.method} ${req.originalUrl} ${res.statusCode} - ${ms}ms`,
-      );
-    }
-  });
+//    if (req.originalUrl.startsWith("/api") && ms > 300) {
+//      console.log(
+//        `[SLOW API] ${req.method} ${req.originalUrl} ${res.statusCode} - ${ms}ms`,
+//      );
+//    }
+//  });
 
-  next();
-});
+//  next();
+// });
 
 // 🎯 SHIFTED CORS BLOCK STARTS HERE
 import cors from "cors";
