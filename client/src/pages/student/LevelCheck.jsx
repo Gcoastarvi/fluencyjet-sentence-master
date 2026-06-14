@@ -185,7 +185,7 @@ function appendLevelCheckParams(url, data = {}) {
   }
 }
 
-const LEVEL_CHECK_QUESTIONS = [
+const COMMON_LEVEL_CHECK_QUESTIONS = [
   {
     id: 1,
     level: "beginner",
@@ -263,7 +263,6 @@ const LEVEL_CHECK_QUESTIONS = [
     wrongMessageTa:
       "நல்ல முயற்சி. Negative sentences-ஐ தெளிவாக கற்றுக்கொள்ள உதவுவோம்.",
   },
-
   {
     id: 6,
     level: "intermediate",
@@ -285,19 +284,6 @@ const LEVEL_CHECK_QUESTIONS = [
   {
     id: 7,
     level: "intermediate",
-    skill: "Conditionals",
-    q: "Fill in the blank: If I had time, I ___ help you.",
-    qTa: "காலியிடத்தை நிரப்புங்கள்: If I had time, I ___ help you.",
-    options: ["will", "would", "am", "can"],
-    answer: 1,
-    wrongMessage:
-      "Good attempt. We’ll help you understand advanced patterns step by step.",
-    wrongMessageTa:
-      "நல்ல முயற்சி. Advanced patterns-ஐ படிப்படியாக புரியவைக்கிறோம்.",
-  },
-  {
-    id: 8,
-    level: "intermediate",
     skill: "Duration",
     q: "Choose the correct sentence:",
     qTa: "சரியான ஆங்கில வாக்கியத்தை தேர்வு செய்யுங்கள்:",
@@ -314,20 +300,7 @@ const LEVEL_CHECK_QUESTIONS = [
       "கவலைப்பட வேண்டாம். இவை common mistakes. இதை நிச்சயம் சரிசெய்யலாம்.",
   },
   {
-    id: 9,
-    level: "intermediate",
-    skill: "Prepositions",
-    q: "Pick the correct preposition: I’m interested ___ learning English.",
-    qTa: "சரியான preposition-ஐ தேர்வு செய்யுங்கள்: I’m interested ___ learning English.",
-    options: ["on", "in", "at", "for"],
-    answer: 1,
-    wrongMessage:
-      "Good try. Prepositions become natural after repeated practice.",
-    wrongMessageTa:
-      "நul�்ல முயற்சி. Repeated practice மூலம் prepositions இயல்பாக வரும்.",
-  },
-  {
-    id: 10,
+    id: 8,
     level: "intermediate",
     skill: "Natural English",
     q: "Choose the most natural sentence:",
@@ -345,7 +318,242 @@ const LEVEL_CHECK_QUESTIONS = [
   },
 ];
 
-const QUESTIONS = LEVEL_CHECK_QUESTIONS;
+const SEGMENT_LEVEL_CHECK_QUESTIONS = {
+  work: [
+    {
+      id: 9,
+      level: "beginner",
+      skill: "Workplace English",
+      q: "Your manager asks for an update. Which sentence is best?",
+      qTa: "உங்கள் manager update கேட்கிறார். சிறந்த sentence எது?",
+      options: [
+        "I am working on it, and I will update you by evening.",
+        "I working it and evening update.",
+        "I am work on that yesterday.",
+        "I will updated you.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "Good try. We’ll help you speak clearly in workplace situations.",
+      wrongMessageTa:
+        "நல்ல முயற்சி. Workplace situations-ல் தெளிவாக பேச நாங்கள் உதவுவோம்.",
+    },
+    {
+      id: 10,
+      level: "intermediate",
+      skill: "Workplace English",
+      q: "You don’t understand something in a meeting. What do you say?",
+      qTa: "Meeting-ல் ஏதாவது புரியவில்லை. நீங்கள் என்ன சொல்வீர்கள்?",
+      options: [
+        "Could you please explain that again?",
+        "You explain again now.",
+        "I don’t understanded.",
+        "Tell again one more.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "No problem. Polite workplace English becomes easy with practice.",
+      wrongMessageTa:
+        "பரவாயில்லை. Practice மூலம் polite workplace English எளிதாகிவிடும்.",
+    },
+  ],
+
+  interview: [
+    {
+      id: 9,
+      level: "beginner",
+      skill: "Interview English",
+      q: "The interviewer says, “Tell me about yourself.” Which answer starts naturally?",
+      qTa: "Interviewer, “Tell me about yourself” என்று கேட்கிறார். இயல்பான தொடக்கம் எது?",
+      options: [
+        "My name is Arun, and I recently completed my degree in commerce.",
+        "Myself Arun, I am completed degree.",
+        "I am Arun and I am study completed.",
+        "My good name is Arun.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "Good attempt. We’ll help you build strong interview answer patterns.",
+      wrongMessageTa:
+        "நல்ல முயற்சி. Interview answer patterns-ஐ நாங்கள் வலுப்படுத்த உதவுவோம்.",
+    },
+    {
+      id: 10,
+      level: "intermediate",
+      skill: "Interview English",
+      q: "You want to talk about your strength. Which sentence is correct?",
+      qTa: "உங்கள் strength பற்றி சொல்ல வேண்டும். சரியான sentence எது?",
+      options: [
+        "My strength is that I learn quickly.",
+        "My strength are I learning quickly.",
+        "I am strength is learn quickly.",
+        "I quickly learning is strength.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "No issue. Interview confidence improves with repeated sentence practice.",
+      wrongMessageTa:
+        "பிரச்சனை இல்லை. Repeated sentence practice மூலம் interview confidence மேம்படும்.",
+    },
+  ],
+
+  business: [
+    {
+      id: 9,
+      level: "beginner",
+      skill: "Business English",
+      q: "A customer asks about your service. Which sentence is best?",
+      qTa: "ஒரு customer உங்கள் service பற்றி கேட்கிறார். சிறந்த sentence எது?",
+      options: [
+        "Let me explain how our service works.",
+        "I explain service working.",
+        "My service is explaining.",
+        "You listen service.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "Good try. We’ll help you speak better with customers and clients.",
+      wrongMessageTa:
+        "நல்ல முயற்சி. Customers மற்றும் clients உடன் சிறப்பாக பேச உதவுவோம்.",
+    },
+    {
+      id: 10,
+      level: "intermediate",
+      skill: "Business English",
+      q: "You want to ask the customer’s requirement. What do you say?",
+      qTa: "Customer requirement-ஐ கேட்க வேண்டும். நீங்கள் என்ன சொல்வீர்கள்?",
+      options: [
+        "Could you please share your requirement?",
+        "You tell requirement fast.",
+        "What you want means?",
+        "Requirement you saying?",
+      ],
+      answer: 0,
+      wrongMessage:
+        "No problem. Customer communication becomes natural with practice.",
+      wrongMessageTa:
+        "பரவாயில்லை. Practice மூலம் customer communication இயல்பாகிவிடும்.",
+    },
+  ],
+
+  students: [
+    {
+      id: 9,
+      level: "beginner",
+      skill: "Student English",
+      q: "You are giving a presentation. Which sentence is best?",
+      qTa: "நீங்கள் presentation கொடுக்கிறீர்கள். சிறந்த sentence எது?",
+      options: [
+        "Today, I am going to talk about my project.",
+        "Today I talking about my project.",
+        "I am talk my project today.",
+        "My project talking today.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "Good attempt. We’ll help you speak confidently in presentations.",
+      wrongMessageTa:
+        "நல்ல முயற்சி. Presentations-ல் confidence உடன் பேச உதவுவோம்.",
+    },
+    {
+      id: 10,
+      level: "intermediate",
+      skill: "Student English",
+      q: "You want to ask a teacher a question. What do you say?",
+      qTa: "Teacher-ிடம் ஒரு question கேட்க வேண்டும். நீங்கள் என்ன சொல்வீர்கள்?",
+      options: [
+        "Could you please explain this once again?",
+        "Explain again one time you.",
+        "I am not understanded.",
+        "You telling again.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "No issue. We’ll help you ask questions politely and clearly.",
+      wrongMessageTa:
+        "பிரச்சனை இல்லை. கேள்விகளை polite-ஆவும் clear-ஆவும் கேட்க உதவுவோம்.",
+    },
+  ],
+
+  daily: [
+    {
+      id: 9,
+      level: "beginner",
+      skill: "Daily English",
+      q: "You are ordering food. Which sentence is correct?",
+      qTa: "நீங்கள் food order செய்கிறீர்கள். சரியான sentence எது?",
+      options: [
+        "I would like to order one coffee.",
+        "I want ordering one coffee.",
+        "One coffee I am order.",
+        "I ordered now coffee.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "Good try. We’ll help you speak simple English in daily situations.",
+      wrongMessageTa:
+        "நல்ல முயற்சி. Daily situations-ல் simple English பேச உதவுவோம்.",
+    },
+    {
+      id: 10,
+      level: "intermediate",
+      skill: "Daily English",
+      q: "You need help in a shop. What do you say?",
+      qTa: "Shop-ல் உங்களுக்கு help வேண்டும். நீங்கள் என்ன சொல்வீர்கள்?",
+      options: [
+        "Could you please help me find this item?",
+        "You help finding item.",
+        "I need this finding.",
+        "Item help me.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "No problem. Daily English becomes easy with situation-based practice.",
+      wrongMessageTa:
+        "பரவாயில்லை. Situation-based practice மூலம் daily English எளிதாகிவிடும்.",
+    },
+  ],
+
+  general: [
+    {
+      id: 9,
+      level: "beginner",
+      skill: "Speaking Basics",
+      q: "You want to say you are learning English now. Which sentence is correct?",
+      qTa: "நீங்கள் இப்போது English கற்றுக்கொள்கிறீர்கள் என்று சொல்ல வேண்டும். சரியான sentence எது?",
+      options: [
+        "I am learning English every day.",
+        "I learning English every day.",
+        "I am learn English daily.",
+        "English learning I am daily.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "Good attempt. We’ll help you build correct English sentences.",
+      wrongMessageTa:
+        "நல்ல முயற்சி. சரியான English sentences உருவாக்க உதவுவோம்.",
+    },
+    {
+      id: 10,
+      level: "intermediate",
+      skill: "Speaking Basics",
+      q: "You want to ask someone to speak slowly. What do you say?",
+      qTa: "யாரையாவது மெதுவாக பேச சொல்ல வேண்டும். நீங்கள் என்ன சொல்வீர்கள்?",
+      options: [
+        "Could you please speak slowly?",
+        "You speak slow now.",
+        "Slowly you are speaking.",
+        "Speak slow means.",
+      ],
+      answer: 0,
+      wrongMessage:
+        "No issue. We’ll help you speak and respond naturally.",
+      wrongMessageTa:
+        "பிரச்சனை இல்லை. இயல்பாக பேசவும் பதில் சொல்லவும் உதவுவோம்.",
+    },
+  ],
+};
+
 
 
 function getPremiumHeroCopy(segment) {
@@ -649,6 +857,14 @@ export default function LevelCheck() {
     () => getSegmentConfig(location.search),
     [location.search],
   );
+
+  const QUESTIONS = useMemo(() => {
+    return [
+      ...COMMON_LEVEL_CHECK_QUESTIONS,
+      ...(SEGMENT_LEVEL_CHECK_QUESTIONS[segment.key] ||
+        SEGMENT_LEVEL_CHECK_QUESTIONS.general),
+    ];
+  }, [segment.key]);
   const [mode, setMode] = useState("pick"); // "pick" | "quiz" | "result"
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({}); // { [questionId]: optionIndex }
