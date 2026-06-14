@@ -1269,6 +1269,29 @@ export default function Dashboard() {
     }
   }, [summary.uniqueDays]);
 
+  useEffect(() => {
+    const prefetchLessons = async () => {
+      try {
+        const cacheKey = "fj_lessons_cache_v2_basic";
+
+        // If already cached, don't fetch again
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) return;
+
+        const res = await api.get("/lessons?difficulty=basic");
+        const data = res && res.data ? res.data : res;
+
+        if (Array.isArray(data) && data.length > 0) {
+          localStorage.setItem(cacheKey, JSON.stringify(data));
+        }
+      } catch (err) {
+        console.warn("Lesson prefetch failed:", err);
+      }
+    };
+
+    prefetchLessons();
+  }, []);
+
   const progressUserId =
     auth?.user?.id ||
     auth?.user?.email ||

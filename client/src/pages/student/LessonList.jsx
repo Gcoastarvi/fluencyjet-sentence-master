@@ -273,11 +273,11 @@ export default function LessonList({ difficulty }) {
     };
 
     const fetchLessons = async () => {
-      const CACHE_KEY = `fj_lessons_cache_${difficulty}`;
+      const CACHE_KEY = `fj_lessons_cache_v2_${difficulty}`;
 
       try {
         // ✅ 1. Show cached lessons immediately
-        const cached = sessionStorage.getItem(CACHE_KEY);
+        const cached = localStorage.getItem(CACHE_KEY);
 
         if (cached) {
           try {
@@ -305,7 +305,7 @@ export default function LessonList({ difficulty }) {
 
         if (cleanedData.length > 0) {
           setLessons(cleanedData);
-          sessionStorage.setItem(CACHE_KEY, JSON.stringify(cleanedData));
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cleanedData));
         } else {
           console.warn("No lessons found for:", difficulty);
 
