@@ -6,6 +6,7 @@ import {
   trackAppTrialStarted,
   trackWhatsAppJoinClicked,
 } from "@/lib/tracking";
+import { sendToFunnelSheet, getStoredFunnelContext } from "@/lib/funnelSheet";
 
 const WHATSAPP_GROUP_URL = "/join-webinar";
 
@@ -35,17 +36,39 @@ export default function Activation() {
       segment,
       source: "activation",
     });
+
+    sendActivationAction("Activation Viewed");
   }, [track, segment]);
 
   const practicePath = track === "INTERMEDIATE" ? "/i/lessons" : "/b/lessons";
 
+  function sendActivationAction(action) {
+    const context = getStoredFunnelContext();
+    const user = context.user || {};
+
+    sendToFunnelSheet({
+      type: "activation_action",
+      name: user.name || "",
+      email: user.email || "",
+      whatsapp_number: user.whatsapp_number || user.whatsapp || "",
+      segment: context.segment,
+      main_goal: context.main_goal,
+      track: context.track || track,
+      action,
+      source: "activation",
+      page_url: window.location.href,
+    });
+  }
+
   function joinWhatsApp() {
     trackWhatsAppJoinClicked({ source: "activation", track, segment });
+    sendActivationAction("WhatsApp Clicked");
     window.open(WHATSAPP_GROUP_URL, "_blank", "noopener,noreferrer");
   }
 
   function startPractice() {
     trackAppTrialStarted({ source: "activation", track, segment });
+    sendActivationAction("Start Practice Clicked");
     navigate(practicePath);
   }
 
