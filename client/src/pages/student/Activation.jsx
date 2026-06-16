@@ -7,7 +7,7 @@ import {
   trackWhatsAppJoinClicked,
 } from "@/lib/tracking";
 
-const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/KL0O6mla2bN6dDWekku9CC";
+const WHATSAPP_GROUP_URL = "/join-webinar";
 
 function getUser() {
   try {

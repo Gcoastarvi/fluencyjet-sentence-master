@@ -1,3 +1,4 @@
+// client/src/pages/JoinWebinar.jsx
 import { useEffect } from "react";
 
 const CURRENT_WEBINAR_WHATSAPP_URL =
