@@ -10,7 +10,6 @@ import SentenceBuilder from "@/components/quiz/SentenceBuilder";
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 
 import {
-  trackLevelCheckView,
   trackLevelCheckStart,
   trackLevelCheckComplete,
 } from "../../lib/tracking";
@@ -57,6 +56,7 @@ const TRACK_METADATA = {
     cta: "Start Advanced Practice",
   },
 };
+
 
 const LEVEL_CHECK_SEGMENTS = {
   work: {
@@ -137,7 +137,8 @@ const LEVEL_CHECK_SEGMENTS = {
     cta: "Find My English Level",
     defaultGoal: "Build sentences faster",
     badge: "English Level Diagnosis",
-    whoFor: "For Tamil speakers who want to build English sentences faster.",
+    whoFor:
+      "For Tamil speakers who want to build English sentences faster.",
     resultLabelPrefix: "Your English speaking level is",
     resultDiagnosis:
       "You need simple sentence-making practice to speak English with more confidence.",
@@ -155,11 +156,7 @@ function appendLevelCheckParams(url, data = {}) {
     const finalUrl = new URL(url, window.location.origin);
 
     Object.entries(data).forEach(([key, value]) => {
-      if (
-        value !== undefined &&
-        value !== null &&
-        String(value).trim() !== ""
-      ) {
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
         finalUrl.searchParams.set(key, String(value));
       }
     });
@@ -188,7 +185,7 @@ function appendLevelCheckParams(url, data = {}) {
   }
 }
 
-const COMMON_LEVEL_CHECK_QUESTIONS = [
+const LEVEL_CHECK_QUESTIONS = [
   {
     id: 1,
     level: "beginner",
@@ -266,6 +263,7 @@ const COMMON_LEVEL_CHECK_QUESTIONS = [
     wrongMessageTa:
       "நல்ல முயற்சி. Negative sentences-ஐ தெளிவாக கற்றுக்கொள்ள உதவுவோம்.",
   },
+
   {
     id: 6,
     level: "intermediate",
@@ -287,6 +285,19 @@ const COMMON_LEVEL_CHECK_QUESTIONS = [
   {
     id: 7,
     level: "intermediate",
+    skill: "Conditionals",
+    q: "Fill in the blank: If I had time, I ___ help you.",
+    qTa: "காலியிடத்தை நிரப்புங்கள்: If I had time, I ___ help you.",
+    options: ["will", "would", "am", "can"],
+    answer: 1,
+    wrongMessage:
+      "Good attempt. We’ll help you understand advanced patterns step by step.",
+    wrongMessageTa:
+      "நல்ல முயற்சி. Advanced patterns-ஐ படிப்படியாக புரியவைக்கிறோம்.",
+  },
+  {
+    id: 8,
+    level: "intermediate",
     skill: "Duration",
     q: "Choose the correct sentence:",
     qTa: "சரியான ஆங்கில வாக்கியத்தை தேர்வு செய்யுங்கள்:",
@@ -303,7 +314,20 @@ const COMMON_LEVEL_CHECK_QUESTIONS = [
       "கவலைப்பட வேண்டாம். இவை common mistakes. இதை நிச்சயம் சரிசெய்யலாம்.",
   },
   {
-    id: 8,
+    id: 9,
+    level: "intermediate",
+    skill: "Prepositions",
+    q: "Pick the correct preposition: I’m interested ___ learning English.",
+    qTa: "சரியான preposition-ஐ தேர்வு செய்யுங்கள்: I’m interested ___ learning English.",
+    options: ["on", "in", "at", "for"],
+    answer: 1,
+    wrongMessage:
+      "Good try. Prepositions become natural after repeated practice.",
+    wrongMessageTa:
+      "நul�்ல முயற்சி. Repeated practice மூலம் prepositions இயல்பாக வரும்.",
+  },
+  {
+    id: 10,
     level: "intermediate",
     skill: "Natural English",
     q: "Choose the most natural sentence:",
@@ -321,240 +345,8 @@ const COMMON_LEVEL_CHECK_QUESTIONS = [
   },
 ];
 
-const SEGMENT_LEVEL_CHECK_QUESTIONS = {
-  work: [
-    {
-      id: 9,
-      level: "beginner",
-      skill: "Workplace English",
-      q: "Your manager asks for an update. Which sentence is best?",
-      qTa: "உங்கள் manager update கேட்கிறார். சிறந்த sentence எது?",
-      options: [
-        "I am working on it, and I will update you by evening.",
-        "I working it and evening update.",
-        "I am work on that yesterday.",
-        "I will updated you.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "Good try. We’ll help you speak clearly in workplace situations.",
-      wrongMessageTa:
-        "நல்ல முயற்சி. Workplace situations-ல் தெளிவாக பேச நாங்கள் உதவுவோம்.",
-    },
-    {
-      id: 10,
-      level: "intermediate",
-      skill: "Workplace English",
-      q: "You don’t understand something in a meeting. What do you say?",
-      qTa: "Meeting-ல் ஏதாவது புரியவில்லை. நீங்கள் என்ன சொல்வீர்கள்?",
-      options: [
-        "Could you please explain that again?",
-        "You explain again now.",
-        "I don’t understanded.",
-        "Tell again one more.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "No problem. Polite workplace English becomes easy with practice.",
-      wrongMessageTa:
-        "பரவாயில்லை. Practice மூலம் polite workplace English எளிதாகிவிடும்.",
-    },
-  ],
+const QUESTIONS = LEVEL_CHECK_QUESTIONS;
 
-  interview: [
-    {
-      id: 9,
-      level: "beginner",
-      skill: "Interview English",
-      q: "The interviewer says, “Tell me about yourself.” Which answer starts naturally?",
-      qTa: "Interviewer, “Tell me about yourself” என்று கேட்கிறார். இயல்பான தொடக்கம் எது?",
-      options: [
-        "My name is Arun, and I recently completed my degree in commerce.",
-        "Myself Arun, I am completed degree.",
-        "I am Arun and I am study completed.",
-        "My good name is Arun.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "Good attempt. We’ll help you build strong interview answer patterns.",
-      wrongMessageTa:
-        "நல்ல முயற்சி. Interview answer patterns-ஐ நாங்கள் வலுப்படுத்த உதவுவோம்.",
-    },
-    {
-      id: 10,
-      level: "intermediate",
-      skill: "Interview English",
-      q: "You want to talk about your strength. Which sentence is correct?",
-      qTa: "உங்கள் strength பற்றி சொல்ல வேண்டும். சரியான sentence எது?",
-      options: [
-        "My strength is that I learn quickly.",
-        "My strength are I learning quickly.",
-        "I am strength is learn quickly.",
-        "I quickly learning is strength.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "No issue. Interview confidence improves with repeated sentence practice.",
-      wrongMessageTa:
-        "பிரச்சனை இல்லை. Repeated sentence practice மூலம் interview confidence மேம்படும்.",
-    },
-  ],
-
-  business: [
-    {
-      id: 9,
-      level: "beginner",
-      skill: "Business English",
-      q: "A customer asks about your service. Which sentence is best?",
-      qTa: "ஒரு customer உங்கள் service பற்றி கேட்கிறார். சிறந்த sentence எது?",
-      options: [
-        "Let me explain how our service works.",
-        "I explain service working.",
-        "My service is explaining.",
-        "You listen service.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "Good try. We’ll help you speak better with customers and clients.",
-      wrongMessageTa:
-        "நல்ல முயற்சி. Customers மற்றும் clients உடன் சிறப்பாக பேச உதவுவோம்.",
-    },
-    {
-      id: 10,
-      level: "intermediate",
-      skill: "Business English",
-      q: "You want to ask the customer’s requirement. What do you say?",
-      qTa: "Customer requirement-ஐ கேட்க வேண்டும். நீங்கள் என்ன சொல்வீர்கள்?",
-      options: [
-        "Could you please share your requirement?",
-        "You tell requirement fast.",
-        "What you want means?",
-        "Requirement you saying?",
-      ],
-      answer: 0,
-      wrongMessage:
-        "No problem. Customer communication becomes natural with practice.",
-      wrongMessageTa:
-        "பரவாயில்லை. Practice மூலம் customer communication இயல்பாகிவிடும்.",
-    },
-  ],
-
-  students: [
-    {
-      id: 9,
-      level: "beginner",
-      skill: "Student English",
-      q: "You are giving a presentation. Which sentence is best?",
-      qTa: "நீங்கள் presentation கொடுக்கிறீர்கள். சிறந்த sentence எது?",
-      options: [
-        "Today, I am going to talk about my project.",
-        "Today I talking about my project.",
-        "I am talk my project today.",
-        "My project talking today.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "Good attempt. We’ll help you speak confidently in presentations.",
-      wrongMessageTa:
-        "நல்ல முயற்சி. Presentations-ல் confidence உடன் பேச உதவுவோம்.",
-    },
-    {
-      id: 10,
-      level: "intermediate",
-      skill: "Student English",
-      q: "You want to ask a teacher a question. What do you say?",
-      qTa: "Teacher-ிடம் ஒரு question கேட்க வேண்டும். நீங்கள் என்ன சொல்வீர்கள்?",
-      options: [
-        "Could you please explain this once again?",
-        "Explain again one time you.",
-        "I am not understanded.",
-        "You telling again.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "No issue. We’ll help you ask questions politely and clearly.",
-      wrongMessageTa:
-        "பிரச்சனை இல்லை. கேள்விகளை polite-ஆவும் clear-ஆவும் கேட்க உதவுவோம்.",
-    },
-  ],
-
-  daily: [
-    {
-      id: 9,
-      level: "beginner",
-      skill: "Daily English",
-      q: "You are ordering food. Which sentence is correct?",
-      qTa: "நீங்கள் food order செய்கிறீர்கள். சரியான sentence எது?",
-      options: [
-        "I would like to order one coffee.",
-        "I want ordering one coffee.",
-        "One coffee I am order.",
-        "I ordered now coffee.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "Good try. We’ll help you speak simple English in daily situations.",
-      wrongMessageTa:
-        "நல்ல முயற்சி. Daily situations-ல் simple English பேச உதவுவோம்.",
-    },
-    {
-      id: 10,
-      level: "intermediate",
-      skill: "Daily English",
-      q: "You need help in a shop. What do you say?",
-      qTa: "Shop-ல் உங்களுக்கு help வேண்டும். நீங்கள் என்ன சொல்வீர்கள்?",
-      options: [
-        "Could you please help me find this item?",
-        "You help finding item.",
-        "I need this finding.",
-        "Item help me.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "No problem. Daily English becomes easy with situation-based practice.",
-      wrongMessageTa:
-        "பரவாயில்லை. Situation-based practice மூலம் daily English எளிதாகிவிடும்.",
-    },
-  ],
-
-  general: [
-    {
-      id: 9,
-      level: "beginner",
-      skill: "Speaking Basics",
-      q: "You want to say you are learning English now. Which sentence is correct?",
-      qTa: "நீங்கள் இப்போது English கற்றுக்கொள்கிறீர்கள் என்று சொல்ல வேண்டும். சரியான sentence எது?",
-      options: [
-        "I am learning English every day.",
-        "I learning English every day.",
-        "I am learn English daily.",
-        "English learning I am daily.",
-      ],
-      answer: 0,
-      wrongMessage:
-        "Good attempt. We’ll help you build correct English sentences.",
-      wrongMessageTa:
-        "நல்ல முயற்சி. சரியான English sentences உருவாக்க உதவுவோம்.",
-    },
-    {
-      id: 10,
-      level: "intermediate",
-      skill: "Speaking Basics",
-      q: "You want to ask someone to speak slowly. What do you say?",
-      qTa: "யாரையாவது மெதுவாக பேச சொல்ல வேண்டும். நீங்கள் என்ன சொல்வீர்கள்?",
-      options: [
-        "Could you please speak slowly?",
-        "You speak slow now.",
-        "Slowly you are speaking.",
-        "Speak slow means.",
-      ],
-      answer: 0,
-      wrongMessage: "No issue. We’ll help you speak and respond naturally.",
-      wrongMessageTa:
-        "பிரச்சனை இல்லை. இயல்பாக பேசவும் பதில் சொல்லவும் உதவுவோம்.",
-    },
-  ],
-};
 
 function getPremiumHeroCopy(segment) {
   const key = segment?.key || "general";
@@ -563,8 +355,7 @@ function getPremiumHeroCopy(segment) {
     work: {
       badge: "Workplace English Diagnosis",
       highlight: "Workplace English Confidence Level",
-      banner:
-        "For working professionals who want to communicate better in meetings, calls, and office discussions.",
+      banner: "For working professionals who want to communicate better in meetings, calls, and office discussions.",
       cta: "Start My Free Workplace Check",
       quote:
         "I’ll help you check how ready you are for meetings, calls, and workplace conversations. It’s just 10 quick questions.",
@@ -573,8 +364,7 @@ function getPremiumHeroCopy(segment) {
     interview: {
       badge: "Interview English Diagnosis",
       highlight: "Interview English Confidence Level",
-      banner:
-        "For job seekers and freshers who want to answer interviews confidently.",
+      banner: "For job seekers and freshers who want to answer interviews confidently.",
       cta: "Start My Free Interview Check",
       quote:
         "I’ll help you find the right English practice path for interviews. It’s just 10 quick questions.",
@@ -583,8 +373,7 @@ function getPremiumHeroCopy(segment) {
     business: {
       badge: "Business English Diagnosis",
       highlight: "Business English Confidence Level",
-      banner:
-        "For business owners who want to speak confidently with customers, clients, staff, and suppliers.",
+      banner: "For business owners who want to speak confidently with customers, clients, staff, and suppliers.",
       cta: "Start My Free Business English Check",
       quote:
         "I’ll help you discover your business English confidence level in just 10 quick questions.",
@@ -593,8 +382,7 @@ function getPremiumHeroCopy(segment) {
     students: {
       badge: "Study & Career English Diagnosis",
       highlight: "Study & Career English Confidence Level",
-      banner:
-        "For students and freshers who want confidence for studies, presentations, interviews, and career.",
+      banner: "For students and freshers who want confidence for studies, presentations, interviews, and career.",
       cta: "Start My Free Student English Check",
       quote:
         "I’ll help you find the right English path for your studies and career. It’s just 10 quick questions.",
@@ -603,8 +391,7 @@ function getPremiumHeroCopy(segment) {
     daily: {
       badge: "Daily English Fluency Diagnosis",
       highlight: "Daily Conversation Fluency Level",
-      banner:
-        "For Tamil speakers who want to speak confidently in daily life, travel, shopping, phone calls, and social situations.",
+      banner: "For Tamil speakers who want to speak confidently in daily life, travel, shopping, phone calls, and social situations.",
       cta: "Start My Free Daily English Check",
       quote:
         "I’ll help you discover your daily conversation level in just 10 quick questions.",
@@ -613,8 +400,7 @@ function getPremiumHeroCopy(segment) {
     general: {
       badge: "English Level Diagnosis",
       highlight: "English Speaking Confidence Level",
-      banner:
-        "For Tamil speakers who know English words but struggle to speak confidently.",
+      banner: "For Tamil speakers who know English words but struggle to speak confidently.",
       cta: "Start My Free Level Check",
       quote:
         "I’ll help you find the right English practice path for you. It’s just 10 quick questions.",
@@ -625,7 +411,7 @@ function getPremiumHeroCopy(segment) {
   return map[key] || map.general;
 }
 
-function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
+function PremiumLevelCheckIntro({ segment, onStart }) {
   const hero = getPremiumHeroCopy(segment);
 
   return (
@@ -633,8 +419,7 @@ function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
       <div className="bg-violet-950 px-4 py-3 text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-4 text-sm font-bold sm:gap-7">
           <span className="flex items-center gap-2">
-            <span className="text-emerald-400">✓</span> Free 2-Minute Level
-            Check
+            <span className="text-emerald-400">✓</span> Free 2-Minute Level Check
           </span>
           <span className="hidden text-violet-300 sm:inline">|</span>
           <span className="flex items-center gap-2">
@@ -642,8 +427,7 @@ function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
           </span>
           <span className="hidden text-violet-300 sm:inline">|</span>
           <span className="flex items-center gap-2">
-            <span className="text-emerald-400">✓</span> No Signup Required to
-            Check
+            <span className="text-emerald-400">✓</span> No Signup Required to Check
           </span>
         </div>
       </div>
@@ -684,8 +468,7 @@ function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
                   .”
                 </p>
                 <p className="mt-3 text-sm font-bold leading-relaxed text-violet-700">
-                  உங்களுக்கு சரியான English practice path-ஐ கண்டுபிடிக்க
-                  உதவுகிறேன்.
+                  உங்களுக்கு சரியான English practice path-ஐ கண்டுபிடிக்க உதவுகிறேன்.
                 </p>
               </div>
 
@@ -740,35 +523,30 @@ function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
               {segment.subheadline}
             </p>
 
+            <div className="mt-6 max-w-2xl rounded-3xl border-l-4 border-violet-600 bg-white/70 p-5 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-2xl">
+                  {hero.icon}
+                </div>
+                <p className="text-base font-black leading-relaxed text-violet-800">
+                  {hero.banner}
+                </p>
+              </div>
+            </div>
+
             <p className="mt-6 flex items-center gap-2 text-sm font-bold text-slate-500">
               <span className="text-emerald-500">●</span>
               Takes only 2 minutes • No signup required to check
             </p>
 
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={onStart}
-                className="inline-flex w-full items-center justify-center gap-3 rounded-3xl bg-gradient-to-r from-violet-600 to-violet-800 px-8 py-5 text-lg font-black text-white shadow-2xl shadow-violet-200 transition hover:-translate-y-0.5 hover:shadow-violet-300 active:scale-[0.98] sm:w-auto sm:text-xl"
-              >
-                {hero.cta}
-                <span className="text-2xl">→</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={onSkipPractice}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-3xl border border-emerald-200 bg-white px-8 py-5 text-lg font-black text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md active:scale-[0.98] sm:w-auto"
-              >
-                Start Free App Practice
-                <span className="text-xl">🚀</span>
-              </button>
-            </div>
-
-            <p className="mt-3 max-w-xl text-sm font-bold text-slate-500">
-              New or unsure? You can start with basic sentence practice
-              directly.
-            </p>
+            <button
+              type="button"
+              onClick={onStart}
+              className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-3xl bg-gradient-to-r from-violet-600 to-violet-800 px-8 py-5 text-lg font-black text-white shadow-2xl shadow-violet-200 transition hover:-translate-y-0.5 hover:shadow-violet-300 active:scale-[0.98] sm:w-auto sm:text-xl"
+            >
+              {hero.cta}
+              <span className="text-2xl">→</span>
+            </button>
 
             <div className="mt-8 grid max-w-2xl grid-cols-3 items-start gap-3 text-center">
               {[
@@ -783,9 +561,7 @@ function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
                   <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-violet-300 bg-violet-100 text-lg font-black text-violet-700">
                     {num}
                   </div>
-                  <p className="mt-2 text-sm font-black text-slate-800">
-                    {title}
-                  </p>
+                  <p className="mt-2 text-sm font-black text-slate-800">{title}</p>
                   <p className="text-xs font-medium text-slate-500">{sub}</p>
                 </div>
               ))}
@@ -819,21 +595,9 @@ function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
 
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              [
-                "📊",
-                "Instant Level Report",
-                "Know your speaking level immediately.",
-              ],
-              [
-                "🗺️",
-                "Personalized Path",
-                "Get a practice path based on your level and goal.",
-              ],
-              [
-                "📱",
-                "Free App Access",
-                "Start practising with curated sample lessons.",
-              ],
+              ["📊", "Instant Level Report", "Know your speaking level immediately."],
+              ["🗺️", "Personalized Path", "Get a practice path based on your level and goal."],
+              ["📱", "Free App Access", "Start practising with curated sample lessons."],
               ["🎥", "Live Class Invite", "Reserve your free live class seat."],
             ].map(([icon, title, desc]) => (
               <div
@@ -843,9 +607,7 @@ function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-3xl shadow-sm">
                   {icon}
                 </div>
-                <h3 className="mt-5 text-lg font-black text-slate-950">
-                  {title}
-                </h3>
+                <h3 className="mt-5 text-lg font-black text-slate-950">{title}</h3>
                 <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600">
                   {desc}
                 </p>
@@ -860,23 +622,25 @@ function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
           🕒 Your free practice path is ready after the level check
         </p>
         <p className="mt-2 text-sm font-semibold text-violet-100">
-          Take the 2-minute check, get your result, and start practising your
-          first sentences.
+          Take the 2-minute check, get your result, and start practising your first sentences.
         </p>
       </section>
 
       <footer className="bg-slate-950 px-5 py-8 text-center text-sm font-medium text-slate-400">
         <p>FluencyJet — Speak English with Confidence</p>
-        <p className="mt-1 text-slate-500">Your data is safe. No spam, ever.</p>
+        <p className="mt-1 text-slate-500">
+          Your data is safe. No spam, ever.
+        </p>
         <p className="mx-auto mt-4 max-w-3xl text-xs leading-relaxed text-slate-600">
-          This site is not a part of the Facebook website or Meta Platforms,
-          Inc. Additionally, this site is NOT endorsed by Facebook or Meta in
-          any way. FACEBOOK is a trademark of Meta Platforms, Inc.
+          This site is not a part of the Facebook website or Meta Platforms, Inc.
+          Additionally, this site is NOT endorsed by Facebook or Meta in any way.
+          FACEBOOK is a trademark of Meta Platforms, Inc.
         </p>
       </footer>
     </div>
   );
 }
+
 
 export default function LevelCheck() {
   const navigate = useNavigate();
@@ -885,14 +649,6 @@ export default function LevelCheck() {
     () => getSegmentConfig(location.search),
     [location.search],
   );
-
-  const QUESTIONS = useMemo(() => {
-    return [
-      ...COMMON_LEVEL_CHECK_QUESTIONS,
-      ...(SEGMENT_LEVEL_CHECK_QUESTIONS[segment.key] ||
-        SEGMENT_LEVEL_CHECK_QUESTIONS.general),
-    ];
-  }, [segment.key]);
   const [mode, setMode] = useState("pick"); // "pick" | "quiz" | "result"
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState({}); // { [questionId]: optionIndex }
@@ -901,12 +657,8 @@ export default function LevelCheck() {
   const [step, setStep] = useState("intro"); // intro, quiz, result
 
   useEffect(() => {
-    trackLevelCheckView({
-      source: "level_check_page",
-      segment: segment.key,
-      main_goal: segment.defaultGoal,
-    });
-  }, [segment.key, segment.defaultGoal]);
+    trackLevelCheckStart("level_check_page");
+  }, []);
 
   function goToTrack(track, opts = {}) {
     try {
@@ -929,16 +681,16 @@ export default function LevelCheck() {
       if (!token) {
         navigate(
           appendLevelCheckParams("/smart-signup", {
-            next: lessonHubUrl,
-            track,
-            segment: segment.key,
-            goal: segment.defaultGoal,
-            level:
-              track === "intermediate" || track === "advanced"
-                ? "Intermediate"
-                : "Beginner",
-            score: result?.score,
-          }),
+              next: lessonHubUrl,
+              track,
+              segment: segment.key,
+              goal: segment.defaultGoal,
+              level:
+                track === "intermediate" || track === "advanced"
+                  ? "Intermediate"
+                  : "Beginner",
+              score: result?.score,
+            }),
           { replace: true },
         );
         return;
@@ -951,50 +703,22 @@ export default function LevelCheck() {
     if (!token) {
       navigate(
         appendLevelCheckParams("/smart-signup", {
-          next: target,
-          track,
-          segment: segment.key,
-          goal: segment.defaultGoal,
-          level:
-            track === "intermediate" || track === "advanced"
-              ? "Intermediate"
-              : "Beginner",
-          score: result?.score,
-        }),
+            next: target,
+            track,
+            segment: segment.key,
+            goal: segment.defaultGoal,
+            level:
+              track === "intermediate" || track === "advanced"
+                ? "Intermediate"
+                : "Beginner",
+            score: result?.score,
+          }),
         { replace: true },
       );
       return;
     }
 
     navigate(target, { replace: true });
-  }
-
-  function startFreeAppPractice() {
-    const params = new URLSearchParams(window.location.search);
-    const segmentKey = params.get("segment") || "default";
-
-    const next = "/b/lessons";
-    const encodedNext = encodeURIComponent(next);
-
-    try {
-      sessionStorage.setItem(
-        "fj_level_result",
-        JSON.stringify({
-          level: "Beginner Practice",
-          level_check_result: "Not checked",
-          track: "beginner",
-          score: null,
-          skipped: true,
-          segment: segmentKey,
-          completedAt: new Date().toISOString(),
-        }),
-      );
-
-      localStorage.setItem("fj_track", "beginner");
-      localStorage.setItem("fj_segment", segmentKey);
-    } catch {}
-
-    window.location.href = `/smart-signup?next=${encodedNext}&track=beginner&source=skip_level_check&segment=${encodeURIComponent(segmentKey)}`;
   }
 
   const current = QUESTIONS[idx];
@@ -1030,31 +754,31 @@ export default function LevelCheck() {
     console.log("[LEVEL CHECK]", { answers, finalScore, track });
 
     const levelLabel =
-      track === "intermediate" || track === "advanced"
-        ? "Intermediate"
-        : "Beginner";
+        track === "intermediate" || track === "advanced"
+          ? "Intermediate"
+          : "Beginner";
 
-    const levelResultPayload = {
-      score: finalScore,
-      track,
-      level: levelLabel,
-      segment: segment.key,
-      main_goal: segment.defaultGoal,
-      result_diagnosis: segment.resultDiagnosis,
-    };
+      const levelResultPayload = {
+        score: finalScore,
+        track,
+        level: levelLabel,
+        segment: segment.key,
+        main_goal: segment.defaultGoal,
+        result_diagnosis: segment.resultDiagnosis,
+      };
 
-    setResult(levelResultPayload);
+      setResult(levelResultPayload);
 
-    try {
-      sessionStorage.setItem(
-        "fj_level_result",
-        JSON.stringify(levelResultPayload),
-      );
-      localStorage.setItem("fj_level_segment", segment.key);
-      localStorage.setItem("fj_main_goal", segment.defaultGoal);
-    } catch {}
+      try {
+        sessionStorage.setItem(
+          "fj_level_result",
+          JSON.stringify(levelResultPayload),
+        );
+        localStorage.setItem("fj_level_segment", segment.key);
+        localStorage.setItem("fj_main_goal", segment.defaultGoal);
+      } catch {}
 
-    setMode("result");
+      setMode("result");
     setStep("result");
 
     try {
@@ -1076,8 +800,6 @@ export default function LevelCheck() {
     trackLevelCheckComplete({
       score: finalScore,
       track,
-      segment: segment.key,
-      main_goal: segment.defaultGoal,
       source: "level_check_page",
     });
 
@@ -1101,23 +823,17 @@ export default function LevelCheck() {
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-white via-slate-50 to-violet-50/40 py-10">
       <div className="mx-auto max-w-4xl px-4">
         <div className="rounded-3xl border border-slate-200 bg-white/75 p-6 shadow-sm backdrop-blur">
-          {mode === "pick" && (
-            <PremiumLevelCheckIntro
-              segment={segment}
-              onStart={() => {
-                trackLevelCheckStart({
-                  source: "level_check_page",
-                  segment: segment.key,
-                  main_goal: segment.defaultGoal,
-                });
-                setMode("quiz");
-                setStep("quiz");
-              }}
-              onSkipPractice={startFreeAppPractice}
-            />
-          )}
+            {mode === "pick" && (
+              <PremiumLevelCheckIntro
+                segment={segment}
+                onStart={() => {
+                  setMode("quiz");
+                  setStep("quiz");
+                }}
+              />
+            )}
 
-          {/* 290: Refined Quiz Interface */}
+            {/* 290: Refined Quiz Interface */}
           {mode === "quiz" && (
             <div className="max-w-md mx-auto py-8 flex flex-col items-center">
               {/* Top Progress Header */}
@@ -1410,13 +1126,7 @@ export default function LevelCheck() {
                               localStorage.setItem("fj_track", track);
                             } catch {}
 
-                            const params = new URLSearchParams(
-                              window.location.search,
-                            );
-                            const segmentKey =
-                              params.get("segment") || "default";
-
-                            window.location.href = `/smart-signup?next=${encodedNext}&track=${track}&segment=${encodeURIComponent(segmentKey)}&name=${encodeURIComponent(userName || "")}`;
+                            window.location.href = `/smart-signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName || "")}`;
                           }}
                           className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
                         >
