@@ -58,7 +58,6 @@ const TRACK_METADATA = {
   },
 };
 
-
 const LEVEL_CHECK_SEGMENTS = {
   work: {
     key: "work",
@@ -138,8 +137,7 @@ const LEVEL_CHECK_SEGMENTS = {
     cta: "Find My English Level",
     defaultGoal: "Build sentences faster",
     badge: "English Level Diagnosis",
-    whoFor:
-      "For Tamil speakers who want to build English sentences faster.",
+    whoFor: "For Tamil speakers who want to build English sentences faster.",
     resultLabelPrefix: "Your English speaking level is",
     resultDiagnosis:
       "You need simple sentence-making practice to speak English with more confidence.",
@@ -157,7 +155,11 @@ function appendLevelCheckParams(url, data = {}) {
     const finalUrl = new URL(url, window.location.origin);
 
     Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && String(value).trim() !== "") {
+      if (
+        value !== undefined &&
+        value !== null &&
+        String(value).trim() !== ""
+      ) {
         finalUrl.searchParams.set(key, String(value));
       }
     });
@@ -547,15 +549,12 @@ const SEGMENT_LEVEL_CHECK_QUESTIONS = {
         "Speak slow means.",
       ],
       answer: 0,
-      wrongMessage:
-        "No issue. We’ll help you speak and respond naturally.",
+      wrongMessage: "No issue. We’ll help you speak and respond naturally.",
       wrongMessageTa:
         "பிரச்சனை இல்லை. இயல்பாக பேசவும் பதில் சொல்லவும் உதவுவோம்.",
     },
   ],
 };
-
-
 
 function getPremiumHeroCopy(segment) {
   const key = segment?.key || "general";
@@ -564,7 +563,8 @@ function getPremiumHeroCopy(segment) {
     work: {
       badge: "Workplace English Diagnosis",
       highlight: "Workplace English Confidence Level",
-      banner: "For working professionals who want to communicate better in meetings, calls, and office discussions.",
+      banner:
+        "For working professionals who want to communicate better in meetings, calls, and office discussions.",
       cta: "Start My Free Workplace Check",
       quote:
         "I’ll help you check how ready you are for meetings, calls, and workplace conversations. It’s just 10 quick questions.",
@@ -573,7 +573,8 @@ function getPremiumHeroCopy(segment) {
     interview: {
       badge: "Interview English Diagnosis",
       highlight: "Interview English Confidence Level",
-      banner: "For job seekers and freshers who want to answer interviews confidently.",
+      banner:
+        "For job seekers and freshers who want to answer interviews confidently.",
       cta: "Start My Free Interview Check",
       quote:
         "I’ll help you find the right English practice path for interviews. It’s just 10 quick questions.",
@@ -582,7 +583,8 @@ function getPremiumHeroCopy(segment) {
     business: {
       badge: "Business English Diagnosis",
       highlight: "Business English Confidence Level",
-      banner: "For business owners who want to speak confidently with customers, clients, staff, and suppliers.",
+      banner:
+        "For business owners who want to speak confidently with customers, clients, staff, and suppliers.",
       cta: "Start My Free Business English Check",
       quote:
         "I’ll help you discover your business English confidence level in just 10 quick questions.",
@@ -591,7 +593,8 @@ function getPremiumHeroCopy(segment) {
     students: {
       badge: "Study & Career English Diagnosis",
       highlight: "Study & Career English Confidence Level",
-      banner: "For students and freshers who want confidence for studies, presentations, interviews, and career.",
+      banner:
+        "For students and freshers who want confidence for studies, presentations, interviews, and career.",
       cta: "Start My Free Student English Check",
       quote:
         "I’ll help you find the right English path for your studies and career. It’s just 10 quick questions.",
@@ -600,7 +603,8 @@ function getPremiumHeroCopy(segment) {
     daily: {
       badge: "Daily English Fluency Diagnosis",
       highlight: "Daily Conversation Fluency Level",
-      banner: "For Tamil speakers who want to speak confidently in daily life, travel, shopping, phone calls, and social situations.",
+      banner:
+        "For Tamil speakers who want to speak confidently in daily life, travel, shopping, phone calls, and social situations.",
       cta: "Start My Free Daily English Check",
       quote:
         "I’ll help you discover your daily conversation level in just 10 quick questions.",
@@ -609,7 +613,8 @@ function getPremiumHeroCopy(segment) {
     general: {
       badge: "English Level Diagnosis",
       highlight: "English Speaking Confidence Level",
-      banner: "For Tamil speakers who know English words but struggle to speak confidently.",
+      banner:
+        "For Tamil speakers who know English words but struggle to speak confidently.",
       cta: "Start My Free Level Check",
       quote:
         "I’ll help you find the right English practice path for you. It’s just 10 quick questions.",
@@ -620,7 +625,7 @@ function getPremiumHeroCopy(segment) {
   return map[key] || map.general;
 }
 
-function PremiumLevelCheckIntro({ segment, onStart }) {
+function PremiumLevelCheckIntro({ segment, onStart, onSkipPractice }) {
   const hero = getPremiumHeroCopy(segment);
 
   return (
@@ -628,7 +633,8 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
       <div className="bg-violet-950 px-4 py-3 text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-4 text-sm font-bold sm:gap-7">
           <span className="flex items-center gap-2">
-            <span className="text-emerald-400">✓</span> Free 2-Minute Level Check
+            <span className="text-emerald-400">✓</span> Free 2-Minute Level
+            Check
           </span>
           <span className="hidden text-violet-300 sm:inline">|</span>
           <span className="flex items-center gap-2">
@@ -636,7 +642,8 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
           </span>
           <span className="hidden text-violet-300 sm:inline">|</span>
           <span className="flex items-center gap-2">
-            <span className="text-emerald-400">✓</span> No Signup Required to Check
+            <span className="text-emerald-400">✓</span> No Signup Required to
+            Check
           </span>
         </div>
       </div>
@@ -677,7 +684,8 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
                   .”
                 </p>
                 <p className="mt-3 text-sm font-bold leading-relaxed text-violet-700">
-                  உங்களுக்கு சரியான English practice path-ஐ கண்டுபிடிக்க உதவுகிறேன்.
+                  உங்களுக்கு சரியான English practice path-ஐ கண்டுபிடிக்க
+                  உதவுகிறேன்.
                 </p>
               </div>
 
@@ -748,14 +756,30 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
               Takes only 2 minutes • No signup required to check
             </p>
 
-            <button
-              type="button"
-              onClick={onStart}
-              className="mt-4 inline-flex w-full items-center justify-center gap-3 rounded-3xl bg-gradient-to-r from-violet-600 to-violet-800 px-8 py-5 text-lg font-black text-white shadow-2xl shadow-violet-200 transition hover:-translate-y-0.5 hover:shadow-violet-300 active:scale-[0.98] sm:w-auto sm:text-xl"
-            >
-              {hero.cta}
-              <span className="text-2xl">→</span>
-            </button>
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={onStart}
+                className="inline-flex w-full items-center justify-center gap-3 rounded-3xl bg-gradient-to-r from-violet-600 to-violet-800 px-8 py-5 text-lg font-black text-white shadow-2xl shadow-violet-200 transition hover:-translate-y-0.5 hover:shadow-violet-300 active:scale-[0.98] sm:w-auto sm:text-xl"
+              >
+                {hero.cta}
+                <span className="text-2xl">→</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onSkipPractice}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-3xl border border-emerald-200 bg-white px-8 py-5 text-lg font-black text-emerald-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-50 hover:shadow-md active:scale-[0.98] sm:w-auto"
+              >
+                Start Free App Practice
+                <span className="text-xl">🚀</span>
+              </button>
+            </div>
+
+            <p className="mt-3 max-w-xl text-sm font-bold text-slate-500">
+              New or unsure? You can start with basic sentence practice
+              directly.
+            </p>
 
             <div className="mt-8 grid max-w-2xl grid-cols-3 items-start gap-3 text-center">
               {[
@@ -770,7 +794,9 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
                   <div className="relative mx-auto flex h-14 w-14 items-center justify-center rounded-full border-2 border-violet-300 bg-violet-100 text-lg font-black text-violet-700">
                     {num}
                   </div>
-                  <p className="mt-2 text-sm font-black text-slate-800">{title}</p>
+                  <p className="mt-2 text-sm font-black text-slate-800">
+                    {title}
+                  </p>
                   <p className="text-xs font-medium text-slate-500">{sub}</p>
                 </div>
               ))}
@@ -804,9 +830,21 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
 
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              ["📊", "Instant Level Report", "Know your speaking level immediately."],
-              ["🗺️", "Personalized Path", "Get a practice path based on your level and goal."],
-              ["📱", "Free App Access", "Start practising with curated sample lessons."],
+              [
+                "📊",
+                "Instant Level Report",
+                "Know your speaking level immediately.",
+              ],
+              [
+                "🗺️",
+                "Personalized Path",
+                "Get a practice path based on your level and goal.",
+              ],
+              [
+                "📱",
+                "Free App Access",
+                "Start practising with curated sample lessons.",
+              ],
               ["🎥", "Live Class Invite", "Reserve your free live class seat."],
             ].map(([icon, title, desc]) => (
               <div
@@ -816,7 +854,9 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
                 <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-white text-3xl shadow-sm">
                   {icon}
                 </div>
-                <h3 className="mt-5 text-lg font-black text-slate-950">{title}</h3>
+                <h3 className="mt-5 text-lg font-black text-slate-950">
+                  {title}
+                </h3>
                 <p className="mt-2 text-sm font-semibold leading-relaxed text-slate-600">
                   {desc}
                 </p>
@@ -831,25 +871,23 @@ function PremiumLevelCheckIntro({ segment, onStart }) {
           🕒 Your free practice path is ready after the level check
         </p>
         <p className="mt-2 text-sm font-semibold text-violet-100">
-          Take the 2-minute check, get your result, and start practising your first sentences.
+          Take the 2-minute check, get your result, and start practising your
+          first sentences.
         </p>
       </section>
 
       <footer className="bg-slate-950 px-5 py-8 text-center text-sm font-medium text-slate-400">
         <p>FluencyJet — Speak English with Confidence</p>
-        <p className="mt-1 text-slate-500">
-          Your data is safe. No spam, ever.
-        </p>
+        <p className="mt-1 text-slate-500">Your data is safe. No spam, ever.</p>
         <p className="mx-auto mt-4 max-w-3xl text-xs leading-relaxed text-slate-600">
-          This site is not a part of the Facebook website or Meta Platforms, Inc.
-          Additionally, this site is NOT endorsed by Facebook or Meta in any way.
-          FACEBOOK is a trademark of Meta Platforms, Inc.
+          This site is not a part of the Facebook website or Meta Platforms,
+          Inc. Additionally, this site is NOT endorsed by Facebook or Meta in
+          any way. FACEBOOK is a trademark of Meta Platforms, Inc.
         </p>
       </footer>
     </div>
   );
 }
-
 
 export default function LevelCheck() {
   const navigate = useNavigate();
@@ -902,16 +940,16 @@ export default function LevelCheck() {
       if (!token) {
         navigate(
           appendLevelCheckParams("/smart-signup", {
-              next: lessonHubUrl,
-              track,
-              segment: segment.key,
-              goal: segment.defaultGoal,
-              level:
-                track === "intermediate" || track === "advanced"
-                  ? "Intermediate"
-                  : "Beginner",
-              score: result?.score,
-            }),
+            next: lessonHubUrl,
+            track,
+            segment: segment.key,
+            goal: segment.defaultGoal,
+            level:
+              track === "intermediate" || track === "advanced"
+                ? "Intermediate"
+                : "Beginner",
+            score: result?.score,
+          }),
           { replace: true },
         );
         return;
@@ -924,22 +962,50 @@ export default function LevelCheck() {
     if (!token) {
       navigate(
         appendLevelCheckParams("/smart-signup", {
-            next: target,
-            track,
-            segment: segment.key,
-            goal: segment.defaultGoal,
-            level:
-              track === "intermediate" || track === "advanced"
-                ? "Intermediate"
-                : "Beginner",
-            score: result?.score,
-          }),
+          next: target,
+          track,
+          segment: segment.key,
+          goal: segment.defaultGoal,
+          level:
+            track === "intermediate" || track === "advanced"
+              ? "Intermediate"
+              : "Beginner",
+          score: result?.score,
+        }),
         { replace: true },
       );
       return;
     }
 
     navigate(target, { replace: true });
+  }
+
+  function startFreeAppPractice() {
+    const params = new URLSearchParams(window.location.search);
+    const segmentKey = params.get("segment") || "default";
+
+    const next = "/b/lessons";
+    const encodedNext = encodeURIComponent(next);
+
+    try {
+      sessionStorage.setItem(
+        "fj_level_result",
+        JSON.stringify({
+          level: "Beginner Practice",
+          level_check_result: "Not checked",
+          track: "beginner",
+          score: null,
+          skipped: true,
+          segment: segmentKey,
+          completedAt: new Date().toISOString(),
+        }),
+      );
+
+      localStorage.setItem("fj_track", "beginner");
+      localStorage.setItem("fj_segment", segmentKey);
+    } catch {}
+
+    window.location.href = `/smart-signup?next=${encodedNext}&track=beginner&source=skip_level_check&segment=${encodeURIComponent(segmentKey)}`;
   }
 
   const current = QUESTIONS[idx];
@@ -975,31 +1041,31 @@ export default function LevelCheck() {
     console.log("[LEVEL CHECK]", { answers, finalScore, track });
 
     const levelLabel =
-        track === "intermediate" || track === "advanced"
-          ? "Intermediate"
-          : "Beginner";
+      track === "intermediate" || track === "advanced"
+        ? "Intermediate"
+        : "Beginner";
 
-      const levelResultPayload = {
-        score: finalScore,
-        track,
-        level: levelLabel,
-        segment: segment.key,
-        main_goal: segment.defaultGoal,
-        result_diagnosis: segment.resultDiagnosis,
-      };
+    const levelResultPayload = {
+      score: finalScore,
+      track,
+      level: levelLabel,
+      segment: segment.key,
+      main_goal: segment.defaultGoal,
+      result_diagnosis: segment.resultDiagnosis,
+    };
 
-      setResult(levelResultPayload);
+    setResult(levelResultPayload);
 
-      try {
-        sessionStorage.setItem(
-          "fj_level_result",
-          JSON.stringify(levelResultPayload),
-        );
-        localStorage.setItem("fj_level_segment", segment.key);
-        localStorage.setItem("fj_main_goal", segment.defaultGoal);
-      } catch {}
+    try {
+      sessionStorage.setItem(
+        "fj_level_result",
+        JSON.stringify(levelResultPayload),
+      );
+      localStorage.setItem("fj_level_segment", segment.key);
+      localStorage.setItem("fj_main_goal", segment.defaultGoal);
+    } catch {}
 
-      setMode("result");
+    setMode("result");
     setStep("result");
 
     try {
@@ -1046,22 +1112,23 @@ export default function LevelCheck() {
     <div className="min-h-[calc(100vh-64px)] bg-gradient-to-b from-white via-slate-50 to-violet-50/40 py-10">
       <div className="mx-auto max-w-4xl px-4">
         <div className="rounded-3xl border border-slate-200 bg-white/75 p-6 shadow-sm backdrop-blur">
-            {mode === "pick" && (
-              <PremiumLevelCheckIntro
-                segment={segment}
-                onStart={() => {
-                  trackLevelCheckStart({
-                    source: "level_check_page",
-                    segment: segment.key,
-                    main_goal: segment.defaultGoal,
-                  });
-                  setMode("quiz");
-                  setStep("quiz");
-                }}
-              />
-            )}
+          {mode === "pick" && (
+            <PremiumLevelCheckIntro
+              segment={segment}
+              onStart={() => {
+                trackLevelCheckStart({
+                  source: "level_check_page",
+                  segment: segment.key,
+                  main_goal: segment.defaultGoal,
+                });
+                setMode("quiz");
+                setStep("quiz");
+              }}
+              onSkipPractice={startFreeAppPractice}
+            />
+          )}
 
-            {/* 290: Refined Quiz Interface */}
+          {/* 290: Refined Quiz Interface */}
           {mode === "quiz" && (
             <div className="max-w-md mx-auto py-8 flex flex-col items-center">
               {/* Top Progress Header */}
@@ -1354,7 +1421,13 @@ export default function LevelCheck() {
                               localStorage.setItem("fj_track", track);
                             } catch {}
 
-                            window.location.href = `/smart-signup?next=${encodedNext}&track=${track}&name=${encodeURIComponent(userName || "")}`;
+                            const params = new URLSearchParams(
+                              window.location.search,
+                            );
+                            const segmentKey =
+                              params.get("segment") || "default";
+
+                            window.location.href = `/smart-signup?next=${encodedNext}&track=${track}&segment=${encodeURIComponent(segmentKey)}&name=${encodeURIComponent(userName || "")}`;
                           }}
                           className="w-full bg-indigo-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2"
                         >

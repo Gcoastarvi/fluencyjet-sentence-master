@@ -157,6 +157,7 @@ export default function SmartSignup() {
   const [searchParams] = useSearchParams();
 
   const storedLevel = useMemo(() => getStoredLevel(), []);
+  const skippedLevelCheck = storedLevel?.skipped === true;
   const storedUser = useMemo(() => getStoredUser(), []);
 
   const initialTrack = normalizeTrack(
@@ -181,7 +182,9 @@ export default function SmartSignup() {
 
   const segment = getInitialSegment(searchParams, storedLevel);
   const signupCopy = getSmartSignupSegmentCopy(segment);
-  const levelDisplayName = getLevelDisplayName(resultLabel);
+  const levelDisplayName = skippedLevelCheck
+    ? "Beginner Practice"
+    : getLevelDisplayName(resultLabel);
 
   const [name, setName] = useState(
     searchParams.get("name") || storedUser?.name || "",
@@ -225,8 +228,8 @@ export default function SmartSignup() {
         password,
         current_status: currentStatus,
         main_goal: mainGoal,
-          segment,
-          practice_commitment: practiceCommitment,
+        segment,
+        practice_commitment: practiceCommitment,
         reserve_seat: reserveSeat,
         whatsapp_consent: whatsappConsent,
         track: initialTrack,
@@ -265,37 +268,37 @@ export default function SmartSignup() {
       );
 
       trackSmartSignupCompleted({
-          track: userPayload.track || initialTrack,
-          segment,
-          main_goal: mainGoal,
-          source: "smart_signup",
-        });
+        track: userPayload.track || initialTrack,
+        segment,
+        main_goal: mainGoal,
+        source: "smart_signup",
+      });
 
-        sendToFunnelSheet({
-          type: "smart_signup",
-          name: payload.name,
-          email: payload.email,
-          whatsapp_number: payload.whatsapp_number,
-          segment,
-          main_goal: mainGoal,
-          level_check_result: payload.level_check_result,
-          level_check_score: payload.level_check_score,
-          track: userPayload.track || initialTrack,
-          current_status: payload.current_status,
-          practice_commitment: payload.practice_commitment,
-          reserve_seat: payload.reserve_seat,
-          whatsapp_consent: payload.whatsapp_consent,
-          utm_source: payload.utm_source,
-          utm_medium: payload.utm_medium,
-          utm_campaign: payload.utm_campaign,
-          utm_content: payload.utm_content,
-          utm_term: payload.utm_term,
-          source: payload.source || "smart_signup",
-          campaign: payload.campaign,
-          adset: payload.adset,
-          ad: payload.ad,
-          page_url: window.location.href,
-        });
+      sendToFunnelSheet({
+        type: "smart_signup",
+        name: payload.name,
+        email: payload.email,
+        whatsapp_number: payload.whatsapp_number,
+        segment,
+        main_goal: mainGoal,
+        level_check_result: payload.level_check_result,
+        level_check_score: payload.level_check_score,
+        track: userPayload.track || initialTrack,
+        current_status: payload.current_status,
+        practice_commitment: payload.practice_commitment,
+        reserve_seat: payload.reserve_seat,
+        whatsapp_consent: payload.whatsapp_consent,
+        utm_source: payload.utm_source,
+        utm_medium: payload.utm_medium,
+        utm_campaign: payload.utm_campaign,
+        utm_content: payload.utm_content,
+        utm_term: payload.utm_term,
+        source: payload.source || "smart_signup",
+        campaign: payload.campaign,
+        adset: payload.adset,
+        ad: payload.ad,
+        page_url: window.location.href,
+      });
 
       window.location.href = res.redirect || next || "/activation";
     } catch (err) {
@@ -313,27 +316,31 @@ export default function SmartSignup() {
       <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <section className="rounded-[2rem] border border-indigo-100 bg-white/80 p-6 shadow-sm">
           <div className="inline-flex rounded-full bg-indigo-100 px-4 py-2 text-sm font-black text-indigo-700">
-            Level Check Completed
+            {skippedLevelCheck
+              ? "Free Practice Path Ready"
+              : "Level Check Completed"}
           </div>
 
-                      <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
-              {signupCopy.title}:
-              <span className="block text-indigo-700">{levelDisplayName}</span>
-            </h1>
+          <h1 className="mt-5 text-3xl font-black leading-tight tracking-tight text-slate-950 sm:text-4xl">
+            {skippedLevelCheck ? "Your Practice Path" : signupCopy.title}:
+            <span className="block text-indigo-700">{levelDisplayName}</span>
+          </h1>
 
-            <div className="mt-4 rounded-3xl border border-indigo-100 bg-indigo-50 p-5">
-              <p className="text-sm font-black uppercase tracking-widest text-indigo-700">
-                Your Fluency Diagnosis
-              </p>
-              <p className="mt-2 text-base font-bold leading-relaxed text-slate-700">
-                {signupCopy.diagnosis}
-              </p>
-            </div>
-
-            <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
-              Create your free FluencyJet account and reserve your free live class
-              seat.
+          <div className="mt-4 rounded-3xl border border-indigo-100 bg-indigo-50 p-5">
+            <p className="text-sm font-black uppercase tracking-widest text-indigo-700">
+              {skippedLevelCheck ? "Start Here" : "Your Fluency Diagnosis"}
             </p>
+            <p className="mt-2 text-base font-bold leading-relaxed text-slate-700">
+              {skippedLevelCheck
+                ? "You can start with basic sentence practice now. We’ll help you build confidence step by step."
+                : signupCopy.diagnosis}
+            </p>
+          </div>
+
+          <p className="mt-4 text-base font-medium leading-relaxed text-slate-600">
+            Create your free FluencyJet account and reserve your free live class
+            seat.
+          </p>
 
           <div className="mt-6 space-y-3 rounded-3xl bg-indigo-950 p-5 text-white">
             <p className="text-sm font-bold uppercase tracking-widest text-indigo-200">
@@ -366,9 +373,9 @@ export default function SmartSignup() {
             One simple step to unlock your app access and live class seat.
           </p>
 
-            <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-800">
-              Recommended goal: {mainGoal || "Build sentences faster"}
-            </div>
+          <div className="mt-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-800">
+            Recommended goal: {mainGoal || "Build sentences faster"}
+          </div>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
