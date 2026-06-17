@@ -274,31 +274,38 @@ export default function SmartSignup() {
         source: "smart_signup",
       });
 
-      sendToFunnelSheet({
-        type: "smart_signup",
-        name: payload.name,
-        email: payload.email,
-        whatsapp_number: payload.whatsapp_number,
-        segment,
-        main_goal: mainGoal,
-        level_check_result: payload.level_check_result,
-        level_check_score: payload.level_check_score,
-        track: userPayload.track || initialTrack,
-        current_status: payload.current_status,
-        practice_commitment: payload.practice_commitment,
-        reserve_seat: payload.reserve_seat,
-        whatsapp_consent: payload.whatsapp_consent,
-        utm_source: payload.utm_source,
-        utm_medium: payload.utm_medium,
-        utm_campaign: payload.utm_campaign,
-        utm_content: payload.utm_content,
-        utm_term: payload.utm_term,
-        source: payload.source || "smart_signup",
-        campaign: payload.campaign,
-        adset: payload.adset,
-        ad: payload.ad,
-        page_url: window.location.href,
-      });
+      try {
+        await Promise.race([
+          sendToFunnelSheet({
+            type: "smart_signup",
+            name: payload.name,
+            email: payload.email,
+            whatsapp_number: payload.whatsapp_number,
+            segment,
+            main_goal: mainGoal,
+            level_check_result: payload.level_check_result,
+            level_check_score: payload.level_check_score,
+            track: userPayload.track || initialTrack,
+            current_status: payload.current_status,
+            practice_commitment: payload.practice_commitment,
+            reserve_seat: payload.reserve_seat,
+            whatsapp_consent: payload.whatsapp_consent,
+            utm_source: payload.utm_source,
+            utm_medium: payload.utm_medium,
+            utm_campaign: payload.utm_campaign,
+            utm_content: payload.utm_content,
+            utm_term: payload.utm_term,
+            source: payload.source || "smart_signup",
+            campaign: payload.campaign,
+            adset: payload.adset,
+            ad: payload.ad,
+            page_url: window.location.href,
+          }),
+          new Promise((resolve) => setTimeout(resolve, 1200)),
+        ]);
+      } catch (sheetErr) {
+        console.warn("Smart signup sheet logging failed:", sheetErr);
+      }
 
       window.location.href = res.redirect || next || "/activation";
     } catch (err) {
