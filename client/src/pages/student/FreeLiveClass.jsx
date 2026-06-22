@@ -478,147 +478,148 @@ export default function FreeLiveClass() {
                   </div>
                 </div>
 
-              <form className="space-y-4" onSubmit={handleSubmit}>
-                {/* Name */}
-                <div>
-                  <label
-                    htmlFor="free-live-name"
-                    className="mb-1 block text-sm font-bold text-slate-800"
-                  >
-                    Name
-                  </label>
-
-                  <input
-                    id="free-live-name"
-                    type="text"
-                    autoComplete="name"
-                    required
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    placeholder="Your name"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
-                  />
-                </div>
-
-                {/* WhatsApp */}
-                <div>
-                  <label
-                    htmlFor="free-live-whatsapp"
-                    className="mb-1 block text-sm font-bold text-slate-800"
-                  >
-                    WhatsApp Number
-                  </label>
-
-                  <div className="flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 transition focus-within:border-violet-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-100">
-                    <span className="flex items-center border-r border-slate-200 px-4 text-sm font-black text-slate-600">
-                      +91
-                    </span>
-
-                    <input
-                      id="free-live-whatsapp"
-                      type="tel"
-                      inputMode="numeric"
-                      autoComplete="tel"
-                      required
-                      value={whatsappNumber}
-                      onChange={updateWhatsAppNumber}
-                      placeholder="9876543210"
-                      maxLength={10}
-                      className="min-w-0 flex-1 bg-transparent px-4 py-3.5 font-semibold text-slate-950 outline-none placeholder:text-slate-400"
-                    />
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label
-                    htmlFor="free-live-email"
-                    className="mb-1 block text-sm font-bold text-slate-800"
-                  >
-                    Email
-                  </label>
-
-                  <input
-                    id="free-live-email"
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder="you@example.com"
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
-                  />
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label
-                    htmlFor="free-live-password"
-                    className="mb-1 block text-sm font-bold text-slate-800"
-                  >
-                    Create Your Practice Password
-                  </label>
-
-                  <div className="relative">
-                    <input
-                      id="free-live-password"
-                      type={showPassword ? "text" : "password"}
-                      autoComplete="new-password"
-                      required
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      placeholder="Minimum 6 characters"
-                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 pr-16 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowPassword((currentValue) => !currentValue)
-                      }
-                      className="absolute inset-y-0 right-0 px-4 text-xs font-black text-violet-700"
+                <form className="space-y-4" onSubmit={handleSubmit}>
+                  {/* Name */}
+                  <div>
+                    <label
+                      htmlFor="free-live-name"
+                      className="mb-1 block text-sm font-bold text-slate-800"
                     >
-                      {showPassword ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                </div>             
+                      Name
+                    </label>
 
-                {/* Error */}
-                {error ? (
-                  <div
-                    role="alert"
-                    className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold leading-6 text-red-700"
+                    <input
+                      id="free-live-name"
+                      type="text"
+                      autoComplete="name"
+                      required
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      placeholder="Your name"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                    />
+                  </div>
+
+                  {/* WhatsApp */}
+                  <div>
+                    <label
+                      htmlFor="free-live-whatsapp"
+                      className="mb-1 block text-sm font-bold text-slate-800"
+                    >
+                      WhatsApp Number
+                    </label>
+
+                    <div className="flex overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 transition focus-within:border-violet-500 focus-within:bg-white focus-within:ring-4 focus-within:ring-violet-100">
+                      <span className="flex items-center border-r border-slate-200 px-4 text-sm font-black text-slate-600">
+                        +91
+                      </span>
+
+                      <input
+                        id="free-live-whatsapp"
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel"
+                        required
+                        value={whatsappNumber}
+                        onChange={updateWhatsAppNumber}
+                        placeholder="9876543210"
+                        maxLength={10}
+                        className="min-w-0 flex-1 bg-transparent px-4 py-3.5 font-semibold text-slate-950 outline-none placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label
+                      htmlFor="free-live-email"
+                      className="mb-1 block text-sm font-bold text-slate-800"
+                    >
+                      Email
+                    </label>
+
+                    <input
+                      id="free-live-email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      required
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder="you@example.com"
+                      className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                    />
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <label
+                      htmlFor="free-live-password"
+                      className="mb-1 block text-sm font-bold text-slate-800"
+                    >
+                      Create Your Practice Password
+                    </label>
+
+                    <div className="relative">
+                      <input
+                        id="free-live-password"
+                        type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        placeholder="Minimum 6 characters"
+                        className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 pr-16 font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-100"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowPassword((currentValue) => !currentValue)
+                        }
+                        className="absolute inset-y-0 right-0 px-4 text-xs font-black text-violet-700"
+                      >
+                        {showPassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Error */}
+                  {error ? (
+                    <div
+                      role="alert"
+                      className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-bold leading-6 text-red-700"
+                    >
+                      {error}
+                    </div>
+                  ) : null}
+
+                  {/* CTA */}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-2xl bg-violet-700 px-8 py-4 text-base font-black text-white shadow-xl shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 sm:text-lg"
                   >
-                    {error}
-                  </div>
-                ) : null}
+                    {loading
+                      ? "Creating Your Account..."
+                      : "Reserve My Free Seat & Start Practice"}
+                  </button>
 
-                {/* CTA */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full rounded-2xl bg-violet-700 px-8 py-4 text-base font-black text-white shadow-xl shadow-violet-200 transition hover:-translate-y-0.5 hover:bg-violet-800 disabled:cursor-not-allowed disabled:opacity-60 sm:text-lg"
-                >
-                  {loading
-                    ? "Creating Your Account..."
-                    : "Reserve My Free Seat & Start Practice"}
-                </button>
+                  <p className="text-center text-sm font-bold text-violet-700">
+                    Reserve Your Free Live-Class Seat + Unlock English Practice
+                  </p>
 
-                <p className="text-center text-sm font-bold text-violet-700">
-                  Reserve Your Free Live-Class Seat + Unlock English Practice
-                </p>
+                  <p className="text-center text-xs font-semibold leading-relaxed text-slate-600">
+                    No payment required. The Zoom link and class reminders will
+                    be shared through WhatsApp.
+                  </p>
 
-                <p className="text-center text-xs font-semibold leading-relaxed text-slate-600">
-                  No payment required. The Zoom link and class reminders will be
-                  shared through WhatsApp.
-                </p>
-
-                <p className="border-t border-slate-200 pt-4 text-center text-xs font-semibold leading-5 text-slate-500">
-                  Already have a FluencyJet account? Enter the same email and
-                  password to reserve your seat.
-                </p>
-              </form>
+                  <p className="border-t border-slate-200 pt-4 text-center text-xs font-semibold leading-5 text-slate-500">
+                    Already have a FluencyJet account? Enter the same email and
+                    password to reserve your seat.
+                  </p>
+                </form>
+              </div>
             </div>
           </div>
         </div>
@@ -878,3 +879,4 @@ export default function FreeLiveClass() {
     </div>
   );
 }
+// 
