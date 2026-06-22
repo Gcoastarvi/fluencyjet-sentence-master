@@ -439,13 +439,8 @@ export default function FreeLiveClass() {
                 </p>
 
                 <h2 className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-                  Create Your Free App Account + Reserve Your Live-Class Seat
+                  Reserve Your Live-Class Seat + Unlock Free English Practice
                 </h2>
-
-                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-                  Complete this one step to unlock app practice and receive the
-                  live-class link through WhatsApp.
-                </p>
 
                 {/* Webinar strip */}
                 <div className="mt-4 rounded-2xl border border-violet-100 bg-violet-50 p-4">
@@ -482,18 +477,6 @@ export default function FreeLiveClass() {
                     </p>
                   </div>
                 </div>
-
-                {/* Segment goal */}
-                <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
-                    Your Selected Goal
-                  </p>
-
-                  <p className="mt-1 font-black text-emerald-950">
-                    {pageContent.goal}
-                  </p>
-                </div>
-              </div>
 
               <form className="space-y-4" onSubmit={handleSubmit}>
                 {/* Name */}
@@ -574,7 +557,7 @@ export default function FreeLiveClass() {
                     htmlFor="free-live-password"
                     className="mb-1 block text-sm font-bold text-slate-800"
                   >
-                    Create App Password
+                    Create Your Practice Password
                   </label>
 
                   <div className="relative">
@@ -599,24 +582,7 @@ export default function FreeLiveClass() {
                       {showPassword ? "Hide" : "Show"}
                     </button>
                   </div>
-                </div>
-
-                {/* Commitment */}
-                <label className="flex cursor-pointer gap-3 rounded-2xl border border-violet-100 bg-violet-50 p-4">
-                  <input
-                    type="checkbox"
-                    checked={commitmentConfirmed}
-                    onChange={(event) =>
-                      setCommitmentConfirmed(event.target.checked)
-                    }
-                    className="mt-1 h-5 w-5 shrink-0 accent-violet-700"
-                  />
-
-                  <span className="text-sm font-semibold leading-6 text-slate-700">
-                    Yes, I want to reserve my seat, receive WhatsApp reminders
-                    and practise my first English sentences before the class.
-                  </span>
-                </label>
+                </div>             
 
                 {/* Error */}
                 {error ? (
@@ -640,7 +606,7 @@ export default function FreeLiveClass() {
                 </button>
 
                 <p className="text-center text-sm font-bold text-violet-700">
-                  Free live class + instant app access
+                  Reserve Your Free Live-Class Seat + Unlock English Practice
                 </p>
 
                 <p className="text-center text-xs font-semibold leading-relaxed text-slate-600">
