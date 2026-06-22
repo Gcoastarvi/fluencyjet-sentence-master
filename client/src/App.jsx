@@ -15,6 +15,7 @@ import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
 import SmartSignup from "./pages/student/SmartSignup";
 import Activation from "./pages/student/Activation";
+import FreeLiveClass from "./pages/student/FreeLiveClass";
 
 import Dashboard from "./pages/student/Dashboard.jsx";
 import LessonDetail from "./pages/student/LessonDetail.jsx";
@@ -210,6 +211,8 @@ export default function App() {
           <Routes>
             {/* Admin login (no Navbar) */}
             <Route path="/admin/login" element={<AdminLogin />} />
+
+            <Route path="/free-live-class" element={<FreeLiveClass />} />
 
             {/* All other pages share Navbar */}
             <Route element={<MainLayout />}>
