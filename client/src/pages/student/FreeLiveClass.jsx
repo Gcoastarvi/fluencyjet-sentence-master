@@ -268,7 +268,12 @@ export default function FreeLiveClass() {
         Use the existing Activation page.
         It already connects the user to WhatsApp and app practice.
       */
-      window.location.href = res.redirect || "/activation";
+      const activationParams = new URLSearchParams({
+        source: "free_live_class",
+        segment,
+      });
+
+      window.location.href = `/activation?${activationParams.toString()}`;
     } catch (err) {
       console.error("Free live class signup error:", err);
 
@@ -879,4 +884,3 @@ export default function FreeLiveClass() {
     </div>
   );
 }
-// 
