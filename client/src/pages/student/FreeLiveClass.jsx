@@ -112,7 +112,6 @@ export default function FreeLiveClass() {
   const [email, setEmail] = useState(storedUser?.email || "");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [password, setPassword] = useState("");
-  const [commitmentConfirmed, setCommitmentConfirmed] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -138,10 +137,6 @@ export default function FreeLiveClass() {
 
     if (password.length < 6) {
       return "Please create a password with at least 6 characters.";
-    }
-
-    if (!commitmentConfirmed) {
-      return "Please confirm that you want to reserve your live-class seat.";
     }
 
     return "";
