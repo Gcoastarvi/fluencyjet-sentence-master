@@ -7,6 +7,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { uiFor } from "@/lib/modeUi";
 
 import { track } from "@/lib/track";
+import {
+  getStoredFunnelContext,
+  sendToFunnelSheet,
+} from "@/lib/funnelSheet";
 
 import PracticeHeader from "@/components/student/PracticeHeader";
 import PromptCard from "@/components/student/PromptCard";
@@ -67,6 +71,7 @@ const SUPPORTED_PRACTICE_MODES = new Set([
   "audio",
 ]);
 const MAX_ATTEMPTS = 3;
+const QUICK_START_DAY_NUMBER = 900001;
 
 export default function SentencePractice() {
   const { mode: urlMode } = useParams();
@@ -136,6 +141,54 @@ export default function SentencePractice() {
     search.get("difficulty") || "beginner",
   ).toLowerCase();
 
+  const isStrictQuickStart =
+    search.get("context") === "quick-start" &&
+    lessonId === QUICK_START_DAY_NUMBER &&
+    difficulty === "beginner";
+
+  const quickStartSegment = String(
+    search.get("segment") ||
+      storedUser?.segment ||
+      localStorage.getItem("fj_segment") ||
+      localStorage.getItem("fj_level_segment") ||
+      "general",
+  )
+    .trim()
+    .toLowerCase();
+
+  function addQuickStartParams(params) {
+    if (!isStrictQuickStart) return params;
+    params.set("lessonId", String(QUICK_START_DAY_NUMBER));
+    params.set("difficulty", "beginner");
+    params.set("context", "quick-start");
+    params.set("source", "free_live_class");
+    params.set("segment", quickStartSegment);
+    return params;
+  }
+
+  function sendQuickStartAction(action, mode = safeMode, variant = "") {
+    if (!isStrictQuickStart) return;
+
+    const context = getStoredFunnelContext();
+    const contextUser = context.user || storedUser || {};
+
+    sendToFunnelSheet({
+      type: "quick_start_action",
+      action,
+      source: "free_live_class",
+      name: contextUser.name || "",
+      email: contextUser.email || "",
+      whatsapp_number:
+        contextUser.whatsapp_number || contextUser.whatsapp || "",
+      segment: quickStartSegment,
+      main_goal: context.main_goal || contextUser.main_goal || "",
+      track: context.track || contextUser.track || "BEGINNER",
+      mode,
+      variant,
+      page_url: window.location.href,
+    });
+  }
+
   function goLessons() {
     navigate("/lessons", { replace: true });
   }
@@ -157,9 +210,14 @@ export default function SentencePractice() {
 
   function goAudio(variant) {
     if (!lessonIdNumSafe) return;
-    navigate(
-      `/practice/audio?lessonId=${encodeURIComponent(lessonIdNumSafe)}&difficulty=${encodeURIComponent(difficulty)}&variant=${encodeURIComponent(variant)}`,
+    const params = addQuickStartParams(
+      new URLSearchParams({
+        lessonId: String(lessonIdNumSafe),
+        difficulty,
+        variant,
+      }),
     );
+    navigate(`/practice/audio?${params.toString()}`);
   }
 
   function persistModeProgress(modeOverride, completedCount) {
@@ -445,6 +503,9 @@ export default function SentencePractice() {
 
   const [isComplete, setIsComplete] = useState(false);
 
+  const quickStartStartedRef = useRef(false);
+  const quickStartCompletedRef = useRef(false);
+
   const [loadError, setLoadError] = useState("");
   const [sessionTarget] = useState(null); // use all available questions in the lesson
 
@@ -512,6 +573,11 @@ export default function SentencePractice() {
   );
 
   const lid = Number(lessonIdFromQuery ?? lessonId ?? 0);
+
+  useEffect(() => {
+    quickStartStartedRef.current = false;
+    quickStartCompletedRef.current = false;
+  }, [safeMode, lid, difficulty, audioVariant, location.search]);
 
   useEffect(() => {
     setIsComplete(false);
@@ -784,6 +850,18 @@ export default function SentencePractice() {
 
   const isSessionDone =
     isComplete || (totalQuestions > 0 && currentIndex >= totalQuestions);
+
+  useEffect(() => {
+    if (!isStrictQuickStart || !isSessionDone) return;
+    if (quickStartCompletedRef.current) return;
+
+    quickStartCompletedRef.current = true;
+    sendQuickStartAction(
+      "Quick Start Completed",
+      safeMode,
+      safeMode === "audio" ? audioVariant : "",
+    );
+  }, [isStrictQuickStart, isSessionDone, safeMode, audioVariant]);
 
   useEffect(() => {
     if (!isSessionDone) return;
@@ -1179,6 +1257,10 @@ export default function SentencePractice() {
   } // <--- 🎯 This was the missing closing brace for awardXPEvent
 
   async function awardCompletionBonus(mode) {
+    if (isStrictQuickStart) {
+      return { ok: true, awarded: 0, skipped: true };
+    }
+
     return awardXPEvent({
       xp: 300,
       event: "lesson_completed",
@@ -1378,6 +1460,15 @@ export default function SentencePractice() {
       }
 
       setLessonExercises(normalized);
+
+      if (isStrictQuickStart && !quickStartStartedRef.current) {
+        quickStartStartedRef.current = true;
+        sendQuickStartAction(
+          "Quick Start Started",
+          safeMode,
+          safeMode === "audio" ? audioVariant : "",
+        );
+      }
 
       // Only reset to Q1 on first load or hard restart, not on every reload
       setCurrentIndex((prev) => {
@@ -2330,15 +2421,18 @@ export default function SentencePractice() {
     let target = "";
 
     if (mode === "audio") {
-      const qs = new URLSearchParams();
+      const qs = addQuickStartParams(new URLSearchParams(sp));
       qs.set("lessonId", String(lid));
       qs.set("difficulty", difficulty);
       qs.set("variant", nextVariant || "repeat");
+      qs.set("restart", String(Date.now()));
       target = `/practice/audio?${qs.toString()}`;
     } else {
-      const qs = new URLSearchParams();
+      const qs = addQuickStartParams(new URLSearchParams(sp));
       qs.set("lessonId", String(lid));
       qs.set("difficulty", difficulty);
+      qs.delete("variant");
+      qs.set("restart", String(Date.now()));
       target = `/practice/${mode}?${qs.toString()}`;
     }
 
@@ -2402,6 +2496,87 @@ export default function SentencePractice() {
     const base = difficulty === "intermediate" ? "/i" : "/b";
 
     const currentLessonNumber = Number(lid || 1);
+
+    if (isStrictQuickStart) {
+      const currentExperience =
+        safeMode === "audio" ? `${safeMode}:${audioVariant}` : safeMode;
+      const quickStartModes = [
+        { title: "Reorder", mode: "reorder", variant: "" },
+        { title: "Typing", mode: "typing", variant: "" },
+        { title: "Audio Repeat", mode: "audio", variant: "repeat" },
+        { title: "Dictation", mode: "audio", variant: "dictation" },
+      ].filter(({ mode, variant }) => {
+        const experience = mode === "audio" ? `${mode}:${variant}` : mode;
+        return experience !== currentExperience;
+      });
+
+      const practiseAnotherMode = (mode, variant) => {
+        sendQuickStartAction("Quick Start Mode Selected", mode, variant);
+
+        const params = addQuickStartParams(
+          new URLSearchParams({
+            lessonId: String(QUICK_START_DAY_NUMBER),
+            difficulty: "beginner",
+            restart: String(Date.now()),
+          }),
+        );
+        if (variant) params.set("variant", variant);
+
+        navigate(`/practice/${mode}?${params.toString()}`);
+      };
+
+      return (
+        <div className="min-h-screen bg-slate-950 px-4 py-10 text-white sm:px-6">
+          <main className="mx-auto max-w-3xl">
+            <section className="overflow-hidden rounded-[2rem] border border-emerald-300/30 bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 p-7 text-center shadow-2xl sm:p-10">
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-emerald-100">
+                Starter challenge complete
+              </p>
+              <h1 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
+                You completed your first 10 sentences!
+              </h1>
+              <p className="mx-auto mt-5 max-w-2xl text-lg font-semibold leading-8 text-emerald-50">
+                This was only the beginning. FluencyJet contains a guided
+                120-lesson path to help you keep building confident English.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  sendQuickStartAction(
+                    "Continue to Free Lessons Clicked",
+                    safeMode,
+                    safeMode === "audio" ? audioVariant : "",
+                  );
+                  navigate("/b/lessons");
+                }}
+                className="mt-8 w-full rounded-2xl bg-white px-6 py-4 text-lg font-black text-emerald-800 shadow-lg transition hover:-translate-y-0.5"
+              >
+                Continue to My 3 Free Lessons →
+              </button>
+            </section>
+
+            <section className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6">
+              <h2 className="text-xl font-black">
+                Practise These Sentences in Another Mode
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {quickStartModes.map(({ title, mode, variant }) => (
+                  <button
+                    key={`${mode}-${variant || "default"}`}
+                    type="button"
+                    onClick={() => practiseAnotherMode(mode, variant)}
+                    className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4 text-left font-black transition hover:bg-white/20"
+                  >
+                    {title} →
+                  </button>
+                ))}
+              </div>
+            </section>
+          </main>
+        </div>
+      );
+    }
 
     const goToQuiz = (mode, variant = "") => {
       const qs = new URLSearchParams();
@@ -2669,18 +2844,9 @@ export default function SentencePractice() {
             <button
               type="button"
               onClick={() => {
-                const sp = new URLSearchParams(window.location.search);
-                const lid = sp.get("lessonId") || String(lessonId);
-                const diff = sp.get("difficulty") || difficulty || "beginner";
-
                 const nextMode = fallbackMode;
 
-                navigate(
-                  `/practice/${nextMode}?lessonId=${encodeURIComponent(
-                    lid,
-                  )}&difficulty=${encodeURIComponent(diff)}`,
-                  { replace: true },
-                );
+                hardResetThenNavigate(nextMode);
               }}
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
             >
@@ -2760,16 +2926,9 @@ export default function SentencePractice() {
               type="button"
               onClick={() => {
                 playClick();
-                const sp = new URLSearchParams(window.location.search);
-                const lid = sp.get("lessonId") || String(lessonId);
-                const diff = sp.get("difficulty") || difficulty || "beginner";
-
                 const nextMode = fallbackMode;
 
-                navigate(
-                  `/b/practice/${nextMode}?lessonId=${encodeURIComponent(lid)}&difficulty=${encodeURIComponent(diff)}`,
-                  { replace: true },
-                );
+                hardResetThenNavigate(nextMode);
               }}
               className="rounded-xl border px-4 py-2 text-sm hover:bg-gray-50"
             >
@@ -3209,6 +3368,15 @@ export default function SentencePractice() {
         total={totalQuestions || lessonExercises?.length || 0}
         streakText={`${Number(streak || 0)}-day streak`}
         onBack={() => {
+          if (isStrictQuickStart) {
+            const params = new URLSearchParams({
+              source: "free_live_class",
+              segment: quickStartSegment,
+            });
+            navigate(`/quick-start?${params.toString()}`);
+            return;
+          }
+
           const rawDifficulty = String(difficulty || "").toLowerCase();
           const normalizedDifficulty =
             rawDifficulty === "intermediate" ? "intermediate" : "basic";

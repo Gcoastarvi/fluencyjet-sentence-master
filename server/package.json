@@ -8,7 +8,8 @@
     "build": "cd ../client && npm ci && npm run build && cd ../server && rm -rf dist && mkdir -p dist/public && cp -R ../client/dist/* dist/public/",
     "start": "NODE_ENV=production node index.js",
     "postinstall": "prisma generate",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "seed:quick-start": "node prisma/seed/quickStartSeed.js"
   },
   "dependencies": {
     "@prisma/client": "^6.19.0",

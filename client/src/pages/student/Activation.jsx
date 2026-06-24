@@ -85,6 +85,11 @@ export default function Activation() {
   */
   const practicePath = track === "INTERMEDIATE" ? "/i/lessons" : "/b/lessons";
 
+  const quickStartPath = `/quick-start?${new URLSearchParams({
+    source: "free_live_class",
+    segment,
+  }).toString()}`;
+
   useEffect(() => {
     /*
       Prevent duplicate Activation Viewed events in case React runs
@@ -182,7 +187,7 @@ export default function Activation() {
 
     localStorage.setItem("fj_practice_source", actionSource);
 
-    navigate(practicePath);
+    navigate(isFreeLiveClass ? quickStartPath : practicePath);
   }
 
   const heading = isFreeLiveClass

@@ -2,6 +2,7 @@
 import express from "express";
 import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
+import { QUICK_START_DAY_NUMBER } from "../config/quickStart.js";
 
 import crypto from "crypto";
 
@@ -559,7 +560,13 @@ router.post("/update", authRequired, async (req, res) => {
         ? Boolean(body.isCorrect)
         : event === "exercise_correct";
 
-    const completedQuiz = Boolean(body.completedQuiz);
+    const isQuickStartLesson =
+      normalizeLessonId(body.lessonId ?? body.lesson_id) ===
+      QUICK_START_DAY_NUMBER;
+
+    // Quick Start earns normal per-question XP and mode progress, but it is not
+    // curriculum and must never enter lesson-completion or unlock paths.
+    const completedQuiz = Boolean(body.completedQuiz) && !isQuickStartLesson;
 
     const questionIdRaw =
       body.questionId ?? body.questionKey ?? body.question_id ?? "";

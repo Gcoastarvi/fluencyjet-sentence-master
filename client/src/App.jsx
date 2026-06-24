@@ -16,6 +16,7 @@ import { AuthProvider } from "./context/AuthContext";
 import SmartSignup from "./pages/student/SmartSignup";
 import Activation from "./pages/student/Activation";
 import FreeLiveClass from "./pages/student/FreeLiveClass";
+import QuickStart from "./pages/student/QuickStart";
 
 import Dashboard from "./pages/student/Dashboard.jsx";
 import LessonDetail from "./pages/student/LessonDetail.jsx";
@@ -108,6 +109,7 @@ function MainLayout() {
     "/level-check",
     "/smart-signup",
     "/activation",
+    "/quick-start",
     "/webinar",
   ];
 
@@ -226,6 +228,14 @@ export default function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/smart-signup" element={<SmartSignup />} />
               <Route path="/activation" element={<Activation />} />
+              <Route
+                path="/quick-start"
+                element={
+                  <ProtectedRoute>
+                    <QuickStart />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/webinar" element={<Webinar />} />
               <Route path="/join-webinar" element={<JoinWebinar />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />

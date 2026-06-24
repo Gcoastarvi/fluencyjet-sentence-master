@@ -2,6 +2,7 @@
 import express from "express";
 import prisma from "../db/client.js";
 import { authMiddleware, authRequired } from "../middleware/authMiddleware.js";
+import { QUICK_START_DAY_NUMBER } from "../config/quickStart.js";
 
 const router = express.Router();
 
@@ -19,6 +20,14 @@ function normalizeDifficulty(value) {
   if (!value) return null;
   const v = String(value).toLowerCase();
   return VALID_DIFFICULTIES.has(v) ? v : null;
+}
+
+function isQuickStartRequest(level, lessonId, difficulty) {
+  return (
+    level === "BEGINNER" &&
+    String(difficulty || "").toLowerCase() === "beginner" &&
+    Number(lessonId) === QUICK_START_DAY_NUMBER
+  );
 }
 
 // Simple shuffle helper for random quizzes
@@ -176,7 +185,7 @@ router.get("/random", authRequired, async (req, res) => {
     const freeLessons = track === "INTERMEDIATE" ? interIds : beginnerMax;
 
     // ✅ Tier-aware access rules (RANDOM)
-    if (!isProAll) {
+    if (!isProAll && !isQuickStartRequest(level, lessonIdNum, diff)) {
       // Paid beginner can access intermediate free lessons only (1-3), not premium intermediate
       if (
         isPaidBeginner &&
@@ -737,7 +746,7 @@ router.get("/by-lesson/:lessonId", authRequired, async (req, res) => {
     });
 
     // ✅ Tier-aware access rules
-    if (!isProAll) {
+    if (!isProAll && !isQuickStartRequest(level, lessonIdNum, diff)) {
       // Paid beginner can access intermediate free lessons only (1-3), not premium intermediate
       if (
         isPaidBeginner &&
