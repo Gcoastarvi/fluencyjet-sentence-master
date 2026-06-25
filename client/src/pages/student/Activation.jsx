@@ -85,11 +85,6 @@ export default function Activation() {
   */
   const practicePath = track === "INTERMEDIATE" ? "/i/lessons" : "/b/lessons";
 
-  const quickStartPath = `/quick-start?${new URLSearchParams({
-    source: "free_live_class",
-    segment,
-  }).toString()}`;
-
   useEffect(() => {
     /*
       Prevent duplicate Activation Viewed events in case React runs
@@ -187,7 +182,9 @@ export default function Activation() {
 
     localStorage.setItem("fj_practice_source", actionSource);
 
-    navigate(isFreeLiveClass ? quickStartPath : practicePath);
+    navigate(
+      isFreeLiveClass ? "/b/lesson/1?difficulty=beginner" : practicePath,
+    );
   }
 
   const heading = isFreeLiveClass
@@ -199,15 +196,15 @@ export default function Activation() {
     : "Complete these 2 steps before the live class.";
 
   const practiceHeading = isFreeLiveClass
-    ? "Start Your 3-Minute English Practice"
+    ? "Start Your First Free Lesson"
     : "Start Your Free English Practice";
 
   const practiceDescription = isFreeLiveClass
-    ? "Practise your first English sentences now so you can understand the live class faster."
+    ? "Complete your first guided English lesson before the live class."
     : "Practise your first 10 sentences before the live class.";
 
   const practiceButtonText = isFreeLiveClass
-    ? "Start My 3-Minute Practice"
+    ? "Start My First Free Lesson"
     : "Start Free Practice";
 
   return (
