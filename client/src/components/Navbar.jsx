@@ -11,6 +11,7 @@ export default function Navbar() {
     "/level-check",
     "/smart-signup",
     "/activation",
+    "/start-practice",
     "/webinar",
   ];
 

@@ -17,6 +17,7 @@ import SmartSignup from "./pages/student/SmartSignup";
 import Activation from "./pages/student/Activation";
 import FreeLiveClass from "./pages/student/FreeLiveClass";
 import QuickStart from "./pages/student/QuickStart";
+import StartPractice from "./pages/student/StartPractice";
 
 import Dashboard from "./pages/student/Dashboard.jsx";
 import LessonDetail from "./pages/student/LessonDetail.jsx";
@@ -110,6 +111,7 @@ function MainLayout() {
     "/smart-signup",
     "/activation",
     "/quick-start",
+    "/start-practice",
     "/webinar",
   ];
 
@@ -228,6 +230,7 @@ export default function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/smart-signup" element={<SmartSignup />} />
               <Route path="/activation" element={<Activation />} />
+              <Route path="/start-practice" element={<StartPractice />} />
               <Route
                 path="/quick-start"
                 element={
