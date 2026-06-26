@@ -1164,6 +1164,28 @@ export default function LessonDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const preload = () => {
+      preloadSentencePractice().catch((err) => {
+        console.warn("SentencePractice preload failed:", err);
+      });
+    };
+
+    if ("requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(preload, { timeout: 1500 });
+
+      return () => {
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timer = window.setTimeout(preload, 500);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, []);
+
   const teach = LESSON_TEACH[Number(lessonId)] || null;
 
   const streak = userProfile?.daily_streak || 0;
