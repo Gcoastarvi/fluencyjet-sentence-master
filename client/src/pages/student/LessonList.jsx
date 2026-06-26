@@ -453,28 +453,6 @@ export default function LessonList({ difficulty }) {
   });
 
   useEffect(() => {
-    const preload = () => {
-      import("./LessonDetail.jsx").catch((err) => {
-        console.warn("LessonDetail preload failed:", err);
-      });
-    };
-
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(preload, { timeout: 1500 });
-
-      return () => {
-        window.cancelIdleCallback(idleId);
-      };
-    }
-
-    const timer = window.setTimeout(preload, 500);
-
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, []);
-
-  useEffect(() => {
     if (showLeagueIntro) {
       // 🎊 Fire a Bronze-colored confetti burst (Orange/Brown/Gold)
       confetti({

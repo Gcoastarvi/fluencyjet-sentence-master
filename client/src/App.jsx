@@ -37,11 +37,15 @@ import Webinar from "./pages/Webinar";
 
 function PageLoader() {
   return (
-    <div className="flex min-h-[35vh] items-center justify-center px-6">
-      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-        <div className="h-6 w-6 animate-spin rounded-full border-3 border-slate-200 border-t-indigo-600" />
-
-        <p className="text-sm font-semibold text-slate-600">Opening page...</p>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6">
+      <div className="rounded-3xl bg-white px-8 py-7 shadow-sm border border-slate-100 text-center">
+        <div className="mx-auto mb-4 h-9 w-9 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+        <p className="text-base font-extrabold text-slate-900">
+          Loading FluencyJet...
+        </p>
+        <p className="mt-1 text-sm font-medium text-slate-500">
+          Please wait a moment
+        </p>
       </div>
     </div>
   );
