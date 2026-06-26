@@ -1270,26 +1270,46 @@ export default function Dashboard() {
   }, [summary.uniqueDays]);
 
   useEffect(() => {
-    const prefetchLessons = async () => {
+    let isMounted = true;
+
+    const prefetchLessonTrack = async (difficulty) => {
+      const cacheKey = `fj_lessons_cache_v2_${difficulty}`;
+
       try {
-        const cacheKey = "fj_lessons_cache_v2_basic";
-
-        // If already cached, don't fetch again
         const cached = localStorage.getItem(cacheKey);
-        if (cached) return;
 
-        const res = await api.get("/lessons?difficulty=basic");
-        const data = res && res.data ? res.data : res;
+        if (cached) {
+          const parsed = JSON.parse(cached);
 
-        if (Array.isArray(data) && data.length > 0) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return;
+          }
+        }
+
+        const response = await api.get(`/lessons?difficulty=${difficulty}`);
+
+        const data = response && response.data ? response.data : response;
+
+        if (isMounted && Array.isArray(data) && data.length > 0) {
           localStorage.setItem(cacheKey, JSON.stringify(data));
         }
       } catch (err) {
-        console.warn("Lesson prefetch failed:", err);
+        console.warn(`Lesson prefetch failed for ${difficulty}:`, err);
       }
     };
 
+    const prefetchLessons = async () => {
+      await Promise.allSettled([
+        prefetchLessonTrack("basic"),
+        prefetchLessonTrack("intermediate"),
+      ]);
+    };
+
     prefetchLessons();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const progressUserId =
