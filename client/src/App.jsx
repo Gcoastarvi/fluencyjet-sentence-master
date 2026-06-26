@@ -63,8 +63,8 @@ const LessonQuiz = lazy(() => import("./pages/student/LessonQuiz.jsx"));
 const Practice = lazy(() => import("./pages/student/Practice.jsx"));
 const TypingQuiz = lazy(() => import("./pages/student/TypingQuiz.jsx"));
 const SentencePractice = lazy(
-// () => import("./pages/student/SentencePractice.jsx"),
-// );
+  () => import("./pages/student/SentencePractice.jsx"),
+);
 const Paywall = lazy(() => import("./pages/student/Paywall.jsx"));
 const Checkout = lazy(() => import("./pages/student/Checkout.jsx"));
 // const LevelCheck = lazy(() => import("./pages/student/LevelCheck"));
