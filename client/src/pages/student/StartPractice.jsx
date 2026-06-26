@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "@/context/AuthContext";
-import { sendToFunnelSheet } from "@/lib/funnelSheet";
+import {
+  getStoredFunnelContext,
+  sendToFunnelSheet,
+} from "@/lib/funnelSheet";
 import { trackEvent } from "@/lib/tracking";
 
 const SOURCE = "whatsapp_group";
@@ -51,6 +54,8 @@ function buildLevelCheckDestination(segment) {
 
 function trackStartPracticeAction(action, segment, destinationUrl = "") {
   const pageUrl = getPageUrl();
+  const context = getStoredFunnelContext();
+  const user = context.user || {};
   const params = {
     source: SOURCE,
     segment,
@@ -64,15 +69,15 @@ function trackStartPracticeAction(action, segment, destinationUrl = "") {
 
   try {
     void sendToFunnelSheet({
-      type: "start_practice_action",
+      type: "activation_action",
       action,
       source: SOURCE,
       segment,
-      name: "",
-      email: "",
-      whatsapp_number: "",
-      main_goal: "",
-      track: "",
+      name: user.name || "",
+      email: user.email || "",
+      whatsapp_number: user.whatsapp_number || user.whatsapp || "",
+      main_goal: context.main_goal || user.main_goal || "",
+      track: context.track || user.track || "",
       page_url: pageUrl,
       destination_url: destinationUrl,
     });
