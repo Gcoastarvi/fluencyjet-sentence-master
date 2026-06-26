@@ -32,6 +32,7 @@ import Login from "./pages/student/Login.jsx";
 import JoinWebinar from "./pages/JoinWebinar";
 import LevelCheck from "./pages/student/LevelCheck";
 import AdminLessons from "./pages/admin/AdminLessons.jsx";
+import Signup from "./pages/student/Signup.jsx";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -63,7 +64,7 @@ function PageLoader() {
 // const LessonQuiz = lazy(() => import("./pages/student/LessonQuiz.jsx"));
 // const Leaderboard = lazy(() => import("./pages/student/Leaderboard.jsx"));
 // const Login = lazy(() => import("./pages/student/Login.jsx"));
-const Signup = lazy(() => import("./pages/student/Signup.jsx"));
+// const Signup = lazy(() => import("./pages/student/Signup.jsx"));
 // const Practice = lazy(() => import("./pages/student/Practice.jsx"));
 // const TypingQuiz = lazy(() => import("./pages/student/TypingQuiz.jsx"));
 // const SentencePractice = lazy(

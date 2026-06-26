@@ -6,6 +6,10 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, auth, logout, loading, isAuthenticated } = useAuth();
+
+  const [showStreakModal, setShowStreakModal] = useState(false);
 
   const funnelHiddenPaths = [
     "/level-check",
@@ -15,13 +19,13 @@ export default function Navbar() {
     "/webinar",
   ];
 
-  const shouldHideNavbar = funnelHiddenPaths.some((path) =>
-    location.pathname === path || location.pathname.startsWith(path + "/"),
+  const shouldHideNavbar = funnelHiddenPaths.some(
+    (path) =>
+      location.pathname === path || location.pathname.startsWith(path + "/"),
   );
 
   if (shouldHideNavbar) return null;
-  const { user, auth, logout, loading, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+
   const storedTrack =
     typeof window !== "undefined" ? localStorage.getItem("fj_track") || "" : "";
 
@@ -39,9 +43,6 @@ export default function Navbar() {
 
   const trackPath =
     resolvedTrack === "intermediate" ? "/i/lessons" : "/b/lessons";
-
-  // 🎯 STEP 2: Use the local 'useState' instead of 'React.useState' for cleaner code
-  const [showStreakModal, setShowStreakModal] = useState(false);
 
   // ✅ LOADING GUARD — THIS IS THE KEY
   if (loading) {

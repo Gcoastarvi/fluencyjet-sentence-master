@@ -103,25 +103,38 @@ export function AuthProvider({ children }) {
         setUser(nextUser);
         persist(storedToken, nextUser);
 
+        // User data is ready. Allow the page to render immediately.
+        if (!cancelled) {
+          setLoading(false);
+        }
+
         const progressUserId = nextUser?.id || nextUser?.email || null;
 
+        // Refresh lesson progress in the background.
+        // Do not block the page while waiting for this request.
         if (progressUserId) {
-          try {
-            const progressRes = await getLessonProgressSummary();
-            const items = Array.isArray(progressRes?.data?.items)
-              ? progressRes.data.items
-              : [];
-            hydrateProgressSummary(progressUserId, items);
-          } catch (e) {
-            console.error("[Auth] lesson progress hydration failed", e);
-          }
+          getLessonProgressSummary()
+            .then((progressRes) => {
+              if (cancelled) return;
+
+              const items = Array.isArray(progressRes?.data?.items)
+                ? progressRes.data.items
+                : [];
+
+              hydrateProgressSummary(progressUserId, items);
+            })
+            .catch((e) => {
+              console.error("[Auth] lesson progress hydration failed", e);
+            });
         }
       } else {
         // invalid/expired token
         logout();
-      }
 
-      setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
 
     hydrate();

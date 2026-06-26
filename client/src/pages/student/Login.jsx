@@ -88,12 +88,12 @@ export default function Login() {
             </div>
 
             <div className="mt-2 flex justify-end">
-              <a
-                href="/forgot-password"
+              <Link
+                to="/forgot-password"
                 className="text-sm font-semibold text-indigo-700 hover:underline"
               >
                 Forgot password?
-              </a>
+              </Link>
             </div>
           </div>
 
