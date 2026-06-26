@@ -454,7 +454,9 @@ export default function LessonList({ difficulty }) {
   }, [showLeagueIntro]);
 
   // 63: Keep your loading check
-  if (loading) return <LessonSkeleton />;
+  if (loading && lessons.length === 0) {
+    return <LessonSkeleton />;
+  }
 
   // 65: Standardized return (Removed the double return/fragment)
   return (
