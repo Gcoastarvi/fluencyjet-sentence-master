@@ -78,8 +78,26 @@ export default function LessonList({ difficulty }) {
     null;
 
   // 🎯 2. Local State
-  const [lessons, setLessons] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Read cached lessons before the first React render to avoid a white flash.
+  const initialCachedLessons = (() => {
+    try {
+      const cacheKey = `fj_lessons_cache_v2_${difficulty}`;
+      const cached = localStorage.getItem(cacheKey);
+
+      if (!cached) return [];
+
+      const parsed = JSON.parse(cached);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      console.warn("Initial lesson cache read failed:", err);
+      return [];
+    }
+  })();
+
+  const [lessons, setLessons] = useState(() => initialCachedLessons);
+  const [loading, setLoading] = useState(
+    () => initialCachedLessons.length === 0,
+  );
   const [expandedModules, setExpandedModules] = useState({ 1: true });
 
   const [showReward, setShowReward] = useState(false);
