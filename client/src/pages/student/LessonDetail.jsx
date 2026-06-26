@@ -24,6 +24,8 @@ import { useAuth } from "../../context/AuthContext";
 import { readProgress, pct } from "@/lib/progressStore";
 import { freeAllowsLesson } from "../../lib/accessRules";
 
+const preloadSentencePractice = () => import("./SentencePractice.jsx");
+
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
 const ENABLE_CLOZE = false; // keep off unless you really have cloze exercises
@@ -708,6 +710,7 @@ export default function LessonDetail() {
   });
 
   async function startMode(mode) {
+    preloadSentencePractice();
     // 🎯 Added async here
     setShowMoreModes(false);
     if (!lessonId) return;
@@ -1011,6 +1014,7 @@ export default function LessonDetail() {
   ]);
 
   async function smartStart() {
+    preloadSentencePractice();
     // 1. Core Invariants (Keep your safety guards)
     if (!lessonId) return;
     if (isLocked) return goPaywall();

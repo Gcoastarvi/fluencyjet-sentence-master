@@ -8,6 +8,9 @@ import { lessonMeta } from "@/data/lessonMeta";
 import { useAuth } from "../../context/AuthContext";
 import { freeAllowsLesson } from "../../lib/accessRules";
 
+const preloadLessonDetail = () =>
+  import("../../pages/student/LessonDetail.jsx");
+
 export default function LessonCard({ lesson, displayNum, isLocked }) {
   const navigate = useNavigate();
 
@@ -64,6 +67,8 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
 
   const handleClick = () => {
     if (isLocked) return;
+
+    preloadLessonDetail();
 
     const isIntermediate = window.location.pathname.startsWith("/i/");
     const basePath = isIntermediate ? "/i/lesson" : "/b/lesson";
@@ -150,6 +155,9 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
           <div className="flex items-center gap-4">
             <button
               onClick={handleClick}
+              onMouseEnter={preloadLessonDetail}
+              onFocus={preloadLessonDetail}
+              onTouchStart={preloadLessonDetail}
               disabled={isLocked}
               className={`px-9 py-4 rounded-2xl font-black text-base transition-all ${
                 isLocked
