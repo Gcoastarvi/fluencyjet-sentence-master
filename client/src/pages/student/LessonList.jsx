@@ -450,7 +450,7 @@ export default function LessonList({ difficulty }) {
 
   const [showLeagueIntro, setShowLeagueIntro] = useState(() => {
     return !localStorage.getItem("league_intro_seen");
-  });
+  });  
 
   useEffect(() => {
     if (showLeagueIntro) {

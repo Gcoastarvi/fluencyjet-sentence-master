@@ -1162,7 +1162,7 @@ export default function LessonDetail() {
 
     smartStart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []);  
 
   const teach = LESSON_TEACH[Number(lessonId)] || null;
 
