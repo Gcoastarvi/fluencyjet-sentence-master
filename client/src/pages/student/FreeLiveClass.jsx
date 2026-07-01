@@ -10,7 +10,7 @@ import { setToken } from "@/utils/tokenStore";
 /*
   CHANGE THESE TWO VALUES BEFORE YOUR NEXT WEBINAR.
 */
-const WEBINAR_DATE = "Sunday, 28 June 2026";
+const WEBINAR_DATE = "Sunday, 5 July 2026";
 const WEBINAR_TIME = "11:00 AM";
 
 const SEGMENT_CONTENT = {
