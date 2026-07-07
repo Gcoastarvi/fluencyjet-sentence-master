@@ -22,6 +22,11 @@ import StartPractice from "./pages/student/StartPractice";
 import Dashboard from "./pages/student/Dashboard.jsx";
 import Leaderboard from "./pages/student/Leaderboard.jsx";
 import LessonList from "./pages/student/LessonList";
+import LessonDetail from "./pages/student/LessonDetail.jsx";
+import LessonQuiz from "./pages/student/LessonQuiz.jsx";
+import Practice from "./pages/student/Practice.jsx";
+import TypingQuiz from "./pages/student/TypingQuiz.jsx";
+import SentencePractice from "./pages/student/SentencePractice.jsx";
 import Home from "./pages/Home";
 import Login from "./pages/student/Login.jsx";
 import JoinWebinar from "./pages/JoinWebinar";
@@ -57,16 +62,16 @@ function PageLoader() {
 // const Home = lazy(() => import("./pages/Home"));
 // const Webinar = lazy(() => import("./pages/Webinar"));
 // const Dashboard = lazy(() => import("./pages/student/Dashboard.jsx"));
-const LessonDetail = lazy(() => import("./pages/student/LessonDetail.jsx"));
-const LessonQuiz = lazy(() => import("./pages/student/LessonQuiz.jsx"));
+// const LessonDetail = lazy(() => import("./pages/student/LessonDetail.jsx"));
+// const LessonQuiz = lazy(() => import("./pages/student/LessonQuiz.jsx"));
 // const Leaderboard = lazy(() => import("./pages/student/Leaderboard.jsx"));
 // const Login = lazy(() => import("./pages/student/Login.jsx"));
 // const Signup = lazy(() => import("./pages/student/Signup.jsx"));
-const Practice = lazy(() => import("./pages/student/Practice.jsx"));
-const TypingQuiz = lazy(() => import("./pages/student/TypingQuiz.jsx"));
-const SentencePractice = lazy(
-  () => import("./pages/student/SentencePractice.jsx"),
-);
+// const Practice = lazy(() => import("./pages/student/Practice.jsx"));
+// const TypingQuiz = lazy(() => import("./pages/student/TypingQuiz.jsx"));
+// const SentencePractice = lazy(
+//  () => import("./pages/student/SentencePractice.jsx"),
+// );
 const Paywall = lazy(() => import("./pages/student/Paywall.jsx"));
 const Checkout = lazy(() => import("./pages/student/Checkout.jsx"));
 // const LevelCheck = lazy(() => import("./pages/student/LevelCheck"));
