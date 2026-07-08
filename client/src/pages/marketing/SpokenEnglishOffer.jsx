@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const VIMEO_VIDEO_ID = "PASTE_YOUR_VIMEO_VIDEO_ID_HERE";
+const VIMEO_VIDEO_ID = "65e83560-cdde-4f39-8c24-ca04e4716a4b";
 
 const PAYMENT_URL =
   import.meta.env.VITE_SPOKEN_ENGLISH_PAYMENT_URL ||
@@ -25,7 +25,9 @@ function trackEvent(eventName) {
 
 function Section({ children, className = "" }) {
   return (
-    <section className={`mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8 ${className}`}>
+    <section
+      className={`mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8 ${className}`}
+    >
       {children}
     </section>
   );
@@ -63,12 +65,17 @@ function SectionHeader({ eyebrow, title, subtitle, dark = false }) {
   );
 }
 
-function CtaButton({ className = "", children = "Get 1-Year Access for ₹1,199" }) {
+function CtaButton({
+  className = "",
+  children = "Get 1-Year Access for ₹1,199",
+}) {
   const handleClick = () => {
     trackEvent("spoken_english_offer_payment_cta_click");
 
     if (!PAYMENT_URL || PAYMENT_URL.includes("PASTE_RAZORPAY")) {
-      window.alert("Payment link is not configured yet. Please contact WhatsApp Support: 9047122250");
+      window.alert(
+        "Payment link is not configured yet. Please contact WhatsApp Support: 9047122250",
+      );
       return;
     }
 
@@ -96,7 +103,9 @@ function WhatsAppSupport({ dark = false }) {
       href={WHATSAPP_URL}
       onClick={handleClick}
       className={`font-bold underline decoration-lime-400 underline-offset-4 transition ${
-        dark ? "text-white hover:text-lime-300" : "text-purple-900 hover:text-purple-700"
+        dark
+          ? "text-white hover:text-lime-300"
+          : "text-purple-900 hover:text-purple-700"
       }`}
     >
       Need help? WhatsApp Support: 9047122250
@@ -367,40 +376,34 @@ export default function SpokenEnglishOffer() {
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
 
         <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-8 pb-12 text-center sm:px-6 lg:px-8">
-          <h1 className="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            English பேசணும்… ஆனா{" "}
-            <span className="text-yellow-300">Grammar Mistake</span> பயமா?
+          <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+            English பேச Fear குறையணுமா?{" "}
+            <span className="text-yellow-300">
+              Daily Spoken English Gym Practice
+            </span>{" "}
+            Start பண்ணுங்கள்
           </h1>
 
-          <h2 className="mx-auto mt-4 max-w-3xl text-xl font-black text-lime-300 sm:text-3xl">
-            Solution: Spoken English Gym for Tamil Learners
-          </h2>
+          <p className="mx-auto mt-6 max-w-4xl text-lg leading-relaxed text-white/80 sm:text-2xl">
+            FluencyJet Sentence Master-ல் 120 structured lessons, simple grammar
+            explanation, real-life spoken English topics, and Reorder + Typing +
+            Voice + Dictation practice modes கிடைக்கும்.
+          </p>
 
           <div className="mt-8 w-full overflow-hidden rounded-3xl border border-white/20 bg-black shadow-2xl shadow-lime-400/10 sm:mt-10">
             <div className="relative w-full pb-[56.25%]">
               <iframe
                 className="absolute left-0 top-0 h-full w-full"
-                src={"https://player.vimeo.com/video/" + VIMEO_VIDEO_ID + "?title=0&byline=0&portrait=0&badge=0&autopause=0"}
+                src={
+                  "https://player.vimeo.com/video/" +
+                  VIMEO_VIDEO_ID +
+                  "?title=0&byline=0&portrait=0&badge=0&autopause=0"
+                }
                 title="FluencyJet Spoken English Gym VSL"
                 allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
                 allowFullScreen
               />
             </div>
-          </div>
-
-          <div className="mt-7 w-full max-w-4xl rounded-3xl border border-lime-300/25 bg-white/10 p-5 shadow-xl shadow-lime-400/10 backdrop-blur sm:p-7">
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-lime-300">
-              Course Promise
-            </p>
-
-            <p className="mt-3 text-xl font-black leading-snug text-white sm:text-3xl">
-              Simple Grammar + Real-Life Spoken English Topics + Daily Gym Practice
-            </p>
-
-            <p className="mx-auto mt-3 max-w-3xl text-base leading-relaxed text-white/75 sm:text-lg">
-              Reduce grammar mistake fear, avoid wrong sentences, and build spoken English
-              confidence step by step through 120 structured lessons and practice modes.
-            </p>
           </div>
 
           <div className="mt-7 w-full max-w-xl">
@@ -409,8 +412,50 @@ export default function SpokenEnglishOffer() {
             </CtaButton>
 
             <p className="mt-3 text-sm font-semibold text-white/65">
-              Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card, and Credit Card.
+              Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card, and
+              Credit Card.
             </p>
+          </div>
+
+          <div className="mt-7 w-full max-w-3xl rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl shadow-lime-500/10 backdrop-blur">
+            <div className="rounded-[1.5rem] bg-white p-6 text-slate-950">
+              <p className="text-center text-sm font-black uppercase tracking-[0.2em] text-purple-700">
+                Special Online Launch Offer
+              </p>
+
+              <div className="mt-5 text-center">
+                <p className="text-lg font-bold text-slate-700">
+                  Complete 1-Year Access
+                </p>
+                <p className="mt-2 text-6xl font-black tracking-tight text-purple-950">
+                  ₹1,199
+                </p>
+                <p className="mt-2 text-lg font-black text-lime-700">
+                  One-time payment only
+                </p>
+              </div>
+
+              <div className="mt-6 grid gap-3 rounded-2xl bg-slate-50 p-4 text-left sm:grid-cols-2">
+                {[
+                  "120 structured lessons",
+                  "Simple grammar explanation",
+                  "Real-life spoken English topics",
+                  "Reorder + Typing + Voice + Dictation",
+                  "Beginner + Intermediate learning path",
+                  "XP, streaks, and progress tracking",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 text-sm font-bold"
+                  >
+                    <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-lime-300 text-purple-950">
+                      ✓
+                    </span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="mt-5">
@@ -550,7 +595,10 @@ export default function SpokenEnglishOffer() {
             "You may understand English, but struggle to reply quickly.",
             "The missing link is daily spoken English practice.",
           ].map((item) => (
-            <div key={item} className="flex gap-4 rounded-2xl bg-white p-5 shadow-sm">
+            <div
+              key={item}
+              className="flex gap-4 rounded-2xl bg-white p-5 shadow-sm"
+            >
               <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-lime-300 font-black text-purple-950">
                 ✓
               </span>
@@ -561,8 +609,9 @@ export default function SpokenEnglishOffer() {
 
         <div className="mx-auto mt-8 max-w-4xl rounded-3xl bg-purple-950 p-6 text-center text-white shadow-xl">
           <p className="text-xl font-black sm:text-2xl">
-            That is why FluencyJet Sentence Master gives you a Spoken English Gym — a place where you
-            can practice sentences every day, from your current level, without pressure.
+            That is why FluencyJet Sentence Master gives you a Spoken English
+            Gym — a place where you can practice sentences every day, from your
+            current level, without pressure.
           </p>
         </div>
       </Section>
@@ -590,7 +639,9 @@ export default function SpokenEnglishOffer() {
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-lime-300 text-lg font-black text-purple-950">
                   ✓
                 </div>
-                <p className="text-xl font-black leading-snug text-slate-950">{item}</p>
+                <p className="text-xl font-black leading-snug text-slate-950">
+                  {item}
+                </p>
               </div>
             ))}
           </div>
@@ -653,10 +704,13 @@ export default function SpokenEnglishOffer() {
               Complete 1-Year Access
             </h2>
             <p className="mt-5 text-7xl font-black text-yellow-300">₹1,199</p>
-            <p className="mt-3 text-xl font-black text-lime-200">One-time payment only</p>
+            <p className="mt-3 text-xl font-black text-lime-200">
+              One-time payment only
+            </p>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/75">
-              Includes Sentence Master app access, 120 structured lessons, spoken English gym
-              practice modes, and supporting fluency resources.
+              Includes Sentence Master app access, 120 structured lessons,
+              spoken English gym practice modes, and supporting fluency
+              resources.
             </p>
 
             <div className="mt-8">
@@ -664,7 +718,8 @@ export default function SpokenEnglishOffer() {
             </div>
 
             <p className="mt-4 text-sm font-semibold text-white/70">
-              Pay securely using UPI, GPay, PhonePe, Paytm, Debit Card, or Credit Card.
+              Pay securely using UPI, GPay, PhonePe, Paytm, Debit Card, or
+              Credit Card.
             </p>
 
             <div className="mt-5">
@@ -699,22 +754,23 @@ export default function SpokenEnglishOffer() {
             </h2>
             <div className="mt-6 space-y-4 text-lg leading-relaxed text-slate-700">
               <p>
-                Hi, I’m Aravind Pasupathy, founder of FluencyJet. I have trained thousands of
-                learners using memory techniques, language learning systems, and practical English
-                training methods.
+                Hi, I’m Aravind Pasupathy, founder of FluencyJet. I have trained
+                thousands of learners using memory techniques, language learning
+                systems, and practical English training methods.
               </p>
               <p>
-                I created the Spoken English Gym because many Tamil learners don’t fail due to lack
-                of interest. They struggle because they don’t get enough guided sentence-making
-                practice.
+                I created the Spoken English Gym because many Tamil learners
+                don’t fail due to lack of interest. They struggle because they
+                don’t get enough guided sentence-making practice.
               </p>
               <p>
-                Sentence Master is designed to help you practice English step by step — with simple
-                grammar, useful speaking topics, and daily exercises that train your sentence
-                formation.
+                Sentence Master is designed to help you practice English step by
+                step — with simple grammar, useful speaking topics, and daily
+                exercises that train your sentence formation.
               </p>
               <p className="font-black text-purple-950">
-                Guinness World Record holder in memory and trainer to 35,000+ students.
+                Guinness World Record holder in memory and trainer to 35,000+
+                students.
               </p>
             </div>
           </div>
@@ -727,7 +783,11 @@ export default function SpokenEnglishOffer() {
 
           <div className="mx-auto max-w-4xl space-y-4">
             {faqs.map((faq) => (
-              <FaqItem key={faq.question} question={faq.question} answer={faq.answer} />
+              <FaqItem
+                key={faq.question}
+                question={faq.question}
+                answer={faq.answer}
+              />
             ))}
           </div>
         </Section>
@@ -737,11 +797,13 @@ export default function SpokenEnglishOffer() {
         <Section>
           <div className="mx-auto max-w-4xl text-center">
             <h2 className="text-4xl font-black leading-tight sm:text-5xl">
-              Stop Only Watching English Lessons. Start Practicing Spoken English Daily.
+              Stop Only Watching English Lessons. Start Practicing Spoken
+              English Daily.
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/75 sm:text-xl">
-              If you want to reduce fear, avoid wrong sentences, and build the habit of daily
-              English practice, join the Spoken English Gym today.
+              If you want to reduce fear, avoid wrong sentences, and build the
+              habit of daily English practice, join the Spoken English Gym
+              today.
             </p>
 
             <div className="mt-8">
@@ -774,8 +836,9 @@ export default function SpokenEnglishOffer() {
           </div>
 
           <p className="mx-auto mt-5 max-w-3xl text-xs leading-relaxed text-white/50">
-            This site is not part of Facebook or Meta. Additionally, this site is not endorsed by
-            Facebook in any way. Facebook is a trademark of Meta Platforms, Inc.
+            This site is not part of Facebook or Meta. Additionally, this site
+            is not endorsed by Facebook in any way. Facebook is a trademark of
+            Meta Platforms, Inc.
           </p>
         </div>
       </footer>
