@@ -9,6 +9,24 @@ const PAYMENT_URL =
 const WHATSAPP_URL =
   "https://wa.me/919047122250?text=Hi%20FluencyJet%2C%20I%20want%20to%20join%20the%20Spoken%20English%20Gym.%20I%20need%20help.";
 
+function MarketingNavHider() {
+  return (
+    <style>{`
+      body.marketing-no-nav header,
+      body.marketing-no-nav nav,
+      body.marketing-no-nav [data-testid="navbar"],
+      body.marketing-no-nav .navbar,
+      body.marketing-no-nav .site-header {
+        display: none !important;
+      }
+
+      body.marketing-no-nav {
+        overflow-x: hidden;
+      }
+    `}</style>
+  );
+}
+
 function trackEvent(eventName) {
   try {
     if (window.gtag) {
@@ -289,7 +307,12 @@ function FaqItem({ question, answer }) {
 export default function SpokenEnglishOffer() {
   useEffect(() => {
     document.title = "FluencyJet Spoken English Gym - 1 Year Access";
+    document.body.classList.add("marketing-no-nav");
     trackEvent("spoken_english_offer_page_view");
+
+    return () => {
+      document.body.classList.remove("marketing-no-nav");
+    };
   }, []);
 
   const offerItems = [
@@ -370,7 +393,9 @@ export default function SpokenEnglishOffer() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
+    <>
+      <MarketingNavHider />
+      <main className="min-h-screen bg-slate-50 text-slate-950">
       <section className="relative overflow-hidden bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
         <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-lime-300/15 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
@@ -833,5 +858,6 @@ export default function SpokenEnglishOffer() {
         </CtaButton>
       </div>
     </main>
+    </>
   );
 }

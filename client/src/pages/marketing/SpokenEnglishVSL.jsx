@@ -3,6 +3,24 @@ import { useEffect, useState } from "react";
 const VIMEO_VIDEO_ID = "1206728761";
 const CTA_DELAY_MS = 3 * 60 * 1000;
 
+function MarketingNavHider() {
+  return (
+    <style>{`
+      body.marketing-no-nav header,
+      body.marketing-no-nav nav,
+      body.marketing-no-nav [data-testid="navbar"],
+      body.marketing-no-nav .navbar,
+      body.marketing-no-nav .site-header {
+        display: none !important;
+      }
+
+      body.marketing-no-nav {
+        overflow-x: hidden;
+      }
+    `}</style>
+  );
+}
+
 function trackEvent(eventName) {
   try {
     if (window.gtag) window.gtag("event", eventName);
@@ -17,6 +35,7 @@ export default function SpokenEnglishVSL() {
 
   useEffect(() => {
     document.title = "Spoken English Gym for Tamil Learners | FluencyJet";
+    document.body.classList.add("marketing-no-nav");
     trackEvent("spoken_english_vsl_page_view");
 
     const timer = window.setTimeout(() => {
@@ -24,7 +43,10 @@ export default function SpokenEnglishVSL() {
       trackEvent("spoken_english_vsl_cta_revealed");
     }, CTA_DELAY_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      document.body.classList.remove("marketing-no-nav");
+    };
   }, []);
 
   const handleCtaClick = () => {
@@ -37,7 +59,9 @@ export default function SpokenEnglishVSL() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
+    <>
+      <MarketingNavHider />
+      <main className="min-h-screen bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
       <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-4 py-8 pb-10 text-center sm:px-6 lg:px-8">
         <h1 className="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
           English பேசணும்… ஆனா{" "}
@@ -91,5 +115,6 @@ export default function SpokenEnglishVSL() {
         </footer>
       </section>
     </main>
+    </>
   );
 }
