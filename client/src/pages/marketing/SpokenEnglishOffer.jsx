@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+const VIMEO_VIDEO_ID = "PASTE_YOUR_VIMEO_VIDEO_ID_HERE";
+
 const PAYMENT_URL =
   import.meta.env.VITE_SPOKEN_ENGLISH_PAYMENT_URL ||
   "PASTE_RAZORPAY_PAYMENT_LINK_HERE";
@@ -361,70 +363,58 @@ export default function SpokenEnglishOffer() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
       <section className="relative overflow-hidden bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
-        <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-lime-300/20 blur-3xl" />
+        <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-lime-300/15 blur-3xl" />
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
 
-        <div className="relative mx-auto grid min-h-screen w-full max-w-6xl items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8">
-          <div>
-            <p className="mb-4 inline-flex rounded-full border border-lime-300/30 bg-white/10 px-4 py-2 text-sm font-black uppercase tracking-[0.18em] text-lime-300">
-              FluencyJet Spoken English Gym
-            </p>
+        <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-8 pb-12 text-center sm:px-6 lg:px-8">
+          <h1 className="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+            English பேசணும்… ஆனா{" "}
+            <span className="text-yellow-300">Grammar Mistake</span> பயமா?
+          </h1>
 
-            <h1 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              English பேச Fear குறையணுமா?{" "}
-              <span className="text-yellow-300">Daily Spoken English Gym Practice</span>{" "}
-              Start பண்ணுங்கள்
-            </h1>
+          <h2 className="mx-auto mt-4 max-w-3xl text-xl font-black text-lime-300 sm:text-3xl">
+            Solution: Spoken English Gym for Tamil Learners
+          </h2>
 
-            <p className="mt-6 max-w-3xl text-lg leading-relaxed text-white/80 sm:text-2xl">
-              FluencyJet Sentence Master-ல் 120 structured lessons, simple grammar explanation,
-              real-life spoken English topics, and Reorder + Typing + Voice + Dictation practice
-              modes கிடைக்கும்.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-              <CtaButton />
-              <div className="text-sm font-semibold text-white/70">
-                Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card, and Credit Card.
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <WhatsAppSupport dark />
+          <div className="mt-8 w-full overflow-hidden rounded-3xl border border-white/20 bg-black shadow-2xl shadow-lime-400/10 sm:mt-10">
+            <div className="relative w-full pb-[56.25%]">
+              <iframe
+                className="absolute left-0 top-0 h-full w-full"
+                src={"https://player.vimeo.com/video/" + VIMEO_VIDEO_ID + "?title=0&byline=0&portrait=0&badge=0&autopause=0"}
+                title="FluencyJet Spoken English Gym VSL"
+                allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+                allowFullScreen
+              />
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl shadow-lime-500/10 backdrop-blur">
-            <div className="rounded-[1.5rem] bg-white p-6 text-slate-950">
-              <p className="text-center text-sm font-black uppercase tracking-[0.2em] text-purple-700">
-                Special Online Launch Offer
-              </p>
-              <div className="mt-6 text-center">
-                <p className="text-lg font-bold text-slate-700">Complete 1-Year Access</p>
-                <p className="mt-2 text-6xl font-black tracking-tight text-purple-950">₹1,199</p>
-                <p className="mt-2 text-lg font-black text-lime-700">One-time payment only</p>
-              </div>
+          <div className="mt-7 w-full max-w-4xl rounded-3xl border border-lime-300/25 bg-white/10 p-5 shadow-xl shadow-lime-400/10 backdrop-blur sm:p-7">
+            <p className="text-sm font-black uppercase tracking-[0.22em] text-lime-300">
+              Course Promise
+            </p>
 
-              <div className="mt-6 space-y-3 rounded-2xl bg-slate-50 p-4">
-                {[
-                  "120 structured lessons",
-                  "Simple grammar explanation",
-                  "Real-life spoken English topics",
-                  "Reorder + Typing + Voice + Dictation",
-                  "Beginner + Intermediate learning path",
-                  "XP, streaks, and progress tracking",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3 text-sm font-bold">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-lime-300 text-purple-950">
-                      ✓
-                    </span>
-                    {item}
-                  </div>
-                ))}
-              </div>
+            <p className="mt-3 text-xl font-black leading-snug text-white sm:text-3xl">
+              Simple Grammar + Real-Life Spoken English Topics + Daily Gym Practice
+            </p>
 
-              <CtaButton className="mt-6 w-full" />
-            </div>
+            <p className="mx-auto mt-3 max-w-3xl text-base leading-relaxed text-white/75 sm:text-lg">
+              Reduce grammar mistake fear, avoid wrong sentences, and build spoken English
+              confidence step by step through 120 structured lessons and practice modes.
+            </p>
+          </div>
+
+          <div className="mt-7 w-full max-w-xl">
+            <CtaButton className="w-full">
+              Get 1-Year Access for ₹1,199
+            </CtaButton>
+
+            <p className="mt-3 text-sm font-semibold text-white/65">
+              Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card, and Credit Card.
+            </p>
+          </div>
+
+          <div className="mt-5">
+            <WhatsAppSupport dark />
           </div>
         </div>
       </section>
