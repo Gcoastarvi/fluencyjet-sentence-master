@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
-const VIMEO_VIDEO_ID = "PASTE_YOUR_VIMEO_VIDEO_ID_HERE";
+const VIMEO_VIDEO_ID = "65e83560-cdde-4f39-8c24-ca04e4716a4b";
 
 const PAYMENT_URL =
   import.meta.env.VITE_SPOKEN_ENGLISH_PAYMENT_URL ||
-  "PASTE_RAZORPAY_PAYMENT_LINK_HERE";
+  "https://rzp.io/rzp/U2adLCc";
 
 const WHATSAPP_URL =
   "https://wa.me/919047122250?text=Hi%20FluencyJet%2C%20I%20want%20to%20join%20the%20Spoken%20English%20Gym.%20I%20need%20help.";
