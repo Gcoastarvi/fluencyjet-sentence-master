@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const VIMEO_VIDEO_ID = "65e83560-cdde-4f39-8c24-ca04e4716a4b";
+const VIMEO_VIDEO_ID = "PASTE_YOUR_VIMEO_VIDEO_ID_HERE";
 
 const PAYMENT_URL =
   import.meta.env.VITE_SPOKEN_ENGLISH_PAYMENT_URL ||
@@ -378,27 +378,21 @@ export default function SpokenEnglishOffer() {
         <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-8 pb-12 text-center sm:px-6 lg:px-8">
           <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             English பேச Fear குறையணுமா?{" "}
-            <span className="text-yellow-300">
-              Daily Spoken English Gym Practice
-            </span>{" "}
+            <span className="text-yellow-300">Daily Spoken English Gym Practice</span>{" "}
             Start பண்ணுங்கள்
           </h1>
 
           <p className="mx-auto mt-6 max-w-4xl text-lg leading-relaxed text-white/80 sm:text-2xl">
-            FluencyJet Sentence Master-ல் 120 structured lessons, simple grammar
-            explanation, real-life spoken English topics, and Reorder + Typing +
-            Voice + Dictation practice modes கிடைக்கும்.
+            FluencyJet Sentence Master-ல் 120 structured lessons, simple grammar explanation,
+            real-life spoken English topics, and Reorder + Typing + Voice + Dictation practice
+            modes கிடைக்கும்.
           </p>
 
           <div className="mt-8 w-full overflow-hidden rounded-3xl border border-white/20 bg-black shadow-2xl shadow-lime-400/10 sm:mt-10">
             <div className="relative w-full pb-[56.25%]">
               <iframe
                 className="absolute left-0 top-0 h-full w-full"
-                src={
-                  "https://player.vimeo.com/video/" +
-                  VIMEO_VIDEO_ID +
-                  "?title=0&byline=0&portrait=0&badge=0&autopause=0"
-                }
+                src={"https://player.vimeo.com/video/" + VIMEO_VIDEO_ID + "?title=0&byline=0&portrait=0&badge=0&autopause=0"}
                 title="FluencyJet Spoken English Gym VSL"
                 allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
                 allowFullScreen
@@ -412,8 +406,7 @@ export default function SpokenEnglishOffer() {
             </CtaButton>
 
             <p className="mt-3 text-sm font-semibold text-white/65">
-              Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card, and
-              Credit Card.
+              Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card, and Credit Card.
             </p>
           </div>
 
@@ -424,15 +417,9 @@ export default function SpokenEnglishOffer() {
               </p>
 
               <div className="mt-5 text-center">
-                <p className="text-lg font-bold text-slate-700">
-                  Complete 1-Year Access
-                </p>
-                <p className="mt-2 text-6xl font-black tracking-tight text-purple-950">
-                  ₹1,199
-                </p>
-                <p className="mt-2 text-lg font-black text-lime-700">
-                  One-time payment only
-                </p>
+                <p className="text-lg font-bold text-slate-700">Complete 1-Year Access</p>
+                <p className="mt-2 text-6xl font-black tracking-tight text-purple-950">₹1,199</p>
+                <p className="mt-2 text-lg font-black text-lime-700">One-time payment only</p>
               </div>
 
               <div className="mt-6 grid gap-3 rounded-2xl bg-slate-50 p-4 text-left sm:grid-cols-2">
@@ -444,10 +431,7 @@ export default function SpokenEnglishOffer() {
                   "Beginner + Intermediate learning path",
                   "XP, streaks, and progress tracking",
                 ].map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-3 text-sm font-bold"
-                  >
+                  <div key={item} className="flex items-center gap-3 text-sm font-bold">
                     <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-lime-300 text-purple-950">
                       ✓
                     </span>

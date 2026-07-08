@@ -5,13 +5,8 @@ const CTA_DELAY_MS = 3 * 60 * 1000;
 
 function trackEvent(eventName) {
   try {
-    if (window.gtag) {
-      window.gtag("event", eventName);
-    }
-
-    if (window.fbq) {
-      window.fbq("trackCustom", eventName);
-    }
+    if (window.gtag) window.gtag("event", eventName);
+    if (window.fbq) window.fbq("trackCustom", eventName);
   } catch (error) {
     console.warn("Tracking error:", error);
   }
@@ -43,23 +38,17 @@ export default function SpokenEnglishVSL() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
-      <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-4 py-8 sm:px-6 lg:px-8">
-        <div className="w-full text-center">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-lime-300 sm:text-base">
-            FluencyJet Spoken English Gym
-          </p>
+      <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-4 py-8 pb-10 text-center sm:px-6 lg:px-8">
+        <h1 className="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+          English பேசணும்… ஆனா{" "}
+          <span className="text-yellow-300">Grammar Mistake</span> பயமா?
+        </h1>
 
-          <h1 className="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            English பேசணும்… ஆனா{" "}
-            <span className="text-yellow-300">Grammar Mistake</span> பயமா?
-          </h1>
+        <h2 className="mx-auto mt-4 max-w-3xl text-xl font-black text-lime-300 sm:text-3xl">
+          Solution: Spoken English Gym for Tamil Learners
+        </h2>
 
-          <h2 className="mx-auto mt-5 max-w-3xl text-xl font-bold text-lime-300 sm:text-3xl">
-            Solution: Spoken English Gym for Tamil Learners
-          </h2>
-        </div>
-
-        <div className="mt-8 w-full overflow-hidden rounded-2xl border border-white/20 bg-black shadow-2xl shadow-lime-400/10 sm:mt-10">
+        <div className="mt-8 w-full overflow-hidden rounded-3xl border border-white/20 bg-black shadow-2xl shadow-lime-400/10 sm:mt-10">
           <div className="relative w-full pb-[56.25%]">
             <iframe
               className="absolute left-0 top-0 h-full w-full"
