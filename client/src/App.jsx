@@ -212,8 +212,8 @@ function LessonRedirect() {
 }
 
 export default function App() {
-  const location = useLocation();
-  const hideMarketingNav = ["/spoken-english-vsl", "/spoken-english-offer"].includes(location.pathname);
+  const currentPath = window.location.pathname;
+  const hideMarketingNav = ["/spoken-english-vsl", "/spoken-english-offer"].includes(currentPath);
   return (
     <AuthProvider>
       <Router>
