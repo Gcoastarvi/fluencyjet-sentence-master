@@ -34,6 +34,7 @@ import LevelCheck from "./pages/student/LevelCheck";
 import AdminLessons from "./pages/admin/AdminLessons.jsx";
 import Signup from "./pages/student/Signup.jsx";
 import SpokenEnglishVSL from "./pages/marketing/SpokenEnglishVSL";
+import SpokenEnglishOffer from "./pages/marketing/SpokenEnglishOffer";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -248,6 +249,10 @@ export default function App() {
               <Route
                 path="/spoken-english-vsl"
                 element={<SpokenEnglishVSL />}
+              />
+              <Route
+                path="/spoken-english-offer"
+                element={<SpokenEnglishOffer />}
               />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
