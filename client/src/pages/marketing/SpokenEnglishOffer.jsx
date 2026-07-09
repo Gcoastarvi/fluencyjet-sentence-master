@@ -162,90 +162,23 @@ function LessonSystemCard({ number, title, text, examples }) {
   );
 }
 
-function PracticeMock({ title, text, type }) {
-  const renderMock = () => {
-    if (type === "reorder") {
-      return (
-        <div className="space-y-3">
-          <div className="rounded-xl bg-white p-3 text-sm font-bold text-slate-900">
-            நான் தினமும் English practice பண்ணுகிறேன்.
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {["practice", "English", "every day", "I"].map((word) => (
-              <span
-                key={word}
-                className="rounded-xl bg-lime-300 px-3 py-2 text-sm font-black text-slate-950"
-              >
-                {word}
-              </span>
-            ))}
-          </div>
-          <div className="rounded-xl bg-purple-900 p-3 text-sm font-bold text-white">
-            I practice English every day.
-          </div>
-        </div>
-      );
-    }
-
-    if (type === "typing") {
-      return (
-        <div className="space-y-3">
-          <div className="rounded-xl bg-white p-3 text-sm font-bold text-slate-900">
-            நான் English பேச விரும்புகிறேன்.
-          </div>
-          <div className="rounded-xl border border-lime-300 bg-black/40 p-3 text-sm font-semibold text-lime-200">
-            I want to speak English.
-          </div>
-          <div className="h-2 rounded-full bg-lime-300" />
-        </div>
-      );
-    }
-
-    if (type === "voice") {
-      return (
-        <div className="space-y-4 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-lime-300 text-3xl">
-            🎙️
-          </div>
-          <div className="rounded-xl bg-white p-3 text-sm font-black text-slate-900">
-            Speak: I can improve my English.
-          </div>
-          <div className="mx-auto flex max-w-48 gap-1">
-            {[35, 55, 80, 45, 70, 50, 65].map((height, index) => (
-              <span
-                key={index}
-                className="w-full rounded-full bg-lime-300"
-                style={{ height: `${height}px` }}
-              />
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-3">
-        <div className="rounded-xl bg-white p-3 text-sm font-bold text-slate-900">
-          Listen carefully and type the sentence.
-        </div>
-        <div className="flex items-center justify-center gap-3 rounded-xl bg-lime-300 p-4 text-purple-950">
-          <span className="text-2xl">▶️</span>
-          <div className="h-2 w-40 rounded-full bg-purple-950" />
-        </div>
-        <div className="rounded-xl border border-white/20 bg-black/40 p-3 text-sm font-semibold text-white/80">
-          I am learning English now...
-        </div>
-      </div>
-    );
-  };
-
+function PracticeMock({ title, text, mediaSrc }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-2xl shadow-black/20 backdrop-blur">
       <div className="bg-gradient-to-br from-purple-950 to-slate-950 p-5">
-        <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
-          {renderMock()}
+        <div className="mx-auto max-w-[260px] overflow-hidden rounded-[2rem] border-[10px] border-slate-900 bg-slate-950 shadow-2xl">
+          <video
+            src={mediaSrc}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            className="aspect-[9/16] w-full bg-slate-950 object-contain"
+          />
         </div>
       </div>
+
       <div className="bg-white p-6">
         <h3 className="text-2xl font-black text-slate-950">{title}</h3>
         <p className="mt-3 text-base leading-relaxed text-slate-700">{text}</p>
@@ -561,22 +494,22 @@ export default function SpokenEnglishOffer() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <PracticeMock
-              type="reorder"
+              mediaSrc="/practice-modes/reorder.mp4"
               title="Reorder Practice"
               text="Arrange the words in the correct order and train your sentence structure."
             />
             <PracticeMock
-              type="typing"
+              mediaSrc="/practice-modes/typing.mp4"
               title="Typing Practice"
               text="See the Tamil meaning and type the correct English sentence yourself."
             />
             <PracticeMock
-              type="voice"
+              mediaSrc="/practice-modes/voice.mp4"
               title="Voice Practice"
               text="Speak the sentence aloud and build speaking confidence."
             />
             <PracticeMock
-              type="dictation"
+              mediaSrc="/practice-modes/dictation.mp4"
               title="Dictation Practice"
               text="Listen carefully, understand the sentence, and practice English through listening."
             />
