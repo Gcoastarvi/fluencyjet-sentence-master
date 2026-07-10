@@ -133,73 +133,133 @@ function WhatsAppSupport({ dark = false }) {
 }
 
 function FeatureIcon({ type }) {
-  const common = "h-8 w-8 stroke-current";
+  const iconClass = "h-8 w-8";
 
-  if (type === "lessons") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" className={common} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M8 6h11" />
-        <path d="M8 12h11" />
-        <path d="M8 18h11" />
-        <path d="M3.5 6l1 1 2-2" />
-        <path d="M3.5 12l1 1 2-2" />
-        <path d="M3.5 18l1 1 2-2" />
-      </svg>
-    );
+  switch (type) {
+    case "lessons":
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={iconClass}
+          stroke="currentColor"
+          strokeWidth="2.1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="4" y="3.5" width="13" height="16" rx="2.5" />
+          <path d="M8 8h5" />
+          <path d="M8 12h5" />
+          <path d="M8 16h3" />
+          <path d="M17 7h2.5a1.5 1.5 0 0 1 1.5 1.5v10a2 2 0 0 1-2 2H8" />
+          <path d="m14.5 16.5 1.5 1.5 3-3.5" />
+        </svg>
+      );
+
+    case "grammar":
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={iconClass}
+          stroke="currentColor"
+          strokeWidth="2.1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11a3 3 0 0 1 3 3v14H7a3 3 0 0 0-3 3V5.5Z" />
+          <path d="M14 6h3.5A2.5 2.5 0 0 1 20 8.5V20h-6" />
+          <path d="M7.5 8.5h3" />
+          <path d="M7.5 12h3" />
+          <path d="m15.5 14.5 1.6 1.6 3.1-3.6" />
+        </svg>
+      );
+
+    case "speaking":
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={iconClass}
+          stroke="currentColor"
+          strokeWidth="2.1"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M4 5.5A3.5 3.5 0 0 1 7.5 2h6A3.5 3.5 0 0 1 17 5.5v4A3.5 3.5 0 0 1 13.5 13H10l-4.5 4v-4.5A3.5 3.5 0 0 1 4 9.5v-4Z" />
+          <path d="M14.5 14.5H17A3 3 0 0 1 20 17.5V19a3 3 0 0 1-3 3h-1v2l-3-2h-1" />
+          <path d="M8 7h5" />
+          <path d="M8 9.5h3" />
+        </svg>
+      );
+
+    case "gym":
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          className={iconClass}
+          stroke="currentColor"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 9v6" />
+          <path d="M6 7v10" />
+          <path d="M9 10v4" />
+          <path d="M15 10v4" />
+          <path d="M18 7v10" />
+          <path d="M21 9v6" />
+          <path d="M9 12h6" />
+          <path d="M8.5 5.5C9.5 4.5 10.7 4 12 4s2.5.5 3.5 1.5" />
+        </svg>
+      );
+
+    default:
+      return null;
   }
-
-  if (type === "grammar") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" className={common} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M5 4.5h8a3 3 0 0 1 3 3v12H8a3 3 0 0 0-3 3v-18Z" />
-        <path d="M16 7.5h3a2 2 0 0 1 2 2v10h-5" />
-        <path d="M8 9h5" />
-        <path d="M8 13h4" />
-        <path d="m14.5 15.5 1.7 1.7 3.3-3.7" />
-      </svg>
-    );
-  }
-
-  if (type === "speaking") {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" className={common} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7.5 15.5H7a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v3.5a4 4 0 0 1-4 4h-2.5L6 20v-4.5" />
-        <path d="M15 13h2a4 4 0 0 1 4 4v.5a3.5 3.5 0 0 1-3.5 3.5H17v2l-2.5-2H13" />
-        <path d="M7.5 9.5h5" />
-        <path d="M7.5 12h3" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={common} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 8v8" />
-      <path d="M18 8v8" />
-      <path d="M4 10v4" />
-      <path d="M20 10v4" />
-      <path d="M6 12h12" />
-      <path d="M9 6h6" />
-      <path d="M9 18h6" />
-      <path d="M14.5 5.5c1.8.3 3.2 1.2 4.2 2.5" />
-      <path d="M9.5 18.5c-1.8-.3-3.2-1.2-4.2-2.5" />
-    </svg>
-  );
 }
 
 function InfoCard({ title, text, iconType, number }) {
+  const iconShell = {
+    lessons:
+      "from-purple-950 via-purple-800 to-indigo-700 text-lime-300 shadow-purple-200",
+    grammar:
+      "from-indigo-950 via-blue-800 to-purple-700 text-cyan-200 shadow-blue-200",
+    speaking:
+      "from-fuchsia-950 via-purple-800 to-violet-700 text-lime-200 shadow-fuchsia-200",
+    gym:
+      "from-emerald-950 via-purple-900 to-lime-700 text-lime-200 shadow-lime-200",
+  }[iconType];
+
   return (
-    <div className="group relative overflow-hidden rounded-[2rem] border border-purple-100 bg-white p-[1px] shadow-xl shadow-purple-100/70 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-200/80">
+    <div className="group relative h-full overflow-hidden rounded-[2rem] border border-purple-100 bg-white shadow-xl shadow-purple-100/70 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-200/80">
       <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-lime-300 via-purple-500 to-lime-300" />
 
-      <div className="relative h-full rounded-[1.95rem] bg-gradient-to-b from-white via-white to-purple-50/40 p-6 sm:p-7">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-950 via-purple-800 to-purple-950 text-lime-300 shadow-lg shadow-purple-200 transition duration-300 group-hover:scale-105 group-hover:shadow-lime-200/60">
-            <FeatureIcon type={iconType} />
+      <div className="relative flex h-full flex-col bg-gradient-to-b from-white via-white to-purple-50/40 p-6 sm:p-7">
+        <div className="mb-7 flex items-start justify-between gap-4">
+          <div className="relative">
+            <div
+              className={"absolute inset-1 rounded-2xl bg-gradient-to-br blur-xl opacity-35 " + iconShell}
+            />
+
+            <div
+              className={
+                "relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br shadow-lg transition duration-300 group-hover:scale-105 " +
+                iconShell
+              }
+            >
+              <FeatureIcon type={iconType} />
+            </div>
           </div>
 
-          <div className="rounded-full border border-lime-200 bg-lime-50 px-3 py-1 text-xs font-black tracking-[0.18em] text-purple-800">
+          <span className="rounded-full border border-purple-200 bg-white px-3 py-1 text-xs font-black tracking-[0.16em] text-purple-700 shadow-sm">
             {number}
-          </div>
+          </span>
         </div>
 
         <h3 className="text-2xl font-black leading-tight text-slate-950">
@@ -515,25 +575,29 @@ export default function SpokenEnglishOffer() {
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <InfoCard
-              icon="🎯"
-              title="120 Structured Lessons"
-              text="Step-by-step spoken English lessons from self-introduction to daily conversations, questions, workplace English, interviews, and more."
-            />
+            iconType="lessons"
+            number="01"
+            title="120 Structured Lessons"
+            text="Step-by-step spoken English lessons from self-introduction to daily conversations, questions, workplace English, interviews, and more."
+          />
             <InfoCard
-              icon="📘"
-              title="Simple Grammar Explanation"
-              text="No confusing grammar overload. Each lesson explains one practical grammar point that you can use while speaking."
-            />
+            iconType="grammar"
+            number="02"
+            title="Simple Grammar Explanation"
+            text="No confusing grammar overload. Each lesson explains one practical grammar point that you can use while speaking."
+          />
             <InfoCard
-              icon="💬"
-              title="Real-Life Speaking Topics"
-              text="Practice English for useful situations like introducing yourself, asking questions, daily routine, work, problems, opinions, and interviews."
-            />
+            iconType="speaking"
+            number="03"
+            title="Real-Life Speaking Topics"
+            text="Practice English for useful situations like introducing yourself, asking questions, daily routine, work, problems, opinions, and interviews."
+          />
             <InfoCard
-              icon="🏋️"
-              title="Spoken English Gym Practice"
-              text="Build sentences repeatedly through Reorder, Typing, Voice, and Dictation practice modes."
-            />
+            iconType="gym"
+            number="04"
+            title="Spoken English Gym Practice"
+            text="Build sentences repeatedly through Reorder, Typing, Voice, and Dictation practice modes."
+          />
           </div>
         </Section>
 
