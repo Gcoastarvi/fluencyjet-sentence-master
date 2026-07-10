@@ -26,6 +26,7 @@ function MarketingNavHider() {
     `}</style>
   );
 }
+g;
 
 function trackEvent(eventName) {
   try {
@@ -329,468 +330,491 @@ export default function SpokenEnglishOffer() {
     <>
       <MarketingNavHider />
       <main className="min-h-screen bg-slate-50 text-slate-950">
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
-        <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-lime-300/15 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
+        <section className="relative overflow-hidden bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
+          <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-lime-300/15 blur-3xl" />
+          <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
 
-        <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-8 pb-12 text-center sm:px-6 lg:px-8">
-          <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            English பேச Fear குறையணுமா?{" "}
-            <span className="text-yellow-300">Daily Spoken English Gym Practice</span>{" "}
-            Start பண்ணுங்கள்
-          </h1>
+          <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-8 pb-12 text-center sm:px-6 lg:px-8">
+            <h1 className="mx-auto max-w-5xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+              English பேச Fear குறையணுமா?{" "}
+              <span className="text-yellow-300">
+                Daily Spoken English Gym Practice
+              </span>{" "}
+              Start பண்ணுங்கள்
+            </h1>
 
-          <p className="mx-auto mt-6 max-w-4xl text-lg leading-relaxed text-white/80 sm:text-2xl">
-            FluencyJet Sentence Master-ல் 120 structured lessons, simple grammar explanation,
-            real-life spoken English topics, and Reorder + Typing + Voice + Dictation practice
-            modes கிடைக்கும்.
-          </p>
+            <p className="mx-auto mt-6 max-w-4xl text-lg leading-relaxed text-white/80 sm:text-2xl">
+              FluencyJet Sentence Master-ல் 120 structured lessons, simple
+              grammar explanation, real-life spoken English topics, and Reorder
+              + Typing + Voice + Dictation practice modes கிடைக்கும்.
+            </p>
 
-          <div className="mt-8 w-full overflow-hidden rounded-3xl border border-white/20 bg-black shadow-2xl shadow-lime-400/10 sm:mt-10">
-            <div className="relative w-full pb-[56.25%]">
-              <iframe
-                className="absolute left-0 top-0 h-full w-full"
-                src={"https://player.vimeo.com/video/" + VIMEO_VIDEO_ID + "?title=0&byline=0&portrait=0&badge=0&autopause=0"}
-                title="FluencyJet Spoken English Gym VSL"
-                allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
-                allowFullScreen
+            <div className="mt-8 w-full overflow-hidden rounded-3xl border border-white/20 bg-black shadow-2xl shadow-lime-400/10 sm:mt-10">
+              <div className="relative w-full pb-[56.25%]">
+                <iframe
+                  className="absolute left-0 top-0 h-full w-full"
+                  src={
+                    "https://player.vimeo.com/video/" +
+                    VIMEO_VIDEO_ID +
+                    "?title=0&byline=0&portrait=0&badge=0&autopause=0"
+                  }
+                  title="FluencyJet Spoken English Gym VSL"
+                  allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+
+            <div className="mt-7 w-full max-w-xl">
+              <CtaButton className="w-full">
+                Get 1-Year Access for ₹1,199
+              </CtaButton>
+
+              <p className="mt-3 text-sm font-semibold text-white/65">
+                Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card, and
+                Credit Card.
+              </p>
+            </div>
+
+            <div className="mt-7 w-full max-w-3xl rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl shadow-lime-500/10 backdrop-blur">
+              <div className="rounded-[1.5rem] bg-white p-6 text-slate-950">
+                <p className="text-center text-sm font-black uppercase tracking-[0.2em] text-purple-700">
+                  Special Online Launch Offer
+                </p>
+
+                <div className="mt-5 text-center">
+                  <p className="text-lg font-bold text-slate-700">
+                    Complete 1-Year Access
+                  </p>
+                  <p className="mt-2 text-6xl font-black tracking-tight text-purple-950">
+                    ₹1,199
+                  </p>
+                  <p className="mt-2 text-lg font-black text-lime-700">
+                    One-time payment only
+                  </p>
+                </div>
+
+                <div className="mt-6 grid gap-3 rounded-2xl bg-slate-50 p-4 text-left sm:grid-cols-2">
+                  {[
+                    "120 structured lessons",
+                    "Simple grammar explanation",
+                    "Real-life spoken English topics",
+                    "Reorder + Typing + Voice + Dictation",
+                    "Beginner + Intermediate learning path",
+                    "XP, streaks, and progress tracking",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-3 text-sm font-bold"
+                    >
+                      <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-lime-300 text-purple-950">
+                        ✓
+                      </span>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <WhatsAppSupport dark />
+            </div>
+          </div>
+        </section>
+
+        <Section>
+          <SectionHeader
+            eyebrow="Inside The Gym"
+            title="Inside The Spoken English Gym, You Don’t Just Watch. You Practice."
+            subtitle="Most English learners watch videos, learn rules, and still struggle when they need to speak. Sentence Master is different. Every lesson helps you understand one useful English structure and immediately practice it through gym-style exercises."
+          />
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <InfoCard
+              icon="🎯"
+              title="120 Structured Lessons"
+              text="Step-by-step spoken English lessons from self-introduction to daily conversations, questions, workplace English, interviews, and more."
+            />
+            <InfoCard
+              icon="📘"
+              title="Simple Grammar Explanation"
+              text="No confusing grammar overload. Each lesson explains one practical grammar point that you can use while speaking."
+            />
+            <InfoCard
+              icon="💬"
+              title="Real-Life Speaking Topics"
+              text="Practice English for useful situations like introducing yourself, asking questions, daily routine, work, problems, opinions, and interviews."
+            />
+            <InfoCard
+              icon="🏋️"
+              title="Spoken English Gym Practice"
+              text="Build sentences repeatedly through Reorder, Typing, Voice, and Dictation practice modes."
+            />
+          </div>
+        </Section>
+
+        <section className="bg-gradient-to-b from-purple-950 to-slate-950">
+          <Section>
+            <SectionHeader
+              dark
+              eyebrow="Lesson System"
+              title="Every Lesson Connects 3 Things"
+              subtitle="Grammar + Speaking Topic + Gym Practice = Better Spoken English Practice"
+            />
+
+            <div className="grid gap-6 lg:grid-cols-3">
+              <LessonSystemCard
+                number="1"
+                title="Grammar Point"
+                text="Understand one useful English structure in a simple way."
+                examples={[
+                  "Have / Has",
+                  "Present Simple",
+                  "Present Continuous",
+                  "Future & Past Tenses",
+                  "Can / Should / Will",
+                  "Questions",
+                  "Adjectives",
+                ]}
+              />
+              <LessonSystemCard
+                number="2"
+                title="Spoken English Topic"
+                text="Use that structure in a practical speaking situation."
+                examples={[
+                  "Self-introduction",
+                  "Daily routine",
+                  "Asking for help",
+                  "Office conversation",
+                  "Interview answers",
+                  "Explaining problems",
+                ]}
+              />
+              <LessonSystemCard
+                number="3"
+                title="Gym Practice"
+                text="Practice the same sentence pattern again and again until your brain becomes faster."
+                examples={[
+                  "Quick English",
+                  "Grammar Genius",
+                  "Fluennt Voice",
+                  "Listening",
+                ]}
               />
             </div>
-          </div>
+          </Section>
+        </section>
 
-          <div className="mt-7 w-full max-w-xl">
-            <CtaButton className="w-full">
-              Get 1-Year Access for ₹1,199
-            </CtaButton>
+        <section className="bg-slate-950">
+          <Section>
+            <SectionHeader
+              dark
+              eyebrow="Practice Modes"
+              title="See How The Spoken English Gym Works"
+              subtitle="This is not passive learning. You actively build, type, speak, and listen to English sentences."
+            />
 
-            <p className="mt-3 text-sm font-semibold text-white/65">
-              Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card, and Credit Card.
-            </p>
-          </div>
-
-          <div className="mt-7 w-full max-w-3xl rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl shadow-lime-500/10 backdrop-blur">
-            <div className="rounded-[1.5rem] bg-white p-6 text-slate-950">
-              <p className="text-center text-sm font-black uppercase tracking-[0.2em] text-purple-700">
-                Special Online Launch Offer
-              </p>
-
-              <div className="mt-5 text-center">
-                <p className="text-lg font-bold text-slate-700">Complete 1-Year Access</p>
-                <p className="mt-2 text-6xl font-black tracking-tight text-purple-950">₹1,199</p>
-                <p className="mt-2 text-lg font-black text-lime-700">One-time payment only</p>
-              </div>
-
-              <div className="mt-6 grid gap-3 rounded-2xl bg-slate-50 p-4 text-left sm:grid-cols-2">
-                {[
-                  "120 structured lessons",
-                  "Simple grammar explanation",
-                  "Real-life spoken English topics",
-                  "Reorder + Typing + Voice + Dictation",
-                  "Beginner + Intermediate learning path",
-                  "XP, streaks, and progress tracking",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3 text-sm font-bold">
-                    <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-lime-300 text-purple-950">
-                      ✓
-                    </span>
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <PracticeMock
+                mediaSrc="/practice-modes/reorder.mp4"
+                title="Reorder Practice"
+                text="Arrange the words in the correct order and train your sentence structure."
+              />
+              <PracticeMock
+                mediaSrc="/practice-modes/typing.mp4"
+                title="Typing Practice"
+                text="See the Tamil meaning and type the correct English sentence yourself."
+              />
+              <PracticeMock
+                mediaSrc="/practice-modes/voice.mp4"
+                title="Voice Practice"
+                text="Speak the sentence aloud and build speaking confidence."
+              />
+              <PracticeMock
+                mediaSrc="/practice-modes/dictation.mp4"
+                title="Dictation Practice"
+                text="Listen carefully, understand the sentence, and practice English through listening."
+              />
             </div>
-          </div>
 
-          <div className="mt-5">
-            <WhatsAppSupport dark />
-          </div>
-        </div>
-      </section>
-
-      <Section>
-        <SectionHeader
-          eyebrow="Inside The Gym"
-          title="Inside The Spoken English Gym, You Don’t Just Watch. You Practice."
-          subtitle="Most English learners watch videos, learn rules, and still struggle when they need to speak. Sentence Master is different. Every lesson helps you understand one useful English structure and immediately practice it through gym-style exercises."
-        />
-
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          <InfoCard
-            icon="🎯"
-            title="120 Structured Lessons"
-            text="Step-by-step spoken English lessons from self-introduction to daily conversations, questions, workplace English, interviews, and more."
-          />
-          <InfoCard
-            icon="📘"
-            title="Simple Grammar Explanation"
-            text="No confusing grammar overload. Each lesson explains one practical grammar point that you can use while speaking."
-          />
-          <InfoCard
-            icon="💬"
-            title="Real-Life Speaking Topics"
-            text="Practice English for useful situations like introducing yourself, asking questions, daily routine, work, problems, opinions, and interviews."
-          />
-          <InfoCard
-            icon="🏋️"
-            title="Spoken English Gym Practice"
-            text="Build sentences repeatedly through Reorder, Typing, Voice, and Dictation practice modes."
-          />
-        </div>
-      </Section>
-
-      <section className="bg-gradient-to-b from-purple-950 to-slate-950">
-        <Section>
-          <SectionHeader
-            dark
-            eyebrow="Lesson System"
-            title="Every Lesson Connects 3 Things"
-            subtitle="Grammar + Speaking Topic + Gym Practice = Better Spoken English Practice"
-          />
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            <LessonSystemCard
-              number="1"
-              title="Grammar Point"
-              text="Understand one useful English structure in a simple way."
-              examples={[
-                "I am...",
-                "I want to...",
-                "I need to...",
-                "Do you...?",
-                "Can I...?",
-                "I am going to...",
-              ]}
-            />
-            <LessonSystemCard
-              number="2"
-              title="Spoken English Topic"
-              text="Use that structure in a practical speaking situation."
-              examples={[
-                "Self-introduction",
-                "Daily routine",
-                "Asking for help",
-                "Office conversation",
-                "Interview answers",
-                "Explaining problems",
-              ]}
-            />
-            <LessonSystemCard
-              number="3"
-              title="Gym Practice"
-              text="Practice the same sentence pattern again and again until your brain becomes faster."
-              examples={["Reorder", "Typing", "Voice", "Dictation"]}
-            />
-          </div>
-        </Section>
-      </section>
-
-      <section className="bg-slate-950">
-        <Section>
-          <SectionHeader
-            dark
-            eyebrow="Practice Modes"
-            title="See How The Spoken English Gym Works"
-            subtitle="This is not passive learning. You actively build, type, speak, and listen to English sentences."
-          />
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            <PracticeMock
-              mediaSrc="/practice-modes/reorder.mp4"
-              title="Reorder Practice"
-              text="Arrange the words in the correct order and train your sentence structure."
-            />
-            <PracticeMock
-              mediaSrc="/practice-modes/typing.mp4"
-              title="Typing Practice"
-              text="See the Tamil meaning and type the correct English sentence yourself."
-            />
-            <PracticeMock
-              mediaSrc="/practice-modes/voice.mp4"
-              title="Voice Practice"
-              text="Speak the sentence aloud and build speaking confidence."
-            />
-            <PracticeMock
-              mediaSrc="/practice-modes/dictation.mp4"
-              title="Dictation Practice"
-              text="Listen carefully, understand the sentence, and practice English through listening."
-            />
-          </div>
-
-          <div className="mt-10 text-center">
-            <CtaButton />
-          </div>
-        </Section>
-      </section>
-
-      <Section>
-        <SectionHeader
-          eyebrow="The Real Problem"
-          title="Why Many Tamil Learners Struggle To Speak English"
-          subtitle="Many learners know English words. Many learners have studied grammar. But when they need to speak, they still feel fear, hesitation, and confusion."
-        />
-
-        <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-2">
-          {[
-            "You may be afraid of grammar mistakes.",
-            "You may worry about saying wrong sentences.",
-            "You may not get the right words at the right time.",
-            "You may feel nervous that people will laugh.",
-            "You may understand English, but struggle to reply quickly.",
-            "The missing link is daily spoken English practice.",
-          ].map((item) => (
-            <div
-              key={item}
-              className="flex gap-4 rounded-2xl bg-white p-5 shadow-sm"
-            >
-              <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-lime-300 font-black text-purple-950">
-                ✓
-              </span>
-              <p className="text-lg font-bold text-slate-800">{item}</p>
+            <div className="mt-10 text-center">
+              <CtaButton />
             </div>
-          ))}
-        </div>
+          </Section>
+        </section>
 
-        <div className="mx-auto mt-8 max-w-4xl rounded-3xl bg-purple-950 p-6 text-center text-white shadow-xl">
-          <p className="text-xl font-black sm:text-2xl">
-            That is why FluencyJet Sentence Master gives you a Spoken English
-            Gym — a place where you can practice sentences every day, from your
-            current level, without pressure.
-          </p>
-        </div>
-      </Section>
-
-      <section className="bg-white">
         <Section>
           <SectionHeader
-            eyebrow="Who This Helps"
-            title="Who Is This Spoken English Gym For?"
+            eyebrow="The Real Problem"
+            title="Why Many Tamil Learners Struggle To Speak English"
+            subtitle="Many learners know English words. Many learners have studied grammar. But when they need to speak, they still feel fear, hesitation, and confusion."
           />
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-2">
             {[
-              "Tamil speakers who want to speak English without fear",
-              "Learners who know words but struggle to make sentences",
-              "Students preparing for interviews or career growth",
-              "Working professionals who want better communication",
-              "Business owners who want to speak with more confidence",
-              "Anyone who can practice English for 10–15 minutes daily",
+              "You may be afraid of grammar mistakes.",
+              "You may worry about saying wrong sentences.",
+              "You may not get the right words at the right time.",
+              "You may feel nervous that people will laugh.",
+              "You may understand English, but struggle to reply quickly.",
+              "The missing link is daily spoken English practice.",
             ].map((item) => (
               <div
                 key={item}
-                className="rounded-3xl border border-purple-100 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg shadow-purple-100/60"
+                className="flex gap-4 rounded-2xl bg-white p-5 shadow-sm"
               >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-lime-300 text-lg font-black text-purple-950">
+                <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-lime-300 font-black text-purple-950">
                   ✓
-                </div>
-                <p className="text-xl font-black leading-snug text-slate-950">
-                  {item}
-                </p>
+                </span>
+                <p className="text-lg font-bold text-slate-800">{item}</p>
               </div>
             ))}
           </div>
+
+          <div className="mx-auto mt-8 max-w-4xl rounded-3xl bg-purple-950 p-6 text-center text-white shadow-xl">
+            <p className="text-xl font-black sm:text-2xl">
+              That is why FluencyJet Sentence Master gives you a Spoken English
+              Gym — a place where you can practice sentences every day, from
+              your current level, without pressure.
+            </p>
+          </div>
         </Section>
-      </section>
 
-      <Section>
-        <SectionHeader
-          eyebrow="Your Access"
-          title="Here’s What You Get With 1-Year Access"
-        />
+        <section className="bg-white">
+          <Section>
+            <SectionHeader
+              eyebrow="Who This Helps"
+              title="Who Is This Spoken English Gym For?"
+            />
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          {offerItems.map((item) => (
-            <OfferItem key={item.title} title={item.title} text={item.text} />
-          ))}
-        </div>
-      </Section>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                "Tamil speakers who want to speak English without fear",
+                "Learners who know words but struggle to make sentences",
+                "Students preparing for interviews or career growth",
+                "Working professionals who want better communication",
+                "Business owners who want to speak with more confidence",
+                "Anyone who can practice English for 10–15 minutes daily",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-3xl border border-purple-100 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg shadow-purple-100/60"
+                >
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-lime-300 text-lg font-black text-purple-950">
+                    ✓
+                  </div>
+                  <p className="text-xl font-black leading-snug text-slate-950">
+                    {item}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        </section>
 
-      <section className="bg-white">
         <Section>
           <SectionHeader
-            eyebrow="Supporting Resources"
-            title="Plus Supporting Fluency Resources"
-            subtitle="Along with the Spoken English Gym, you also get supporting resources to help you build vocabulary, grammar clarity, and speaking confidence."
+            eyebrow="Your Access"
+            title="Here’s What You Get With 1-Year Access"
           />
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <BonusCard
-              title="5-Step English Fluency Course"
-              text="Learn the full path: words, grammar, sentence engine, sentences, and communication."
-            />
-            <BonusCard
-              title="English Grammar Memory Method"
-              text="Understand grammar concepts using simple memory-based explanation."
-            />
-            <BonusCard
-              title="1000 Core English Words"
-              text="Build your basic spoken English vocabulary foundation."
-            />
-            <BonusCard
-              title="180-Day Speaking Topics"
-              text="Get practical speaking topic ideas for daily English practice."
-            />
-            <BonusCard
-              title="Ready-to-Use Sentence PDF Library"
-              text="Revise useful sentence patterns anytime."
-            />
+          <div className="grid gap-4 lg:grid-cols-2">
+            {offerItems.map((item) => (
+              <OfferItem key={item.title} title={item.title} text={item.text} />
+            ))}
           </div>
         </Section>
-      </section>
 
-      <section className="bg-gradient-to-b from-purple-950 to-slate-950 text-white">
+        <section className="bg-white">
+          <Section>
+            <SectionHeader
+              eyebrow="Supporting Resources"
+              title="Plus Supporting Fluency Resources"
+              subtitle="Along with the Spoken English Gym, you also get supporting resources to help you build vocabulary, grammar clarity, and speaking confidence."
+            />
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <BonusCard
+                title="5-Step English Fluency Course"
+                text="Learn the full path: words, grammar, sentence engine, sentences, and communication."
+              />
+              <BonusCard
+                title="English Grammar Memory Method"
+                text="Understand grammar concepts using simple memory-based explanation."
+              />
+              <BonusCard
+                title="1000 Core English Words"
+                text="Build your basic spoken English vocabulary foundation."
+              />
+              <BonusCard
+                title="180-Day Speaking Topics"
+                text="Get practical speaking topic ideas for daily English practice."
+              />
+              <BonusCard
+                title="Ready-to-Use Sentence PDF Library"
+                text="Revise useful sentence patterns anytime."
+              />
+            </div>
+          </Section>
+        </section>
+
+        <section className="bg-gradient-to-b from-purple-950 to-slate-950 text-white">
+          <Section>
+            <div className="mx-auto max-w-4xl rounded-[2rem] border border-lime-300/30 bg-white/10 p-6 text-center shadow-2xl shadow-lime-400/10 backdrop-blur sm:p-10">
+              <p className="text-sm font-black uppercase tracking-[0.22em] text-lime-300">
+                Special Online Launch Offer
+              </p>
+              <h2 className="mt-4 text-4xl font-black sm:text-5xl">
+                Complete 1-Year Access
+              </h2>
+              <p className="mt-5 text-7xl font-black text-yellow-300">₹1,199</p>
+              <p className="mt-3 text-xl font-black text-lime-200">
+                One-time payment only
+              </p>
+              <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/75">
+                Includes Sentence Master app access, 120 structured lessons,
+                spoken English gym practice modes, and supporting fluency
+                resources.
+              </p>
+
+              <div className="mt-8">
+                <CtaButton className="w-full max-w-xl" />
+              </div>
+
+              <p className="mt-4 text-sm font-semibold text-white/70">
+                Pay securely using UPI, GPay, PhonePe, Paytm, Debit Card, or
+                Credit Card.
+              </p>
+
+              <div className="mt-5">
+                <WhatsAppSupport dark />
+              </div>
+            </div>
+          </Section>
+        </section>
+
         <Section>
-          <div className="mx-auto max-w-4xl rounded-[2rem] border border-lime-300/30 bg-white/10 p-6 text-center shadow-2xl shadow-lime-400/10 backdrop-blur sm:p-10">
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-lime-300">
-              Special Online Launch Offer
-            </p>
-            <h2 className="mt-4 text-4xl font-black sm:text-5xl">
-              Complete 1-Year Access
-            </h2>
-            <p className="mt-5 text-7xl font-black text-yellow-300">₹1,199</p>
-            <p className="mt-3 text-xl font-black text-lime-200">
-              One-time payment only
-            </p>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/75">
-              Includes Sentence Master app access, 120 structured lessons,
-              spoken English gym practice modes, and supporting fluency
-              resources.
-            </p>
-
-            <div className="mt-8">
-              <CtaButton className="w-full max-w-xl" />
-            </div>
-
-            <p className="mt-4 text-sm font-semibold text-white/70">
-              Pay securely using UPI, GPay, PhonePe, Paytm, Debit Card, or
-              Credit Card.
-            </p>
-
-            <div className="mt-5">
-              <WhatsAppSupport dark />
-            </div>
-          </div>
-        </Section>
-      </section>
-
-      <Section>
-        <div className="grid items-center gap-8 lg:grid-cols-[0.8fr_1.2fr]">
-          <div className="rounded-[2rem] bg-gradient-to-br from-purple-950 to-slate-950 p-6 text-white shadow-2xl">
-            <div className="aspect-square rounded-[1.5rem] bg-gradient-to-br from-lime-300/30 to-purple-500/30 p-6">
-              <div className="flex h-full flex-col items-center justify-center rounded-[1.25rem] border border-white/15 bg-white/10 text-center">
-                <div className="mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-lime-300 text-4xl">
-                  👨‍🏫
+          <div className="grid items-center gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+            <div className="rounded-[2rem] bg-gradient-to-br from-purple-950 to-slate-950 p-6 text-white shadow-2xl">
+              <div className="aspect-square rounded-[1.5rem] bg-gradient-to-br from-lime-300/30 to-purple-500/30 p-6">
+                <div className="flex h-full flex-col items-center justify-center rounded-[1.25rem] border border-white/15 bg-white/10 text-center">
+                  <div className="mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-lime-300 text-4xl">
+                    👨‍🏫
+                  </div>
+                  <p className="text-3xl font-black">Aravind Pasupathy</p>
+                  <p className="mt-2 text-lg font-bold text-lime-200">
+                    Founder of FluencyJet
+                  </p>
                 </div>
-                <p className="text-3xl font-black">Aravind Pasupathy</p>
-                <p className="mt-2 text-lg font-bold text-lime-200">
-                  Founder of FluencyJet
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-sm font-black uppercase tracking-[0.22em] text-purple-700">
+                Meet Your Mentor
+              </p>
+              <h2 className="text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
+                Learn From A Trainer Who Understands Tamil Learners
+              </h2>
+              <div className="mt-6 space-y-4 text-lg leading-relaxed text-slate-700">
+                <p>
+                  Hi, I’m Aravind Pasupathy, founder of FluencyJet. I have
+                  trained thousands of learners using memory techniques,
+                  language learning systems, and practical English training
+                  methods.
+                </p>
+                <p>
+                  I created the Spoken English Gym because many Tamil learners
+                  don’t fail due to lack of interest. They struggle because they
+                  don’t get enough guided sentence-making practice.
+                </p>
+                <p>
+                  Sentence Master is designed to help you practice English step
+                  by step — with simple grammar, useful speaking topics, and
+                  daily exercises that train your sentence formation.
+                </p>
+                <p className="font-black text-purple-950">
+                  Guinness World Record holder in memory and trainer to 35,000+
+                  students.
                 </p>
               </div>
             </div>
           </div>
-
-          <div>
-            <p className="mb-3 text-sm font-black uppercase tracking-[0.22em] text-purple-700">
-              Meet Your Mentor
-            </p>
-            <h2 className="text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
-              Learn From A Trainer Who Understands Tamil Learners
-            </h2>
-            <div className="mt-6 space-y-4 text-lg leading-relaxed text-slate-700">
-              <p>
-                Hi, I’m Aravind Pasupathy, founder of FluencyJet. I have trained
-                thousands of learners using memory techniques, language learning
-                systems, and practical English training methods.
-              </p>
-              <p>
-                I created the Spoken English Gym because many Tamil learners
-                don’t fail due to lack of interest. They struggle because they
-                don’t get enough guided sentence-making practice.
-              </p>
-              <p>
-                Sentence Master is designed to help you practice English step by
-                step — with simple grammar, useful speaking topics, and daily
-                exercises that train your sentence formation.
-              </p>
-              <p className="font-black text-purple-950">
-                Guinness World Record holder in memory and trainer to 35,000+
-                students.
-              </p>
-            </div>
-          </div>
-        </div>
-      </Section>
-
-      <section className="bg-white">
-        <Section>
-          <SectionHeader eyebrow="FAQ" title="Frequently Asked Questions" />
-
-          <div className="mx-auto max-w-4xl space-y-4">
-            {faqs.map((faq) => (
-              <FaqItem
-                key={faq.question}
-                question={faq.question}
-                answer={faq.answer}
-              />
-            ))}
-          </div>
         </Section>
-      </section>
 
-      <section className="bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
-        <Section>
-          <div className="mx-auto max-w-4xl text-center">
-            <h2 className="text-4xl font-black leading-tight sm:text-5xl">
-              Stop Only Watching English Lessons. Start Practicing Spoken
-              English Daily.
-            </h2>
-            <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/75 sm:text-xl">
-              If you want to reduce fear, avoid wrong sentences, and build the
-              habit of daily English practice, join the Spoken English Gym
-              today.
+        <section className="bg-white">
+          <Section>
+            <SectionHeader eyebrow="FAQ" title="Frequently Asked Questions" />
+
+            <div className="mx-auto max-w-4xl space-y-4">
+              {faqs.map((faq) => (
+                <FaqItem
+                  key={faq.question}
+                  question={faq.question}
+                  answer={faq.answer}
+                />
+              ))}
+            </div>
+          </Section>
+        </section>
+
+        <section className="bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
+          <Section>
+            <div className="mx-auto max-w-4xl text-center">
+              <h2 className="text-4xl font-black leading-tight sm:text-5xl">
+                Stop Only Watching English Lessons. Start Practicing Spoken
+                English Daily.
+              </h2>
+              <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/75 sm:text-xl">
+                If you want to reduce fear, avoid wrong sentences, and build the
+                habit of daily English practice, join the Spoken English Gym
+                today.
+              </p>
+
+              <div className="mt-8">
+                <CtaButton />
+              </div>
+
+              <div className="mt-5">
+                <WhatsAppSupport dark />
+              </div>
+            </div>
+          </Section>
+        </section>
+
+        <footer className="bg-slate-950 px-4 py-8 text-center text-white">
+          <div className="mx-auto max-w-5xl">
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-white/80">
+              <span>© FluencyJet</span>
+              <a href="/legal/privacy" className="hover:text-lime-300">
+                Privacy Policy
+              </a>
+              <a href="/legal/terms" className="hover:text-lime-300">
+                Terms
+              </a>
+              <a href="/legal/refund" className="hover:text-lime-300">
+                Refund Policy
+              </a>
+              <a href="/legal/contact" className="hover:text-lime-300">
+                Contact
+              </a>
+            </div>
+
+            <p className="mx-auto mt-5 max-w-3xl text-xs leading-relaxed text-white/50">
+              This site is not part of Facebook or Meta. Additionally, this site
+              is not endorsed by Facebook in any way. Facebook is a trademark of
+              Meta Platforms, Inc.
             </p>
-
-            <div className="mt-8">
-              <CtaButton />
-            </div>
-
-            <div className="mt-5">
-              <WhatsAppSupport dark />
-            </div>
           </div>
-        </Section>
-      </section>
+        </footer>
 
-      <footer className="bg-slate-950 px-4 py-8 text-center text-white">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-semibold text-white/80">
-            <span>© FluencyJet</span>
-            <a href="/legal/privacy" className="hover:text-lime-300">
-              Privacy Policy
-            </a>
-            <a href="/legal/terms" className="hover:text-lime-300">
-              Terms
-            </a>
-            <a href="/legal/refund" className="hover:text-lime-300">
-              Refund Policy
-            </a>
-            <a href="/legal/contact" className="hover:text-lime-300">
-              Contact
-            </a>
-          </div>
-
-          <p className="mx-auto mt-5 max-w-3xl text-xs leading-relaxed text-white/50">
-            This site is not part of Facebook or Meta. Additionally, this site
-            is not endorsed by Facebook in any way. Facebook is a trademark of
-            Meta Platforms, Inc.
-          </p>
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-slate-950/95 p-3 shadow-2xl backdrop-blur sm:hidden">
+          <CtaButton className="w-full py-3 text-base">
+            Get 1-Year Access for ₹1,199
+          </CtaButton>
         </div>
-      </footer>
-
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-slate-950/95 p-3 shadow-2xl backdrop-blur sm:hidden">
-        <CtaButton className="w-full py-3 text-base">
-          Get 1-Year Access for ₹1,199
-        </CtaButton>
-      </div>
-    </main>
+      </main>
     </>
   );
 }
