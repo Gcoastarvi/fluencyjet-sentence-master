@@ -983,55 +983,7 @@ export default function SpokenEnglishOffer() {
         </section>
 
         <section className="bg-slate-950">
-          <Section>
-            <SectionHeader
-              dark
-              eyebrow="Practice Modes"
-              title="See How The Spoken English Gym Works"
-              subtitle="This is not passive learning. You actively build, type, speak, and listen to English sentences."
-            />
-
-            <div className="grid items-stretch gap-7 lg:grid-cols-2">
-              <PracticeMock
-                mode="reorder"
-                number="01"
-                mediaSrc="/practice-modes/reorder.mp4"
-                title="Reorder Practice"
-                text="Arrange the words in the correct order and train your sentence structure."
-              />
-
-              <PracticeMock
-                mode="typing"
-                number="02"
-                mediaSrc="/practice-modes/typing.mp4"
-                title="Typing Practice"
-                text="See the Tamil meaning and type the correct English sentence yourself."
-              />
-
-              <PracticeMock
-                mode="voice"
-                number="03"
-                mediaSrc="/practice-modes/dictation.mp4"
-                title="Voice Practice"
-                text="Speak the sentence aloud and build speaking confidence."
-              />
-
-              <PracticeMock
-                mode="dictation"
-                number="04"
-                mediaSrc="/practice-modes/voice.mp4"
-                title="Dictation Practice"
-                text="Listen carefully, understand the sentence, and practice English through listening."
-              />
-            </div>
-
-            <div className="mt-10 text-center">
-              <CtaButton />
-            </div>
-          </Section>
-        </section>
-
-        <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-purple-50/60">
+          <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-purple-50/60">
         <div className="pointer-events-none absolute -left-24 top-32 h-72 w-72 rounded-full bg-lime-200/25 blur-3xl" />
         <div className="pointer-events-none absolute -right-24 bottom-28 h-80 w-80 rounded-full bg-purple-300/20 blur-3xl" />
 
@@ -1139,6 +1091,7 @@ export default function SpokenEnglishOffer() {
             </div>
           </div>
         </Section>
+      </section>
       </section>
 
         <section className="bg-white">
