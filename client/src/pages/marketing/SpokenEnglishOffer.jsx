@@ -232,8 +232,7 @@ function InfoCard({ title, text, iconType, number }) {
       "from-indigo-950 via-blue-800 to-purple-700 text-cyan-200 shadow-blue-200",
     speaking:
       "from-fuchsia-950 via-purple-800 to-violet-700 text-lime-200 shadow-fuchsia-200",
-    gym:
-      "from-emerald-950 via-purple-900 to-lime-700 text-lime-200 shadow-lime-200",
+    gym: "from-emerald-950 via-purple-900 to-lime-700 text-lime-200 shadow-lime-200",
   }[iconType];
 
   return (
@@ -244,7 +243,10 @@ function InfoCard({ title, text, iconType, number }) {
         <div className="mb-7 flex items-start justify-between gap-4">
           <div className="relative">
             <div
-              className={"absolute inset-1 rounded-2xl bg-gradient-to-br blur-xl opacity-35 " + iconShell}
+              className={
+                "absolute inset-1 rounded-2xl bg-gradient-to-br blur-xl opacity-35 " +
+                iconShell
+              }
             />
 
             <div
@@ -293,25 +295,143 @@ function LessonSystemCard({ number, title, text, examples }) {
   );
 }
 
-function PracticeMock({ title, text, mediaSrc }) {
+function PracticeModeIcon({ type }) {
+  const common = "h-5 w-5 stroke-current";
+
+  if (type === "reorder") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className={common}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M7 7h11" />
+        <path d="m15 4 3 3-3 3" />
+        <path d="M17 17H6" />
+        <path d="m9 14-3 3 3 3" />
+      </svg>
+    );
+  }
+
+  if (type === "typing") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className={common}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="3" y="5" width="18" height="14" rx="2.5" />
+        <path d="M7 9h.01M11 9h.01M15 9h.01M18 9h.01" />
+        <path d="M7 13h.01M11 13h.01M15 13h.01" />
+        <path d="M8 16h8" />
+      </svg>
+    );
+  }
+
+  if (type === "voice") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className={common}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="9" y="3" width="6" height="11" rx="3" />
+        <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
+        <path d="M12 17.5V21" />
+        <path d="M9 21h6" />
+      </svg>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-3xl border border-white/15 bg-white/10 shadow-2xl shadow-black/20 backdrop-blur">
-      <div className="bg-gradient-to-br from-purple-950 to-slate-950 p-5">
-        <div className="mx-auto max-w-[260px] overflow-hidden rounded-[2rem] border-[10px] border-slate-900 bg-slate-950 shadow-2xl">
-          <video
-            src={mediaSrc}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            className="aspect-[9/16] w-full bg-slate-950 object-contain"
-          />
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={common}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 13V9a8 8 0 0 1 16 0v4" />
+      <path d="M4 12h3v7H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 1-2Z" />
+      <path d="M20 12h-3v7h2a2 2 0 0 0 2-2v-3a2 2 0 0 0-1-2Z" />
+      <path d="M12 19h3" />
+    </svg>
+  );
+}
+
+function PracticeMock({ title, text, mediaSrc, mode, number }) {
+  const styles = {
+    reorder: {
+      badge: "bg-purple-100 text-purple-800",
+      icon: "from-purple-950 to-purple-700 text-lime-300",
+      line: "from-purple-500 to-lime-300",
+    },
+    typing: {
+      badge: "bg-orange-100 text-orange-800",
+      icon: "from-orange-700 to-purple-900 text-yellow-200",
+      line: "from-orange-400 to-purple-500",
+    },
+    voice: {
+      badge: "bg-emerald-100 text-emerald-800",
+      icon: "from-emerald-700 to-purple-900 text-lime-200",
+      line: "from-emerald-400 to-purple-500",
+    },
+    dictation: {
+      badge: "bg-sky-100 text-sky-800",
+      icon: "from-sky-700 to-purple-900 text-cyan-100",
+      line: "from-sky-400 to-purple-500",
+    },
+  }[mode];
+
+  return (
+    <div className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 shadow-2xl shadow-black/25 transition duration-300 hover:-translate-y-1 hover:shadow-purple-900/40">
+      <div className={`h-1.5 bg-gradient-to-r ${styles.line}`} />
+
+      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-purple-950 to-slate-950 p-3 sm:p-5">
+        <div className="relative mx-auto w-full max-w-[280px]">
+          <div className="absolute inset-3 rounded-[2.2rem] bg-purple-500/25 blur-2xl" />
+
+          <div className="relative overflow-hidden rounded-[2rem] border-[9px] border-slate-900 bg-slate-950 shadow-2xl">
+            <video
+              src={mediaSrc}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="aspect-[9/16] w-full bg-slate-950 object-cover"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="bg-white p-6">
+      <div className="flex flex-1 flex-col rounded-b-[2rem] bg-white p-6 sm:p-7">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div
+            className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg ${styles.icon}`}
+          >
+            <PracticeModeIcon type={mode} />
+          </div>
+
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.14em] ${styles.badge}`}
+          >
+            Mode {number}
+          </span>
+        </div>
+
         <h3 className="text-2xl font-black text-slate-950">{title}</h3>
+
         <p className="mt-3 text-base leading-relaxed text-slate-700">{text}</p>
       </div>
     </div>
@@ -507,60 +627,60 @@ export default function SpokenEnglishOffer() {
             </div>
 
             <div className="mt-8 w-full max-w-4xl rounded-[1.75rem] bg-gradient-to-br from-lime-300/50 via-white/15 to-purple-500/40 p-[1px] shadow-2xl shadow-lime-500/20 sm:rounded-[2.25rem]">
-            <div className="rounded-[1.7rem] bg-white/10 p-2 backdrop-blur sm:rounded-[2.2rem] sm:p-3">
-              <div className="relative overflow-hidden rounded-[1.45rem] bg-gradient-to-b from-white via-white to-slate-50 px-4 py-6 text-slate-950 shadow-2xl sm:rounded-[1.85rem] sm:px-8 sm:py-9">
-                <div className="pointer-events-none absolute -left-16 -top-16 h-36 w-36 rounded-full bg-lime-300/30 blur-2xl" />
-                <div className="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-purple-400/20 blur-2xl" />
+              <div className="rounded-[1.7rem] bg-white/10 p-2 backdrop-blur sm:rounded-[2.2rem] sm:p-3">
+                <div className="relative overflow-hidden rounded-[1.45rem] bg-gradient-to-b from-white via-white to-slate-50 px-4 py-6 text-slate-950 shadow-2xl sm:rounded-[1.85rem] sm:px-8 sm:py-9">
+                  <div className="pointer-events-none absolute -left-16 -top-16 h-36 w-36 rounded-full bg-lime-300/30 blur-2xl" />
+                  <div className="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-purple-400/20 blur-2xl" />
 
-                <div className="relative">
-                  <div className="mx-auto w-fit rounded-full bg-gradient-to-r from-purple-100 via-white to-lime-100 px-4 py-2 shadow-sm sm:px-5">
-                    <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-purple-700 sm:text-sm">
-                      Special Online Launch Offer
-                    </p>
-                  </div>
-
-                  <div className="mt-6 text-center">
-                    <p className="text-lg font-black text-slate-700 sm:text-xl">
-                      Complete 1-Year Access
-                    </p>
-
-                    <div className="mx-auto mt-4 w-fit rounded-[2rem] bg-gradient-to-r from-purple-950 via-purple-800 to-purple-950 px-7 py-3 shadow-xl shadow-purple-200">
-                      <p className="text-5xl font-black tracking-tight text-white sm:text-7xl">
-                        ₹1,199
+                  <div className="relative">
+                    <div className="mx-auto w-fit rounded-full bg-gradient-to-r from-purple-100 via-white to-lime-100 px-4 py-2 shadow-sm sm:px-5">
+                      <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-purple-700 sm:text-sm">
+                        Special Online Launch Offer
                       </p>
                     </div>
 
-                    <p className="mx-auto mt-4 w-fit rounded-full bg-lime-100 px-5 py-2 text-base font-black text-lime-800 sm:text-lg">
-                      One-time payment only
-                    </p>
-                  </div>
+                    <div className="mt-6 text-center">
+                      <p className="text-lg font-black text-slate-700 sm:text-xl">
+                        Complete 1-Year Access
+                      </p>
 
-                  <div className="mt-6 grid gap-3 rounded-[1.25rem] border border-slate-100 bg-slate-50/90 p-3 text-left shadow-inner sm:mt-7 sm:grid-cols-2 sm:rounded-[1.5rem] sm:p-5">
-                    {[
-                      "120 structured lessons",
-                      "Simple grammar explanation",
-                      "Real-life spoken English topics",
-                      "Reorder + Typing + Voice + Dictation",
-                      "Beginner + Intermediate learning path",
-                      "XP, streaks, and progress tracking",
-                    ].map((item) => (
-                      <div
-                        key={item}
-                        className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-black shadow-sm ring-1 ring-slate-100 sm:px-4"
-                      >
-                        <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-gradient-to-br from-lime-300 to-lime-400 text-sm font-black text-purple-950 shadow-sm sm:h-8 sm:w-8 sm:text-base">
-                          ✓
-                        </span>
-                        <span className="leading-snug">{item}</span>
+                      <div className="mx-auto mt-4 w-fit rounded-[2rem] bg-gradient-to-r from-purple-950 via-purple-800 to-purple-950 px-7 py-3 shadow-xl shadow-purple-200">
+                        <p className="text-5xl font-black tracking-tight text-white sm:text-7xl">
+                          ₹1,199
+                        </p>
                       </div>
-                    ))}
+
+                      <p className="mx-auto mt-4 w-fit rounded-full bg-lime-100 px-5 py-2 text-base font-black text-lime-800 sm:text-lg">
+                        One-time payment only
+                      </p>
+                    </div>
+
+                    <div className="mt-6 grid gap-3 rounded-[1.25rem] border border-slate-100 bg-slate-50/90 p-3 text-left shadow-inner sm:mt-7 sm:grid-cols-2 sm:rounded-[1.5rem] sm:p-5">
+                      {[
+                        "120 structured lessons",
+                        "Simple grammar explanation",
+                        "Real-life spoken English topics",
+                        "Reorder + Typing + Voice + Dictation",
+                        "Beginner + Intermediate learning path",
+                        "XP, streaks, and progress tracking",
+                      ].map((item) => (
+                        <div
+                          key={item}
+                          className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-black shadow-sm ring-1 ring-slate-100 sm:px-4"
+                        >
+                          <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-gradient-to-br from-lime-300 to-lime-400 text-sm font-black text-purple-950 shadow-sm sm:h-8 sm:w-8 sm:text-base">
+                            ✓
+                          </span>
+                          <span className="leading-snug">{item}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-5">
+            <div className="mt-5">
               <WhatsAppSupport dark />
             </div>
           </div>
@@ -575,29 +695,29 @@ export default function SpokenEnglishOffer() {
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <InfoCard
-            iconType="lessons"
-            number="01"
-            title="120 Structured Lessons"
-            text="Step-by-step spoken English lessons from self-introduction to daily conversations, questions, workplace English, interviews, and more."
-          />
+              iconType="lessons"
+              number="01"
+              title="120 Structured Lessons"
+              text="Step-by-step spoken English lessons from self-introduction to daily conversations, questions, workplace English, interviews, and more."
+            />
             <InfoCard
-            iconType="grammar"
-            number="02"
-            title="Simple Grammar Explanation"
-            text="No confusing grammar overload. Each lesson explains one practical grammar point that you can use while speaking."
-          />
+              iconType="grammar"
+              number="02"
+              title="Simple Grammar Explanation"
+              text="No confusing grammar overload. Each lesson explains one practical grammar point that you can use while speaking."
+            />
             <InfoCard
-            iconType="speaking"
-            number="03"
-            title="Real-Life Speaking Topics"
-            text="Practice English for useful situations like introducing yourself, asking questions, daily routine, work, problems, opinions, and interviews."
-          />
+              iconType="speaking"
+              number="03"
+              title="Real-Life Speaking Topics"
+              text="Practice English for useful situations like introducing yourself, asking questions, daily routine, work, problems, opinions, and interviews."
+            />
             <InfoCard
-            iconType="gym"
-            number="04"
-            title="Spoken English Gym Practice"
-            text="Build sentences repeatedly through Reorder, Typing, Voice, and Dictation practice modes."
-          />
+              iconType="gym"
+              number="04"
+              title="Spoken English Gym Practice"
+              text="Build sentences repeatedly through Reorder, Typing, Voice, and Dictation practice modes."
+            />
           </div>
         </Section>
 
@@ -645,7 +765,7 @@ export default function SpokenEnglishOffer() {
                 examples={[
                   "Quick English",
                   "Grammar Genius",
-                  "Fluennt Voice",
+                  "Fluent Voice",
                   "Listening",
                 ]}
               />
@@ -662,24 +782,35 @@ export default function SpokenEnglishOffer() {
               subtitle="This is not passive learning. You actively build, type, speak, and listen to English sentences."
             />
 
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid items-stretch gap-7 lg:grid-cols-2">
               <PracticeMock
+                mode="reorder"
+                number="01"
                 mediaSrc="/practice-modes/reorder.mp4"
                 title="Reorder Practice"
                 text="Arrange the words in the correct order and train your sentence structure."
               />
+
               <PracticeMock
+                mode="typing"
+                number="02"
                 mediaSrc="/practice-modes/typing.mp4"
                 title="Typing Practice"
                 text="See the Tamil meaning and type the correct English sentence yourself."
               />
+
               <PracticeMock
-                mediaSrc="/practice-modes/voice.mp4"
+                mode="voice"
+                number="03"
+                mediaSrc="/practice-modes/dictation.mp4"
                 title="Voice Practice"
                 text="Speak the sentence aloud and build speaking confidence."
               />
+
               <PracticeMock
-                mediaSrc="/practice-modes/dictation.mp4"
+                mode="dictation"
+                number="04"
+                mediaSrc="/practice-modes/voice.mp4"
                 title="Dictation Practice"
                 text="Listen carefully, understand the sentence, and practice English through listening."
               />
