@@ -132,14 +132,84 @@ function WhatsAppSupport({ dark = false }) {
   );
 }
 
-function InfoCard({ title, text, icon }) {
+function FeatureIcon({ type }) {
+  const common = "h-8 w-8 stroke-current";
+
+  if (type === "lessons") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={common} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 6h11" />
+        <path d="M8 12h11" />
+        <path d="M8 18h11" />
+        <path d="M3.5 6l1 1 2-2" />
+        <path d="M3.5 12l1 1 2-2" />
+        <path d="M3.5 18l1 1 2-2" />
+      </svg>
+    );
+  }
+
+  if (type === "grammar") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={common} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 4.5h8a3 3 0 0 1 3 3v12H8a3 3 0 0 0-3 3v-18Z" />
+        <path d="M16 7.5h3a2 2 0 0 1 2 2v10h-5" />
+        <path d="M8 9h5" />
+        <path d="M8 13h4" />
+        <path d="m14.5 15.5 1.7 1.7 3.3-3.7" />
+      </svg>
+    );
+  }
+
+  if (type === "speaking") {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" className={common} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7.5 15.5H7a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v3.5a4 4 0 0 1-4 4h-2.5L6 20v-4.5" />
+        <path d="M15 13h2a4 4 0 0 1 4 4v.5a3.5 3.5 0 0 1-3.5 3.5H17v2l-2.5-2H13" />
+        <path d="M7.5 9.5h5" />
+        <path d="M7.5 12h3" />
+      </svg>
+    );
+  }
+
   return (
-    <div className="rounded-3xl border border-purple-100 bg-white p-6 shadow-lg shadow-purple-100/70">
-      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-950 text-2xl text-lime-300">
-        {icon}
+    <svg viewBox="0 0 24 24" fill="none" className={common} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 8v8" />
+      <path d="M18 8v8" />
+      <path d="M4 10v4" />
+      <path d="M20 10v4" />
+      <path d="M6 12h12" />
+      <path d="M9 6h6" />
+      <path d="M9 18h6" />
+      <path d="M14.5 5.5c1.8.3 3.2 1.2 4.2 2.5" />
+      <path d="M9.5 18.5c-1.8-.3-3.2-1.2-4.2-2.5" />
+    </svg>
+  );
+}
+
+function InfoCard({ title, text, iconType, number }) {
+  return (
+    <div className="group relative overflow-hidden rounded-[2rem] border border-purple-100 bg-white p-[1px] shadow-xl shadow-purple-100/70 transition duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-200/80">
+      <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-lime-300 via-purple-500 to-lime-300" />
+
+      <div className="relative h-full rounded-[1.95rem] bg-gradient-to-b from-white via-white to-purple-50/40 p-6 sm:p-7">
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-950 via-purple-800 to-purple-950 text-lime-300 shadow-lg shadow-purple-200 transition duration-300 group-hover:scale-105 group-hover:shadow-lime-200/60">
+            <FeatureIcon type={iconType} />
+          </div>
+
+          <div className="rounded-full border border-lime-200 bg-lime-50 px-3 py-1 text-xs font-black tracking-[0.18em] text-purple-800">
+            {number}
+          </div>
+        </div>
+
+        <h3 className="text-2xl font-black leading-tight text-slate-950">
+          {title}
+        </h3>
+
+        <p className="mt-4 text-base leading-relaxed text-slate-700 sm:text-lg">
+          {text}
+        </p>
       </div>
-      <h3 className="text-xl font-black text-slate-950">{title}</h3>
-      <p className="mt-3 text-base leading-relaxed text-slate-700">{text}</p>
     </div>
   );
 }
