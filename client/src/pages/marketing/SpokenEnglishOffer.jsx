@@ -26,7 +26,6 @@ function MarketingNavHider() {
     `}</style>
   );
 }
-g;
 
 function trackEvent(eventName) {
   try {
