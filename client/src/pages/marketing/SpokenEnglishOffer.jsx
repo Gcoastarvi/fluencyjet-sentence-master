@@ -329,7 +329,7 @@ export default function SpokenEnglishOffer() {
   return (
     <>
       <MarketingNavHider />
-      <main className="min-h-screen bg-slate-50 text-slate-950">
+      <main className="min-h-screen bg-slate-50 pb-24 text-slate-950 sm:pb-0">
         <section className="relative overflow-hidden bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
           <div className="absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 rounded-full bg-lime-300/15 blur-3xl" />
           <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-purple-500/20 blur-3xl" />
@@ -376,14 +376,14 @@ export default function SpokenEnglishOffer() {
               </p>
             </div>
 
-            <div className="mt-8 w-full max-w-4xl rounded-[2.25rem] bg-gradient-to-br from-lime-300/50 via-white/15 to-purple-500/40 p-[1px] shadow-2xl shadow-lime-500/20">
-            <div className="rounded-[2.2rem] bg-white/10 p-3 backdrop-blur">
-              <div className="relative overflow-hidden rounded-[1.85rem] bg-gradient-to-b from-white via-white to-slate-50 px-5 py-7 text-slate-950 shadow-2xl sm:px-8 sm:py-9">
+            <div className="mt-8 w-full max-w-4xl rounded-[1.75rem] bg-gradient-to-br from-lime-300/50 via-white/15 to-purple-500/40 p-[1px] shadow-2xl shadow-lime-500/20 sm:rounded-[2.25rem]">
+            <div className="rounded-[1.7rem] bg-white/10 p-2 backdrop-blur sm:rounded-[2.2rem] sm:p-3">
+              <div className="relative overflow-hidden rounded-[1.45rem] bg-gradient-to-b from-white via-white to-slate-50 px-4 py-6 text-slate-950 shadow-2xl sm:rounded-[1.85rem] sm:px-8 sm:py-9">
                 <div className="pointer-events-none absolute -left-16 -top-16 h-36 w-36 rounded-full bg-lime-300/30 blur-2xl" />
                 <div className="pointer-events-none absolute -bottom-20 -right-16 h-44 w-44 rounded-full bg-purple-400/20 blur-2xl" />
 
                 <div className="relative">
-                  <div className="mx-auto w-fit rounded-full bg-gradient-to-r from-purple-100 via-white to-lime-100 px-5 py-2 shadow-sm">
+                  <div className="mx-auto w-fit rounded-full bg-gradient-to-r from-purple-100 via-white to-lime-100 px-4 py-2 shadow-sm sm:px-5">
                     <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-purple-700 sm:text-sm">
                       Special Online Launch Offer
                     </p>
@@ -395,7 +395,7 @@ export default function SpokenEnglishOffer() {
                     </p>
 
                     <div className="mx-auto mt-4 w-fit rounded-[2rem] bg-gradient-to-r from-purple-950 via-purple-800 to-purple-950 px-7 py-3 shadow-xl shadow-purple-200">
-                      <p className="text-6xl font-black tracking-tight text-white sm:text-7xl">
+                      <p className="text-5xl font-black tracking-tight text-white sm:text-7xl">
                         ₹1,199
                       </p>
                     </div>
@@ -405,7 +405,7 @@ export default function SpokenEnglishOffer() {
                     </p>
                   </div>
 
-                  <div className="mt-7 grid gap-3 rounded-[1.5rem] border border-slate-100 bg-slate-50/90 p-4 text-left shadow-inner sm:grid-cols-2 sm:p-5">
+                  <div className="mt-6 grid gap-3 rounded-[1.25rem] border border-slate-100 bg-slate-50/90 p-3 text-left shadow-inner sm:mt-7 sm:grid-cols-2 sm:rounded-[1.5rem] sm:p-5">
                     {[
                       "120 structured lessons",
                       "Simple grammar explanation",
@@ -416,9 +416,9 @@ export default function SpokenEnglishOffer() {
                     ].map((item) => (
                       <div
                         key={item}
-                        className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-black shadow-sm ring-1 ring-slate-100"
+                        className="flex items-center gap-3 rounded-2xl bg-white px-3 py-3 text-sm font-black shadow-sm ring-1 ring-slate-100 sm:px-4"
                       >
-                        <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-gradient-to-br from-lime-300 to-lime-400 text-base font-black text-purple-950 shadow-sm">
+                        <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-gradient-to-br from-lime-300 to-lime-400 text-sm font-black text-purple-950 shadow-sm sm:h-8 sm:w-8 sm:text-base">
                           ✓
                         </span>
                         <span className="leading-snug">{item}</span>
