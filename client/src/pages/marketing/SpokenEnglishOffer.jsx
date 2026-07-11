@@ -1,4 +1,5 @@
 // client/src/pages/marketing/SpokenEnglishOffer.jsx
+import ProblemSolutionSection from "../../components/marketing/ProblemSolutionSection";
 import { useEffect, useState } from "react";
 
 const VIMEO_VIDEO_ID = "1206728761";
@@ -983,115 +984,7 @@ export default function SpokenEnglishOffer() {
         </section>
 
         <section className="bg-slate-950">
-          <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 via-white to-purple-50/60">
-        <div className="pointer-events-none absolute -left-24 top-32 h-72 w-72 rounded-full bg-lime-200/25 blur-3xl" />
-        <div className="pointer-events-none absolute -right-24 bottom-28 h-80 w-80 rounded-full bg-purple-300/20 blur-3xl" />
-
-        <Section className="relative pb-28 sm:pb-16">
-          <SectionHeader
-            eyebrow="The Real Problem"
-            title="Why Many Tamil Learners Struggle To Speak English"
-            subtitle="Many learners know English words. Many learners have studied grammar. But when they need to speak, they still feel fear, hesitation, and confusion."
-          />
-
-          <div className="mx-auto grid max-w-5xl gap-4 sm:grid-cols-2 sm:gap-5">
-            <ProblemCard type="grammar">
-              You may be afraid of grammar mistakes.
-            </ProblemCard>
-
-            <ProblemCard type="sentence">
-              You may worry about saying wrong sentences.
-            </ProblemCard>
-
-            <ProblemCard type="words">
-              You may not get the right words at the right time.
-            </ProblemCard>
-
-            <ProblemCard type="people">
-              You may feel nervous that people will laugh.
-            </ProblemCard>
-
-            <ProblemCard type="reply" wide>
-              You may understand English, but struggle to reply quickly.
-            </ProblemCard>
-          </div>
-
-          <div className="mx-auto mt-7 flex max-w-5xl justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-purple-200 bg-white text-purple-700 shadow-md">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-5 w-5 stroke-current"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M12 4v16" />
-                <path d="m6 14 6 6 6-6" />
-              </svg>
-            </div>
-          </div>
-
-          <div className="mx-auto mt-7 max-w-5xl rounded-[2rem] bg-gradient-to-r from-lime-300 via-lime-200 to-purple-200 p-[2px] shadow-xl shadow-purple-100">
-            <div className="flex flex-col items-center gap-4 rounded-[1.9rem] bg-white px-6 py-7 text-center sm:flex-row sm:px-8 sm:py-8 sm:text-left">
-              <div className="flex h-16 w-16 flex-none items-center justify-center rounded-2xl bg-gradient-to-br from-purple-950 via-purple-800 to-purple-950 text-lime-300 shadow-xl shadow-purple-200">
-                <ProblemIcon type="link" />
-              </div>
-
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-purple-700">
-                  The Missing Link
-                </p>
-
-                <p className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl">
-                  The missing link is daily spoken English practice.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mx-auto mt-7 flex max-w-5xl justify-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-lime-300/40 bg-purple-950 text-lime-300 shadow-lg shadow-purple-200">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                className="h-5 w-5 stroke-current"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M12 4v16" />
-                <path d="m6 14 6 6 6-6" />
-              </svg>
-            </div>
-          </div>
-
-          <div className="mx-auto mt-7 max-w-5xl overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-lime-300/70 via-purple-500/50 to-purple-950 p-[2px] shadow-2xl shadow-purple-200">
-            <div className="relative overflow-hidden rounded-[2.15rem] bg-gradient-to-br from-purple-950 via-purple-900 to-slate-950 px-6 py-9 text-white sm:px-10 sm:py-10">
-              <div className="pointer-events-none absolute -left-16 -top-20 h-48 w-48 rounded-full bg-lime-300/15 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-20 -right-16 h-48 w-48 rounded-full bg-purple-400/25 blur-3xl" />
-
-              <div className="relative flex flex-col items-center gap-6 text-center sm:flex-row sm:text-left">
-                <div className="flex h-20 w-20 flex-none items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-lime-300 to-lime-400 text-purple-950 shadow-xl shadow-lime-500/20">
-                  <ProblemIcon type="solution" />
-                </div>
-
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-lime-300">
-                    The Solution
-                  </p>
-
-                  <p className="mt-3 text-2xl font-black leading-snug text-white sm:text-3xl">
-                    That is why FluencyJet Sentence Master gives you a Spoken English Gym — a place where you can practice sentences every day, from your current level, without pressure.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Section>
-      </section>
+          <ProblemSolutionSection />
       </section>
 
         <section className="bg-white">
