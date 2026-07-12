@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import WhoThisHelpsSection from "../../components/marketing/WhoThisHelpsSection";
 import AccessPackageSection from "../../components/marketing/AccessPackageSection";
 import MentorSection from "../../components/marketing/MentorSection";
+import PracticeModesSection from "../../components/marketing/PracticeModesSection";
 
 const VIMEO_VIDEO_ID = "1206728761";
 
@@ -712,7 +713,7 @@ export default function SpokenEnglishOffer() {
 
   const offerItems = [
     {
-      title: "Sentence Master App Access",
+      title: "Online Spoken English Gym Access",
       text: "1-year access to FluencyJet Sentence Master for daily spoken English practice.",
     },
     {
@@ -749,7 +750,7 @@ export default function SpokenEnglishOffer() {
     {
       question: "Is this a spoken English course or an app?",
       answer:
-        "It is a structured spoken English practice app. Inside Sentence Master, you get lessons, grammar explanations, speaking topics, and gym-style practice exercises.",
+        "It is an online Spoken English Gym that works directly in your mobile or computer browser. Inside, you get lessons, grammar explanations, speaking topics, and gym-style practice exercises.",
     },
     {
       question: "I am afraid of grammar. Can I still use it?",
@@ -846,7 +847,7 @@ export default function SpokenEnglishOffer() {
                   <div className="relative">
                     <div className="mx-auto w-fit rounded-full bg-gradient-to-r from-purple-100 via-white to-lime-100 px-4 py-2 shadow-sm sm:px-5">
                       <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-purple-700 sm:text-sm">
-                        Special Online Launch Offer
+                        Special Online Offer
                       </p>
                     </div>
 
@@ -985,7 +986,9 @@ export default function SpokenEnglishOffer() {
         </section>
 
         <section className="bg-slate-950">
-          <ProblemSolutionSection />
+          <PracticeModesSection />
+
+      <ProblemSolutionSection />
         </section>
 
         <WhoThisHelpsSection />
@@ -996,7 +999,7 @@ export default function SpokenEnglishOffer() {
           <Section>
             <div className="mx-auto max-w-4xl rounded-[2rem] border border-lime-300/30 bg-white/10 p-6 text-center shadow-2xl shadow-lime-400/10 backdrop-blur sm:p-10">
               <p className="text-sm font-black uppercase tracking-[0.22em] text-lime-300">
-                Special Online Launch Offer
+                Special Online Offer
               </p>
               <h2 className="mt-4 text-4xl font-black sm:text-5xl">
                 Complete 1-Year Access
@@ -1006,9 +1009,9 @@ export default function SpokenEnglishOffer() {
                 One-time payment only
               </p>
               <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/75">
-                Includes Sentence Master app access, 120 structured lessons,
-                spoken English gym practice modes, and supporting fluency
-                resources.
+                Includes Online Spoken English Gym Access, 120 structured
+                lessons, spoken English gym practice modes, and supporting
+                fluency resources.
               </p>
 
               <div className="mt-8">
