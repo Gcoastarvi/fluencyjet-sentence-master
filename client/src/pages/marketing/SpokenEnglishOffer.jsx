@@ -1,6 +1,7 @@
 // client/src/pages/marketing/SpokenEnglishOffer.jsx
 import ProblemSolutionSection from "../../components/marketing/ProblemSolutionSection";
 import { useEffect, useState } from "react";
+import WhoThisHelpsSection from "../../components/marketing/WhoThisHelpsSection";
 
 const VIMEO_VIDEO_ID = "1206728761";
 
@@ -987,37 +988,7 @@ export default function SpokenEnglishOffer() {
           <ProblemSolutionSection />
       </section>
 
-        <section className="bg-white">
-          <Section>
-            <SectionHeader
-              eyebrow="Who This Helps"
-              title="Who Is This Spoken English Gym For?"
-            />
-
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                "Tamil speakers who want to speak English without fear",
-                "Learners who know words but struggle to make sentences",
-                "Students preparing for interviews or career growth",
-                "Working professionals who want better communication",
-                "Business owners who want to speak with more confidence",
-                "Anyone who can practice English for 10–15 minutes daily",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-3xl border border-purple-100 bg-gradient-to-br from-white to-purple-50 p-6 shadow-lg shadow-purple-100/60"
-                >
-                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-lime-300 text-lg font-black text-purple-950">
-                    ✓
-                  </div>
-                  <p className="text-xl font-black leading-snug text-slate-950">
-                    {item}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Section>
-        </section>
+              <WhoThisHelpsSection />
 
         <Section>
           <SectionHeader
