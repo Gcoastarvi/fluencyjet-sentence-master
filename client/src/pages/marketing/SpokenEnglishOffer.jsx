@@ -2,6 +2,7 @@
 import ProblemSolutionSection from "../../components/marketing/ProblemSolutionSection";
 import { useEffect, useState } from "react";
 import WhoThisHelpsSection from "../../components/marketing/WhoThisHelpsSection";
+import AccessPackageSection from "../../components/marketing/AccessPackageSection";
 
 const VIMEO_VIDEO_ID = "1206728761";
 
@@ -990,18 +991,7 @@ export default function SpokenEnglishOffer() {
 
               <WhoThisHelpsSection />
 
-        <Section>
-          <SectionHeader
-            eyebrow="Your Access"
-            title="Here’s What You Get With 1-Year Access"
-          />
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            {offerItems.map((item) => (
-              <OfferItem key={item.title} title={item.title} text={item.text} />
-            ))}
-          </div>
-        </Section>
+        <AccessPackageSection />
 
         <section className="bg-white">
           <Section>
