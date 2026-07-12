@@ -5,6 +5,7 @@ import WhoThisHelpsSection from "../../components/marketing/WhoThisHelpsSection"
 import AccessPackageSection from "../../components/marketing/AccessPackageSection";
 import MentorSection from "../../components/marketing/MentorSection";
 import PracticeModesSection from "../../components/marketing/PracticeModesSection";
+import LessonSystemSection from "../../components/marketing/LessonSystemSection";
 
 const VIMEO_VIDEO_ID = "1206728761";
 
@@ -934,55 +935,9 @@ export default function SpokenEnglishOffer() {
         </Section>
 
         <section className="bg-gradient-to-b from-purple-950 to-slate-950">
-          <Section>
-            <SectionHeader
-              dark
-              eyebrow="Lesson System"
-              title="Every Lesson Connects 3 Things"
-              subtitle="Grammar + Speaking Topic + Gym Practice = Better Spoken English Practice"
-            />
+                <LessonSystemSection />
 
-            <div className="grid gap-6 lg:grid-cols-3">
-              <LessonSystemCard
-                number="1"
-                title="Grammar Point"
-                text="Understand one useful English structure in a simple way."
-                examples={[
-                  "Have / Has",
-                  "Present Simple",
-                  "Present Continuous",
-                  "Future & Past Tenses",
-                  "Can / Should / Will",
-                  "Questions",
-                  "Adjectives",
-                ]}
-              />
-              <LessonSystemCard
-                number="2"
-                title="Spoken English Topic"
-                text="Use that structure in a practical speaking situation."
-                examples={[
-                  "Self-introduction",
-                  "Daily routine",
-                  "Asking for help",
-                  "Office conversation",
-                  "Interview answers",
-                  "Explaining problems",
-                ]}
-              />
-              <LessonSystemCard
-                number="3"
-                title="Gym Practice"
-                text="Practice the same sentence pattern again and again until your brain becomes faster."
-                examples={[
-                  "Quick English",
-                  "Grammar Genius",
-                  "Fluent Voice",
-                  "Listening",
-                ]}
-              />
-            </div>
-          </Section>
+
         </section>
 
         <section className="bg-slate-950">
