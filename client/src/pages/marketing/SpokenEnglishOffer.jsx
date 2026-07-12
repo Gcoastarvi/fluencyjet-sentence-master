@@ -3,6 +3,7 @@ import ProblemSolutionSection from "../../components/marketing/ProblemSolutionSe
 import { useEffect, useState } from "react";
 import WhoThisHelpsSection from "../../components/marketing/WhoThisHelpsSection";
 import AccessPackageSection from "../../components/marketing/AccessPackageSection";
+import MentorSection from "../../components/marketing/MentorSection";
 
 const VIMEO_VIDEO_ID = "1206728761";
 
@@ -442,8 +443,7 @@ function PracticeMock({ title, text, mediaSrc, mode, number }) {
 }
 
 function ProblemIcon({ type }) {
-  const common =
-    "h-6 w-6 stroke-current";
+  const common = "h-6 w-6 stroke-current";
 
   if (type === "grammar") {
     return (
@@ -627,8 +627,7 @@ function ProblemCard({ type, children, wide = false }) {
     >
       <div
         className={
-          "absolute inset-x-0 top-0 h-1 bg-gradient-to-r " +
-          styles.accent
+          "absolute inset-x-0 top-0 h-1 bg-gradient-to-r " + styles.accent
         }
       />
 
@@ -987,44 +986,11 @@ export default function SpokenEnglishOffer() {
 
         <section className="bg-slate-950">
           <ProblemSolutionSection />
-      </section>
+        </section>
 
-              <WhoThisHelpsSection />
+        <WhoThisHelpsSection />
 
         <AccessPackageSection />
-
-        <section className="bg-white">
-          <Section>
-            <SectionHeader
-              eyebrow="Supporting Resources"
-              title="Plus Supporting Fluency Resources"
-              subtitle="Along with the Spoken English Gym, you also get supporting resources to help you build vocabulary, grammar clarity, and speaking confidence."
-            />
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <BonusCard
-                title="5-Step English Fluency Course"
-                text="Learn the full path: words, grammar, sentence engine, sentences, and communication."
-              />
-              <BonusCard
-                title="English Grammar Memory Method"
-                text="Understand grammar concepts using simple memory-based explanation."
-              />
-              <BonusCard
-                title="1000 Core English Words"
-                text="Build your basic spoken English vocabulary foundation."
-              />
-              <BonusCard
-                title="180-Day Speaking Topics"
-                text="Get practical speaking topic ideas for daily English practice."
-              />
-              <BonusCard
-                title="Ready-to-Use Sentence PDF Library"
-                text="Revise useful sentence patterns anytime."
-              />
-            </div>
-          </Section>
-        </section>
 
         <section className="bg-gradient-to-b from-purple-950 to-slate-950 text-white">
           <Section>
@@ -1061,54 +1027,7 @@ export default function SpokenEnglishOffer() {
           </Section>
         </section>
 
-        <Section>
-          <div className="grid items-center gap-8 lg:grid-cols-[0.8fr_1.2fr]">
-            <div className="rounded-[2rem] bg-gradient-to-br from-purple-950 to-slate-950 p-6 text-white shadow-2xl">
-              <div className="aspect-square rounded-[1.5rem] bg-gradient-to-br from-lime-300/30 to-purple-500/30 p-6">
-                <div className="flex h-full flex-col items-center justify-center rounded-[1.25rem] border border-white/15 bg-white/10 text-center">
-                  <div className="mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-lime-300 text-4xl">
-                    👨‍🏫
-                  </div>
-                  <p className="text-3xl font-black">Aravind Pasupathy</p>
-                  <p className="mt-2 text-lg font-bold text-lime-200">
-                    Founder of FluencyJet
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-3 text-sm font-black uppercase tracking-[0.22em] text-purple-700">
-                Meet Your Mentor
-              </p>
-              <h2 className="text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
-                Learn From A Trainer Who Understands Tamil Learners
-              </h2>
-              <div className="mt-6 space-y-4 text-lg leading-relaxed text-slate-700">
-                <p>
-                  Hi, I’m Aravind Pasupathy, founder of FluencyJet. I have
-                  trained thousands of learners using memory techniques,
-                  language learning systems, and practical English training
-                  methods.
-                </p>
-                <p>
-                  I created the Spoken English Gym because many Tamil learners
-                  don’t fail due to lack of interest. They struggle because they
-                  don’t get enough guided sentence-making practice.
-                </p>
-                <p>
-                  Sentence Master is designed to help you practice English step
-                  by step — with simple grammar, useful speaking topics, and
-                  daily exercises that train your sentence formation.
-                </p>
-                <p className="font-black text-purple-950">
-                  Guinness World Record holder in memory and trainer to 35,000+
-                  students.
-                </p>
-              </div>
-            </div>
-          </div>
-        </Section>
+        <MentorSection />
 
         <section className="bg-white">
           <Section>
