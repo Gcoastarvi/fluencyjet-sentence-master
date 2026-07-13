@@ -253,12 +253,15 @@ export default function App() {
                 path="/spoken-english-vsl"
                 element={<SpokenEnglishVSL />}
               />
-              <Route
-                path="/spoken-english-offer"
-                element={<SpokenEnglishOffer />
+                          <Route
+              path="/spoken-english-offer"
+              element={<SpokenEnglishOffer />}
+            />
+
             <Route
               path="/spoken-english-thank-you"
               element={<SpokenEnglishThankYou />}
+            />
             />}
               />
               <Route path="/forgot-password" element={<ForgotPassword />} />
