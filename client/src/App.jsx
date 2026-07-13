@@ -41,6 +41,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import RouteTracker from "./components/RouteTracker";
 import Webinar from "./pages/Webinar";
+import SpokenEnglishThankYou from "./pages/marketing/SpokenEnglishThankYou";
 
 function PageLoader() {
   return (
@@ -254,7 +255,11 @@ export default function App() {
               />
               <Route
                 path="/spoken-english-offer"
-                element={<SpokenEnglishOffer />}
+                element={<SpokenEnglishOffer />
+            <Route
+              path="/spoken-english-thank-you"
+              element={<SpokenEnglishThankYou />}
+            />}
               />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
