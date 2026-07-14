@@ -22,9 +22,7 @@ export function trackPageView(path) {
     }
 
     if (w.fbq) {
-      w.fbq("track", "PageView", {
-        page_path: pagePath,
-      });
+      w.fbq("track", "PageView");
     }
   } catch (error) {
     console.warn("[tracking] page_view failed:", error);
