@@ -1,3 +1,5 @@
+import { trackSpokenEnglishInitiateCheckout } from "../../lib/tracking";
+
 function OfferFeatureIcon({ type }) {
   const common = "h-5 w-5 stroke-current";
 
@@ -112,34 +114,6 @@ const features = [
   },
 ];
 
-function trackCheckout() {
-  try {
-    if (window.fbq) {
-      window.fbq("track", "InitiateCheckout", {
-        content_name: "Spoken English Gym",
-        value: 1199,
-        currency: "INR",
-      });
-    }
-
-    if (window.gtag) {
-      window.gtag("event", "begin_checkout", {
-        currency: "INR",
-        value: 1199,
-        items: [
-          {
-            item_name: "Spoken English Gym 1-Year Access",
-            price: 1199,
-            quantity: 1,
-          },
-        ],
-      });
-    }
-  } catch (error) {
-    console.warn("Checkout tracking error:", error);
-  }
-}
-
 export default function LaunchOfferCard({ paymentUrl }) {
   return (
     <section className="mx-auto mt-10 w-full max-w-6xl px-4 sm:px-6">
@@ -153,12 +127,12 @@ export default function LaunchOfferCard({ paymentUrl }) {
               <div className="relative">
                 <div className="mx-auto w-fit rounded-full border border-lime-300/25 bg-white/10 px-5 py-2 backdrop-blur">
                   <p className="text-xs font-black uppercase tracking-[0.22em] text-lime-300 sm:text-sm">
-                    Special Online Launch Offer
+                    Special Online Offer
                   </p>
                 </div>
 
                 <h2 className="mx-auto mt-6 max-w-xl text-3xl font-black leading-tight sm:text-4xl">
-                  1-Year Access to Your Chosen Learning Path
+                  1-Year Access to Your Spoken English Gym
                 </h2>
 
                 <div className="mx-auto mt-7 w-fit rounded-[2rem] bg-gradient-to-r from-purple-700 via-violet-600 to-purple-700 px-7 py-4 shadow-2xl shadow-purple-950/40">
@@ -173,7 +147,8 @@ export default function LaunchOfferCard({ paymentUrl }) {
 
                 <div className="mx-auto mt-5 w-fit rounded-2xl border border-white/15 bg-white/10 px-5 py-3">
                   <p className="text-sm font-black text-white sm:text-base">
-                    Beginner <span className="text-lime-300">or</span> Intermediate
+                    Beginner <span className="text-lime-300">or</span>{" "}
+                    Intermediate
                   </p>
                   <p className="mt-1 text-xs font-semibold text-white/60">
                     Choose the path that matches your current level
@@ -226,14 +201,15 @@ export default function LaunchOfferCard({ paymentUrl }) {
 
                 <a
                   href={paymentUrl}
-                  onClick={trackCheckout}
+                  onClick={trackSpokenEnglishInitiateCheckout}
                   className="mt-6 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-yellow-300 to-lime-400 px-6 py-5 text-center text-lg font-black text-slate-950 shadow-xl shadow-lime-300/30 transition hover:-translate-y-0.5 hover:shadow-2xl active:translate-y-0 sm:text-xl"
                 >
                   Get 1-Year Access for ₹1,199
                 </a>
 
                 <p className="mt-4 text-center text-xs font-bold leading-relaxed text-slate-500 sm:text-sm">
-                  Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card or Credit Card
+                  Secure payment via UPI, GPay, PhonePe, Paytm, Debit Card or
+                  Credit Card
                 </p>
 
                 <div className="mt-5 border-t border-purple-100 pt-5 text-center">

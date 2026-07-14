@@ -49,9 +49,10 @@ export const lessonMeta = {
       },
     },
     5: {
-      title: "Talk About Your Team",
+      title: "Talk About Your Friends & Team",
       outcome: "You can talk about people, groups, and teams.",
-      tamilOutcome: "நீங்கள் மனிதர்கள், குழுக்கள், அணிகள் பற்றி பேச முடியும்.",
+      tamilOutcome:
+        "நீங்கள் நண்பர்கள், மனிதர்கள், குழுக்கள், பற்றி பேச முடியும்.",
       patterns: ["You are...", "We are...", "They are..."],
       video: {
         provider: "vimeo",
@@ -60,7 +61,7 @@ export const lessonMeta = {
       },
     },
     6: {
-      title: "Introduce Colleagues and Companies",
+      title: "Introduce Friends, Colleagues and Companies",
       outcome: "You can introduce another person or company.",
       tamilOutcome:
         "நீங்கள் மற்றொருவரையோ நிறுவனத்தையோ அறிமுகப்படுத்த முடியும்.",
@@ -110,8 +111,7 @@ export const lessonMeta = {
       title: "Professional Self-Introduction Challenge",
       outcome:
         "You can introduce yourself confidently in real-life situations.",
-      tamilOutcome:
-        "நீங்கள் உண்மையான சூழ்நிலைகளில் உங்களை நம்பிக்கையுடன் அறிமுகப்படுத்த முடியும்.",
+      tamilOutcome: "உங்களை தன்னம்பிக்கையுடன் அறிமுகப்படுத்த முடியும்.",
       patterns: ["I’m here for...", "My name is...", "I work as..."],
       video: {
         provider: "vimeo",
@@ -122,8 +122,7 @@ export const lessonMeta = {
     11: {
       title: "Talk About Work Preferences",
       outcome: "You can say what you like at work.",
-      tamilOutcome:
-        "நீங்கள் வேலை இடத்தில் உங்களுக்கு பிடித்ததை சொல்ல முடியும்.",
+      tamilOutcome: "வேலை இடத்தில் உங்களுக்கு பிடித்ததை சொல்ல முடியும்.",
       patterns: ["I like...", "I like working...", "I like using..."],
       video: {
         provider: "vimeo",
@@ -132,7 +131,7 @@ export const lessonMeta = {
       },
     },
     12: {
-      title: "Talk About a Colleague’s Routine",
+      title: "Talk About other people's Routine",
       outcome: "You can speak about what another person does.",
       tamilOutcome: "நீங்கள் மற்றொருவர் என்ன செய்கிறார் என்று சொல்ல முடியும்.",
       patterns: ["He likes...", "She works...", "He uses..."],
@@ -145,7 +144,7 @@ export const lessonMeta = {
     13: {
       title: "Talk About Food and Drinks",
       outcome: "You can speak about eating, drinking, and office breaks.",
-      tamilOutcome: "நீங்கள் உணவு, பானம், அலுவலக இடைவேளை பற்றி பேச முடியும்.",
+      tamilOutcome: "உணவு, பானம், இடைவேளை பற்றி பேச முடியும்.",
       patterns: ["I eat...", "I drink...", "I have..."],
       video: {
         provider: "vimeo",
@@ -167,8 +166,7 @@ export const lessonMeta = {
     15: {
       title: "Ask Simple Work Questions",
       outcome: "You can ask simple questions about work habits.",
-      tamilOutcome:
-        "நீங்கள் வேலை பழக்கங்கள் பற்றி எளிய கேள்விகள் கேட்க முடியும்.",
+      tamilOutcome: "வேலை பழக்கங்கள் பற்றி எளிய கேள்விகள் கேட்க முடியும்.",
       patterns: ["Do you...?", "Do you work...?", "Do you use...?"],
       video: {
         provider: "vimeo",
@@ -179,7 +177,7 @@ export const lessonMeta = {
     16: {
       title: "Describe Your Workday",
       outcome: "You can talk about your daily work routine.",
-      tamilOutcome: "நீங்கள் உங்கள் தினசரி வேலை வழக்கத்தை சொல்ல முடியும்.",
+      tamilOutcome: "உங்கள் தினசரிவழக்கத்தை சொல்ல முடியும்.",
       patterns: [
         "I wake up at...",
         "I start work at...",
@@ -194,8 +192,7 @@ export const lessonMeta = {
     17: {
       title: "Talk About Habits and Reliability",
       outcome: "You can say how often you do something.",
-      tamilOutcome:
-        "நீங்கள் எவ்வளவு அடிக்கடி செய்கிறீர்கள் என்று சொல்ல முடியும்.",
+      tamilOutcome: "உங்கள் பழக்கவழக்கங்களைப் பற்றி பேச முடியும்.",
       patterns: ["I always...", "I never...", "I usually..."],
       video: {
         provider: "vimeo",
@@ -206,8 +203,7 @@ export const lessonMeta = {
     18: {
       title: "Order Coffee Politely",
       outcome: "You can order coffee or snacks in a polite way.",
-      tamilOutcome:
-        "நீங்கள் காபி அல்லது சிற்றுண்டியை மரியாதையாக ஆர்டர் செய்ய முடியும்.",
+      tamilOutcome: "காபி அல்லது சிற்றுண்டியை ஆர்டர் செய்வது எப்படி?",
       patterns: ["I want...", "I’d like...", "Can I have...?"],
       video: {
         provider: "vimeo",
@@ -219,7 +215,7 @@ export const lessonMeta = {
       title: "Describe a Busy Workday",
       outcome: "You can speak about a busy day using longer sentences.",
       tamilOutcome:
-        "நீங்கள் பிஸியான நாளைப் பற்றி நீளமான வாக்கியங்களில் பேச முடியும்.",
+        "பிஸியான நாளைப் பற்றி நீளமான வாக்கியங்களில் செய்வது எப்படி?",
       patterns: ["I wake up at...", "I always...", "After work..."],
       video: {
         provider: "vimeo",
@@ -228,10 +224,9 @@ export const lessonMeta = {
       },
     },
     20: {
-      title: "Explain Your Daily Work Routine",
+      title: "Explain Your Daily Routine",
       outcome: "You can explain your full workday routine in English.",
-      tamilOutcome:
-        "நீங்கள் உங்கள் முழு வேலை நாள் வழக்கத்தை ஆங்கிலத்தில் விளக்க முடியும்.",
+      tamilOutcome: "உங்கள் முழு நாள் வழக்கத்தை ஆங்கிலத்தில் விளக்க முடியும்.",
       patterns: ["I start work at...", "I usually...", "I finish work at..."],
       video: {
         provider: "vimeo",
@@ -243,7 +238,7 @@ export const lessonMeta = {
       title: "Talk About Tools and Resources",
       outcome: "You can say what tools and resources you have.",
       tamilOutcome:
-        "நீங்கள் உங்களிடம் உள்ள கருவிகள் மற்றும் வசதிகள் பற்றி சொல்ல முடியும்.",
+        "உங்களிடம் உள்ள கருவிகள் மற்றும் வசதிகள் பற்றி எப்படி சொல்வது?",
       patterns: ["I have...", "I have a...", "I have some..."],
       video: {
         provider: "vimeo",
@@ -254,7 +249,7 @@ export const lessonMeta = {
     22: {
       title: "Describe What Others Have",
       outcome: "You can say what another person has.",
-      tamilOutcome: "நீங்கள் மற்றொருவரிடம் என்ன உள்ளது என்று சொல்ல முடியும்.",
+      tamilOutcome: "மற்றொருவரிடம் என்ன உள்ளது என்பதை எப்படி சொல்வது?",
       patterns: ["He has...", "She has...", "It has..."],
       video: {
         provider: "vimeo",
@@ -264,9 +259,8 @@ export const lessonMeta = {
     },
     23: {
       title: "Locate Office Items",
-      outcome: "You can say where office items are.",
-      tamilOutcome:
-        "நீங்கள் அலுவலக பொருட்கள் எங்கு உள்ளன என்று சொல்ல முடியும்.",
+      outcome: "You can say where items are.",
+      tamilOutcome: "பொருட்கள் எங்கு உள்ளன என்பதை எப்படி சொல்வது?",
       patterns: ["It is in...", "It is on...", "It is under..."],
       video: {
         provider: "vimeo",
@@ -277,8 +271,7 @@ export const lessonMeta = {
     24: {
       title: "Give Simple Location Details",
       outcome: "You can describe where something is placed.",
-      tamilOutcome:
-        "ஒரு பொருள் எங்கு வைக்கப்பட்டுள்ளது என்று நீங்கள் சொல்ல முடியும்.",
+      tamilOutcome: "ஒரு பொருள் எங்கு வைக்கப்பட்டுள்ளது என்பதை எப்படி சொல்வது?",
       patterns: ["It is next to...", "It is behind...", "It is near..."],
       video: {
         provider: "vimeo",
@@ -289,7 +282,7 @@ export const lessonMeta = {
     25: {
       title: "Refer to Documents and Objects",
       outcome: "You can point to one thing and talk about it.",
-      tamilOutcome: "நீங்கள் ஒரு பொருளைக் காட்டி அதைப் பற்றி பேச முடியும்.",
+      tamilOutcome: "ஒரு பொருளைக் காட்டி அதைப் பற்றி எப்படி பேசுவது?",
       patterns: ["This is...", "That is...", "This document is..."],
       video: {
         provider: "vimeo",
@@ -301,7 +294,7 @@ export const lessonMeta = {
       title: "Talk About Files and Products",
       outcome: "You can talk about many things near or far.",
       tamilOutcome:
-        "நீங்கள் அருகில் அல்லது தொலைவில் உள்ள பல பொருட்கள் பற்றி பேச முடியும்.",
+        "அருகில் அல்லது தொலைவில் உள்ள பல பொருட்கள் பற்றி எப்படி பேசுவது?",
       patterns: ["These are...", "Those are...", "These files are..."],
       video: {
         provider: "vimeo",
@@ -312,7 +305,7 @@ export const lessonMeta = {
     27: {
       title: "Ask About Ownership",
       outcome: "You can ask who owns something.",
-      tamilOutcome: "ஒரு பொருள் யாருடையது என்று நீங்கள் கேட்க முடியும்.",
+      tamilOutcome: "ஒரு பொருள் யாருடையது என்று எப்படி கேட்பது?",
       patterns: ["Whose is this?", "Whose file is this?", "It is Ram’s..."],
       video: {
         provider: "vimeo",
@@ -321,9 +314,9 @@ export const lessonMeta = {
       },
     },
     28: {
-      title: "Find Lost Office Items",
+      title: "Find Lost Items",
       outcome: "You can describe and ask about lost items.",
-      tamilOutcome: "நீங்கள் காணாமல் போன பொருட்களை விவரித்து கேட்க முடியும்.",
+      tamilOutcome: "காணாமல் போன பொருட்களை எப்படி விவரித்து கேட்பது",
       patterns: ["I lost...", "It is a...", "Have you seen...?"],
       video: {
         provider: "vimeo",
@@ -334,7 +327,7 @@ export const lessonMeta = {
     29: {
       title: "Describe Your Desk or Office Setup",
       outcome: "You can describe your workspace clearly.",
-      tamilOutcome: "நீங்கள் உங்கள் வேலை இடத்தை தெளிவாக விவரிக்க முடியும்.",
+      tamilOutcome: "நீங்கள் உங்கள் வேலை இடத்தை தெளிவாக விவரிப்பது எப்படி?",
       patterns: ["On my desk...", "Next to my...", "Behind the..."],
       video: {
         provider: "vimeo",
@@ -346,7 +339,7 @@ export const lessonMeta = {
       title: "Explain Your Workspace Clearly",
       outcome: "You can talk about your desk, tools, and office items.",
       tamilOutcome:
-        "நீங்கள் உங்கள் மேசை, கருவிகள், அலுவலக பொருட்கள் பற்றி தெளிவாக பேச முடியும்.",
+        "நீங்கள் உங்கள் மேசை, கருவிகள், அலுவலக பொருட்கள் பற்றி தெளிவாக பேசுவது எப்படி?",
       patterns: ["I have...", "It is on...", "These are..."],
       video: {
         provider: "vimeo",
@@ -797,7 +790,7 @@ export const lessonMeta = {
       title: "Use Quantity Phrases",
       outcome: "You can use quantity phrases in daily situations.",
       tamilOutcome:
-        "நீங்கள் தினசரி சூழ்நிலைகளில் அளவு சொற்களை பயன்படுத்த முடியும்.",
+        "நீங்கள் தினசரி சூழ்நிலைகளில் அளவு சொற்களை பயன்படுத்த மு���ி���ும்.",
       patterns: ["A cup of...", "A bottle of...", "A packet of..."],
       video: {
         provider: "vimeo",

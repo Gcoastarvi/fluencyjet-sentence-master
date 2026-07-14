@@ -1,4 +1,10 @@
 import { useEffect, useState } from "react";
+import {
+  trackSpokenEnglishVSLView,
+  trackVSLCTAVisible,
+  trackVSLCTAClick,
+  trackVSLWhatsAppClick,
+} from "../../lib/tracking";
 
 const VIMEO_VIDEO_ID = "1206728761";
 const CTA_DELAY_MS = 3 * 60 * 1000;
@@ -21,26 +27,17 @@ function MarketingNavHider() {
   );
 }
 
-function trackEvent(eventName) {
-  try {
-    if (window.gtag) window.gtag("event", eventName);
-    if (window.fbq) window.fbq("trackCustom", eventName);
-  } catch (error) {
-    console.warn("Tracking error:", error);
-  }
-}
-
 export default function SpokenEnglishVSL() {
   const [showCta, setShowCta] = useState(false);
 
   useEffect(() => {
     document.title = "Spoken English Gym for Tamil Learners | FluencyJet";
     document.body.classList.add("marketing-no-nav");
-    trackEvent("spoken_english_vsl_page_view");
+    trackSpokenEnglishVSLView();
 
     const timer = window.setTimeout(() => {
       setShowCta(true);
-      trackEvent("spoken_english_vsl_cta_revealed");
+      trackVSLCTAVisible();
     }, CTA_DELAY_MS);
 
     return () => {
@@ -50,12 +47,12 @@ export default function SpokenEnglishVSL() {
   }, []);
 
   const handleCtaClick = () => {
-    trackEvent("spoken_english_vsl_offer_cta_click");
+    trackVSLCTAClick();
     window.location.href = "/spoken-english-offer";
   };
 
   const handleWhatsAppClick = () => {
-    trackEvent("spoken_english_vsl_whatsapp_click");
+    trackVSLWhatsAppClick();
   };
 
   return (

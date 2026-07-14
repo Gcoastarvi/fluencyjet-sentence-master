@@ -1,3 +1,4 @@
+// client/src/lib/tracking.js
 const GA_MEASUREMENT_ID = "G-3PFCRYL9TC";
 
 function safeWindow() {
@@ -267,4 +268,109 @@ export function trackAppTrialStarted({
 
 export function trackDemoVideoViewed({ source = "lesson_onboarding" } = {}) {
   trackEvent("DemoVideoViewed", { source });
+}
+
+/* ============================================================
+   SPOKEN-ENGLISH VSL FUNNEL HELPERS
+   Pixel / Dataset: 1246171816816642 (FJ Sentence Master)
+   ============================================================ */
+
+/**
+ * Fire once on /spoken-english-vsl mount.
+ * Standard ViewContent feeds Meta purchase-optimisation audiences.
+ * Custom event preserves existing reporting.
+ */
+export function trackSpokenEnglishVSLView() {
+  trackMetaStandard("ViewContent", {
+    content_name: "Spoken English VSL",
+    content_category: "spoken_english",
+  });
+  trackEvent("spoken_english_vsl_page_view", {});
+}
+
+/**
+ * Fire when the 3-minute CTA becomes visible.
+ * Custom event only — not InitiateCheckout (user has not shown purchase intent yet).
+ */
+export function trackVSLCTAVisible() {
+  trackEvent("spoken_english_vsl_cta_revealed", {});
+}
+
+/**
+ * Fire when the VSL CTA is clicked (navigates to offer page).
+ * Custom event only — InitiateCheckout is reserved for the offer-page payment CTA.
+ */
+export function trackVSLCTAClick() {
+  trackEvent("spoken_english_vsl_offer_cta_click", {});
+}
+
+/** Fire when the WhatsApp link on the VSL page is clicked. */
+export function trackVSLWhatsAppClick() {
+  trackEvent("spoken_english_vsl_whatsapp_click", {});
+}
+
+/**
+ * Fire once on /spoken-english-offer mount.
+ * Standard ViewContent with product value signals purchase intent to Meta.
+ */
+export function trackSpokenEnglishOfferView() {
+  trackMetaStandard("ViewContent", {
+    content_name: "Spoken English Offer",
+    content_category: "spoken_english",
+    value: 1199,
+    currency: "INR",
+  });
+  trackEvent("spoken_english_offer_page_view", {});
+}
+
+/**
+ * Module-level cooldown guard.
+ * Prevents accidental duplicate InitiateCheckout if multiple CTAs are visible
+ * simultaneously or a button receives a rapid double-click.
+ */
+let _initiateCheckoutFiredAt = 0;
+const INITIATE_CHECKOUT_COOLDOWN_MS = 2000;
+
+/**
+ * Fire when any Razorpay payment CTA on the offer page is clicked.
+ * Fires standard Meta InitiateCheckout + GA4 begin_checkout + custom event.
+ * Suppresses duplicate calls within the cooldown window.
+ */
+export function trackSpokenEnglishInitiateCheckout() {
+  const now = Date.now();
+  if (now - _initiateCheckoutFiredAt < INITIATE_CHECKOUT_COOLDOWN_MS) return;
+  _initiateCheckoutFiredAt = now;
+
+  trackMetaStandard("InitiateCheckout", {
+    content_name: "Spoken English Gym",
+    content_category: "spoken_english",
+    value: 1199,
+    currency: "INR",
+  });
+
+  const w = safeWindow();
+  try {
+    if (w?.gtag) {
+      w.gtag("event", "begin_checkout", {
+        currency: "INR",
+        value: 1199,
+        items: [
+          {
+            item_name: "Spoken English Gym 1-Year Access",
+            price: 1199,
+            quantity: 1,
+          },
+        ],
+      });
+    }
+  } catch (error) {
+    console.warn("[tracking] begin_checkout failed:", error);
+  }
+
+  trackEvent("spoken_english_offer_payment_cta_click", {});
+}
+
+/** Fire when the WhatsApp link on the offer page is clicked. */
+export function trackOfferWhatsAppClick() {
+  trackEvent("spoken_english_offer_whatsapp_click", {});
 }
