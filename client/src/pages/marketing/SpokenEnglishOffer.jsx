@@ -97,7 +97,9 @@ function CtaButton({
       return;
     }
 
-    window.location.href = PAYMENT_URL;
+    setTimeout(() => {
+      window.location.href = PAYMENT_URL;
+    }, 300);
   };
 
   return (

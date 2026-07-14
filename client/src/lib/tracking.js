@@ -281,7 +281,8 @@ export function trackDemoVideoViewed({ source = "lesson_onboarding" } = {}) {
 export function trackSpokenEnglishVSLView() {
   trackMetaStandard("ViewContent", {
     content_name: "Spoken English VSL",
-    content_category: "spoken_english",
+    content_ids: ["spoken-english-gym"],
+    content_type: "product",
   });
   trackEvent("spoken_english_vsl_page_view", {});
 }
@@ -314,7 +315,8 @@ export function trackVSLWhatsAppClick() {
 export function trackSpokenEnglishOfferView() {
   trackMetaStandard("ViewContent", {
     content_name: "Spoken English Offer",
-    content_category: "spoken_english",
+    content_ids: ["spoken-english-gym"],
+    content_type: "product",
     value: 1199,
     currency: "INR",
   });
@@ -341,9 +343,11 @@ export function trackSpokenEnglishInitiateCheckout() {
 
   trackMetaStandard("InitiateCheckout", {
     content_name: "Spoken English Gym",
-    content_category: "spoken_english",
+    content_ids: ["spoken-english-gym"],
+    content_type: "product",
     value: 1199,
     currency: "INR",
+    num_items: 1,
   });
 
   const w = safeWindow();
