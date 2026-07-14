@@ -181,6 +181,24 @@ model Payment {
   user      User     @relation(fields: [userId], references: [id])
 }
 
+model SpokenEnglishPurchase {
+  id               String   @id @default(cuid())
+  paymentLinkId    String?
+  paymentId        String   @unique
+  amount           Int
+  currency         String   @default("INR")
+  status           String
+  customerEmail    String?
+  customerContact  String?
+  webhookEventId   String   @unique
+  metaEventId      String
+  metaDelivered    Boolean  @default(false)
+  metaError        String?
+  metaResponseCode Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
 model DiagnosticQuestion {
   id         String      @id @default(uuid())
   isActive   Boolean     @default(true)
