@@ -7,7 +7,7 @@ const router = express.Router();
 
 const EXPECTED_AMOUNT_PAISE = 119900;
 const EXPECTED_CURRENCY = "INR";
-const EXPECTED_EVENT = "payment_link.paid";
+const EXPECTED_EVENT = "payment_page.payment_attempted";
 const CAPI_EVENT_SOURCE_URL =
   "https://www.fluencyjet.com/spoken-english-thank-you";
 const CAPI_CONTENT_NAME = "FluencyJet Sentence Master";
@@ -16,7 +16,7 @@ const CAPI_CONTENT_IDS = ["sentence_master_1199"];
 /**
  * POST /api/webhooks/razorpay
  *
- * Receives payment_link.paid from Razorpay.
+ * Receives payment_page.payment_attempted from Razorpay.
  * express.raw() is applied per-route so this handler receives the raw
  * Buffer needed for HMAC verification.
  * This route MUST be mounted in index.js BEFORE global express.json().
@@ -66,7 +66,7 @@ router.post(
     }
 
     const paymentEntity = payload?.payload?.payment?.entity;
-    const linkEntity    = payload?.payload?.payment_link?.entity;
+    const linkEntity    = payload?.payload?.payment_page?.entity;
 
     if (!paymentEntity?.id) {
       console.warn("[webhook/rzp] Missing payment entity in payload");
@@ -115,7 +115,7 @@ router.post(
       return res.status(200).json({ ok: true, skipped: true, reason: "status_not_captured" });
     }
 
-    const configuredLinkId = process.env.RAZORPAY_PAYMENT_LINK_ID;
+    const configuredLinkId = process.env.RAZORPAY_PAYMENT_PAGE_ID;
     if (configuredLinkId && paymentLinkId && paymentLinkId !== configuredLinkId) {
       console.warn(`[webhook/rzp] Payment link ID mismatch: got ${paymentLinkId}`);
       return res.status(200).json({ ok: true, skipped: true, reason: "link_id_mismatch" });
