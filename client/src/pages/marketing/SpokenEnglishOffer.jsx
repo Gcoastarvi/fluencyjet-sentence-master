@@ -15,9 +15,9 @@ import {
 
 const VIMEO_VIDEO_ID = "1206728761";
 
-const PAYMENT_URL =r
+const PAYMENT_URL =
   import.meta.env.VITE_SPOKEN_ENGLISH_PAYMENT_URL ||
-  "https://rzp.io/rzp/gFLPK5Sq";
+  "https://rzp.io/rzp/U2adLCc";
 
 const WHATSAPP_URL =
   "https://wa.me/919047122250?text=Hi%20FluencyJet%2C%20I%20want%20to%20join%20the%20Spoken%20English%20Gym.%20I%20need%20help.";
