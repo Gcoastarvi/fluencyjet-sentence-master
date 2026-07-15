@@ -13,7 +13,7 @@ import {
   trackOfferWhatsAppClick,
 } from "../../lib/tracking";
 
-const VIMEO_VIDEO_ID = "1206728761";
+const VIMEO_VIDEO_ID = "1210087375";
 
 const PAYMENT_URL =
   import.meta.env.VITE_SPOKEN_ENGLISH_PAYMENT_URL ||
