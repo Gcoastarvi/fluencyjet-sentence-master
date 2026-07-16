@@ -202,10 +202,10 @@ export default function Navbar() {
                     Leaderboard
                   </Link>
 
-                  {/* 🎯 Hide Upgrade if user has paid access */}
+                  {/* 🎯 Hide Full Access CTA if user has paid access */}
                   {!isPaidUser && (
                     <Link
-                      to="/webinar"
+                      to="/spoken-english-offer"
                       className="shrink-0 px-4 py-2 bg-yellow-400 text-black rounded-full font-semibold text-sm sm:text-base"
                     >
                       Upgrade
