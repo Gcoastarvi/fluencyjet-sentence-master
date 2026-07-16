@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import LessonCard from "../../components/student/LessonCard";
 import confetti from "canvas-confetti";
 import { overallLessonPct } from "@/lib/progressStore";
+import { freeAllowsLesson } from "../../lib/accessRules";
 
 // 🎯 THE SOURCE OF TRUTH: Unify all league thresholds here
 export const getLeagueInfo = (xp) => {
@@ -614,7 +615,7 @@ export default function LessonList({ difficulty }) {
                   {module.lessons.map((lesson, idx) => {
                     const displayNum = (module.id - 1) * 10 + (idx + 1);
                     const isLocked =
-                      auth?.user?.has_access === false && displayNum > 3;
+                      auth?.user?.has_access === false && !freeAllowsLesson(displayNum);
 
                     return (
                       <React.Fragment key={lesson.id}>

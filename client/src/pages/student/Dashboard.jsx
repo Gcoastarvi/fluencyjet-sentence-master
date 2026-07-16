@@ -16,6 +16,7 @@ import confetti from "canvas-confetti";
 import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 import { lessonMeta } from "@/data/lessonMeta";
 import { overallLessonPct } from "@/lib/progressStore";
+import { freeAllowsLesson } from "../../lib/accessRules";
 
 const UI_TEXT = {
   en: {
@@ -871,8 +872,8 @@ export default function Dashboard() {
     // 1. Safety check for data
     if (!lessons || !Array.isArray(lessons)) return 0;
 
-    // 2. Look at the first 3 lessons specifically
-    const trialLessons = lessons.slice(0, 3);
+    // 2. Look at the single free preview lesson
+    const trialLessons = lessons.slice(0, 1);
 
     // 3. Count how many have any progress (typing, reorder, or audio > 0)
     const count = trialLessons.filter((lesson) => {
@@ -1828,7 +1829,7 @@ export default function Dashboard() {
                     summary?.plan === "INTERMEDIATE" ||
                     summary?.plan === "PRO";
 
-                  const isFreeLesson = lessonNum <= 3;
+                  const isFreeLesson = freeAllowsLesson(lessonNum);
 
                   const isLocked = !hasPaidAccess && !isFreeLesson;
 

@@ -309,7 +309,7 @@ export default function LessonDetail() {
     effectivePlan === "PAID" ||
     (hasManualAccess && effectivePlan === currentRouteTrack);
 
-  const isLocked = Number(dayNumber) > 3 && !hasTrackAccess;
+  const isLocked = !freeAllowsLesson(Number(dayNumber)) && !hasTrackAccess;
 
   useEffect(() => {
     // 🏆 Trigger celebration only when they reach 100%
@@ -816,11 +816,11 @@ export default function LessonDetail() {
         return "AUTH";
       }
 
-      // 🎯 Added a safety check for Lesson 1-3
+      // Safety check for the free preview lesson
       if (
         status === 403 &&
         data?.code === "PAYWALL" &&
-        parseInt(lessonId) > 3
+        !freeAllowsLesson(parseInt(lessonId, 10))
       ) {
         const action = data?.nextAction || null;
         const from = action?.from || `lesson_${lid}`;
