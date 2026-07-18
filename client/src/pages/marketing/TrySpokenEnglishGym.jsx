@@ -27,10 +27,6 @@ export default function TrySpokenEnglishGym() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (isAuthenticated) {
-      window.location.href = AFTER_SIGNUP_URL;
-      return;
-    }
     trackSmartSignupView({
       source: SOURCE,
       track: "BEGINNER",
@@ -38,6 +34,12 @@ export default function TrySpokenEnglishGym() {
       main_goal: "Build sentences faster",
     });
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      window.location.href = AFTER_SIGNUP_URL;
+    }
+  }, [isAuthenticated]);
 
   async function handleSubmit(e) {
     e.preventDefault();
