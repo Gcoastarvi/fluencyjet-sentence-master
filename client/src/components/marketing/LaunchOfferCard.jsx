@@ -1,3 +1,4 @@
+// client/src/components/marketing/LaunchOfferCard.jsx
 import { trackSpokenEnglishInitiateCheckout } from "../../lib/tracking";
 
 function OfferFeatureIcon({ type }) {

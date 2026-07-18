@@ -35,6 +35,7 @@ import AdminLessons from "./pages/admin/AdminLessons.jsx";
 import Signup from "./pages/student/Signup.jsx";
 import SpokenEnglishVSL from "./pages/marketing/SpokenEnglishVSL";
 import SpokenEnglishOffer from "./pages/marketing/SpokenEnglishOffer";
+import TrySpokenEnglishGym from "./pages/marketing/TrySpokenEnglishGym";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -225,6 +226,7 @@ export default function App() {
             <Route path="/admin/login" element={<AdminLogin />} />
 
             <Route path="/free-live-class" element={<FreeLiveClass />} />
+            <Route path="/try-spoken-english-gym" element={<TrySpokenEnglishGym />} />
 
             {/* All other pages share Navbar */}
             <Route element={<MainLayout />}>
