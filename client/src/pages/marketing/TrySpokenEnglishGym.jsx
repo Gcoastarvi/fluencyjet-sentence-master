@@ -4,9 +4,10 @@ import { smartSignup } from "@/api/apiClient";
 import { setToken } from "@/utils/tokenStore";
 import { trackSmartSignupView, trackSmartSignupCompleted } from "@/lib/tracking";
 import { sendToFunnelSheet } from "@/lib/funnelSheet";
+import { useAuth } from "@/context/AuthContext";
 
 const SOURCE = "whatsapp_vsl_help";
-const AFTER_SIGNUP_URL = "/quick-start";
+const AFTER_SIGNUP_URL = "/b/lesson/1?difficulty=beginner";
 
 const BENEFITS = [
   "Daily sentence practice — just 10 minutes a day",
@@ -17,6 +18,7 @@ const BENEFITS = [
 ];
 
 export default function TrySpokenEnglishGym() {
+  const { isAuthenticated } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -25,6 +27,10 @@ export default function TrySpokenEnglishGym() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (isAuthenticated) {
+      window.location.href = AFTER_SIGNUP_URL;
+      return;
+    }
     trackSmartSignupView({
       source: SOURCE,
       track: "BEGINNER",
