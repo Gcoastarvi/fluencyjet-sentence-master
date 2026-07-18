@@ -6,7 +6,7 @@ import { trackSmartSignupView, trackSmartSignupCompleted } from "@/lib/tracking"
 import { sendToFunnelSheet } from "@/lib/funnelSheet";
 
 const SOURCE = "whatsapp_vsl_help";
-const AFTER_SIGNUP_URL = "/b/lesson/1?difficulty=beginner";
+const AFTER_SIGNUP_URL = "/quick-start";
 
 const BENEFITS = [
   "Daily sentence practice — just 10 minutes a day",
