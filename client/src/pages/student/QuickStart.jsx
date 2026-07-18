@@ -99,7 +99,7 @@ export default function QuickStart() {
             Your First Sentence Challenge
           </h1>
           <p className="mt-5 max-w-3xl text-lg font-semibold leading-8 text-indigo-100 sm:text-xl">
-            Complete your first 10 sentences in Reorder mode in approximately
+            Complete your first 7 sentences in Reorder mode in approximately
             three minutes. Then practise the same sentences through Typing,
             Audio and Dictation.
           </p>
