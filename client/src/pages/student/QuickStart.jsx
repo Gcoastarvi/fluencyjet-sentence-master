@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import {
-  getStoredFunnelContext,
-  sendToFunnelSheet,
-} from "@/lib/funnelSheet";
+import { getStoredFunnelContext, sendToFunnelSheet } from "@/lib/funnelSheet";
 
 const QUICK_START_DAY_NUMBER = 900001;
 
@@ -108,7 +105,7 @@ export default function QuickStart() {
           </p>
 
           <div className="mt-7 inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/10 px-5 py-3 text-sm font-black">
-            <span className="text-xl">10</span> useful sentences
+            <span className="text-xl">7</span> useful sentences
           </div>
         </section>
 
@@ -139,10 +136,12 @@ export default function QuickStart() {
         </section>
 
         <section className="mt-8 rounded-3xl border border-white/10 bg-white/5 p-6 text-center sm:p-8">
-          <h2 className="text-2xl font-black">This is your starter challenge</h2>
+          <h2 className="text-2xl font-black">
+            This is your starter challenge
+          </h2>
           <p className="mx-auto mt-3 max-w-3xl font-semibold leading-7 text-slate-300">
             FluencyJet includes 120 guided lessons that build your English step
-            by step. These 10 sentences are simply your first quick win.
+            by step. These 7 sentences are simply your first quick win.
           </p>
         </section>
       </main>

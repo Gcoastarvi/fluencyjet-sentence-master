@@ -5,7 +5,7 @@ import { QUICK_START_DAY_NUMBER } from "../../config/quickStart.js";
 const prisma = new PrismaClient();
 
 const QUICK_START_TITLE = "FluencyJet Quick Start";
-const QUICK_START_TITLE_TA = "ஃப்ளூயன்ஸிஜெட் விரைவு தொடக்கம்";
+const QUICK_START_TITLE_TA = "ஜெட் வேகத்தில் ஆங்கிலம்";
 const SOURCE_KEY_PREFIX = `quick-start:${QUICK_START_DAY_NUMBER}:`;
 
 const SENTENCES = [
@@ -14,7 +14,7 @@ const SENTENCES = [
     tamil: "நான் ஆங்கிலம் கற்றுக்கொண்டிருக்கிறேன்.",
   },
   {
-    english: "I am ready to practise.",
+    english: "I am ready to practice.",
     tamil: "நான் பயிற்சி செய்யத் தயாராக இருக்கிறேன்.",
   },
   {
@@ -30,24 +30,12 @@ const SENTENCES = [
     tamil: "நான் தன்னம்பிக்கையுடன் பேச விரும்புகிறேன்.",
   },
   {
-    english: "I want to make sentences faster.",
-    tamil: "நான் வாக்கியங்களை வேகமாக உருவாக்க விரும்புகிறேன்.",
-  },
-  {
     english: "I need daily practice.",
     tamil: "எனக்கு தினசரி பயிற்சி தேவை.",
   },
   {
     english: "I need simple guidance.",
     tamil: "எனக்கு எளிய வழிகாட்டுதல் தேவை.",
-  },
-  {
-    english: "I can learn step by step.",
-    tamil: "நான் படிப்படியாகக் கற்றுக்கொள்ள முடியும்.",
-  },
-  {
-    english: "I can speak better with practice.",
-    tamil: "பயிற்சியால் நான் இன்னும் நன்றாகப் பேச முடியும்.",
   },
 ];
 
@@ -127,7 +115,9 @@ async function seedQuickStart() {
       );
     }
 
-    if (existingDay?.exercises?.some((exercise) => !isOwnedExercise(exercise))) {
+    if (
+      existingDay?.exercises?.some((exercise) => !isOwnedExercise(exercise))
+    ) {
       throw new Error(
         `Quick Start ownership check failed: PracticeDay ${QUICK_START_DAY_NUMBER} contains an unowned exercise`,
       );
@@ -214,4 +204,3 @@ seedQuickStart()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
