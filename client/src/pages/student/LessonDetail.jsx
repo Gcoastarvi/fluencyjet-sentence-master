@@ -363,7 +363,7 @@ export default function LessonDetail() {
       );
     } else {
       navigate(
-        `/attend-webinar?from=lesson_${lessonNum}`,
+        `/webinar-preview-complete?from=lesson_${lessonNum}`,
         { replace: true },
       );
     }

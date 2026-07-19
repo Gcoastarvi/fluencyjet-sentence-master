@@ -37,6 +37,7 @@ import SpokenEnglishVSL from "./pages/marketing/SpokenEnglishVSL";
 import SpokenEnglishOffer from "./pages/marketing/SpokenEnglishOffer";
 import TrySpokenEnglishGym from "./pages/marketing/TrySpokenEnglishGym";
 import WebinarAttend from "./pages/student/WebinarAttend";
+import WebinarPreviewComplete from "./pages/student/WebinarAttend";
 
 // Route guards
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -122,6 +123,7 @@ function MainLayout() {
     "/start-practice",
     "/webinar",
     "/attend-webinar",
+    "/webinar-preview-complete",
   ];
 
   const shouldHideNavbar = hideNavbarPaths.some(
@@ -271,6 +273,7 @@ export default function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/attend-webinar" element={<WebinarAttend />} />
+              <Route path="/webinar-preview-complete" element={<WebinarPreviewComplete />} />
               <Route path="/paywall" element={<Paywall />} />
               <Route path="/level-check" element={<LevelCheck />} />
               <Route path="/upgrade" element={<Upgrade />} />
