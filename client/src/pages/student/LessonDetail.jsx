@@ -356,10 +356,17 @@ export default function LessonDetail() {
     if (hasTrackAccess) return;
 
     const plan = diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER";
-    navigate(
-      `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonNum}&difficulty=${encodeURIComponent(diff)}`,
-      { replace: true },
-    );
+    if (plan === "INTERMEDIATE") {
+      navigate(
+        `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonNum}&difficulty=${encodeURIComponent(diff)}`,
+        { replace: true },
+      );
+    } else {
+      navigate(
+        `/attend-webinar?from=lesson_${lessonNum}`,
+        { replace: true },
+      );
+    }
   }, [
     auth,
     dayNumber,
