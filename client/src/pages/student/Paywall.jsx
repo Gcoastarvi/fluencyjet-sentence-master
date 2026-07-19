@@ -115,7 +115,7 @@ export default function Paywall() {
       <div className="w-full max-w-md overflow-hidden rounded-[2rem] border border-white/10 bg-white shadow-2xl">
         <div className="px-6 py-8 text-center sm:px-8 sm:py-10">
           <div className="mx-auto inline-flex rounded-full bg-lime-100 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-purple-900">
-            ✓ Lesson 1 Complete
+            ✓ 2 Free Lessons Complete
           </div>
 
           <h1 className="mt-6 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">

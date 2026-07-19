@@ -84,7 +84,7 @@ function getUserTrack(userRow, diff) {
 
 function freeAllowsLesson(track, lessonIdNum) {
   const freeMax = Number(
-    process.env.FREE_LESSON_MAX || process.env.FREE_BEGINNER_MAX || 1,
+    process.env.FREE_LESSON_MAX || process.env.FREE_BEGINNER_MAX || 2,
   );
   const n = Number(lessonIdNum);
   return Number.isFinite(n) && n >= 1 && n <= freeMax;
