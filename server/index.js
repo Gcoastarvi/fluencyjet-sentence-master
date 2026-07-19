@@ -284,6 +284,19 @@ if (process.env.NODE_ENV === "production") {
 }
 
 /* -------------------------------------------------- */
-app.listen(PORT, "0.0.0.0", () => {
+// Start server; if primary port is taken (e.g. Vite dev server holds 3000),
+// fall back to port 3005 which is mapped to external port 3000 in .replit.
+const FALLBACK_PORT = 3005;
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API running on port ${PORT}`);
+});
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.warn(`⚠️  Port ${PORT} in use — retrying on port ${FALLBACK_PORT}`);
+    app.listen(FALLBACK_PORT, "0.0.0.0", () => {
+      console.log(`🚀 API running on port ${FALLBACK_PORT}`);
+    });
+  } else {
+    throw err;
+  }
 });
