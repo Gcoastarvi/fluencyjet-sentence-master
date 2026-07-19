@@ -40,8 +40,6 @@ function shuffle(array) {
 }
 
 function paywallResponse({ lessonId, freeLessons, plan = "BEGINNER" }) {
-  const PLAN = String(plan || "BEGINNER").toUpperCase();
-
   return {
     ok: false,
     code: "PAYWALL",
@@ -50,9 +48,7 @@ function paywallResponse({ lessonId, freeLessons, plan = "BEGINNER" }) {
 
     nextAction: {
       type: process.env.LOCK_REDIRECT_TYPE || "PAYWALL",
-      url:
-        process.env.LOCK_REDIRECT_URL ||
-        `/paywall?plan=${encodeURIComponent(PLAN)}`,
+      url: process.env.LOCK_REDIRECT_URL || `/webinar-preview-complete`,
       from: `lesson_${lessonId}`,
     },
   };

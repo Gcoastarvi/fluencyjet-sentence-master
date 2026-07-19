@@ -14,6 +14,7 @@ function readProgress(lid, mode) {
   } catch {
     return null;
   }
+  pay;
 }
 
 function pct(p) {
@@ -402,9 +403,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
             const routeBasePath = routeTrack === "INTERMEDIATE" ? "/i" : "/b";
 
             if (!isUnlocked) {
-              navigate(
-                `/paywall?plan=${routeTrack}&from=lesson_${dayNumber}&difficulty=${encodeURIComponent(diff)}`,
-              );
+              navigate(`/webinar-preview-complete?from=lesson_${dayNumber}`);
               return;
             }
 

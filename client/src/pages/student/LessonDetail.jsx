@@ -350,23 +350,13 @@ export default function LessonDetail() {
 
   useEffect(() => {
     const lessonNum = Number(dayNumber || lessonId);
-    const diff = String(difficulty || "beginner").toLowerCase();
 
     if (!hasTrackAccess && freeAllowsLesson(lessonNum)) return;
     if (hasTrackAccess) return;
 
-    const plan = diff === "intermediate" ? "INTERMEDIATE" : "BEGINNER";
-    if (plan === "INTERMEDIATE") {
-      navigate(
-        `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonNum}&difficulty=${encodeURIComponent(diff)}`,
-        { replace: true },
-      );
-    } else {
-      navigate(
-        `/webinar-preview-complete?from=lesson_${lessonNum}`,
-        { replace: true },
-      );
-    }
+    navigate(`/webinar-preview-complete?from=lesson_${lessonNum}`, {
+      replace: true,
+    });
   }, [
     auth,
     dayNumber,
@@ -688,11 +678,7 @@ export default function LessonDetail() {
       : null;
 
   function goPaywall() {
-    // 🎯 THE TRACK PRESERVER
-    const plan = difficulty?.toUpperCase() || "BEGINNER";
-    const from = `lesson_${dayNumber}`;
-
-    navigate(`/paywall?plan=${plan}&from=${from}&difficulty=${difficulty}`);
+    navigate(`/webinar-preview-complete?from=lesson_${dayNumber}`);
   }
 
   console.log("[LessonDetail progress debug]", {
@@ -714,7 +700,7 @@ export default function LessonDetail() {
       .sort(),
   });
 
-  async function startMode(mode) {    
+  async function startMode(mode) {
     // 🎯 Added async here
     setShowMoreModes(false);
     if (!lessonId) return;
@@ -831,11 +817,7 @@ export default function LessonDetail() {
       ) {
         const action = data?.nextAction || null;
         const from = action?.from || `lesson_${lid}`;
-        const base =
-          action?.url ||
-          `/paywall?plan=${encodeURIComponent(
-            String(diff || difficulty || "beginner").toUpperCase(),
-          )}`;
+        const base = action?.url || `/webinar-preview-complete`;
         const sep = String(base).includes("?") ? "&" : "?";
         const target = `${base}${sep}from=${encodeURIComponent(from)}`;
         navigate(target, { replace: true });
@@ -1017,7 +999,7 @@ export default function LessonDetail() {
     difficulty,
   ]);
 
-  async function smartStart() {    
+  async function smartStart() {
     // 1. Core Invariants (Keep your safety guards)
     if (!lessonId) return;
     if (isLocked) return goPaywall();
@@ -1165,7 +1147,7 @@ export default function LessonDetail() {
 
     smartStart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);  
+  }, []);
 
   const teach = LESSON_TEACH[Number(lessonId)] || null;
 

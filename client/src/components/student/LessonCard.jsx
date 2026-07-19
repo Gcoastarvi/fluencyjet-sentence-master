@@ -89,11 +89,9 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
     const isFreeLesson = freeAllowsLesson(lessonKey);
 
     if (!hasTrackAccess && !isFreeLesson) {
-      const plan = isIntermediate ? "INTERMEDIATE" : "BEGINNER";
-      navigate(
-        `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonKey}&difficulty=${encodeURIComponent(difficulty)}`,
-        { replace: true },
-      );
+      navigate(`/webinar-preview-complete?from=lesson_${lessonKey}`, {
+        replace: true,
+      });
       return;
     }
 
@@ -149,7 +147,7 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
 
           <div className="flex items-center gap-4">
             <button
-              onClick={handleClick}              
+              onClick={handleClick}
               disabled={isLocked}
               className={`px-9 py-4 rounded-2xl font-black text-base transition-all ${
                 isLocked

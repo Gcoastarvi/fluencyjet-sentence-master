@@ -1844,9 +1844,8 @@ export default function Dashboard() {
                           return;
                         }
 
-                        const plan = isInt ? "INTERMEDIATE" : "BEGINNER";
                         navigate(
-                          `/paywall?plan=${encodeURIComponent(plan)}&from=lesson_${lessonNum}&difficulty=${encodeURIComponent(d)}`,
+                          `/webinar-preview-complete?from=lesson_${lessonNum}`,
                         );
                       }}
                       className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative group
