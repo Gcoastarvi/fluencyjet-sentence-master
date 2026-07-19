@@ -34,32 +34,21 @@ const OUTCOMES = [
     icon: "🎤",
     title: "Live practice with a real teacher",
     desc: "Speak, get corrected, and gain confidence in the session.",
-  },
-  {
-    icon: "🔓",
-    title: "Unlock the full 30-day course",
-    desc: "Webinar attendees get access to all remaining lessons.",
-  },
+  }, 
 ];
 
 const STEPS = [
   {
     id: 1,
     label: "Free Preview",
-    sublabel: "Lesson 1 — Done",
+    sublabel: "Lesson 1 & 2 — Done",
     state: "done",
   },
   {
     id: 2,
-    label: "Live Webinar",
+    label: "Live Class",
     sublabel: "Your next step",
     state: "current",
-  },
-  {
-    id: 3,
-    label: "Full Course",
-    sublabel: "Lessons 2–30",
-    state: "locked",
   },
 ];
 
@@ -176,8 +165,8 @@ export default function WebinarAttend() {
             ℹ️
           </span>
           <p className="text-sm font-semibold leading-relaxed text-amber-900">
-            <span className="font-black">Lesson 1 was your free preview.</span>{" "}
-            The remaining lessons open up after you attend the live webinar —
+            <span className="font-black">Do not miss the live class.</span>{" "}
+            The remaining lessons open up after you attend the live class —
             it's free, and it's where the real progress happens.
           </p>
         </div>
@@ -210,7 +199,7 @@ export default function WebinarAttend() {
           What you'll learn in the webinar
         </h2>
         <p className="mt-1 text-sm font-medium text-slate-500">
-          A focused 90-minute session — practical, interactive, no fluff.
+          A focused 60-minute session — practical, interactive, no fluff.
         </p>
 
         <ul className="mt-5 space-y-4">
