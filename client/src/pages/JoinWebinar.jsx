@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 
 const CURRENT_WEBINAR_WHATSAPP_URL =
-  "https://chat.whatsapp.com/IxYExfTsju7KqsROB9Ygx8";
+  "https://chat.whatsapp.com/LO2mOizkuRtFgIqcPRHXUF";
 
 export default function JoinWebinar() {
   useEffect(() => {
