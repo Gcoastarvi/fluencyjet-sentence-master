@@ -106,6 +106,11 @@ export default function SpokenEnglishChallenge() {
   const navigate = useNavigate();
   const challengeStartedRef = useRef(false);
 
+  const advanceTimerRef = useRef(null);
+
+  const [xpFlash, setXpFlash] = useState(null);
+  const [isAdvancing, setIsAdvancing] = useState(false);
+
   const [questionIndex, setQuestionIndex] = useState(0);
   const [availableWords, setAvailableWords] = useState([]);
   const [selectedWords, setSelectedWords] = useState([]);
@@ -126,6 +131,14 @@ export default function SpokenEnglishChallenge() {
   const currentXp = completedSentences * XP_PER_SENTENCE;
 
   useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current) {
+        window.clearTimeout(advanceTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (!currentQuestion) return;
 
     const tokens = createTokens(currentQuestion.words, currentQuestion.id);
@@ -135,6 +148,8 @@ export default function SpokenEnglishChallenge() {
     setAttempts(0);
     setFeedback(null);
     setAnswerLocked(false);
+    setXpFlash(null);
+    setIsAdvancing(false);
   }, [questionIndex, currentQuestion]);
 
   function markChallengeStarted() {
@@ -234,20 +249,23 @@ export default function SpokenEnglishChallenge() {
     setAnswerHistory(nextAnswerHistory);
     setAnswerLocked(true);
 
-    setFeedback({
-      type: "success",
-      message: wasCorrectOnFirstTry
-        ? `Excellent! +${XP_PER_SENTENCE} XP`
-        : `Correct! +${XP_PER_SENTENCE} XP`,
-    });
+    setFeedback(null);
+    setXpFlash(XP_PER_SENTENCE);
+    setIsAdvancing(true);
 
-    if (questionIndex === totalQuestions - 1) {
-      completeChallenge({
-        nextFirstTryScore,
-        nextCompletedSentences,
-        nextAnswerHistory,
-      });
-    }
+    advanceTimerRef.current = window.setTimeout(() => {
+      if (questionIndex === totalQuestions - 1) {
+        completeChallenge({
+          nextFirstTryScore,
+          nextCompletedSentences,
+          nextAnswerHistory,
+        });
+
+        return;
+      }
+
+      setQuestionIndex((previous) => previous + 1);
+    }, 850);
   }
 
   function completeChallenge({
@@ -291,12 +309,6 @@ export default function SpokenEnglishChallenge() {
       xp: challengeResult.xp,
       duration_seconds: challengeResult.durationSeconds,
     });
-  }
-
-  function goToNextQuestion() {
-    if (!answerLocked) return;
-
-    setQuestionIndex((previous) => previous + 1);
   }
 
   function continueToSignup() {
@@ -447,6 +459,11 @@ export default function SpokenEnglishChallenge() {
           </div>
 
           <div className="sec-question-card">
+            {xpFlash !== null && (
+              <div className="sec-xp-flash" role="status" aria-live="polite">
+                +{xpFlash} XP
+              </div>
+            )}
             <p className="sec-instruction">
               Arrange the words to create this sentence:
             </p>
@@ -489,11 +506,8 @@ export default function SpokenEnglishChallenge() {
               ))}
             </div>
 
-            {feedback && (
-              <div
-                className={`sec-feedback sec-feedback-${feedback.type}`}
-                role="status"
-              >
+            {feedback?.type === "error" && (
+              <div className="sec-feedback sec-feedback-error" role="alert">
                 {feedback.message}
               </div>
             )}
@@ -505,7 +519,9 @@ export default function SpokenEnglishChallenge() {
                     type="button"
                     className="sec-secondary-button"
                     onClick={clearSentence}
-                    disabled={selectedWords.length === 0}
+                    disabled={
+                      selectedWords.length === 0 || answerLocked || isAdvancing
+                    }
                   >
                     Clear
                   </button>
@@ -515,10 +531,11 @@ export default function SpokenEnglishChallenge() {
                     className="sec-primary-button"
                     onClick={checkAnswer}
                     disabled={
+                      isAdvancing ||
                       selectedWords.length !== currentQuestion.words.length
                     }
                   >
-                    Check My Sentence
+                    {isAdvancing ? "Loading Next Sentence..." : "Check Answer"}
                   </button>
                 </>
               ) : (

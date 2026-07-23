@@ -523,4 +523,42 @@
   .sec-trust-row {
     gap: 10px 16px;
   }
+
+  .sec-xp-flash {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 90px);
+    left: 50%;
+    z-index: 9999;
+    border-radius: 999px;
+    padding: 13px 24px;
+    background: #e8fff5;
+    color: #00875d;
+    font-size: 22px;
+    font-weight: 900;
+    box-shadow: 0 14px 35px rgba(0, 135, 93, 0.24);
+    pointer-events: none;
+    animation: sec-xp-pop 850ms ease-out forwards;
+  }
+
+  @keyframes sec-xp-pop {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 18px) scale(0.75);
+    }
+
+    25% {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1.08);
+    }
+
+    70% {
+      opacity: 1;
+      transform: translate(-50%, -6px) scale(1);
+    }
+
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -22px) scale(0.96);
+    }
+  }
 }
