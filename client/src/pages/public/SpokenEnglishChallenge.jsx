@@ -513,42 +513,29 @@ export default function SpokenEnglishChallenge() {
             )}
 
             <div className="sec-actions">
-              {!answerLocked ? (
-                <>
-                  <button
-                    type="button"
-                    className="sec-secondary-button"
-                    onClick={clearSentence}
-                    disabled={
-                      selectedWords.length === 0 || answerLocked || isAdvancing
-                    }
-                  >
-                    Clear
-                  </button>
+              <button
+                type="button"
+                className="sec-secondary-button"
+                onClick={clearSentence}
+                disabled={
+                  selectedWords.length === 0 || answerLocked || isAdvancing
+                }
+              >
+                Clear
+              </button>
 
-                  <button
-                    type="button"
-                    className="sec-primary-button"
-                    onClick={checkAnswer}
-                    disabled={
-                      isAdvancing ||
-                      selectedWords.length !== currentQuestion.words.length
-                    }
-                  >
-                    {isAdvancing ? "Loading Next Sentence..." : "Check Answer"}
-                  </button>
-                </>
-              ) : (
-                questionIndex < totalQuestions - 1 && (
-                  <button
-                    type="button"
-                    className="sec-primary-button sec-full-button"
-                    onClick={goToNextQuestion}
-                  >
-                    Next Sentence →
-                  </button>
-                )
-              )}
+              <button
+                type="button"
+                className="sec-primary-button"
+                onClick={checkAnswer}
+                disabled={
+                  answerLocked ||
+                  isAdvancing ||
+                  selectedWords.length !== currentQuestion.words.length
+                }
+              >
+                {isAdvancing ? "Loading Next Sentence..." : "Check Answer"}
+              </button>
             </div>
 
             <p className="sec-question-note">
