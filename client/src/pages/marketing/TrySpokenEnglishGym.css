@@ -1,0 +1,19 @@
+.guest-challenge-summary {
+  margin-bottom: 24px;
+  border: 1px solid #cfc8ff;
+  border-radius: 16px;
+  padding: 18px;
+  background: #f5f3ff;
+  color: #29204f;
+}
+
+.guest-challenge-summary strong {
+  display: block;
+  color: #4c3ddb;
+  font-size: 20px;
+}
+
+.guest-challenge-summary p {
+  margin: 8px 0 0;
+  line-height: 1.5;
+}

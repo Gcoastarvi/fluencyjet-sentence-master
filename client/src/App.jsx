@@ -35,6 +35,7 @@ import AdminLessons from "./pages/admin/AdminLessons.jsx";
 import Signup from "./pages/student/Signup.jsx";
 import SpokenEnglishVSL from "./pages/marketing/SpokenEnglishVSL";
 import SpokenEnglishOffer from "./pages/marketing/SpokenEnglishOffer";
+import SpokenEnglishChallenge from "./pages/public/SpokenEnglishChallenge";
 import TrySpokenEnglishGym from "./pages/marketing/TrySpokenEnglishGym";
 import WebinarAttend from "./pages/student/WebinarAttend";
 import WebinarPreviewComplete from "./pages/student/WebinarAttend";
@@ -219,7 +220,10 @@ function LessonRedirect() {
 
 export default function App() {
   const currentPath = window.location.pathname;
-  const hideMarketingNav = ["/spoken-english-vsl", "/spoken-english-offer"].includes(currentPath);
+  const hideMarketingNav = [
+    "/spoken-english-vsl",
+    "/spoken-english-offer",
+  ].includes(currentPath);
   return (
     <AuthProvider>
       <Router>
@@ -230,7 +234,14 @@ export default function App() {
             <Route path="/admin/login" element={<AdminLogin />} />
 
             <Route path="/free-live-class" element={<FreeLiveClass />} />
-            <Route path="/try-spoken-english-gym" element={<TrySpokenEnglishGym />} />
+            <Route
+              path="/try-spoken-english-gym"
+              element={<TrySpokenEnglishGym />}
+            />
+            <Route
+              path="/spoken-english-challenge"
+              element={<SpokenEnglishChallenge />}
+            />
 
             {/* All other pages share Navbar */}
             <Route element={<MainLayout />}>
@@ -259,21 +270,22 @@ export default function App() {
                 path="/spoken-english-vsl"
                 element={<SpokenEnglishVSL />}
               />
-                          <Route
-              path="/spoken-english-offer"
-              element={<SpokenEnglishOffer />}
-            />
-
-            <Route
-              path="/spoken-english-thank-you"
-              element={<SpokenEnglishThankYou />}
-            />
-            />}
+              <Route
+                path="/spoken-english-offer"
+                element={<SpokenEnglishOffer />}
               />
+              <Route
+                path="/spoken-english-thank-you"
+                element={<SpokenEnglishThankYou />}
+              />
+
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/attend-webinar" element={<WebinarAttend />} />
-              <Route path="/webinar-preview-complete" element={<WebinarPreviewComplete />} />
+              <Route
+                path="/webinar-preview-complete"
+                element={<WebinarPreviewComplete />}
+              />
               <Route path="/paywall" element={<Paywall />} />
               <Route path="/level-check" element={<LevelCheck />} />
               <Route path="/upgrade" element={<Upgrade />} />
@@ -295,7 +307,6 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
-
               <Route
                 path="/i/lessons"
                 element={
@@ -304,7 +315,6 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
-
               {/* keep diagnostic as alias → level-check */}
               <Route
                 path="/diagnostic"
@@ -314,19 +324,15 @@ export default function App() {
                 path="/diagnostic/result"
                 element={<Navigate to="/level-check" replace />}
               />
-
               {/* lessons redirect based on fj_track */}
               <Route path="/lessons" element={<LessonsRedirect />} />
-
               {/* legacy route (IMPORTANT) */}
               <Route path="/lesson/:lessonId" element={<LessonRedirect />} />
-
               {/* practice entry (redirect only). Actual practice is protected below */}
               <Route
                 path="/practice"
                 element={<Navigate to="/practice/reorder" replace />}
               />
-
               {/* Student-protected */}
               <Route
                 path="/dashboard"
@@ -376,7 +382,6 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
-
               {/* Admin-protected (unchanged) */}
               <Route
                 path="/admin"

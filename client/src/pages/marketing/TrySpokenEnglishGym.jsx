@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+// client/src/pages/marketing/TrySpokenEnglishGym.jsx
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { smartSignup } from "@/api/apiClient";
 import { setToken } from "@/utils/tokenStore";
-import { trackSmartSignupView, trackSmartSignupCompleted } from "@/lib/tracking";
+import {
+  trackSmartSignupView,
+  trackSmartSignupCompleted,
+} from "@/lib/tracking";
 import { sendToFunnelSheet } from "@/lib/funnelSheet";
 import { useAuth } from "@/context/AuthContext";
+import "./TrySpokenEnglishGym.css";
 
 const SOURCE = "whatsapp_vsl_help";
 const AFTER_SIGNUP_URL = "/b/lesson/1?difficulty=beginner";
@@ -25,6 +30,25 @@ export default function TrySpokenEnglishGym() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [guestChallenge, setGuestChallenge] = useState(null);
+
+  useEffect(() => {
+    try {
+      const savedResult = localStorage.getItem("fj_guest_challenge_v1");
+
+      if (!savedResult) return;
+
+      const parsedResult = JSON.parse(savedResult);
+
+      if (parsedResult && typeof parsedResult.xp === "number") {
+        setGuestChallenge(parsedResult);
+      }
+    } catch (error) {
+      console.warn("Unable to read the guest challenge result:", error);
+
+      localStorage.removeItem("fj_guest_challenge_v1");
+    }
+  }, []);
 
   useEffect(() => {
     trackSmartSignupView({
@@ -176,6 +200,20 @@ export default function TrySpokenEnglishGym() {
         <p className="mt-1 text-sm font-medium text-slate-500">
           Create your account in 30 seconds — no payment, no card needed.
         </p>
+
+        {guestChallenge && (
+          <div className="guest-challenge-summary">
+            <strong>
+              🎉 You earned {guestChallenge.xp.toLocaleString("en-IN")}{" "}
+              Challenge XP!
+            </strong>
+
+            <p>
+              Create your free account to save your result and continue your
+              first FluencyJet workout.
+            </p>
+          </div>
+        )}
 
         <form
           onSubmit={handleSubmit}
