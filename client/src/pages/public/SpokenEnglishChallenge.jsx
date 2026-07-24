@@ -116,9 +116,11 @@ export default function SpokenEnglishChallenge() {
   const challengeStartedRef = useRef(false);
 
   const advanceTimerRef = useRef(null);
+  const correctSoundRef = useRef(null);
 
   const [xpFlash, setXpFlash] = useState(null);
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const [xpToastId, setXpToastId] = useState(0);
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [availableWords, setAvailableWords] = useState([]);
@@ -167,6 +169,20 @@ export default function SpokenEnglishChallenge() {
     setIsAdvancing(false);
   }, [questionIndex, currentQuestion]);
 
+  useEffect(() => {
+    const audio = new Audio("/sounds/correct.mp3");
+
+    audio.preload = "auto";
+    audio.volume = 0.65;
+
+    correctSoundRef.current = audio;
+
+    return () => {
+      audio.pause();
+      correctSoundRef.current = null;
+    };
+  }, []);
+
   function markChallengeStarted() {
     if (challengeStartedRef.current) return;
 
@@ -202,6 +218,26 @@ export default function SpokenEnglishChallenge() {
 
     setAvailableWords((previous) => [...previous, token]);
     setFeedback(null);
+  }
+
+  function playCorrectSound() {
+    const audio = correctSoundRef.current;
+
+    if (!audio) return;
+
+    try {
+      audio.currentTime = 0;
+
+      const playPromise = audio.play();
+
+      if (playPromise?.catch) {
+        playPromise.catch(() => {
+          // Some browsers may block audio until user interaction.
+        });
+      }
+    } catch (error) {
+      console.warn("Unable to play correct-answer sound:", error);
+    }
   }
 
   function clearSentence() {
@@ -265,6 +301,10 @@ export default function SpokenEnglishChallenge() {
     setAnswerLocked(true);
 
     setFeedback(null);
+
+    playCorrectSound();
+
+    setXpToastId((previous) => previous + 1);
     setXpFlash(XP_PER_SENTENCE);
     setIsAdvancing(true);
 
@@ -474,8 +514,13 @@ export default function SpokenEnglishChallenge() {
           </div>
 
           {xpFlash !== null && (
-            <div className="sec-xp-flash" role="status" aria-live="polite">
-              +{xpFlash} XP
+            <div
+              key={xpToastId}
+              className="sec-xp-flash"
+              role="status"
+              aria-live="polite"
+            >
+              +{xpFlash} XP ✨
             </div>
           )}
 
