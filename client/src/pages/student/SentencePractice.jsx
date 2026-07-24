@@ -7,10 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { uiFor } from "@/lib/modeUi";
 
 import { track } from "@/lib/track";
-import {
-  getStoredFunnelContext,
-  sendToFunnelSheet,
-} from "@/lib/funnelSheet";
+import { getStoredFunnelContext, sendToFunnelSheet } from "@/lib/funnelSheet";
 
 import PracticeHeader from "@/components/student/PracticeHeader";
 import PromptCard from "@/components/student/PromptCard";
@@ -18,6 +15,7 @@ import PromptCard from "@/components/student/PromptCard";
 import { readProgress, writeProgress, pct } from "@/lib/progressStore";
 
 import { useAuth } from "../../context/AuthContext";
+import ReorderExerciseCard from "@/components/practice/ReorderExerciseCard";
 
 // ===== helpers (reorder/typing normalization) =====
 const norm = (v) =>
@@ -3993,96 +3991,27 @@ export default function SentencePractice() {
 
         {/* REORDER UI */}
         {safeMode === "reorder" && (
-          <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:p-6">
-            <div className={`h-1.5 w-full rounded-full ${A.bar}`} />
-
-            <div className="mb-5 mt-3 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-[22px] font-black tracking-tight text-slate-950 sm:text-2xl">
-                  {uiFor("reorder").title}
-                </h2>
-
-                <p className="mt-1 text-sm font-bold text-slate-500">
-                  Build the English sentence
-                </p>
-
-                {/* Status pills */}
-                {(status === "wrong" ||
-                  (typeof wrongIndexes !== "undefined" &&
-                    Array.isArray(wrongIndexes) &&
-                    wrongIndexes.length > 0)) && (
-                  <div className="mt-3 inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700">
-                    Not quite — try again
-                  </div>
-                )}
-
-                {status === "reveal" && (
-                  <div
-                    className={`mt-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-bold ${A.border} ${A.soft} ${A.text}`}
-                  >
-                    Answer shown
-                  </div>
-                )}
-
-                {status === "correct" && (
-                  <div className="mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                    Correct ✅
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Answer Area */}
-            <div className="mt-4 flex min-h-[96px] flex-wrap content-start gap-3 rounded-[1.5rem] border border-dashed border-indigo-200 bg-gradient-to-br from-indigo-50/80 via-white to-white p-5 shadow-inner">
-              {Array.isArray(answer) && answer.length === 0 && (
-                <div className="flex w-full items-center text-[15px] font-black text-slate-400 sm:text-base">
-                  Tap words in the correct order
-                </div>
-              )}
-
-              {answer.map((word, index) => {
-                const isWrong = wrongIndexes.includes(index);
-                return (
-                  <span
-                    key={`${word}-${index}`}
-                    className={`rounded-2xl px-5 py-3 text-[20px] font-black shadow-md transition-transform active:scale-[0.98] sm:text-[22px] ${
-                      isWrong
-                        ? "border border-rose-200 bg-rose-100 text-rose-800"
-                        : "border border-indigo-100 bg-white text-indigo-950"
-                    }`}
-                  >
-                    {word}
-                  </span>
-                );
-              })}
-            </div>
-
-            {/* Tile Bank */}
-            <div className="mt-4 flex flex-wrap gap-3 rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
-              {tiles.map((word, index) => (
+          <ReorderExerciseCard
+            title={uiFor("reorder").title}
+            subtitle="Build the English sentence"
+            answer={answer}
+            tiles={tiles}
+            wrongIndexes={wrongIndexes}
+            status={status}
+            accent={A}
+            onTileClick={addToAnswer}
+            footer={
+              !stickyCfg.show && status === "idle" ? (
                 <button
-                  key={`${word}-${index}`}
                   type="button"
-                  onClick={() => addToAnswer(word)}
-                  disabled={status === "correct" || status === "reveal"}
-                  className={`rounded-2xl border px-5 py-3 text-[19px] font-extrabold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 sm:text-[20px] ${A.border} ${A.soft} ${A.text}`}
+                  onClick={checkReorderAnswer}
+                  className="mt-5 w-full rounded-2xl bg-indigo-600 py-4 text-base font-black text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700 active:scale-[0.99]"
                 >
-                  {word}
+                  Check Answer
                 </button>
-              ))}
-            </div>
-
-            {/* Check Answer */}
-            {!stickyCfg.show && status === "idle" && (
-              <button
-                type="button"
-                onClick={checkReorderAnswer}
-                className="mt-5 w-full rounded-2xl bg-indigo-600 py-4 text-base font-black text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700 active:scale-[0.99]"
-              >
-                Check Answer
-              </button>
-            )}
-          </div>
+              ) : null
+            }
+          />
         )}
 
         {/* Wrong */}
