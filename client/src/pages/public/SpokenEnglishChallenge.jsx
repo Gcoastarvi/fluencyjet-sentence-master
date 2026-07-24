@@ -1,6 +1,8 @@
+// client/src/pages/public/SpokenEnglishChallenge.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./SpokenEnglishChallenge.css";
+import ReorderExerciseCard from "@/components/practice/ReorderExerciseCard";
 
 const XP_PER_SENTENCE = 150;
 const STORAGE_KEY = "fj_guest_challenge_v1";
@@ -49,6 +51,13 @@ const QUESTIONS = [
     words: ["me", "yesterday", "called", "He"],
   },
 ];
+
+const CHALLENGE_ACCENT = {
+  bar: "bg-indigo-500",
+  border: "border-indigo-200",
+  soft: "bg-indigo-50",
+  text: "text-indigo-700",
+};
 
 function shuffleArray(items) {
   const shuffled = [...items];
@@ -129,6 +138,12 @@ export default function SpokenEnglishChallenge() {
   const currentQuestion = QUESTIONS[questionIndex];
   const totalQuestions = QUESTIONS.length;
   const currentXp = completedSentences * XP_PER_SENTENCE;
+
+  const challengeStatus = answerLocked
+    ? "correct"
+    : feedback?.type === "error"
+      ? "wrong"
+      : "idle";
 
   useEffect(() => {
     return () => {
@@ -458,91 +473,68 @@ export default function SpokenEnglishChallenge() {
             />
           </div>
 
-          <div className="sec-question-card">
-            {xpFlash !== null && (
-              <div className="sec-xp-flash" role="status" aria-live="polite">
-                +{xpFlash} XP
-              </div>
-            )}
-            <p className="sec-instruction">
-              Arrange the words to create this sentence:
+          {xpFlash !== null && (
+            <div className="sec-xp-flash" role="status" aria-live="polite">
+              +{xpFlash} XP
+            </div>
+          )}
+
+          {/* Tamil prompt stays outside and above the shared Reorder card */}
+          <div className="mb-5 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:p-6">
+            <p className="mb-3 text-sm font-bold text-slate-500">
+              Tamil prompt
             </p>
 
-            <div className="sec-tamil-prompt">{currentQuestion.tamil}</div>
+            <div className="rounded-2xl bg-slate-50 px-5 py-5 text-2xl font-black leading-relaxed text-slate-950 sm:text-3xl">
+              {currentQuestion.tamil}
+            </div>
+          </div>
 
-            <div
-              className={`sec-answer-area ${
-                feedback?.type === "success" ? "sec-answer-correct" : ""
-              }`}
-            >
-              {selectedWords.length === 0 ? (
-                <span className="sec-placeholder">Tap the words below</span>
-              ) : (
-                selectedWords.map((token) => (
+          <ReorderExerciseCard
+            title="Quick English"
+            subtitle="Build the English sentence"
+            answer={selectedWords}
+            tiles={availableWords}
+            status={challengeStatus}
+            accent={CHALLENGE_ACCENT}
+            onTileClick={selectWord}
+            onAnswerClick={removeSelectedWord}
+            disabled={isAdvancing}
+            footer={
+              <>
+                <div className="sec-actions">
                   <button
                     type="button"
-                    className="sec-selected-word"
-                    key={token.id}
-                    onClick={() => removeSelectedWord(token)}
-                    disabled={answerLocked}
+                    className="sec-secondary-button"
+                    onClick={clearSentence}
+                    disabled={
+                      selectedWords.length === 0 || answerLocked || isAdvancing
+                    }
                   >
-                    {token.text}
+                    Reset
                   </button>
-                ))
-              )}
-            </div>
 
-            <div className="sec-word-bank">
-              {availableWords.map((token) => (
-                <button
-                  type="button"
-                  className="sec-word-chip"
-                  key={token.id}
-                  onClick={() => selectWord(token)}
-                  disabled={answerLocked}
-                >
-                  {token.text}
-                </button>
-              ))}
-            </div>
+                  <button
+                    type="button"
+                    className="sec-primary-button"
+                    onClick={checkAnswer}
+                    disabled={
+                      answerLocked ||
+                      isAdvancing ||
+                      selectedWords.length !== currentQuestion.words.length
+                    }
+                  >
+                    {isAdvancing ? "Loading Next Sentence..." : "Check Answer"}
+                  </button>
+                </div>
 
-            {feedback?.type === "error" && (
-              <div className="sec-feedback sec-feedback-error" role="alert">
-                {feedback.message}
-              </div>
-            )}
-
-            <div className="sec-actions">
-              <button
-                type="button"
-                className="sec-secondary-button"
-                onClick={clearSentence}
-                disabled={
-                  selectedWords.length === 0 || answerLocked || isAdvancing
-                }
-              >
-                Clear
-              </button>
-
-              <button
-                type="button"
-                className="sec-primary-button"
-                onClick={checkAnswer}
-                disabled={
-                  answerLocked ||
-                  isAdvancing ||
-                  selectedWords.length !== currentQuestion.words.length
-                }
-              >
-                {isAdvancing ? "Loading Next Sentence..." : "Check Answer"}
-              </button>
-            </div>
-
-            <p className="sec-question-note">
-              Your first-attempt score and XP will be shown after all seven
-              sentences.
-            </p>
-          </div>
+                <p className="sec-question-note">
+                  Your first-attempt score and XP will be shown after all seven
+                  sentences.
+                </p>
+              </>
+            }
+          />
         </div>
       </section>
 
