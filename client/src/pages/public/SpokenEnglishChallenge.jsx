@@ -1,5 +1,6 @@
 // client/src/pages/public/SpokenEnglishChallenge.jsx
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import "./SpokenEnglishChallenge.css";
 import ReorderExerciseCard from "@/components/practice/ReorderExerciseCard";
@@ -320,7 +321,7 @@ export default function SpokenEnglishChallenge() {
       }
 
       setQuestionIndex((previous) => previous + 1);
-    }, 850);
+    }, 1250);
   }
 
   function completeChallenge({
@@ -513,16 +514,15 @@ export default function SpokenEnglishChallenge() {
             />
           </div>
 
-          {xpFlash !== null && (
-            <div
-              key={xpToastId}
-              className="sec-xp-flash"
-              role="status"
-              aria-live="polite"
-            >
-              +{xpFlash} XP ✨
-            </div>
-          )}
+          {typeof document !== "undefined" &&
+            xpFlash !== null &&
+            createPortal(
+              <div className="sec-xp-flash" role="status" aria-live="polite">
+                +{xpFlash} XP ✨
+              </div>,
+              document.body,
+              `xp-toast-${xpToastId}`,
+            )}
 
           {/* Tamil prompt stays outside and above the shared Reorder card */}
           <div className="mb-5 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_rgba(15,23,42,0.06)] sm:p-6">
