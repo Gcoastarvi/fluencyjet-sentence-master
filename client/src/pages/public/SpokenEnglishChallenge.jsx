@@ -117,6 +117,7 @@ export default function SpokenEnglishChallenge() {
   const challengeStartedRef = useRef(false);
 
   const advanceTimerRef = useRef(null);
+  const xpHideTimerRef = useRef(null);
   const correctSoundRef = useRef(null);
 
   const [xpFlash, setXpFlash] = useState(null);
@@ -153,6 +154,10 @@ export default function SpokenEnglishChallenge() {
       if (advanceTimerRef.current) {
         window.clearTimeout(advanceTimerRef.current);
       }
+
+      if (xpHideTimerRef.current) {
+        window.clearTimeout(xpHideTimerRef.current);
+      }
     };
   }, []);
 
@@ -166,7 +171,6 @@ export default function SpokenEnglishChallenge() {
     setAttempts(0);
     setFeedback(null);
     setAnswerLocked(false);
-    setXpFlash(null);
     setIsAdvancing(false);
   }, [questionIndex, currentQuestion]);
 
@@ -307,6 +311,15 @@ export default function SpokenEnglishChallenge() {
 
     setXpToastId((previous) => previous + 1);
     setXpFlash(XP_PER_SENTENCE);
+
+    if (xpHideTimerRef.current) {
+      window.clearTimeout(xpHideTimerRef.current);
+    }
+
+    xpHideTimerRef.current = window.setTimeout(() => {
+      setXpFlash(null);
+    }, 1050);
+
     setIsAdvancing(true);
 
     advanceTimerRef.current = window.setTimeout(() => {
