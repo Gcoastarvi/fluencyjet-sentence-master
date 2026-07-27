@@ -50,35 +50,31 @@ const BENEFITS = [
 const PRACTICE_TYPES = [
   {
     mode: "reorder",
-    name: "Quick English",
-    action: "Build the Sentence",
-    description:
-      "Put the words in the correct order. Learn how a complete English sentence is built.",
-    video: "/practice-modes/reorder.mp4",
+    title: "Reorder Practice",
+    text: "Arrange the words in the correct order and train your sentence structure.",
+    mediaSrc: "/practice-modes/reorder.mp4",
+    number: "01",
   },
   {
     mode: "typing",
-    name: "Grammar Genius",
-    action: "Type It Yourself",
-    description:
-      "Remember the sentence and type it yourself. Improve word order, spelling, and grammar.",
-    video: "/practice-modes/typing.mp4",
+    title: "Typing Practice",
+    text: "See the Tamil meaning and type the correct English sentence yourself.",
+    mediaSrc: "/practice-modes/typing.mp4",
+    number: "02",
   },
   {
     mode: "voice",
-    name: "Fluent Voice",
-    action: "Listen and Repeat",
-    description:
-      "Hear the sentence clearly. Say it aloud and practise your spoken English.",
-    video: "/practice-modes/voice.mp4",
+    title: "Speaking Practice",
+    text: "Listen to the sentence, repeat it aloud, and build speaking confidence.",
+    mediaSrc: "/practice-modes/voice.mp4",
+    number: "03",
   },
   {
     mode: "dictation",
-    name: "Dictation",
-    action: "Listen and Write",
-    description:
-      "Listen carefully and type what you hear. Improve listening and sentence memory together.",
-    video: "/practice-modes/dictation.mp4",
+    title: "Listening Practice",
+    text: "Listen carefully and type what you hear. Improve listening and sentence memory.",
+    mediaSrc: "/practice-modes/dictation.mp4",
+    number: "04",
   },
 ];
 
@@ -169,19 +165,19 @@ function readGuestChallenge() {
 }
 
 function PracticeModeIcon({ type }) {
-  const commonProps = {
-    viewBox: "0 0 24 24",
-    fill: "none",
-    strokeWidth: "2.2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-    className: "practice-mode-icon-svg",
-    "aria-hidden": true,
-  };
+  const common = "h-5 w-5 stroke-current";
 
   if (type === "reorder") {
     return (
-      <svg {...commonProps}>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className={common}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
         <path d="M7 7h11" />
         <path d="m15 4 3 3-3 3" />
         <path d="M17 17H6" />
@@ -192,7 +188,15 @@ function PracticeModeIcon({ type }) {
 
   if (type === "typing") {
     return (
-      <svg {...commonProps}>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className={common}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
         <rect x="3" y="5" width="18" height="14" rx="2.5" />
         <path d="M7 9h.01M11 9h.01M15 9h.01M18 9h.01" />
         <path d="M7 13h.01M11 13h.01M15 13h.01" />
@@ -203,7 +207,15 @@ function PracticeModeIcon({ type }) {
 
   if (type === "voice") {
     return (
-      <svg {...commonProps}>
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        className={common}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
         <rect x="9" y="3" width="6" height="11" rx="3" />
         <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
         <path d="M12 17.5V21" />
@@ -213,7 +225,15 @@ function PracticeModeIcon({ type }) {
   }
 
   return (
-    <svg {...commonProps}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      className={common}
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M4 13V9a8 8 0 0 1 16 0v4" />
       <path d="M4 12h3v7H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 1-2Z" />
       <path d="M20 12h-3v7h2a2 2 0 0 0 2-2v-3a2 2 0 0 0-1-2Z" />
@@ -222,40 +242,70 @@ function PracticeModeIcon({ type }) {
   );
 }
 
-function PracticeWorkoutCard({ mode, number }) {
+function PracticeMock({ title, text, mediaSrc, mode, number }) {
+  const styles = {
+    reorder: {
+      badge: "bg-purple-100 text-purple-800",
+      icon: "from-purple-950 to-purple-700 text-lime-300",
+      line: "from-purple-500 to-lime-300",
+    },
+    typing: {
+      badge: "bg-orange-100 text-orange-800",
+      icon: "from-orange-700 to-purple-900 text-yellow-200",
+      line: "from-orange-400 to-purple-500",
+    },
+    voice: {
+      badge: "bg-emerald-100 text-emerald-800",
+      icon: "from-emerald-700 to-purple-900 text-lime-200",
+      line: "from-emerald-400 to-purple-500",
+    },
+    dictation: {
+      badge: "bg-sky-100 text-sky-800",
+      icon: "from-sky-700 to-purple-900 text-cyan-100",
+      line: "from-sky-400 to-purple-500",
+    },
+  }[mode];
+
   return (
-    <article
-      className={`practice-workout-card practice-workout-card--${mode.mode}`}
-    >
-      <div className="practice-workout-accent" aria-hidden="true" />
+    <article className="group flex h-full flex-col overflow-hidden rounded-[2rem] border border-white/15 bg-white/10 shadow-2xl shadow-black/25 transition duration-300 hover:-translate-y-1 hover:shadow-purple-900/40">
+      <div className={`h-1.5 bg-gradient-to-r ${styles.line}`} />
 
-      <div className="practice-workout-header">
-        <div className="practice-workout-icon">
-          <PracticeModeIcon type={mode.mode} />
+      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-purple-950 to-slate-950 p-3 sm:p-5">
+        <div className="relative mx-auto w-full max-w-[280px]">
+          <div className="absolute inset-3 rounded-[2.2rem] bg-purple-500/25 blur-2xl" />
+
+          <div className="relative overflow-hidden rounded-[2rem] border-[9px] border-slate-900 bg-slate-950 shadow-2xl">
+            <video
+              src={mediaSrc}
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              className="aspect-[9/16] w-full bg-slate-950 object-cover"
+              aria-label={`${title} demonstration`}
+            />
+          </div>
         </div>
-
-        <div className="practice-workout-heading">
-          <span className="practice-workout-badge">{mode.name}</span>
-          <h3>{mode.action}</h3>
-        </div>
-
-        <span className="practice-workout-number" aria-hidden="true">
-          {String(number).padStart(2, "0")}
-        </span>
       </div>
 
-      <p className="practice-workout-description">{mode.description}</p>
+      <div className="flex flex-1 flex-col rounded-b-[2rem] bg-white p-6 sm:p-7">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div
+            className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg ${styles.icon}`}
+          >
+            <PracticeModeIcon type={mode} />
+          </div>
 
-      <div className="practice-workout-video">
-        <video
-          src={mode.video}
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          aria-label={`${mode.name}: ${mode.action}`}
-        />
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.14em] ${styles.badge}`}
+          >
+            Mode {number}
+          </span>
+        </div>
+
+        <h3 className="text-2xl font-black text-slate-950">{title}</h3>
+        <p className="mt-3 text-base leading-relaxed text-slate-700">{text}</p>
       </div>
     </article>
   );
@@ -642,11 +692,14 @@ export default function TrySpokenEnglishGym() {
           </div>
 
           <div className="mode-grid">
-            {PRACTICE_TYPES.map((mode, index) => (
-              <PracticeWorkoutCard
-                key={mode.name}
-                mode={mode}
-                number={index + 1}
+            {PRACTICE_TYPES.map((mode) => (
+              <PracticeMock
+                key={mode.mode}
+                title={mode.title}
+                text={mode.text}
+                mediaSrc={mode.mediaSrc}
+                mode={mode.mode}
+                number={mode.number}
               />
             ))}
           </div>
