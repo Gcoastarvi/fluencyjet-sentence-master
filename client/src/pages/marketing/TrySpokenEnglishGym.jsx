@@ -49,6 +49,7 @@ const BENEFITS = [
 
 const PRACTICE_TYPES = [
   {
+    mode: "reorder",
     name: "Quick English",
     action: "Build the Sentence",
     description:
@@ -56,6 +57,7 @@ const PRACTICE_TYPES = [
     video: "/practice-modes/reorder.mp4",
   },
   {
+    mode: "typing",
     name: "Grammar Genius",
     action: "Type It Yourself",
     description:
@@ -63,6 +65,7 @@ const PRACTICE_TYPES = [
     video: "/practice-modes/typing.mp4",
   },
   {
+    mode: "voice",
     name: "Fluent Voice",
     action: "Listen and Repeat",
     description:
@@ -70,6 +73,7 @@ const PRACTICE_TYPES = [
     video: "/practice-modes/voice.mp4",
   },
   {
+    mode: "dictation",
     name: "Dictation",
     action: "Listen and Write",
     description:
@@ -126,6 +130,12 @@ const FAQ_ITEMS = [
 ];
 
 function getSafeNextPath(value) {
+  // This funnel already gives the learner seven Reorder questions.
+  // Skip the second Reorder warm-up and take new users to the lesson list.
+  if (!value || value === "/quick-start") {
+    return "/b/lessons";
+  }
+
   if (
     typeof value === "string" &&
     value.startsWith("/") &&
@@ -134,7 +144,7 @@ function getSafeNextPath(value) {
     return value;
   }
 
-  return "/quick-start";
+  return "/b/lessons";
 }
 
 function readGuestChallenge() {
@@ -158,12 +168,105 @@ function readGuestChallenge() {
   }
 }
 
+function PracticeModeIcon({ type }) {
+  const commonProps = {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    strokeWidth: "2.2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    className: "practice-mode-icon-svg",
+    "aria-hidden": true,
+  };
+
+  if (type === "reorder") {
+    return (
+      <svg {...commonProps}>
+        <path d="M7 7h11" />
+        <path d="m15 4 3 3-3 3" />
+        <path d="M17 17H6" />
+        <path d="m9 14-3 3 3 3" />
+      </svg>
+    );
+  }
+
+  if (type === "typing") {
+    return (
+      <svg {...commonProps}>
+        <rect x="3" y="5" width="18" height="14" rx="2.5" />
+        <path d="M7 9h.01M11 9h.01M15 9h.01M18 9h.01" />
+        <path d="M7 13h.01M11 13h.01M15 13h.01" />
+        <path d="M8 16h8" />
+      </svg>
+    );
+  }
+
+  if (type === "voice") {
+    return (
+      <svg {...commonProps}>
+        <rect x="9" y="3" width="6" height="11" rx="3" />
+        <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
+        <path d="M12 17.5V21" />
+        <path d="M9 21h6" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...commonProps}>
+      <path d="M4 13V9a8 8 0 0 1 16 0v4" />
+      <path d="M4 12h3v7H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 1-2Z" />
+      <path d="M20 12h-3v7h2a2 2 0 0 0 2-2v-3a2 2 0 0 0-1-2Z" />
+      <path d="M12 19h3" />
+    </svg>
+  );
+}
+
+function PracticeWorkoutCard({ mode, number }) {
+  return (
+    <article
+      className={`practice-workout-card practice-workout-card--${mode.mode}`}
+    >
+      <div className="practice-workout-accent" aria-hidden="true" />
+
+      <div className="practice-workout-header">
+        <div className="practice-workout-icon">
+          <PracticeModeIcon type={mode.mode} />
+        </div>
+
+        <div className="practice-workout-heading">
+          <span className="practice-workout-badge">{mode.name}</span>
+          <h3>{mode.action}</h3>
+        </div>
+
+        <span className="practice-workout-number" aria-hidden="true">
+          {String(number).padStart(2, "0")}
+        </span>
+      </div>
+
+      <p className="practice-workout-description">{mode.description}</p>
+
+      <div className="practice-workout-video">
+        <video
+          src={mode.video}
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="metadata"
+          aria-label={`${mode.name}: ${mode.action}`}
+        />
+      </div>
+    </article>
+  );
+}
+
 export default function TrySpokenEnglishGym() {
   const { isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
 
   const source = searchParams.get("source") || "try-spoken-english-gym";
-  const nextPath = getSafeNextPath(searchParams.get("next") || "/quick-start");
+  const nextPath = getSafeNextPath(searchParams.get("next") || "/b/lessons");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -540,25 +643,11 @@ export default function TrySpokenEnglishGym() {
 
           <div className="mode-grid">
             {PRACTICE_TYPES.map((mode, index) => (
-              <article className="mode-card" key={mode.name}>
-                <div className="mode-video-wrap">
-                  <video
-                    src={mode.video}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="metadata"
-                    aria-label={`${mode.name}: ${mode.action}`}
-                  />
-                </div>
-                <div className="mode-copy">
-                  <span className="mode-number">0{index + 1}</span>
-                  <p className="mode-name">{mode.name}</p>
-                  <h3>{mode.action}</h3>
-                  <p>{mode.description}</p>
-                </div>
-              </article>
+              <PracticeWorkoutCard
+                key={mode.name}
+                mode={mode}
+                number={index + 1}
+              />
             ))}
           </div>
 
