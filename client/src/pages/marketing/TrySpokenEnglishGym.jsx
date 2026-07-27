@@ -457,7 +457,15 @@ export default function TrySpokenEnglishGym() {
 
           <div className="hero-grid">
             <div className="hero-copy">
-              <p className="eyebrow">WELCOME TO THE SPOKEN ENGLISH GYM</p>
+              <p className="eyebrow hero-eyebrow">
+                <span className="hero-eyebrow-spark" aria-hidden="true">
+                  ✦
+                </span>
+
+                <span className="hero-eyebrow-text">
+                  WELCOME TO THE SPOKEN ENGLISH GYM
+                </span>
+              </p>
 
               <h1 data-testid="text-headline">
                 Train Your Brain to Build English Sentences Faster.
@@ -649,16 +657,22 @@ export default function TrySpokenEnglishGym() {
 
       <section className="page-section benefits-section">
         <div className="gym-shell">
-          <div className="section-heading">
-            <p className="eyebrow dark">WHAT CAN FLUENCYJET DO FOR YOU?</p>
-            <h2>Make English Sentences Faster. Speak With More Confidence.</h2>
-            <p>
-              You may know English words. You may know some grammar. But the
-              right sentence may not come when you try to speak.
+          <div className="section-heading benefits-heading">
+            <p className="eyebrow dark benefits-eyebrow">
+              WHAT CAN FLUENCYJET DO FOR YOU?
             </p>
-            <p>
-              FluencyJet gives you simple daily practice to help you use the
-              English you already know.
+
+            <h2>Turn the English You Know Into Sentences You Can Speak.</h2>
+
+            <p className="benefits-lead">
+              You may know English words and some grammar. But speaking is hard
+              when the right sentence does not come quickly.
+            </p>
+
+            <p className="benefits-lead benefits-lead--strong">
+              FluencyJet gives you short daily workouts to help you build
+              sentences, understand spoken English, and speak with more
+              confidence.
             </p>
           </div>
 
@@ -785,8 +799,15 @@ export default function TrySpokenEnglishGym() {
 
       <section className="page-section creator-section">
         <div className="gym-shell creator-grid">
-          <div className="creator-mark" aria-hidden="true">
-            AP
+          <div className="creator-photo-wrap">
+            <img
+              src="/coach.jpg"
+              alt="Aravind Pasupathy, creator of FluencyJet"
+              className="creator-photo"
+              loading="lazy"
+            />
+
+            <span className="creator-photo-badge">FluencyJet Creator</span>
           </div>
 
           <div>
@@ -798,14 +819,11 @@ export default function TrySpokenEnglishGym() {
               <span>35,000+ Students Trained</span>
             </div>
 
-            <p>
+            <p className="creator-intro">
               Aravind is an English trainer and memory coach. He created
-              FluencyJet to solve a common problem.
-            </p>
-
-            <p>
-              Many learners know English words and grammar. But they do not get
-              enough sentence-making practice.
+              FluencyJet for learners who know English words and grammar but
+              need a clear daily system to build sentences and speak with
+              confidence.
             </p>
 
             <blockquote>
