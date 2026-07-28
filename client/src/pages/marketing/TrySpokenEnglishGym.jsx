@@ -468,7 +468,7 @@ export default function TrySpokenEnglishGym() {
               </p>
 
               <h1 data-testid="text-headline">
-                Train Your Brain to Build English Sentences Faster.
+                Build English Sentences Faster.
                 <span>Speak With Greater Confidence.</span>
               </h1>
 
@@ -482,9 +482,8 @@ export default function TrySpokenEnglishGym() {
               <div className="hero-highlights" aria-label="Product highlights">
                 <span>120 step-by-step lessons</span>
                 <span>4,800 guided exercises</span>
-                <span>4 ways to practise</span>
-                <span>10-minute daily workouts</span>
-                <span>Beginner &amp; Intermediate paths</span>
+                <span>4 ways to practice</span>
+                <span>10-minute daily practice</span>
               </div>
 
               <div className="practice-flow" aria-label="Four ways to practise">
@@ -518,10 +517,10 @@ export default function TrySpokenEnglishGym() {
               aria-labelledby="signup-title"
             >
               <p className="signup-mini">YOUR NEXT STEP</p>
-              <h2 id="signup-title">Save Your XP and Continue Your Workout</h2>
+              <h2 id="signup-title">Try Spoken English Gym for FREE</h2>
               <p className="signup-intro">
                 Create your free account to save your progress and unlock your
-                first complete workout.
+                free lessons.
               </p>
 
               {guestChallenge && (
