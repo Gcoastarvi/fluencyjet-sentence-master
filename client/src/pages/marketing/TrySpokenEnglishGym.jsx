@@ -43,7 +43,7 @@ const BENEFITS = [
   {
     icon: "🔥",
     title: "Build a Daily Practice Habit",
-    text: "Complete short workouts. Earn XP. See your progress. Continue from where you stopped.",
+    text: "Complete short quizzes. Earn XP. See your progress. Continue from where you stopped.",
   },
 ];
 
@@ -91,7 +91,7 @@ const FAQ_ITEMS = [
   {
     question: "Do I need to pay now?",
     answer:
-      "No. Create your account and complete your first workout free. No card is needed now.",
+      "No. Create your account and complete your first lesson free. No card is needed now.",
   },
   {
     question: "What does complete access cost?",
@@ -503,7 +503,7 @@ export default function TrySpokenEnglishGym() {
                 </p>
                 <p>One-time payment. No monthly subscription.</p>
                 <p className="price-note">
-                  Create your free account. Try the app first. Decide after you
+                  Create your free account. Try the quizzes first. Decide after you
                   experience it.
                 </p>
               </div>
@@ -736,7 +736,7 @@ export default function TrySpokenEnglishGym() {
             <h2>Everything Is Planned for You.</h2>
             <p>
               You do not need to search for a new English lesson every day. Open
-              FluencyJet, complete your workout, and continue from where you
+              FluencyJet, complete your quizzes, and continue from where you
               stopped.
             </p>
           </div>
@@ -760,7 +760,7 @@ export default function TrySpokenEnglishGym() {
         <div className="gym-shell">
           <div className="section-heading">
             <p className="eyebrow dark">START FREE. TRY IT. THEN DECIDE.</p>
-            <h2>See the App Before You Pay.</h2>
+            <h2>See the Lessons Before You Pay.</h2>
           </div>
 
           <div className="steps-grid">
@@ -836,7 +836,7 @@ export default function TrySpokenEnglishGym() {
           <div className="section-heading">
             <p className="eyebrow dark">SIMPLE ONE-YEAR ACCESS</p>
             <h2>Start Free. Continue for {FULL_PRICE}.</h2>
-            <p>Try the first complete workout before you decide.</p>
+            <p>Try the first lesson before you decide.</p>
           </div>
 
           <div className="pricing-grid">
@@ -905,7 +905,7 @@ export default function TrySpokenEnglishGym() {
       <section className="final-cta-section">
         <div className="gym-shell">
           <p className="eyebrow">YOUR CHALLENGE WAS THE WARM-UP</p>
-          <h2>Now Start Your First Complete Workout.</h2>
+          <h2>Now Start Your First Lesson.</h2>
           <p>
             {guestChallenge ? `Save your ${xpText} XP. ` : ""}
             Create your free account. Experience the FluencyJet practice system.
