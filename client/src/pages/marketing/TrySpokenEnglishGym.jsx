@@ -18,12 +18,12 @@ const BENEFITS = [
   {
     icon: "↔",
     title: "Translate Less in Your Mind",
-    text: "Practise complete English patterns. Slowly reduce the need to translate every word from Tamil.",
+    text: "Practice complete English patterns. Slowly reduce the need to translate every word from Tamil.",
   },
   {
     icon: "⚡",
     title: "Make Sentences Faster",
-    text: "Practise useful sentence patterns again and again. Bring the right sentence to mind more easily.",
+    text: "Practice useful sentence patterns again and again. Bring the right sentence to mind more easily.",
   },
   {
     icon: "✓",
@@ -38,7 +38,7 @@ const BENEFITS = [
   {
     icon: "🎙",
     title: "Speak With Less Fear",
-    text: "Listen, repeat, and practise privately. Feel more comfortable before speaking with other people.",
+    text: "Listen, repeat, and practice privately. Feel more comfortable before speaking with other people.",
   },
   {
     icon: "🔥",
@@ -81,7 +81,7 @@ const PRACTICE_TYPES = [
 const PRODUCT_STATS = [
   ["120", "Step-by-step lessons"],
   ["4,800", "Guided exercises"],
-  ["4", "Ways to practise"],
+  ["4", "Ways to practice"],
   ["2", "Learning paths"],
   ["10 min", "Daily workouts"],
   ["1 year", "Complete access"],
@@ -114,7 +114,7 @@ const FAQ_ITEMS = [
       "No. FluencyJet is an active practice app. You build, type, listen to, and speak English sentences.",
   },
   {
-    question: "How much should I practise?",
+    question: "How much should I practice?",
     answer:
       "Start with around 10 minutes a day. Regular practice is more important than long, irregular study.",
   },
@@ -363,7 +363,7 @@ export default function TrySpokenEnglishGym() {
         segment: "general",
         main_goal: "Build sentences faster",
         current_status: "Not specified",
-        practice_commitment: "Yes, I can practise 10 minutes daily",
+        practice_commitment: "Yes, I can practice 10 minutes daily",
         reserve_seat: false,
         whatsapp_consent: whatsappConsent,
         level_check_result: "Beginner",
@@ -473,7 +473,7 @@ export default function TrySpokenEnglishGym() {
               </h1>
 
               <p className="hero-support">
-                Practise through <strong>120 structured lessons</strong> and{" "}
+                Practice through <strong>120 structured lessons</strong> and{" "}
                 <strong>4,800 guided exercises</strong> designed to improve
                 sentence formation, grammar, listening, and spoken English—one
                 daily workout at a time.
@@ -486,7 +486,7 @@ export default function TrySpokenEnglishGym() {
                 <span>10-minute daily practice</span>
               </div>
 
-              <div className="practice-flow" aria-label="Four ways to practise">
+              <div className="practice-flow" aria-label="Four ways to practice">
                 <span>Build the Sentence</span>
                 <b aria-hidden="true">→</b>
                 <span>Type It Yourself</span>
@@ -497,9 +497,7 @@ export default function TrySpokenEnglishGym() {
               </div>
 
               <div className="hero-price">
-                <p className="price-kicker">
-                  TRY YOUR FIRST COMPLETE WORKOUT FREE
-                </p>
+                <p className="price-kicker">TRY YOUR FIRST LESSON FOR FREE</p>
                 <p className="price-main">
                   Complete one-year access: <strong>{FULL_PRICE}</strong>
                 </p>
@@ -630,7 +628,7 @@ export default function TrySpokenEnglishGym() {
                   {loading
                     ? "Creating Your Account..."
                     : guestChallenge
-                      ? "Save My XP & Continue My Workout"
+                      ? "Save My XP & Continue My Lessons"
                       : "Create My Free Account & Continue"}
                 </button>
 
@@ -669,7 +667,7 @@ export default function TrySpokenEnglishGym() {
             </p>
 
             <p className="benefits-lead benefits-lead--strong">
-              FluencyJet gives you short daily workouts to help you build
+              FluencyJet gives you short daily quizzes to help you build
               sentences, understand spoken English, and speak with more
               confidence.
             </p>
@@ -696,10 +694,10 @@ export default function TrySpokenEnglishGym() {
       <section className="page-section modes-section">
         <div className="gym-shell">
           <div className="section-heading light">
-            <p className="eyebrow">ONE SENTENCE. FOUR WORKOUTS.</p>
+            <p className="eyebrow">ONE SENTENCE. FOUR EXERCISES.</p>
             <h2>Learn It. Remember It. Speak It. Understand It.</h2>
             <p>
-              You practise the same useful sentence in four different ways. This
+              You practice the same useful sentence in four different ways. This
               helps your brain understand, remember, and use the sentence.
             </p>
           </div>
@@ -726,7 +724,7 @@ export default function TrySpokenEnglishGym() {
 
           <p className="modes-closing">
             You do not only watch English lessons.{" "}
-            <strong>You practise using English.</strong>
+            <strong>You practice using English.</strong>
           </p>
         </div>
       </section>
