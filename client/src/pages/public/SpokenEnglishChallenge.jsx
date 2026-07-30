@@ -386,7 +386,9 @@ export default function SpokenEnglishChallenge() {
       xp: result?.xp || 0,
     });
 
-    const nextPath = encodeURIComponent("/quick-start");
+    const nextPath = encodeURIComponent(
+      "/practice/reorder?lessonId=1&difficulty=beginner&onboarding=1&source=spoken-english-challenge",
+    );
 
     navigate(
       `/try-spoken-english-gym?source=spoken-english-challenge&next=${nextPath}#signup`,

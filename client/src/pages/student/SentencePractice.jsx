@@ -89,6 +89,14 @@ export default function SentencePractice() {
     }
   })();
 
+  const hasPaidAccess =
+    auth?.user?.hasAccess === true ||
+    auth?.user?.has_access === true ||
+    auth?.hasAccess === true ||
+    auth?.has_access === true ||
+    storedUser?.hasAccess === true ||
+    storedUser?.has_access === true;
+
   const progressUserId =
     auth?.user?.id ||
     auth?.user?.email ||
@@ -138,6 +146,16 @@ export default function SentencePractice() {
   const difficulty = String(
     search.get("difficulty") || "beginner",
   ).toLowerCase();
+
+  const isLesson1ChallengeOnboarding =
+    lessonId === 1 &&
+    difficulty === "beginner" &&
+    safeMode === "reorder" &&
+    search.get("onboarding") === "1" &&
+    search.get("source") === "spoken-english-challenge";
+
+  const showLesson1ConversionComplete =
+    isLesson1ChallengeOnboarding && !hasPaidAccess;
 
   const isStrictQuickStart =
     search.get("context") === "quick-start" &&
@@ -2569,6 +2587,169 @@ export default function SentencePractice() {
                     {title} →
                   </button>
                 ))}
+              </div>
+            </section>
+          </main>
+        </div>
+      );
+    }
+
+    if (showLesson1ConversionComplete) {
+      const nextPracticeModes = [
+        {
+          title: "Grammar Genius",
+          subtitle: "Type the English sentence",
+          time: "About 4 minutes",
+          icon: "⌨️",
+          mode: "typing",
+          variant: "",
+          card: "border-orange-200 bg-orange-50 text-orange-900 hover:border-orange-300",
+        },
+        {
+          title: "Listening Quiz",
+          subtitle: "Listen and type what you hear",
+          time: "About 5 minutes",
+          icon: "✍️",
+          mode: "audio",
+          variant: "dictation",
+          card: "border-rose-200 bg-rose-50 text-rose-900 hover:border-rose-300",
+        },
+        {
+          title: "Listen & Repeat",
+          subtitle: "Guided speaking self-practice",
+          time: "About 2 minutes",
+          icon: "🎧",
+          mode: "audio",
+          variant: "repeat",
+          card: "border-emerald-200 bg-emerald-50 text-emerald-900 hover:border-emerald-300",
+        },
+      ];
+
+      return (
+        <div className="min-h-screen bg-slate-50 px-4 py-8">
+          <main className="mx-auto max-w-3xl">
+            <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_14px_40px_rgba(15,23,42,0.08)]">
+              <div className="h-2 w-full bg-indigo-500" />
+
+              <div className="p-6 sm:p-9">
+                <div className="text-center">
+                  <p className="text-sm font-black uppercase tracking-[0.22em] text-indigo-600">
+                    Your first FluencyJet workout
+                  </p>
+
+                  <h1 className="mt-4 text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+                    🎉 Great job!
+                  </h1>
+
+                  <p className="mx-auto mt-4 max-w-xl text-lg font-extrabold leading-8 text-slate-800 sm:text-xl">
+                    You completed the Lesson 1 Quick English workout.
+                  </p>
+
+                  <div className="mx-auto mt-6 grid max-w-xl grid-cols-2 gap-3">
+                    <div className="rounded-2xl bg-indigo-50 p-4">
+                      <div className="text-2xl font-black text-indigo-700">
+                        {totalQuestions}
+                      </div>
+                      <div className="mt-1 text-xs font-black uppercase tracking-wider text-indigo-500">
+                        Sentences completed
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-amber-50 p-4">
+                      <div className="text-2xl font-black text-amber-700">
+                        +{Number(completionXp || 0).toLocaleString("en-IN")}
+                      </div>
+                      <div className="mt-1 text-xs font-black uppercase tracking-wider text-amber-600">
+                        XP earned
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <section className="mt-8 rounded-3xl border border-indigo-200 bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white shadow-xl">
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-100">
+                    Recommended next step
+                  </p>
+
+                  <h2 className="mt-3 text-2xl font-black">
+                    Continue Lesson 1
+                  </h2>
+
+                  <p className="mt-3 font-semibold leading-7 text-indigo-50">
+                    Watch the short lesson video, review the sentence starters
+                    and see how your Lesson 1 progress is recorded.
+                  </p>
+
+                  <button
+                    type="button"
+                    className="mt-6 w-full rounded-2xl bg-white px-6 py-5 text-lg font-black text-indigo-700 shadow-lg transition hover:-translate-y-0.5 hover:bg-indigo-50 active:scale-[0.99]"
+                    onClick={() => {
+                      track("practice_cta_clicked", {
+                        lessonId: 1,
+                        difficulty: "beginner",
+                        mode: "reorder",
+                        cta: "continue_lesson_1_onboarding",
+                        source: "spoken-english-challenge",
+                      });
+
+                      navigate(
+                        "/b/lesson/1?difficulty=beginner&onboarding=1&source=spoken-english-challenge",
+                        { replace: true },
+                      );
+                    }}
+                  >
+                    Continue Lesson 1 →
+                  </button>
+                </section>
+
+                <section className="mt-8">
+                  <div className="text-sm font-black uppercase tracking-[0.18em] text-slate-600">
+                    Or practise Lesson 1 another way
+                  </div>
+
+                  <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                    {nextPracticeModes.map((item) => (
+                      <button
+                        key={`${item.mode}-${item.variant || "default"}`}
+                        type="button"
+                        onClick={() =>
+                          hardResetThenNavigate(item.mode, item.variant)
+                        }
+                        className={[
+                          "rounded-2xl border p-5 text-left shadow-sm transition-all",
+                          "hover:-translate-y-0.5 hover:shadow-md active:scale-[0.99]",
+                          item.card,
+                        ].join(" ")}
+                      >
+                        <div className="text-3xl">{item.icon}</div>
+
+                        <h3 className="mt-4 text-lg font-black">
+                          {item.title}
+                        </h3>
+
+                        <p className="mt-2 text-sm font-bold opacity-80">
+                          {item.subtitle}
+                        </p>
+
+                        <p className="mt-4 text-xs font-black uppercase tracking-wider opacity-70">
+                          {item.time}
+                        </p>
+
+                        <p className="mt-4 font-black">Try now →</p>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <div className="mt-8 border-t border-slate-200 pt-6 text-center">
+                  <button
+                    type="button"
+                    className="text-sm font-black text-slate-500 transition hover:text-indigo-700"
+                    onClick={() => navigate("/leaderboard")}
+                  >
+                    🏆 View Leaderboard
+                  </button>
+                </div>
               </div>
             </section>
           </main>
