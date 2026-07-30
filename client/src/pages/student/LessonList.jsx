@@ -7,6 +7,7 @@ import LessonCard from "../../components/student/LessonCard";
 import confetti from "canvas-confetti";
 import { overallLessonPct } from "@/lib/progressStore";
 import { freeAllowsLesson } from "../../lib/accessRules";
+import { track } from "../../lib/track";
 
 // 🎯 THE SOURCE OF TRUTH: Unify all league thresholds here
 export const getLeagueInfo = (xp) => {
@@ -68,6 +69,59 @@ export default function LessonList({ difficulty }) {
       return null;
     }
   })();
+
+  const hasManualAccess =
+    auth?.user?.has_access === true ||
+    auth?.user?.hasAccess === true ||
+    auth?.has_access === true ||
+    auth?.hasAccess === true ||
+    storedUser?.has_access === true ||
+    storedUser?.hasAccess === true;
+
+  const effectivePlan = String(
+    auth?.user?.plan || auth?.plan || storedUser?.plan || "FREE",
+  ).toUpperCase();
+
+  const currentRouteTrack =
+    String(difficulty || "").toLowerCase() === "intermediate"
+      ? "INTERMEDIATE"
+      : "BEGINNER";
+
+  const hasTrackAccess =
+    effectivePlan === "PRO" ||
+    effectivePlan === "PAID" ||
+    (hasManualAccess && effectivePlan === currentRouteTrack);
+
+  const onboardingParams = new URLSearchParams(location.search);
+
+  const isLesson1ChallengeOnboarding =
+    String(difficulty || "").toLowerCase() === "basic" &&
+    onboardingParams.get("onboarding") === "1" &&
+    onboardingParams.get("source") === "spoken-english-challenge" &&
+    onboardingParams.get("focus") === "lesson-1";
+
+  const showLesson1CurriculumOnboarding =
+    isLesson1ChallengeOnboarding && !hasTrackAccess;
+
+  function goToPaidOffer(placement) {
+    if (showLesson1CurriculumOnboarding) {
+      track("lesson1_curriculum_offer_clicked", {
+        lessonId: 1,
+        difficulty: "beginner",
+        source: "spoken-english-challenge",
+        placement,
+      });
+
+      navigate(
+        "/spoken-english-offer?source=lesson1-curriculum&placement=" +
+          encodeURIComponent(placement),
+      );
+
+      return;
+    }
+
+    navigate("/upgrade");
+  }
 
   const progressUserId =
     auth?.user?.id ||
@@ -451,7 +505,7 @@ export default function LessonList({ difficulty }) {
 
   const [showLeagueIntro, setShowLeagueIntro] = useState(() => {
     return !localStorage.getItem("league_intro_seen");
-  });  
+  });
 
   useEffect(() => {
     if (showLeagueIntro) {
@@ -480,6 +534,38 @@ export default function LessonList({ difficulty }) {
   // 65: Standardized return (Removed the double return/fragment)
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
+      {showLesson1CurriculumOnboarding && (
+        <section className="mx-auto max-w-4xl px-4 pt-6">
+          <div className="overflow-hidden rounded-[2rem] border border-indigo-200 bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 p-6 text-white shadow-2xl sm:p-8">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-indigo-200">
+              Step 3 of 3 — Your Complete Learning Path
+            </p>
+
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+              See What You Will Learn Across 120 Lessons
+            </h1>
+
+            <p className="mt-4 max-w-2xl font-semibold leading-7 text-slate-200">
+              You have completed your first workout and explored Lesson 1. Now
+              browse the complete structured path FluencyJet provides.
+            </p>
+
+            <div className="mt-6 grid gap-2 text-sm font-black sm:grid-cols-3">
+              <div className="rounded-xl bg-white/10 px-4 py-3">
+                ✓ First workout
+              </div>
+
+              <div className="rounded-xl bg-white/10 px-4 py-3">
+                ✓ Explore Lesson 1
+              </div>
+
+              <div className="rounded-xl border border-white/40 bg-white px-4 py-3 text-indigo-800">
+                ● View learning path
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
       {/* 🏆 1. Sticky Header stays fixed at top */}
       <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-6 pt-4 pb-2">
@@ -497,12 +583,14 @@ export default function LessonList({ difficulty }) {
             </div>
 
             {/* 👑 Smart Upgrade Button or Progress % */}
-            {auth?.user?.has_access === false || auth?.has_access === false ? (
+            {!hasTrackAccess ? (
               <button
-                onClick={() => navigate("/upgrade")}
+                onClick={() => goToPaidOffer("header")}
                 className="mb-1 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-200 hover:scale-105 transition-transform animate-pulse"
               >
-                Unlock All Units 👑
+                {showLesson1CurriculumOnboarding
+                  ? "Get 1-Year Access · ₹1,199"
+                  : "Unlock All Units 👑"}
               </button>
             ) : (
               <span className="text-xs font-black text-indigo-600">
@@ -615,35 +703,128 @@ export default function LessonList({ difficulty }) {
                   {module.lessons.map((lesson, idx) => {
                     const displayNum = (module.id - 1) * 10 + (idx + 1);
                     const isLocked =
-                      auth?.user?.has_access === false && !freeAllowsLesson(displayNum);
+                      !hasTrackAccess && !freeAllowsLesson(displayNum);
 
                     return (
                       <React.Fragment key={lesson.id}>
-                        <LessonCard
-                          lesson={lesson}
-                          displayNum={displayNum}
-                          isLocked={isLocked}
-                        />
+                        <div
+                          id={`lesson-card-${displayNum}`}
+                          className={
+                            showLesson1CurriculumOnboarding && displayNum === 1
+                              ? "w-full rounded-[2.5rem] ring-4 ring-indigo-400 ring-offset-4 ring-offset-slate-50"
+                              : "w-full"
+                          }
+                        >
+                          <LessonCard
+                            lesson={lesson}
+                            displayNum={displayNum}
+                            isLocked={isLocked}
+                          />
+                        </div>
+
+                        {showLesson1CurriculumOnboarding &&
+                          displayNum === 1 && (
+                            <section className="w-full overflow-hidden rounded-[2.5rem] border-2 border-indigo-200 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-6 shadow-xl sm:p-8">
+                              <p className="text-xs font-black uppercase tracking-[0.22em] text-indigo-600">
+                                Continue Your FluencyJet Journey
+                              </p>
+
+                              <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                                Unlock Lessons 2–120
+                              </h3>
+
+                              <p className="mt-3 font-semibold leading-7 text-slate-600">
+                                You have completed your first workout, explored
+                                Lesson 1 and seen the complete learning path.
+                                Continue building English sentences step by
+                                step.
+                              </p>
+
+                              <div className="mt-5 grid gap-3 text-sm font-bold text-slate-700 sm:grid-cols-3">
+                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
+                                  120 structured lessons
+                                </div>
+
+                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
+                                  Four practice modes
+                                </div>
+
+                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
+                                  One-year access
+                                </div>
+                              </div>
+
+                              <div className="mt-6 rounded-2xl bg-slate-950 p-5 text-center text-white">
+                                <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">
+                                  Complete One-Year Access
+                                </p>
+
+                                <p className="mt-2 text-4xl font-black">
+                                  ₹1,199
+                                </p>
+
+                                <p className="mt-2 text-sm font-bold text-slate-300">
+                                  One-time payment · 7-day money-back guarantee
+                                </p>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  track("lesson1_curriculum_offer_clicked", {
+                                    lessonId: 1,
+                                    difficulty: "beginner",
+                                    source: "spoken-english-challenge",
+                                    placement: "after_lesson_1",
+                                  });
+
+                                  navigate(
+                                    "/spoken-english-offer?source=lesson1-curriculum&placement=after-lesson-1",
+                                  );
+                                }}
+                                className="mt-5 w-full rounded-2xl bg-indigo-600 px-6 py-5 text-lg font-black text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-indigo-700 active:scale-[0.99]"
+                              >
+                                Get One-Year Access — ₹1,199 →
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  document
+                                    .getElementById("lesson-card-2")
+                                    ?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "center",
+                                    });
+                                }}
+                                className="mt-4 w-full text-sm font-black text-slate-500 transition hover:text-indigo-700"
+                              >
+                                Continue Exploring the Learning Path
+                              </button>
+                            </section>
+                          )}
 
                         {/* 🎯 Unit 1 End-of-Preview Cliffhanger */}
-                        {module.id === 1 &&
-                          idx === 9 &&
-                          auth?.user?.has_access === false && (
-                            <div className="w-full mt-10 p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden border-4 border-amber-400/30">
-                              <h4 className="text-xl font-black mb-2 italic text-amber-400">
-                                Unit 1 Complete! 🚀
-                              </h4>
-                              <p className="text-slate-400 text-[11px] mb-6 font-bold uppercase tracking-wider">
-                                Unlock 110+ more professional lessons now.
-                              </p>
-                              <button
-                                onClick={() => navigate("/upgrade")}
-                                className="w-full py-4 bg-amber-400 text-slate-900 font-black rounded-2xl text-[10px] hover:scale-105 transition-transform"
-                              >
-                                Continue Your Journey
-                              </button>
-                            </div>
-                          )}
+                        {module.id === 1 && idx === 9 && !hasTrackAccess && (
+                          <div className="w-full mt-10 p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl relative overflow-hidden border-4 border-amber-400/30">
+                            <h4 className="text-xl font-black mb-2 italic text-amber-400">
+                              Unit 1 Complete! 🚀
+                            </h4>
+                            <p className="text-slate-400 text-[11px] mb-6 font-bold uppercase tracking-wider">
+                              Unlock 110+ more professional lessons now.
+                            </p>
+                            <button
+                              onClick={() =>
+                                goToPaidOffer("unit-1-cliffhanger")
+                              }
+                              className="w-full py-4 bg-amber-400 text-slate-900 font-black rounded-2xl text-[10px] hover:scale-105 transition-transform"
+                            >
+                              {showLesson1CurriculumOnboarding
+                                ? "Get 1-Year Access — ₹1,199"
+                                : "Continue Your Journey"}
+                            </button>
+                          </div>
+                        )}
                       </React.Fragment>
                     );
                   })}
