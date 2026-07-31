@@ -120,7 +120,19 @@ export default function LessonList({ difficulty }) {
       return;
     }
 
-    navigate("/upgrade");
+    track("lesson_list_offer_clicked", {
+      source: "lesson-list",
+      placement,
+      difficulty:
+        String(difficulty || "").toLowerCase() === "intermediate"
+          ? "intermediate"
+          : "beginner",
+    });
+
+    navigate(
+      "/spoken-english-offer?source=lesson-list&placement=" +
+        encodeURIComponent(placement),
+    );
   }
 
   const progressUserId =
