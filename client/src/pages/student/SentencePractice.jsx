@@ -528,6 +528,7 @@ export default function SentencePractice() {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completionXp, setCompletionXp] = useState(0);
   const [sessionXpEarned, setSessionXpEarned] = useState(0);
+  const [sessionXpResolved, setSessionXpResolved] = useState(false);
   const completionBonusRequestedRef = useRef(false);
   const [completionMode, setCompletionMode] = useState("typing");
 
@@ -1299,6 +1300,7 @@ export default function SentencePractice() {
 
     if (!result?.ok) {
       completionBonusRequestedRef.current = false;
+      setSessionXpResolved(true);
       return result;
     }
 
@@ -1309,6 +1311,7 @@ export default function SentencePractice() {
       setSessionXpEarned((current) => current + awarded);
     }
 
+    setSessionXpResolved(true);
     return result;
   }
 
@@ -1637,6 +1640,7 @@ export default function SentencePractice() {
     setIsComplete(false);
     setCompletionXp(0);
     setSessionXpEarned(0);
+    setSessionXpResolved(false);
     completionBonusRequestedRef.current = false;
 
     setCurrentIndex(0);
@@ -2493,6 +2497,7 @@ export default function SentencePractice() {
       try {
         setCompletionXp(0);
         setSessionXpEarned(0);
+        setSessionXpResolved(false);
         completionBonusRequestedRef.current = false;
       } catch {}
 
@@ -2690,10 +2695,16 @@ export default function SentencePractice() {
                           ? `+${Number(
                               sessionXpEarned || completionXp || 0,
                             ).toLocaleString("en-IN")}`
-                          : "Updating…"}
+                          : sessionXpResolved
+                            ? "Progress saved"
+                            : "Updating…"}
                       </div>
                       <div className="mt-1 text-xs font-black uppercase tracking-wider text-amber-600">
-                        XP earned
+                        {Number(sessionXpEarned || completionXp || 0) > 0
+                          ? "XP earned"
+                          : sessionXpResolved
+                            ? "XP already credited"
+                            : "XP earned"}
                       </div>
                     </div>
                   </div>
