@@ -527,6 +527,8 @@ export default function SentencePractice() {
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [completionXp, setCompletionXp] = useState(0);
+  const [sessionXpEarned, setSessionXpEarned] = useState(0);
+  const completionBonusRequestedRef = useRef(false);
   const [completionMode, setCompletionMode] = useState("typing");
 
   // typing/cloze shared input state
@@ -1286,6 +1288,30 @@ export default function SentencePractice() {
     });
   }
 
+  async function awardCompletionBonusOnce(mode) {
+    if (completionBonusRequestedRef.current) {
+      return { ok: true, awarded: 0, skipped: true };
+    }
+
+    completionBonusRequestedRef.current = true;
+
+    const result = await awardCompletionBonus(mode);
+
+    if (!result?.ok) {
+      completionBonusRequestedRef.current = false;
+      return result;
+    }
+
+    const awarded = Number(result?.awarded ?? 0) || 0;
+
+    if (awarded > 0) {
+      setCompletionXp(awarded);
+      setSessionXpEarned((current) => current + awarded);
+    }
+
+    return result;
+  }
+
   async function persistBackendLessonModeProgress({
     lessonId,
     mode,
@@ -1610,6 +1636,8 @@ export default function SentencePractice() {
     setShowCompleteModal(false);
     setIsComplete(false);
     setCompletionXp(0);
+    setSessionXpEarned(0);
+    completionBonusRequestedRef.current = false;
 
     setCurrentIndex(0);
     setStatus("idle");
@@ -1657,11 +1685,8 @@ export default function SentencePractice() {
 
     // ✅ if this Next will finish the session, compute + store completion bonus now
     if (total > 0 && nextIndex >= total) {
-      // guard: don't spam-set if already set
-      if (Number(completionXp || 0) === 0) {
-        Promise.resolve(awardCompletionBonus?.(safeMode))
-          .then((bonus) => setCompletionXp(Number(bonus || 0)))
-          .catch(() => {});
+      if (!completionBonusRequestedRef.current) {
+        Promise.resolve(awardCompletionBonusOnce(safeMode)).catch(() => {});
       }
     }
 
@@ -2104,13 +2129,12 @@ export default function SentencePractice() {
 
         if (isLastQuestion) {
           try {
-            const bonus = await awardCompletionBonus(
+            await awardCompletionBonusOnce(
               safeMode === "audio" && audioVariant === "dictation"
                 ? "audio"
                 : "typing",
             );
 
-            setCompletionXp(Number(bonus?.awarded ?? 300) || 300);
             setCompletionMode(
               safeMode === "audio" && audioVariant === "dictation"
                 ? "audio"
@@ -2310,6 +2334,10 @@ export default function SentencePractice() {
           .then((result) => {
             const awarded = Number(result?.awarded ?? 0) || 0;
 
+            if (result?.ok && awarded > 0) {
+              setSessionXpEarned((current) => current + awarded);
+            }
+
             if (!result?.ok) {
               console.error("[XP] reorder sync failed", result);
             } else if (awarded <= 0) {
@@ -2324,9 +2352,8 @@ export default function SentencePractice() {
           currentIndex >= (lessonExercises?.length || 0) - 1;
 
         if (isLastQuestion) {
-          awardCompletionBonus("reorder")
-            .then((bonus) => {
-              setCompletionXp(Number(bonus?.awarded ?? 300) || 300);
+          awardCompletionBonusOnce("reorder")
+            .then(() => {
               setCompletionMode("reorder");
 
               const willHitSessionComplete =
@@ -2465,6 +2492,8 @@ export default function SentencePractice() {
       } catch {}
       try {
         setCompletionXp(0);
+        setSessionXpEarned(0);
+        completionBonusRequestedRef.current = false;
       } catch {}
 
       safeStopAudioAndUnlock();
@@ -2657,7 +2686,11 @@ export default function SentencePractice() {
 
                     <div className="rounded-2xl bg-amber-50 p-4">
                       <div className="text-2xl font-black text-amber-700">
-                        +{Number(completionXp || 0).toLocaleString("en-IN")}
+                        {Number(sessionXpEarned || completionXp || 0) > 0
+                          ? `+${Number(
+                              sessionXpEarned || completionXp || 0,
+                            ).toLocaleString("en-IN")}`
+                          : "Updating…"}
                       </div>
                       <div className="mt-1 text-xs font-black uppercase tracking-wider text-amber-600">
                         XP earned
