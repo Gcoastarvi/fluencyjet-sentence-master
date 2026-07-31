@@ -2697,14 +2697,14 @@ export default function SentencePractice() {
                             ).toLocaleString("en-IN")}`
                           : sessionXpResolved
                             ? "Progress saved"
-                            : "Updating…"}
+                            : "Calculating…"}
                       </div>
                       <div className="mt-1 text-xs font-black uppercase tracking-wider text-amber-600">
                         {Number(sessionXpEarned || completionXp || 0) > 0
-                          ? "XP earned"
+                          ? "Practice score earned"
                           : sessionXpResolved
-                            ? "XP already credited"
-                            : "XP earned"}
+                            ? "Workout completed"
+                            : "Calculating score"}
                       </div>
                     </div>
                   </div>
