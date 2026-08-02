@@ -84,7 +84,7 @@ function SectionHeader({ eyebrow, title, subtitle, dark = false }) {
 
 function CtaButton({
   className = "",
-  children = "Get 1-Year Access for ₹1,199",
+  children = "Get 1-Year Access — ₹1,199",
 }) {
   const handleClick = () => {
     trackSpokenEnglishInitiateCheckout();
@@ -824,7 +824,7 @@ export default function SpokenEnglishOffer() {
 
             <div className="mt-7 w-full max-w-xl">
               <CtaButton className="w-full">
-                Get 1-Year Access for ₹1,199
+                Get 1-Year Access — ₹1,199
               </CtaButton>
 
               <p className="mt-3 text-sm font-semibold text-white/65">
@@ -991,7 +991,7 @@ export default function SpokenEnglishOffer() {
 
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-slate-950/95 p-3 shadow-2xl backdrop-blur sm:hidden">
           <CtaButton className="w-full py-3 text-base">
-            Get 1-Year Access for ₹1,199
+            Get 1-Year Access — ₹1,199
           </CtaButton>
         </div>
       </main>

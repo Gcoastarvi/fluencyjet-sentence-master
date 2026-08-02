@@ -545,36 +545,21 @@ export default function LessonList({ difficulty }) {
 
   // 65: Standardized return (Removed the double return/fragment)
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className={`min-h-screen bg-slate-50 ${showLesson1CurriculumOnboarding ? "pb-36" : "pb-20"}`}>
       {showLesson1CurriculumOnboarding && (
         <section className="mx-auto max-w-4xl px-4 pt-6">
-          <div className="overflow-hidden rounded-[2rem] border border-indigo-200 bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 p-6 text-white shadow-2xl sm:p-8">
+          <div className="rounded-[2rem] bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 p-6 text-white shadow-xl sm:p-8">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-indigo-200">
-              Step 3 of 3 — Your Complete Learning Path
+              Step 3 of 3
             </p>
 
             <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-              See What You Will Learn Across 120 Lessons
+              See All 120 Lessons
             </h1>
 
-            <p className="mt-4 max-w-2xl font-semibold leading-7 text-slate-200">
-              You have completed your first workout and explored Lesson 1. Now
-              browse the complete structured path FluencyJet provides.
+            <p className="mt-3 max-w-2xl text-base font-semibold leading-7 text-slate-200 sm:text-lg">
+              You finished your first workout. Now see what you can learn next.
             </p>
-
-            <div className="mt-6 grid gap-2 text-sm font-black sm:grid-cols-3">
-              <div className="rounded-xl bg-white/10 px-4 py-3">
-                ✓ First workout
-              </div>
-
-              <div className="rounded-xl bg-white/10 px-4 py-3">
-                ✓ Explore Lesson 1
-              </div>
-
-              <div className="rounded-xl border border-white/40 bg-white px-4 py-3 text-indigo-800">
-                ● View learning path
-              </div>
-            </div>
           </div>
         </section>
       )}
@@ -598,7 +583,7 @@ export default function LessonList({ difficulty }) {
             {!hasTrackAccess ? (
               <button
                 onClick={() => goToPaidOffer("header")}
-                className="mb-1 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-200 hover:scale-105 transition-transform animate-pulse"
+                className={`${showLesson1CurriculumOnboarding ? "hidden sm:inline-flex" : "inline-flex"} mb-1 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-orange-200 hover:scale-105 transition-transform animate-pulse`}
               >
                 {showLesson1CurriculumOnboarding
                   ? "Get 1-Year Access · ₹1,199"
@@ -733,88 +718,6 @@ export default function LessonList({ difficulty }) {
                             isLocked={isLocked}
                           />
                         </div>
-
-                        {showLesson1CurriculumOnboarding &&
-                          displayNum === 1 && (
-                            <section className="w-full overflow-hidden rounded-[2.5rem] border-2 border-indigo-200 bg-gradient-to-br from-white via-indigo-50 to-violet-100 p-6 shadow-xl sm:p-8">
-                              <p className="text-xs font-black uppercase tracking-[0.22em] text-indigo-600">
-                                Continue Your FluencyJet Journey
-                              </p>
-
-                              <h3 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                                Unlock Lessons 2–120
-                              </h3>
-
-                              <p className="mt-3 font-semibold leading-7 text-slate-600">
-                                You have completed your first workout, explored
-                                Lesson 1 and seen the complete learning path.
-                                Continue building English sentences step by
-                                step.
-                              </p>
-
-                              <div className="mt-5 grid gap-3 text-sm font-bold text-slate-700 sm:grid-cols-3">
-                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                                  120 structured lessons
-                                </div>
-
-                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                                  Four practice modes
-                                </div>
-
-                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                                  One-year access
-                                </div>
-                              </div>
-
-                              <div className="mt-6 rounded-2xl bg-slate-950 p-5 text-center text-white">
-                                <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">
-                                  Complete One-Year Access
-                                </p>
-
-                                <p className="mt-2 text-4xl font-black">
-                                  ₹1,199
-                                </p>
-
-                                <p className="mt-2 text-sm font-bold text-slate-300">
-                                  One-time payment · 7-day money-back guarantee
-                                </p>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  track("lesson1_curriculum_offer_clicked", {
-                                    lessonId: 1,
-                                    difficulty: "beginner",
-                                    source: "spoken-english-challenge",
-                                    placement: "after_lesson_1",
-                                  });
-
-                                  navigate(
-                                    "/spoken-english-offer?source=lesson1-curriculum&placement=after-lesson-1",
-                                  );
-                                }}
-                                className="mt-5 w-full rounded-2xl bg-indigo-600 px-6 py-5 text-lg font-black text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:bg-indigo-700 active:scale-[0.99]"
-                              >
-                                Get One-Year Access — ₹1,199 →
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  document
-                                    .getElementById("lesson-card-2")
-                                    ?.scrollIntoView({
-                                      behavior: "smooth",
-                                      block: "center",
-                                    });
-                                }}
-                                className="mt-4 w-full text-sm font-black text-slate-500 transition hover:text-indigo-700"
-                              >
-                                Continue Exploring the Learning Path
-                              </button>
-                            </section>
-                          )}
 
                         {/* 🎯 Unit 1 End-of-Preview Cliffhanger */}
                         {module.id === 1 && idx === 9 && !hasTrackAccess && (
@@ -1363,6 +1266,31 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
         </div>
       </div>
       <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
+      {showLesson1CurriculumOnboarding && (
+        <div
+          data-testid="lesson-list-sticky-offer"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-amber-200 bg-white/95 px-4 pt-2 backdrop-blur"
+          style={{
+            paddingBottom:
+              "calc(10px + env(safe-area-inset-bottom))",
+          }}
+        >
+          <div className="mx-auto max-w-4xl">
+            <p className="mb-2 text-center text-xs font-bold text-slate-600">
+              One-time payment · 7-day money-back guarantee
+            </p>
+
+            <button
+              type="button"
+              onClick={() => goToPaidOffer("sticky")}
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-4 text-base font-black text-slate-950 shadow-lg transition hover:from-amber-200 hover:to-orange-300 active:scale-[0.99] sm:text-lg"
+            >
+              Unlock Full Access — ₹1,199
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -317,6 +317,28 @@ export default function LessonDetail() {
 
   const showLesson1Onboarding = isLesson1ChallengeOnboarding && !hasTrackAccess;
 
+  const [showLearningPathSticky, setShowLearningPathSticky] = useState(false);
+
+  useEffect(() => {
+    if (!showLesson1Onboarding) {
+      setShowLearningPathSticky(false);
+      return undefined;
+    }
+
+    const handleScroll = () => {
+      setShowLearningPathSticky(window.scrollY > 420);
+    };
+
+    handleScroll();
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [showLesson1Onboarding]);
+
+
   const isLocked = !freeAllowsLesson(Number(dayNumber)) && !hasTrackAccess;
 
   useEffect(() => {
@@ -1194,38 +1216,23 @@ export default function LessonDetail() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-6 pt-10">
+      <main className={`mx-auto max-w-3xl px-6 pt-10 ${showLesson1Onboarding ? "pb-32" : ""}`}>
         {showLesson1Onboarding && (
-          <section className="mb-8 overflow-hidden rounded-[2rem] border border-indigo-200 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700 p-6 text-white shadow-xl sm:p-8">
+          <section className="mb-8 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white shadow-xl sm:p-8">
             <p className="text-xs font-black uppercase tracking-[0.22em] text-indigo-100">
-              Step 2 of 3 — Explore Your First Lesson
+              Step 2 of 3
             </p>
 
-            <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-              See How FluencyJet Teaches One Complete Lesson
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
+              Explore Lesson 1
             </h2>
 
-            <p className="mt-3 max-w-2xl font-semibold leading-7 text-indigo-50">
-              You completed the Quick English workout. Now explore the lesson
-              topic, sentence starters, video guide, practice modes and your
-              saved progress.
+            <p className="mt-3 max-w-2xl text-base font-semibold leading-7 text-indigo-50 sm:text-lg">
+              You finished Quick English. Now watch the short lesson video.
             </p>
-
-            <div className="mt-6 grid gap-2 text-sm font-black sm:grid-cols-3">
-              <div className="rounded-xl bg-white/20 px-4 py-3">
-                ✓ First workout
-              </div>
-
-              <div className="rounded-xl border border-white/40 bg-white px-4 py-3 text-indigo-700">
-                ● Explore Lesson 1
-              </div>
-
-              <div className="rounded-xl bg-white/10 px-4 py-3 text-indigo-100">
-                ○ View learning path
-              </div>
-            </div>
           </section>
         )}
+
         {/* 2. LESSON OUTCOME CARD */}
         <section className="mb-8 group">
           <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-100 bg-white p-8 shadow-sm">
@@ -1407,55 +1414,6 @@ export default function LessonDetail() {
           </div>
         </section>
 
-        {showLesson1Onboarding && (
-          <section className="mb-10 overflow-hidden rounded-[2rem] border border-violet-200 bg-white p-6 shadow-xl sm:p-8">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-violet-600">
-              Your Complete Learning Journey
-            </p>
-
-            <h2 className="mt-3 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-              You Have Started Lesson 1 of 120
-            </h2>
-
-            <p className="mt-3 font-semibold leading-7 text-slate-600">
-              Explore the complete FluencyJet learning path and see the useful
-              English topics you will learn step by step.
-            </p>
-
-            <div className="mt-5 grid gap-3 text-sm font-bold text-slate-700 sm:grid-cols-3">
-              <div className="rounded-xl bg-violet-50 px-4 py-3">
-                120 structured lessons
-              </div>
-
-              <div className="rounded-xl bg-amber-50 px-4 py-3">
-                Four guided practice modes
-              </div>
-
-              <div className="rounded-xl bg-emerald-50 px-4 py-3">
-                Progress saved automatically
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                track("lesson1_learning_path_clicked", {
-                  lessonId: 1,
-                  difficulty: "beginner",
-                  source: "spoken-english-challenge",
-                });
-
-                navigate(
-                  "/b/lessons?onboarding=1&source=spoken-english-challenge&focus=lesson-1",
-                );
-              }}
-              className="mt-6 w-full rounded-2xl bg-slate-950 px-6 py-5 text-lg font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-violet-700 active:scale-[0.99]"
-            >
-              View My 120-Lesson Learning Path →
-            </button>
-          </section>
-        )}
-
         {/* 5. SKILL PROGRESS BARS */}
         <section className="mb-10">
           <div className="mb-4 flex items-end justify-between px-1">
@@ -1571,6 +1529,38 @@ export default function LessonDetail() {
             })}
           </div>
         </section>
+        {showLesson1Onboarding && showLearningPathSticky && (
+          <div
+            data-testid="lesson1-learning-path-sticky"
+            className="fixed inset-x-0 bottom-0 z-50 border-t border-slate-200 bg-white/95 px-4 pt-3 backdrop-blur"
+            style={{
+              paddingBottom:
+                "calc(12px + env(safe-area-inset-bottom))",
+            }}
+          >
+            <div className="mx-auto max-w-3xl">
+              <button
+                type="button"
+                onClick={() => {
+                  track("lesson1_learning_path_clicked", {
+                    lessonId: 1,
+                    difficulty: "beginner",
+                    source: "spoken-english-challenge",
+                    placement: "sticky",
+                  });
+
+                  navigate(
+                    "/b/lessons?onboarding=1&source=spoken-english-challenge&focus=lesson-1",
+                  );
+                }}
+                className="w-full rounded-2xl bg-indigo-600 px-6 py-4 text-base font-black text-white shadow-lg transition hover:bg-indigo-700 active:scale-[0.99] sm:text-lg"
+              >
+                See All 120 Lessons →
+              </button>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );
