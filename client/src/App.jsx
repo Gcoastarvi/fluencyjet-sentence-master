@@ -35,6 +35,7 @@ import AdminLessons from "./pages/admin/AdminLessons.jsx";
 import Signup from "./pages/student/Signup.jsx";
 import SpokenEnglishVSL from "./pages/marketing/SpokenEnglishVSL";
 import SpokenEnglishOffer from "./pages/marketing/SpokenEnglishOffer";
+import SpokenEnglishOfferV2 from "./pages/marketing/SpokenEnglishOfferV2";
 import SpokenEnglishChallenge from "./pages/public/SpokenEnglishChallenge";
 import TrySpokenEnglishGym from "./pages/marketing/TrySpokenEnglishGym";
 import WebinarAttend from "./pages/student/WebinarAttend";
@@ -223,6 +224,7 @@ export default function App() {
   const hideMarketingNav = [
     "/spoken-english-vsl",
     "/spoken-english-offer",
+    "/spoken-english-offer-v2",
   ].includes(currentPath);
   return (
     <AuthProvider>
@@ -273,6 +275,10 @@ export default function App() {
               <Route
                 path="/spoken-english-offer"
                 element={<SpokenEnglishOffer />}
+              />
+              <Route
+                path="/spoken-english-offer-v2"
+                element={<SpokenEnglishOfferV2 />}
               />
               <Route
                 path="/spoken-english-thank-you"
