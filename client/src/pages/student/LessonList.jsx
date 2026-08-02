@@ -1201,6 +1201,32 @@ export default function LessonList({ difficulty }) {
           </div>
         </div>
       )}
+      {showLesson1CurriculumOnboarding && (
+        <div
+          data-testid="lesson-list-sticky-offer"
+          className="fixed inset-x-0 bottom-0 z-50 border-t border-amber-200 bg-white/95 px-4 pt-2 backdrop-blur"
+          style={{
+            paddingBottom:
+              "calc(10px + env(safe-area-inset-bottom))",
+          }}
+        >
+          <div className="mx-auto max-w-4xl">
+            <p className="mb-2 text-center text-xs font-bold text-slate-600">
+              One-time payment · 7-day money-back guarantee
+            </p>
+
+            <button
+              type="button"
+              onClick={() => goToPaidOffer("sticky")}
+              className="w-full rounded-2xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-4 text-base font-black text-slate-950 shadow-lg transition hover:from-amber-200 hover:to-orange-300 active:scale-[0.99] sm:text-lg"
+            >
+              Unlock Full Access — ₹1,199
+            </button>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }
@@ -1266,30 +1292,6 @@ function MissionItem({ label, tamil, xp, done, isStreak }) {
         </div>
       </div>
       <span className="text-[10px] font-black text-indigo-500">+{xp}XP</span>
-      {showLesson1CurriculumOnboarding && (
-        <div
-          data-testid="lesson-list-sticky-offer"
-          className="fixed inset-x-0 bottom-0 z-50 border-t border-amber-200 bg-white/95 px-4 pt-2 backdrop-blur"
-          style={{
-            paddingBottom:
-              "calc(10px + env(safe-area-inset-bottom))",
-          }}
-        >
-          <div className="mx-auto max-w-4xl">
-            <p className="mb-2 text-center text-xs font-bold text-slate-600">
-              One-time payment · 7-day money-back guarantee
-            </p>
-
-            <button
-              type="button"
-              onClick={() => goToPaidOffer("sticky")}
-              className="w-full rounded-2xl bg-gradient-to-r from-amber-300 to-orange-400 px-6 py-4 text-base font-black text-slate-950 shadow-lg transition hover:from-amber-200 hover:to-orange-300 active:scale-[0.99] sm:text-lg"
-            >
-              Unlock Full Access — ₹1,199
-            </button>
-          </div>
-        </div>
-      )}
 
     </div>
   );
