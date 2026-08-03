@@ -1,6 +1,6 @@
 // client/src/pages/marketing/SpokenEnglishOfferV2.jsx
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   trackSpokenEnglishOfferView,
@@ -52,34 +52,42 @@ const PRACTICE_MODES = [
   {
     number: "01",
     icon: "🧩",
-    title: "Quick English",
-    action: "Build it",
-    text: "Arrange the words and build the complete English sentence.",
-    tone: "border-violet-300 bg-violet-50 text-violet-950",
+    brand: "Quick English",
+    title: "Reorder Practice",
+    text: "Arrange the words in the correct order and build the complete English sentence.",
+    video: "/practice-modes/reorder.mp4",
+    iconTone: "bg-violet-700 text-lime-300",
+    badgeTone: "border-violet-200 bg-violet-50 text-violet-800",
   },
   {
     number: "02",
     icon: "⌨️",
-    title: "Grammar Genius",
-    action: "Type it",
-    text: "See the Tamil meaning and type the English sentence yourself.",
-    tone: "border-amber-300 bg-amber-50 text-amber-950",
+    brand: "Grammar Genius",
+    title: "Typing Practice",
+    text: "See the Tamil meaning and type the correct English sentence yourself.",
+    video: "/practice-modes/typing.mp4",
+    iconTone: "bg-amber-600 text-white",
+    badgeTone: "border-amber-200 bg-amber-50 text-amber-800",
   },
   {
     number: "03",
-    icon: "🎧",
-    title: "Fluent Voice",
-    action: "Speak it",
-    text: "Listen to the sentence and repeat it aloud with confidence.",
-    tone: "border-emerald-300 bg-emerald-50 text-emerald-950",
+    icon: "🎙️",
+    brand: "Fluent Voice",
+    title: "Voice Practice",
+    text: "Listen to the sentence, repeat it aloud and build speaking confidence.",
+    video: "/practice-modes/voice.mp4",
+    iconTone: "bg-emerald-700 text-white",
+    badgeTone: "border-emerald-200 bg-emerald-50 text-emerald-800",
   },
   {
     number: "04",
-    icon: "✍️",
-    title: "Listening Quiz",
-    action: "Remember it",
-    text: "Listen carefully and type the sentence you hear.",
-    tone: "border-rose-300 bg-rose-50 text-rose-950",
+    icon: "🎧",
+    brand: "Listening Quiz",
+    title: "Dictation Practice",
+    text: "Listen carefully, understand the sentence and type what you hear.",
+    video: "/practice-modes/dictation.mp4",
+    iconTone: "bg-blue-700 text-white",
+    badgeTone: "border-blue-200 bg-blue-50 text-blue-800",
   },
 ];
 
@@ -227,6 +235,87 @@ function SectionHeader({ eyebrow, title, text, dark = false }) {
         >
           {text}
         </p>
+      )}
+    </div>
+  );
+}
+
+function PracticeModePreview({ src, title }) {
+  const containerRef = useRef(null);
+  const videoRef = useRef(null);
+
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const element = containerRef.current;
+
+    if (!element) return undefined;
+
+    if (!("IntersectionObserver" in window)) {
+      setShouldLoad(true);
+      setIsVisible(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const visible = Boolean(entry?.isIntersecting);
+
+        setIsVisible(visible);
+
+        if (visible) {
+          setShouldLoad(true);
+        }
+      },
+      {
+        rootMargin: "320px 0px",
+        threshold: 0.08,
+      },
+    );
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video || !shouldLoad) return;
+
+    if (isVisible) {
+      video.play().catch(() => {
+        // Some browsers may wait for a user interaction.
+      });
+    } else {
+      video.pause();
+    }
+  }, [isVisible, shouldLoad]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative aspect-[16/10] overflow-hidden bg-gradient-to-br from-[#430b69] via-[#270646] to-[#130225]"
+    >
+      {shouldLoad ? (
+        <video
+          ref={videoRef}
+          className="h-full w-full object-contain p-4 sm:p-6"
+          muted
+          loop
+          playsInline
+          autoPlay
+          preload="metadata"
+          disablePictureInPicture
+          aria-label={`${title} demonstration`}
+        >
+          <source src={src} type="video/mp4" />
+        </video>
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <div className="h-10 w-10 animate-pulse rounded-full border-4 border-white/20 border-t-lime-300" />
+        </div>
       )}
     </div>
   );
@@ -457,28 +546,44 @@ export default function SpokenEnglishOfferV2() {
               dark
             />
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2">
               {PRACTICE_MODES.map((mode) => (
                 <article
                   key={mode.title}
-                  className={`rounded-[1.75rem] border p-5 shadow-xl ${mode.tone}`}
+                  className="overflow-hidden rounded-[2rem] border border-white/15 bg-white text-slate-950 shadow-2xl"
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="text-3xl">{mode.icon}</span>
-                    <span className="text-xs font-black tracking-[0.18em] opacity-60">
-                      {mode.number}
-                    </span>
+                  <PracticeModePreview
+                    src={mode.video}
+                    title={mode.title}
+                  />
+
+                  <div className="p-6 sm:p-7">
+                    <div className="flex items-start justify-between gap-4">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl text-xl shadow-lg ${mode.iconTone}`}
+                      >
+                        {mode.icon}
+                      </div>
+
+                      <span
+                        className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${mode.badgeTone}`}
+                      >
+                        Mode {mode.number}
+                      </span>
+                    </div>
+
+                    <p className="mt-5 text-xs font-black uppercase tracking-[0.2em] text-violet-700">
+                      {mode.brand}
+                    </p>
+
+                    <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                      {mode.title}
+                    </h3>
+
+                    <p className="mt-3 text-base font-medium leading-7 text-slate-600">
+                      {mode.text}
+                    </p>
                   </div>
-
-                  <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] opacity-70">
-                    {mode.action}
-                  </p>
-
-                  <h3 className="mt-2 text-xl font-black">{mode.title}</h3>
-
-                  <p className="mt-3 text-sm font-semibold leading-6 opacity-80">
-                    {mode.text}
-                  </p>
                 </article>
               ))}
             </div>
@@ -486,6 +591,10 @@ export default function SpokenEnglishOfferV2() {
             <p className="mx-auto mt-9 max-w-3xl text-center text-lg font-black text-lime-200">
               You do not only watch English lessons. You practise using English.
             </p>
+
+            <div className="mt-8 text-center">
+              <PurchaseButton />
+            </div>
           </div>
         </section>
 
