@@ -225,6 +225,7 @@ export default function App() {
     "/spoken-english-vsl",
     "/spoken-english-offer",
     "/spoken-english-offer-v2",
+    "/spoken-english-offer-legacy",
   ].includes(currentPath);
   return (
     <AuthProvider>
@@ -274,6 +275,10 @@ export default function App() {
               />
               <Route
                 path="/spoken-english-offer"
+                element={<SpokenEnglishOfferV2 />}
+              />
+              <Route
+                path="/spoken-english-offer-legacy"
                 element={<SpokenEnglishOffer />}
               />
               <Route
