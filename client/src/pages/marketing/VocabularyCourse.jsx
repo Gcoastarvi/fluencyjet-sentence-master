@@ -241,7 +241,7 @@ function SecurePaymentStrip() {
   );
 }
 
-function SourceWordMethodSection({ onPurchase }) {
+function SourceWordMethodSection({ destination }) {
   return (
     <section className="bg-gradient-to-b from-white to-slate-50 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -325,13 +325,13 @@ function SourceWordMethodSection({ onPurchase }) {
             easier to understand, remember and use.
           </p>
 
-          <button
-            type="button"
-            onClick={onPurchase}
-            className="mt-6 w-full max-w-2xl rounded-2xl bg-gradient-to-r from-yellow-300 to-lime-400 px-6 py-5 text-lg font-black text-slate-950 shadow-xl shadow-lime-400/20 transition hover:-translate-y-0.5 active:scale-[0.99] sm:text-xl"
+          <PurchaseButton
+            placement="source-word-method"
+            destination={destination}
+            className="mt-6 max-w-2xl"
           >
             Learn the Source-Word Method — Join for ₹799
-          </button>
+          </PurchaseButton>
         </div>
       </div>
     </section>
@@ -505,7 +505,7 @@ export default function VocabularyCourse() {
           </div>
         </section>
 
-        <SourceWordMethodSection onPurchase={handlePurchase} />
+        <SourceWordMethodSection destination={paymentDestination} />
 
         {/* CREDIBILITY */}
         <section className="bg-white px-4 py-12 sm:px-6 sm:py-16">
