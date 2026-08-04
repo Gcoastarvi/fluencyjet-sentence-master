@@ -376,3 +376,80 @@ export function trackSpokenEnglishInitiateCheckout() {
 export function trackOfferWhatsAppClick() {
   trackEvent("spoken_english_offer_whatsapp_click", {});
 }
+
+/* ============================================================
+   VOCABULARY VSL FUNNEL HELPERS
+   ============================================================ */
+
+/**
+ * Fires when /vocabulary-vsl is opened.
+ */
+export function trackVocabularyVSLView() {
+  trackMetaStandard("ViewContent", {
+    content_name: "Vocabulary Masterclass VSL",
+    content_ids: ["vocabulary-masterclass-799"],
+    content_type: "product",
+    value: 799,
+    currency: "INR",
+  });
+
+  trackEvent("vocabulary_vsl_page_view", {
+    funnel: "vocabulary",
+    product: "vocabulary-masterclass-799",
+  });
+}
+
+/**
+ * Fires once when the Vimeo video begins playing.
+ */
+export function trackVocabularyVSLVideoStarted() {
+  trackEvent("vocabulary_vsl_video_started", {
+    funnel: "vocabulary",
+    video_id: "1130094804",
+  });
+}
+
+/**
+ * Fires when the learner completes three minutes of active playback.
+ */
+export function trackVocabularyVSLThreeMinuteReached() {
+  trackEvent("vocabulary_vsl_three_minutes_watched", {
+    funnel: "vocabulary",
+    video_id: "1130094804",
+    watched_seconds: 180,
+  });
+}
+
+/**
+ * Fires when the course CTA becomes visible.
+ */
+export function trackVocabularyVSLCTAVisible() {
+  trackEvent("vocabulary_vsl_cta_revealed", {
+    funnel: "vocabulary",
+    reveal_after_seconds: 180,
+  });
+}
+
+/**
+ * Fires when the learner clicks through to the course page.
+ */
+export function trackVocabularyVSLCTAClick() {
+  trackEvent("vocabulary_vsl_course_cta_click", {
+    funnel: "vocabulary",
+    destination: "/vocabulary-course",
+  });
+}
+
+/**
+ * Fires when the learner clicks WhatsApp support.
+ */
+export function trackVocabularyVSLWhatsAppClick() {
+  trackEvent("vocabulary_vsl_whatsapp_click", {
+    funnel: "vocabulary",
+  });
+
+  trackMetaStandard("Contact", {
+    content_name: "Vocabulary Masterclass WhatsApp Support",
+    content_category: "vocabulary",
+  });
+}
