@@ -1,3 +1,4 @@
+// client/src/pages/marketing/VocabularyVSL.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import Player from "@vimeo/player";
 
@@ -11,12 +12,16 @@ import {
 } from "../../lib/tracking";
 
 const VIMEO_VIDEO_ID = "1130094804";
-const REQUIRED_WATCH_TIME_MS = 3 * 60 * 1000;
+
+const VIDEO_DURATION_SECONDS = 9 * 60 + 48; // 588 seconds
+const CTA_REVEAL_SECONDS = 3 * 60; // 180 seconds
+
+const VIDEO_DURATION_MS = VIDEO_DURATION_SECONDS * 1000; // 588 000 ms — progress bar max
+const REQUIRED_WATCH_TIME_MS = CTA_REVEAL_SECONDS * 1000; // 180 000 ms — CTA reveal threshold
 
 const COURSE_PAGE_PATH = "/vocabulary-course";
 
-const WATCH_PROGRESS_STORAGE_KEY =
-  "fj_vocabulary_vsl_active_watch_time_ms";
+const WATCH_PROGRESS_STORAGE_KEY = "fj_vocabulary_vsl_active_watch_time_ms";
 
 const ALLOWED_FORWARD_PARAMS = [
   "utm_source",
@@ -36,7 +41,7 @@ const ALLOWED_FORWARD_PARAMS = [
 const WHATSAPP_URL =
   "https://wa.me/919487070761?text=" +
   encodeURIComponent(
-    "Hi FluencyJet, I watched the English Vocabulary Masterclass video. I need more information about the course."
+    "Hi FluencyJet, I watched the English Vocabulary Masterclass video. I need more information about the course.",
   );
 
 function MarketingNavHider() {
@@ -60,14 +65,14 @@ function MarketingNavHider() {
 function getStoredWatchTime() {
   try {
     const storedValue = Number(
-      window.sessionStorage.getItem(WATCH_PROGRESS_STORAGE_KEY)
+      window.sessionStorage.getItem(WATCH_PROGRESS_STORAGE_KEY),
     );
 
     if (!Number.isFinite(storedValue) || storedValue < 0) {
       return 0;
     }
 
-    return Math.min(storedValue, REQUIRED_WATCH_TIME_MS);
+    return Math.min(storedValue, VIDEO_DURATION_MS);
   } catch {
     return 0;
   }
@@ -77,7 +82,7 @@ function saveWatchTime(milliseconds) {
   try {
     window.sessionStorage.setItem(
       WATCH_PROGRESS_STORAGE_KEY,
-      String(Math.min(milliseconds, REQUIRED_WATCH_TIME_MS))
+      String(Math.min(milliseconds, VIDEO_DURATION_MS)),
     );
   } catch {
     // The funnel should continue even if storage is unavailable.
@@ -100,14 +105,13 @@ function buildCourseDestination() {
 
   const query = destinationParams.toString();
 
-  return query
-    ? `${COURSE_PAGE_PATH}?${query}`
-    : COURSE_PAGE_PATH;
+  return query ? `${COURSE_PAGE_PATH}?${query}` : COURSE_PAGE_PATH;
 }
 
 export default function VocabularyVSL() {
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
+  const ctaTrackedRef = useRef(false);
 
   const isPlayingRef = useRef(false);
   const isBufferingRef = useRef(false);
@@ -119,6 +123,7 @@ export default function VocabularyVSL() {
   const ctaVisibleTrackedRef = useRef(false);
 
   const [showCta, setShowCta] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [watchProgress, setWatchProgress] = useState(0);
 
   const courseDestination = useMemo(() => {
@@ -130,8 +135,7 @@ export default function VocabularyVSL() {
   }, []);
 
   useEffect(() => {
-    document.title =
-      "Free English Vocabulary Masterclass | FluencyJet";
+    document.title = "Free English Vocabulary Masterclass | FluencyJet";
 
     document.body.classList.add("marketing-no-nav");
 
@@ -140,13 +144,11 @@ export default function VocabularyVSL() {
     accumulatedWatchTimeRef.current = getStoredWatchTime();
 
     const savedProgress =
-      accumulatedWatchTimeRef.current / REQUIRED_WATCH_TIME_MS;
+      accumulatedWatchTimeRef.current / VIDEO_DURATION_MS;
 
     setWatchProgress(Math.min(savedProgress, 1));
 
-    if (
-      accumulatedWatchTimeRef.current >= REQUIRED_WATCH_TIME_MS
-    ) {
+    if (accumulatedWatchTimeRef.current >= REQUIRED_WATCH_TIME_MS) {
       setShowCta(true);
     }
 
@@ -217,7 +219,7 @@ export default function VocabularyVSL() {
       const now = Date.now();
       const elapsedSinceLastTick = Math.min(
         now - lastTimerTickRef.current,
-        1500
+        1500,
       );
 
       lastTimerTickRef.current = now;
@@ -233,15 +235,13 @@ export default function VocabularyVSL() {
 
       const nextWatchTime = Math.min(
         accumulatedWatchTimeRef.current + elapsedSinceLastTick,
-        REQUIRED_WATCH_TIME_MS
+        VIDEO_DURATION_MS,
       );
 
       accumulatedWatchTimeRef.current = nextWatchTime;
       saveWatchTime(nextWatchTime);
 
-      setWatchProgress(
-        Math.min(nextWatchTime / REQUIRED_WATCH_TIME_MS, 1)
-      );
+      setWatchProgress(Math.min(nextWatchTime / VIDEO_DURATION_MS, 1));
 
       if (nextWatchTime >= REQUIRED_WATCH_TIME_MS) {
         setShowCta(true);
@@ -282,12 +282,6 @@ export default function VocabularyVSL() {
     trackVocabularyVSLWhatsAppClick();
   };
 
-  const watchedSeconds = Math.floor(
-    (watchProgress * REQUIRED_WATCH_TIME_MS) / 1000
-  );
-
-  const remainingSeconds = Math.max(180 - watchedSeconds, 0);
-
   return (
     <>
       <MarketingNavHider />
@@ -304,14 +298,12 @@ export default function VocabularyVSL() {
 
             <h1 className="mx-auto mt-4 max-w-5xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
               A Smarter Way to Build Your{" "}
-              <span className="text-yellow-300">
-                English Vocabulary
-              </span>
+              <span className="text-yellow-300">English Vocabulary</span>
             </h1>
 
             <p className="mx-auto mt-5 max-w-4xl text-lg font-semibold leading-8 text-white/85 sm:text-2xl">
-              Discover how source words and word families can help you
-              decode, understand and remember difficult English words.
+              Discover how source words and word families can help you decode,
+              understand and remember difficult English words.
             </p>
 
             <div className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2">
@@ -345,26 +337,17 @@ export default function VocabularyVSL() {
             {!showCta && (
               <div className="mx-auto mt-6 max-w-2xl rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
                 <p className="text-sm font-bold text-white/80 sm:text-base">
-                  Continue watching. Your course invitation will appear
-                  after the important explanation.
+                  Continue watching.
                 </p>
 
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-lime-400 transition-all duration-700"
                     style={{
-                      width: `${Math.min(
-                        watchProgress * 100,
-                        100
-                      )}%`,
+                      width: `${Math.min(watchProgress * 100, 100)}%`,
                     }}
                   />
                 </div>
-
-                <p className="mt-2 text-xs font-semibold text-white/55">
-                  Approximately {remainingSeconds} seconds of active
-                  viewing remaining
-                </p>
               </div>
             )}
 
@@ -389,8 +372,8 @@ export default function VocabularyVSL() {
                 </h2>
 
                 <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-white/75">
-                  See the complete course, lessons, bonuses, learner
-                  feedback and current ₹799 access offer.
+                  See the complete course, lessons, bonuses, learner feedback
+                  and current ₹799 access offer.
                 </p>
 
                 <button
@@ -411,9 +394,9 @@ export default function VocabularyVSL() {
 
           <footer className="relative mt-auto w-full pt-12 text-center">
             <p className="mx-auto max-w-4xl text-xs leading-relaxed text-white/45 sm:text-sm">
-              This site is not part of Facebook or Meta. This site is
-              not endorsed by Facebook or Meta in any way. Facebook is
-              a trademark of Meta Platforms, Inc.
+              This site is not part of Facebook or Meta. This site is not
+              endorsed by Facebook or Meta in any way. Facebook is a trademark
+              of Meta Platforms, Inc.
             </p>
           </footer>
         </section>
