@@ -1,5 +1,4 @@
 // client/src/pages/marketing/VocabularyCourse.jsx
-
 import { useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -127,10 +126,25 @@ function PurchaseButton({
 function SecurePaymentStrip() {
   return (
     <div className="mt-5">
+      <div className="grid gap-3 text-sm font-bold text-white/80 sm:grid-cols-3">
+        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
+          ✓ One-time payment
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
+          ✓ 1-year access
+        </div>
+
+        <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center">
+          ✓ Secure Razorpay checkout
+        </div>
+      </div>
+
       <img
         src="/secure-payment.png"
-        alt="Secure and trusted payment checkout"
-        className="mx-auto h-auto w-full max-w-2xl"
+        alt="Secure payment and trusted checkout"
+        className="mx-auto mt-5 h-auto w-full max-w-md object-contain"
+        loading="lazy"
       />
 
       <p className="mt-2 text-center text-xs font-semibold text-white/60 sm:text-sm">
