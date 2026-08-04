@@ -49,6 +49,93 @@ const DELIVERABLES = [
   },
 ];
 
+const WORD_FAMILY_EXAMPLES = [
+  {
+    source: "PORT",
+    meaning: "carry",
+    explanation:
+      "Once you understand that PORT means carry, several related words become easier to decode.",
+    words: [
+      {
+        word: "Transport",
+        breakdown: "TRANS + PORT",
+        meaning: "carry across",
+      },
+      {
+        word: "Import",
+        breakdown: "IM + PORT",
+        meaning: "carry into a country",
+      },
+      {
+        word: "Export",
+        breakdown: "EX + PORT",
+        meaning: "carry out of a country",
+      },
+      {
+        word: "Portable",
+        breakdown: "PORT + ABLE",
+        meaning: "able to be carried",
+      },
+    ],
+  },
+  {
+    source: "SPECT",
+    meaning: "look or see",
+    explanation:
+      "Recognising SPECT helps learners understand words connected with looking, seeing and observing.",
+    words: [
+      {
+        word: "Inspect",
+        breakdown: "IN + SPECT",
+        meaning: "look into carefully",
+      },
+      {
+        word: "Spectator",
+        breakdown: "SPECT + ATOR",
+        meaning: "a person who watches",
+      },
+      {
+        word: "Retrospect",
+        breakdown: "RETRO + SPECT",
+        meaning: "look back",
+      },
+      {
+        word: "Perspective",
+        breakdown: "PER + SPECT",
+        meaning: "a way of looking at something",
+      },
+    ],
+  },
+  {
+    source: "DICT",
+    meaning: "say or speak",
+    explanation:
+      "DICT appears in many words connected with speaking, saying and communicating.",
+    words: [
+      {
+        word: "Predict",
+        breakdown: "PRE + DICT",
+        meaning: "say before it happens",
+      },
+      {
+        word: "Contradict",
+        breakdown: "CONTRA + DICT",
+        meaning: "speak against",
+      },
+      {
+        word: "Dictate",
+        breakdown: "DICT + ATE",
+        meaning: "say something aloud",
+      },
+      {
+        word: "Dictionary",
+        breakdown: "DICT + IONARY",
+        meaning: "a reference for words",
+      },
+    ],
+  },
+];
+
 function MarketingNavHider() {
   return (
     <style>{`
@@ -151,6 +238,103 @@ function SecurePaymentStrip() {
         Secure checkout through Razorpay
       </p>
     </div>
+  );
+}
+
+function SourceWordMethodSection({ onPurchase }) {
+  return (
+    <section className="bg-gradient-to-b from-white to-slate-50 px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-700">
+            How the method works
+          </p>
+
+          <h2 className="mt-4 text-3xl font-black leading-tight text-slate-950 sm:text-4xl lg:text-5xl">
+            Learn one source word.
+            <span className="block text-emerald-700">
+              Unlock an entire family of English words.
+            </span>
+          </h2>
+
+          <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
+            Instead of memorising difficult words one by one, FluencyJet helps
+            you understand the meaningful building blocks hidden inside them.
+          </p>
+        </div>
+
+        <div className="mt-12 grid gap-7 lg:grid-cols-3">
+          {WORD_FAMILY_EXAMPLES.map((family) => (
+            <article
+              key={family.source}
+              className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/50"
+            >
+              <div className="bg-gradient-to-br from-[#032f27] to-[#021426] px-6 py-7 text-center text-white">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-lime-300">
+                  Source word
+                </p>
+
+                <h3 className="mt-2 text-5xl font-black text-yellow-300">
+                  {family.source}
+                </h3>
+
+                <p className="mt-2 text-lg font-bold text-white/85">
+                  Meaning: “{family.meaning}”
+                </p>
+              </div>
+
+              <div className="p-5 sm:p-6">
+                <p className="text-sm leading-6 text-slate-600">
+                  {family.explanation}
+                </p>
+
+                <div className="mt-5 space-y-3">
+                  {family.words.map((item) => (
+                    <div
+                      key={item.word}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-lg font-black text-slate-950">
+                          {item.word}
+                        </p>
+
+                        <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-800">
+                          {item.breakdown}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-sm font-semibold text-slate-600">
+                        {item.meaning}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="mx-auto mt-10 max-w-3xl rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6 text-center sm:p-8">
+          <p className="text-xl font-black text-slate-950 sm:text-2xl">
+            One source word can help you understand several connected words.
+          </p>
+
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-600">
+            This reduces random memorisation and helps unfamiliar words become
+            easier to understand, remember and use.
+          </p>
+
+          <button
+            type="button"
+            onClick={onPurchase}
+            className="mt-6 w-full max-w-2xl rounded-2xl bg-gradient-to-r from-yellow-300 to-lime-400 px-6 py-5 text-lg font-black text-slate-950 shadow-xl shadow-lime-400/20 transition hover:-translate-y-0.5 active:scale-[0.99] sm:text-xl"
+          >
+            Learn the Source-Word Method — Join for ₹799
+          </button>
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -320,6 +504,8 @@ export default function VocabularyCourse() {
             </div>
           </div>
         </section>
+
+        <SourceWordMethodSection onPurchase={handlePurchase} />
 
         {/* CREDIBILITY */}
         <section className="bg-white px-4 py-12 sm:px-6 sm:py-16">
