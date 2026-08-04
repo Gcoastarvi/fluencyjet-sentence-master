@@ -453,3 +453,106 @@ export function trackVocabularyVSLWhatsAppClick() {
     content_category: "vocabulary",
   });
 }
+
+/* ============================================================
+   VOCABULARY COURSE FUNNEL HELPERS
+   Product: Vocabulary Challenge — ₹799
+   ============================================================ */
+
+export function trackVocabularyCourseView({
+  source = "vocabulary-course",
+} = {}) {
+  trackMetaStandard("ViewContent", {
+    content_name: "FluencyJet Vocabulary Challenge",
+    content_ids: ["vocabulary-challenge-799"],
+    content_type: "product",
+    content_category: "English Vocabulary",
+    value: 799,
+    currency: "INR",
+    source,
+  });
+
+  trackEvent("vocabulary_course_page_view", {
+    funnel: "vocabulary",
+    product: "vocabulary-challenge-799",
+    source,
+    value: 799,
+    currency: "INR",
+  });
+}
+
+let _vocabularyCheckoutFiredAt = 0;
+const VOCABULARY_CHECKOUT_COOLDOWN_MS = 2000;
+
+export function trackVocabularyInitiateCheckout({
+  placement = "unknown",
+  source = "vocabulary-course",
+} = {}) {
+  const now = Date.now();
+
+  if (now - _vocabularyCheckoutFiredAt < VOCABULARY_CHECKOUT_COOLDOWN_MS) {
+    return;
+  }
+
+  _vocabularyCheckoutFiredAt = now;
+
+  trackMetaStandard("InitiateCheckout", {
+    content_name: "FluencyJet Vocabulary Challenge",
+    content_ids: ["vocabulary-challenge-799"],
+    content_type: "product",
+    content_category: "English Vocabulary",
+    value: 799,
+    currency: "INR",
+    num_items: 1,
+    placement,
+    source,
+  });
+
+  const w = safeWindow();
+
+  try {
+    if (w?.gtag) {
+      w.gtag("event", "begin_checkout", {
+        currency: "INR",
+        value: 799,
+        items: [
+          {
+            item_id: "vocabulary-challenge-799",
+            item_name: "FluencyJet Vocabulary Challenge",
+            item_category: "English Vocabulary",
+            price: 799,
+            quantity: 1,
+          },
+        ],
+        placement,
+        source,
+      });
+    }
+  } catch (error) {
+    console.warn("[tracking] vocabulary begin_checkout failed:", error);
+  }
+
+  trackEvent("vocabulary_payment_cta_click", {
+    funnel: "vocabulary",
+    product: "vocabulary-challenge-799",
+    placement,
+    source,
+    value: 799,
+    currency: "INR",
+  });
+}
+
+export function trackVocabularyCourseWhatsAppClick({
+  source = "vocabulary-course",
+} = {}) {
+  trackEvent("vocabulary_course_whatsapp_click", {
+    funnel: "vocabulary",
+    source,
+  });
+
+  trackMetaStandard("Contact", {
+    content_name: "Vocabulary Course WhatsApp Support",
+    content_category: "vocabulary",
+    source,
+  });
+}

@@ -39,6 +39,7 @@ import SpokenEnglishOfferV2 from "./pages/marketing/SpokenEnglishOfferV2";
 import SpokenEnglishChallenge from "./pages/public/SpokenEnglishChallenge";
 import TrySpokenEnglishGym from "./pages/marketing/TrySpokenEnglishGym";
 import VocabularyVSL from "./pages/marketing/VocabularyVSL";
+import VocabularyCourse from "./pages/marketing/VocabularyCourse";
 import WebinarAttend from "./pages/student/WebinarAttend";
 import WebinarPreviewComplete from "./pages/student/WebinarAttend";
 
@@ -247,6 +248,7 @@ export default function App() {
               element={<SpokenEnglishChallenge />}
             />
             <Route path="/vocabulary-vsl" element={<VocabularyVSL />} />
+            <Route path="/vocabulary-course" element={<VocabularyCourse />} />
 
             {/* All other pages share Navbar */}
             <Route element={<MainLayout />}>
