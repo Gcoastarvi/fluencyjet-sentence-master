@@ -136,6 +136,81 @@ const WORD_FAMILY_EXAMPLES = [
   },
 ];
 
+const VOCABULARY_BONUSES = [
+  {
+    number: "01",
+    title: "Ultimate Tense Playbook",
+    image: "/vocabulary-bonuses/bonus-01-tense-playbook.png",
+    value: "₹700",
+    benefit:
+      "Understand the major English tense patterns through a practical reference guide.",
+  },
+  {
+    number: "02",
+    title: "Clever Ways to Speak in Style",
+    image: "/vocabulary-bonuses/bonus-02-speak-in-style.png",
+    value: "₹700",
+    benefit:
+      "Learn useful expressions that make everyday English sound more natural and engaging.",
+  },
+  {
+    number: "03",
+    title: "Fearless Communicator’s Handbook",
+    image: "/vocabulary-bonuses/bonus-03-fearless-communicator.png",
+    value: "₹700",
+    benefit:
+      "Use practical communication strategies to speak with greater confidence.",
+  },
+  {
+    number: "04",
+    title: "Pronunciation Tongue Twisters",
+    image: "/vocabulary-bonuses/bonus-04-pronunciation.png",
+    value: "₹600",
+    benefit:
+      "Practise difficult English sounds and improve pronunciation clarity.",
+  },
+  {
+    number: "05",
+    title: "Idiom Powerpack",
+    image: "/vocabulary-bonuses/bonus-05-idioms.png",
+    value: "₹500",
+    benefit:
+      "Understand and use high-value English idioms in the right situations.",
+  },
+  {
+    number: "06",
+    title: "Dynamic Phrasal Verbs Guide",
+    image: "/vocabulary-bonuses/bonus-06-phrasal-verbs.png",
+    value: "₹500",
+    benefit:
+      "Build confidence with commonly used phrasal verbs and their meanings.",
+  },
+  {
+    number: "07",
+    title: "Native Speakers’ Collocations",
+    image: "/vocabulary-bonuses/bonus-07-collocations.png",
+    value: "₹500",
+    benefit:
+      "Learn natural word combinations commonly used by fluent English speakers.",
+  },
+  {
+    number: "08",
+    title: "Brilliant Ways to Write",
+    image: "/vocabulary-bonuses/bonus-08-writing.png",
+    value: "₹500",
+    benefit:
+      "Improve sentence clarity, vocabulary choice and everyday English writing.",
+  },
+  {
+    number: "09",
+    title: "Daily English Quiz on WhatsApp",
+    image: "/vocabulary-bonuses/bonus-09-whatsapp-quiz.png",
+    value: "Priceless",
+    benefit:
+      "Continue practising regularly through short vocabulary quizzes on WhatsApp.",
+  },
+];
+
 function MarketingNavHider() {
   return (
     <style>{`
@@ -332,6 +407,99 @@ function SourceWordMethodSection({ destination }) {
           >
             Learn the Source-Word Method — Join for ₹799
           </PurchaseButton>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function BonusStackSection({ destination }) {
+  return (
+    <section className="bg-gradient-to-b from-white to-slate-50 px-4 py-14 sm:px-6 sm:py-20">
+      <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="text-xs font-black uppercase tracking-[0.24em] text-emerald-700">
+            Included With Your Course
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl lg:text-5xl">
+            Get All 9 Practical English Bonuses
+          </h2>
+
+          <p className="mx-auto mt-4 max-w-3xl text-base font-medium leading-7 text-slate-600 sm:text-lg">
+            These additional guides help you strengthen grammar, speaking,
+            pronunciation, vocabulary and writing alongside the main course.
+          </p>
+
+          <div className="mx-auto mt-6 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2 text-sm font-black text-emerald-800">
+            Bonuses worth ₹4,700 included
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {VOCABULARY_BONUSES.map((bonus) => (
+            <article
+              key={bonus.number}
+              className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-xl shadow-slate-200/50"
+            >
+              <div className="aspect-[4/5] overflow-hidden bg-white">
+                <img
+                  src={bonus.image}
+                  alt={bonus.title}
+                  loading="lazy"
+                  className="h-full w-full object-contain"
+                />
+              </div>
+
+              <div className="p-5 sm:p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="rounded-full bg-emerald-950 px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-lime-300">
+                    Bonus #{bonus.number}
+                  </span>
+
+                  <span className="text-sm font-black text-orange-600">
+                    Value {bonus.value}
+                  </span>
+                </div>
+
+                <h3 className="mt-4 text-xl font-black leading-tight text-slate-950">
+                  {bonus.title}
+                </h3>
+
+                <p className="mt-3 leading-7 text-slate-600">{bonus.benefit}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="mx-auto mt-10 max-w-2xl rounded-[2rem] bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-950 p-6 text-center text-white shadow-2xl sm:p-8">
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-lime-300">
+            Complete Course + All 9 Bonuses
+          </p>
+
+          <div className="mt-4 flex items-end justify-center gap-3">
+            <span className="text-xl font-bold text-white/45 line-through">
+              ₹8,700
+            </span>
+
+            <span className="text-5xl font-black text-yellow-300">₹799</span>
+          </div>
+
+          <p className="mt-3 font-semibold text-white/70">
+            One-time payment · 1-year access
+          </p>
+
+          <div className="mt-6">
+            <PurchaseButton
+              placement="bonus-stack"
+              destination={destination}
+              children="Get the Course + All 9 Bonuses — ₹799"
+            />
+          </div>
+
+          <p className="mt-4 text-xs font-semibold text-white/55 sm:text-sm">
+            Secure Razorpay checkout · No monthly subscription
+          </p>
         </div>
       </div>
     </section>
@@ -540,6 +708,8 @@ export default function VocabularyCourse() {
             </div>
           </div>
         </section>
+
+        <BonusStackSection destination={paymentDestination} />
 
         <footer className="bg-slate-950 px-4 py-8 text-center text-white">
           <p className="mx-auto max-w-4xl text-xs leading-6 text-white/50 sm:text-sm">
