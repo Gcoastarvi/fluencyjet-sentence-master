@@ -765,7 +765,7 @@ function VocabularyWhatsAppSupport() {
           href={whatsappUrl}
           target="_blank"
           rel="noreferrer"
-          onClick={trackVocabularyOfferWhatsAppClick}
+          onClick={trackVocabularyCourseWhatsAppClick}
           className="mt-6 inline-flex min-h-14 items-center justify-center rounded-2xl bg-emerald-600 px-7 py-4 text-base font-black text-white shadow-lg transition hover:bg-emerald-700"
         >
           Chat on WhatsApp: 9487070761
