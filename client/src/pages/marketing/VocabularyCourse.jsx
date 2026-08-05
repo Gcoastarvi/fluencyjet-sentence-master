@@ -310,7 +310,7 @@ function buildTrackedPaymentUrl(searchParams) {
 function PurchaseButton({
   placement,
   destination,
-  children = "Join Now for ₹799",
+  children = "Get 1-Year Access + All 9 Bonuses — ₹799",
   className = "",
 }) {
   function handlePurchase() {
@@ -340,6 +340,44 @@ function PurchaseButton({
     >
       {children}
     </button>
+  );
+}
+
+function VocabularyVSLSection() {
+  return (
+    <section className="mx-auto mt-10 w-full max-w-4xl">
+      <div className="overflow-hidden rounded-[1.75rem] border border-white/15 bg-white/10 p-4 shadow-2xl sm:p-6">
+        <div className="mb-5 text-center">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-lime-300">
+            Watch the Method Again
+          </p>
+
+          <h2 className="mt-3 text-2xl font-black leading-tight text-white sm:text-3xl">
+            See How the Source-Word Method Works
+          </h2>
+
+          <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">
+            Watch this short masterclass to understand how one source word can
+            help you decode and remember several connected English words.
+          </p>
+        </div>
+
+        <div className="relative w-full overflow-hidden rounded-2xl bg-black pb-[56.25%] shadow-xl">
+          <iframe
+            className="absolute inset-0 h-full w-full"
+            src="https://player.vimeo.com/video/1130094804?title=0&byline=0&portrait=0"
+            title="FluencyJet English Vocabulary Masterclass"
+            loading="lazy"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+
+        <p className="mt-4 text-center text-sm font-semibold text-white/60">
+          Learn the method first. Join only when you are convinced.
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -852,11 +890,16 @@ export default function VocabularyCourse() {
                 English Vocabulary Challenge
               </p>
 
-              <h1 className="mt-5 text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
-                Build a Powerful English Vocabulary
-                <span className="block text-yellow-300">
-                  Without Memorising Words One by One
+              <h1 className="mx-auto max-w-6xl text-[2.35rem] font-black leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
+                <span className="block">
+                  Build a Powerful English Vocabulary
                 </span>
+
+                <span className="mt-3 block text-yellow-300">
+                  Without Memorising Words
+                </span>
+
+                <span className="block text-yellow-300">One by One</span>
               </h1>
 
               <p className="mx-auto mt-6 max-w-3xl text-lg font-medium leading-8 text-white/80 sm:text-xl">
@@ -882,6 +925,8 @@ export default function VocabularyCourse() {
                 </div>
               ))}
             </div>
+
+            <VocabularyVSLSection />
 
             <div className="mx-auto mt-9 max-w-2xl rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur sm:p-8">
               <p className="text-center text-sm font-black uppercase tracking-[0.18em] text-lime-300">
