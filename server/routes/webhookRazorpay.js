@@ -5,13 +5,26 @@ import { sendCapiPurchase } from "../lib/metaCapi.js";
 
 const router = express.Router();
 
-const EXPECTED_AMOUNT_PAISE = 119900;
 const EXPECTED_CURRENCY = "INR";
 const EXPECTED_EVENT = "payment.captured";
-const CAPI_EVENT_SOURCE_URL =
-  "https://www.fluencyjet.com/spoken-english-thank-you";
-const CAPI_CONTENT_NAME = "FluencyJet Sentence Master";
-const CAPI_CONTENT_IDS = ["sentence_master_1199"];
+
+const PRODUCTS_BY_AMOUNT = {
+  79900: {
+    code: "vocabulary_challenge_799",
+    value: 799,
+    contentName: "FluencyJet Vocabulary Challenge",
+    contentIds: ["vocabulary_challenge_799"],
+    eventSourceUrl: "https://www.fluencyjet.com/vocabulary-thank-you",
+  },
+
+  119900: {
+    code: "sentence_master_1199",
+    value: 1199,
+    contentName: "FluencyJet Sentence Master",
+    contentIds: ["sentence_master_1199"],
+    eventSourceUrl: "https://www.fluencyjet.com/spoken-english-thank-you",
+  },
+};
 
 /**
  * POST /api/webhooks/razorpay
@@ -25,9 +38,9 @@ router.post(
   "/razorpay",
   express.raw({ type: "application/json" }),
   async (req, res) => {
-    const signature  = req.headers["x-razorpay-signature"] || "";
-    const eventId    = req.headers["x-razorpay-event-id"]  || "";
-    const rawBody    = req.body;
+    const signature = req.headers["x-razorpay-signature"] || "";
+    const eventId = req.headers["x-razorpay-event-id"] || "";
+    const rawBody = req.body;
 
     if (!signature || !rawBody || rawBody.length === 0) {
       console.warn("[webhook/rzp] Missing signature or empty body");
@@ -37,7 +50,9 @@ router.post(
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     if (!webhookSecret) {
       console.error("[webhook/rzp] RAZORPAY_WEBHOOK_SECRET not set");
-      return res.status(500).json({ ok: false, error: "Server misconfiguration" });
+      return res
+        .status(500)
+        .json({ ok: false, error: "Server misconfiguration" });
     }
 
     const expected = crypto
@@ -54,7 +69,9 @@ router.post(
     try {
       payload = JSON.parse(rawBody.toString("utf8"));
     } catch {
-      console.warn("[webhook/rzp] Body is not valid JSON after signature passed");
+      console.warn(
+        "[webhook/rzp] Body is not valid JSON after signature passed",
+      );
       return res.status(400).json({ ok: false, error: "Invalid JSON" });
     }
 
@@ -69,54 +86,71 @@ router.post(
 
     if (!paymentEntity?.id) {
       console.warn("[webhook/rzp] Missing payment entity in payload");
-      return res.status(400).json({ ok: false, error: "Missing payment entity" });
+      return res
+        .status(400)
+        .json({ ok: false, error: "Missing payment entity" });
     }
 
-    const paymentId       = paymentEntity.id;
-    const amount          = paymentEntity.amount;
-    const currency        = paymentEntity.currency;
-    const paymentStatus   = paymentEntity.status;
-    const customerEmail   = paymentEntity.email   || null;
-    const customerContact = paymentEntity.contact  || null;
-    const paymentLinkId   = null; // payment.captured carries no page/link entity
+    const paymentId = paymentEntity.id;
+    const amount = paymentEntity.amount;
+    const currency = paymentEntity.currency;
+    const paymentStatus = paymentEntity.status;
+    const customerEmail = paymentEntity.email || null;
+    const customerContact = paymentEntity.contact || null;
+    const paymentLinkId = null; // payment.captured carries no page/link entity
 
     const dedupKey = eventId || `noeid_${paymentId}`;
 
     try {
       const existing = await prisma.spokenEnglishPurchase.findFirst({
         where: {
-          OR: [
-            { webhookEventId: dedupKey },
-            { paymentId },
-          ],
+          OR: [{ webhookEventId: dedupKey }, { paymentId }],
         },
         select: { id: true },
       });
       if (existing) {
-        console.log(`[webhook/rzp] Duplicate — already processed paymentId=${paymentId}`);
-        return res.status(200).json({ ok: true, duplicate: true });
+        console.log(
+          `[webhook/rzp] Duplicate — already processed paymentId=${paymentId}`,
+        );
+
+        return res.status(200).json({
+          ok: true,
+          duplicate: true,
+        });
       }
     } catch (err) {
       console.error("[webhook/rzp] Idempotency check failed:", err.message);
       return res.status(500).json({ ok: false, error: "DB error" });
     }
 
-    if (amount !== EXPECTED_AMOUNT_PAISE) {
-      console.warn(`[webhook/rzp] Amount mismatch: ${amount} paise (expected ${EXPECTED_AMOUNT_PAISE})`);
-      return res.status(200).json({ ok: true, skipped: true, reason: "amount_mismatch" });
+    const product = PRODUCTS_BY_AMOUNT[amount];
+
+    if (!product) {
+      console.warn(`[webhook/rzp] Unsupported product amount: ${amount} paise`);
+
+      return res.status(200).json({
+        ok: true,
+        skipped: true,
+        reason: "unsupported_product_amount",
+      });
     }
     if (currency !== EXPECTED_CURRENCY) {
       console.warn(`[webhook/rzp] Currency mismatch: ${currency}`);
-      return res.status(200).json({ ok: true, skipped: true, reason: "currency_mismatch" });
+      return res
+        .status(200)
+        .json({ ok: true, skipped: true, reason: "currency_mismatch" });
     }
     if (paymentStatus !== "captured" && paymentStatus !== "authorized") {
       console.warn(`[webhook/rzp] Unexpected payment status: ${paymentStatus}`);
-      return res.status(200).json({ ok: true, skipped: true, reason: "status_not_captured" });
+      return res
+        .status(200)
+        .json({ ok: true, skipped: true, reason: "status_not_captured" });
     }
 
-    const metaEventId = `se_purchase_${paymentId}`;
+    const metaEventId = `${product.code}_purchase_${paymentId}`;
 
     let record;
+
     try {
       record = await prisma.spokenEnglishPurchase.create({
         data: {
@@ -132,21 +166,29 @@ router.post(
           metaDelivered: false,
         },
       });
-      console.log(`[webhook/rzp] Purchase saved id=${record.id} paymentId=${paymentId}`);
+
+      console.log(
+        `[webhook/rzp] Purchase saved product=${product.code} ` +
+          `id=${record.id} paymentId=${paymentId}`,
+      );
     } catch (err) {
       if (err.code === "P2002") {
-        console.log(`[webhook/rzp] Concurrent duplicate insert for paymentId=${paymentId}`);
+        console.log(
+          `[webhook/rzp] Concurrent duplicate insert for paymentId=${paymentId}`,
+        );
         return res.status(200).json({ ok: true, duplicate: true });
       }
       console.error("[webhook/rzp] DB create failed:", err.message);
       return res.status(500).json({ ok: false, error: "DB error" });
     }
 
-    const pixelId     = process.env.META_PIXEL_ID;
+    const pixelId = process.env.META_PIXEL_ID;
     const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
 
     if (!pixelId || !accessToken) {
-      console.warn("[webhook/rzp] META_PIXEL_ID or META_CAPI_ACCESS_TOKEN not set — CAPI skipped");
+      console.warn(
+        "[webhook/rzp] META_PIXEL_ID or META_CAPI_ACCESS_TOKEN not set — CAPI skipped",
+      );
       return res.status(200).json({ ok: true, capiSkipped: true });
     }
 
@@ -155,11 +197,11 @@ router.post(
       accessToken,
       eventId: metaEventId,
       eventTime: Date.now(),
-      eventSourceUrl: CAPI_EVENT_SOURCE_URL,
-      value: 1199,
-      currency: "INR",
-      contentName: CAPI_CONTENT_NAME,
-      contentIds: CAPI_CONTENT_IDS,
+      eventSourceUrl: product.eventSourceUrl,
+      value: product.value,
+      currency: EXPECTED_CURRENCY,
+      contentName: product.contentName,
+      contentIds: product.contentIds,
       email: customerEmail,
       phone: customerContact,
     });
@@ -182,13 +224,22 @@ router.post(
     }
 
     if (capiResult.ok) {
-      console.log(`[webhook/rzp] CAPI Purchase delivered eventId=${metaEventId} status=${capiResult.status}`);
+      console.log(
+        `[webhook/rzp] CAPI Purchase delivered eventId=${metaEventId} status=${capiResult.status}`,
+      );
     } else {
-      console.warn(`[webhook/rzp] CAPI delivery failed status=${capiResult.status} error=${errorSnippet}`);
+      console.warn(
+        `[webhook/rzp] CAPI delivery failed status=${capiResult.status} error=${errorSnippet}`,
+      );
     }
 
-    return res.status(200).json({ ok: true, capiDelivered: capiResult.ok });
-  }
+    return res.status(200).json({
+      ok: true,
+      product: product.code,
+      paymentId,
+      capiDelivered: capiResult.ok,
+    });
+  },
 );
 
 /**
@@ -198,7 +249,7 @@ router.post(
  */
 router.get("/spoken-english/status", async (req, res) => {
   const adminSecret = process.env.ADMIN_SECRET;
-  const authHeader  = req.headers.authorization || "";
+  const authHeader = req.headers.authorization || "";
 
   if (!adminSecret || authHeader !== `Bearer ${adminSecret}`) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
