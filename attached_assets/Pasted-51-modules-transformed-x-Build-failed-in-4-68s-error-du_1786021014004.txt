@@ -1,0 +1,55 @@
+51 modules transformed.
+x Build failed in 4.68s
+error during build:
+[vite:esbuild] Transform failed with 4 errors:
+/home/runner/workspace/client/src/pages/marketing/VocabularyCourse.jsx:978:10: ERROR: Unexpected closing "section" tag does not match opening "div" tag
+/home/runner/workspace/client/src/pages/marketing/VocabularyCourse.jsx:1072:8: ERROR: Unexpected closing "main" tag does not match opening "section" tag
+/home/runner/workspace/client/src/pages/marketing/VocabularyCourse.jsx:1073:6: ERROR: Unexpected closing fragment tag does not match opening "main" tag
+/home/runner/workspace/client/src/pages/marketing/VocabularyCourse.jsx:1076:0: ERROR: Unexpected end of file before a closing fragment tag
+file: /home/runner/workspace/client/src/pages/marketing/VocabularyCourse.jsx:978:10
+
+Unexpected closing "section" tag does not match opening "div" tag
+976|              </div>
+977|            </div>
+978|          </section>
+   |            ^
+979|  
+980|          {/* DELIVERABLES */}
+
+Unexpected closing "main" tag does not match opening "section" tag
+1070|  
+1071|          <VocabularyLegalFooter />
+1072|        </main>
+   |          ^
+1073|      </>
+1074|    );
+
+Unexpected closing fragment tag does not match opening "main" tag
+1071|          <VocabularyLegalFooter />
+1072|        </main>
+1073|      </>
+   |        ^
+1074|    );
+1075|  }
+
+Unexpected end of file before a closing fragment tag
+1074|    );
+1075|  }
+1076|  
+   |  ^
+
+    at failureErrorWithLog (/home/runner/workspace/client/node_modules/esbuild/lib/main.js:1472:15)
+    at /home/runner/workspace/client/node_modules/esbuild/lib/main.js:755:50
+    at responseCallbacks.<computed> (/home/runner/workspace/client/node_modules/esbuild/lib/main.js:622:9)
+    at handleIncomingPacket (/home/runner/workspace/client/node_modules/esbuild/lib/main.js:677:12)
+    at Socket.readFromStdout (/home/runner/workspace/client/node_modules/esbuild/lib/main.js:600:7)
+    at Socket.emit (node:events:519:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+npm notice
+npm notice New major version of npm available! 10.9.4 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
