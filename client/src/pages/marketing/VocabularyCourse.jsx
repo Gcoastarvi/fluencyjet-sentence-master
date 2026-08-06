@@ -910,69 +910,70 @@ export default function VocabularyCourse() {
                 </p>
               </div>
 
-            <div className="mx-auto mt-9 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                "2,239 high-value words",
-                "11+ hours of lessons",
-                "Daily WhatsApp quiz",
-                "1-year access",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4 text-center font-bold text-white backdrop-blur"
-                >
-                  <span className="mr-2 text-lime-300">✓</span>
-                  {item}
-                </div>
-              ))}
-            </div>
-
-            <VocabularyVSLSection />
-
-            <div className="mx-auto mt-9 max-w-2xl rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur sm:p-8">
-              <p className="text-center text-sm font-black uppercase tracking-[0.18em] text-lime-300">
-                Complete Course + Bonuses
-              </p>
-
-              <div className="mt-4 flex items-end justify-center gap-3">
-                <span className="text-xl font-bold text-white/50 line-through">
-                  ₹8,700
-                </span>
-
-                <span className="text-5xl font-black text-yellow-300 sm:text-6xl">
-                  ₹799
-                </span>
+              <div className="mx-auto mt-9 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  "2,239 high-value words",
+                  "11+ hours of lessons",
+                  "Daily WhatsApp quiz",
+                  "1-year access",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-white/15 bg-white/10 px-4 py-4 text-center font-bold text-white backdrop-blur"
+                  >
+                    <span className="mr-2 text-lime-300">✓</span>
+                    {item}
+                  </div>
+                ))}
               </div>
 
-              <p className="mt-2 text-center font-semibold text-white/70">
-                One-time payment · 1-year access
-              </p>
+              <VocabularyVSLSection />
 
-              <PurchaseButton
-                placement="hero"
-                destination={paymentDestination}
-                className="mt-6"
-              />
+              <div className="mx-auto mt-9 max-w-2xl rounded-[2rem] border border-white/15 bg-white/10 p-5 shadow-2xl backdrop-blur sm:p-8">
+                <p className="text-center text-sm font-black uppercase tracking-[0.18em] text-lime-300">
+                  Complete Course + Bonuses
+                </p>
 
-              <p className="mt-3 text-center text-sm font-bold text-white/70">
-                No monthly subscription · No automatic renewal
-              </p>
+                <div className="mt-4 flex items-end justify-center gap-3">
+                  <span className="text-xl font-bold text-white/50 line-through">
+                    ₹8,700
+                  </span>
 
-              <SecurePaymentStrip />
-            </div>
+                  <span className="text-5xl font-black text-yellow-300 sm:text-6xl">
+                    ₹799
+                  </span>
+                </div>
 
-            <div className="mt-7 text-center">
-              <a
-                href={WHATSAPP_URL}
-                onClick={() =>
-                  trackVocabularyCourseWhatsAppClick({
-                    source: "hero",
-                  })
-                }
-                className="font-bold text-white underline decoration-lime-300 underline-offset-4 transition hover:text-lime-300"
-              >
-                Questions? WhatsApp Support: 9487070761
-              </a>
+                <p className="mt-2 text-center font-semibold text-white/70">
+                  One-time payment · 1-year access
+                </p>
+
+                <PurchaseButton
+                  placement="hero"
+                  destination={paymentDestination}
+                  className="mt-6"
+                />
+
+                <p className="mt-3 text-center text-sm font-bold text-white/70">
+                  No monthly subscription · No automatic renewal
+                </p>
+
+                <SecurePaymentStrip />
+              </div>
+
+              <div className="mt-7 text-center">
+                <a
+                  href={WHATSAPP_URL}
+                  onClick={() =>
+                    trackVocabularyCourseWhatsAppClick({
+                      source: "hero",
+                    })
+                  }
+                  className="font-bold text-white underline decoration-lime-300 underline-offset-4 transition hover:text-lime-300"
+                >
+                  Questions? WhatsApp Support: 9487070761
+                </a>
+              </div>
             </div>
           </div>
         </section>
