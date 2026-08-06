@@ -143,8 +143,7 @@ export default function VocabularyVSL() {
 
     accumulatedWatchTimeRef.current = getStoredWatchTime();
 
-    const savedProgress =
-      accumulatedWatchTimeRef.current / VIDEO_DURATION_MS;
+    const savedProgress = accumulatedWatchTimeRef.current / VIDEO_DURATION_MS;
 
     setWatchProgress(Math.min(savedProgress, 1));
 
@@ -296,15 +295,23 @@ export default function VocabularyVSL() {
               Free 9-Minute English Vocabulary Masterclass
             </p>
 
-            <h1 className="mx-auto mt-4 max-w-5xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              A Smarter Way to Build Your{" "}
-              <span className="text-yellow-300">English Vocabulary</span>
+            <h1 className="mx-auto mt-4 max-w-6xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+              A Smarter, Faster Way to Build Your English Vocabulary
             </h1>
 
-            <p className="mx-auto mt-5 max-w-4xl text-lg font-semibold leading-8 text-white/85 sm:text-2xl">
-              Discover how source words and word families can help you decode,
-              understand and remember difficult English words.
+            <p className="mx-auto mt-3 max-w-5xl text-xl font-medium leading-tight text-white/85 sm:text-3xl lg:text-4xl">
+              Remember 2,239 High-Value English Words in 30 Days!
             </p>
+
+            <div className="mx-auto mt-6 max-w-5xl">
+              <p className="text-3xl font-black leading-tight text-yellow-300 sm:text-5xl">
+                Watch The Masterclass 100%
+              </p>
+
+              <p className="mt-1 text-2xl font-black leading-tight text-lime-400 sm:text-4xl">
+                It’s Really Important For You
+              </p>
+            </div>
 
             <div className="mx-auto mt-6 flex max-w-3xl flex-wrap justify-center gap-2">
               {[

@@ -892,22 +892,23 @@ export default function VocabularyCourse() {
 
               <h1 className="mx-auto max-w-6xl text-[2.35rem] font-black leading-[1.08] tracking-tight text-white sm:text-5xl lg:text-6xl">
                 <span className="block">
-                  Build a Powerful English Vocabulary
+                  A Smarter Way To Build Your English Vocabulary
                 </span>
 
-                <span className="mt-3 block text-yellow-300">
-                  Without Memorising Words
+                <span className="mt-4 block">
+                  Decode, Remember 2,239 High-Value Words
                 </span>
-
-                <span className="block text-yellow-300">One by One</span>
               </h1>
 
-              <p className="mx-auto mt-6 max-w-3xl text-lg font-medium leading-8 text-white/80 sm:text-xl">
-                Learn how source words and word families can help you decode,
-                understand and remember difficult English words more
-                confidently.
-              </p>
-            </div>
+              <div className="mx-auto mt-8 max-w-5xl">
+                <p className="text-3xl font-medium leading-tight text-red-500 sm:text-4xl lg:text-5xl">
+                  Learn A Structured Word Building System
+                </p>
+
+                <p className="mt-1 text-3xl font-black leading-tight text-lime-400 sm:text-4xl lg:text-5xl">
+                  Just 15 Minutes Of Daily Practice
+                </p>
+              </div>
 
             <div className="mx-auto mt-9 grid max-w-4xl gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {[
