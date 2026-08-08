@@ -6,6 +6,9 @@ const SUPPORT_URL =
     "Hi FluencyJet, I completed the ₹799 Vocabulary Challenge payment and need help with course access.",
   );
 
+const WHATSAPP_GROUP_URL =
+  "https://chat.whatsapp.com/Fq0KaBNW1gy9rxiwhxnzyA?s=cl&p=a&ilr=0";
+
 export default function VocabularyThankYou() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-emerald-950 to-slate-950 px-4 py-10 text-white sm:px-6 sm:py-16">
@@ -77,6 +80,20 @@ export default function VocabularyThankYou() {
               </li>
             </ol>
           </div>
+
+          <p className="mx-auto mt-8 max-w-2xl text-base font-bold text-white">
+            Next Step: Join the private WhatsApp group for course updates and
+            daily vocabulary practice.
+          </p>
+
+          <a
+            href={WHATSAPP_GROUP_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-8 inline-flex min-h-14 w-full items-center justify-center rounded-2xl bg-[#25D366] px-6 py-4 text-base font-black text-white shadow-lg transition hover:brightness-95 sm:w-auto"
+          >
+            Join the Vocabulary WhatsApp Group
+          </a>
 
           <a
             href={SUPPORT_URL}
