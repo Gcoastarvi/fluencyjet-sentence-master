@@ -6,8 +6,7 @@ const SUPPORT_URL =
     "Hi FluencyJet, I completed the ₹799 Vocabulary Challenge payment and need help with course access.",
   );
 
-const WHATSAPP_GROUP_URL =
-  "https://chat.whatsapp.com/Fq0KaBNW1gy9rxiwhxnzyA?s=cl&p=a&ilr=0";
+const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/GZyRknjcIkVLmC2fBvO63P";
 
 export default function VocabularyThankYou() {
   return (
