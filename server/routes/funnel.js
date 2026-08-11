@@ -111,7 +111,7 @@ router.post("/smart-signup", async (req, res) => {
     }
 
     const reserveSeat = body.reserve_seat !== false;
-    const whatsappConsent = body.whatsapp_consent !== false;
+    const whatsappConsent = body.whatsapp_consent === true;
 
     const updateData = {
       name,
@@ -126,6 +126,9 @@ router.post("/smart-signup", async (req, res) => {
       practice_commitment: practiceCommitment,
       webinar_registered: reserveSeat,
       webinar_registered_at: reserveSeat ? new Date() : null,
+      whatsapp_consent: whatsappConsent,
+      whatsapp_consent_at: whatsappConsent ? new Date() : null,
+      whatsapp_consent_source: whatsappConsent ? "try-spoken-english-gym" : null,
       utm_source: cleanString(body.utm_source, 150),
       utm_medium: cleanString(body.utm_medium, 150),
       utm_campaign: cleanString(body.utm_campaign, 200),

@@ -37,7 +37,10 @@ model User {
   level_check_score        Int?
   level_check_completed_at DateTime?
 
-  whatsapp_number     String? @db.VarChar(30)
+  whatsapp_number         String?   @db.VarChar(30)
+  whatsapp_consent        Boolean   @default(false)
+  whatsapp_consent_at     DateTime?
+  whatsapp_consent_source String?   @db.VarChar(150)
   current_status      String? @db.VarChar(80)
   main_goal           String? @db.VarChar(120)
   practice_commitment String? @db.VarChar(120)
