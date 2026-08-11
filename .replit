@@ -63,3 +63,7 @@ author = 47616575
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash start-replit.sh"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 180000
