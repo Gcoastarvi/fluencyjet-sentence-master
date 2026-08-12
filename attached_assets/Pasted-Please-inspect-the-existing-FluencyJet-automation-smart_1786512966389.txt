@@ -1,0 +1,77 @@
+Please inspect the existing FluencyJet automation, smart-signup, and Lesson 1 reorder progress code before making changes.
+
+For this task, implement only the database scheduling and cancellation lifecycle for the first WhatsApp reminder. Do NOT send any WhatsApp message yet.
+
+Desired behaviour:
+
+1. When a user completes smart signup with WhatsApp consent = true:
+
+   * schedule one pending automation event for 7 minutes later;
+   * event type should clearly represent the Lesson 1 signup/practice reminder;
+   * store scheduled time and enough basic payload information for future WhatsApp delivery.
+
+2. Before scheduling, check whether Lesson 1 reorder practice is already complete for that user. If it is already complete, do not schedule the reminder.
+
+3. If the same user signs up again:
+
+   * cancel any previous pending reminder of this type before creating a new one;
+   * if the new signup has WhatsApp consent = false, cancel any existing pending reminder and do not create a new one.
+
+4. When Lesson 1 reorder practice reaches 100% server-side:
+
+   * cancel every pending reminder of this type for that user;
+   * record the cancellation time.
+
+5. Extend the existing AutomationEvent infrastructure minimally so it can represent:
+
+   * a future scheduled time;
+   * PENDING status;
+   * CANCELLED status;
+   * cancellation timestamp;
+   * the new Lesson 1 signup reminder event type.
+
+6. Add appropriate database indexes needed for looking up a user's pending reminder and, later, due scheduled reminders.
+
+7. The reminder scheduling must NEVER cause signup to fail. If automation scheduling fails, log the error but allow normal signup/login/redirect behaviour to continue.
+
+8. Reminder cancellation must NEVER cause practice progress saving to fail. If cancellation fails, log the error but preserve the normal progress response.
+
+9. Preserve all existing:
+
+   * signup and authentication behaviour;
+   * WhatsApp consent persistence;
+   * lesson/practice progress;
+   * XP;
+   * redirects;
+   * analytics;
+   * Razorpay/payment code;
+   * existing automation types.
+
+10. Do NOT implement:
+
+* WhatsApp Cloud API calls;
+* Meta template sending;
+* background workers;
+* timers/setInterval;
+* cron jobs;
+* payment automation;
+* Message #2 or later funnel messages.
+
+Testing required without sending any WhatsApp:
+
+* consent checked + incomplete Lesson 1 reorder → one PENDING event, scheduled about 7 minutes later;
+* complete Lesson 1 reorder → that event becomes CANCELLED with cancelled timestamp;
+* consent unchecked → no new event;
+* re-signup unchecked → any existing pending event is cancelled;
+* re-signup checked → old pending event cancelled and only one new pending event created;
+* user who already completed Lesson 1 reorder → no reminder scheduled;
+* normal signup and practice progress continue working.
+
+Before building, show me:
+
+* the exact schema changes you propose;
+* the exact existing server-side hooks you will use;
+* the files you intend to modify;
+* how you will test each case.
+
+Keep this task narrowly scoped. Do not make any changes until I approve the plan.
