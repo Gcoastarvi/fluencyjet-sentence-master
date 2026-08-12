@@ -180,6 +180,69 @@ router.post("/smart-signup", async (req, res) => {
     const token = signToken(user);
     setAuthCookie(res, token);
 
+    // ── Automation: schedule or cancel LESSON1_SIGNUP_REMINDER ──────────────
+    // Isolated — never blocks signup response.
+    try {
+      if (!whatsappConsent) {
+        // Consent not given: cancel any stale PENDING row (e.g. re-signup).
+        await prisma.automationEvent.updateMany({
+          where: {
+            userId:    user.id,
+            eventType: "LESSON1_SIGNUP_REMINDER",
+            status:    "PENDING",
+          },
+          data: { status: "CANCELLED", cancelledAt: new Date() },
+        });
+      } else {
+        // Consent given — check whether Lesson 1 reorder is already 100%.
+        const lesson1Progress = await prisma.lessonModeProgress.findUnique({
+          where: {
+            userId_lessonId_mode: {
+              userId:   String(user.id),
+              lessonId: 1,
+              mode:     "reorder",
+            },
+          },
+        });
+
+        const alreadyDone =
+          lesson1Progress &&
+          lesson1Progress.total > 0 &&
+          lesson1Progress.completed >= lesson1Progress.total;
+
+        // Cancel any existing PENDING row first (re-signup guard / stale-row guard).
+        await prisma.automationEvent.updateMany({
+          where: {
+            userId:    user.id,
+            eventType: "LESSON1_SIGNUP_REMINDER",
+            status:    "PENDING",
+          },
+          data: { status: "CANCELLED", cancelledAt: new Date() },
+        });
+
+        if (!alreadyDone) {
+          // Lesson 1 not yet complete — schedule the reminder.
+          await prisma.automationEvent.create({
+            data: {
+              userId:      user.id,
+              eventType:   "LESSON1_SIGNUP_REMINDER",
+              status:      "PENDING",
+              scheduledAt: new Date(Date.now() + 7 * 60 * 1000),
+              payload: {
+                whatsapp_number: whatsappNumber,
+                source:          "try-spoken-english-gym",
+              },
+            },
+          });
+        }
+        // If alreadyDone: stale PENDING rows already cancelled above; no new row.
+      }
+    } catch (automationErr) {
+      console.error("LESSON1_SIGNUP_REMINDER automation error:", automationErr);
+      // Do not rethrow — signup response must not be blocked.
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
     return res.status(createdNewUser ? 201 : 200).json({
       ok: true,
       message: createdNewUser

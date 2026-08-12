@@ -463,6 +463,33 @@ router.post("/lesson-mode", authRequired, async (req, res) => {
       },
     });
 
+    // ── Automation: cancel LESSON1_SIGNUP_REMINDER when Lesson 1 reorder hits 100% ──
+    // Isolated — never blocks progress response.
+    if (
+      lessonId === 1 &&
+      mode === "reorder" &&
+      row.total > 0 &&
+      row.completed >= row.total
+    ) {
+      try {
+        await prisma.automationEvent.updateMany({
+          where: {
+            userId:    parseInt(userId, 10),
+            eventType: "LESSON1_SIGNUP_REMINDER",
+            status:    "PENDING",
+          },
+          data: { status: "CANCELLED", cancelledAt: new Date() },
+        });
+      } catch (automationErr) {
+        console.error(
+          "LESSON1_SIGNUP_REMINDER cancellation error (progress):",
+          automationErr,
+        );
+        // Do not rethrow — progress response must not be blocked.
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────────────
+
     return res.json({
       ok: true,
       item: {

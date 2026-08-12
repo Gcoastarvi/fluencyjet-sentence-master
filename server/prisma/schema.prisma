@@ -279,13 +279,18 @@ model UserDayProgress {
 }
 
 model AutomationEvent {
-  id        String           @id @default(uuid())
-  userId    Int
-  eventType AutomationType
-  status    AutomationStatus @default(PENDING)
-  payload   Json?
-  createdAt DateTime         @default(now())
-  sentAt    DateTime?
+  id          String           @id @default(uuid())
+  userId      Int
+  eventType   AutomationType
+  status      AutomationStatus @default(PENDING)
+  payload     Json?
+  createdAt   DateTime         @default(now())
+  sentAt      DateTime?
+  scheduledAt DateTime?
+  cancelledAt DateTime?
+
+  @@index([userId, eventType, status])
+  @@index([status, scheduledAt])
 }
 
 enum QuizType {
@@ -331,10 +336,12 @@ enum ExerciseType {
 enum AutomationType {
   DAY3_WEBINAR
   DAY5_UPGRADE
+  LESSON1_SIGNUP_REMINDER
 }
 
 enum AutomationStatus {
   PENDING
   SENT
   DONE
+  CANCELLED
 }
