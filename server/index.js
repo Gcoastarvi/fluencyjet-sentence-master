@@ -30,6 +30,7 @@ import adminExercises from "./routes/adminExercises.js";
 import adminLessonsRouter from "./routes/adminLessons.js";
 import adminLessonsUpsertRouter from "./routes/adminLessonsUpsert.js";
 import meRouter from "./routes/me.js";
+import automationProcessorRouter from "./routes/automationProcessor.js";
 // import shopRouter from "./routes/shop.js";
 import userRoutes from "./routes/user.js";
 import adminAuthRouter from "./routes/adminAuth.js";
@@ -260,6 +261,7 @@ app.use("/api/progress", progressRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/dashboard", dashboardRouter); // Student Dashboard
 app.use("/api/lessons", lessonsRouter); // Student Lessons
+app.use("/api/automation", automationProcessorRouter);
 
 // -----------------------------
 // Serve React build in production

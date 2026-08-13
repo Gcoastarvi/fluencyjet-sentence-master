@@ -1,0 +1,356 @@
+// server/routes/automationProcessor.js
+//
+// Phase 2 – DRY_RUN reminder processor.
+// Protected POST endpoint for manually evaluating a single due
+// LESSON1_SIGNUP_REMINDER.  No WhatsApp messages are sent; no cron is used;
+// no batch processing of all users is possible.
+//
+import express from 'express';
+import prisma from '../db/client.js';
+
+const router = express.Router();
+
+// ---------------------------------------------------------------------------
+// POST /api/automation/process-due-reminders
+// ---------------------------------------------------------------------------
+router.post('/process-due-reminders', async (req, res) => {
+  // ── 1. FAIL-CLOSED: AUTOMATION_SECRET must be set and non-trivial ────────
+  const POISON = new Set(['undefined', 'null', 'false', '0', 'none', 'secret']);
+  const envSecret = process.env.AUTOMATION_SECRET;
+
+  if (!envSecret || envSecret.trim() === '' || POISON.has(envSecret.trim())) {
+    console.warn('[AUTOMATION] Secret not configured on this server.');
+    return res.status(503).json({
+      ok: false,
+      error: 'AUTOMATION_NOT_CONFIGURED',
+      message: 'Automation secret is not configured on this server.',
+    });
+  }
+
+  // ── 2. BEARER TOKEN CHECK ────────────────────────────────────────────────
+  // Never log the Authorization header value or the token.
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+
+  if (!token || token !== envSecret) {
+    console.warn('[AUTOMATION] Unauthorized request to process-due-reminders.');
+    return res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
+  }
+
+  // ── 3. dryRun FLAG CHECK ─────────────────────────────────────────────────
+  if (req.body?.dryRun !== true) {
+    return res.status(400).json({
+      ok: false,
+      error: 'DRY_RUN_FLAG_REQUIRED',
+      message: 'dryRun must be boolean true.',
+    });
+  }
+
+  // ── 4. EXACTLY ONE IDENTIFIER ────────────────────────────────────────────
+  const { email, userId, automationEventId } = req.body || {};
+  const identifiers = [email, userId, automationEventId].filter(
+    (v) => v !== undefined && v !== null && v !== '',
+  );
+
+  if (identifiers.length === 0) {
+    return res.status(400).json({
+      ok: false,
+      error: 'MISSING_IDENTIFIER',
+      message: 'Provide exactly one of: email, userId, automationEventId.',
+    });
+  }
+  if (identifiers.length > 1) {
+    return res.status(400).json({
+      ok: false,
+      error: 'AMBIGUOUS_IDENTIFIER',
+      message: 'Provide exactly one of: email, userId, automationEventId — not multiple.',
+    });
+  }
+
+  // ── 5. MAIN HANDLER ──────────────────────────────────────────────────────
+  try {
+    let ae; // the AutomationEvent row we will work with
+
+    // ── PATH A: automationEventId — direct UUID primary-key lookup ──────────
+    if (automationEventId !== undefined && automationEventId !== null && automationEventId !== '') {
+      ae = await prisma.automationEvent.findUnique({
+        where: { id: String(automationEventId) },
+      });
+
+      if (!ae) {
+        return res.status(404).json({
+          ok: false,
+          error: 'NOT_FOUND',
+          message: `No AutomationEvent found with id=${automationEventId}.`,
+        });
+      }
+
+      if (ae.eventType !== 'LESSON1_SIGNUP_REMINDER') {
+        return res.status(400).json({
+          ok: false,
+          error: 'WRONG_EVENT_TYPE',
+          message: `AutomationEvent ${automationEventId} is type ${ae.eventType}, not LESSON1_SIGNUP_REMINDER.`,
+        });
+      }
+
+      if (ae.status !== 'PENDING') {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          existingStatus: ae.status,
+          processedAt: ae.processedAt ?? null,
+          cancelledAt: ae.cancelledAt ?? null,
+          whatsappSent: false,
+        });
+      }
+    }
+
+    // ── PATH B: email or userId — two-step PENDING-first lookup ────────────
+    else {
+      // Step B1: resolve the user
+      let resolvedUserId;
+
+      if (email !== undefined && email !== null && email !== '') {
+        const user = await prisma.user.findUnique({
+          where: { email: String(email).trim().toLowerCase() },
+          select: { id: true },
+        });
+        if (!user) {
+          return res.status(404).json({
+            ok: false,
+            error: 'USER_NOT_FOUND',
+            message: `No user found with email=${email}.`,
+          });
+        }
+        resolvedUserId = user.id;
+      } else {
+        // userId path
+        const parsed = parseInt(userId, 10);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          return res.status(400).json({
+            ok: false,
+            error: 'INVALID_USER_ID',
+            message: 'userId must be a positive integer.',
+          });
+        }
+        const user = await prisma.user.findUnique({
+          where: { id: parsed },
+          select: { id: true },
+        });
+        if (!user) {
+          return res.status(404).json({
+            ok: false,
+            error: 'USER_NOT_FOUND',
+            message: `No user found with userId=${userId}.`,
+          });
+        }
+        resolvedUserId = parsed;
+      }
+
+      // Step B2: find the unique PENDING row (partial unique index guarantees ≤ 1)
+      ae = await prisma.automationEvent.findFirst({
+        where: {
+          userId:    resolvedUserId,
+          eventType: 'LESSON1_SIGNUP_REMINDER',
+          status:    'PENDING',
+        },
+      });
+
+      if (!ae) {
+        // Step B3: fallback — fetch the most recent historical row for reporting
+        const historical = await prisma.automationEvent.findFirst({
+          where: {
+            userId:    resolvedUserId,
+            eventType: 'LESSON1_SIGNUP_REMINDER',
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (!historical) {
+          return res.json({
+            ok: true,
+            result: 'NOT_FOUND',
+            message: 'No LESSON1_SIGNUP_REMINDER has ever been created for this user.',
+            whatsappSent: false,
+          });
+        }
+
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: historical.id,
+          existingStatus: historical.status,
+          processedAt: historical.processedAt ?? null,
+          cancelledAt: historical.cancelledAt ?? null,
+          whatsappSent: false,
+        });
+      }
+    }
+
+    // ── 6. DUE-TIME CHECK (no DB write on failure) ───────────────────────────
+    if (!ae.scheduledAt || ae.scheduledAt > new Date()) {
+      const scheduledAt = ae.scheduledAt ? ae.scheduledAt.toISOString() : null;
+      const now = new Date().toISOString();
+      console.log(`[AUTOMATION] NOT_DUE aeId=${ae.id} scheduledAt=${scheduledAt} now=${now}`);
+      return res.json({
+        ok: true,
+        result: 'NOT_DUE',
+        aeId: ae.id,
+        scheduledAt,
+        now,
+        whatsappSent: false,
+      });
+    }
+
+    // ── 7–11. ELIGIBILITY CHECKS (ineligible rows → CANCELLED) ──────────────
+    const user = await prisma.user.findUnique({
+      where: { id: ae.userId },
+      select: {
+        id: true,
+        email: true,
+        whatsapp_consent: true,
+        whatsapp_number: true,
+        has_access: true,
+      },
+    });
+
+    if (!user) {
+      // User deleted — cancel the row
+      await cancelRow(ae.id, 'USER_NOT_FOUND');
+      return res.json(ineligibleResponse(ae, 'USER_NOT_FOUND'));
+    }
+
+    if (!user.whatsapp_consent) {
+      await cancelRow(ae.id, 'CONSENT_FALSE');
+      return res.json(ineligibleResponse(ae, 'CONSENT_FALSE'));
+    }
+
+    if (!user.whatsapp_number) {
+      await cancelRow(ae.id, 'NO_WHATSAPP_NUMBER');
+      return res.json(ineligibleResponse(ae, 'NO_WHATSAPP_NUMBER'));
+    }
+
+    if (user.has_access) {
+      await cancelRow(ae.id, 'USER_HAS_ACCESS');
+      return res.json(ineligibleResponse(ae, 'USER_HAS_ACCESS'));
+    }
+
+    // Lesson 1 reorder completion check
+    const lesson1 = await prisma.lessonModeProgress.findUnique({
+      where: {
+        userId_lessonId_mode: {
+          userId:   String(ae.userId),
+          lessonId: 1,
+          mode:     'reorder',
+        },
+      },
+      select: { completed: true, total: true },
+    });
+
+    const lesson1Complete =
+      lesson1 !== null &&
+      lesson1.total > 0 &&
+      lesson1.completed >= lesson1.total;
+
+    if (lesson1Complete) {
+      await cancelRow(ae.id, 'LESSON1_COMPLETE');
+      return res.json(ineligibleResponse(ae, 'LESSON1_COMPLETE'));
+    }
+
+    // ── 12. ATOMIC TRANSITION: PENDING → DRY_RUN (race guard) ───────────────
+    const now = new Date();
+    const updated = await prisma.automationEvent.updateMany({
+      where: {
+        id:     ae.id,
+        status: 'PENDING',   // ← race guard: only wins if still PENDING
+      },
+      data: {
+        status:      'DRY_RUN',
+        processedAt: now,
+        // sentAt intentionally NOT set — no message was sent
+      },
+    });
+
+    if (updated.count === 0) {
+      // Another request (or Task #4 progress-completion) won the race
+      console.log(`[AUTOMATION] ALREADY_PROCESSED (race) aeId=${ae.id}`);
+      return res.json({
+        ok: true,
+        result: 'ALREADY_PROCESSED',
+        aeId: ae.id,
+        whatsappSent: false,
+      });
+    }
+
+    // ── 13. SUCCESS ──────────────────────────────────────────────────────────
+    console.log(
+      `[AUTOMATION] DRY_RUN aeId=${ae.id} userId=${ae.userId} ` +
+      `email=${user.email} processedAt=${now.toISOString()}`,
+    );
+
+    return res.json({
+      ok: true,
+      result: 'DRY_RUN',
+      aeId: ae.id,
+      userId: ae.userId,
+      email: user.email,
+      scheduledAt: ae.scheduledAt.toISOString(),
+      processedAt: now.toISOString(),
+      sentAt: null,
+      whatsappSent: false,
+      eligibility: {
+        whatsapp_consent: true,
+        whatsapp_number_present: true,
+        has_access: false,
+        lesson1_complete: false,
+      },
+    });
+  } catch (err) {
+    console.error('[AUTOMATION] Unexpected error in process-due-reminders:', err.message);
+    return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Atomically cancel a row that failed an eligibility check.
+ * Uses WHERE status=PENDING so a concurrent race cannot double-write.
+ */
+async function cancelRow(aeId, reason) {
+  const now = new Date();
+  const result = await prisma.automationEvent.updateMany({
+    where: { id: aeId, status: 'PENDING' },
+    data: {
+      status:      'CANCELLED',
+      cancelledAt: now,
+      processedAt: now,
+    },
+  });
+  console.log(
+    `[AUTOMATION] CANCELLED aeId=${aeId} reason=${reason} count=${result.count}`,
+  );
+}
+
+/**
+ * Build the ineligible-cancellation response body.
+ */
+function ineligibleResponse(ae, skipReason) {
+  const now = new Date().toISOString();
+  return {
+    ok: true,
+    result: 'CANCELLED',
+    skipReason,
+    aeId: ae.id,
+    userId: ae.userId,
+    processedAt: now,
+    cancelledAt: now,
+    sentAt: null,
+    whatsappSent: false,
+  };
+}
+
+export default router;

@@ -288,6 +288,7 @@ model AutomationEvent {
   sentAt      DateTime?
   scheduledAt DateTime?
   cancelledAt DateTime?
+  processedAt DateTime?
 
   @@index([userId, eventType, status])
   @@index([status, scheduledAt])
@@ -344,4 +345,5 @@ enum AutomationStatus {
   SENT
   DONE
   CANCELLED
+  DRY_RUN
 }
