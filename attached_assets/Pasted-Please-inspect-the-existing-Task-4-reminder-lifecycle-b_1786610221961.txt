@@ -1,0 +1,73 @@
+Please inspect the existing Task #4 reminder lifecycle before making any changes.
+
+I now want to build the next layer: a safe due-reminder processor in DRY-RUN mode only.
+
+This milestone must NOT send any WhatsApp message and must NOT add a cron/scheduled trigger yet.
+
+Safety principle for this first version: the endpoint must process only one explicitly selected test user/reminder per request. It must refuse an unscoped “process all due reminders” request. We will add batch processing later only after manual production tests pass.
+
+Requirements:
+
+Extend AutomationStatus with a new DRY_RUN status.
+Add an optional processedAt timestamp to AutomationEvent.
+sentAt must remain NULL during dry-run processing because no WhatsApp message has actually been sent.
+Add one protected server endpoint for manually evaluating a due LESSON1_SIGNUP_REMINDER.
+Protect the endpoint with a dedicated AUTOMATION_SECRET Bearer token. Do not expose this secret to the frontend.
+For this first milestone, require the request to explicitly identify exactly one user/reminder, preferably by user email, userId, or AutomationEvent id. Do not allow an unscoped request that processes all due production reminders.
+The reminder must be due:
+eventType = LESSON1_SIGNUP_REMINDER
+status = PENDING
+scheduledAt is not null
+scheduledAt <= current time
+Immediately before dry-run processing, re-check all eligibility:
+AutomationEvent is still PENDING
+user still exists
+whatsapp_consent === true
+WhatsApp number exists
+has_access === false
+Lesson 1 reorder is NOT complete
+If the reminder is still eligible:
+atomically transition that exact row from PENDING to DRY_RUN
+set processedAt
+leave sentAt = null
+If the reminder is no longer eligible because consent was withdrawn, user has access, WhatsApp number is missing, or Lesson 1 reorder is complete:
+change it to CANCELLED
+set cancelledAt
+set processedAt
+do not send anything.
+Use an atomic conditional status transition so concurrent requests cannot process the same PENDING row twice. If another request or the practice-completion cancellation wins the race first, the processor should safely report that the row was no longer PENDING and do nothing.
+Return a clear JSON summary showing:
+selected event/user
+whether it was due
+eligibility result
+final result (DRY_RUN, CANCELLED, NOT_DUE, ALREADY_PROCESSED, etc.)
+processedAt
+and confirm whatsappSent: false
+Log enough information server-side to audit the dry-run, but never log passwords, secrets, tokens, or other sensitive data.
+Preserve all current Task #4 scheduling and cancellation behavior.
+Do NOT implement:
+WhatsApp Cloud API calls
+Meta template sending
+cron jobs
+Railway scheduled jobs
+GitHub Actions
+setInterval
+batch processing of all users
+Message #2 or later funnel messages
+payment changes
+frontend changes
+Use a safe additive Prisma migration only.
+
+Before building, show me:
+
+exact schema changes;
+exact files to modify/create;
+endpoint request shape;
+authentication design;
+eligibility-check order;
+atomic race-protection method;
+exactly how processedAt, cancelledAt, and sentAt behave;
+a production-safe test plan using a new test signup;
+confirmation that an unscoped request cannot accidentally process real production leads.
+
+Do not make any changes until I approve the plan.
