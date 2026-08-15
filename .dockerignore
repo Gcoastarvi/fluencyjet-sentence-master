@@ -19,6 +19,7 @@ tmp
 # Node modules (never copy into image context)
 node_modules
 client/node_modules
+server/node_modules
 
 # Vite caches
 client/.vite

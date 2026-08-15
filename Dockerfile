@@ -19,7 +19,7 @@ COPY server/package*.json ./
 # (postinstall runs prisma generate)
 COPY server/prisma ./prisma
 
-RUN npm ci
+RUN npm ci --omit=dev --no-audit --no-fund
 
 COPY server .
 RUN npm run build || true
