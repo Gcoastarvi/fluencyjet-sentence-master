@@ -1,9 +1,10 @@
 // server/routes/automationProcessor.js
 //
-// Phase 2 – DRY_RUN reminder processor.
-// Protected POST endpoint for manually evaluating a single due
-// LESSON1_SIGNUP_REMINDER.  No WhatsApp messages are sent; no cron is used;
-// no batch processing of all users is possible.
+// Phase 2 – DRY_RUN reminder processor (single-reminder endpoint).
+// Phase 3 – Batch DRY_RUN processor (explicit-ID and discovery modes).
+//
+// Protected endpoints for manually evaluating due LESSON1_SIGNUP_REMINDER events.
+// No WhatsApp messages are sent. No cron is used. No live sends occur.
 //
 import express from 'express';
 import prisma from '../db/client.js';
@@ -11,42 +12,56 @@ import prisma from '../db/client.js';
 const router = express.Router();
 
 // ---------------------------------------------------------------------------
-// POST /api/automation/process-due-reminders
+// Shared constants
 // ---------------------------------------------------------------------------
-router.post('/process-due-reminders', async (req, res) => {
-  // ── 1. FAIL-CLOSED: AUTOMATION_SECRET must be set and non-trivial ────────
-  const POISON = new Set(['undefined', 'null', 'false', '0', 'none', 'secret']);
-  const envSecret = process.env.AUTOMATION_SECRET;
+const POISON     = new Set(['undefined', 'null', 'false', '0', 'none', 'secret']);
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_BATCH  = 10;
 
+// ---------------------------------------------------------------------------
+// Shared auth helper.
+// Sends the 503/401 response itself; returns false if the request is rejected.
+// ---------------------------------------------------------------------------
+function checkAuth(req, res, tag) {
+  const envSecret = process.env.AUTOMATION_SECRET;
   if (!envSecret || envSecret.trim() === '' || POISON.has(envSecret.trim())) {
-    console.warn('[AUTOMATION] Secret not configured on this server.');
-    return res.status(503).json({
-      ok: false,
-      error: 'AUTOMATION_NOT_CONFIGURED',
+    console.warn(`[${tag}] Secret not configured on this server.`);
+    res.status(503).json({
+      ok:      false,
+      error:   'AUTOMATION_NOT_CONFIGURED',
       message: 'Automation secret is not configured on this server.',
     });
+    return false;
   }
 
-  // ── 2. BEARER TOKEN CHECK ────────────────────────────────────────────────
-  // Never log the Authorization header value or the token.
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-
   if (!token || token !== envSecret) {
-    console.warn('[AUTOMATION] Unauthorized request to process-due-reminders.');
-    return res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
+    console.warn(`[${tag}] Unauthorized request.`);
+    res.status(401).json({ ok: false, error: 'UNAUTHORIZED' });
+    return false;
   }
 
-  // ── 3. dryRun FLAG CHECK ─────────────────────────────────────────────────
+  return true;
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/automation/process-due-reminders   (Phase 2 – single reminder)
+// ---------------------------------------------------------------------------
+router.post('/process-due-reminders', async (req, res) => {
+  // ── 1. Auth ───────────────────────────────────────────────────────────────
+  if (!checkAuth(req, res, 'AUTOMATION')) return;
+
+  // ── 2. dryRun flag ────────────────────────────────────────────────────────
   if (req.body?.dryRun !== true) {
     return res.status(400).json({
-      ok: false,
-      error: 'DRY_RUN_FLAG_REQUIRED',
+      ok:      false,
+      error:   'DRY_RUN_FLAG_REQUIRED',
       message: 'dryRun must be boolean true.',
     });
   }
 
-  // ── 4. EXACTLY ONE IDENTIFIER ────────────────────────────────────────────
+  // ── 3. Exactly one identifier ─────────────────────────────────────────────
   const { email, userId, automationEventId } = req.body || {};
   const identifiers = [email, userId, automationEventId].filter(
     (v) => v !== undefined && v !== null && v !== '',
@@ -54,24 +69,24 @@ router.post('/process-due-reminders', async (req, res) => {
 
   if (identifiers.length === 0) {
     return res.status(400).json({
-      ok: false,
-      error: 'MISSING_IDENTIFIER',
+      ok:      false,
+      error:   'MISSING_IDENTIFIER',
       message: 'Provide exactly one of: email, userId, automationEventId.',
     });
   }
   if (identifiers.length > 1) {
     return res.status(400).json({
-      ok: false,
-      error: 'AMBIGUOUS_IDENTIFIER',
+      ok:      false,
+      error:   'AMBIGUOUS_IDENTIFIER',
       message: 'Provide exactly one of: email, userId, automationEventId — not multiple.',
     });
   }
 
-  // ── 5. MAIN HANDLER ──────────────────────────────────────────────────────
+  // ── 4. Main handler ───────────────────────────────────────────────────────
   try {
-    let ae; // the AutomationEvent row we will work with
+    let ae;
 
-    // ── PATH A: automationEventId — direct UUID primary-key lookup ──────────
+    // ── PATH A: automationEventId — direct UUID primary-key lookup ────────
     if (automationEventId !== undefined && automationEventId !== null && automationEventId !== '') {
       ae = await prisma.automationEvent.findUnique({
         where: { id: String(automationEventId) },
@@ -79,69 +94,67 @@ router.post('/process-due-reminders', async (req, res) => {
 
       if (!ae) {
         return res.status(404).json({
-          ok: false,
-          error: 'NOT_FOUND',
+          ok:      false,
+          error:   'NOT_FOUND',
           message: `No AutomationEvent found with id=${automationEventId}.`,
         });
       }
 
       if (ae.eventType !== 'LESSON1_SIGNUP_REMINDER') {
         return res.status(400).json({
-          ok: false,
-          error: 'WRONG_EVENT_TYPE',
+          ok:      false,
+          error:   'WRONG_EVENT_TYPE',
           message: `AutomationEvent ${automationEventId} is type ${ae.eventType}, not LESSON1_SIGNUP_REMINDER.`,
         });
       }
 
       if (ae.status !== 'PENDING') {
         return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: ae.id,
+          ok:             true,
+          result:         'ALREADY_PROCESSED',
+          aeId:           ae.id,
           existingStatus: ae.status,
-          processedAt: ae.processedAt ?? null,
-          cancelledAt: ae.cancelledAt ?? null,
-          whatsappSent: false,
+          processedAt:    ae.processedAt ?? null,
+          cancelledAt:    ae.cancelledAt ?? null,
+          whatsappSent:   false,
         });
       }
     }
 
-    // ── PATH B: email or userId — two-step PENDING-first lookup ────────────
+    // ── PATH B: email or userId — two-step PENDING-first lookup ──────────
     else {
-      // Step B1: resolve the user
       let resolvedUserId;
 
       if (email !== undefined && email !== null && email !== '') {
         const user = await prisma.user.findUnique({
-          where: { email: String(email).trim().toLowerCase() },
+          where:  { email: String(email).trim().toLowerCase() },
           select: { id: true },
         });
         if (!user) {
           return res.status(404).json({
-            ok: false,
-            error: 'USER_NOT_FOUND',
+            ok:      false,
+            error:   'USER_NOT_FOUND',
             message: `No user found with email=${email}.`,
           });
         }
         resolvedUserId = user.id;
       } else {
-        // userId path
         const parsed = parseInt(userId, 10);
         if (!Number.isFinite(parsed) || parsed <= 0) {
           return res.status(400).json({
-            ok: false,
-            error: 'INVALID_USER_ID',
+            ok:      false,
+            error:   'INVALID_USER_ID',
             message: 'userId must be a positive integer.',
           });
         }
         const user = await prisma.user.findUnique({
-          where: { id: parsed },
+          where:  { id: parsed },
           select: { id: true },
         });
         if (!user) {
           return res.status(404).json({
-            ok: false,
-            error: 'USER_NOT_FOUND',
+            ok:      false,
+            error:   'USER_NOT_FOUND',
             message: `No user found with userId=${userId}.`,
           });
         }
@@ -160,152 +173,50 @@ router.post('/process-due-reminders', async (req, res) => {
       if (!ae) {
         // Step B3: fallback — fetch the most recent historical row for reporting
         const historical = await prisma.automationEvent.findFirst({
-          where: {
-            userId:    resolvedUserId,
-            eventType: 'LESSON1_SIGNUP_REMINDER',
-          },
+          where:   { userId: resolvedUserId, eventType: 'LESSON1_SIGNUP_REMINDER' },
           orderBy: { createdAt: 'desc' },
         });
 
         if (!historical) {
           return res.json({
-            ok: true,
-            result: 'NOT_FOUND',
-            message: 'No LESSON1_SIGNUP_REMINDER has ever been created for this user.',
+            ok:           true,
+            result:       'NOT_FOUND',
+            message:      'No LESSON1_SIGNUP_REMINDER has ever been created for this user.',
             whatsappSent: false,
           });
         }
 
         return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: historical.id,
+          ok:             true,
+          result:         'ALREADY_PROCESSED',
+          aeId:           historical.id,
           existingStatus: historical.status,
-          processedAt: historical.processedAt ?? null,
-          cancelledAt: historical.cancelledAt ?? null,
-          whatsappSent: false,
+          processedAt:    historical.processedAt ?? null,
+          cancelledAt:    historical.cancelledAt ?? null,
+          whatsappSent:   false,
         });
       }
     }
 
-    // ── 6. DUE-TIME CHECK (no DB write on failure) ───────────────────────────
+    // ── 5. Due-time check (no DB write on failure) ─────────────────────────
     if (!ae.scheduledAt || ae.scheduledAt > new Date()) {
       const scheduledAt = ae.scheduledAt ? ae.scheduledAt.toISOString() : null;
       const now = new Date().toISOString();
       console.log(`[AUTOMATION] NOT_DUE aeId=${ae.id} scheduledAt=${scheduledAt} now=${now}`);
       return res.json({
-        ok: true,
-        result: 'NOT_DUE',
-        aeId: ae.id,
+        ok:           true,
+        result:       'NOT_DUE',
+        aeId:         ae.id,
         scheduledAt,
         now,
         whatsappSent: false,
       });
     }
 
-    // ── 7–11. ELIGIBILITY CHECKS (ineligible rows → CANCELLED) ──────────────
-    const user = await prisma.user.findUnique({
-      where: { id: ae.userId },
-      select: {
-        id: true,
-        email: true,
-        whatsapp_consent: true,
-        whatsapp_number: true,
-        has_access: true,
-      },
-    });
+    // ── 6. Eligibility + transition via shared function ────────────────────
+    const rowResult = await processOneReminder(ae);
+    return res.json({ ok: true, ...rowResult });
 
-    if (!user) {
-      // User deleted — cancel the row
-      await cancelRow(ae.id, 'USER_NOT_FOUND');
-      return res.json(ineligibleResponse(ae, 'USER_NOT_FOUND'));
-    }
-
-    if (!user.whatsapp_consent) {
-      await cancelRow(ae.id, 'CONSENT_FALSE');
-      return res.json(ineligibleResponse(ae, 'CONSENT_FALSE'));
-    }
-
-    if (!user.whatsapp_number) {
-      await cancelRow(ae.id, 'NO_WHATSAPP_NUMBER');
-      return res.json(ineligibleResponse(ae, 'NO_WHATSAPP_NUMBER'));
-    }
-
-    if (user.has_access) {
-      await cancelRow(ae.id, 'USER_HAS_ACCESS');
-      return res.json(ineligibleResponse(ae, 'USER_HAS_ACCESS'));
-    }
-
-    // Lesson 1 reorder completion check
-    const lesson1 = await prisma.lessonModeProgress.findUnique({
-      where: {
-        userId_lessonId_mode: {
-          userId:   String(ae.userId),
-          lessonId: 1,
-          mode:     'reorder',
-        },
-      },
-      select: { completed: true, total: true },
-    });
-
-    const lesson1Complete =
-      lesson1 !== null &&
-      lesson1.total > 0 &&
-      lesson1.completed >= lesson1.total;
-
-    if (lesson1Complete) {
-      await cancelRow(ae.id, 'LESSON1_COMPLETE');
-      return res.json(ineligibleResponse(ae, 'LESSON1_COMPLETE'));
-    }
-
-    // ── 12. ATOMIC TRANSITION: PENDING → DRY_RUN (race guard) ───────────────
-    const now = new Date();
-    const updated = await prisma.automationEvent.updateMany({
-      where: {
-        id:     ae.id,
-        status: 'PENDING',   // ← race guard: only wins if still PENDING
-      },
-      data: {
-        status:      'DRY_RUN',
-        processedAt: now,
-        // sentAt intentionally NOT set — no message was sent
-      },
-    });
-
-    if (updated.count === 0) {
-      // Another request (or Task #4 progress-completion) won the race
-      console.log(`[AUTOMATION] ALREADY_PROCESSED (race) aeId=${ae.id}`);
-      return res.json({
-        ok: true,
-        result: 'ALREADY_PROCESSED',
-        aeId: ae.id,
-        whatsappSent: false,
-      });
-    }
-
-    // ── 13. SUCCESS ──────────────────────────────────────────────────────────
-    console.log(
-      `[AUTOMATION] DRY_RUN aeId=${ae.id} userId=${ae.userId} ` +
-      `email=${user.email} processedAt=${now.toISOString()}`,
-    );
-
-    return res.json({
-      ok: true,
-      result: 'DRY_RUN',
-      aeId: ae.id,
-      userId: ae.userId,
-      email: user.email,
-      scheduledAt: ae.scheduledAt.toISOString(),
-      processedAt: now.toISOString(),
-      sentAt: null,
-      whatsappSent: false,
-      eligibility: {
-        whatsapp_consent: true,
-        whatsapp_number_present: true,
-        has_access: false,
-        lesson1_complete: false,
-      },
-    });
   } catch (err) {
     console.error('[AUTOMATION] Unexpected error in process-due-reminders:', err.message);
     return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR' });
@@ -313,42 +224,397 @@ router.post('/process-due-reminders', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /api/automation/process-due-reminders-batch   (Phase 3 – batch)
+// ---------------------------------------------------------------------------
+router.post('/process-due-reminders-batch', async (req, res) => {
+  // ── 1. Auth ───────────────────────────────────────────────────────────────
+  if (!checkAuth(req, res, 'AUTOMATION-BATCH')) return;
+
+  // ── 2. dryRun flag ────────────────────────────────────────────────────────
+  if (req.body?.dryRun !== true) {
+    return res.status(400).json({
+      ok:      false,
+      error:   'DRY_RUN_FLAG_REQUIRED',
+      message: 'dryRun must be boolean true.',
+    });
+  }
+
+  // ── 3. mode — required, no inference, no default ─────────────────────────
+  const { mode } = req.body;
+  if (mode === undefined || mode === null) {
+    return res.status(400).json({
+      ok:      false,
+      error:   'INVALID_MODE',
+      message: 'mode is required: "explicit" or "discovery".',
+    });
+  }
+  if (mode !== 'explicit' && mode !== 'discovery') {
+    return res.status(400).json({
+      ok:      false,
+      error:   'INVALID_MODE',
+      message: 'mode must be "explicit" or "discovery".',
+    });
+  }
+
+  // ── 4. Mode-specific validation ───────────────────────────────────────────
+  let deduplicatedIds = null;
+  let limit           = null;
+
+  if (mode === 'explicit') {
+    // 4a. Conflicting field (limit forbidden in explicit mode)
+    if (req.body.limit !== undefined) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'CONFLICTING_PARAMS',
+        message: 'limit is not allowed in explicit mode.',
+      });
+    }
+
+    // 4b. Required field
+    if (req.body.automationEventIds === undefined) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'MISSING_AUTOMATION_EVENT_IDS',
+        message: 'automationEventIds is required in explicit mode.',
+      });
+    }
+
+    // 4c. Array shape
+    if (!Array.isArray(req.body.automationEventIds)) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'INVALID_AUTOMATION_EVENT_IDS',
+        message: 'automationEventIds must be an array.',
+      });
+    }
+    if (req.body.automationEventIds.length === 0) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'INVALID_AUTOMATION_EVENT_IDS',
+        message: 'automationEventIds must contain at least 1 ID.',
+      });
+    }
+
+    // 4d. UUID v4 validation
+    for (let i = 0; i < req.body.automationEventIds.length; i++) {
+      const v = req.body.automationEventIds[i];
+      if (typeof v !== 'string' || !UUID_V4_RE.test(v)) {
+        return res.status(400).json({
+          ok:      false,
+          error:   'INVALID_AUTOMATION_EVENT_IDS',
+          message: `element ${i} is not a valid UUID: ${v}`,
+        });
+      }
+    }
+
+    // 4e. Silent deduplication
+    const raw = req.body.automationEventIds;
+    deduplicatedIds = [...new Set(raw)];
+    if (deduplicatedIds.length < raw.length) {
+      console.warn(
+        `[AUTOMATION-BATCH] Deduplicated ${raw.length - deduplicatedIds.length} duplicate ID(s).`,
+      );
+    }
+
+    // 4f. Hard cap after dedup
+    if (deduplicatedIds.length > MAX_BATCH) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'LIMIT_EXCEEDS_MAX',
+        message: `automationEventIds may not contain more than ${MAX_BATCH} distinct IDs.`,
+      });
+    }
+
+    // 4g. Unknown fields — checked last so field-specific errors fire first
+    const ALLOWED_EXPLICIT = new Set(['dryRun', 'mode', 'automationEventIds']);
+    const unknownKeys = Object.keys(req.body).filter((k) => !ALLOWED_EXPLICIT.has(k));
+    if (unknownKeys.length > 0) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'UNKNOWN_FIELDS',
+        message: `Unexpected body field(s): ${unknownKeys.join(', ')}.`,
+      });
+    }
+
+  } else {
+    // discovery mode
+
+    // 4a. Conflicting field (automationEventIds forbidden in discovery mode)
+    if (req.body.automationEventIds !== undefined) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'CONFLICTING_PARAMS',
+        message: 'automationEventIds is not allowed in discovery mode.',
+      });
+    }
+
+    // 4b. limit required — no default
+    if (req.body.limit === undefined) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'MISSING_LIMIT',
+        message: 'limit is required in discovery mode.',
+      });
+    }
+
+    // 4c. Strict number type, positive integer, 1–10
+    if (
+      typeof req.body.limit !== 'number' ||
+      !Number.isInteger(req.body.limit) ||
+      req.body.limit < 1
+    ) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'INVALID_LIMIT',
+        message: 'limit must be a positive integer.',
+      });
+    }
+    if (req.body.limit > MAX_BATCH) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'LIMIT_EXCEEDS_MAX',
+        message: `limit cannot exceed ${MAX_BATCH}.`,
+      });
+    }
+
+    // 4d. Unknown fields
+    const ALLOWED_DISCOVERY = new Set(['dryRun', 'mode', 'limit']);
+    const unknownKeys = Object.keys(req.body).filter((k) => !ALLOWED_DISCOVERY.has(k));
+    if (unknownKeys.length > 0) {
+      return res.status(400).json({
+        ok:      false,
+        error:   'UNKNOWN_FIELDS',
+        message: `Unexpected body field(s): ${unknownKeys.join(', ')}.`,
+      });
+    }
+
+    limit = req.body.limit;
+  }
+
+  // ── 5. DB query ───────────────────────────────────────────────────────────
+  try {
+    const now = new Date();
+    let due;
+
+    if (mode === 'explicit') {
+      due = await prisma.automationEvent.findMany({
+        where: {
+          id:          { in: deduplicatedIds },
+          eventType:   'LESSON1_SIGNUP_REMINDER',
+          status:      'PENDING',
+          scheduledAt: { lte: now },
+        },
+        orderBy: { scheduledAt: 'asc' },
+      });
+    } else {
+      due = await prisma.automationEvent.findMany({
+        where: {
+          eventType:   'LESSON1_SIGNUP_REMINDER',
+          status:      'PENDING',
+          scheduledAt: { lte: now },
+        },
+        orderBy: { scheduledAt: 'asc' },
+        take:    limit,
+      });
+    }
+
+    // ── 6. Serial per-row processing with per-row error isolation ─────────
+    const results = [];
+    for (const ae of due) {
+      try {
+        const rowResult = await processOneReminder(ae);
+        results.push(rowResult);
+      } catch (err) {
+        console.error(`[AUTOMATION-BATCH] Row failed aeId=${ae.id}:`, err.message);
+        results.push({ aeId: ae.id, result: 'FAILED', error: err.message });
+      }
+    }
+
+    // ── 7. Aggregate counts ───────────────────────────────────────────────
+    let processed        = 0;
+    let cancelled        = 0;
+    let alreadyProcessed = 0;
+    let failed           = 0;
+    for (const r of results) {
+      if      (r.result === 'DRY_RUN')          processed++;
+      else if (r.result === 'CANCELLED')         cancelled++;
+      else if (r.result === 'ALREADY_PROCESSED') alreadyProcessed++;
+      else if (r.result === 'FAILED')            failed++;
+    }
+
+    // ── 8. Response ───────────────────────────────────────────────────────
+    if (mode === 'explicit') {
+      const foundIds         = new Set(due.map((ae) => ae.id));
+      const notFoundOrNotDue = deduplicatedIds.filter((id) => !foundIds.has(id));
+      return res.json({
+        ok:               true,
+        dryRun:           true,
+        mode:             'explicit',
+        requestedIds:     deduplicatedIds.length,
+        foundAndDue:      due.length,
+        notFoundOrNotDue,
+        processed,
+        cancelled,
+        alreadyProcessed,
+        failed,
+        whatsappSent:     false,
+        results,
+      });
+    } else {
+      return res.json({
+        ok:               true,
+        dryRun:           true,
+        mode:             'discovery',
+        selected:         due.length,
+        processed,
+        cancelled,
+        alreadyProcessed,
+        failed,
+        whatsappSent:     false,
+        results,
+      });
+    }
+
+  } catch (err) {
+    console.error('[AUTOMATION-BATCH] Unexpected error:', err.message);
+    return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// processOneReminder — shared eligibility + atomic transition logic.
+//
+// Caller guarantees: ae.status === 'PENDING' and ae.scheduledAt <= now.
+// Returns a per-row result object (no `ok` field — callers add that).
+// DB errors propagate to the caller's try/catch.
+// ---------------------------------------------------------------------------
+async function processOneReminder(ae) {
+  const user = await prisma.user.findUnique({
+    where:  { id: ae.userId },
+    select: {
+      id:               true,
+      email:            true,
+      whatsapp_consent: true,
+      whatsapp_number:  true,
+      has_access:       true,
+    },
+  });
+
+  if (!user) {
+    const { count, processedAt, cancelledAt } = await cancelRow(ae.id, 'USER_NOT_FOUND');
+    if (count === 0) return { result: 'ALREADY_PROCESSED', aeId: ae.id, whatsappSent: false };
+    return ineligibleResult(ae, 'USER_NOT_FOUND', processedAt, cancelledAt);
+  }
+  if (!user.whatsapp_consent) {
+    const { count, processedAt, cancelledAt } = await cancelRow(ae.id, 'CONSENT_FALSE');
+    if (count === 0) return { result: 'ALREADY_PROCESSED', aeId: ae.id, whatsappSent: false };
+    return ineligibleResult(ae, 'CONSENT_FALSE', processedAt, cancelledAt);
+  }
+  if (!user.whatsapp_number) {
+    const { count, processedAt, cancelledAt } = await cancelRow(ae.id, 'NO_WHATSAPP_NUMBER');
+    if (count === 0) return { result: 'ALREADY_PROCESSED', aeId: ae.id, whatsappSent: false };
+    return ineligibleResult(ae, 'NO_WHATSAPP_NUMBER', processedAt, cancelledAt);
+  }
+  if (user.has_access) {
+    const { count, processedAt, cancelledAt } = await cancelRow(ae.id, 'USER_HAS_ACCESS');
+    if (count === 0) return { result: 'ALREADY_PROCESSED', aeId: ae.id, whatsappSent: false };
+    return ineligibleResult(ae, 'USER_HAS_ACCESS', processedAt, cancelledAt);
+  }
+
+  const lesson1 = await prisma.lessonModeProgress.findUnique({
+    where: {
+      userId_lessonId_mode: {
+        userId:   String(ae.userId),
+        lessonId: 1,
+        mode:     'reorder',
+      },
+    },
+    select: { completed: true, total: true },
+  });
+
+  const lesson1Complete =
+    lesson1 !== null && lesson1.total > 0 && lesson1.completed >= lesson1.total;
+
+  if (lesson1Complete) {
+    const { count, processedAt, cancelledAt } = await cancelRow(ae.id, 'LESSON1_COMPLETE');
+    if (count === 0) return { result: 'ALREADY_PROCESSED', aeId: ae.id, whatsappSent: false };
+    return ineligibleResult(ae, 'LESSON1_COMPLETE', processedAt, cancelledAt);
+  }
+
+  // Atomic transition: PENDING → DRY_RUN (race guard)
+  const now = new Date();
+  const updated = await prisma.automationEvent.updateMany({
+    where: { id: ae.id, status: 'PENDING' },  // ← race guard
+    data:  { status: 'DRY_RUN', processedAt: now },
+    // sentAt intentionally NOT set — no message was sent
+  });
+
+  if (updated.count === 0) {
+    console.log(`[AUTOMATION] ALREADY_PROCESSED (race) aeId=${ae.id}`);
+    return { result: 'ALREADY_PROCESSED', aeId: ae.id, whatsappSent: false };
+  }
+
+  console.log(
+    `[AUTOMATION] DRY_RUN aeId=${ae.id} userId=${ae.userId} ` +
+    `email=${user.email} processedAt=${now.toISOString()}`,
+  );
+
+  return {
+    result:       'DRY_RUN',
+    aeId:         ae.id,
+    userId:       ae.userId,
+    email:        user.email,
+    scheduledAt:  ae.scheduledAt.toISOString(),
+    processedAt:  now.toISOString(),
+    sentAt:       null,
+    whatsappSent: false,
+    eligibility: {
+      whatsapp_consent:        true,
+      whatsapp_number_present: true,
+      has_access:              false,
+      lesson1_complete:        false,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
  * Atomically cancel a row that failed an eligibility check.
- * Uses WHERE status=PENDING so a concurrent race cannot double-write.
+ * WHERE status=PENDING prevents double-write under concurrent access.
+ *
+ * Returns { count, processedAt, cancelledAt } so the caller can:
+ *   - detect a race (count === 0) and return ALREADY_PROCESSED
+ *   - surface the EXACT timestamps written to the DB in the response
  */
 async function cancelRow(aeId, reason) {
   const now = new Date();
   const result = await prisma.automationEvent.updateMany({
     where: { id: aeId, status: 'PENDING' },
-    data: {
-      status:      'CANCELLED',
-      cancelledAt: now,
-      processedAt: now,
-    },
+    data:  { status: 'CANCELLED', cancelledAt: now, processedAt: now },
   });
-  console.log(
-    `[AUTOMATION] CANCELLED aeId=${aeId} reason=${reason} count=${result.count}`,
-  );
+  console.log(`[AUTOMATION] CANCELLED aeId=${aeId} reason=${reason} count=${result.count}`);
+  return { count: result.count, processedAt: now, cancelledAt: now };
 }
 
 /**
- * Build the ineligible-cancellation response body.
+ * Build a per-row ineligible-cancellation result object.
+ * No `ok` field — callers add that when returning to HTTP clients.
+ *
+ * processedAt and cancelledAt must be the exact Date objects returned
+ * by cancelRow so that response timestamps match what was written to DB.
  */
-function ineligibleResponse(ae, skipReason) {
-  const now = new Date().toISOString();
+function ineligibleResult(ae, skipReason, processedAt, cancelledAt) {
   return {
-    ok: true,
-    result: 'CANCELLED',
+    result:       'CANCELLED',
     skipReason,
-    aeId: ae.id,
-    userId: ae.userId,
-    processedAt: now,
-    cancelledAt: now,
-    sentAt: null,
+    aeId:         ae.id,
+    userId:       ae.userId,
+    processedAt:  processedAt.toISOString(),
+    cancelledAt:  cancelledAt.toISOString(),
+    sentAt:       null,
     whatsappSent: false,
   };
 }
