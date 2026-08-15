@@ -10,7 +10,7 @@ RUN npm run build
 
 
 # ---------- Build server ----------
-FROM node:22-alpine AS server-build
+FROM node:22-bookworm-slim AS server-build
 WORKDIR /app/server
 
 COPY server/package*.json ./
@@ -26,7 +26,7 @@ RUN npm run build || true
 
 
 # ---------- Runtime ----------
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 WORKDIR /app
 
 ENV NODE_ENV=production
