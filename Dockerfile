@@ -19,7 +19,10 @@ COPY server/package*.json ./
 # (postinstall runs prisma generate)
 COPY server/prisma ./prisma
 
-RUN npm ci --omit=dev --no-audit --no-fund
+RUN npm ci --omit=dev --no-audit --no-fund || \
+    (echo "===== NPM DEBUG LOG =====" && \
+     find /root/.npm/_logs -name '*-debug-0.log' -type f -print -exec tail -n 250 {} \; && \
+     exit 1)
 
 COPY server .
 RUN npm run build || true
