@@ -13,6 +13,10 @@ RUN npm run build
 FROM node:22-bookworm-slim AS server-build
 WORKDIR /app/server
 
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends openssl && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY server/package*.json ./
 
 # ✅ IMPORTANT: Prisma schema must exist before npm ci
@@ -31,6 +35,10 @@ RUN npm run build || true
 # ---------- Runtime ----------
 FROM node:22-bookworm-slim
 WORKDIR /app
+
+RUN apt-get update -y && \
+    apt-get install -y --no-install-recommends openssl && \
+    rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 
