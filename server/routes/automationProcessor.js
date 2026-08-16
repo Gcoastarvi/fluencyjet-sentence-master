@@ -8,6 +8,7 @@
 //
 import express from 'express';
 import prisma from '../db/client.js';
+import { sendWhatsAppTemplate } from '../services/whatsappProvider.js';
 
 const router = express.Router();
 
@@ -478,6 +479,449 @@ router.post('/process-due-reminders-batch', async (req, res) => {
   } catch (err) {
     console.error('[AUTOMATION-BATCH] Unexpected error:', err.message);
     return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/automation/process-due-reminder-live
+//
+// Phase 4 controlled live-send endpoint.
+//
+// Safety constraints:
+//   - explicit automationEventId only
+//   - exactly one reminder
+//   - dedicated live-send kill switch
+//   - request must explicitly confirm liveSend:true
+//   - recipient restricted to WHATSAPP_LIVE_TEST_NUMBER
+//   - eligibility re-checked immediately before claim
+//   - atomic PENDING -> SENDING claim before provider invocation
+//   - provider success required before SENT/sentAt
+//   - provider uncertainty leaves row in SENDING for manual investigation
+//
+// NOTE: the current provider implementation is intentionally disabled and
+// cannot contact Meta. Jest tests will mock the provider in a later step.
+// ---------------------------------------------------------------------------
+router.post('/process-due-reminder-live', async (req, res) => {
+  // ── 1. Existing automation auth ──────────────────────────────────────────
+  if (!checkAuth(req, res, 'AUTOMATION-LIVE')) return;
+
+  // ── 2. Global live-send kill switch ──────────────────────────────────────
+  if ((process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() !== 'true') {
+    return res.status(503).json({
+      ok: false,
+      error: 'WHATSAPP_LIVE_SEND_DISABLED',
+    });
+  }
+
+  // ── 3. Explicit request confirmation ─────────────────────────────────────
+  if (req.body?.liveSend !== true) {
+    return res.status(400).json({
+      ok: false,
+      error: 'LIVE_SEND_CONFIRMATION_REQUIRED',
+      message: 'liveSend must be boolean true.',
+    });
+  }
+
+  // ── 4. Reject unknown fields ──────────────────────────────────────────────
+  const allowedFields = new Set(['liveSend', 'automationEventId']);
+  const unknownFields = Object.keys(req.body || {}).filter(
+    (key) => !allowedFields.has(key),
+  );
+
+  if (unknownFields.length > 0) {
+    return res.status(400).json({
+      ok: false,
+      error: 'UNKNOWN_FIELDS',
+      message: `Unknown field(s): ${unknownFields.join(', ')}`,
+    });
+  }
+
+  // ── 5. Exactly one explicit AutomationEvent UUID ─────────────────────────
+  const automationEventId = req.body?.automationEventId;
+
+  if (
+    typeof automationEventId !== 'string' ||
+    !UUID_V4_RE.test(automationEventId)
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_AUTOMATION_EVENT_ID',
+    });
+  }
+
+  // ── 6. Test-recipient restriction ────────────────────────────────────────
+  const allowedTestNumber = (process.env.WHATSAPP_LIVE_TEST_NUMBER || '').trim();
+
+  if (
+    !allowedTestNumber ||
+    POISON.has(allowedTestNumber.toLowerCase())
+  ) {
+    return res.status(503).json({
+      ok: false,
+      error: 'WHATSAPP_TEST_NUMBER_NOT_CONFIGURED',
+    });
+  }
+
+  // Template configuration is also fail-closed.
+  const templateName =
+    (process.env.WHATSAPP_LESSON1_TEMPLATE_NAME || '').trim();
+  const languageCode =
+    (process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE || '').trim();
+
+  if (!templateName || !languageCode) {
+    return res.status(503).json({
+      ok: false,
+      error: 'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
+    });
+  }
+
+  try {
+    // ── 7. Fetch exact reminder ─────────────────────────────────────────────
+    const ae = await prisma.automationEvent.findUnique({
+      where: { id: automationEventId },
+    });
+
+    if (!ae) {
+      return res.status(404).json({
+        ok: false,
+        error: 'NOT_FOUND',
+      });
+    }
+
+    if (ae.eventType !== 'LESSON1_SIGNUP_REMINDER') {
+      return res.status(400).json({
+        ok: false,
+        error: 'WRONG_EVENT_TYPE',
+      });
+    }
+
+    if (ae.status !== 'PENDING') {
+      return res.json({
+        ok: true,
+        result: 'ALREADY_PROCESSED',
+        aeId: ae.id,
+        existingStatus: ae.status,
+        whatsappSent: false,
+      });
+    }
+
+    const now = new Date();
+
+    if (!ae.scheduledAt || ae.scheduledAt > now) {
+      return res.json({
+        ok: true,
+        result: 'NOT_DUE',
+        aeId: ae.id,
+        scheduledAt: ae.scheduledAt?.toISOString() ?? null,
+        now: now.toISOString(),
+        whatsappSent: false,
+      });
+    }
+
+    // ── 8. Re-check eligibility immediately before claim ────────────────────
+    const user = await prisma.user.findUnique({
+      where: { id: ae.userId },
+      select: {
+        id: true,
+        email: true,
+        whatsapp_consent: true,
+        whatsapp_number: true,
+        has_access: true,
+      },
+    });
+
+    if (!user) {
+      const result = await cancelRow(ae.id, 'USER_NOT_FOUND');
+      if (result.count === 0) {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          whatsappSent: false,
+        });
+      }
+      return res.json({
+        ok: true,
+        ...ineligibleResult(
+          ae,
+          'USER_NOT_FOUND',
+          result.processedAt,
+          result.cancelledAt,
+        ),
+      });
+    }
+
+    if (!user.whatsapp_consent) {
+      const result = await cancelRow(ae.id, 'CONSENT_FALSE');
+      if (result.count === 0) {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          whatsappSent: false,
+        });
+      }
+      return res.json({
+        ok: true,
+        ...ineligibleResult(
+          ae,
+          'CONSENT_FALSE',
+          result.processedAt,
+          result.cancelledAt,
+        ),
+      });
+    }
+
+    if (!user.whatsapp_number) {
+      const result = await cancelRow(ae.id, 'NO_WHATSAPP_NUMBER');
+      if (result.count === 0) {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          whatsappSent: false,
+        });
+      }
+      return res.json({
+        ok: true,
+        ...ineligibleResult(
+          ae,
+          'NO_WHATSAPP_NUMBER',
+          result.processedAt,
+          result.cancelledAt,
+        ),
+      });
+    }
+
+    if (user.has_access) {
+      const result = await cancelRow(ae.id, 'USER_HAS_ACCESS');
+      if (result.count === 0) {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          whatsappSent: false,
+        });
+      }
+      return res.json({
+        ok: true,
+        ...ineligibleResult(
+          ae,
+          'USER_HAS_ACCESS',
+          result.processedAt,
+          result.cancelledAt,
+        ),
+      });
+    }
+
+    const lesson1 = await prisma.lessonModeProgress.findUnique({
+      where: {
+        userId_lessonId_mode: {
+          userId: String(ae.userId),
+          lessonId: 1,
+          mode: 'reorder',
+        },
+      },
+      select: { completed: true, total: true },
+    });
+
+    const lesson1Complete =
+      lesson1 !== null &&
+      lesson1.total > 0 &&
+      lesson1.completed >= lesson1.total;
+
+    if (lesson1Complete) {
+      const result = await cancelRow(ae.id, 'LESSON1_COMPLETE');
+      if (result.count === 0) {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          whatsappSent: false,
+        });
+      }
+      return res.json({
+        ok: true,
+        ...ineligibleResult(
+          ae,
+          'LESSON1_COMPLETE',
+          result.processedAt,
+          result.cancelledAt,
+        ),
+      });
+    }
+
+    // ── 9. Hard test-number allowlist ───────────────────────────────────────
+    if (user.whatsapp_number.trim() !== allowedTestNumber) {
+      return res.status(403).json({
+        ok: false,
+        error: 'TEST_RECIPIENT_ONLY',
+        aeId: ae.id,
+        whatsappSent: false,
+      });
+    }
+
+    // ── 10. Atomic claim: PENDING -> SENDING ────────────────────────────────
+    const claimedAt = new Date();
+
+    const claimed = await prisma.automationEvent.updateMany({
+      where: {
+        id: ae.id,
+        status: 'PENDING',
+      },
+      data: {
+        status: 'SENDING',
+        processedAt: claimedAt,
+      },
+    });
+
+    if (claimed.count === 0) {
+      return res.json({
+        ok: true,
+        result: 'ALREADY_PROCESSED',
+        aeId: ae.id,
+        whatsappSent: false,
+      });
+    }
+
+    console.log(
+      `[AUTOMATION-LIVE] CLAIMED aeId=${ae.id} userId=${ae.userId}`,
+    );
+
+    // ── 11. Provider invocation ─────────────────────────────────────────────
+    let delivery;
+
+    try {
+      delivery = await sendWhatsAppTemplate({
+        to: user.whatsapp_number,
+        templateName,
+        languageCode,
+        automationEventId: ae.id,
+      });
+    } catch (providerErr) {
+      console.error(
+        `[AUTOMATION-LIVE] PROVIDER_UNCONFIRMED aeId=${ae.id} ` +
+        `code=${providerErr?.code || 'UNKNOWN'}`,
+      );
+
+      // Deliberately leave status=SENDING.
+      // A timeout/error can be ambiguous; automatically retrying could
+      // create a duplicate WhatsApp message.
+      return res.status(502).json({
+        ok: false,
+        error: 'WHATSAPP_SEND_UNCONFIRMED',
+        providerError: providerErr?.code || 'UNKNOWN',
+        aeId: ae.id,
+        existingStatus: 'SENDING',
+        whatsappSent: null,
+      });
+    }
+
+    if (
+      !delivery ||
+      typeof delivery.messageId !== 'string' ||
+      delivery.messageId.trim() === ''
+    ) {
+      console.error(
+        `[AUTOMATION-LIVE] INVALID_PROVIDER_RESPONSE aeId=${ae.id}`,
+      );
+
+      // Same conservative treatment: remain SENDING.
+      return res.status(502).json({
+        ok: false,
+        error: 'WHATSAPP_SEND_UNCONFIRMED',
+        providerError: 'INVALID_PROVIDER_RESPONSE',
+        aeId: ae.id,
+        existingStatus: 'SENDING',
+        whatsappSent: null,
+      });
+    }
+
+    // ── 12. Provider confirmed acceptance → finalize SENT ───────────────────
+    const sentAt = new Date();
+
+    const existingPayload =
+      ae.payload &&
+      typeof ae.payload === 'object' &&
+      !Array.isArray(ae.payload)
+        ? ae.payload
+        : {};
+
+    const nextPayload = {
+      ...existingPayload,
+      whatsappDelivery: {
+        provider: delivery.provider || 'meta',
+        messageId: delivery.messageId,
+        sentAt: sentAt.toISOString(),
+      },
+    };
+
+    try {
+      const finalized = await prisma.automationEvent.updateMany({
+        where: {
+          id: ae.id,
+          status: 'SENDING',
+        },
+        data: {
+          status: 'SENT',
+          sentAt,
+          processedAt: sentAt,
+          payload: nextPayload,
+        },
+      });
+
+      if (finalized.count === 0) {
+        console.error(
+          `[AUTOMATION-LIVE] FINALIZE_CONFLICT aeId=${ae.id} ` +
+          `messageId=${delivery.messageId}`,
+        );
+
+        return res.status(500).json({
+          ok: false,
+          error: 'SEND_FINALIZE_CONFLICT',
+          aeId: ae.id,
+          providerMessageId: delivery.messageId,
+          whatsappSent: true,
+        });
+      }
+    } catch (finalizeErr) {
+      console.error(
+        `[AUTOMATION-LIVE] FINALIZE_FAILED aeId=${ae.id} ` +
+        `messageId=${delivery.messageId} error=${finalizeErr.message}`,
+      );
+
+      // Provider already confirmed the message. Never retry automatically.
+      return res.status(500).json({
+        ok: false,
+        error: 'SEND_FINALIZE_FAILED',
+        aeId: ae.id,
+        providerMessageId: delivery.messageId,
+        whatsappSent: true,
+      });
+    }
+
+    console.log(
+      `[AUTOMATION-LIVE] SENT aeId=${ae.id} userId=${ae.userId} ` +
+      `messageId=${delivery.messageId}`,
+    );
+
+    return res.json({
+      ok: true,
+      result: 'SENT',
+      aeId: ae.id,
+      userId: ae.userId,
+      email: user.email,
+      sentAt: sentAt.toISOString(),
+      providerMessageId: delivery.messageId,
+      whatsappSent: true,
+    });
+  } catch (err) {
+    console.error('[AUTOMATION-LIVE] Unexpected error:', err.message);
+
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+    });
   }
 });
 
