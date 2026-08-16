@@ -342,6 +342,7 @@ enum AutomationType {
 
 enum AutomationStatus {
   PENDING
+  SENDING
   SENT
   DONE
   CANCELLED
