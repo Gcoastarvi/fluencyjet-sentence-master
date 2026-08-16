@@ -623,6 +623,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
       where: { id: ae.userId },
       select: {
         id: true,
+        name: true,
         email: true,
         whatsapp_consent: true,
         whatsapp_number: true,
@@ -648,6 +649,18 @@ router.post('/process-due-reminder-live', async (req, res) => {
           result.processedAt,
           result.cancelledAt,
         ),
+      });
+    }
+
+    const learnerName = String(user.name || '').trim();
+
+    if (!learnerName) {
+      return res.status(422).json({
+        ok: false,
+        error: 'WHATSAPP_TEMPLATE_PARAMETER_MISSING',
+        parameter: 'body.{{1}}',
+        aeId: ae.id,
+        whatsappSent: false,
       });
     }
 
@@ -796,6 +809,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
         to: user.whatsapp_number,
         templateName,
         languageCode,
+        bodyParameters: [learnerName],
         automationEventId: ae.id,
       });
     } catch (providerErr) {

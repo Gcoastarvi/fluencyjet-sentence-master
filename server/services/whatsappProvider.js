@@ -15,7 +15,7 @@
  *   to: string,
  *   templateName: string,
  *   languageCode: string,
- *   components?: Array,
+ *   bodyParameters?: Array<string>,
  *   automationEventId: string
  * }
  *

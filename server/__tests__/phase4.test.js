@@ -96,6 +96,7 @@ function makeAe(overrides = {}) {
 function makeUser(overrides = {}) {
   return {
     id: 42,
+    name: 'Aravind',
     email: 'phase4-test@example.com',
     whatsapp_consent: true,
     whatsapp_number: TEST_NUMBER,
@@ -382,6 +383,30 @@ describe(
       expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
     });
 
+    test('[L-15A] Missing learner name → 422, no claim, no send', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(
+        makeUser({ name: null }),
+      );
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(422);
+      expect(res.body.error)
+        .toBe('WHATSAPP_TEMPLATE_PARAMETER_MISSING');
+
+      expect(res.body.parameter).toBe('body.{{1}}');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockPrisma.automationEvent.updateMany)
+        .not.toHaveBeenCalled();
+
+      expect(mockSendWhatsAppTemplate)
+        .not.toHaveBeenCalled();
+    });
+
     test('[L-16] Non-test recipient → 403, no claim, no send', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(
         makeUser({
@@ -443,6 +468,7 @@ describe(
           to: TEST_NUMBER,
           templateName: 'lesson1_signup_reminder',
           languageCode: 'ta',
+          bodyParameters: ['Aravind'],
           automationEventId: UUID1,
         });
 
