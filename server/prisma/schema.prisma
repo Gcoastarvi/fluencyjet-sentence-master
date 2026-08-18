@@ -41,9 +41,10 @@ model User {
   whatsapp_consent        Boolean   @default(false)
   whatsapp_consent_at     DateTime?
   whatsapp_consent_source String?   @db.VarChar(150)
-  current_status      String? @db.VarChar(80)
-  main_goal           String? @db.VarChar(120)
-  practice_commitment String? @db.VarChar(120)
+  whatsapp_opted_out_at   DateTime?
+  current_status          String?   @db.VarChar(80)
+  main_goal               String?   @db.VarChar(120)
+  practice_commitment     String?   @db.VarChar(120)
 
   webinar_registered    Boolean   @default(false)
   webinar_registered_at DateTime?
@@ -279,19 +280,45 @@ model UserDayProgress {
 }
 
 model AutomationEvent {
-  id          String           @id @default(uuid())
-  userId      Int
-  eventType   AutomationType
-  status      AutomationStatus @default(PENDING)
-  payload     Json?
-  createdAt   DateTime         @default(now())
-  sentAt      DateTime?
-  scheduledAt DateTime?
-  cancelledAt DateTime?
-  processedAt DateTime?
+  id                String                 @id @default(uuid())
+  userId            Int
+  eventType         AutomationType
+  status            AutomationStatus       @default(PENDING)
+  payload           Json?
+  createdAt         DateTime               @default(now())
+  sentAt            DateTime?
+  scheduledAt       DateTime?
+  cancelledAt       DateTime?
+  processedAt       DateTime?
+  providerMessageId String?                @unique @db.VarChar(255)
+  whatsappEvents    WhatsAppMessageEvent[]
 
   @@index([userId, eventType, status])
   @@index([status, scheduledAt])
+}
+
+model WhatsAppMessageEvent {
+  id                String           @id @default(uuid())
+  automationEventId String?
+  automationEvent   AutomationEvent? @relation(fields: [automationEventId], references: [id], onDelete: SetNull)
+
+  providerMessageId String    @db.VarChar(255)
+  eventType         String    @db.VarChar(50)
+  recipientWaId     String?   @db.VarChar(30)
+  senderWaId        String?   @db.VarChar(30)
+  eventTimestamp    DateTime?
+
+  errorCode    Int?
+  errorTitle   String? @db.VarChar(255)
+  errorDetails String?
+  rawPayload   Json?
+
+  dedupKey  String   @unique @db.VarChar(64)
+  createdAt DateTime @default(now())
+
+  @@index([providerMessageId])
+  @@index([automationEventId])
+  @@index([eventType, eventTimestamp])
 }
 
 enum QuizType {
