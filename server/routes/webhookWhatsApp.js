@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import prisma from '../db/client.js';
 
 const router = express.Router();
 
@@ -61,6 +62,183 @@ function verifyMetaSignature(rawBody, signatureHeader, appSecret) {
   return crypto.timingSafeEqual(suppliedDigest, expectedDigest);
 }
 
+
+const TRACKED_STATUS_TYPES = new Set([
+  'sent',
+  'delivered',
+  'read',
+  'failed',
+]);
+
+function safeText(value, maxLength) {
+  if (value === undefined || value === null) return null;
+
+  const text = String(value).trim();
+  if (!text) return null;
+
+  return text.slice(0, maxLength);
+}
+
+function parseMetaTimestamp(value) {
+  const seconds = Number(value);
+
+  if (!Number.isFinite(seconds) || seconds < 0) {
+    return null;
+  }
+
+  const date = new Date(seconds * 1000);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function normalizeMetaError(status) {
+  const error =
+    Array.isArray(status?.errors) && status.errors.length > 0
+      ? status.errors[0]
+      : null;
+
+  if (!error) {
+    return {
+      errorCode: null,
+      errorTitle: null,
+      errorDetails: null,
+    };
+  }
+
+  const numericCode = Number(error.code);
+
+  return {
+    errorCode: Number.isInteger(numericCode) ? numericCode : null,
+    errorTitle: safeText(error.title, 255),
+    errorDetails:
+      safeText(error?.error_data?.details, 5000) ||
+      safeText(error.message, 5000),
+  };
+}
+
+function makeStatusDedupKey({
+  providerMessageId,
+  eventType,
+  timestamp,
+  recipientWaId,
+  errorCode,
+  errorTitle,
+  errorDetails,
+}) {
+  const canonical = JSON.stringify({
+    providerMessageId,
+    eventType,
+    timestamp: String(timestamp ?? ''),
+    recipientWaId: recipientWaId || null,
+    errorCode,
+    errorTitle,
+    errorDetails,
+  });
+
+  return crypto
+    .createHash('sha256')
+    .update(canonical)
+    .digest('hex');
+}
+
+async function processStatusEvents(payload) {
+  const summary = {
+    processed: 0,
+    duplicates: 0,
+    unlinked: 0,
+    skipped: 0,
+  };
+
+  const entries = Array.isArray(payload?.entry) ? payload.entry : [];
+
+  for (const entry of entries) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+
+    for (const change of changes) {
+      const statuses = Array.isArray(change?.value?.statuses)
+        ? change.value.statuses
+        : [];
+
+      for (const status of statuses) {
+        const providerMessageId = safeText(status?.id, 255);
+        const rawStatus = safeText(status?.status, 50)?.toLowerCase();
+
+        if (
+          !providerMessageId ||
+          !rawStatus ||
+          !TRACKED_STATUS_TYPES.has(rawStatus)
+        ) {
+          summary.skipped += 1;
+          continue;
+        }
+
+        const eventType = rawStatus.toUpperCase();
+        const recipientWaId = safeText(status?.recipient_id, 30);
+        const eventTimestamp = parseMetaTimestamp(status?.timestamp);
+
+        const {
+          errorCode,
+          errorTitle,
+          errorDetails,
+        } = normalizeMetaError(status);
+
+        const automationEvent =
+          await prisma.automationEvent.findUnique({
+            where: {
+              providerMessageId,
+            },
+            select: {
+              id: true,
+            },
+          });
+
+        const dedupKey = makeStatusDedupKey({
+          providerMessageId,
+          eventType,
+          timestamp: status?.timestamp,
+          recipientWaId,
+          errorCode,
+          errorTitle,
+          errorDetails,
+        });
+
+        try {
+          await prisma.whatsAppMessageEvent.create({
+            data: {
+              automationEventId: automationEvent?.id || null,
+              providerMessageId,
+              eventType,
+              recipientWaId,
+              senderWaId: null,
+              eventTimestamp,
+              errorCode,
+              errorTitle,
+              errorDetails,
+              rawPayload: status,
+              dedupKey,
+            },
+          });
+        } catch (error) {
+          if (error?.code === 'P2002') {
+            summary.duplicates += 1;
+            continue;
+          }
+
+          throw error;
+        }
+
+        summary.processed += 1;
+
+        if (!automationEvent) {
+          summary.unlinked += 1;
+        }
+      }
+    }
+  }
+
+  return summary;
+}
+
 /**
  * GET /api/webhooks/whatsapp
  *
@@ -108,7 +286,7 @@ router.get('/whatsapp', (req, res) => {
 router.post(
   '/whatsapp',
   express.raw({ type: 'application/json', limit: '1mb' }),
-  (req, res) => {
+  async (req, res) => {
     const appSecret = requiredSecret('META_APP_SECRET');
 
     if (!appSecret) {
@@ -151,8 +329,27 @@ router.post(
       ? payload.entry.length
       : 0;
 
+    let statusSummary;
+
+    try {
+      statusSummary = await processStatusEvents(payload);
+    } catch (error) {
+      console.error(
+        '[webhook/whatsapp] Status processing failed:',
+        error?.message || error,
+      );
+
+      return res.status(500).json({
+        ok: false,
+        error: 'WEBHOOK_PROCESSING_FAILED',
+      });
+    }
+
     console.log(
-      `[webhook/whatsapp] Authenticated webhook received entries=${entryCount}`,
+      `[webhook/whatsapp] Authenticated webhook received entries=${entryCount} ` +
+        `statusesProcessed=${statusSummary.processed} ` +
+        `duplicates=${statusSummary.duplicates} ` +
+        `unlinked=${statusSummary.unlinked}`,
     );
 
     return res.status(200).json({
