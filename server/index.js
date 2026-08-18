@@ -6,6 +6,7 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import adminRouter from "./routes/admin.js";
 import webhookRazorpayRouter from "./routes/webhookRazorpay.js";
+import webhookWhatsAppRouter from "./routes/webhookWhatsApp.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,6 +112,7 @@ app.set("trust proxy", 1);
 //    express.raw() inside the router receives the unmodified Buffer
 //    needed for Razorpay HMAC-SHA256 signature verification.
 app.use("/api/webhooks", webhookRazorpayRouter);
+app.use("/api/webhooks", webhookWhatsAppRouter);
 
 // ✅ Unbreakable body parsing (JSON + urlencoded)
 app.use(express.json({ limit: "1mb" }));
