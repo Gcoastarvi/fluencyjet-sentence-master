@@ -484,6 +484,7 @@ describe(
               status: 'SENT',
               sentAt: expect.any(Date),
               processedAt: expect.any(Date),
+              providerMessageId: 'wamid.TEST123',
               payload: expect.objectContaining({
                 source: 'try-spoken-english-gym',
                 whatsappDelivery: expect.objectContaining({

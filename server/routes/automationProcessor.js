@@ -881,6 +881,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
           sentAt,
           processedAt: sentAt,
           payload: nextPayload,
+          providerMessageId: delivery.messageId,
         },
       });
 
