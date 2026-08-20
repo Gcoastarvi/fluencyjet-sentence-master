@@ -31,7 +31,11 @@ const mockPrisma = {
     findMany:    jest.fn(),
     updateMany:  jest.fn(),
   },
-  user:               { findUnique: jest.fn() },
+  user: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+  },
   lessonModeProgress: { findUnique: jest.fn() },
 };
 
@@ -77,6 +81,8 @@ const eligibleUser = {
   email:            'test@example.com',
   whatsapp_consent: true,
   whatsapp_number:  '+919999999999',
+  whatsapp_number_normalized: '+919999999999',
+  whatsapp_opted_out_at: null,
   has_access:       false,
 };
 
@@ -86,6 +92,15 @@ const eligibleUser = {
 beforeEach(() => {
   process.env.AUTOMATION_SECRET = SECRET;
   jest.clearAllMocks();
+
+  mockPrisma.user.findFirst.mockResolvedValue({ id: 42 });
+
+  mockPrisma.user.findMany.mockResolvedValue([
+    {
+      has_access: false,
+      whatsapp_opted_out_at: null,
+    },
+  ]);
 });
 
 afterEach(() => {
@@ -398,6 +413,179 @@ describe('POST /api/automation/process-due-reminders — single-reminder endpoin
       expect(res.body.result).toBe('CANCELLED');
       expect(res.body.skipReason).toBe('LESSON1_COMPLETE');
     });
+    test('[P2-23A] Same phone peer has access → CANCELLED PHONE_HAS_ACCESS', async () => {
+      mockPrisma.automationEvent.findUnique.mockResolvedValue({
+        ...pendingDueAe,
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...eligibleUser,
+      });
+      mockPrisma.user.findMany.mockResolvedValue([
+        {
+          has_access: false,
+          whatsapp_opted_out_at: null,
+        },
+        {
+          has_access: true,
+          whatsapp_opted_out_at: null,
+        },
+      ]);
+      mockPrisma.automationEvent.updateMany.mockResolvedValue({
+        count: 1,
+      });
+
+      const res = await request(makeApp())
+        .post('/api/automation/process-due-reminders')
+        .set(AUTH)
+        .send({
+          dryRun: true,
+          automationEventId: AE_ID,
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('PHONE_HAS_ACCESS');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockPrisma.lessonModeProgress.findUnique)
+        .not.toHaveBeenCalled();
+    });
+
+    test('[P2-23B] Same phone peer opted out → CANCELLED PHONE_OPTED_OUT', async () => {
+      mockPrisma.automationEvent.findUnique.mockResolvedValue({
+        ...pendingDueAe,
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...eligibleUser,
+      });
+      mockPrisma.user.findMany.mockResolvedValue([
+        {
+          has_access: false,
+          whatsapp_opted_out_at: null,
+        },
+        {
+          has_access: false,
+          whatsapp_opted_out_at: new Date(),
+        },
+      ]);
+      mockPrisma.automationEvent.updateMany.mockResolvedValue({
+        count: 1,
+      });
+
+      const res = await request(makeApp())
+        .post('/api/automation/process-due-reminders')
+        .set(AUTH)
+        .send({
+          dryRun: true,
+          automationEventId: AE_ID,
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('PHONE_OPTED_OUT');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockPrisma.lessonModeProgress.findUnique)
+        .not.toHaveBeenCalled();
+    });
+
+    test('[P2-23C] Missing normalized phone → CANCELLED INVALID_WHATSAPP_NUMBER', async () => {
+      mockPrisma.automationEvent.findUnique.mockResolvedValue({
+        ...pendingDueAe,
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...eligibleUser,
+        whatsapp_number: 'invalid-number',
+        whatsapp_number_normalized: null,
+      });
+      mockPrisma.automationEvent.updateMany.mockResolvedValue({
+        count: 1,
+      });
+
+      const res = await request(makeApp())
+        .post('/api/automation/process-due-reminders')
+        .set(AUTH)
+        .send({
+          dryRun: true,
+          automationEventId: AE_ID,
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason)
+        .toBe('INVALID_WHATSAPP_NUMBER');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockPrisma.user.findMany)
+        .not.toHaveBeenCalled();
+
+      expect(mockPrisma.lessonModeProgress.findUnique)
+        .not.toHaveBeenCalled();
+    });
+
+    test('[P2-23E] Reminder owner changed canonical phone → CANCELLED PHONE_IDENTITY_CHANGED', async () => {
+      mockPrisma.automationEvent.findUnique.mockResolvedValue({
+        ...pendingDueAe,
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...eligibleUser,
+      });
+      mockPrisma.user.findFirst.mockResolvedValue(null);
+      mockPrisma.automationEvent.updateMany.mockResolvedValue({
+        count: 1,
+      });
+
+      const res = await request(makeApp())
+        .post('/api/automation/process-due-reminders')
+        .set(AUTH)
+        .send({
+          dryRun: true,
+          automationEventId: AE_ID,
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason)
+        .toBe('PHONE_IDENTITY_CHANGED');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockPrisma.user.findMany)
+        .not.toHaveBeenCalled();
+
+      expect(mockPrisma.lessonModeProgress.findUnique)
+        .not.toHaveBeenCalled();
+    });
+
+    test('[P2-23D] Canonical identity resolves to no users → fail closed', async () => {
+      mockPrisma.automationEvent.findUnique.mockResolvedValue({
+        ...pendingDueAe,
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        ...eligibleUser,
+      });
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.automationEvent.updateMany.mockResolvedValue({
+        count: 1,
+      });
+
+      const res = await request(makeApp())
+        .post('/api/automation/process-due-reminders')
+        .set(AUTH)
+        .send({
+          dryRun: true,
+          automationEventId: AE_ID,
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason)
+        .toBe('PHONE_IDENTITY_NOT_FOUND');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockPrisma.lessonModeProgress.findUnique)
+        .not.toHaveBeenCalled();
+    });
+
   });
 
   // ── DRY_RUN transition ─────────────────────────────────────────────────────

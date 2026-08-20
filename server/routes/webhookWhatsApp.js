@@ -1,6 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import prisma from '../db/client.js';
+import { normalizeWhatsAppWaId } from '../lib/whatsappNumber.js';
 
 const router = express.Router();
 
@@ -155,27 +156,6 @@ function normalizeInboundCommand(value) {
     .trim()
     .replace(/\s+/g, ' ')
     .toUpperCase();
-}
-
-function inboundNumberCandidates(value) {
-  const digits = String(value ?? '').replace(/\D/g, '');
-
-  if (!/^\d{8,15}$/.test(digits)) {
-    return [];
-  }
-
-  const candidates = new Set([
-    digits,
-    `+${digits}`,
-  ]);
-
-  // Backward compatibility for existing FluencyJet India signup rows
-  // that may contain only the 10-digit local number.
-  if (/^91\d{10}$/.test(digits)) {
-    candidates.add(digits.slice(2));
-  }
-
-  return [...candidates];
 }
 
 function makeInboundDedupKey({
@@ -366,18 +346,16 @@ async function processInboundMessages(payload) {
               return 'RECORDED';
             }
 
-            const candidates =
-              inboundNumberCandidates(senderWaId);
+            const normalizedSender =
+              normalizeWhatsAppWaId(senderWaId);
 
-            if (candidates.length === 0) {
+            if (!normalizedSender) {
               return 'UNKNOWN';
             }
 
             const users = await tx.user.findMany({
               where: {
-                whatsapp_number: {
-                  in: candidates,
-                },
+                whatsapp_number_normalized: normalizedSender,
               },
               select: {
                 id: true,

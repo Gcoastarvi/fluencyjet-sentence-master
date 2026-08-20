@@ -176,14 +176,8 @@ describe('WhatsApp webhook inbound message processing', () => {
     const userLookup =
       mockPrisma.user.findMany.mock.calls[0][0];
 
-    expect(userLookup.where.whatsapp_number.in)
-      .toEqual(
-        expect.arrayContaining([
-          '919876543210',
-          '+919876543210',
-          '9876543210',
-        ]),
-      );
+    expect(userLookup.where.whatsapp_number_normalized)
+      .toBe('+919876543210');
 
     expect(userLookup.take).toBeUndefined();
 

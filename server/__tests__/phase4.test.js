@@ -23,6 +23,7 @@ import {
 
 import request from 'supertest';
 import express from 'express';
+import { normalizeWhatsAppNumber } from '../lib/whatsappNumber.js';
 
 // ---------------------------------------------------------------------------
 // Mock Prisma BEFORE importing the router.
@@ -34,6 +35,8 @@ const mockPrisma = {
   },
   user: {
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
   },
   lessonModeProgress: {
     findUnique: jest.fn(),
@@ -94,12 +97,27 @@ function makeAe(overrides = {}) {
 }
 
 function makeUser(overrides = {}) {
+  const whatsappNumber =
+    Object.prototype.hasOwnProperty.call(overrides, 'whatsapp_number')
+      ? overrides.whatsapp_number
+      : TEST_NUMBER;
+
+  const normalizedNumber =
+    Object.prototype.hasOwnProperty.call(
+      overrides,
+      'whatsapp_number_normalized',
+    )
+      ? overrides.whatsapp_number_normalized
+      : normalizeWhatsAppNumber(whatsappNumber);
+
   return {
     id: 42,
     name: 'Aravind',
     email: 'phase4-test@example.com',
     whatsapp_consent: true,
-    whatsapp_number: TEST_NUMBER,
+    whatsapp_number: whatsappNumber,
+    whatsapp_number_normalized: normalizedNumber,
+    whatsapp_opted_out_at: null,
     has_access: false,
     ...overrides,
   };
@@ -128,6 +146,14 @@ beforeEach(() => {
   mockPrisma.automationEvent.findUnique.mockResolvedValue(makeAe());
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.user.findUnique.mockResolvedValue(makeUser());
+  mockPrisma.user.findFirst.mockResolvedValue({ id: 42 });
+
+  mockPrisma.user.findMany.mockResolvedValue([
+    {
+      has_access: false,
+      whatsapp_opted_out_at: null,
+    },
+  ]);
   mockPrisma.lessonModeProgress.findUnique.mockResolvedValue(null);
 
   mockSendWhatsAppTemplate.mockResolvedValue({
@@ -365,6 +391,111 @@ describe(
       expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
     });
 
+    test('[L-14A] Same phone peer has access → CANCELLED, no send', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([
+        {
+          has_access: false,
+          whatsapp_opted_out_at: null,
+        },
+        {
+          has_access: true,
+          whatsapp_opted_out_at: null,
+        },
+      ]);
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('PHONE_HAS_ACCESS');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockSendWhatsAppTemplate)
+        .not.toHaveBeenCalled();
+
+      expect(mockPrisma.lessonModeProgress.findUnique)
+        .not.toHaveBeenCalled();
+    });
+
+    test('[L-14B] Same phone peer opted out → CANCELLED, no send', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([
+        {
+          has_access: false,
+          whatsapp_opted_out_at: null,
+        },
+        {
+          has_access: false,
+          whatsapp_opted_out_at: new Date(),
+        },
+      ]);
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('PHONE_OPTED_OUT');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockSendWhatsAppTemplate)
+        .not.toHaveBeenCalled();
+
+      expect(mockPrisma.lessonModeProgress.findUnique)
+        .not.toHaveBeenCalled();
+    });
+
+    test('[L-14C] Missing normalized phone → CANCELLED, no send', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(
+        makeUser({
+          whatsapp_number: 'invalid-number',
+          whatsapp_number_normalized: null,
+        }),
+      );
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason)
+        .toBe('INVALID_WHATSAPP_NUMBER');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockPrisma.user.findMany)
+        .not.toHaveBeenCalled();
+
+      expect(mockSendWhatsAppTemplate)
+        .not.toHaveBeenCalled();
+    });
+
+    test('[L-14D] Reminder owner changed canonical phone → CANCELLED, no send', async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(null);
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason)
+        .toBe('PHONE_IDENTITY_CHANGED');
+      expect(res.body.whatsappSent).toBe(false);
+
+      expect(mockPrisma.user.findMany)
+        .not.toHaveBeenCalled();
+
+      expect(mockSendWhatsAppTemplate)
+        .not.toHaveBeenCalled();
+    });
+
     test('[L-15] Lesson 1 complete → CANCELLED', async () => {
       mockPrisma.lessonModeProgress.findUnique.mockResolvedValue({
         completed: 10,
@@ -426,6 +557,22 @@ describe(
         .not.toHaveBeenCalled();
 
       expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+    });
+
+    test('[L-16A] Formatted test allowlist matches canonical recipient', async () => {
+      process.env.WHATSAPP_LIVE_TEST_NUMBER = '99999 99999';
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('SENT');
+      expect(res.body.whatsappSent).toBe(true);
+
+      expect(mockSendWhatsAppTemplate)
+        .toHaveBeenCalledTimes(1);
     });
 
     test('[L-17] Happy path: PENDING → SENDING → SENT', async () => {
@@ -494,6 +641,36 @@ describe(
                 }),
               }),
             }),
+          }),
+        );
+    });
+
+    test('[L-17A] Provider receives canonical normalized recipient', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(
+        makeUser({
+          whatsapp_number: '99999 99999',
+        }),
+      );
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('SENT');
+
+      expect(mockSendWhatsAppTemplate)
+        .toHaveBeenCalledWith(
+          expect.objectContaining({
+            to: TEST_NUMBER,
+          }),
+        );
+
+      expect(mockSendWhatsAppTemplate)
+        .not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            to: '99999 99999',
           }),
         );
     });

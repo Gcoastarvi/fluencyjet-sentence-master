@@ -3,6 +3,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js";
+import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
 
 const router = express.Router();
 
@@ -79,6 +80,7 @@ router.post("/smart-signup", async (req, res) => {
     const track = normalizeTrack(body.track || levelCheckResult);
 
     const whatsappNumber = cleanString(body.whatsapp_number, 30);
+    const whatsappNumberNormalized = normalizeWhatsAppNumber(whatsappNumber);
     const currentStatus = cleanString(body.current_status, 80);
     const mainGoal = cleanString(body.main_goal, 120);
     const practiceCommitment = cleanString(body.practice_commitment, 120);
@@ -121,6 +123,7 @@ router.post("/smart-signup", async (req, res) => {
       level_check_score: Number.isFinite(parsedScore) ? parsedScore : null,
       level_check_completed_at: new Date(),
       whatsapp_number: whatsappNumber,
+      whatsapp_number_normalized: whatsappNumberNormalized,
       current_status: currentStatus,
       main_goal: mainGoal,
       practice_commitment: practiceCommitment,
@@ -281,12 +284,16 @@ router.post("/register-webinar", async (req, res) => {
 
     const body = req.body || {};
 
+    const whatsappNumber = cleanString(body.whatsapp_number, 30);
+    const whatsappNumberNormalized = normalizeWhatsAppNumber(whatsappNumber);
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
         webinar_registered: true,
         webinar_registered_at: new Date(),
-        whatsapp_number: cleanString(body.whatsapp_number, 30),
+        whatsapp_number: whatsappNumber,
+        whatsapp_number_normalized: whatsappNumberNormalized,
         current_status: cleanString(body.current_status, 80),
         main_goal: cleanString(body.main_goal, 120),
         practice_commitment: cleanString(body.practice_commitment, 120),

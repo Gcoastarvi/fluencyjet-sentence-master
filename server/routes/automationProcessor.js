@@ -9,6 +9,7 @@
 import express from 'express';
 import prisma from '../db/client.js';
 import { sendWhatsAppTemplate } from '../services/whatsappProvider.js';
+import { normalizeWhatsAppNumber } from '../lib/whatsappNumber.js';
 
 const router = express.Router();
 
@@ -18,6 +19,52 @@ const router = express.Router();
 const POISON     = new Set(['undefined', 'null', 'false', '0', 'none', 'secret']);
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BATCH  = 10;
+
+async function getPhoneLevelSkipReason(ownerUserId, normalizedNumber) {
+  // Re-confirm that the reminder owner still owns this canonical destination.
+  // If the number changed after the first User read, fail closed.
+  const ownerStillMatches = await prisma.user.findFirst({
+    where: {
+      id: ownerUserId,
+      whatsapp_number_normalized: normalizedNumber,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!ownerStillMatches) {
+    return 'PHONE_IDENTITY_CHANGED';
+  }
+
+  const phoneUsers = await prisma.user.findMany({
+    where: {
+      whatsapp_number_normalized: normalizedNumber,
+    },
+    select: {
+      has_access: true,
+      whatsapp_opted_out_at: true,
+    },
+  });
+
+  // Fail closed if the canonical identity unexpectedly resolves to no rows.
+  if (phoneUsers.length === 0) {
+    return 'PHONE_IDENTITY_NOT_FOUND';
+  }
+
+  // A STOP belongs to the WhatsApp destination, not only one User row.
+  if (phoneUsers.some((u) => Boolean(u.whatsapp_opted_out_at))) {
+    return 'PHONE_OPTED_OUT';
+  }
+
+  // Do not send a Lesson 1 acquisition reminder when any account sharing
+  // this WhatsApp destination already has product access.
+  if (phoneUsers.some((u) => u.has_access === true)) {
+    return 'PHONE_HAS_ACCESS';
+  }
+
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // Shared auth helper.
@@ -562,6 +609,16 @@ router.post('/process-due-reminder-live', async (req, res) => {
     });
   }
 
+  const allowedTestNumberNormalized =
+    normalizeWhatsAppNumber(allowedTestNumber);
+
+  if (!allowedTestNumberNormalized) {
+    return res.status(503).json({
+      ok: false,
+      error: 'WHATSAPP_TEST_NUMBER_INVALID',
+    });
+  }
+
   // Template configuration is also fail-closed.
   const templateName =
     (process.env.WHATSAPP_LESSON1_TEMPLATE_NAME || '').trim();
@@ -627,6 +684,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
         email: true,
         whatsapp_consent: true,
         whatsapp_number: true,
+        whatsapp_number_normalized: true,
         has_access: true,
       },
     });
@@ -706,6 +764,27 @@ router.post('/process-due-reminder-live', async (req, res) => {
       });
     }
 
+    if (!user.whatsapp_number_normalized) {
+      const result = await cancelRow(ae.id, 'INVALID_WHATSAPP_NUMBER');
+      if (result.count === 0) {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          whatsappSent: false,
+        });
+      }
+      return res.json({
+        ok: true,
+        ...ineligibleResult(
+          ae,
+          'INVALID_WHATSAPP_NUMBER',
+          result.processedAt,
+          result.cancelledAt,
+        ),
+      });
+    }
+
     if (user.has_access) {
       const result = await cancelRow(ae.id, 'USER_HAS_ACCESS');
       if (result.count === 0) {
@@ -721,6 +800,30 @@ router.post('/process-due-reminder-live', async (req, res) => {
         ...ineligibleResult(
           ae,
           'USER_HAS_ACCESS',
+          result.processedAt,
+          result.cancelledAt,
+        ),
+      });
+    }
+
+    const phoneSkipReason =
+      await getPhoneLevelSkipReason(user.id, user.whatsapp_number_normalized);
+
+    if (phoneSkipReason) {
+      const result = await cancelRow(ae.id, phoneSkipReason);
+      if (result.count === 0) {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          whatsappSent: false,
+        });
+      }
+      return res.json({
+        ok: true,
+        ...ineligibleResult(
+          ae,
+          phoneSkipReason,
           result.processedAt,
           result.cancelledAt,
         ),
@@ -765,7 +868,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
     }
 
     // ── 9. Hard test-number allowlist ───────────────────────────────────────
-    if (user.whatsapp_number.trim() !== allowedTestNumber) {
+    if (user.whatsapp_number_normalized !== allowedTestNumberNormalized) {
       return res.status(403).json({
         ok: false,
         error: 'TEST_RECIPIENT_ONLY',
@@ -806,7 +909,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
 
     try {
       delivery = await sendWhatsAppTemplate({
-        to: user.whatsapp_number,
+        to: user.whatsapp_number_normalized,
         templateName,
         languageCode,
         bodyParameters: [learnerName],
@@ -955,6 +1058,7 @@ async function processOneReminder(ae) {
       email:            true,
       whatsapp_consent: true,
       whatsapp_number:  true,
+      whatsapp_number_normalized: true,
       has_access:       true,
     },
   });
@@ -974,10 +1078,51 @@ async function processOneReminder(ae) {
     if (count === 0) return { result: 'ALREADY_PROCESSED', aeId: ae.id, whatsappSent: false };
     return ineligibleResult(ae, 'NO_WHATSAPP_NUMBER', processedAt, cancelledAt);
   }
+  if (!user.whatsapp_number_normalized) {
+    const { count, processedAt, cancelledAt } =
+      await cancelRow(ae.id, 'INVALID_WHATSAPP_NUMBER');
+    if (count === 0) {
+      return {
+        result: 'ALREADY_PROCESSED',
+        aeId: ae.id,
+        whatsappSent: false,
+      };
+    }
+    return ineligibleResult(
+      ae,
+      'INVALID_WHATSAPP_NUMBER',
+      processedAt,
+      cancelledAt,
+    );
+  }
+
   if (user.has_access) {
     const { count, processedAt, cancelledAt } = await cancelRow(ae.id, 'USER_HAS_ACCESS');
     if (count === 0) return { result: 'ALREADY_PROCESSED', aeId: ae.id, whatsappSent: false };
     return ineligibleResult(ae, 'USER_HAS_ACCESS', processedAt, cancelledAt);
+  }
+
+  const phoneSkipReason =
+    await getPhoneLevelSkipReason(user.id, user.whatsapp_number_normalized);
+
+  if (phoneSkipReason) {
+    const { count, processedAt, cancelledAt } =
+      await cancelRow(ae.id, phoneSkipReason);
+
+    if (count === 0) {
+      return {
+        result: 'ALREADY_PROCESSED',
+        aeId: ae.id,
+        whatsappSent: false,
+      };
+    }
+
+    return ineligibleResult(
+      ae,
+      phoneSkipReason,
+      processedAt,
+      cancelledAt,
+    );
   }
 
   const lesson1 = await prisma.lessonModeProgress.findUnique({

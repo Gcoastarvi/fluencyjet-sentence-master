@@ -27,7 +27,11 @@ const mockPrisma = {
     findMany:    jest.fn(),
     updateMany:  jest.fn(),
   },
-  user:               { findUnique: jest.fn() },
+  user: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+  },
   lessonModeProgress: { findUnique: jest.fn() },
 };
 
@@ -83,6 +87,8 @@ const eligibleUser = {
   email:            'test@example.com',
   whatsapp_consent: true,
   whatsapp_number:  '+919999999999',
+  whatsapp_number_normalized: '+919999999999',
+  whatsapp_opted_out_at: null,
   has_access:       false,
 };
 
@@ -92,6 +98,15 @@ const eligibleUser = {
 beforeEach(() => {
   process.env.AUTOMATION_SECRET = SECRET;
   jest.clearAllMocks();
+
+  mockPrisma.user.findFirst.mockResolvedValue({ id: 42 });
+
+  mockPrisma.user.findMany.mockResolvedValue([
+    {
+      has_access: false,
+      whatsapp_opted_out_at: null,
+    },
+  ]);
 });
 
 afterEach(() => {
