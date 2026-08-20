@@ -141,6 +141,59 @@ function makeStatusDedupKey({
     .digest('hex');
 }
 
+
+const OPT_OUT_COMMANDS = new Set([
+  'STOP',
+  'UNSUBSCRIBE',
+  'CANCEL',
+  'STOP ALL',
+  'UNSUBSCRIBE ALL',
+]);
+
+function normalizeInboundCommand(value) {
+  return String(value ?? '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toUpperCase();
+}
+
+function inboundNumberCandidates(value) {
+  const digits = String(value ?? '').replace(/\D/g, '');
+
+  if (!/^\d{8,15}$/.test(digits)) {
+    return [];
+  }
+
+  const candidates = new Set([
+    digits,
+    `+${digits}`,
+  ]);
+
+  // Backward compatibility for existing FluencyJet India signup rows
+  // that may contain only the 10-digit local number.
+  if (/^91\d{10}$/.test(digits)) {
+    candidates.add(digits.slice(2));
+  }
+
+  return [...candidates];
+}
+
+function makeInboundDedupKey({
+  providerMessageId,
+  senderWaId,
+}) {
+  const canonical = JSON.stringify({
+    providerMessageId,
+    eventType: 'INBOUND_TEXT',
+    senderWaId,
+  });
+
+  return crypto
+    .createHash('sha256')
+    .update(canonical)
+    .digest('hex');
+}
+
 async function processStatusEvents(payload) {
   const summary = {
     processed: 0,
@@ -231,6 +284,168 @@ async function processStatusEvents(payload) {
 
         if (!automationEvent) {
           summary.unlinked += 1;
+        }
+      }
+    }
+  }
+
+  return summary;
+}
+
+
+async function processInboundMessages(payload) {
+  const summary = {
+    processed: 0,
+    duplicates: 0,
+    optOuts: 0,
+    unknownSenders: 0,
+    skipped: 0,
+  };
+
+  const entries = Array.isArray(payload?.entry) ? payload.entry : [];
+
+  for (const entry of entries) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+
+    for (const change of changes) {
+      const value = change?.value;
+      const messages = Array.isArray(value?.messages)
+        ? value.messages
+        : [];
+
+      const recipientWaId =
+        safeText(value?.metadata?.display_phone_number, 30);
+
+      for (const message of messages) {
+        const providerMessageId = safeText(message?.id, 255);
+        const senderWaId = safeText(message?.from, 30);
+        const messageType = safeText(message?.type, 50)?.toLowerCase();
+
+        if (
+          !providerMessageId ||
+          !senderWaId ||
+          messageType !== 'text'
+        ) {
+          summary.skipped += 1;
+          continue;
+        }
+
+        const eventTimestamp =
+          parseMetaTimestamp(message?.timestamp);
+
+        const command =
+          normalizeInboundCommand(message?.text?.body);
+
+        const isOptOut =
+          OPT_OUT_COMMANDS.has(command);
+
+        const dedupKey = makeInboundDedupKey({
+          providerMessageId,
+          senderWaId,
+        });
+
+        try {
+          const outcome = await prisma.$transaction(async (tx) => {
+            await tx.whatsAppMessageEvent.create({
+              data: {
+                automationEventId: null,
+                providerMessageId,
+                eventType: 'INBOUND_TEXT',
+                recipientWaId,
+                senderWaId,
+                eventTimestamp,
+                errorCode: null,
+                errorTitle: null,
+                errorDetails: null,
+                rawPayload: message,
+                dedupKey,
+              },
+            });
+
+            if (!isOptOut) {
+              return 'RECORDED';
+            }
+
+            const candidates =
+              inboundNumberCandidates(senderWaId);
+
+            if (candidates.length === 0) {
+              return 'UNKNOWN';
+            }
+
+            const users = await tx.user.findMany({
+              where: {
+                whatsapp_number: {
+                  in: candidates,
+                },
+              },
+              select: {
+                id: true,
+              },
+            });
+
+            if (users.length === 0) {
+              return 'UNKNOWN';
+            }
+
+            const userIds = [
+              ...new Set(
+                users
+                  .map((user) => user.id)
+                  .filter((id) => Number.isInteger(id)),
+              ),
+            ];
+
+            if (userIds.length === 0) {
+              return 'UNKNOWN';
+            }
+
+            const now = new Date();
+
+            await tx.user.updateMany({
+              where: {
+                id: {
+                  in: userIds,
+                },
+              },
+              data: {
+                whatsapp_consent: false,
+                whatsapp_opted_out_at: now,
+              },
+            });
+
+            await tx.automationEvent.updateMany({
+              where: {
+                userId: {
+                  in: userIds,
+                },
+                eventType: 'LESSON1_SIGNUP_REMINDER',
+                status: 'PENDING',
+              },
+              data: {
+                status: 'CANCELLED',
+                cancelledAt: now,
+                processedAt: now,
+              },
+            });
+
+            return 'OPT_OUT';
+          });
+
+          summary.processed += 1;
+
+          if (outcome === 'OPT_OUT') {
+            summary.optOuts += 1;
+          } else if (outcome === 'UNKNOWN') {
+            summary.unknownSenders += 1;
+          }
+        } catch (error) {
+          if (error?.code === 'P2002') {
+            summary.duplicates += 1;
+            continue;
+          }
+
+          throw error;
         }
       }
     }
@@ -345,11 +560,32 @@ router.post(
       });
     }
 
+    let inboundSummary;
+
+    try {
+      inboundSummary = await processInboundMessages(payload);
+    } catch (error) {
+      console.error(
+        '[webhook/whatsapp] Inbound processing failed:',
+        error?.message || error,
+      );
+
+      return res.status(500).json({
+        ok: false,
+        error: 'WEBHOOK_PROCESSING_FAILED',
+      });
+    }
+
     console.log(
       `[webhook/whatsapp] Authenticated webhook received entries=${entryCount} ` +
         `statusesProcessed=${statusSummary.processed} ` +
-        `duplicates=${statusSummary.duplicates} ` +
-        `unlinked=${statusSummary.unlinked}`,
+        `statusDuplicates=${statusSummary.duplicates} ` +
+        `unlinked=${statusSummary.unlinked} ` +
+        `inboundProcessed=${inboundSummary.processed} ` +
+        `inboundDuplicates=${inboundSummary.duplicates} ` +
+        `optOuts=${inboundSummary.optOuts} ` +
+        `unknownSenders=${inboundSummary.unknownSenders} ` +
+        `inboundSkipped=${inboundSummary.skipped}`,
     );
 
     return res.status(200).json({
