@@ -116,10 +116,6 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
     email = normalizeEmail(String(email || ""));
     password = String(password || "");
 
-    // TEMP DEBUG — keep until fixed
-    console.log("[LOGIN] content-type:", req.headers["content-type"]);
-    console.log("[LOGIN] body:", req.body);
-
     if (!email || !password) {
       return res
         .status(400)
