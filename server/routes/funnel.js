@@ -4,6 +4,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
+import {
+  buildSmartSignupWhatsAppState,
+  buildWebinarWhatsAppState,
+  cancelPendingLesson1Reminder,
+  reconcileLesson1SignupReminder,
+} from "../lib/whatsappIdentity.js";
 
 const router = express.Router();
 
@@ -105,6 +111,14 @@ router.post("/smart-signup", async (req, res) => {
       });
     }
 
+    if (!whatsappNumberNormalized) {
+      return res.status(400).json({
+        ok: false,
+        code: "INVALID_WHATSAPP_NUMBER",
+        message: "Please enter a valid WhatsApp number.",
+      });
+    }
+
     if (!currentStatus || !mainGoal || !practiceCommitment) {
       return res.status(400).json({
         ok: false,
@@ -158,16 +172,32 @@ router.post("/smart-signup", async (req, res) => {
         });
       }
 
+      const whatsappState = buildSmartSignupWhatsAppState({
+        existingUser: user,
+        nextNormalizedNumber: whatsappNumberNormalized,
+        consent: whatsappConsent,
+      });
+
       user = await prisma.user.update({
         where: { id: user.id },
-        data: updateData,
+        data: {
+          ...updateData,
+          ...whatsappState.update,
+        },
       });
     } else {
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      const whatsappState = buildSmartSignupWhatsAppState({
+        existingUser: null,
+        nextNormalizedNumber: whatsappNumberNormalized,
+        consent: whatsappConsent,
+      });
+
       user = await prisma.user.create({
         data: {
           ...updateData,
+          ...whatsappState.update,
           email,
           password: hashedPassword,
           plan: "FREE",
@@ -186,60 +216,12 @@ router.post("/smart-signup", async (req, res) => {
     // ── Automation: schedule or cancel LESSON1_SIGNUP_REMINDER ──────────────
     // Isolated — never blocks signup response.
     try {
-      if (!whatsappConsent) {
-        // Consent not given: cancel any stale PENDING row (e.g. re-signup).
-        await prisma.automationEvent.updateMany({
-          where: {
-            userId:    user.id,
-            eventType: "LESSON1_SIGNUP_REMINDER",
-            status:    "PENDING",
-          },
-          data: { status: "CANCELLED", cancelledAt: new Date() },
-        });
-      } else {
-        // Consent given — check whether Lesson 1 reorder is already 100%.
-        const lesson1Progress = await prisma.lessonModeProgress.findUnique({
-          where: {
-            userId_lessonId_mode: {
-              userId:   String(user.id),
-              lessonId: 1,
-              mode:     "reorder",
-            },
-          },
-        });
-
-        const alreadyDone =
-          lesson1Progress &&
-          lesson1Progress.total > 0 &&
-          lesson1Progress.completed >= lesson1Progress.total;
-
-        // Cancel any existing PENDING row first (re-signup guard / stale-row guard).
-        await prisma.automationEvent.updateMany({
-          where: {
-            userId:    user.id,
-            eventType: "LESSON1_SIGNUP_REMINDER",
-            status:    "PENDING",
-          },
-          data: { status: "CANCELLED", cancelledAt: new Date() },
-        });
-
-        if (!alreadyDone) {
-          // Lesson 1 not yet complete — schedule the reminder.
-          await prisma.automationEvent.create({
-            data: {
-              userId:      user.id,
-              eventType:   "LESSON1_SIGNUP_REMINDER",
-              status:      "PENDING",
-              scheduledAt: new Date(Date.now() + 7 * 60 * 1000),
-              payload: {
-                whatsapp_number: whatsappNumber,
-                source:          "try-spoken-english-gym",
-              },
-            },
-          });
-        }
-        // If alreadyDone: stale PENDING rows already cancelled above; no new row.
-      }
+      await reconcileLesson1SignupReminder({
+        prisma,
+        userId: user.id,
+        whatsappConsent,
+        whatsappNumber,
+      });
     } catch (automationErr) {
       console.error("LESSON1_SIGNUP_REMINDER automation error:", automationErr);
       // Do not rethrow — signup response must not be blocked.
@@ -287,6 +269,30 @@ router.post("/register-webinar", async (req, res) => {
     const whatsappNumber = cleanString(body.whatsapp_number, 30);
     const whatsappNumberNormalized = normalizeWhatsAppNumber(whatsappNumber);
 
+    if (whatsappNumber && !whatsappNumberNormalized) {
+      return res.status(400).json({
+        ok: false,
+        code: "INVALID_WHATSAPP_NUMBER",
+        message: "Please enter a valid WhatsApp number.",
+      });
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({
+        ok: false,
+        message: "User account was not found.",
+      });
+    }
+
+    const whatsappState = buildWebinarWhatsAppState({
+      existingUser,
+      nextNormalizedNumber: whatsappNumberNormalized,
+    });
+
     const user = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -297,8 +303,23 @@ router.post("/register-webinar", async (req, res) => {
         current_status: cleanString(body.current_status, 80),
         main_goal: cleanString(body.main_goal, 120),
         practice_commitment: cleanString(body.practice_commitment, 120),
+        ...whatsappState.update,
       },
     });
+
+    if (whatsappState.identityChanged) {
+      // A webinar registration has no consent input, so a new destination
+      // cannot receive a replacement reminder. Cancellation is best effort
+      // and must never break the registration response.
+      try {
+        await cancelPendingLesson1Reminder(prisma, userId);
+      } catch (automationErr) {
+        console.error(
+          "LESSON1_SIGNUP_REMINDER webinar identity reconciliation error:",
+          automationErr,
+        );
+      }
+    }
 
     return res.json({
       ok: true,
