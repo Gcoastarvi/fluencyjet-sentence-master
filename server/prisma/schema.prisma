@@ -31,6 +31,7 @@ model User {
   xp_events                XpEvent[]
   league_history           LeagueHistory[]
   reset_tokens             PasswordResetToken[]
+  whatsappSuppressionClearances WhatsAppPhoneSuppression[] @relation("WhatsAppSuppressionClearedBy")
   track                    String               @default("BEGINNER")
   current_unit             Int                  @default(1)
   level_check_result       String?
@@ -287,6 +288,7 @@ model AutomationEvent {
   eventType         AutomationType
   status            AutomationStatus       @default(PENDING)
   payload           Json?
+  destinationNumberNormalized String?       @db.VarChar(20)
   createdAt         DateTime               @default(now())
   sentAt            DateTime?
   scheduledAt       DateTime?
@@ -303,11 +305,15 @@ model WhatsAppMessageEvent {
   id                String           @id @default(uuid())
   automationEventId String?
   automationEvent   AutomationEvent? @relation(fields: [automationEventId], references: [id], onDelete: SetNull)
+  suppressionSource WhatsAppPhoneSuppression? @relation("WhatsAppSuppressionSource")
 
   providerMessageId String    @db.VarChar(255)
   eventType         String    @db.VarChar(50)
   recipientWaId     String?   @db.VarChar(30)
   senderWaId        String?   @db.VarChar(30)
+  senderNumberNormalized String? @db.VarChar(20)
+  inboundClassification  String? @db.VarChar(40)
+  inboundCommand         String? @db.VarChar(30)
   eventTimestamp    DateTime?
 
   errorCode    Int?
@@ -321,6 +327,25 @@ model WhatsAppMessageEvent {
   @@index([providerMessageId])
   @@index([automationEventId])
   @@index([eventType, eventTimestamp])
+}
+
+model WhatsAppPhoneSuppression {
+  phoneNumberNormalized String              @id @db.VarChar(20)
+  isOptedOut            Boolean             @default(true)
+  optedOutAt            DateTime?
+  optOutCommand         String?             @db.VarChar(30)
+  sourceEventId         String?             @unique
+  sourceEvent           WhatsAppMessageEvent? @relation("WhatsAppSuppressionSource", fields: [sourceEventId], references: [id], onDelete: SetNull)
+  clearedAt             DateTime?
+  clearanceSource       String?             @db.VarChar(150)
+  clearanceReason       String?             @db.VarChar(255)
+  clearedByUserId       Int?
+  clearedByUser         User?               @relation("WhatsAppSuppressionClearedBy", fields: [clearedByUserId], references: [id], onDelete: SetNull)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+
+  @@index([isOptedOut, optedOutAt])
+  @@index([clearedByUserId])
 }
 
 enum QuizType {

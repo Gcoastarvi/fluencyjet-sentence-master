@@ -318,6 +318,8 @@ async function processInboundMessages(payload) {
 
         const isOptOut =
           OPT_OUT_COMMANDS.has(command);
+        const normalizedSender =
+          normalizeWhatsAppWaId(senderWaId);
 
         const dedupKey = makeInboundDedupKey({
           providerMessageId,
@@ -326,32 +328,58 @@ async function processInboundMessages(payload) {
 
         try {
           const outcome = await prisma.$transaction(async (tx) => {
-            await tx.whatsAppMessageEvent.create({
-              data: {
-                automationEventId: null,
-                providerMessageId,
-                eventType: 'INBOUND_TEXT',
-                recipientWaId,
-                senderWaId,
-                eventTimestamp,
-                errorCode: null,
-                errorTitle: null,
-                errorDetails: null,
-                rawPayload: message,
-                dedupKey,
-              },
-            });
+            const inboundEvent =
+              await tx.whatsAppMessageEvent.create({
+                data: {
+                  automationEventId: null,
+                  providerMessageId,
+                  eventType: 'INBOUND_TEXT',
+                  recipientWaId,
+                  senderWaId,
+                  senderNumberNormalized: normalizedSender,
+                  inboundClassification: isOptOut ? 'OPT_OUT' : 'OTHER',
+                  inboundCommand: isOptOut ? command : null,
+                  eventTimestamp,
+                  errorCode: null,
+                  errorTitle: null,
+                  errorDetails: null,
+                  rawPayload: message,
+                  dedupKey,
+                },
+              });
 
             if (!isOptOut) {
               return 'RECORDED';
             }
 
-            const normalizedSender =
-              normalizeWhatsAppWaId(senderWaId);
-
             if (!normalizedSender) {
               return 'UNKNOWN';
             }
+
+            const now = new Date();
+
+            await tx.whatsAppPhoneSuppression.upsert({
+              where: {
+                phoneNumberNormalized: normalizedSender,
+              },
+              create: {
+                phoneNumberNormalized: normalizedSender,
+                isOptedOut: true,
+                optedOutAt: now,
+                optOutCommand: command,
+                sourceEventId: inboundEvent.id,
+              },
+              update: {
+                isOptedOut: true,
+                optedOutAt: now,
+                optOutCommand: command,
+                sourceEventId: inboundEvent.id,
+                clearedAt: null,
+                clearanceSource: null,
+                clearanceReason: null,
+                clearedByUserId: null,
+              },
+            });
 
             const users = await tx.user.findMany({
               where: {
@@ -377,8 +405,6 @@ async function processInboundMessages(payload) {
             if (userIds.length === 0) {
               return 'UNKNOWN';
             }
-
-            const now = new Date();
 
             await tx.user.updateMany({
               where: {

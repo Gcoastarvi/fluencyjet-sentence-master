@@ -184,6 +184,7 @@ describe("smart-signup WhatsApp identity safety", () => {
         userId: USER_ID,
         eventType: "LESSON1_SIGNUP_REMINDER",
         status: "PENDING",
+        destinationNumberNormalized: NEW_NUMBER,
         scheduledAt: expect.any(Date),
         payload: {
           whatsapp_number: NEW_NUMBER,

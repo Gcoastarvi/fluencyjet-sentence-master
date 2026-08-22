@@ -221,6 +221,7 @@ router.post("/smart-signup", async (req, res) => {
         userId: user.id,
         whatsappConsent,
         whatsappNumber,
+        whatsappNumberNormalized,
       });
     } catch (automationErr) {
       console.error("LESSON1_SIGNUP_REMINDER automation error:", automationErr);

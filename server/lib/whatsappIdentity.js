@@ -83,6 +83,7 @@ export async function reconcileLesson1SignupReminder({
   userId,
   whatsappConsent,
   whatsappNumber,
+  whatsappNumberNormalized,
   source = "try-spoken-english-gym",
 }) {
   if (!whatsappConsent) {
@@ -118,6 +119,7 @@ export async function reconcileLesson1SignupReminder({
       userId,
       eventType: LESSON1_SIGNUP_REMINDER,
       status: "PENDING",
+      destinationNumberNormalized: whatsappNumberNormalized,
       scheduledAt: new Date(Date.now() + 7 * 60 * 1000),
       payload: {
         whatsapp_number: whatsappNumber,

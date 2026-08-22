@@ -19,6 +19,10 @@ const mockPrisma = {
   whatsAppMessageEvent: {
     create: jest.fn(),
   },
+
+  whatsAppPhoneSuppression: {
+    upsert: jest.fn(),
+  },
 };
 
 jest.unstable_mockModule('../db/client.js', () => ({
@@ -108,6 +112,10 @@ describe('WhatsApp webhook inbound message processing', () => {
       id: 'inbound-event-id',
     });
 
+    mockPrisma.whatsAppPhoneSuppression.upsert.mockResolvedValue({
+      phoneNumberNormalized: '+919876543210',
+    });
+
     mockPrisma.user.findMany.mockResolvedValue([]);
     mockPrisma.user.updateMany.mockResolvedValue({ count: 1 });
     mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
@@ -141,6 +149,9 @@ describe('WhatsApp webhook inbound message processing', () => {
           providerMessageId: 'wamid.INBOUND_HELLO',
           eventType: 'INBOUND_TEXT',
           senderWaId: '919876543210',
+          senderNumberNormalized: '+919876543210',
+          inboundClassification: 'OTHER',
+          inboundCommand: null,
           eventTimestamp: expect.any(Date),
           errorCode: null,
           errorTitle: null,
@@ -152,6 +163,7 @@ describe('WhatsApp webhook inbound message processing', () => {
 
     expect(mockPrisma.user.updateMany).not.toHaveBeenCalled();
     expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.whatsAppPhoneSuppression.upsert).not.toHaveBeenCalled();
   });
 
   test('STOP opts out one matched user and cancels only pending Lesson 1 reminders', async () => {
@@ -172,6 +184,38 @@ describe('WhatsApp webhook inbound message processing', () => {
     expect(res.status).toBe(200);
 
     expect(mockPrisma.user.findMany).toHaveBeenCalled();
+
+    expect(mockPrisma.whatsAppMessageEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        senderNumberNormalized: '+919876543210',
+        inboundClassification: 'OPT_OUT',
+        inboundCommand: 'STOP',
+      }),
+    });
+
+    expect(mockPrisma.whatsAppPhoneSuppression.upsert)
+      .toHaveBeenCalledWith({
+        where: {
+          phoneNumberNormalized: '+919876543210',
+        },
+        create: {
+          phoneNumberNormalized: '+919876543210',
+          isOptedOut: true,
+          optedOutAt: expect.any(Date),
+          optOutCommand: 'STOP',
+          sourceEventId: 'inbound-event-id',
+        },
+        update: {
+          isOptedOut: true,
+          optedOutAt: expect.any(Date),
+          optOutCommand: 'STOP',
+          sourceEventId: 'inbound-event-id',
+          clearedAt: null,
+          clearanceSource: null,
+          clearanceReason: null,
+          clearedByUserId: null,
+        },
+      });
 
     const userLookup =
       mockPrisma.user.findMany.mock.calls[0][0];
@@ -211,6 +255,36 @@ describe('WhatsApp webhook inbound message processing', () => {
       });
   });
 
+  test('new STOP reactivates suppression and clears stale clearance metadata', async () => {
+    mockPrisma.user.findMany.mockResolvedValue([]);
+
+    const res = await sendPayload(
+      inboundTextPayload({
+        body: 'STOP',
+        from: '919876543210',
+        id: 'wamid.INBOUND_REACTIVATE',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.whatsAppPhoneSuppression.upsert)
+      .toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          phoneNumberNormalized: '+919876543210',
+        },
+        update: {
+          isOptedOut: true,
+          optedOutAt: expect.any(Date),
+          optOutCommand: 'STOP',
+          sourceEventId: 'inbound-event-id',
+          clearedAt: null,
+          clearanceSource: null,
+          clearanceReason: null,
+          clearedByUserId: null,
+        },
+      }));
+  });
+
   test('unknown sender is recorded without mutating any user', async () => {
     mockPrisma.user.findMany.mockResolvedValue([]);
 
@@ -226,6 +300,17 @@ describe('WhatsApp webhook inbound message processing', () => {
 
     expect(mockPrisma.whatsAppMessageEvent.create)
       .toHaveBeenCalled();
+
+    expect(mockPrisma.whatsAppPhoneSuppression.upsert)
+      .toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          phoneNumberNormalized: '+919111111111',
+        },
+        create: expect.objectContaining({
+          phoneNumberNormalized: '+919111111111',
+          sourceEventId: 'inbound-event-id',
+        }),
+      }));
 
     expect(mockPrisma.user.findMany)
       .toHaveBeenCalled();
@@ -341,6 +426,9 @@ describe('WhatsApp webhook inbound message processing', () => {
       .not.toHaveBeenCalled();
 
     expect(mockPrisma.automationEvent.updateMany)
+      .not.toHaveBeenCalled();
+
+    expect(mockPrisma.whatsAppPhoneSuppression.upsert)
       .not.toHaveBeenCalled();
   });
 
