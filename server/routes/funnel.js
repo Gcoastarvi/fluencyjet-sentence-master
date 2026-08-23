@@ -8,6 +8,7 @@ import {
   buildSmartSignupWhatsAppState,
   buildWebinarWhatsAppState,
   cancelPendingLesson1Reminder,
+  clearWhatsAppPhoneSuppressionOnExplicitConsent,
   reconcileLesson1SignupReminder,
 } from "../lib/whatsappIdentity.js";
 
@@ -129,6 +130,7 @@ router.post("/smart-signup", async (req, res) => {
     const reserveSeat = body.reserve_seat !== false;
     const whatsappConsent = body.whatsapp_consent === true;
 
+    const consentRecordedAt = new Date();
     const updateData = {
       name,
       track,
@@ -144,7 +146,7 @@ router.post("/smart-signup", async (req, res) => {
       webinar_registered: reserveSeat,
       webinar_registered_at: reserveSeat ? new Date() : null,
       whatsapp_consent: whatsappConsent,
-      whatsapp_consent_at: whatsappConsent ? new Date() : null,
+      whatsapp_consent_at: whatsappConsent ? consentRecordedAt : null,
       whatsapp_consent_source: whatsappConsent ? "try-spoken-english-gym" : null,
       utm_source: cleanString(body.utm_source, 150),
       utm_medium: cleanString(body.utm_medium, 150),
@@ -157,11 +159,15 @@ router.post("/smart-signup", async (req, res) => {
       ad: cleanString(body.ad, 200),
     };
 
-    let user = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    let user;
     let createdNewUser = false;
 
-    if (user) {
-      const passwordMatches = await bcrypt.compare(password, user.password);
+    if (existingUser) {
+      const passwordMatches = await bcrypt.compare(
+        password,
+        existingUser.password,
+      );
 
       if (!passwordMatches) {
         return res.status(409).json({
@@ -172,43 +178,51 @@ router.post("/smart-signup", async (req, res) => {
         });
       }
 
-      const whatsappState = buildSmartSignupWhatsAppState({
-        existingUser: user,
-        nextNormalizedNumber: whatsappNumberNormalized,
-        consent: whatsappConsent,
-      });
-
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          ...updateData,
-          ...whatsappState.update,
-        },
-      });
-    } else {
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      const whatsappState = buildSmartSignupWhatsAppState({
-        existingUser: null,
-        nextNormalizedNumber: whatsappNumberNormalized,
-        consent: whatsappConsent,
-      });
-
-      user = await prisma.user.create({
-        data: {
-          ...updateData,
-          ...whatsappState.update,
-          email,
-          password: hashedPassword,
-          plan: "FREE",
-          has_access: false,
-          tier_level: "free",
-          avatar_url: "/avatars/avatar-01.png",
-        },
-      });
-
-      createdNewUser = true;
     }
+
+    const hashedPassword = existingUser
+      ? null
+      : await bcrypt.hash(password, 10);
+    const whatsappState = buildSmartSignupWhatsAppState({
+      existingUser,
+      nextNormalizedNumber: whatsappNumberNormalized,
+      consent: whatsappConsent,
+      now: consentRecordedAt,
+    });
+
+    user = await prisma.$transaction(async (tx) => {
+      const savedUser = existingUser
+        ? await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              ...updateData,
+              ...whatsappState.update,
+            },
+          })
+        : await tx.user.create({
+            data: {
+              ...updateData,
+              ...whatsappState.update,
+              email,
+              password: hashedPassword,
+              plan: "FREE",
+              has_access: false,
+              tier_level: "free",
+              avatar_url: "/avatars/avatar-01.png",
+            },
+          });
+
+      await clearWhatsAppPhoneSuppressionOnExplicitConsent({
+        prisma: tx,
+        userId: savedUser.id,
+        phoneNumberNormalized: whatsappNumberNormalized,
+        consent: whatsappConsent,
+        now: consentRecordedAt,
+      });
+
+      return savedUser;
+    });
+    createdNewUser = !existingUser;
 
     const token = signToken(user);
     setAuthCookie(res, token);

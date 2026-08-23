@@ -1,4 +1,8 @@
 export const LESSON1_SIGNUP_REMINDER = "LESSON1_SIGNUP_REMINDER";
+export const WHATSAPP_SUPPRESSION_CLEARANCE_SOURCE =
+  "try-spoken-english-gym";
+export const WHATSAPP_SUPPRESSION_CLEARANCE_REASON =
+  "explicit-whatsapp-consent";
 
 export function whatsappIdentityChanged(
   previousNormalizedNumber,
@@ -62,6 +66,32 @@ export function buildWebinarWhatsAppState({
       whatsapp_opted_out_at: null,
     },
   };
+}
+
+export async function clearWhatsAppPhoneSuppressionOnExplicitConsent({
+  prisma,
+  userId,
+  phoneNumberNormalized,
+  consent,
+  now = new Date(),
+}) {
+  if (consent !== true || !phoneNumberNormalized) {
+    return { count: 0 };
+  }
+
+  return prisma.whatsAppPhoneSuppression.updateMany({
+    where: {
+      phoneNumberNormalized,
+      isOptedOut: true,
+    },
+    data: {
+      isOptedOut: false,
+      clearedAt: now,
+      clearanceSource: WHATSAPP_SUPPRESSION_CLEARANCE_SOURCE,
+      clearanceReason: WHATSAPP_SUPPRESSION_CLEARANCE_REASON,
+      clearedByUserId: userId,
+    },
+  });
 }
 
 export async function cancelPendingLesson1Reminder(prisma, userId) {

@@ -11,6 +11,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 
 const mockPrisma = {
+  $transaction: jest.fn(),
   user: {
     findUnique: jest.fn(),
     update: jest.fn(),
@@ -19,6 +20,9 @@ const mockPrisma = {
   automationEvent: {
     updateMany: jest.fn(),
     create: jest.fn(),
+  },
+  whatsAppPhoneSuppression: {
+    updateMany: jest.fn(),
   },
   lessonModeProgress: {
     findUnique: jest.fn(),
@@ -116,9 +120,15 @@ beforeEach(() => {
   }));
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.automationEvent.create.mockResolvedValue({ id: "event-1" });
+  mockPrisma.whatsAppPhoneSuppression.updateMany.mockResolvedValue({
+    count: 1,
+  });
   mockPrisma.lessonModeProgress.findUnique.mockResolvedValue(null);
   mockBcrypt.compare.mockResolvedValue(true);
   mockBcrypt.hash.mockResolvedValue("new-hashed-password");
+  mockPrisma.$transaction.mockImplementation(async (callback) =>
+    callback(mockPrisma),
+  );
 });
 
 afterEach(() => {
@@ -305,6 +315,71 @@ describe("smart-signup WhatsApp identity safety", () => {
     expect(updateData.whatsapp_opted_out_at).toBeNull();
     expect(updateData.whatsapp_consent).toBe(true);
     expect(mockPrisma.automationEvent.create).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.whatsAppPhoneSuppression.updateMany).toHaveBeenCalledWith(
+      {
+        where: {
+          phoneNumberNormalized: OLD_NUMBER,
+          isOptedOut: true,
+        },
+        data: {
+          isOptedOut: false,
+          clearedAt: expect.any(Date),
+          clearanceSource: "try-spoken-english-gym",
+          clearanceReason: "explicit-whatsapp-consent",
+          clearedByUserId: USER_ID,
+        },
+      },
+    );
+  });
+
+  test.each([
+    ["omitted consent", undefined],
+    ["false consent", false],
+  ])(
+    "does not clear durable suppression for a same-number signup with %s",
+    async (_label, whatsappConsent) => {
+      mockExistingUser(
+        makeUser({
+          whatsapp_opted_out_at: new Date("2026-08-20T10:00:00.000Z"),
+        }),
+      );
+
+      const body = signupBody({
+        whatsapp_number: "+91 98765 43210",
+      });
+      if (whatsappConsent === undefined) {
+        delete body.whatsapp_consent;
+      } else {
+        body.whatsapp_consent = whatsappConsent;
+      }
+
+      const res = await request(makeApp())
+        .post("/api/funnel/smart-signup")
+        .send(body);
+
+      expect(res.status).toBe(200);
+      expect(
+        mockPrisma.whatsAppPhoneSuppression.updateMany,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  test("does not clear durable suppression when changing numbers without consent", async () => {
+    mockExistingUser(makeUser());
+
+    const res = await request(makeApp())
+      .post("/api/funnel/smart-signup")
+      .send(
+        signupBody({
+          whatsapp_number: NEW_NUMBER,
+          whatsapp_consent: false,
+        }),
+      );
+
+    expect(res.status).toBe(200);
+    expect(
+      mockPrisma.whatsAppPhoneSuppression.updateMany,
+    ).not.toHaveBeenCalled();
   });
 
   test("eligible smart-signup reschedules but completed Lesson 1 gets no replacement", async () => {
@@ -374,6 +449,9 @@ describe("webinar registration WhatsApp identity safety", () => {
     expect(updateData).not.toHaveProperty("whatsapp_consent_source");
     expect(updateData).not.toHaveProperty("whatsapp_opted_out_at");
     expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(
+      mockPrisma.whatsAppPhoneSuppression.updateMany,
+    ).not.toHaveBeenCalled();
   });
 
   test("true canonical change resets consent, clears opt-out, and cancels pending only", async () => {
@@ -423,6 +501,9 @@ describe("webinar registration WhatsApp identity safety", () => {
       },
     });
     expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
+    expect(
+      mockPrisma.whatsAppPhoneSuppression.updateMany,
+    ).not.toHaveBeenCalled();
     expect(lifecycleRows).toEqual([
       expect.objectContaining({ id: "pending", status: "CANCELLED" }),
       expect.objectContaining({ id: "sent", status: "SENT" }),
