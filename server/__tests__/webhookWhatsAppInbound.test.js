@@ -322,6 +322,42 @@ describe('WhatsApp webhook inbound message processing', () => {
       .not.toHaveBeenCalled();
   });
 
+  test('formatting-equivalent sender is stored and suppressed under one canonical destination', async () => {
+    mockPrisma.user.findMany.mockResolvedValue([{ id: 4201 }]);
+
+    const res = await sendPayload(
+      inboundTextPayload({
+        body: 'STOP',
+        from: '+91 98765 43210',
+        id: 'wamid.INBOUND_FORMATTED',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.whatsAppMessageEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        senderWaId: '+91 98765 43210',
+        senderNumberNormalized: '+919876543210',
+        inboundClassification: 'OPT_OUT',
+        inboundCommand: 'STOP',
+      }),
+    });
+    expect(mockPrisma.whatsAppPhoneSuppression.upsert)
+      .toHaveBeenCalledWith(expect.objectContaining({
+        where: {
+          phoneNumberNormalized: '+919876543210',
+        },
+      }));
+    expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+      where: {
+        whatsapp_number_normalized: '+919876543210',
+      },
+      select: {
+        id: true,
+      },
+    });
+  });
+
   test('STOP opts out all accounts sharing the matched WhatsApp number', async () => {
     mockPrisma.user.findMany.mockResolvedValue([
       { id: 4201 },
