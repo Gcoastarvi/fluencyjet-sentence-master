@@ -41,6 +41,15 @@ const DEFAULT_SENDING_MONITOR_WINDOW_MINUTES = 1_440;
 const MAX_SENDING_MONITOR_WINDOW_MINUTES = 525_600;
 const DEFAULT_SENDING_MONITOR_HISTORY_LIMIT = 25;
 const MAX_SENDING_MONITOR_HISTORY_LIMIT = 100;
+const DEFAULT_DUE_REMINDER_PREVIEW_LIMIT = 10;
+const MAX_DUE_REMINDER_PREVIEW_LIMIT = 10;
+
+function getLesson1TemplateConfiguration() {
+  return {
+    templateName: (process.env.WHATSAPP_LESSON1_TEMPLATE_NAME || '').trim(),
+    languageCode: (process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE || '').trim(),
+  };
+}
 
 async function sendTemplateWithinDestinationLock(
   sendTemplate,
@@ -203,6 +212,25 @@ async function getLiveReminderEligibility(ae, database = prisma) {
     skipReason: null,
     user,
   };
+}
+
+async function isLesson1Complete(userId, database = prisma) {
+  const lesson1 = await database.lessonModeProgress.findUnique({
+    where: {
+      userId_lessonId_mode: {
+        userId: String(userId),
+        lessonId: 1,
+        mode: 'reorder',
+      },
+    },
+    select: { completed: true, total: true },
+  });
+
+  return (
+    lesson1 !== null &&
+    lesson1.total > 0 &&
+    lesson1.completed >= lesson1.total
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1039,6 +1067,146 @@ router.get('/sending-monitor', async (req, res) => {
     });
   } catch {
     console.error('[AUTOMATION-SENDING-MONITOR] Database read failed.');
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+    });
+  }
+});
+
+function formatDueReminderPreviewRow(ae, eligibility, now) {
+  const reasonCode = eligibility.skipReason ?? null;
+
+  return {
+    automationEventId: ae.id,
+    eventType: ae.eventType,
+    status: ae.status,
+    scheduledAt: formatSendingAuditDate(ae.scheduledAt),
+    due: ae.scheduledAt instanceof Date && ae.scheduledAt <= now,
+    destination: ae.destinationNumberNormalized ? '[masked]' : null,
+    eligibility: {
+      decision: reasonCode ? 'EXCLUDED' : 'ELIGIBLE',
+      reasonCode,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/automation/due-reminder-preview
+//
+// Bounded operator preview only. This route intentionally has no writes,
+// transactions, locks, provider calls, retries, or work discovery.
+// ---------------------------------------------------------------------------
+router.get('/due-reminder-preview', async (req, res) => {
+  if (!checkAuth(req, res, 'AUTOMATION-DUE-REMINDER-PREVIEW')) return;
+
+  const allowedQueryFields = new Set(['limit']);
+  const unknownFields = Object.keys(req.query || {}).filter(
+    (key) => !allowedQueryFields.has(key),
+  );
+
+  if (unknownFields.length > 0) {
+    return res.status(400).json({
+      ok: false,
+      error: 'UNKNOWN_QUERY_FIELDS',
+    });
+  }
+
+  const limit = parseSendingAuditInteger(req.query?.limit, {
+    name: 'limit',
+    defaultValue: DEFAULT_DUE_REMINDER_PREVIEW_LIMIT,
+    minimum: 1,
+    maximum: MAX_DUE_REMINDER_PREVIEW_LIMIT,
+  });
+
+  if (typeof limit === 'object') {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_QUERY_PARAMETERS',
+      message: limit.error,
+    });
+  }
+
+  const { templateName, languageCode } = getLesson1TemplateConfiguration();
+  if (!templateName || !languageCode) {
+    return res.status(503).json({
+      ok: false,
+      error: 'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
+    });
+  }
+
+  const now = new Date();
+
+  try {
+    const dueEvents = await prisma.automationEvent.findMany({
+      where: {
+        eventType: 'LESSON1_SIGNUP_REMINDER',
+        status: 'PENDING',
+        scheduledAt: { lte: now },
+      },
+      orderBy: [
+        { scheduledAt: 'asc' },
+        { id: 'asc' },
+      ],
+      take: limit,
+      select: {
+        id: true,
+        eventType: true,
+        status: true,
+        userId: true,
+        scheduledAt: true,
+        destinationNumberNormalized: true,
+      },
+    });
+
+    const rows = [];
+    const exclusionReasons = {};
+
+    for (const ae of dueEvents.slice(0, limit)) {
+      const eligibility = await getLiveReminderEligibility(ae, prisma);
+      const learnerName = String(eligibility.user?.name || '').trim();
+
+      if (!eligibility.skipReason && !learnerName) {
+        eligibility.skipReason = 'WHATSAPP_TEMPLATE_PARAMETER_MISSING';
+      }
+
+      const lesson1Complete =
+        !eligibility.skipReason &&
+        await isLesson1Complete(ae.userId, prisma);
+
+      if (lesson1Complete) {
+        eligibility.skipReason = 'LESSON1_COMPLETE';
+      }
+
+      const row = formatDueReminderPreviewRow(ae, eligibility, now);
+      rows.push(row);
+
+      if (row.eligibility.reasonCode) {
+        const reason = row.eligibility.reasonCode;
+        exclusionReasons[reason] = (exclusionReasons[reason] || 0) + 1;
+      }
+    }
+
+    const eligible = rows.filter(
+      (row) => row.eligibility.decision === 'ELIGIBLE',
+    ).length;
+    const excluded = rows.length - eligible;
+
+    return res.json({
+      ok: true,
+      preview: 'LESSON1_SIGNUP_REMINDER',
+      generatedAt: now.toISOString(),
+      limit,
+      counts: {
+        examined: rows.length,
+        eligible,
+        excluded,
+        exclusionReasons,
+      },
+      rows,
+    });
+  } catch {
+    console.error('[AUTOMATION-DUE-REMINDER-PREVIEW] Database read failed.');
     return res.status(500).json({
       ok: false,
       error: 'INTERNAL_ERROR',
@@ -1941,10 +2109,7 @@ export function createLiveReminderHandler({
   }
 
   // Template configuration is also fail-closed.
-  const templateName =
-    (process.env.WHATSAPP_LESSON1_TEMPLATE_NAME || '').trim();
-  const languageCode =
-    (process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE || '').trim();
+  const { templateName, languageCode } = getLesson1TemplateConfiguration();
 
   if (!templateName || !languageCode) {
     return res.status(503).json({
@@ -2037,21 +2202,7 @@ export function createLiveReminderHandler({
       });
     }
 
-    const lesson1 = await database.lessonModeProgress.findUnique({
-      where: {
-        userId_lessonId_mode: {
-          userId: String(ae.userId),
-          lessonId: 1,
-          mode: 'reorder',
-        },
-      },
-      select: { completed: true, total: true },
-    });
-
-    const lesson1Complete =
-      lesson1 !== null &&
-      lesson1.total > 0 &&
-      lesson1.completed >= lesson1.total;
+    const lesson1Complete = await isLesson1Complete(ae.userId, database);
 
     if (lesson1Complete) {
       const result = await cancelRow(ae.id, 'LESSON1_COMPLETE', database);
@@ -2426,19 +2577,7 @@ async function processOneReminder(ae) {
     );
   }
 
-  const lesson1 = await prisma.lessonModeProgress.findUnique({
-    where: {
-      userId_lessonId_mode: {
-        userId:   String(ae.userId),
-        lessonId: 1,
-        mode:     'reorder',
-      },
-    },
-    select: { completed: true, total: true },
-  });
-
-  const lesson1Complete =
-    lesson1 !== null && lesson1.total > 0 && lesson1.completed >= lesson1.total;
+  const lesson1Complete = await isLesson1Complete(ae.userId);
 
   if (lesson1Complete) {
     const { count, processedAt, cancelledAt } = await cancelRow(ae.id, 'LESSON1_COMPLETE');
