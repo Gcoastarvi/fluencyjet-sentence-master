@@ -211,12 +211,12 @@ function getSendingMonitor(app, query = {}) {
     .set('Authorization', `Bearer ${automationSecret}`);
 }
 
-async function expectPlanUsesIndex(indexName, statement) {
-  const planRows = await controlClient.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe('SET LOCAL enable_seqscan = off');
-    return tx.$queryRawUnsafe(`EXPLAIN (FORMAT JSON) ${statement}`);
-  });
-  expect(JSON.stringify(planRows)).toContain(indexName);
+async function expectPlanUsesIndexes(indexNames, statement) {
+  const planRows = await controlClient.$queryRawUnsafe(
+    `EXPLAIN (FORMAT JSON) ${statement}`,
+  );
+  const plan = JSON.stringify(planRows);
+  indexNames.forEach((indexName) => expect(plan).toContain(indexName));
 }
 
 function webhookSignature(rawBody) {
@@ -741,6 +741,82 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
   });
 
   test('uses the dedicated monitor indexes for bounded status, window, and history access', async () => {
+    const createdAtFallback = await createFixture(99001);
+    await controlClient.automationEvent.update({
+      where: { id: createdAtFallback.event.id },
+      data: {
+        processedAt: null,
+        createdAt: new Date(),
+      },
+    });
+    const staleFallbackUsers = Array.from({ length: 128 }, (_value, index) => {
+      const fixtureIndex = 99100 + index;
+      const number = `+1997${runToken}${fixtureIndex}`;
+      testNumbers.add(number);
+      return {
+        number,
+        email: `reconciliation-${runToken}-${fixtureIndex}@example.test`,
+      };
+    });
+    await controlClient.user.createMany({
+      data: staleFallbackUsers.map(({ number, email }) => ({
+        name: 'Reconciliation Test',
+        email,
+        password: 'not-a-real-password',
+        whatsapp_number: number,
+        whatsapp_number_normalized: number,
+        whatsapp_consent: true,
+        whatsapp_consent_at: new Date(),
+        has_access: false,
+      })),
+    });
+    const staleFallbackUserRows = await controlClient.user.findMany({
+      where: { email: { in: staleFallbackUsers.map(({ email }) => email) } },
+      select: { id: true },
+    });
+    staleFallbackUserRows.forEach(({ id }) => testUserIds.add(id));
+    const staleCreatedAt = new Date(Date.now() - 2 * 60 * 60_000);
+    const staleFallbackEvents = staleFallbackUserRows.map(({ id }, index) => ({
+      id: crypto.randomUUID(),
+      userId: id,
+      eventType: 'LESSON1_SIGNUP_REMINDER',
+      status: 'SENDING',
+      destinationNumberNormalized: staleFallbackUsers[index].number,
+      scheduledAt: staleCreatedAt,
+      processedAt: null,
+      createdAt: staleCreatedAt,
+      payload: { integration: true },
+    }));
+    await controlClient.automationEvent.createMany({ data: staleFallbackEvents });
+    staleFallbackEvents.forEach(({ id }) => testEventIds.add(id));
+    await controlClient.automationEvent.updateMany({
+      where: { id: { in: staleFallbackEvents.slice(0, 64).map(({ id }) => id) } },
+      data: {
+        status: 'PENDING',
+        scheduledAt: new Date(Date.now() + 2 * 60 * 60_000),
+      },
+    });
+    const unrelatedEvents = Array.from({ length: 1024 }, () => ({
+      id: crypto.randomUUID(),
+      userId: createdAtFallback.user.id,
+      eventType: 'DAY3_WEBINAR',
+      status: 'SENT',
+      createdAt: staleCreatedAt,
+      payload: { integration: true },
+    }));
+    await controlClient.automationEvent.createMany({ data: unrelatedEvents });
+    unrelatedEvents.forEach(({ id }) => testEventIds.add(id));
+    const unrelatedWebhookEvents = Array.from({ length: 1024 }, (_value, index) => ({
+      id: crypto.randomUUID(),
+      providerMessageId: `wamid.monitor.noise.${runToken}.${index}`,
+      eventType: 'SENT',
+      dedupKey: crypto.randomBytes(32).toString('hex'),
+      createdAt: new Date(),
+    }));
+    await controlClient.whatsAppMessageEvent.createMany({
+      data: unrelatedWebhookEvents,
+    });
+    unrelatedWebhookEvents.forEach(({ id }) => testEvidenceIds.add(id));
     const historicalFailures = Array.from({ length: 128 }, (_value, index) => ({
       id: crypto.randomUUID(),
       providerMessageId: `wamid.monitor.history.${runToken}.${index}`,
@@ -753,52 +829,121 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
       data: historicalFailures,
     });
     for (const row of historicalFailures) testEvidenceIds.add(row.id);
+    const journalRows = Array.from({ length: 1028 }, (_value, index) => ({
+      id: crypto.randomUUID(),
+      automationEventId: createdAtFallback.event.id,
+      idempotencyKey: `monitor-plan-${runToken}-${index}`,
+      requestHash: crypto.randomBytes(32).toString('hex'),
+      action: 'QUARANTINE',
+      decision: 'REJECTED',
+      priorStatus: 'SENDING',
+      resultingStatus: 'SENDING',
+      reasonCode: 'OUTCOME_UNKNOWN',
+      authMethod: 'AUTOMATION_BEARER',
+      createdAt: new Date(
+        Date.now() - (index < 1024 ? 2 * 24 * 60 * 60_000 : index * 1_000),
+      ),
+    }));
+    await controlClient.automationReconciliationJournal.createMany({
+      data: journalRows,
+    });
+    await controlClient.$executeRawUnsafe('ANALYZE "AutomationEvent"');
     await controlClient.$executeRawUnsafe('ANALYZE "WhatsAppMessageEvent"');
+    await controlClient.$executeRawUnsafe('ANALYZE "AutomationReconciliationJournal"');
 
-    await expectPlanUsesIndex(
-      'AutomationEvent_eventType_status_scheduledAt_idx',
+    const partialIndexRows = await controlClient.$queryRaw`
+      SELECT indexdef
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND indexname = 'AutomationEvent_eventType_status_createdAt_idx'
+    `;
+    expect(partialIndexRows).toHaveLength(1);
+    expect(partialIndexRows[0].indexdef).toContain(
+      'WHERE ("processedAt" IS NULL)',
+    );
+
+    await expectPlanUsesIndexes(
+      ['AutomationEvent_eventType_status_scheduledAt_idx'],
       `
-        SELECT "scheduledAt"
+        SELECT 'due' AS "bucket", COUNT(*) AS "count"
         FROM "AutomationEvent"
         WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
           AND "status" = 'PENDING'
+          AND "scheduledAt" IS NOT NULL
           AND "scheduledAt" <= NOW()
-        ORDER BY "scheduledAt" DESC
-        LIMIT 5
+        UNION ALL
+        SELECT 'scheduledFuture' AS "bucket", COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'PENDING'
+          AND "scheduledAt" > NOW()
+        UNION ALL
+        SELECT 'unscheduled' AS "bucket", COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'PENDING'
+          AND "scheduledAt" IS NULL
       `,
     );
-    await expectPlanUsesIndex(
-      'AutomationEvent_eventType_status_processedAt_idx',
+    await expectPlanUsesIndexes(
+      [
+        'AutomationEvent_eventType_status_processedAt_idx',
+        'AutomationEvent_eventType_status_createdAt_idx',
+      ],
       `
-        SELECT "processedAt"
+        SELECT 'under15Minutes' AS "bucket", COUNT(*) AS "count"
         FROM "AutomationEvent"
         WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
           AND "status" = 'SENDING'
           AND "processedAt" > NOW() - INTERVAL '15 minutes'
-        ORDER BY "processedAt" DESC
-        LIMIT 5
+        UNION ALL
+        SELECT 'under15Minutes' AS "bucket", COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" IS NULL
+          AND "createdAt" > NOW() - INTERVAL '15 minutes'
       `,
     );
-    await expectPlanUsesIndex(
-      'WhatsAppMessageEvent_eventType_createdAt_idx',
+    await expectPlanUsesIndexes(
+      ['WhatsAppMessageEvent_eventType_createdAt_idx'],
       `
-        SELECT COUNT(*)
+        SELECT
+          COUNT(*) AS "observedInWindow",
+          COUNT(*) FILTER (
+            WHERE "automationEventId" IS NOT NULL
+          ) AS "linkedToAutomationEvent",
+          COUNT(*) FILTER (
+            WHERE "automationEventId" IS NULL
+          ) AS "unlinked",
+          COUNT(*) FILTER (
+            WHERE "eventTimestamp" IS NULL
+          ) AS "missingTimestamp"
         FROM "WhatsAppMessageEvent"
         WHERE "eventType" = 'FAILED'
           AND "createdAt" >= NOW() - INTERVAL '60 minutes'
       `,
     );
-    await expectPlanUsesIndex(
-      'AutomationReconciliationJournal_createdAt_id_idx',
+    await expectPlanUsesIndexes(
+      ['AutomationReconciliationJournal_createdAt_id_idx'],
       `
-        SELECT j."id"
+        SELECT
+          j."id",
+          j."automationEventId",
+          j."createdAt",
+          j."action",
+          j."decision",
+          j."priorStatus",
+          j."resultingStatus",
+          j."reasonCode",
+          j."evidenceStatus"
         FROM "AutomationReconciliationJournal" j
         INNER JOIN "AutomationEvent" ae
           ON ae."id" = j."automationEventId"
         WHERE j."createdAt" >= NOW() - INTERVAL '60 minutes'
           AND ae."eventType" = 'LESSON1_SIGNUP_REMINDER'
         ORDER BY j."createdAt" DESC, j."id" DESC
-        LIMIT 5
+        LIMIT 11
       `,
     );
     expect(reconciliationProvider).not.toHaveBeenCalled();

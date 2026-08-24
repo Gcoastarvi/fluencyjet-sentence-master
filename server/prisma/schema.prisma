@@ -302,7 +302,8 @@ model AutomationEvent {
   @@index([status, scheduledAt])
   @@index([eventType, status, scheduledAt])
   @@index([eventType, status, processedAt])
-  @@index([eventType, status, createdAt])
+  // The createdAt fallback index is partial and is intentionally defined in SQL
+  // migration 20260824000200 because Prisma schema indexes cannot express it.
 }
 
 model WhatsAppMessageEvent {

@@ -1,3 +1,4 @@
 - [WhatsApp opt-out concurrency](whatsapp-opt-out-concurrency.md) — suppression checks see committed state; per-destination serialization is needed for an in-flight STOP race.
 - [Sending audit safety](sending-audit-safety.md) — audit responses are a privacy boundary and effective-age pagination needs deterministic cross-partition ordering.
 - [Sending reconciliation safety](sending-reconciliation-safety.md) — uncertain sends may be terminalized only through evidence-gated, journaled SENDING transitions.
+- [Sending monitor partial indexes](sending-monitor-partial-indexes.md) — fallback age filtering uses a SQL-only partial index that Prisma schema metadata cannot model.
