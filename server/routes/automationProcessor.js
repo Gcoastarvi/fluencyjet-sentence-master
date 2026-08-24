@@ -37,6 +37,10 @@ const QUARANTINE_REASON_CODES = new Set([
 const PROVIDER_SUCCESS_STATUSES = new Set(['SENT', 'DELIVERED', 'READ']);
 const PROVIDER_FAILURE_STATUS = 'FAILED';
 const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
+const DEFAULT_SENDING_MONITOR_WINDOW_MINUTES = 1_440;
+const MAX_SENDING_MONITOR_WINDOW_MINUTES = 525_600;
+const DEFAULT_SENDING_MONITOR_HISTORY_LIMIT = 25;
+const MAX_SENDING_MONITOR_HISTORY_LIMIT = 100;
 
 async function sendTemplateWithinDestinationLock(
   sendTemplate,
@@ -663,6 +667,337 @@ router.get('/sending-audit', async (req, res) => {
     console.error(
       '[AUTOMATION-SENDING-AUDIT] Database read failed.',
     );
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+    });
+  }
+});
+
+function sendingMonitorBaseWhere(status) {
+  return {
+    eventType: 'LESSON1_SIGNUP_REMINDER',
+    status,
+  };
+}
+
+function sendingMonitorAgeWhere({
+  lowerExclusive,
+  upperInclusive,
+}) {
+  const processedAt = {};
+  const createdAt = {};
+
+  if (lowerExclusive) {
+    processedAt.gt = lowerExclusive;
+    createdAt.gt = lowerExclusive;
+  }
+  if (upperInclusive) {
+    processedAt.lte = upperInclusive;
+    createdAt.lte = upperInclusive;
+  }
+
+  return {
+    OR: [
+      { processedAt: processedAt },
+      {
+        processedAt: null,
+        createdAt: createdAt,
+      },
+    ],
+  };
+}
+
+function sendingMonitorHistoryRow(row) {
+  return {
+    journalId: row.id,
+    automationEventId: row.automationEventId,
+    createdAt: formatSendingAuditDate(row.createdAt),
+    action: row.action,
+    decision: row.decision,
+    priorStatus: row.priorStatus,
+    resultingStatus: row.resultingStatus,
+    reasonCode: row.reasonCode,
+    evidenceStatus: row.evidenceStatus,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/automation/sending-monitor
+//
+// Bounded operator monitoring only. This route intentionally has no writes,
+// transaction state changes, provider calls, retries, or work discovery.
+// ---------------------------------------------------------------------------
+router.get('/sending-monitor', async (req, res) => {
+  if (!checkAuth(req, res, 'AUTOMATION-SENDING-MONITOR')) return;
+
+  const allowedQueryFields = new Set(['windowMinutes', 'historyLimit']);
+  const unknownFields = Object.keys(req.query || {}).filter(
+    (key) => !allowedQueryFields.has(key),
+  );
+
+  if (unknownFields.length > 0) {
+    return res.status(400).json({
+      ok: false,
+      error: 'UNKNOWN_QUERY_FIELDS',
+    });
+  }
+
+  const windowMinutes = parseSendingAuditInteger(
+    req.query?.windowMinutes,
+    {
+      name: 'windowMinutes',
+      defaultValue: DEFAULT_SENDING_MONITOR_WINDOW_MINUTES,
+      minimum: 1,
+      maximum: MAX_SENDING_MONITOR_WINDOW_MINUTES,
+    },
+  );
+  const historyLimit = parseSendingAuditInteger(
+    req.query?.historyLimit,
+    {
+      name: 'historyLimit',
+      defaultValue: DEFAULT_SENDING_MONITOR_HISTORY_LIMIT,
+      minimum: 0,
+      maximum: MAX_SENDING_MONITOR_HISTORY_LIMIT,
+    },
+  );
+
+  if (typeof windowMinutes === 'object' || typeof historyLimit === 'object') {
+    const parameterError =
+      typeof windowMinutes === 'object'
+        ? windowMinutes.error
+        : historyLimit.error;
+
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_QUERY_PARAMETERS',
+      message: parameterError,
+    });
+  }
+
+  const now = new Date();
+  const since = new Date(now.getTime() - windowMinutes * 60_000);
+  const pendingWhere = sendingMonitorBaseWhere('PENDING');
+  const sendingWhere = sendingMonitorBaseWhere('SENDING');
+  const age15Minutes = new Date(now.getTime() - 15 * 60_000);
+  const age1Hour = new Date(now.getTime() - 60 * 60_000);
+  const age6Hours = new Date(now.getTime() - 6 * 60 * 60_000);
+  const age24Hours = new Date(now.getTime() - 24 * 60 * 60_000);
+  const age7Days = new Date(now.getTime() - 7 * 24 * 60 * 60_000);
+  const failedWhere = {
+    eventType: PROVIDER_FAILURE_STATUS,
+    createdAt: { gte: since },
+  };
+  const journalWhere = {
+    createdAt: { gte: since },
+    automationEvent: {
+      is: {
+        eventType: 'LESSON1_SIGNUP_REMINDER',
+      },
+    },
+  };
+
+  const ageBucketWhere = (bounds) => ({
+    ...sendingWhere,
+    ...sendingMonitorAgeWhere(bounds),
+  });
+
+  try {
+    const queries = [
+    prisma.automationEvent.count({ where: pendingWhere }),
+    prisma.automationEvent.count({
+      where: {
+        ...pendingWhere,
+        scheduledAt: { not: null, lte: now },
+      },
+    }),
+    prisma.automationEvent.count({
+      where: {
+        ...pendingWhere,
+        scheduledAt: { gt: now },
+      },
+    }),
+    prisma.automationEvent.count({
+      where: {
+        ...pendingWhere,
+        scheduledAt: null,
+      },
+    }),
+    prisma.automationEvent.count({ where: sendingWhere }),
+    prisma.automationEvent.count({
+      where: ageBucketWhere({ lowerExclusive: age15Minutes }),
+    }),
+    prisma.automationEvent.count({
+      where: ageBucketWhere({
+        lowerExclusive: age1Hour,
+        upperInclusive: age15Minutes,
+      }),
+    }),
+    prisma.automationEvent.count({
+      where: ageBucketWhere({
+        lowerExclusive: age6Hours,
+        upperInclusive: age1Hour,
+      }),
+    }),
+    prisma.automationEvent.count({
+      where: ageBucketWhere({
+        lowerExclusive: age24Hours,
+        upperInclusive: age6Hours,
+      }),
+    }),
+    prisma.automationEvent.count({
+      where: ageBucketWhere({
+        lowerExclusive: age7Days,
+        upperInclusive: age24Hours,
+      }),
+    }),
+    prisma.automationEvent.count({
+      where: ageBucketWhere({ upperInclusive: age7Days }),
+    }),
+    // createdAt is non-null in the schema, so effective age always falls back
+    // to it when processedAt is absent.
+    Promise.resolve(0),
+    prisma.whatsAppMessageEvent.count({ where: failedWhere }),
+    prisma.whatsAppMessageEvent.count({
+      where: {
+        ...failedWhere,
+        automationEventId: { not: null },
+      },
+    }),
+    prisma.whatsAppMessageEvent.count({
+      where: {
+        ...failedWhere,
+        automationEventId: null,
+      },
+    }),
+    prisma.whatsAppMessageEvent.count({
+      where: {
+        ...failedWhere,
+        eventTimestamp: null,
+      },
+    }),
+    prisma.automationReconciliationJournal.count({
+      where: {
+        ...journalWhere,
+        action: 'MARK_SENT',
+        decision: 'APPLIED',
+      },
+    }),
+    prisma.automationReconciliationJournal.count({
+      where: {
+        ...journalWhere,
+        action: 'MARK_SENT',
+        decision: 'REJECTED',
+      },
+    }),
+    prisma.automationReconciliationJournal.count({
+      where: {
+        ...journalWhere,
+        action: 'QUARANTINE',
+        decision: 'APPLIED',
+      },
+    }),
+      prisma.automationReconciliationJournal.count({
+        where: {
+          ...journalWhere,
+          action: 'QUARANTINE',
+          decision: 'REJECTED',
+        },
+      }),
+    ];
+
+    if (historyLimit > 0) {
+      queries.push(
+        prisma.automationReconciliationJournal.findMany({
+          where: journalWhere,
+          select: {
+            id: true,
+            automationEventId: true,
+            createdAt: true,
+            action: true,
+            decision: true,
+            priorStatus: true,
+            resultingStatus: true,
+            reasonCode: true,
+            evidenceStatus: true,
+          },
+          orderBy: [
+            { createdAt: 'desc' },
+            { id: 'desc' },
+          ],
+          take: historyLimit + 1,
+        }),
+      );
+    }
+
+    const results = await Promise.all(queries);
+    const pendingTotal = results[0];
+    const pendingDue = results[1];
+    const pendingScheduledFuture = results[2];
+    const pendingUnscheduled = results[3];
+    const sendingTotal = results[4];
+    const historyResult =
+      historyLimit > 0 ? results[results.length - 1] : [];
+    const history = historyResult.slice(0, historyLimit);
+    const markSentApplied = results[16];
+    const markSentRejected = results[17];
+    const quarantineApplied = results[18];
+    const quarantineRejected = results[19];
+
+    return res.json({
+      ok: true,
+      generatedAt: now.toISOString(),
+      window: {
+        minutes: windowMinutes,
+        since: since.toISOString(),
+        providerFailedWebhookEventsBasis: 'createdAt',
+        reconciliationJournalBasis: 'createdAt',
+      },
+      current: {
+        pending: {
+          total: pendingTotal,
+          due: pendingDue,
+          scheduledFuture: pendingScheduledFuture,
+          unscheduled: pendingUnscheduled,
+        },
+        sending: {
+          total: sendingTotal,
+          ageBasis: 'processedAt-or-createdAt',
+          buckets: {
+            under15Minutes: results[5],
+            minutes15To1Hour: results[6],
+            hours1To6: results[7],
+            hours6To24: results[8],
+            days1To7: results[9],
+            over7Days: results[10],
+            missingAge: results[11],
+          },
+        },
+      },
+      providerFailedWebhookEvents: {
+        observedInWindow: results[12],
+        linkedToAutomationEvent: results[13],
+        unlinked: results[14],
+        missingTimestamp: results[15],
+      },
+      reconciliation: {
+        MARK_SENT: {
+          totalJournalEntries: markSentApplied + markSentRejected,
+          applied: markSentApplied,
+          rejected: markSentRejected,
+        },
+        QUARANTINE: {
+          totalJournalEntries: quarantineApplied + quarantineRejected,
+          applied: quarantineApplied,
+          rejected: quarantineRejected,
+        },
+      },
+      recentReconciliations: history.map(sendingMonitorHistoryRow),
+      recentReconciliationsHasMore:
+        historyLimit > 0 && historyResult.length > history.length,
+    });
+  } catch {
+    console.error('[AUTOMATION-SENDING-MONITOR] Database read failed.');
     return res.status(500).json({
       ok: false,
       error: 'INTERNAL_ERROR',

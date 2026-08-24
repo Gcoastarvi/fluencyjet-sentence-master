@@ -204,6 +204,13 @@ function postReconciliation(app, eventId, action, reasonCode, key) {
     .send(body);
 }
 
+function getSendingMonitor(app, query = {}) {
+  return request(app)
+    .get('/api/automation/sending-monitor')
+    .query(query)
+    .set('Authorization', `Bearer ${automationSecret}`);
+}
+
 function webhookSignature(rawBody) {
   return `sha256=${crypto
     .createHmac('sha256', metaAppSecret)
@@ -495,5 +502,233 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
     release.resolve();
     await expect(heldLock).rejects.toThrow('intentional lock rollback');
     expect((await heldRequest).status).toBe(200);
+  });
+
+  test('reports bounded sanitized metrics and history without changing monitored records', async () => {
+    await cleanup();
+    reconciliationProvider.mockClear();
+    const app = makeApp();
+    const baseline = await getSendingMonitor(app, {
+      windowMinutes: '60',
+      historyLimit: '0',
+    });
+    expect(baseline.status).toBe(200);
+
+    const due = await createFixture(20, {
+      status: 'PENDING',
+      providerMessageId: null,
+    });
+    const scheduledFuture = await createFixture(21, {
+      status: 'PENDING',
+      providerMessageId: null,
+    });
+    const unscheduled = await createFixture(22, {
+      status: 'PENDING',
+      providerMessageId: null,
+    });
+    await controlClient.automationEvent.update({
+      where: { id: due.event.id },
+      data: { scheduledAt: new Date(Date.now() - 5 * 60_000) },
+    });
+    await controlClient.automationEvent.update({
+      where: { id: scheduledFuture.event.id },
+      data: { scheduledAt: new Date(Date.now() + 5 * 60_000) },
+    });
+    await controlClient.automationEvent.update({
+      where: { id: unscheduled.event.id },
+      data: { scheduledAt: null },
+    });
+
+    const sendingFixtures = await Promise.all([
+      createFixture(23),
+      createFixture(24),
+      createFixture(25),
+      createFixture(26),
+      createFixture(27),
+      createFixture(28),
+    ]);
+    const ageAnchors = [
+      new Date(Date.now() - 5 * 60_000),
+      new Date(Date.now() - 30 * 60_000),
+      new Date(Date.now() - 2 * 60 * 60_000),
+      new Date(Date.now() - 12 * 60 * 60_000),
+      new Date(Date.now() - 2 * 24 * 60 * 60_000),
+      new Date(Date.now() - 8 * 24 * 60 * 60_000),
+    ];
+    await Promise.all(
+      sendingFixtures.map((fixture, index) =>
+        controlClient.automationEvent.update({
+          where: { id: fixture.event.id },
+          data: { processedAt: ageAnchors[index] },
+        }),
+      ),
+    );
+
+    const linkedFailure = await createEvidence(sendingFixtures[0].event, 'FAILED');
+    const unlinkedFailure = await controlClient.whatsAppMessageEvent.create({
+      data: {
+        providerMessageId: `wamid.monitor.unlinked.${runToken}`,
+        eventType: 'FAILED',
+        eventTimestamp: null,
+        dedupKey: crypto.randomBytes(32).toString('hex'),
+      },
+    });
+    testEvidenceIds.add(unlinkedFailure.id);
+
+    const journalCreatedAt = [
+      new Date(Date.now() - 10_000),
+      new Date(Date.now() - 20_000),
+      new Date(Date.now() - 30_000),
+      new Date(Date.now() - 40_000),
+    ];
+    const journalRows = [
+      {
+        action: 'MARK_SENT',
+        decision: 'APPLIED',
+        priorStatus: 'SENDING',
+        resultingStatus: 'SENT',
+        reasonCode: 'MATCHING_SUCCESS_EVIDENCE',
+        evidenceStatus: 'SENT',
+      },
+      {
+        action: 'MARK_SENT',
+        decision: 'REJECTED',
+        priorStatus: 'SENDING',
+        resultingStatus: 'SENDING',
+        reasonCode: 'SUCCESS_EVIDENCE_REQUIRED',
+        evidenceStatus: null,
+      },
+      {
+        action: 'QUARANTINE',
+        decision: 'APPLIED',
+        priorStatus: 'SENDING',
+        resultingStatus: 'CANCELLED',
+        reasonCode: 'OUTCOME_UNKNOWN',
+        evidenceStatus: null,
+      },
+      {
+        action: 'QUARANTINE',
+        decision: 'REJECTED',
+        priorStatus: 'SENDING',
+        resultingStatus: 'SENDING',
+        reasonCode: 'SUCCESS_EVIDENCE_PRESENT',
+        evidenceStatus: 'READ',
+      },
+    ];
+    const createdJournals = await Promise.all(
+      journalRows.map((row, index) =>
+        controlClient.automationReconciliationJournal.create({
+          data: {
+            automationEventId: sendingFixtures[0].event.id,
+            idempotencyKey: `monitor-journal-${runToken}-${index}`,
+            requestHash: crypto
+              .createHash('sha256')
+              .update(`monitor-journal-${runToken}-${index}`)
+              .digest('hex'),
+            ...row,
+            authMethod: 'AUTOMATION_BEARER',
+            createdAt: journalCreatedAt[index],
+          },
+        }),
+      ),
+    );
+
+    const monitoredIds = [
+      due.event.id,
+      scheduledFuture.event.id,
+      unscheduled.event.id,
+      ...sendingFixtures.map((fixture) => fixture.event.id),
+    ];
+    const before = await controlClient.automationEvent.findMany({
+      where: { id: { in: monitoredIds } },
+      select: {
+        id: true,
+        status: true,
+        scheduledAt: true,
+        processedAt: true,
+        cancelledAt: true,
+        sentAt: true,
+        providerMessageId: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+    const journalCountBefore =
+      await controlClient.automationReconciliationJournal.count({
+        where: { id: { in: createdJournals.map((journal) => journal.id) } },
+      });
+
+    const response = await getSendingMonitor(app, {
+      windowMinutes: '60',
+      historyLimit: '4',
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.current.pending).toMatchObject({
+      total: baseline.body.current.pending.total + 3,
+      due: baseline.body.current.pending.due + 1,
+      scheduledFuture: baseline.body.current.pending.scheduledFuture + 1,
+      unscheduled: baseline.body.current.pending.unscheduled + 1,
+    });
+    expect(response.body.current.sending.total)
+      .toBeGreaterThanOrEqual(baseline.body.current.sending.total + 6);
+    expect(response.body.current.sending.buckets).toMatchObject({
+      under15Minutes:
+        baseline.body.current.sending.buckets.under15Minutes + 1,
+      minutes15To1Hour:
+        baseline.body.current.sending.buckets.minutes15To1Hour + 1,
+      hours1To6: baseline.body.current.sending.buckets.hours1To6 + 1,
+      hours6To24: baseline.body.current.sending.buckets.hours6To24 + 1,
+      days1To7: baseline.body.current.sending.buckets.days1To7 + 1,
+      over7Days: baseline.body.current.sending.buckets.over7Days + 1,
+    });
+    expect(response.body.providerFailedWebhookEvents).toMatchObject({
+      observedInWindow:
+        baseline.body.providerFailedWebhookEvents.observedInWindow + 2,
+      linkedToAutomationEvent:
+        baseline.body.providerFailedWebhookEvents.linkedToAutomationEvent + 1,
+      unlinked: baseline.body.providerFailedWebhookEvents.unlinked + 1,
+      missingTimestamp:
+        baseline.body.providerFailedWebhookEvents.missingTimestamp + 1,
+    });
+    expect(response.body.reconciliation.MARK_SENT).toMatchObject({
+      applied: baseline.body.reconciliation.MARK_SENT.applied + 1,
+      rejected: baseline.body.reconciliation.MARK_SENT.rejected + 1,
+    });
+    expect(response.body.reconciliation.QUARANTINE).toMatchObject({
+      applied: baseline.body.reconciliation.QUARANTINE.applied + 1,
+      rejected: baseline.body.reconciliation.QUARANTINE.rejected + 1,
+    });
+    expect(response.body.recentReconciliations).toHaveLength(4);
+    expect(response.body.recentReconciliations.map((row) => row.journalId))
+      .toEqual(createdJournals.map((journal) => journal.id));
+
+    const serialized = JSON.stringify(response.body);
+    expect(serialized).not.toContain(sendingFixtures[0].number);
+    expect(serialized).not.toContain(sendingFixtures[0].event.providerMessageId);
+    expect(serialized).not.toContain(linkedFailure.id);
+    expect(serialized).not.toContain('requestHash');
+    expect(serialized).not.toContain('idempotencyKey');
+    expect(serialized).not.toContain('rawPayload');
+
+    const after = await controlClient.automationEvent.findMany({
+      where: { id: { in: monitoredIds } },
+      select: {
+        id: true,
+        status: true,
+        scheduledAt: true,
+        processedAt: true,
+        cancelledAt: true,
+        sentAt: true,
+        providerMessageId: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+    const journalCountAfter =
+      await controlClient.automationReconciliationJournal.count({
+        where: { id: { in: createdJournals.map((journal) => journal.id) } },
+      });
+    expect(after).toEqual(before);
+    expect(journalCountAfter).toBe(journalCountBefore);
+    expect(reconciliationProvider).not.toHaveBeenCalled();
   });
 });
