@@ -147,6 +147,7 @@ const OPT_OUT_COMMANDS = new Set([
   'STOP',
   'UNSUBSCRIBE',
   'CANCEL',
+  'CANCEL ALL',
   'STOP ALL',
   'UNSUBSCRIBE ALL',
 ]);

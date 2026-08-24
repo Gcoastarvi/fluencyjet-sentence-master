@@ -412,6 +412,7 @@ describe('WhatsApp webhook inbound message processing', () => {
     '  STOP   ',
     'unsubscribe',
     'cancel',
+    'cancel all',
     'stop   all',
     'unsubscribe all',
   ])('recognizes opt-out command: %s', async (body) => {
