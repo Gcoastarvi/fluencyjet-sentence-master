@@ -20,7 +20,26 @@ const POISON     = new Set(['undefined', 'null', 'false', '0', 'none', 'secret']
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BATCH  = 10;
 
-async function getPhoneLevelSkipReason(ownerUserId, normalizedNumber) {
+async function getPhoneLevelSkipReason(
+  ownerUserId,
+  normalizedNumber,
+  { checkDurableSuppression = false } = {},
+) {
+  if (checkDurableSuppression) {
+    const suppression = await prisma.whatsAppPhoneSuppression.findUnique({
+      where: {
+        phoneNumberNormalized: normalizedNumber,
+      },
+      select: {
+        isOptedOut: true,
+      },
+    });
+
+    if (suppression?.isOptedOut === true) {
+      return 'PHONE_SUPPRESSED';
+    }
+  }
+
   // Re-confirm that the reminder owner still owns this canonical destination.
   // If the number changed after the first User read, fail closed.
   const ownerStillMatches = await prisma.user.findFirst({
@@ -64,6 +83,86 @@ async function getPhoneLevelSkipReason(ownerUserId, normalizedNumber) {
   }
 
   return null;
+}
+
+function getEventDestination(ae) {
+  const storedDestination = ae.destinationNumberNormalized;
+
+  if (
+    typeof storedDestination !== 'string' ||
+    storedDestination.trim() === ''
+  ) {
+    return {
+      destination: null,
+      skipReason: 'MISSING_EVENT_DESTINATION',
+    };
+  }
+
+  const normalizedDestination = normalizeWhatsAppNumber(storedDestination);
+
+  // The event field is a canonical snapshot. Do not silently repair a value
+  // here, because that would make a mutable interpretation of the target.
+  if (
+    !normalizedDestination ||
+    normalizedDestination !== storedDestination
+  ) {
+    return {
+      destination: null,
+      skipReason: 'INVALID_EVENT_DESTINATION',
+    };
+  }
+
+  return {
+    destination: normalizedDestination,
+    skipReason: null,
+  };
+}
+
+async function getLiveReminderEligibility(ae) {
+  const eventDestination = getEventDestination(ae);
+
+  if (eventDestination.skipReason) {
+    return eventDestination;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: ae.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      whatsapp_consent: true,
+      has_access: true,
+    },
+  });
+
+  if (!user) {
+    return { skipReason: 'USER_NOT_FOUND' };
+  }
+
+  if (!user.whatsapp_consent) {
+    return { skipReason: 'CONSENT_FALSE' };
+  }
+
+  if (user.has_access) {
+    return { skipReason: 'USER_HAS_ACCESS' };
+  }
+
+  const phoneSkipReason = await getPhoneLevelSkipReason(
+    user.id,
+    eventDestination.destination,
+    { checkDurableSuppression: true },
+  );
+
+  if (phoneSkipReason) {
+    return { skipReason: phoneSkipReason };
+  }
+
+  return {
+    destination: eventDestination.destination,
+    skipReason: null,
+    user,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -676,21 +775,10 @@ router.post('/process-due-reminder-live', async (req, res) => {
     }
 
     // ── 8. Re-check eligibility immediately before claim ────────────────────
-    const user = await prisma.user.findUnique({
-      where: { id: ae.userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        whatsapp_consent: true,
-        whatsapp_number: true,
-        whatsapp_number_normalized: true,
-        has_access: true,
-      },
-    });
+    const eligibility = await getLiveReminderEligibility(ae);
 
-    if (!user) {
-      const result = await cancelRow(ae.id, 'USER_NOT_FOUND');
+    if (eligibility.skipReason) {
+      const result = await cancelRow(ae.id, eligibility.skipReason);
       if (result.count === 0) {
         return res.json({
           ok: true,
@@ -703,13 +791,14 @@ router.post('/process-due-reminder-live', async (req, res) => {
         ok: true,
         ...ineligibleResult(
           ae,
-          'USER_NOT_FOUND',
+          eligibility.skipReason,
           result.processedAt,
           result.cancelledAt,
         ),
       });
     }
 
+    const { destination, user } = eligibility;
     const learnerName = String(user.name || '').trim();
 
     if (!learnerName) {
@@ -719,114 +808,6 @@ router.post('/process-due-reminder-live', async (req, res) => {
         parameter: 'body.{{1}}',
         aeId: ae.id,
         whatsappSent: false,
-      });
-    }
-
-    if (!user.whatsapp_consent) {
-      const result = await cancelRow(ae.id, 'CONSENT_FALSE');
-      if (result.count === 0) {
-        return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: ae.id,
-          whatsappSent: false,
-        });
-      }
-      return res.json({
-        ok: true,
-        ...ineligibleResult(
-          ae,
-          'CONSENT_FALSE',
-          result.processedAt,
-          result.cancelledAt,
-        ),
-      });
-    }
-
-    if (!user.whatsapp_number) {
-      const result = await cancelRow(ae.id, 'NO_WHATSAPP_NUMBER');
-      if (result.count === 0) {
-        return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: ae.id,
-          whatsappSent: false,
-        });
-      }
-      return res.json({
-        ok: true,
-        ...ineligibleResult(
-          ae,
-          'NO_WHATSAPP_NUMBER',
-          result.processedAt,
-          result.cancelledAt,
-        ),
-      });
-    }
-
-    if (!user.whatsapp_number_normalized) {
-      const result = await cancelRow(ae.id, 'INVALID_WHATSAPP_NUMBER');
-      if (result.count === 0) {
-        return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: ae.id,
-          whatsappSent: false,
-        });
-      }
-      return res.json({
-        ok: true,
-        ...ineligibleResult(
-          ae,
-          'INVALID_WHATSAPP_NUMBER',
-          result.processedAt,
-          result.cancelledAt,
-        ),
-      });
-    }
-
-    if (user.has_access) {
-      const result = await cancelRow(ae.id, 'USER_HAS_ACCESS');
-      if (result.count === 0) {
-        return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: ae.id,
-          whatsappSent: false,
-        });
-      }
-      return res.json({
-        ok: true,
-        ...ineligibleResult(
-          ae,
-          'USER_HAS_ACCESS',
-          result.processedAt,
-          result.cancelledAt,
-        ),
-      });
-    }
-
-    const phoneSkipReason =
-      await getPhoneLevelSkipReason(user.id, user.whatsapp_number_normalized);
-
-    if (phoneSkipReason) {
-      const result = await cancelRow(ae.id, phoneSkipReason);
-      if (result.count === 0) {
-        return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: ae.id,
-          whatsappSent: false,
-        });
-      }
-      return res.json({
-        ok: true,
-        ...ineligibleResult(
-          ae,
-          phoneSkipReason,
-          result.processedAt,
-          result.cancelledAt,
-        ),
       });
     }
 
@@ -868,7 +849,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
     }
 
     // ── 9. Hard test-number allowlist ───────────────────────────────────────
-    if (user.whatsapp_number_normalized !== allowedTestNumberNormalized) {
+    if (destination !== allowedTestNumberNormalized) {
       return res.status(403).json({
         ok: false,
         error: 'TEST_RECIPIENT_ONLY',
@@ -904,12 +885,40 @@ router.post('/process-due-reminder-live', async (req, res) => {
       `[AUTOMATION-LIVE] CLAIMED aeId=${ae.id} userId=${ae.userId}`,
     );
 
-    // ── 11. Provider invocation ─────────────────────────────────────────────
+    // ── 11. Final gate after claim, before any provider request ─────────────
+    // A STOP, ownership change, or account-access change may occur between
+    // the first eligibility query and the atomic claim above.
+    const finalEligibility = await getLiveReminderEligibility(ae);
+
+    if (finalEligibility.skipReason) {
+      const result = await cancelClaimedRow(ae.id, finalEligibility.skipReason);
+
+      if (result.count === 0) {
+        return res.json({
+          ok: true,
+          result: 'ALREADY_PROCESSED',
+          aeId: ae.id,
+          whatsappSent: false,
+        });
+      }
+
+      return res.json({
+        ok: true,
+        ...ineligibleResult(
+          ae,
+          finalEligibility.skipReason,
+          result.processedAt,
+          result.cancelledAt,
+        ),
+      });
+    }
+
+    // ── 12. Provider invocation ─────────────────────────────────────────────
     let delivery;
 
     try {
       delivery = await sendWhatsAppTemplate({
-        to: user.whatsapp_number_normalized,
+        to: destination,
         templateName,
         languageCode,
         bodyParameters: [learnerName],
@@ -954,7 +963,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
       });
     }
 
-    // ── 12. Provider confirmed acceptance → finalize SENT ───────────────────
+    // ── 13. Provider confirmed acceptance → finalize SENT ───────────────────
     const sentAt = new Date();
 
     const existingPayload =
@@ -1200,6 +1209,27 @@ async function cancelRow(aeId, reason) {
     data:  { status: 'CANCELLED', cancelledAt: now, processedAt: now },
   });
   console.log(`[AUTOMATION] CANCELLED aeId=${aeId} reason=${reason} count=${result.count}`);
+  return { count: result.count, processedAt: now, cancelledAt: now };
+}
+
+/**
+ * Guardedly cancel a claimed row before a provider request starts.
+ * providerMessageId must still be absent: a provider-confirmed attempt is
+ * never recast as unsent, even if another process changes the row.
+ */
+async function cancelClaimedRow(aeId, reason) {
+  const now = new Date();
+  const result = await prisma.automationEvent.updateMany({
+    where: {
+      id: aeId,
+      status: 'SENDING',
+      providerMessageId: null,
+    },
+    data: { status: 'CANCELLED', cancelledAt: now, processedAt: now },
+  });
+  console.log(
+    `[AUTOMATION-LIVE] GUARDED_CANCELLED aeId=${aeId} reason=${reason} count=${result.count}`,
+  );
   return { count: result.count, processedAt: now, cancelledAt: now };
 }
 

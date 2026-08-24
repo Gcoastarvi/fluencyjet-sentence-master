@@ -1,0 +1,1 @@
+- [WhatsApp opt-out concurrency](whatsapp-opt-out-concurrency.md) — suppression checks see committed state; per-destination serialization is needed for an in-flight STOP race.

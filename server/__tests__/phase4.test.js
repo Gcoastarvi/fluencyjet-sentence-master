@@ -33,6 +33,9 @@ const mockPrisma = {
     findUnique: jest.fn(),
     updateMany: jest.fn(),
   },
+  whatsAppPhoneSuppression: {
+    findUnique: jest.fn(),
+  },
   user: {
     findUnique: jest.fn(),
     findFirst: jest.fn(),
@@ -91,6 +94,7 @@ function makeAe(overrides = {}) {
     payload: {
       source: 'try-spoken-english-gym',
     },
+    destinationNumberNormalized: TEST_NUMBER,
     createdAt: new Date(),
     ...overrides,
   };
@@ -154,6 +158,7 @@ beforeEach(() => {
       whatsapp_opted_out_at: null,
     },
   ]);
+  mockPrisma.whatsAppPhoneSuppression.findUnique.mockResolvedValue(null);
   mockPrisma.lessonModeProgress.findUnique.mockResolvedValue(null);
 
   mockSendWhatsAppTemplate.mockResolvedValue({
@@ -356,9 +361,9 @@ describe(
       expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
     });
 
-    test('[L-13] No WhatsApp number → CANCELLED', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(
-        makeUser({ whatsapp_number: null }),
+    test('[L-13] Missing event destination → CANCELLED without a provider call', async () => {
+      mockPrisma.automationEvent.findUnique.mockResolvedValue(
+        makeAe({ destinationNumberNormalized: null }),
       );
 
       const res = await liveRequest({
@@ -369,9 +374,10 @@ describe(
       expect(res.status).toBe(200);
       expect(res.body.result).toBe('CANCELLED');
       expect(res.body.skipReason)
-        .toBe('NO_WHATSAPP_NUMBER');
+        .toBe('MISSING_EVENT_DESTINATION');
 
       expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+      expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
     });
 
     test('[L-14] User already has access → CANCELLED', async () => {
@@ -449,11 +455,10 @@ describe(
         .not.toHaveBeenCalled();
     });
 
-    test('[L-14C] Missing normalized phone → CANCELLED, no send', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(
-        makeUser({
-          whatsapp_number: 'invalid-number',
-          whatsapp_number_normalized: null,
+    test('[L-14C] Invalid event destination → CANCELLED, no send', async () => {
+      mockPrisma.automationEvent.findUnique.mockResolvedValue(
+        makeAe({
+          destinationNumberNormalized: 'invalid-number',
         }),
       );
 
@@ -465,10 +470,10 @@ describe(
       expect(res.status).toBe(200);
       expect(res.body.result).toBe('CANCELLED');
       expect(res.body.skipReason)
-        .toBe('INVALID_WHATSAPP_NUMBER');
+        .toBe('INVALID_EVENT_DESTINATION');
       expect(res.body.whatsappSent).toBe(false);
 
-      expect(mockPrisma.user.findMany)
+      expect(mockPrisma.user.findUnique)
         .not.toHaveBeenCalled();
 
       expect(mockSendWhatsAppTemplate)
@@ -494,6 +499,32 @@ describe(
 
       expect(mockSendWhatsAppTemplate)
         .not.toHaveBeenCalled();
+    });
+
+    test('[L-14E] Active durable phone suppression → CANCELLED, no send', async () => {
+      mockPrisma.whatsAppPhoneSuppression.findUnique.mockResolvedValue({
+        isOptedOut: true,
+      });
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('PHONE_SUPPRESSED');
+      expect(res.body.whatsappSent).toBe(false);
+      expect(mockPrisma.whatsAppPhoneSuppression.findUnique)
+        .toHaveBeenCalledWith({
+          where: {
+            phoneNumberNormalized: TEST_NUMBER,
+          },
+          select: {
+            isOptedOut: true,
+          },
+        });
+      expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
     });
 
     test('[L-15] Lesson 1 complete → CANCELLED', async () => {
@@ -539,9 +570,9 @@ describe(
     });
 
     test('[L-16] Non-test recipient → 403, no claim, no send', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(
-        makeUser({
-          whatsapp_number: '+918888888888',
+      mockPrisma.automationEvent.findUnique.mockResolvedValue(
+        makeAe({
+          destinationNumberNormalized: '+918888888888',
         }),
       );
 
@@ -645,10 +676,11 @@ describe(
         );
     });
 
-    test('[L-17A] Provider receives canonical normalized recipient', async () => {
+    test('[L-17A] Provider uses immutable event destination, not mutable display number', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(
         makeUser({
-          whatsapp_number: '99999 99999',
+          whatsapp_number: '+91 88888 88888',
+          whatsapp_number_normalized: TEST_NUMBER,
         }),
       );
 
@@ -670,7 +702,7 @@ describe(
       expect(mockSendWhatsAppTemplate)
         .not.toHaveBeenCalledWith(
           expect.objectContaining({
-            to: '99999 99999',
+            to: '+91 88888 88888',
           }),
         );
     });
@@ -688,6 +720,84 @@ describe(
       expect(res.body.result).toBe('ALREADY_PROCESSED');
       expect(res.body.whatsappSent).toBe(false);
 
+      expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+    });
+
+    test('[L-18A] Identity change after claim is guardedly cancelled before provider call', async () => {
+      mockPrisma.user.findFirst
+        .mockResolvedValueOnce({ id: 42 })
+        .mockResolvedValueOnce(null);
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('PHONE_IDENTITY_CHANGED');
+      expect(res.body.whatsappSent).toBe(false);
+      expect(mockPrisma.automationEvent.updateMany)
+        .toHaveBeenNthCalledWith(
+          2,
+          {
+            where: {
+              id: UUID1,
+              status: 'SENDING',
+              providerMessageId: null,
+            },
+            data: {
+              status: 'CANCELLED',
+              cancelledAt: expect.any(Date),
+              processedAt: expect.any(Date),
+            },
+          },
+        );
+      expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+    });
+
+    test('[L-18B] Access gained after claim is cancelled before provider call', async () => {
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce(makeUser())
+        .mockResolvedValueOnce(makeUser({ has_access: true }));
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('USER_HAS_ACCESS');
+      expect(res.body.whatsappSent).toBe(false);
+      expect(mockPrisma.automationEvent.updateMany)
+        .toHaveBeenNthCalledWith(
+          2,
+          expect.objectContaining({
+            where: {
+              id: UUID1,
+              status: 'SENDING',
+              providerMessageId: null,
+            },
+          }),
+        );
+      expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+    });
+
+    test('[L-18C] Durable suppression activated after claim is cancelled before provider call', async () => {
+      mockPrisma.whatsAppPhoneSuppression.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ isOptedOut: true });
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('PHONE_SUPPRESSED');
+      expect(res.body.whatsappSent).toBe(false);
       expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
     });
 

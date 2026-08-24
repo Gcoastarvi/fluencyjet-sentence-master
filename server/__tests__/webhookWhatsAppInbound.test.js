@@ -358,6 +358,33 @@ describe('WhatsApp webhook inbound message processing', () => {
     });
   });
 
+  test('STOP never relabels an already-SENDING provider attempt as unsent', async () => {
+    mockPrisma.user.findMany.mockResolvedValue([{ id: 4201 }]);
+
+    const res = await sendPayload(
+      inboundTextPayload({
+        body: 'STOP',
+        id: 'wamid.INBOUND_STOP_SENDING',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledWith({
+      where: {
+        userId: {
+          in: [4201],
+        },
+        eventType: 'LESSON1_SIGNUP_REMINDER',
+        status: 'PENDING',
+      },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: expect.any(Date),
+        processedAt: expect.any(Date),
+      },
+    });
+  });
+
   test('STOP opts out all accounts sharing the matched WhatsApp number', async () => {
     mockPrisma.user.findMany.mockResolvedValue([
       { id: 4201 },
