@@ -296,6 +296,7 @@ model AutomationEvent {
   processedAt       DateTime?
   providerMessageId String?                @unique @db.VarChar(255)
   whatsappEvents    WhatsAppMessageEvent[]
+  reconciliationJournal AutomationReconciliationJournal[]
 
   @@index([userId, eventType, status])
   @@index([status, scheduledAt])
@@ -323,10 +324,32 @@ model WhatsAppMessageEvent {
 
   dedupKey  String   @unique @db.VarChar(64)
   createdAt DateTime @default(now())
+  reconciliationEvidence AutomationReconciliationJournal[] @relation("AutomationReconciliationEvidence")
 
   @@index([providerMessageId])
   @@index([automationEventId])
   @@index([eventType, eventTimestamp])
+}
+
+model AutomationReconciliationJournal {
+  id                String                         @id @default(uuid())
+  automationEventId String
+  automationEvent   AutomationEvent                @relation(fields: [automationEventId], references: [id], onDelete: Restrict)
+  idempotencyKey    String                         @db.VarChar(128)
+  requestHash       String                         @db.Char(64)
+  action            ReconciliationAction
+  decision          ReconciliationDecision
+  priorStatus       AutomationStatus
+  resultingStatus   AutomationStatus
+  reasonCode        String                         @db.VarChar(64)
+  evidenceEventId   String?
+  evidenceEvent     WhatsAppMessageEvent?          @relation("AutomationReconciliationEvidence", fields: [evidenceEventId], references: [id], onDelete: SetNull)
+  evidenceStatus    String?                        @db.VarChar(20)
+  authMethod        String                         @db.VarChar(40)
+  createdAt         DateTime                       @default(now())
+
+  @@unique([automationEventId, idempotencyKey])
+  @@index([automationEventId, createdAt])
 }
 
 model WhatsAppPhoneSuppression {
@@ -401,4 +424,14 @@ enum AutomationStatus {
   DONE
   CANCELLED
   DRY_RUN
+}
+
+enum ReconciliationAction {
+  MARK_SENT
+  QUARANTINE
+}
+
+enum ReconciliationDecision {
+  APPLIED
+  REJECTED
 }

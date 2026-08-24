@@ -154,7 +154,14 @@ beforeEach(() => {
   );
   mockPrisma.$executeRaw.mockResolvedValue(1);
 
-  mockPrisma.automationEvent.findUnique.mockResolvedValue(makeAe());
+  // The production handler commits PENDING -> SENDING before the final
+  // lock-owning re-read. Model that committed state for the normal live path;
+  // individual tests that need a different first read replace this mock.
+  mockPrisma.automationEvent.findUnique.mockImplementation(() =>
+    mockPrisma.automationEvent.findUnique.mock.calls.length === 1
+      ? makeAe()
+      : makeAe({ status: 'SENDING' }),
+  );
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.user.findUnique.mockResolvedValue(makeUser());
   mockPrisma.user.findFirst.mockResolvedValue({ id: 42 });

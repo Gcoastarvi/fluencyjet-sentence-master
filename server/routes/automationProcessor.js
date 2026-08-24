@@ -7,6 +7,7 @@
 // No WhatsApp messages are sent. No cron is used. No live sends occur.
 //
 import express from 'express';
+import crypto from 'crypto';
 import prisma from '../db/client.js';
 import { sendWhatsAppTemplate } from '../services/whatsappProvider.js';
 import { normalizeWhatsAppNumber } from '../lib/whatsappNumber.js';
@@ -27,6 +28,15 @@ const DESTINATION_LOCK_TRANSACTION_OPTIONS = {
   timeout: 30_000,
 };
 const PROVIDER_DISPATCH_TIMEOUT_MS = 12_000;
+const RECONCILIATION_AUTH_METHOD = 'AUTOMATION_BEARER';
+const RECONCILIATION_ACTIONS = new Set(['MARK_SENT', 'QUARANTINE']);
+const QUARANTINE_REASON_CODES = new Set([
+  'FAILED_EVIDENCE',
+  'OUTCOME_UNKNOWN',
+]);
+const PROVIDER_SUCCESS_STATUSES = new Set(['SENT', 'DELIVERED', 'READ']);
+const PROVIDER_FAILURE_STATUS = 'FAILED';
+const MAX_IDEMPOTENCY_KEY_LENGTH = 128;
 
 async function sendTemplateWithinDestinationLock(
   sendTemplate,
@@ -331,6 +341,158 @@ function formatSendingAuditRow(row, now) {
   };
 }
 
+function reconciliationRequestHash({
+  automationEventId,
+  action,
+  reasonCode,
+}) {
+  return crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify({
+        automationEventId,
+        action,
+        reasonCode: reasonCode ?? null,
+      }),
+    )
+    .digest('hex');
+}
+
+function isValidReconciliationIdempotencyKey(value) {
+  return (
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= MAX_IDEMPOTENCY_KEY_LENGTH &&
+    /^[A-Za-z0-9._:-]+$/.test(value)
+  );
+}
+
+function formatReconciliationJournalResult(journal) {
+  const applied = journal.decision === 'APPLIED';
+
+  return {
+    status: applied ? 200 : 409,
+    body: applied
+      ? {
+          ok: true,
+          action: journal.action,
+          automationEventId: journal.automationEventId,
+          resultingStatus: journal.resultingStatus,
+          reconciliationId: journal.id,
+        }
+      : {
+          ok: false,
+          error: 'RECONCILIATION_NOT_APPLIED',
+          action: journal.action,
+          automationEventId: journal.automationEventId,
+          resultingStatus: journal.resultingStatus,
+        },
+  };
+}
+
+function getReconciliationConflictResult() {
+  return {
+    status: 409,
+    body: {
+      ok: false,
+      error: 'IDEMPOTENCY_KEY_REUSED',
+    },
+  };
+}
+
+function sortEvidenceNewestFirst(left, right) {
+  const leftTimestamp =
+    left.eventTimestamp instanceof Date &&
+    !Number.isNaN(left.eventTimestamp.getTime())
+      ? left.eventTimestamp.getTime()
+      : Number.NEGATIVE_INFINITY;
+  const rightTimestamp =
+    right.eventTimestamp instanceof Date &&
+    !Number.isNaN(right.eventTimestamp.getTime())
+      ? right.eventTimestamp.getTime()
+      : Number.NEGATIVE_INFINITY;
+
+  if (leftTimestamp !== rightTimestamp) return rightTimestamp - leftTimestamp;
+
+  const leftCreatedAt =
+    left.createdAt instanceof Date && !Number.isNaN(left.createdAt.getTime())
+      ? left.createdAt.getTime()
+      : Number.NEGATIVE_INFINITY;
+  const rightCreatedAt =
+    right.createdAt instanceof Date && !Number.isNaN(right.createdAt.getTime())
+      ? right.createdAt.getTime()
+      : Number.NEGATIVE_INFINITY;
+
+  if (leftCreatedAt !== rightCreatedAt) return rightCreatedAt - leftCreatedAt;
+  return String(right.id).localeCompare(String(left.id));
+}
+
+function usableProviderSentTimestamp(eventTimestamp, now) {
+  if (
+    !(eventTimestamp instanceof Date) ||
+    Number.isNaN(eventTimestamp.getTime())
+  ) {
+    return null;
+  }
+
+  // Meta timestamps are provider-controlled. Do not write a materially future
+  // timestamp into the lifecycle row if the webhook clock is malformed.
+  if (eventTimestamp.getTime() > now.getTime() + 5 * 60_000) {
+    return null;
+  }
+
+  return eventTimestamp;
+}
+
+async function findMatchingReconciliationEvidence(transaction, event) {
+  if (!event.providerMessageId) return [];
+
+  return transaction.whatsAppMessageEvent.findMany({
+    where: {
+      automationEventId: event.id,
+      providerMessageId: event.providerMessageId,
+      eventType: {
+        in: [...PROVIDER_SUCCESS_STATUSES, PROVIDER_FAILURE_STATUS],
+      },
+    },
+    select: {
+      id: true,
+      eventType: true,
+      eventTimestamp: true,
+      createdAt: true,
+    },
+  });
+}
+
+async function createReconciliationJournalEntry(transaction, data) {
+  return transaction.automationReconciliationJournal.create({ data });
+}
+
+function journalData({
+  event,
+  idempotencyKey,
+  requestHash,
+  action,
+  decision,
+  resultingStatus,
+  reasonCode,
+  evidence = null,
+}) {
+  return {
+    automationEventId: event.id,
+    idempotencyKey,
+    requestHash,
+    action,
+    decision,
+    priorStatus: event.status,
+    resultingStatus,
+    reasonCode,
+    evidenceEventId: evidence?.id ?? null,
+    evidenceStatus: evidence?.eventType ?? null,
+    authMethod: RECONCILIATION_AUTH_METHOD,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // GET /api/automation/sending-audit
 //
@@ -501,6 +663,366 @@ router.get('/sending-audit', async (req, res) => {
     console.error(
       '[AUTOMATION-SENDING-AUDIT] Database read failed.',
     );
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/automation/reconcile-sending
+//
+// Explicit, single-event operator reconciliation for uncertain Lesson 1
+// reminder attempts. It never calls a provider, retries, discovers work, or
+// returns an event to PENDING.
+// ---------------------------------------------------------------------------
+router.post('/reconcile-sending', async (req, res) => {
+  if (!checkAuth(req, res, 'AUTOMATION-RECONCILIATION')) return;
+
+  const allowedFields = new Set([
+    'automationEventId',
+    'action',
+    'reasonCode',
+  ]);
+  const unknownFields = Object.keys(req.body || {}).filter(
+    (key) => !allowedFields.has(key),
+  );
+
+  if (unknownFields.length > 0) {
+    return res.status(400).json({
+      ok: false,
+      error: 'UNKNOWN_FIELDS',
+    });
+  }
+
+  const automationEventId = req.body?.automationEventId;
+  const action = req.body?.action;
+  const reasonCode = req.body?.reasonCode;
+  const idempotencyKey = req.get('Idempotency-Key');
+
+  if (
+    typeof automationEventId !== 'string' ||
+    !UUID_V4_RE.test(automationEventId)
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_AUTOMATION_EVENT_ID',
+    });
+  }
+
+  if (typeof action !== 'string' || !RECONCILIATION_ACTIONS.has(action)) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_RECONCILIATION_ACTION',
+    });
+  }
+
+  if (!isValidReconciliationIdempotencyKey(idempotencyKey)) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_IDEMPOTENCY_KEY',
+    });
+  }
+
+  if (action === 'MARK_SENT' && reasonCode !== undefined) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_RECONCILIATION_REASON',
+    });
+  }
+
+  if (
+    action === 'QUARANTINE' &&
+    (
+      typeof reasonCode !== 'string' ||
+      !QUARANTINE_REASON_CODES.has(reasonCode)
+    )
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_RECONCILIATION_REASON',
+    });
+  }
+
+  const requestHash = reconciliationRequestHash({
+    automationEventId,
+    action,
+    reasonCode,
+  });
+
+  try {
+    const existingJournal =
+      await prisma.automationReconciliationJournal.findUnique({
+        where: {
+          automationEventId_idempotencyKey: {
+            automationEventId,
+            idempotencyKey,
+          },
+        },
+      });
+
+    if (existingJournal) {
+      const result =
+        existingJournal.requestHash === requestHash
+          ? formatReconciliationJournalResult(existingJournal)
+          : getReconciliationConflictResult();
+      return res.status(result.status).json(result.body);
+    }
+
+    // This pre-lock lookup is only to derive the canonical lock key. The event
+    // is re-read inside the transaction after the lock is held.
+    const initialEvent = await prisma.automationEvent.findUnique({
+      where: { id: automationEventId },
+      select: {
+        id: true,
+        eventType: true,
+        destinationNumberNormalized: true,
+      },
+    });
+
+    if (!initialEvent) {
+      return res.status(404).json({
+        ok: false,
+        error: 'NOT_FOUND',
+      });
+    }
+
+    if (initialEvent.eventType !== 'LESSON1_SIGNUP_REMINDER') {
+      return res.status(400).json({
+        ok: false,
+        error: 'WRONG_EVENT_TYPE',
+      });
+    }
+
+    const initialDestination = getEventDestination(initialEvent);
+
+    if (initialDestination.skipReason) {
+      return res.status(409).json({
+        ok: false,
+        error: 'RECONCILIATION_NOT_APPLIED',
+      });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      await acquireWhatsAppDestinationLock(tx, initialDestination.destination);
+
+      // Re-check idempotency after serialization so same-event duplicate
+      // submissions cannot perform more than one lifecycle transition.
+      const journalAfterLock =
+        await tx.automationReconciliationJournal.findUnique({
+          where: {
+            automationEventId_idempotencyKey: {
+              automationEventId,
+              idempotencyKey,
+            },
+          },
+        });
+
+      if (journalAfterLock) {
+        return journalAfterLock.requestHash === requestHash
+          ? formatReconciliationJournalResult(journalAfterLock)
+          : getReconciliationConflictResult();
+      }
+
+      const event = await tx.automationEvent.findUnique({
+        where: { id: automationEventId },
+        select: {
+          id: true,
+          eventType: true,
+          status: true,
+          destinationNumberNormalized: true,
+          providerMessageId: true,
+          sentAt: true,
+        },
+      });
+
+      if (
+        !event ||
+        event.eventType !== 'LESSON1_SIGNUP_REMINDER' ||
+        event.destinationNumberNormalized !== initialDestination.destination
+      ) {
+        return {
+          status: 409,
+          body: {
+            ok: false,
+            error: 'RECONCILIATION_NOT_APPLIED',
+          },
+        };
+      }
+
+      const now = new Date();
+
+      if (event.status !== 'SENDING') {
+        const journal = await createReconciliationJournalEntry(
+          tx,
+          journalData({
+            event,
+            idempotencyKey,
+            requestHash,
+            action,
+            decision: 'REJECTED',
+            resultingStatus: event.status,
+            reasonCode: 'NOT_SENDING',
+          }),
+        );
+        return formatReconciliationJournalResult(journal);
+      }
+
+      const evidence = await findMatchingReconciliationEvidence(tx, event);
+      const successEvidence = evidence
+        .filter((item) => PROVIDER_SUCCESS_STATUSES.has(item.eventType))
+        .sort(sortEvidenceNewestFirst);
+      const failedEvidence = evidence
+        .filter((item) => item.eventType === PROVIDER_FAILURE_STATUS)
+        .sort(sortEvidenceNewestFirst);
+
+      if (action === 'MARK_SENT') {
+        if (successEvidence.length === 0) {
+          const journal = await createReconciliationJournalEntry(
+            tx,
+            journalData({
+              event,
+              idempotencyKey,
+              requestHash,
+              action,
+              decision: 'REJECTED',
+              resultingStatus: event.status,
+              reasonCode: 'SUCCESS_EVIDENCE_REQUIRED',
+            }),
+          );
+          return formatReconciliationJournalResult(journal);
+        }
+
+        const sentEvidence = successEvidence
+          .filter((item) => item.eventType === 'SENT')
+          .map((item) => ({
+            item,
+            timestamp: usableProviderSentTimestamp(item.eventTimestamp, now),
+          }))
+          .filter(({ timestamp }) => timestamp !== null)
+          .sort((left, right) =>
+            right.timestamp.getTime() - left.timestamp.getTime(),
+          )[0];
+
+        const sentData = {
+          status: 'SENT',
+          processedAt: now,
+        };
+
+        // DELIVERED and READ prove the message was sent but are later
+        // milestones, not trustworthy send timestamps.
+        if (sentEvidence && !event.sentAt) {
+          sentData.sentAt = sentEvidence.timestamp;
+        }
+
+        const updated = await tx.automationEvent.updateMany({
+          where: {
+            id: event.id,
+            eventType: 'LESSON1_SIGNUP_REMINDER',
+            status: 'SENDING',
+            providerMessageId: event.providerMessageId,
+          },
+          data: sentData,
+        });
+
+        if (updated.count !== 1) {
+          throw new Error('Reconciliation state changed during MARK_SENT.');
+        }
+
+        const journal = await createReconciliationJournalEntry(
+          tx,
+          journalData({
+            event,
+            idempotencyKey,
+            requestHash,
+            action,
+            decision: 'APPLIED',
+            resultingStatus: 'SENT',
+            reasonCode: 'MATCHING_SUCCESS_EVIDENCE',
+            evidence: successEvidence[0],
+          }),
+        );
+        return formatReconciliationJournalResult(journal);
+      }
+
+      if (successEvidence.length > 0) {
+        const journal = await createReconciliationJournalEntry(
+          tx,
+          journalData({
+            event,
+            idempotencyKey,
+            requestHash,
+            action,
+            decision: 'REJECTED',
+            resultingStatus: event.status,
+            reasonCode: 'SUCCESS_EVIDENCE_PRESENT',
+            evidence: successEvidence[0],
+          }),
+        );
+        return formatReconciliationJournalResult(journal);
+      }
+
+      if (
+        (reasonCode === 'FAILED_EVIDENCE' && failedEvidence.length === 0) ||
+        (reasonCode === 'OUTCOME_UNKNOWN' && failedEvidence.length > 0)
+      ) {
+        const journal = await createReconciliationJournalEntry(
+          tx,
+          journalData({
+            event,
+            idempotencyKey,
+            requestHash,
+            action,
+            decision: 'REJECTED',
+            resultingStatus: event.status,
+            reasonCode:
+              reasonCode === 'FAILED_EVIDENCE'
+                ? 'FAILED_EVIDENCE_REQUIRED'
+                : 'FAILED_EVIDENCE_AVAILABLE',
+            evidence: failedEvidence[0] ?? null,
+          }),
+        );
+        return formatReconciliationJournalResult(journal);
+      }
+
+      const updated = await tx.automationEvent.updateMany({
+        where: {
+          id: event.id,
+          eventType: 'LESSON1_SIGNUP_REMINDER',
+          status: 'SENDING',
+          providerMessageId: event.providerMessageId,
+        },
+        data: {
+          status: 'CANCELLED',
+          cancelledAt: now,
+          processedAt: now,
+        },
+      });
+
+      if (updated.count !== 1) {
+        throw new Error('Reconciliation state changed during QUARANTINE.');
+      }
+
+      const journal = await createReconciliationJournalEntry(
+        tx,
+        journalData({
+          event,
+          idempotencyKey,
+          requestHash,
+          action,
+          decision: 'APPLIED',
+          resultingStatus: 'CANCELLED',
+          reasonCode,
+          evidence: failedEvidence[0] ?? null,
+        }),
+      );
+      return formatReconciliationJournalResult(journal);
+    }, DESTINATION_LOCK_TRANSACTION_OPTIONS);
+
+    return res.status(result.status).json(result.body);
+  } catch {
+    console.error('[AUTOMATION-RECONCILIATION] Database operation failed.');
     return res.status(500).json({
       ok: false,
       error: 'INTERNAL_ERROR',
@@ -1224,11 +1746,37 @@ export function createLiveReminderHandler({
       // the first eligibility query and the committed claim above. Every final
       // read and write below uses the transaction that owns the destination
       // lock so no unlocked pool connection can observe a competing state.
-      const finalEligibility = await getLiveReminderEligibility(ae, tx);
+      const lockedEvent = await tx.automationEvent.findUnique({
+        where: { id: ae.id },
+      });
+
+      // A reconciliation can quarantine the committed claim while this request
+      // waits for the same destination lock. Never dispatch after that terminal
+      // transition; the provider call must be downstream of this final state
+      // check, not merely the earlier PENDING -> SENDING claim.
+      if (
+        !lockedEvent ||
+        lockedEvent.eventType !== 'LESSON1_SIGNUP_REMINDER' ||
+        lockedEvent.status !== 'SENDING' ||
+        lockedEvent.destinationNumberNormalized !== destination
+      ) {
+        return {
+          status: 200,
+          body: {
+            ok: true,
+            result: 'ALREADY_PROCESSED',
+            aeId: ae.id,
+            existingStatus: lockedEvent?.status ?? null,
+            whatsappSent: false,
+          },
+        };
+      }
+
+      const finalEligibility = await getLiveReminderEligibility(lockedEvent, tx);
 
       if (finalEligibility.skipReason) {
         const result = await cancelClaimedRow(
-          ae.id,
+          lockedEvent.id,
           finalEligibility.skipReason,
           tx,
         );
@@ -1239,7 +1787,7 @@ export function createLiveReminderHandler({
             body: {
               ok: true,
               result: 'ALREADY_PROCESSED',
-              aeId: ae.id,
+              aeId: lockedEvent.id,
               whatsappSent: false,
             },
           };
@@ -1250,7 +1798,7 @@ export function createLiveReminderHandler({
           body: {
             ok: true,
             ...ineligibleResult(
-              ae,
+            lockedEvent,
               finalEligibility.skipReason,
               result.processedAt,
               result.cancelledAt,
@@ -1269,7 +1817,7 @@ export function createLiveReminderHandler({
             templateName,
             languageCode,
             bodyParameters: [learnerName],
-            automationEventId: ae.id,
+            automationEventId: lockedEvent.id,
           },
           providerDispatchTimeoutMs,
         );
@@ -1320,10 +1868,10 @@ export function createLiveReminderHandler({
 
       const sentAt = new Date();
       const existingPayload =
-        ae.payload &&
-        typeof ae.payload === 'object' &&
-        !Array.isArray(ae.payload)
-          ? ae.payload
+        lockedEvent.payload &&
+        typeof lockedEvent.payload === 'object' &&
+        !Array.isArray(lockedEvent.payload)
+          ? lockedEvent.payload
           : {};
 
       const nextPayload = {
