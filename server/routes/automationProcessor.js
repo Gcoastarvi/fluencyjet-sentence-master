@@ -674,40 +674,6 @@ router.get('/sending-audit', async (req, res) => {
   }
 });
 
-function sendingMonitorBaseWhere(status) {
-  return {
-    eventType: 'LESSON1_SIGNUP_REMINDER',
-    status,
-  };
-}
-
-function sendingMonitorAgeWhere({
-  lowerExclusive,
-  upperInclusive,
-}) {
-  const processedAt = {};
-  const createdAt = {};
-
-  if (lowerExclusive) {
-    processedAt.gt = lowerExclusive;
-    createdAt.gt = lowerExclusive;
-  }
-  if (upperInclusive) {
-    processedAt.lte = upperInclusive;
-    createdAt.lte = upperInclusive;
-  }
-
-  return {
-    OR: [
-      { processedAt: processedAt },
-      {
-        processedAt: null,
-        createdAt: createdAt,
-      },
-    ],
-  };
-}
-
 function sendingMonitorHistoryRow(row) {
   return {
     journalId: row.id,
@@ -777,172 +743,247 @@ router.get('/sending-monitor', async (req, res) => {
 
   const now = new Date();
   const since = new Date(now.getTime() - windowMinutes * 60_000);
-  const pendingWhere = sendingMonitorBaseWhere('PENDING');
-  const sendingWhere = sendingMonitorBaseWhere('SENDING');
   const age15Minutes = new Date(now.getTime() - 15 * 60_000);
   const age1Hour = new Date(now.getTime() - 60 * 60_000);
   const age6Hours = new Date(now.getTime() - 6 * 60 * 60_000);
   const age24Hours = new Date(now.getTime() - 24 * 60 * 60_000);
   const age7Days = new Date(now.getTime() - 7 * 24 * 60 * 60_000);
-  const failedWhere = {
-    eventType: PROVIDER_FAILURE_STATUS,
-    createdAt: { gte: since },
-  };
-  const journalWhere = {
-    createdAt: { gte: since },
-    automationEvent: {
-      is: {
-        eventType: 'LESSON1_SIGNUP_REMINDER',
-      },
-    },
-  };
-
-  const ageBucketWhere = (bounds) => ({
-    ...sendingWhere,
-    ...sendingMonitorAgeWhere(bounds),
-  });
 
   try {
-    const queries = [
-    prisma.automationEvent.count({ where: pendingWhere }),
-    prisma.automationEvent.count({
-      where: {
-        ...pendingWhere,
-        scheduledAt: { not: null, lte: now },
-      },
-    }),
-    prisma.automationEvent.count({
-      where: {
-        ...pendingWhere,
-        scheduledAt: { gt: now },
-      },
-    }),
-    prisma.automationEvent.count({
-      where: {
-        ...pendingWhere,
-        scheduledAt: null,
-      },
-    }),
-    prisma.automationEvent.count({ where: sendingWhere }),
-    prisma.automationEvent.count({
-      where: ageBucketWhere({ lowerExclusive: age15Minutes }),
-    }),
-    prisma.automationEvent.count({
-      where: ageBucketWhere({
-        lowerExclusive: age1Hour,
-        upperInclusive: age15Minutes,
-      }),
-    }),
-    prisma.automationEvent.count({
-      where: ageBucketWhere({
-        lowerExclusive: age6Hours,
-        upperInclusive: age1Hour,
-      }),
-    }),
-    prisma.automationEvent.count({
-      where: ageBucketWhere({
-        lowerExclusive: age24Hours,
-        upperInclusive: age6Hours,
-      }),
-    }),
-    prisma.automationEvent.count({
-      where: ageBucketWhere({
-        lowerExclusive: age7Days,
-        upperInclusive: age24Hours,
-      }),
-    }),
-    prisma.automationEvent.count({
-      where: ageBucketWhere({ upperInclusive: age7Days }),
-    }),
-    // createdAt is non-null in the schema, so effective age always falls back
-    // to it when processedAt is absent.
-    Promise.resolve(0),
-    prisma.whatsAppMessageEvent.count({ where: failedWhere }),
-    prisma.whatsAppMessageEvent.count({
-      where: {
-        ...failedWhere,
-        automationEventId: { not: null },
-      },
-    }),
-    prisma.whatsAppMessageEvent.count({
-      where: {
-        ...failedWhere,
-        automationEventId: null,
-      },
-    }),
-    prisma.whatsAppMessageEvent.count({
-      where: {
-        ...failedWhere,
-        eventTimestamp: null,
-      },
-    }),
-    prisma.automationReconciliationJournal.count({
-      where: {
-        ...journalWhere,
-        action: 'MARK_SENT',
-        decision: 'APPLIED',
-      },
-    }),
-    prisma.automationReconciliationJournal.count({
-      where: {
-        ...journalWhere,
-        action: 'MARK_SENT',
-        decision: 'REJECTED',
-      },
-    }),
-    prisma.automationReconciliationJournal.count({
-      where: {
-        ...journalWhere,
-        action: 'QUARANTINE',
-        decision: 'APPLIED',
-      },
-    }),
-      prisma.automationReconciliationJournal.count({
-        where: {
-          ...journalWhere,
-          action: 'QUARANTINE',
-          decision: 'REJECTED',
-        },
-      }),
-    ];
+    const [
+      eventRows,
+      sendingRows,
+      failureRows,
+      reconciliationRows,
+      historyResult,
+    ] = await Promise.all([
+      prisma.$queryRaw`
+        SELECT
+          'due' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'PENDING'
+          AND "scheduledAt" IS NOT NULL
+          AND "scheduledAt" <= ${now}
+        UNION ALL
+        SELECT
+          'scheduledFuture' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'PENDING'
+          AND "scheduledAt" > ${now}
+        UNION ALL
+        SELECT
+          'unscheduled' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'PENDING'
+          AND "scheduledAt" IS NULL
+      `,
+      prisma.$queryRaw`
+        SELECT
+          'under15Minutes' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" > ${age15Minutes}
+        UNION ALL
+        SELECT
+          'under15Minutes' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" IS NULL
+          AND "createdAt" > ${age15Minutes}
+        UNION ALL
+        SELECT
+          'minutes15To1Hour' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" > ${age1Hour}
+          AND "processedAt" <= ${age15Minutes}
+        UNION ALL
+        SELECT
+          'minutes15To1Hour' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" IS NULL
+          AND "createdAt" > ${age1Hour}
+          AND "createdAt" <= ${age15Minutes}
+        UNION ALL
+        SELECT
+          'hours1To6' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" > ${age6Hours}
+          AND "processedAt" <= ${age1Hour}
+        UNION ALL
+        SELECT
+          'hours1To6' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" IS NULL
+          AND "createdAt" > ${age6Hours}
+          AND "createdAt" <= ${age1Hour}
+        UNION ALL
+        SELECT
+          'hours6To24' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" > ${age24Hours}
+          AND "processedAt" <= ${age6Hours}
+        UNION ALL
+        SELECT
+          'hours6To24' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" IS NULL
+          AND "createdAt" > ${age24Hours}
+          AND "createdAt" <= ${age6Hours}
+        UNION ALL
+        SELECT
+          'days1To7' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" > ${age7Days}
+          AND "processedAt" <= ${age24Hours}
+        UNION ALL
+        SELECT
+          'days1To7' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" IS NULL
+          AND "createdAt" > ${age7Days}
+          AND "createdAt" <= ${age24Hours}
+        UNION ALL
+        SELECT
+          'over7Days' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" <= ${age7Days}
+        UNION ALL
+        SELECT
+          'over7Days' AS "bucket",
+          COUNT(*) AS "count"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" IS NULL
+          AND "createdAt" <= ${age7Days}
+      `,
+      prisma.$queryRaw`
+        SELECT
+          COUNT(*) AS "observedInWindow",
+          COUNT(*) FILTER (
+            WHERE "automationEventId" IS NOT NULL
+          ) AS "linkedToAutomationEvent",
+          COUNT(*) FILTER (
+            WHERE "automationEventId" IS NULL
+          ) AS "unlinked",
+          COUNT(*) FILTER (
+            WHERE "eventTimestamp" IS NULL
+          ) AS "missingTimestamp"
+        FROM "WhatsAppMessageEvent"
+        WHERE "eventType" = ${PROVIDER_FAILURE_STATUS}
+          AND "createdAt" >= ${since}
+      `,
+      prisma.$queryRaw`
+        SELECT
+          COUNT(*) FILTER (
+            WHERE j."action" = 'MARK_SENT'
+              AND j."decision" = 'APPLIED'
+          ) AS "markSentApplied",
+          COUNT(*) FILTER (
+            WHERE j."action" = 'MARK_SENT'
+              AND j."decision" = 'REJECTED'
+          ) AS "markSentRejected",
+          COUNT(*) FILTER (
+            WHERE j."action" = 'QUARANTINE'
+              AND j."decision" = 'APPLIED'
+          ) AS "quarantineApplied",
+          COUNT(*) FILTER (
+            WHERE j."action" = 'QUARANTINE'
+              AND j."decision" = 'REJECTED'
+          ) AS "quarantineRejected"
+        FROM "AutomationReconciliationJournal" j
+        INNER JOIN "AutomationEvent" ae
+          ON ae."id" = j."automationEventId"
+        WHERE j."createdAt" >= ${since}
+          AND ae."eventType" = 'LESSON1_SIGNUP_REMINDER'
+      `,
+      historyLimit > 0
+        ? prisma.$queryRaw`
+            SELECT
+              j."id" AS "id",
+              j."automationEventId" AS "automationEventId",
+              j."createdAt" AS "createdAt",
+              j."action" AS "action",
+              j."decision" AS "decision",
+              j."priorStatus" AS "priorStatus",
+              j."resultingStatus" AS "resultingStatus",
+              j."reasonCode" AS "reasonCode",
+              j."evidenceStatus" AS "evidenceStatus"
+            FROM "AutomationReconciliationJournal" j
+            INNER JOIN "AutomationEvent" ae
+              ON ae."id" = j."automationEventId"
+            WHERE j."createdAt" >= ${since}
+              AND ae."eventType" = 'LESSON1_SIGNUP_REMINDER'
+            ORDER BY j."createdAt" DESC, j."id" DESC
+            LIMIT ${historyLimit + 1}
+          `
+        : Promise.resolve([]),
+    ]);
 
-    if (historyLimit > 0) {
-      queries.push(
-        prisma.automationReconciliationJournal.findMany({
-          where: journalWhere,
-          select: {
-            id: true,
-            automationEventId: true,
-            createdAt: true,
-            action: true,
-            decision: true,
-            priorStatus: true,
-            resultingStatus: true,
-            reasonCode: true,
-            evidenceStatus: true,
-          },
-          orderBy: [
-            { createdAt: 'desc' },
-            { id: 'desc' },
-          ],
-          take: historyLimit + 1,
-        }),
-      );
-    }
-
-    const results = await Promise.all(queries);
-    const pendingTotal = results[0];
-    const pendingDue = results[1];
-    const pendingScheduledFuture = results[2];
-    const pendingUnscheduled = results[3];
-    const sendingTotal = results[4];
-    const historyResult =
-      historyLimit > 0 ? results[results.length - 1] : [];
+    const failureMetrics = failureRows[0] || {};
+    const reconciliationMetrics = reconciliationRows[0] || {};
+    const count = (value) => Number(value ?? 0);
+    const bucketCounts = (rows) => rows.reduce((result, row) => {
+      result[row.bucket] = (result[row.bucket] || 0) + count(row.count);
+      return result;
+    }, {});
+    const pendingBuckets = bucketCounts(eventRows);
+    const sendingBuckets = bucketCounts(sendingRows);
+    const pendingDue = pendingBuckets.due || 0;
+    const pendingScheduledFuture = pendingBuckets.scheduledFuture || 0;
+    const pendingUnscheduled = pendingBuckets.unscheduled || 0;
+    const pendingTotal =
+      pendingDue + pendingScheduledFuture + pendingUnscheduled;
+    const sendingTotal = [
+      'under15Minutes',
+      'minutes15To1Hour',
+      'hours1To6',
+      'hours6To24',
+      'days1To7',
+      'over7Days',
+    ].reduce((total, bucket) => total + (sendingBuckets[bucket] || 0), 0);
     const history = historyResult.slice(0, historyLimit);
-    const markSentApplied = results[16];
-    const markSentRejected = results[17];
-    const quarantineApplied = results[18];
-    const quarantineRejected = results[19];
+    const markSentApplied = count(reconciliationMetrics.markSentApplied);
+    const markSentRejected = count(reconciliationMetrics.markSentRejected);
+    const quarantineApplied = count(reconciliationMetrics.quarantineApplied);
+    const quarantineRejected = count(reconciliationMetrics.quarantineRejected);
 
     return res.json({
       ok: true,
@@ -964,21 +1005,21 @@ router.get('/sending-monitor', async (req, res) => {
           total: sendingTotal,
           ageBasis: 'processedAt-or-createdAt',
           buckets: {
-            under15Minutes: results[5],
-            minutes15To1Hour: results[6],
-            hours1To6: results[7],
-            hours6To24: results[8],
-            days1To7: results[9],
-            over7Days: results[10],
-            missingAge: results[11],
+            under15Minutes: sendingBuckets.under15Minutes || 0,
+            minutes15To1Hour: sendingBuckets.minutes15To1Hour || 0,
+            hours1To6: sendingBuckets.hours1To6 || 0,
+            hours6To24: sendingBuckets.hours6To24 || 0,
+            days1To7: sendingBuckets.days1To7 || 0,
+            over7Days: sendingBuckets.over7Days || 0,
+            missingAge: 0,
           },
         },
       },
       providerFailedWebhookEvents: {
-        observedInWindow: results[12],
-        linkedToAutomationEvent: results[13],
-        unlinked: results[14],
-        missingTimestamp: results[15],
+        observedInWindow: count(failureMetrics.observedInWindow),
+        linkedToAutomationEvent: count(failureMetrics.linkedToAutomationEvent),
+        unlinked: count(failureMetrics.unlinked),
+        missingTimestamp: count(failureMetrics.missingTimestamp),
       },
       reconciliation: {
         MARK_SENT: {

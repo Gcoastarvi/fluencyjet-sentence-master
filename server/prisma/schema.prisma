@@ -300,6 +300,9 @@ model AutomationEvent {
 
   @@index([userId, eventType, status])
   @@index([status, scheduledAt])
+  @@index([eventType, status, scheduledAt])
+  @@index([eventType, status, processedAt])
+  @@index([eventType, status, createdAt])
 }
 
 model WhatsAppMessageEvent {
@@ -329,6 +332,7 @@ model WhatsAppMessageEvent {
   @@index([providerMessageId])
   @@index([automationEventId])
   @@index([eventType, eventTimestamp])
+  @@index([eventType, createdAt])
 }
 
 model AutomationReconciliationJournal {
@@ -350,6 +354,7 @@ model AutomationReconciliationJournal {
 
   @@unique([automationEventId, idempotencyKey])
   @@index([automationEventId, createdAt])
+  @@index([createdAt, id])
 }
 
 model WhatsAppPhoneSuppression {

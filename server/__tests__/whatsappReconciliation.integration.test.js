@@ -211,6 +211,14 @@ function getSendingMonitor(app, query = {}) {
     .set('Authorization', `Bearer ${automationSecret}`);
 }
 
+async function expectPlanUsesIndex(indexName, statement) {
+  const planRows = await controlClient.$transaction(async (tx) => {
+    await tx.$executeRawUnsafe('SET LOCAL enable_seqscan = off');
+    return tx.$queryRawUnsafe(`EXPLAIN (FORMAT JSON) ${statement}`);
+  });
+  expect(JSON.stringify(planRows)).toContain(indexName);
+}
+
 function webhookSignature(rawBody) {
   return `sha256=${crypto
     .createHmac('sha256', metaAppSecret)
@@ -729,6 +737,70 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
       });
     expect(after).toEqual(before);
     expect(journalCountAfter).toBe(journalCountBefore);
+    expect(reconciliationProvider).not.toHaveBeenCalled();
+  });
+
+  test('uses the dedicated monitor indexes for bounded status, window, and history access', async () => {
+    const historicalFailures = Array.from({ length: 128 }, (_value, index) => ({
+      id: crypto.randomUUID(),
+      providerMessageId: `wamid.monitor.history.${runToken}.${index}`,
+      eventType: 'FAILED',
+      eventTimestamp: new Date(Date.now() - 2 * 24 * 60 * 60_000),
+      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60_000),
+      dedupKey: crypto.randomBytes(32).toString('hex'),
+    }));
+    await controlClient.whatsAppMessageEvent.createMany({
+      data: historicalFailures,
+    });
+    for (const row of historicalFailures) testEvidenceIds.add(row.id);
+    await controlClient.$executeRawUnsafe('ANALYZE "WhatsAppMessageEvent"');
+
+    await expectPlanUsesIndex(
+      'AutomationEvent_eventType_status_scheduledAt_idx',
+      `
+        SELECT "scheduledAt"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'PENDING'
+          AND "scheduledAt" <= NOW()
+        ORDER BY "scheduledAt" DESC
+        LIMIT 5
+      `,
+    );
+    await expectPlanUsesIndex(
+      'AutomationEvent_eventType_status_processedAt_idx',
+      `
+        SELECT "processedAt"
+        FROM "AutomationEvent"
+        WHERE "eventType" = 'LESSON1_SIGNUP_REMINDER'
+          AND "status" = 'SENDING'
+          AND "processedAt" > NOW() - INTERVAL '15 minutes'
+        ORDER BY "processedAt" DESC
+        LIMIT 5
+      `,
+    );
+    await expectPlanUsesIndex(
+      'WhatsAppMessageEvent_eventType_createdAt_idx',
+      `
+        SELECT COUNT(*)
+        FROM "WhatsAppMessageEvent"
+        WHERE "eventType" = 'FAILED'
+          AND "createdAt" >= NOW() - INTERVAL '60 minutes'
+      `,
+    );
+    await expectPlanUsesIndex(
+      'AutomationReconciliationJournal_createdAt_id_idx',
+      `
+        SELECT j."id"
+        FROM "AutomationReconciliationJournal" j
+        INNER JOIN "AutomationEvent" ae
+          ON ae."id" = j."automationEventId"
+        WHERE j."createdAt" >= NOW() - INTERVAL '60 minutes'
+          AND ae."eventType" = 'LESSON1_SIGNUP_REMINDER'
+        ORDER BY j."createdAt" DESC, j."id" DESC
+        LIMIT 5
+      `,
+    );
     expect(reconciliationProvider).not.toHaveBeenCalled();
   });
 });

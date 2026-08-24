@@ -14,6 +14,7 @@ import express from 'express';
 import request from 'supertest';
 
 const mockPrisma = {
+  $queryRaw: jest.fn(),
   automationEvent: {
     count: jest.fn(),
     create: jest.fn(),
@@ -81,44 +82,47 @@ beforeEach(() => {
   process.env.AUTOMATION_SECRET = SECRET;
   jest.clearAllMocks();
 
-  mockPrisma.automationEvent.count
-    .mockResolvedValueOnce(10) // pending total
-    .mockResolvedValueOnce(4)  // pending due
-    .mockResolvedValueOnce(5)  // pending scheduled future
-    .mockResolvedValueOnce(1)  // pending unscheduled
-    .mockResolvedValueOnce(3)  // sending total
-    .mockResolvedValueOnce(1)  // under 15 minutes
-    .mockResolvedValueOnce(1)  // 15 minutes to 1 hour
-    .mockResolvedValueOnce(1)  // 1 to 6 hours
-    .mockResolvedValueOnce(0)  // 6 to 24 hours
-    .mockResolvedValueOnce(0)  // 1 to 7 days
-    .mockResolvedValueOnce(0)  // over 7 days
-    .mockResolvedValueOnce(0); // missing age
-  mockPrisma.whatsAppMessageEvent.count
-    .mockResolvedValueOnce(5)  // observed
-    .mockResolvedValueOnce(4)  // linked
-    .mockResolvedValueOnce(1)  // unlinked
-    .mockResolvedValueOnce(1); // missing timestamp
-  mockPrisma.automationReconciliationJournal.count
-    .mockResolvedValueOnce(2)  // MARK_SENT applied
-    .mockResolvedValueOnce(1)  // MARK_SENT rejected
-    .mockResolvedValueOnce(3)  // QUARANTINE applied
-    .mockResolvedValueOnce(2); // QUARANTINE rejected
-  mockPrisma.automationReconciliationJournal.findMany.mockResolvedValue([
-    makeHistoryRow({ id: 'journal-3' }),
-    makeHistoryRow({
-      id: 'journal-2',
-      createdAt: new Date('2026-08-24T10:00:00.000Z'),
-      action: 'MARK_SENT',
-      resultingStatus: 'SENT',
-      reasonCode: 'MATCHING_SUCCESS_EVIDENCE',
-      evidenceStatus: 'SENT',
-    }),
-    makeHistoryRow({
-      id: 'journal-1',
-      createdAt: new Date('2026-08-24T09:00:00.000Z'),
-    }),
-  ]);
+  mockPrisma.$queryRaw
+    .mockResolvedValueOnce([
+      { bucket: 'due', count: 4n },
+      { bucket: 'scheduledFuture', count: 5n },
+      { bucket: 'unscheduled', count: 1n },
+    ])
+    .mockResolvedValueOnce([
+      { bucket: 'under15Minutes', count: 1n },
+      { bucket: 'minutes15To1Hour', count: 1n },
+      { bucket: 'hours1To6', count: 1n },
+      { bucket: 'hours6To24', count: 0n },
+      { bucket: 'days1To7', count: 0n },
+      { bucket: 'over7Days', count: 0n },
+    ])
+    .mockResolvedValueOnce([{
+      observedInWindow: 5n,
+      linkedToAutomationEvent: 4n,
+      unlinked: 1n,
+      missingTimestamp: 1n,
+    }])
+    .mockResolvedValueOnce([{
+      markSentApplied: 2n,
+      markSentRejected: 1n,
+      quarantineApplied: 3n,
+      quarantineRejected: 2n,
+    }])
+    .mockResolvedValueOnce([
+      makeHistoryRow({ id: 'journal-3' }),
+      makeHistoryRow({
+        id: 'journal-2',
+        createdAt: new Date('2026-08-24T10:00:00.000Z'),
+        action: 'MARK_SENT',
+        resultingStatus: 'SENT',
+        reasonCode: 'MATCHING_SUCCESS_EVIDENCE',
+        evidenceStatus: 'SENT',
+      }),
+      makeHistoryRow({
+        id: 'journal-1',
+        createdAt: new Date('2026-08-24T09:00:00.000Z'),
+      }),
+    ]);
 });
 
 afterEach(() => {
@@ -135,10 +139,7 @@ describe('GET /api/automation/sending-monitor', () => {
       ok: false,
       error: 'UNAUTHORIZED',
     });
-    expect(mockPrisma.automationEvent.count).not.toHaveBeenCalled();
-    expect(mockPrisma.whatsAppMessageEvent.count).not.toHaveBeenCalled();
-    expect(mockPrisma.automationReconciliationJournal.count)
-      .not.toHaveBeenCalled();
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
   });
 
   test.each([
@@ -157,12 +158,7 @@ describe('GET /api/automation/sending-monitor', () => {
     expect(response.body.error).toMatch(
       /UNKNOWN_QUERY_FIELDS|INVALID_QUERY_PARAMETERS/,
     );
-    expect(mockPrisma.automationEvent.count).not.toHaveBeenCalled();
-    expect(mockPrisma.whatsAppMessageEvent.count).not.toHaveBeenCalled();
-    expect(mockPrisma.automationReconciliationJournal.count)
-      .not.toHaveBeenCalled();
-    expect(mockPrisma.automationReconciliationJournal.findMany)
-      .not.toHaveBeenCalled();
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
   });
 
   test('returns bounded metrics, pending breakdown, age buckets, failures, and history', async () => {
@@ -240,25 +236,23 @@ describe('GET /api/automation/sending-monitor', () => {
       expect(serialized.toLowerCase()).not.toContain(sensitiveValue.toLowerCase());
     }
 
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(5);
+    const queryTexts = mockPrisma.$queryRaw.mock.calls
+      .map(([strings]) => strings.join('?'));
+    expect(queryTexts[0]).toContain('FROM "AutomationEvent"');
+    expect(queryTexts[0]).toContain('"status" = \'PENDING\'');
+    expect(queryTexts[1]).toContain('FROM "AutomationEvent"');
+    expect(queryTexts[1]).toContain('"status" = \'SENDING\'');
+    expect(queryTexts[2]).toContain('FROM "WhatsAppMessageEvent"');
+    expect(queryTexts[3]).toContain('FROM "AutomationReconciliationJournal"');
+    expect(queryTexts[4]).toContain('ORDER BY j."createdAt" DESC, j."id" DESC');
+    expect(queryTexts[4]).toContain('LIMIT ?');
+    expect(mockPrisma.automationEvent.count).not.toHaveBeenCalled();
+    expect(mockPrisma.whatsAppMessageEvent.count).not.toHaveBeenCalled();
+    expect(mockPrisma.automationReconciliationJournal.count)
+      .not.toHaveBeenCalled();
     expect(mockPrisma.automationReconciliationJournal.findMany)
-      .toHaveBeenCalledWith(expect.objectContaining({
-        take: 3,
-        orderBy: [
-          { createdAt: 'desc' },
-          { id: 'desc' },
-        ],
-        select: {
-          id: true,
-          automationEventId: true,
-          createdAt: true,
-          action: true,
-          decision: true,
-          priorStatus: true,
-          resultingStatus: true,
-          reasonCode: true,
-          evidenceStatus: true,
-        },
-      }));
+      .not.toHaveBeenCalled();
     expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
     expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
     expect(mockPrisma.automationEvent.deleteMany).not.toHaveBeenCalled();
@@ -277,27 +271,21 @@ describe('GET /api/automation/sending-monitor', () => {
     expect(response.body.generatedAt).toEqual(expect.any(String));
     expect(response.body.window.since).toEqual(expect.any(String));
 
-    const under15Where =
-      mockPrisma.automationEvent.count.mock.calls[5][0].where;
-    const fifteenToOneHourWhere =
-      mockPrisma.automationEvent.count.mock.calls[6][0].where;
-    expect(under15Where.OR[0].processedAt.gt).toEqual(
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(4);
+    const sendingQueryArguments = mockPrisma.$queryRaw.mock.calls[1];
+    expect(sendingQueryArguments[1]).toEqual(
       new Date(new Date(response.body.generatedAt).getTime() - 15 * 60_000),
     );
-    expect(fifteenToOneHourWhere.OR[0].processedAt).toMatchObject({
-      gt: new Date(
-        new Date(response.body.generatedAt).getTime() - 60 * 60_000,
-      ),
-      lte: new Date(
-        new Date(response.body.generatedAt).getTime() - 15 * 60_000,
-      ),
-    });
-    expect(mockPrisma.automationReconciliationJournal.findMany)
-      .not.toHaveBeenCalled();
+    expect(sendingQueryArguments[3]).toEqual(
+      new Date(new Date(response.body.generatedAt).getTime() - 60 * 60_000),
+    );
+    expect(sendingQueryArguments[4]).toEqual(
+      new Date(new Date(response.body.generatedAt).getTime() - 15 * 60_000),
+    );
   });
 
   test('returns a generic error for database failures without exposing details', async () => {
-    mockPrisma.automationEvent.count.mockReset().mockRejectedValue(
+    mockPrisma.$queryRaw.mockReset().mockRejectedValue(
       new Error('connection string and SQL must remain private'),
     );
 
