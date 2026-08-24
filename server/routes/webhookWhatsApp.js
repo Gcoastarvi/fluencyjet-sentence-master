@@ -442,6 +442,9 @@ async function processInboundMessages(payload) {
             });
 
             return 'OPT_OUT';
+          }, {
+            maxWait: 10_000,
+            timeout: 30_000,
           });
 
           summary.processed += 1;

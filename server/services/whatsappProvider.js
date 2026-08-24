@@ -108,7 +108,8 @@ async function readJsonSafely(response) {
  *   templateName: string,
  *   languageCode: string,
  *   bodyParameters?: Array<string>,
- *   automationEventId: string
+ *   automationEventId: string,
+ *   signal?: AbortSignal
  * }
  *
  * Success:
@@ -193,6 +194,15 @@ export async function sendWhatsAppTemplate(message = {}) {
     `${phoneNumberId}/messages`;
 
   const controller = new AbortController();
+  const externalSignal = message.signal;
+  const abortFromCaller = () => controller.abort();
+
+  if (externalSignal?.aborted) {
+    controller.abort();
+  } else if (typeof externalSignal?.addEventListener === 'function') {
+    externalSignal.addEventListener('abort', abortFromCaller, { once: true });
+  }
+
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   let response;
@@ -222,6 +232,9 @@ export async function sendWhatsAppTemplate(message = {}) {
     );
   } finally {
     clearTimeout(timeout);
+    if (typeof externalSignal?.removeEventListener === 'function') {
+      externalSignal.removeEventListener('abort', abortFromCaller);
+    }
   }
 
   const data = await readJsonSafely(response);

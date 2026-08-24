@@ -20,14 +20,37 @@ const router = express.Router();
 const POISON     = new Set(['undefined', 'null', 'false', '0', 'none', 'secret']);
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BATCH  = 10;
+const DESTINATION_LOCK_TRANSACTION_OPTIONS = {
+  maxWait: 10_000,
+  timeout: 30_000,
+};
+const PROVIDER_DISPATCH_TIMEOUT_MS = 12_000;
+
+async function sendTemplateWithinDestinationLock(
+  sendTemplate,
+  message,
+  timeoutMilliseconds,
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMilliseconds);
+
+  try {
+    return await sendTemplate({
+      ...message,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 async function getPhoneLevelSkipReason(
   ownerUserId,
   normalizedNumber,
-  { checkDurableSuppression = false } = {},
+  { checkDurableSuppression = false, database = prisma } = {},
 ) {
   if (checkDurableSuppression) {
-    const suppression = await prisma.whatsAppPhoneSuppression.findUnique({
+    const suppression = await database.whatsAppPhoneSuppression.findUnique({
       where: {
         phoneNumberNormalized: normalizedNumber,
       },
@@ -43,7 +66,7 @@ async function getPhoneLevelSkipReason(
 
   // Re-confirm that the reminder owner still owns this canonical destination.
   // If the number changed after the first User read, fail closed.
-  const ownerStillMatches = await prisma.user.findFirst({
+  const ownerStillMatches = await database.user.findFirst({
     where: {
       id: ownerUserId,
       whatsapp_number_normalized: normalizedNumber,
@@ -57,7 +80,7 @@ async function getPhoneLevelSkipReason(
     return 'PHONE_IDENTITY_CHANGED';
   }
 
-  const phoneUsers = await prisma.user.findMany({
+  const phoneUsers = await database.user.findMany({
     where: {
       whatsapp_number_normalized: normalizedNumber,
     },
@@ -119,14 +142,14 @@ function getEventDestination(ae) {
   };
 }
 
-async function getLiveReminderEligibility(ae) {
+async function getLiveReminderEligibility(ae, database = prisma) {
   const eventDestination = getEventDestination(ae);
 
   if (eventDestination.skipReason) {
     return eventDestination;
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await database.user.findUnique({
     where: { id: ae.userId },
     select: {
       id: true,
@@ -152,7 +175,7 @@ async function getLiveReminderEligibility(ae) {
   const phoneSkipReason = await getPhoneLevelSkipReason(
     user.id,
     eventDestination.destination,
-    { checkDurableSuppression: true },
+    { checkDurableSuppression: true, database },
   );
 
   if (phoneSkipReason) {
@@ -648,12 +671,20 @@ router.post('/process-due-reminders-batch', async (req, res) => {
 // NOTE: the current provider implementation is intentionally disabled and
 // cannot contact Meta. Jest tests will mock the provider in a later step.
 // ---------------------------------------------------------------------------
-router.post('/process-due-reminder-live', async (req, res) => {
+export function createLiveReminderHandler({
+  database = prisma,
+  sendTemplate = sendWhatsAppTemplate,
+  providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
+  isLiveSendEnabled = () =>
+    (process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() ===
+    'true',
+} = {}) {
+  return async (req, res) => {
   // ── 1. Existing automation auth ──────────────────────────────────────────
   if (!checkAuth(req, res, 'AUTOMATION-LIVE')) return;
 
   // ── 2. Global live-send kill switch ──────────────────────────────────────
-  if ((process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() !== 'true') {
+  if (!isLiveSendEnabled()) {
     return res.status(503).json({
       ok: false,
       error: 'WHATSAPP_LIVE_SEND_DISABLED',
@@ -734,7 +765,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
 
   try {
     // ── 7. Fetch exact reminder ─────────────────────────────────────────────
-    const ae = await prisma.automationEvent.findUnique({
+    const ae = await database.automationEvent.findUnique({
       where: { id: automationEventId },
     });
 
@@ -776,10 +807,14 @@ router.post('/process-due-reminder-live', async (req, res) => {
     }
 
     // ── 8. Re-check eligibility immediately before claim ────────────────────
-    const eligibility = await getLiveReminderEligibility(ae);
+    const eligibility = await getLiveReminderEligibility(ae, database);
 
     if (eligibility.skipReason) {
-      const result = await cancelRow(ae.id, eligibility.skipReason);
+      const result = await cancelRow(
+        ae.id,
+        eligibility.skipReason,
+        database,
+      );
       if (result.count === 0) {
         return res.json({
           ok: true,
@@ -812,7 +847,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
       });
     }
 
-    const lesson1 = await prisma.lessonModeProgress.findUnique({
+    const lesson1 = await database.lessonModeProgress.findUnique({
       where: {
         userId_lessonId_mode: {
           userId: String(ae.userId),
@@ -829,7 +864,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
       lesson1.completed >= lesson1.total;
 
     if (lesson1Complete) {
-      const result = await cancelRow(ae.id, 'LESSON1_COMPLETE');
+      const result = await cancelRow(ae.id, 'LESSON1_COMPLETE', database);
       if (result.count === 0) {
         return res.json({
           ok: true,
@@ -859,48 +894,52 @@ router.post('/process-due-reminder-live', async (req, res) => {
       });
     }
 
-    // ── 10. Destination lock, claim, final gate, and provider invocation ───
-    // The lock transaction intentionally remains open until the provider
-    // request is known. A STOP holding this same lock must commit before a
-    // waiting reminder can pass its final eligibility gate, while a send that
-    // wins the lock remains serialized until its provider attempt is known.
-    const response = await prisma.$transaction(async (tx) => {
+    // ── 10. Commit claim, then lock and perform the final send stage ─────────
+    // The claim is intentionally committed before the lock-owning transaction.
+    // If the provider outcome is uncertain, this preserves SENDING even though
+    // the final transaction commits or rolls back. A STOP that wins the lock
+    // before this final stage commits durable suppression first; a send that
+    // wins holds the same lock until its provider outcome is known.
+    const claimedAt = new Date();
+    const claimed = await database.automationEvent.updateMany({
+      where: {
+        id: ae.id,
+        status: 'PENDING',
+      },
+      data: {
+        status: 'SENDING',
+        processedAt: claimedAt,
+      },
+    });
+
+    if (claimed.count === 0) {
+      return res.json({
+        ok: true,
+        result: 'ALREADY_PROCESSED',
+        aeId: ae.id,
+        whatsappSent: false,
+      });
+    }
+
+    console.log(
+      `[AUTOMATION-LIVE] CLAIMED aeId=${ae.id} userId=${ae.userId}`,
+    );
+
+    const response = await database.$transaction(async (tx) => {
       await acquireWhatsAppDestinationLock(tx, destination);
 
-      const claimedAt = new Date();
-      const claimed = await prisma.automationEvent.updateMany({
-        where: {
-          id: ae.id,
-          status: 'PENDING',
-        },
-        data: {
-          status: 'SENDING',
-          processedAt: claimedAt,
-        },
-      });
-
-      if (claimed.count === 0) {
-        return {
-          status: 200,
-          body: {
-            ok: true,
-            result: 'ALREADY_PROCESSED',
-            aeId: ae.id,
-            whatsappSent: false,
-          },
-        };
-      }
-
-      console.log(
-        `[AUTOMATION-LIVE] CLAIMED aeId=${ae.id} userId=${ae.userId}`,
-      );
-
       // A STOP, ownership change, or account-access change may occur between
-      // the first eligibility query and the atomic claim above.
-      const finalEligibility = await getLiveReminderEligibility(ae);
+      // the first eligibility query and the committed claim above. Every final
+      // read and write below uses the transaction that owns the destination
+      // lock so no unlocked pool connection can observe a competing state.
+      const finalEligibility = await getLiveReminderEligibility(ae, tx);
 
       if (finalEligibility.skipReason) {
-        const result = await cancelClaimedRow(ae.id, finalEligibility.skipReason);
+        const result = await cancelClaimedRow(
+          ae.id,
+          finalEligibility.skipReason,
+          tx,
+        );
 
         if (result.count === 0) {
           return {
@@ -931,13 +970,17 @@ router.post('/process-due-reminder-live', async (req, res) => {
       let delivery;
 
       try {
-        delivery = await sendWhatsAppTemplate({
-          to: destination,
-          templateName,
-          languageCode,
-          bodyParameters: [learnerName],
-          automationEventId: ae.id,
-        });
+        delivery = await sendTemplateWithinDestinationLock(
+          sendTemplate,
+          {
+            to: destination,
+            templateName,
+            languageCode,
+            bodyParameters: [learnerName],
+            automationEventId: ae.id,
+          },
+          providerDispatchTimeoutMs,
+        );
       } catch (providerErr) {
         console.error(
           `[AUTOMATION-LIVE] PROVIDER_UNCONFIRMED aeId=${ae.id} ` +
@@ -1001,7 +1044,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
       };
 
       try {
-        const finalized = await prisma.automationEvent.updateMany({
+        const finalized = await tx.automationEvent.updateMany({
           where: {
             id: ae.id,
             status: 'SENDING',
@@ -1069,7 +1112,7 @@ router.post('/process-due-reminder-live', async (req, res) => {
           whatsappSent: true,
         },
       };
-    });
+    }, DESTINATION_LOCK_TRANSACTION_OPTIONS);
 
     return res.status(response.status).json(response.body);
   } catch (err) {
@@ -1080,7 +1123,10 @@ router.post('/process-due-reminder-live', async (req, res) => {
       error: 'INTERNAL_ERROR',
     });
   }
-});
+  };
+}
+
+router.post('/process-due-reminder-live', createLiveReminderHandler());
 
 // ---------------------------------------------------------------------------
 // processOneReminder — shared eligibility + atomic transition logic.
@@ -1232,9 +1278,9 @@ async function processOneReminder(ae) {
  *   - detect a race (count === 0) and return ALREADY_PROCESSED
  *   - surface the EXACT timestamps written to the DB in the response
  */
-async function cancelRow(aeId, reason) {
+async function cancelRow(aeId, reason, database = prisma) {
   const now = new Date();
-  const result = await prisma.automationEvent.updateMany({
+  const result = await database.automationEvent.updateMany({
     where: { id: aeId, status: 'PENDING' },
     data:  { status: 'CANCELLED', cancelledAt: now, processedAt: now },
   });
@@ -1247,9 +1293,9 @@ async function cancelRow(aeId, reason) {
  * providerMessageId must still be absent: a provider-confirmed attempt is
  * never recast as unsent, even if another process changes the row.
  */
-async function cancelClaimedRow(aeId, reason) {
+async function cancelClaimedRow(aeId, reason, database = prisma) {
   const now = new Date();
-  const result = await prisma.automationEvent.updateMany({
+  const result = await database.automationEvent.updateMany({
     where: {
       id: aeId,
       status: 'SENDING',

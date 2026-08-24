@@ -29,3 +29,13 @@ was protected.
 **How to apply:** Connect the integration client directly from the explicit test
 database setting, use production settings only for a sanitized pre-write target
 comparison, and never treat production configuration as a connection fallback.
+
+An advisory lock held across a provider attempt needs an abortable provider
+deadline that settles strictly before the lock-owning transaction can expire.
+
+**Why:** If the transaction times out first, PostgreSQL releases the lock while
+an unresolved provider request may still deliver a message after a STOP commits.
+
+**How to apply:** Bound provider dispatch with an abort signal, keep that
+deadline below the interactive transaction timeout, retain SENDING on timeout,
+and test a competing STOP waits until the dispatch has definitively settled.

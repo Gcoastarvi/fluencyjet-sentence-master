@@ -649,13 +649,14 @@ describe(
         .toHaveBeenCalledTimes(1);
 
       expect(mockSendWhatsAppTemplate)
-        .toHaveBeenCalledWith({
+        .toHaveBeenCalledWith(expect.objectContaining({
           to: TEST_NUMBER,
           templateName: 'lesson1_signup_reminder',
           languageCode: 'ta',
           bodyParameters: ['Aravind'],
           automationEventId: UUID1,
-        });
+          signal: expect.any(AbortSignal),
+        }));
 
       expect(mockPrisma.automationEvent.updateMany)
         .toHaveBeenNthCalledWith(

@@ -13,7 +13,7 @@
     "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand",
     "test:phase2": "node --experimental-vm-modules node_modules/.bin/jest phase2 --runInBand",
     "test:phase3": "node --experimental-vm-modules node_modules/.bin/jest phase3 --runInBand",
-    "test:whatsapp-concurrency": "node --experimental-vm-modules node_modules/.bin/jest whatsappOptOutConcurrency.integration --runInBand",
+    "test:whatsapp-concurrency": "node --experimental-vm-modules node_modules/.bin/jest 'whatsappOptOut.*Concurrency' --runInBand",
     "test:whatsapp-safety": "node --experimental-vm-modules node_modules/.bin/jest phase4 webhookWhatsAppInbound --runInBand"
   },
   "dependencies": {
