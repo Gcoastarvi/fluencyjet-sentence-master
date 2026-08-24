@@ -1,1 +1,2 @@
 - [WhatsApp opt-out concurrency](whatsapp-opt-out-concurrency.md) — suppression checks see committed state; per-destination serialization is needed for an in-flight STOP race.
+- [Sending audit safety](sending-audit-safety.md) — audit responses are a privacy boundary and effective-age pagination needs deterministic cross-partition ordering.

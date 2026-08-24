@@ -20,6 +20,8 @@ const router = express.Router();
 const POISON     = new Set(['undefined', 'null', 'false', '0', 'none', 'secret']);
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_BATCH  = 10;
+const MAX_SENDING_AUDIT_LIMIT = 100;
+const MAX_SENDING_AUDIT_AGE_MINUTES = 525_600;
 const DESTINATION_LOCK_TRANSACTION_OPTIONS = {
   maxWait: 10_000,
   timeout: 30_000,
@@ -215,6 +217,296 @@ function checkAuth(req, res, tag) {
 
   return true;
 }
+
+function parseSendingAuditInteger(value, {
+  name,
+  defaultValue,
+  minimum,
+  maximum,
+}) {
+  if (value === undefined) return defaultValue;
+
+  if (
+    Array.isArray(value) ||
+    typeof value !== 'string' ||
+    !/^\d+$/.test(value.trim())
+  ) {
+    return {
+      error: `${name} must be a non-negative integer.`,
+    };
+  }
+
+  const parsed = Number(value);
+
+  if (
+    !Number.isSafeInteger(parsed) ||
+    parsed < minimum ||
+    parsed > maximum
+  ) {
+    return {
+      error: `${name} must be between ${minimum} and ${maximum}.`,
+    };
+  }
+
+  return parsed;
+}
+
+function isValidSendingAuditDate(value) {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
+function formatSendingAuditDate(value) {
+  return isValidSendingAuditDate(value) ? value.toISOString() : null;
+}
+
+function getSendingAuditAgeAnchor(row) {
+  if (isValidSendingAuditDate(row.processedAt)) {
+    return row.processedAt;
+  }
+
+  if (isValidSendingAuditDate(row.createdAt)) {
+    return row.createdAt;
+  }
+
+  return null;
+}
+
+function compareSendingAuditRows(left, right) {
+  const leftAnchor = getSendingAuditAgeAnchor(left);
+  const rightAnchor = getSendingAuditAgeAnchor(right);
+
+  if (leftAnchor === null && rightAnchor === null) {
+    return String(left.id).localeCompare(String(right.id));
+  }
+  if (leftAnchor === null) return 1;
+  if (rightAnchor === null) return -1;
+
+  const anchorDifference = leftAnchor.getTime() - rightAnchor.getTime();
+  if (anchorDifference !== 0) return anchorDifference;
+
+  return String(left.id).localeCompare(String(right.id));
+}
+
+function formatSendingAuditRow(row, now) {
+  const ageAnchor = getSendingAuditAgeAnchor(row);
+  const ageBasis =
+    isValidSendingAuditDate(row.processedAt)
+      ? 'processedAt'
+      : isValidSendingAuditDate(row.createdAt)
+        ? 'createdAt-fallback'
+        : 'missing';
+
+  return {
+    id: row.id,
+    userId: row.userId,
+    eventType: row.eventType,
+    createdAt: formatSendingAuditDate(row.createdAt),
+    scheduledAt: formatSendingAuditDate(row.scheduledAt),
+    processedAt: formatSendingAuditDate(row.processedAt),
+    sentAt: formatSendingAuditDate(row.sentAt),
+    providerMessageIdPresent: Boolean(row.providerMessageId),
+    destination: row.destinationNumberNormalized ? '[masked]' : null,
+    ageHours:
+      ageAnchor === null
+        ? null
+        : Number(
+            ((now.getTime() - ageAnchor.getTime()) / 3_600_000).toFixed(2),
+          ),
+    ageBasis,
+    evidence: {
+      count: Array.isArray(row.whatsappEvents)
+        ? row.whatsappEvents.length
+        : 0,
+      events: Array.isArray(row.whatsappEvents)
+        ? row.whatsappEvents.map((event) => ({
+            id: event.id,
+            eventType: event.eventType,
+            eventTimestamp: formatSendingAuditDate(event.eventTimestamp),
+            errorCode: event.errorCode ?? null,
+            createdAt: formatSendingAuditDate(event.createdAt),
+            providerMessageIdPresent: Boolean(event.providerMessageId),
+          }))
+        : [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/automation/sending-audit
+//
+// Read-only operator audit for uncertain Lesson 1 reminder attempts.
+// This route deliberately has no write, transaction, provider, or retry path.
+// ---------------------------------------------------------------------------
+router.get('/sending-audit', async (req, res) => {
+  if (!checkAuth(req, res, 'AUTOMATION-SENDING-AUDIT')) return;
+
+  const allowedQueryFields = new Set([
+    'olderThanMinutes',
+    'limit',
+    'automationEventId',
+  ]);
+  const unknownFields = Object.keys(req.query || {}).filter(
+    (key) => !allowedQueryFields.has(key),
+  );
+
+  if (unknownFields.length > 0) {
+    return res.status(400).json({
+      ok: false,
+      error: 'UNKNOWN_QUERY_FIELDS',
+    });
+  }
+
+  const olderThanMinutes = parseSendingAuditInteger(
+    req.query?.olderThanMinutes,
+    {
+      name: 'olderThanMinutes',
+      defaultValue: 0,
+      minimum: 0,
+      maximum: MAX_SENDING_AUDIT_AGE_MINUTES,
+    },
+  );
+  const limit = parseSendingAuditInteger(req.query?.limit, {
+    name: 'limit',
+    defaultValue: MAX_SENDING_AUDIT_LIMIT,
+    minimum: 1,
+    maximum: MAX_SENDING_AUDIT_LIMIT,
+  });
+
+  if (typeof olderThanMinutes === 'object' || typeof limit === 'object') {
+    const parameterError =
+      typeof olderThanMinutes === 'object'
+        ? olderThanMinutes.error
+        : limit.error;
+
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_QUERY_PARAMETERS',
+      message: parameterError,
+    });
+  }
+
+  const automationEventId = req.query?.automationEventId;
+
+  if (
+    automationEventId !== undefined &&
+    (
+      Array.isArray(automationEventId) ||
+      typeof automationEventId !== 'string' ||
+      !UUID_V4_RE.test(automationEventId)
+    )
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_AUTOMATION_EVENT_ID',
+    });
+  }
+
+  const now = new Date();
+  const baseWhere = {
+    status: 'SENDING',
+    eventType: 'LESSON1_SIGNUP_REMINDER',
+  };
+
+  if (automationEventId !== undefined) {
+    baseWhere.id = automationEventId;
+  }
+
+  if (olderThanMinutes > 0) {
+    const cutoff = new Date(
+      now.getTime() - olderThanMinutes * 60_000,
+    );
+    baseWhere.OR = [
+      { processedAt: { lte: cutoff } },
+      {
+        processedAt: null,
+        createdAt: { lte: cutoff },
+      },
+    ];
+  }
+
+  const select = {
+    id: true,
+    userId: true,
+    eventType: true,
+    createdAt: true,
+    scheduledAt: true,
+    processedAt: true,
+    sentAt: true,
+    providerMessageId: true,
+    destinationNumberNormalized: true,
+    whatsappEvents: {
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        providerMessageId: true,
+        eventType: true,
+        eventTimestamp: true,
+        errorCode: true,
+        createdAt: true,
+      },
+    },
+  };
+
+  try {
+    // Query the normal and fallback age anchors separately so that a bounded
+    // result can still be ordered by the effective age anchor. Fetching the
+    // first `limit` from each sorted partition is enough to produce the first
+    // `limit` rows of their merged, oldest-first order.
+    const [count, processedRows, fallbackRows] = await Promise.all([
+      prisma.automationEvent.count({ where: baseWhere }),
+      prisma.automationEvent.findMany({
+        where: {
+          ...baseWhere,
+          processedAt: { not: null },
+        },
+        select,
+        orderBy: [
+          { processedAt: 'asc' },
+          { id: 'asc' },
+        ],
+        take: limit,
+      }),
+      prisma.automationEvent.findMany({
+        where: {
+          ...baseWhere,
+          processedAt: null,
+        },
+        select,
+        orderBy: [
+          { createdAt: 'asc' },
+          { id: 'asc' },
+        ],
+        take: limit,
+      }),
+    ]);
+    const rows = [...processedRows, ...fallbackRows]
+      .sort(compareSendingAuditRows)
+      .slice(0, limit);
+
+    return res.json({
+      ok: true,
+      generatedAt: now.toISOString(),
+      filters: {
+        status: 'SENDING',
+        eventType: 'LESSON1_SIGNUP_REMINDER',
+        olderThanMinutes,
+        limit,
+        automationEventId: automationEventId ?? null,
+      },
+      count,
+      hasMore: count > rows.length,
+      rows: rows.map((row) => formatSendingAuditRow(row, now)),
+    });
+  } catch {
+    console.error(
+      '[AUTOMATION-SENDING-AUDIT] Database read failed.',
+    );
+    return res.status(500).json({
+      ok: false,
+      error: 'INTERNAL_ERROR',
+    });
+  }
+});
 
 // ---------------------------------------------------------------------------
 // POST /api/automation/process-due-reminders   (Phase 2 – single reminder)
