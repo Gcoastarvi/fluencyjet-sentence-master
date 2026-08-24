@@ -29,6 +29,9 @@ import { normalizeWhatsAppNumber } from '../lib/whatsappNumber.js';
 // Mock Prisma BEFORE importing the router.
 // ---------------------------------------------------------------------------
 const mockPrisma = {
+  $transaction: jest.fn(),
+  $executeRaw: jest.fn(),
+
   automationEvent: {
     findUnique: jest.fn(),
     updateMany: jest.fn(),
@@ -146,6 +149,10 @@ beforeEach(() => {
   process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE = 'ta';
 
   jest.clearAllMocks();
+  mockPrisma.$transaction.mockImplementation(
+    async (callback) => callback(mockPrisma),
+  );
+  mockPrisma.$executeRaw.mockResolvedValue(1);
 
   mockPrisma.automationEvent.findUnique.mockResolvedValue(makeAe());
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });

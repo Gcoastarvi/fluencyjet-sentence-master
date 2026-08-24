@@ -10,6 +10,7 @@ import express from 'express';
 import prisma from '../db/client.js';
 import { sendWhatsAppTemplate } from '../services/whatsappProvider.js';
 import { normalizeWhatsAppNumber } from '../lib/whatsappNumber.js';
+import { acquireWhatsAppDestinationLock } from '../lib/whatsappDestinationLock.js';
 
 const router = express.Router();
 
@@ -858,190 +859,219 @@ router.post('/process-due-reminder-live', async (req, res) => {
       });
     }
 
-    // ── 10. Atomic claim: PENDING -> SENDING ────────────────────────────────
-    const claimedAt = new Date();
+    // ── 10. Destination lock, claim, final gate, and provider invocation ───
+    // The lock transaction intentionally remains open until the provider
+    // request is known. A STOP holding this same lock must commit before a
+    // waiting reminder can pass its final eligibility gate, while a send that
+    // wins the lock remains serialized until its provider attempt is known.
+    const response = await prisma.$transaction(async (tx) => {
+      await acquireWhatsAppDestinationLock(tx, destination);
 
-    const claimed = await prisma.automationEvent.updateMany({
-      where: {
-        id: ae.id,
-        status: 'PENDING',
-      },
-      data: {
-        status: 'SENDING',
-        processedAt: claimedAt,
-      },
-    });
-
-    if (claimed.count === 0) {
-      return res.json({
-        ok: true,
-        result: 'ALREADY_PROCESSED',
-        aeId: ae.id,
-        whatsappSent: false,
-      });
-    }
-
-    console.log(
-      `[AUTOMATION-LIVE] CLAIMED aeId=${ae.id} userId=${ae.userId}`,
-    );
-
-    // ── 11. Final gate after claim, before any provider request ─────────────
-    // A STOP, ownership change, or account-access change may occur between
-    // the first eligibility query and the atomic claim above.
-    const finalEligibility = await getLiveReminderEligibility(ae);
-
-    if (finalEligibility.skipReason) {
-      const result = await cancelClaimedRow(ae.id, finalEligibility.skipReason);
-
-      if (result.count === 0) {
-        return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: ae.id,
-          whatsappSent: false,
-        });
-      }
-
-      return res.json({
-        ok: true,
-        ...ineligibleResult(
-          ae,
-          finalEligibility.skipReason,
-          result.processedAt,
-          result.cancelledAt,
-        ),
-      });
-    }
-
-    // ── 12. Provider invocation ─────────────────────────────────────────────
-    let delivery;
-
-    try {
-      delivery = await sendWhatsAppTemplate({
-        to: destination,
-        templateName,
-        languageCode,
-        bodyParameters: [learnerName],
-        automationEventId: ae.id,
-      });
-    } catch (providerErr) {
-      console.error(
-        `[AUTOMATION-LIVE] PROVIDER_UNCONFIRMED aeId=${ae.id} ` +
-        `code=${providerErr?.code || 'UNKNOWN'}`,
-      );
-
-      // Deliberately leave status=SENDING.
-      // A timeout/error can be ambiguous; automatically retrying could
-      // create a duplicate WhatsApp message.
-      return res.status(502).json({
-        ok: false,
-        error: 'WHATSAPP_SEND_UNCONFIRMED',
-        providerError: providerErr?.code || 'UNKNOWN',
-        aeId: ae.id,
-        existingStatus: 'SENDING',
-        whatsappSent: null,
-      });
-    }
-
-    if (
-      !delivery ||
-      typeof delivery.messageId !== 'string' ||
-      delivery.messageId.trim() === ''
-    ) {
-      console.error(
-        `[AUTOMATION-LIVE] INVALID_PROVIDER_RESPONSE aeId=${ae.id}`,
-      );
-
-      // Same conservative treatment: remain SENDING.
-      return res.status(502).json({
-        ok: false,
-        error: 'WHATSAPP_SEND_UNCONFIRMED',
-        providerError: 'INVALID_PROVIDER_RESPONSE',
-        aeId: ae.id,
-        existingStatus: 'SENDING',
-        whatsappSent: null,
-      });
-    }
-
-    // ── 13. Provider confirmed acceptance → finalize SENT ───────────────────
-    const sentAt = new Date();
-
-    const existingPayload =
-      ae.payload &&
-      typeof ae.payload === 'object' &&
-      !Array.isArray(ae.payload)
-        ? ae.payload
-        : {};
-
-    const nextPayload = {
-      ...existingPayload,
-      whatsappDelivery: {
-        provider: delivery.provider || 'meta',
-        messageId: delivery.messageId,
-        sentAt: sentAt.toISOString(),
-      },
-    };
-
-    try {
-      const finalized = await prisma.automationEvent.updateMany({
+      const claimedAt = new Date();
+      const claimed = await prisma.automationEvent.updateMany({
         where: {
           id: ae.id,
-          status: 'SENDING',
+          status: 'PENDING',
         },
         data: {
-          status: 'SENT',
-          sentAt,
-          processedAt: sentAt,
-          payload: nextPayload,
-          providerMessageId: delivery.messageId,
+          status: 'SENDING',
+          processedAt: claimedAt,
         },
       });
 
-      if (finalized.count === 0) {
-        console.error(
-          `[AUTOMATION-LIVE] FINALIZE_CONFLICT aeId=${ae.id} ` +
-          `messageId=${delivery.messageId}`,
-        );
-
-        return res.status(500).json({
-          ok: false,
-          error: 'SEND_FINALIZE_CONFLICT',
-          aeId: ae.id,
-          providerMessageId: delivery.messageId,
-          whatsappSent: true,
-        });
+      if (claimed.count === 0) {
+        return {
+          status: 200,
+          body: {
+            ok: true,
+            result: 'ALREADY_PROCESSED',
+            aeId: ae.id,
+            whatsappSent: false,
+          },
+        };
       }
-    } catch (finalizeErr) {
-      console.error(
-        `[AUTOMATION-LIVE] FINALIZE_FAILED aeId=${ae.id} ` +
-        `messageId=${delivery.messageId} error=${finalizeErr.message}`,
+
+      console.log(
+        `[AUTOMATION-LIVE] CLAIMED aeId=${ae.id} userId=${ae.userId}`,
       );
 
-      // Provider already confirmed the message. Never retry automatically.
-      return res.status(500).json({
-        ok: false,
-        error: 'SEND_FINALIZE_FAILED',
-        aeId: ae.id,
-        providerMessageId: delivery.messageId,
-        whatsappSent: true,
-      });
-    }
+      // A STOP, ownership change, or account-access change may occur between
+      // the first eligibility query and the atomic claim above.
+      const finalEligibility = await getLiveReminderEligibility(ae);
 
-    console.log(
-      `[AUTOMATION-LIVE] SENT aeId=${ae.id} userId=${ae.userId} ` +
-      `messageId=${delivery.messageId}`,
-    );
+      if (finalEligibility.skipReason) {
+        const result = await cancelClaimedRow(ae.id, finalEligibility.skipReason);
 
-    return res.json({
-      ok: true,
-      result: 'SENT',
-      aeId: ae.id,
-      userId: ae.userId,
-      email: user.email,
-      sentAt: sentAt.toISOString(),
-      providerMessageId: delivery.messageId,
-      whatsappSent: true,
+        if (result.count === 0) {
+          return {
+            status: 200,
+            body: {
+              ok: true,
+              result: 'ALREADY_PROCESSED',
+              aeId: ae.id,
+              whatsappSent: false,
+            },
+          };
+        }
+
+        return {
+          status: 200,
+          body: {
+            ok: true,
+            ...ineligibleResult(
+              ae,
+              finalEligibility.skipReason,
+              result.processedAt,
+              result.cancelledAt,
+            ),
+          },
+        };
+      }
+
+      let delivery;
+
+      try {
+        delivery = await sendWhatsAppTemplate({
+          to: destination,
+          templateName,
+          languageCode,
+          bodyParameters: [learnerName],
+          automationEventId: ae.id,
+        });
+      } catch (providerErr) {
+        console.error(
+          `[AUTOMATION-LIVE] PROVIDER_UNCONFIRMED aeId=${ae.id} ` +
+          `code=${providerErr?.code || 'UNKNOWN'}`,
+        );
+
+        // Deliberately leave status=SENDING.
+        // A timeout/error can be ambiguous; automatically retrying could
+        // create a duplicate WhatsApp message.
+        return {
+          status: 502,
+          body: {
+            ok: false,
+            error: 'WHATSAPP_SEND_UNCONFIRMED',
+            providerError: providerErr?.code || 'UNKNOWN',
+            aeId: ae.id,
+            existingStatus: 'SENDING',
+            whatsappSent: null,
+          },
+        };
+      }
+
+      if (
+        !delivery ||
+        typeof delivery.messageId !== 'string' ||
+        delivery.messageId.trim() === ''
+      ) {
+        console.error(
+          `[AUTOMATION-LIVE] INVALID_PROVIDER_RESPONSE aeId=${ae.id}`,
+        );
+
+        // Same conservative treatment: remain SENDING.
+        return {
+          status: 502,
+          body: {
+            ok: false,
+            error: 'WHATSAPP_SEND_UNCONFIRMED',
+            providerError: 'INVALID_PROVIDER_RESPONSE',
+            aeId: ae.id,
+            existingStatus: 'SENDING',
+            whatsappSent: null,
+          },
+        };
+      }
+
+      const sentAt = new Date();
+      const existingPayload =
+        ae.payload &&
+        typeof ae.payload === 'object' &&
+        !Array.isArray(ae.payload)
+          ? ae.payload
+          : {};
+
+      const nextPayload = {
+        ...existingPayload,
+        whatsappDelivery: {
+          provider: delivery.provider || 'meta',
+          messageId: delivery.messageId,
+          sentAt: sentAt.toISOString(),
+        },
+      };
+
+      try {
+        const finalized = await prisma.automationEvent.updateMany({
+          where: {
+            id: ae.id,
+            status: 'SENDING',
+          },
+          data: {
+            status: 'SENT',
+            sentAt,
+            processedAt: sentAt,
+            payload: nextPayload,
+            providerMessageId: delivery.messageId,
+          },
+        });
+
+        if (finalized.count === 0) {
+          console.error(
+            `[AUTOMATION-LIVE] FINALIZE_CONFLICT aeId=${ae.id} ` +
+            `messageId=${delivery.messageId}`,
+          );
+
+          return {
+            status: 500,
+            body: {
+              ok: false,
+              error: 'SEND_FINALIZE_CONFLICT',
+              aeId: ae.id,
+              providerMessageId: delivery.messageId,
+              whatsappSent: true,
+            },
+          };
+        }
+      } catch (finalizeErr) {
+        console.error(
+          `[AUTOMATION-LIVE] FINALIZE_FAILED aeId=${ae.id} ` +
+          `messageId=${delivery.messageId} error=${finalizeErr.message}`,
+        );
+
+        // Provider already confirmed the message. Never retry automatically.
+        return {
+          status: 500,
+          body: {
+            ok: false,
+            error: 'SEND_FINALIZE_FAILED',
+            aeId: ae.id,
+            providerMessageId: delivery.messageId,
+            whatsappSent: true,
+          },
+        };
+      }
+
+      console.log(
+        `[AUTOMATION-LIVE] SENT aeId=${ae.id} userId=${ae.userId} ` +
+        `messageId=${delivery.messageId}`,
+      );
+
+      return {
+        status: 200,
+        body: {
+          ok: true,
+          result: 'SENT',
+          aeId: ae.id,
+          userId: ae.userId,
+          email: user.email,
+          sentAt: sentAt.toISOString(),
+          providerMessageId: delivery.messageId,
+          whatsappSent: true,
+        },
+      };
     });
+
+    return res.status(response.status).json(response.body);
   } catch (err) {
     console.error('[AUTOMATION-LIVE] Unexpected error:', err.message);
 

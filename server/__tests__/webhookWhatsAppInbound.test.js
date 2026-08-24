@@ -5,6 +5,7 @@ import request from 'supertest';
 
 const mockPrisma = {
   $transaction: jest.fn(),
+  $executeRaw: jest.fn(),
 
   user: {
     findMany: jest.fn(),
@@ -107,6 +108,7 @@ describe('WhatsApp webhook inbound message processing', () => {
     mockPrisma.$transaction.mockImplementation(
       async (callback) => callback(mockPrisma),
     );
+    mockPrisma.$executeRaw.mockResolvedValue(1);
 
     mockPrisma.whatsAppMessageEvent.create.mockResolvedValue({
       id: 'inbound-event-id',

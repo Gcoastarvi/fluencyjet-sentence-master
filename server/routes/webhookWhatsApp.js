@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import prisma from '../db/client.js';
 import { normalizeWhatsAppWaId } from '../lib/whatsappNumber.js';
+import { acquireWhatsAppDestinationLock } from '../lib/whatsappDestinationLock.js';
 
 const router = express.Router();
 
@@ -356,6 +357,12 @@ async function processInboundMessages(payload) {
             if (!normalizedSender) {
               return 'UNKNOWN';
             }
+
+            // Serialize STOP with the reminder claim/final-gate/provider
+            // critical section for this destination. This is deliberately
+            // before the durable-suppression write, including for a sender
+            // that has no matching local User row.
+            await acquireWhatsAppDestinationLock(tx, normalizedSender);
 
             const now = new Date();
 

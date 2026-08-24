@@ -17,3 +17,15 @@ cancel the newly claimed event.
 **How to apply:** When a stronger guarantee is required, serialize inbound STOP
 mutations and live reminder claim/final eligibility by canonical destination
 with a database-backed per-phone lock, then add a concurrency integration test.
+
+Real concurrency coverage must use a dedicated test database connection, require
+that connection explicitly, reject a target that matches production before any
+write, and clean only run-scoped test records afterward.
+
+**Why:** Git branches isolate code but not database state; mocked transactions
+cannot demonstrate PostgreSQL advisory-lock blocking or prove production data
+was protected.
+
+**How to apply:** Connect the integration client directly from the explicit test
+database setting, use production settings only for a sanitized pre-write target
+comparison, and never treat production configuration as a connection fallback.
