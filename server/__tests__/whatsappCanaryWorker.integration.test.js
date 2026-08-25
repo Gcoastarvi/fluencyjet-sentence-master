@@ -144,7 +144,7 @@ function makeApp(provider = jest.fn()) {
   return app;
 }
 
-function canaryRequest(app, body = { liveSend: true }) {
+function canaryRequest(app, body) {
   return request(app)
     .post('/api/automation/process-due-reminder-canary')
     .set('Authorization', `Bearer ${automationSecret}`)
@@ -184,6 +184,8 @@ async function createUser(index, {
 }
 
 async function createEvent(user, {
+  eventType = 'LESSON1_SIGNUP_REMINDER',
+  status = 'PENDING',
   scheduledAt = new Date(Date.now() - 60_000),
   destinationNumberNormalized = user.whatsapp_number_normalized,
 } = {}) {
@@ -191,8 +193,8 @@ async function createEvent(user, {
     data: {
       id: crypto.randomUUID(),
       userId: user.id,
-      eventType: 'LESSON1_SIGNUP_REMINDER',
-      status: 'PENDING',
+      eventType,
+      status,
       scheduledAt,
       destinationNumberNormalized,
       payload: {
@@ -311,7 +313,7 @@ beforeAll(async () => {
   process.env.META_APP_SECRET = metaAppSecret;
   process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN = 'canary-verify-token';
   process.env.WHATSAPP_LIVE_SEND_ENABLED = 'false';
-  process.env.WHATSAPP_CANARY_WORKER_ENABLED = 'true';
+  process.env.WHATSAPP_CANARY_WORKER_ENABLED = 'false';
   process.env.WHATSAPP_LIVE_TEST_NUMBER = '99999 99999';
   process.env.WHATSAPP_LESSON1_TEMPLATE_NAME = 'canary_template';
   process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE = 'en';
@@ -353,60 +355,67 @@ afterAll(async () => {
 });
 
 describe('manual canary worker PostgreSQL integration', () => {
-  test('bounds the scan, skips legacy rows without mutation, and sends once', async () => {
+  test('requires a valid target ID and processes only the exact requested event', async () => {
     const provider = jest.fn().mockResolvedValue({
       provider: 'mocked-provider',
       messageId: 'wamid.canary.success',
     });
     const app = makeApp(provider);
-    const legacyUser = await createUser(1, {
+    const distractorUser = await createUser(1, {
       number: numberFor(1),
       consent: false,
     });
     const targetUser = await createUser(2, {
       number: testNumber,
     });
-    const legacyEvent = await createEvent(legacyUser, {
+    const distractorEvent = await createEvent(distractorUser, {
       scheduledAt: new Date(Date.UTC(2000, 0, 1)),
     });
-    const firstTarget = await createEvent(targetUser, {
+    const targetEvent = await createEvent(targetUser, {
       scheduledAt: new Date(Date.UTC(2000, 0, 2)),
-    });
-    const secondTarget = await createEvent(targetUser, {
-      scheduledAt: new Date(Date.UTC(2000, 0, 3)),
     });
 
     const before = await snapshot();
-    const response = await canaryRequest(app);
+    const missingIdResponse = await canaryRequest(app, { liveSend: true });
+    const malformedIdResponse = await canaryRequest(app, {
+      liveSend: true,
+      automationEventId: 'not-a-uuid',
+    });
+    const notFoundResponse = await canaryRequest(app, {
+      liveSend: true,
+      automationEventId: crypto.randomUUID(),
+    });
+    const response = await canaryRequest(app, {
+      liveSend: true,
+      automationEventId: targetEvent.id,
+    });
     const after = await snapshot();
 
+    expect(missingIdResponse.status).toBe(400);
+    expect(missingIdResponse.body.error).toBe('INVALID_AUTOMATION_EVENT_ID');
+    expect(malformedIdResponse.status).toBe(400);
+    expect(malformedIdResponse.body.error).toBe('INVALID_AUTOMATION_EVENT_ID');
+    expect(notFoundResponse.status).toBe(404);
+    expect(notFoundResponse.body.error).toBe('NOT_FOUND');
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
       ok: true,
-      scanLimit: 10,
+      targeted: true,
+      automationEventId: targetEvent.id,
       counts: {
-        examined: 2,
-        skipped: 1,
+        examined: 1,
+        skipped: 0,
         sent: 1,
         unconfirmed: 0,
       },
     });
-    expect(response.body.rows.map((row) => row.automationEventId)).toEqual([
-      legacyEvent.id,
-      firstTarget.id,
-    ]);
-    expect(response.body.rows[0]).toMatchObject({
-      status: 'PENDING',
-      result: 'SKIPPED',
-      reasonCode: 'CONSENT_FALSE',
-      destination: '[masked]',
-    });
-    expect(response.body.rows[1]).toMatchObject({
+    expect(response.body.rows).toEqual([expect.objectContaining({
+      automationEventId: targetEvent.id,
       status: 'SENT',
       result: 'SENT',
       reasonCode: null,
       destination: '[masked]',
-    });
+    })]);
     expect(provider).toHaveBeenCalledTimes(1);
     expect(provider).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -414,17 +423,15 @@ describe('manual canary worker PostgreSQL integration', () => {
       }),
     );
 
-    const legacyAfter = after.events.find((event) => event.id === legacyEvent.id);
-    const firstTargetAfter =
-      after.events.find((event) => event.id === firstTarget.id);
-    const secondTargetAfter =
-      after.events.find((event) => event.id === secondTarget.id);
-    expect(legacyAfter).toMatchObject({ status: 'PENDING' });
-    expect(firstTargetAfter).toMatchObject({
+    const distractorAfter =
+      after.events.find((event) => event.id === distractorEvent.id);
+    const targetAfter =
+      after.events.find((event) => event.id === targetEvent.id);
+    expect(distractorAfter).toMatchObject({ status: 'PENDING' });
+    expect(targetAfter).toMatchObject({
       status: 'SENT',
       providerMessageId: 'wamid.canary.success',
     });
-    expect(secondTargetAfter).toMatchObject({ status: 'PENDING' });
     expect(after.users).toEqual(before.users);
     expect(after.suppressions).toEqual(before.suppressions);
 
@@ -437,6 +444,86 @@ describe('manual canary worker PostgreSQL integration', () => {
     expect(serialized).not.toContain('rawProviderPayload');
   });
 
+  test('fails closed for wrong-type, non-due, non-pending, and wrong-destination targets', async () => {
+    const provider = jest.fn();
+    const app = makeApp(provider);
+    const wrongTypeUser = await createUser(3, { number: testNumber });
+    const nonDueUser = await createUser(4, { number: testNumber });
+    const nonPendingUser = await createUser(5, { number: testNumber });
+    const wrongDestinationUser = await createUser(6, { number: numberFor(6) });
+    const wrongTypeEvent = await createEvent(wrongTypeUser, {
+      eventType: 'DAY3_WEBINAR',
+    });
+    const nonDueEvent = await createEvent(nonDueUser, {
+      scheduledAt: new Date(Date.now() + 60_000),
+    });
+    const nonPendingEvent = await createEvent(nonPendingUser, {
+      status: 'SENDING',
+    });
+    const wrongDestinationEvent = await createEvent(wrongDestinationUser);
+
+    const [wrongTypeResponse, nonDueResponse, nonPendingResponse, wrongDestinationResponse] =
+      await Promise.all([
+        canaryRequest(app, {
+          liveSend: true,
+          automationEventId: wrongTypeEvent.id,
+        }),
+        canaryRequest(app, {
+          liveSend: true,
+          automationEventId: nonDueEvent.id,
+        }),
+        canaryRequest(app, {
+          liveSend: true,
+          automationEventId: nonPendingEvent.id,
+        }),
+        canaryRequest(app, {
+          liveSend: true,
+          automationEventId: wrongDestinationEvent.id,
+        }),
+      ]);
+
+    expect(wrongTypeResponse.status).toBe(400);
+    expect(wrongTypeResponse.body.error).toBe('WRONG_EVENT_TYPE');
+    expect(nonDueResponse.status).toBe(200);
+    expect(nonDueResponse.body.rows[0]).toMatchObject({
+      result: 'NOT_DUE',
+      status: 'PENDING',
+      reasonCode: 'NOT_DUE',
+    });
+    expect(nonPendingResponse.status).toBe(200);
+    expect(nonPendingResponse.body.rows[0]).toMatchObject({
+      result: 'ALREADY_PROCESSED',
+      status: 'SENDING',
+    });
+    expect(wrongDestinationResponse.status).toBe(200);
+    expect(wrongDestinationResponse.body.rows[0]).toMatchObject({
+      result: 'SKIPPED',
+      reasonCode: 'TEST_RECIPIENT_ONLY',
+      status: 'PENDING',
+    });
+    expect(provider).not.toHaveBeenCalled();
+
+    const states = await controlClient.automationEvent.findMany({
+      where: {
+        id: {
+          in: [
+            wrongTypeEvent.id,
+            nonDueEvent.id,
+            nonPendingEvent.id,
+            wrongDestinationEvent.id,
+          ],
+        },
+      },
+      select: { id: true, status: true },
+    });
+    expect(states).toEqual(expect.arrayContaining([
+      { id: wrongTypeEvent.id, status: 'PENDING' },
+      { id: nonDueEvent.id, status: 'PENDING' },
+      { id: nonPendingEvent.id, status: 'SENDING' },
+      { id: wrongDestinationEvent.id, status: 'PENDING' },
+    ]));
+  });
+
   test('keeps uncertainty in SENDING and does not automatically retry it', async () => {
     const provider = jest.fn();
     const providerError = new Error('provider details stay private');
@@ -446,12 +533,18 @@ describe('manual canary worker PostgreSQL integration', () => {
     const user = await createUser(3, { number: testNumber });
     const event = await createEvent(user);
 
-    const firstResponse = await canaryRequest(app);
+    const firstResponse = await canaryRequest(app, {
+      liveSend: true,
+      automationEventId: event.id,
+    });
     const firstState = await controlClient.automationEvent.findUnique({
       where: { id: event.id },
       select: { status: true, providerMessageId: true },
     });
-    const secondResponse = await canaryRequest(app);
+    const secondResponse = await canaryRequest(app, {
+      liveSend: true,
+      automationEventId: event.id,
+    });
     const secondState = await controlClient.automationEvent.findUnique({
       where: { id: event.id },
       select: { status: true, providerMessageId: true },
@@ -466,8 +559,10 @@ describe('manual canary worker PostgreSQL integration', () => {
     });
     expect(firstState).toEqual({ status: 'SENDING', providerMessageId: null });
     expect(secondResponse.status).toBe(200);
-    expect(secondResponse.body.counts.examined).toBe(0);
-    expect(secondResponse.body.rows).toEqual([]);
+    expect(secondResponse.body.rows[0]).toMatchObject({
+      result: 'ALREADY_PROCESSED',
+      status: 'SENDING',
+    });
     expect(secondState).toEqual(firstState);
     expect(provider).toHaveBeenCalledTimes(1);
     const serialized = JSON.stringify(firstResponse.body);
@@ -502,7 +597,10 @@ describe('manual canary worker PostgreSQL integration', () => {
         return Number(rows[0].count) > 0;
       }, 'Expected STOP to wait for the held destination lock.');
 
-      const canaryRequestPromise = canaryRequest(app);
+       const canaryRequestPromise = canaryRequest(app, {
+         liveSend: true,
+         automationEventId: fixtureEvent.id,
+       });
       await waitFor(async () => {
         const event = await controlClient.automationEvent.findUnique({
           where: { id: fixtureEvent.id },

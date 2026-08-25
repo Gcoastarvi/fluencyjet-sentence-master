@@ -43,8 +43,6 @@ const DEFAULT_SENDING_MONITOR_HISTORY_LIMIT = 25;
 const MAX_SENDING_MONITOR_HISTORY_LIMIT = 100;
 const DEFAULT_DUE_REMINDER_PREVIEW_LIMIT = 10;
 const MAX_DUE_REMINDER_PREVIEW_LIMIT = 10;
-const DEFAULT_CANARY_WORKER_SCAN_LIMIT = 10;
-const MAX_CANARY_WORKER_SCAN_LIMIT = 10;
 
 function getLesson1TemplateConfiguration() {
   return {
@@ -2598,6 +2596,18 @@ function sanitizeCanaryLiveResult(ae, response, status = ae.status) {
     };
   }
 
+  if (body.result === 'NOT_DUE') {
+    return {
+      row: formatCanaryRow(ae, {
+        status,
+        result: 'NOT_DUE',
+        reasonCode: 'NOT_DUE',
+        whatsappSent: false,
+      }),
+      stopAfterAttempt: false,
+    };
+  }
+
   if (body.result === 'CANCELLED' || body.result === 'SKIPPED') {
     return {
       row: formatCanaryRow(ae, {
@@ -2616,6 +2626,30 @@ function sanitizeCanaryLiveResult(ae, response, status = ae.status) {
         status,
         result: 'ALREADY_PROCESSED',
         reasonCode: 'ALREADY_PROCESSED',
+        whatsappSent: false,
+      }),
+      stopAfterAttempt: false,
+    };
+  }
+
+  if (body.error === 'TEST_RECIPIENT_ONLY') {
+    return {
+      row: formatCanaryRow(ae, {
+        status,
+        result: 'SKIPPED',
+        reasonCode: 'TEST_RECIPIENT_ONLY',
+        whatsappSent: false,
+      }),
+      stopAfterAttempt: false,
+    };
+  }
+
+  if (body.error === 'WHATSAPP_TEMPLATE_PARAMETER_MISSING') {
+    return {
+      row: formatCanaryRow(ae, {
+        status,
+        result: 'SKIPPED',
+        reasonCode: 'WHATSAPP_TEMPLATE_PARAMETER_MISSING',
         whatsappSent: false,
       }),
       stopAfterAttempt: false,
@@ -2665,6 +2699,15 @@ async function invokeCanaryLiveHandler(handler, req, automationEventId) {
   return outcome;
 }
 
+function canarySummary(row) {
+  return {
+    examined: 1,
+    skipped: row.result === 'SKIPPED' ? 1 : 0,
+    sent: row.result === 'SENT' ? 1 : 0,
+    unconfirmed: row.result === 'UNCONFIRMED' ? 1 : 0,
+  };
+}
+
 export function createCanaryReminderHandler({
   database = prisma,
   sendTemplate = sendWhatsAppTemplate,
@@ -2701,7 +2744,7 @@ export function createCanaryReminderHandler({
       });
     }
 
-    const allowedFields = new Set(['liveSend']);
+    const allowedFields = new Set(['liveSend', 'automationEventId']);
     const unknownFields = Object.keys(req.body || {}).filter(
       (key) => !allowedFields.has(key),
     );
@@ -2710,6 +2753,18 @@ export function createCanaryReminderHandler({
       return res.status(400).json({
         ok: false,
         error: 'UNKNOWN_FIELDS',
+      });
+    }
+
+    const automationEventId = req.body?.automationEventId;
+
+    if (
+      typeof automationEventId !== 'string' ||
+      !UUID_V4_RE.test(automationEventId)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_AUTOMATION_EVENT_ID',
       });
     }
 
@@ -2747,28 +2802,60 @@ export function createCanaryReminderHandler({
     const now = new Date();
 
     try {
-      const dueEvents = await database.automationEvent.findMany({
-        where: {
-          eventType: 'LESSON1_SIGNUP_REMINDER',
-          status: 'PENDING',
-          scheduledAt: { lte: now },
-        },
-        orderBy: [
-          { scheduledAt: 'asc' },
-          { id: 'asc' },
-        ],
-        take: MAX_CANARY_WORKER_SCAN_LIMIT,
-        select: {
-          id: true,
-          eventType: true,
-          status: true,
-          userId: true,
-          scheduledAt: true,
-          destinationNumberNormalized: true,
-        },
+      const ae = await database.automationEvent.findUnique({
+        where: { id: automationEventId },
       });
 
-      const rows = [];
+      if (!ae) {
+        return res.status(404).json({
+          ok: false,
+          error: 'NOT_FOUND',
+        });
+      }
+
+      if (ae.eventType !== 'LESSON1_SIGNUP_REMINDER') {
+        return res.status(400).json({
+          ok: false,
+          error: 'WRONG_EVENT_TYPE',
+        });
+      }
+
+      if (ae.status !== 'PENDING') {
+        const row = formatCanaryRow(ae, {
+          result: 'ALREADY_PROCESSED',
+          reasonCode: 'ALREADY_PROCESSED',
+          whatsappSent: false,
+        });
+
+        return res.json({
+          ok: true,
+          worker: 'LESSON1_SIGNUP_REMINDER_CANARY',
+          targeted: true,
+          generatedAt: now.toISOString(),
+          automationEventId: ae.id,
+          counts: canarySummary(row),
+          rows: [row],
+        });
+      }
+
+      if (!ae.scheduledAt || ae.scheduledAt > now) {
+        const row = formatCanaryRow(ae, {
+          result: 'NOT_DUE',
+          reasonCode: 'NOT_DUE',
+          whatsappSent: false,
+        });
+
+        return res.json({
+          ok: true,
+          worker: 'LESSON1_SIGNUP_REMINDER_CANARY',
+          targeted: true,
+          generatedAt: now.toISOString(),
+          automationEventId: ae.id,
+          counts: canarySummary(row),
+          rows: [row],
+        });
+      }
+
       const liveHandler = createLiveReminderHandler({
         database,
         sendTemplate,
@@ -2776,89 +2863,26 @@ export function createCanaryReminderHandler({
         cancelInitialIneligible: false,
         isLiveSendEnabled,
       });
+      const liveOutcome = await invokeCanaryLiveHandler(
+        liveHandler,
+        req,
+        ae.id,
+      );
+      const canaryOutcome = sanitizeCanaryLiveResult(
+        ae,
+        liveOutcome,
+        await getCanaryEventStatus(database, ae),
+      );
+      const row = canaryOutcome.row;
 
-      for (const ae of dueEvents.slice(0, MAX_CANARY_WORKER_SCAN_LIMIT)) {
-        const eligibility = await getLiveReminderEligibility(ae, database);
-
-        if (eligibility.skipReason) {
-          rows.push(formatCanaryRow(ae, {
-            status: await getCanaryEventStatus(database, ae),
-            result: 'SKIPPED',
-            reasonCode: canaryReasonCode(eligibility.skipReason),
-            whatsappSent: false,
-          }));
-          continue;
-        }
-
-        const learnerName = String(eligibility.user?.name || '').trim();
-
-        if (!learnerName) {
-          rows.push(formatCanaryRow(ae, {
-            status: await getCanaryEventStatus(database, ae),
-            result: 'SKIPPED',
-            reasonCode: 'WHATSAPP_TEMPLATE_PARAMETER_MISSING',
-            whatsappSent: false,
-          }));
-          continue;
-        }
-
-        const lesson1Complete = await isLesson1Complete(ae.userId, database);
-
-        if (lesson1Complete) {
-          rows.push(formatCanaryRow(ae, {
-            status: await getCanaryEventStatus(database, ae),
-            result: 'SKIPPED',
-            reasonCode: 'LESSON1_COMPLETE',
-            whatsappSent: false,
-          }));
-          continue;
-        }
-
-        if (eligibility.destination !== allowedTestNumberNormalized) {
-          rows.push(formatCanaryRow(ae, {
-            status: await getCanaryEventStatus(database, ae),
-            result: 'SKIPPED',
-            reasonCode: 'TEST_RECIPIENT_ONLY',
-            whatsappSent: false,
-          }));
-          continue;
-        }
-
-        const liveOutcome = await invokeCanaryLiveHandler(
-          liveHandler,
-          req,
-          ae.id,
-        );
-        const canaryOutcome = sanitizeCanaryLiveResult(
-          ae,
-          liveOutcome,
-          await getCanaryEventStatus(database, ae),
-        );
-        rows.push(canaryOutcome.row);
-
-        if (canaryOutcome.stopAfterAttempt) {
-          break;
-        }
-      }
-
-      const sent = rows.filter((row) => row.result === 'SENT').length;
-      const unconfirmed = rows.filter(
-        (row) => row.result === 'UNCONFIRMED',
-      ).length;
-      const skipped = rows.filter((row) => row.result === 'SKIPPED').length;
-
-      return res.json({
+      return res.status(200).json({
         ok: true,
         worker: 'LESSON1_SIGNUP_REMINDER_CANARY',
+        targeted: true,
         generatedAt: now.toISOString(),
-        scanLimit: MAX_CANARY_WORKER_SCAN_LIMIT,
-        counts: {
-          examined: rows.length,
-          skipped,
-          sent,
-          unconfirmed,
-        },
-        rows,
+        automationEventId: ae.id,
+        counts: canarySummary(row),
+        rows: [row],
       });
     } catch {
       console.error('[AUTOMATION-CANARY] Database read or processing failed.');
