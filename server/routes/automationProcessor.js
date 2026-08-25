@@ -43,6 +43,8 @@ const DEFAULT_SENDING_MONITOR_HISTORY_LIMIT = 25;
 const MAX_SENDING_MONITOR_HISTORY_LIMIT = 100;
 const DEFAULT_DUE_REMINDER_PREVIEW_LIMIT = 10;
 const MAX_DUE_REMINDER_PREVIEW_LIMIT = 10;
+const DEFAULT_CANARY_WORKER_SCAN_LIMIT = 10;
+const MAX_CANARY_WORKER_SCAN_LIMIT = 10;
 
 function getLesson1TemplateConfiguration() {
   return {
@@ -2051,6 +2053,7 @@ export function createLiveReminderHandler({
   database = prisma,
   sendTemplate = sendWhatsAppTemplate,
   providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
+  cancelInitialIneligible = true,
   isLiveSendEnabled = () =>
     (process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() ===
     'true',
@@ -2183,6 +2186,16 @@ export function createLiveReminderHandler({
     const eligibility = await getLiveReminderEligibility(ae, database);
 
     if (eligibility.skipReason) {
+      if (!cancelInitialIneligible) {
+        return res.json({
+          ok: true,
+          result: 'SKIPPED',
+          aeId: ae.id,
+          skipReason: eligibility.skipReason,
+          whatsappSent: false,
+        });
+      }
+
       const result = await cancelRow(
         ae.id,
         eligibility.skipReason,
@@ -2223,6 +2236,16 @@ export function createLiveReminderHandler({
     const lesson1Complete = await isLesson1Complete(ae.userId, database);
 
     if (lesson1Complete) {
+      if (!cancelInitialIneligible) {
+        return res.json({
+          ok: true,
+          result: 'SKIPPED',
+          aeId: ae.id,
+          skipReason: 'LESSON1_COMPLETE',
+          whatsappSent: false,
+        });
+      }
+
       const result = await cancelRow(ae.id, 'LESSON1_COMPLETE', database);
       if (result.count === 0) {
         return res.json({
@@ -2512,6 +2535,319 @@ export function createLiveReminderHandler({
 }
 
 router.post('/process-due-reminder-live', createLiveReminderHandler());
+
+function canaryReasonCode(value, fallback = 'CANARY_PROCESSING_FAILED') {
+  return typeof value === 'string' && /^[A-Z0-9_]{1,64}$/.test(value)
+    ? value
+    : fallback;
+}
+
+function formatCanaryRow(ae, {
+  result,
+  reasonCode = null,
+  whatsappSent = false,
+}) {
+  return {
+    automationEventId: ae.id,
+    eventType: ae.eventType,
+    status: ae.status,
+    scheduledAt: formatSendingAuditDate(ae.scheduledAt),
+    destination: ae.destinationNumberNormalized ? '[masked]' : null,
+    result,
+    reasonCode,
+    whatsappSent,
+  };
+}
+
+function sanitizeCanaryLiveResult(ae, response) {
+  const body = response.body || {};
+
+  if (body.result === 'SENT' || body.whatsappSent === true) {
+    return {
+      row: formatCanaryRow(ae, {
+        result: 'SENT',
+        reasonCode: body.result === 'SENT'
+          ? null
+          : canaryReasonCode(body.error),
+        whatsappSent: true,
+      }),
+      stopAfterAttempt: true,
+    };
+  }
+
+  if (body.error === 'WHATSAPP_SEND_UNCONFIRMED') {
+    return {
+      row: formatCanaryRow(ae, {
+        result: 'UNCONFIRMED',
+        reasonCode: 'WHATSAPP_SEND_UNCONFIRMED',
+        whatsappSent: null,
+      }),
+      stopAfterAttempt: true,
+    };
+  }
+
+  if (body.result === 'CANCELLED' || body.result === 'SKIPPED') {
+    return {
+      row: formatCanaryRow(ae, {
+        result: 'SKIPPED',
+        reasonCode: canaryReasonCode(body.skipReason),
+        whatsappSent: false,
+      }),
+      stopAfterAttempt: false,
+    };
+  }
+
+  if (body.result === 'ALREADY_PROCESSED') {
+    return {
+      row: formatCanaryRow(ae, {
+        result: 'ALREADY_PROCESSED',
+        reasonCode: 'ALREADY_PROCESSED',
+        whatsappSent: false,
+      }),
+      stopAfterAttempt: false,
+    };
+  }
+
+  return {
+    row: formatCanaryRow(ae, {
+      result: 'NOT_SENT',
+      reasonCode: 'CANARY_PROCESSING_FAILED',
+      whatsappSent: false,
+    }),
+    stopAfterAttempt: true,
+  };
+}
+
+async function invokeCanaryLiveHandler(handler, req, automationEventId) {
+  const outcome = {
+    status: 200,
+    body: null,
+  };
+  const response = {
+    status(statusCode) {
+      outcome.status = statusCode;
+      return response;
+    },
+    json(body) {
+      outcome.body = body;
+      return response;
+    },
+  };
+
+  await handler(
+    {
+      headers: {
+        authorization: req.headers.authorization,
+      },
+      body: {
+        liveSend: true,
+        automationEventId,
+      },
+    },
+    response,
+  );
+
+  return outcome;
+}
+
+export function createCanaryReminderHandler({
+  database = prisma,
+  sendTemplate = sendWhatsAppTemplate,
+  providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
+  isLiveSendEnabled = () =>
+    (process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() ===
+    'true',
+  isCanaryWorkerEnabled = () =>
+    (process.env.WHATSAPP_CANARY_WORKER_ENABLED || '').trim().toLowerCase() ===
+    'true',
+} = {}) {
+  return async (req, res) => {
+    if (!checkAuth(req, res, 'AUTOMATION-CANARY')) return;
+
+    if (!isLiveSendEnabled()) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_LIVE_SEND_DISABLED',
+      });
+    }
+
+    if (!isCanaryWorkerEnabled()) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_CANARY_WORKER_DISABLED',
+      });
+    }
+
+    if (req.body?.liveSend !== true) {
+      return res.status(400).json({
+        ok: false,
+        error: 'LIVE_SEND_CONFIRMATION_REQUIRED',
+        message: 'liveSend must be boolean true.',
+      });
+    }
+
+    const allowedFields = new Set(['liveSend']);
+    const unknownFields = Object.keys(req.body || {}).filter(
+      (key) => !allowedFields.has(key),
+    );
+
+    if (unknownFields.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        error: 'UNKNOWN_FIELDS',
+      });
+    }
+
+    const allowedTestNumber = (process.env.WHATSAPP_LIVE_TEST_NUMBER || '').trim();
+
+    if (
+      !allowedTestNumber ||
+      POISON.has(allowedTestNumber.toLowerCase())
+    ) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_TEST_NUMBER_NOT_CONFIGURED',
+      });
+    }
+
+    const allowedTestNumberNormalized =
+      normalizeWhatsAppNumber(allowedTestNumber);
+
+    if (!allowedTestNumberNormalized) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_TEST_NUMBER_INVALID',
+      });
+    }
+
+    const { templateName, languageCode } = getLesson1TemplateConfiguration();
+
+    if (!templateName || !languageCode) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
+      });
+    }
+
+    const now = new Date();
+
+    try {
+      const dueEvents = await database.automationEvent.findMany({
+        where: {
+          eventType: 'LESSON1_SIGNUP_REMINDER',
+          status: 'PENDING',
+          scheduledAt: { lte: now },
+        },
+        orderBy: [
+          { scheduledAt: 'asc' },
+          { id: 'asc' },
+        ],
+        take: MAX_CANARY_WORKER_SCAN_LIMIT,
+        select: {
+          id: true,
+          eventType: true,
+          status: true,
+          userId: true,
+          scheduledAt: true,
+          destinationNumberNormalized: true,
+        },
+      });
+
+      const rows = [];
+      const liveHandler = createLiveReminderHandler({
+        database,
+        sendTemplate,
+        providerDispatchTimeoutMs,
+        cancelInitialIneligible: false,
+        isLiveSendEnabled,
+      });
+
+      for (const ae of dueEvents.slice(0, MAX_CANARY_WORKER_SCAN_LIMIT)) {
+        const eligibility = await getLiveReminderEligibility(ae, database);
+
+        if (eligibility.skipReason) {
+          rows.push(formatCanaryRow(ae, {
+            result: 'SKIPPED',
+            reasonCode: canaryReasonCode(eligibility.skipReason),
+            whatsappSent: false,
+          }));
+          continue;
+        }
+
+        const learnerName = String(eligibility.user?.name || '').trim();
+
+        if (!learnerName) {
+          rows.push(formatCanaryRow(ae, {
+            result: 'SKIPPED',
+            reasonCode: 'WHATSAPP_TEMPLATE_PARAMETER_MISSING',
+            whatsappSent: false,
+          }));
+          continue;
+        }
+
+        const lesson1Complete = await isLesson1Complete(ae.userId, database);
+
+        if (lesson1Complete) {
+          rows.push(formatCanaryRow(ae, {
+            result: 'SKIPPED',
+            reasonCode: 'LESSON1_COMPLETE',
+            whatsappSent: false,
+          }));
+          continue;
+        }
+
+        if (eligibility.destination !== allowedTestNumberNormalized) {
+          rows.push(formatCanaryRow(ae, {
+            result: 'SKIPPED',
+            reasonCode: 'TEST_RECIPIENT_ONLY',
+            whatsappSent: false,
+          }));
+          continue;
+        }
+
+        const liveOutcome = await invokeCanaryLiveHandler(
+          liveHandler,
+          req,
+          ae.id,
+        );
+        const canaryOutcome = sanitizeCanaryLiveResult(ae, liveOutcome);
+        rows.push(canaryOutcome.row);
+
+        if (canaryOutcome.stopAfterAttempt) {
+          break;
+        }
+      }
+
+      const sent = rows.filter((row) => row.result === 'SENT').length;
+      const unconfirmed = rows.filter(
+        (row) => row.result === 'UNCONFIRMED',
+      ).length;
+      const skipped = rows.filter((row) => row.result === 'SKIPPED').length;
+
+      return res.json({
+        ok: true,
+        worker: 'LESSON1_SIGNUP_REMINDER_CANARY',
+        generatedAt: now.toISOString(),
+        scanLimit: MAX_CANARY_WORKER_SCAN_LIMIT,
+        counts: {
+          examined: rows.length,
+          skipped,
+          sent,
+          unconfirmed,
+        },
+        rows,
+      });
+    } catch {
+      console.error('[AUTOMATION-CANARY] Database read or processing failed.');
+      return res.status(500).json({
+        ok: false,
+        error: 'INTERNAL_ERROR',
+      });
+    }
+  };
+}
+
+router.post('/process-due-reminder-canary', createCanaryReminderHandler());
 
 // ---------------------------------------------------------------------------
 // processOneReminder — shared eligibility + atomic transition logic.
