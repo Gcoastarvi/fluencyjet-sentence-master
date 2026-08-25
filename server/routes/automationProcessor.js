@@ -43,6 +43,14 @@ const DEFAULT_SENDING_MONITOR_HISTORY_LIMIT = 25;
 const MAX_SENDING_MONITOR_HISTORY_LIMIT = 100;
 const DEFAULT_DUE_REMINDER_PREVIEW_LIMIT = 10;
 const MAX_DUE_REMINDER_PREVIEW_LIMIT = 10;
+const DEFAULT_ROLLOUT_CANDIDATE_LIMIT = 10;
+const MAX_ROLLOUT_CANDIDATE_LIMIT = 10;
+const ROLLOUT_WATERMARK_ENV_NAMES = [
+  'WHATSAPP_LESSON1_ROLLOUT_WATERMARK',
+  'WHATSAPP_ROLLOUT_WATERMARK',
+];
+const ROLLOUT_WATERMARK_ISO_RE =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 
 function getLesson1TemplateConfiguration() {
   return {
@@ -291,6 +299,81 @@ function parseSendingAuditInteger(value, {
   }
 
   return parsed;
+}
+
+function parseRolloutWatermark() {
+  const configuredValues = ROLLOUT_WATERMARK_ENV_NAMES
+    .map((name) => ({
+      name,
+      value: String(process.env[name] || '').trim(),
+    }))
+    .filter(({ value }) => value !== '');
+
+  if (configuredValues.length === 0) {
+    return {
+      error: 'WHATSAPP_ROLLOUT_WATERMARK_NOT_CONFIGURED',
+    };
+  }
+
+  if (configuredValues.some(({ value }) => POISON.has(value.toLowerCase()))) {
+    return {
+      error: 'WHATSAPP_ROLLOUT_WATERMARK_INVALID',
+    };
+  }
+
+  if (
+    configuredValues.some(
+      ({ value }) => !ROLLOUT_WATERMARK_ISO_RE.test(value),
+    )
+  ) {
+    return {
+      error: 'WHATSAPP_ROLLOUT_WATERMARK_INVALID',
+    };
+  }
+
+  const parsed = new Date(configuredValues[0].value);
+
+  if (
+    Number.isNaN(parsed.getTime()) ||
+    parsed.toISOString() !== configuredValues[0].value
+  ) {
+    return {
+      error: 'WHATSAPP_ROLLOUT_WATERMARK_INVALID',
+    };
+  }
+
+  if (
+    configuredValues.some(({ value }) => {
+      const other = new Date(value);
+      return (
+        Number.isNaN(other.getTime()) ||
+        other.getTime() !== parsed.getTime()
+      );
+    })
+  ) {
+    return {
+      error: 'WHATSAPP_ROLLOUT_WATERMARK_CONFLICT',
+    };
+  }
+
+  return parsed;
+}
+
+function parseRolloutCandidateLimit(value) {
+  if (value === undefined) return DEFAULT_ROLLOUT_CANDIDATE_LIMIT;
+
+  if (
+    typeof value !== 'number' ||
+    !Number.isSafeInteger(value) ||
+    value < 1 ||
+    value > MAX_ROLLOUT_CANDIDATE_LIMIT
+  ) {
+    return {
+      error: `limit must be between 1 and ${MAX_ROLLOUT_CANDIDATE_LIMIT}.`,
+    };
+  }
+
+  return value;
 }
 
 function isValidSendingAuditDate(value) {
@@ -2052,6 +2135,7 @@ export function createLiveReminderHandler({
   sendTemplate = sendWhatsAppTemplate,
   providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
   cancelInitialIneligible = true,
+  enforceTestRecipient = true,
   isLiveSendEnabled = () =>
     (process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() ===
     'true',
@@ -2105,26 +2189,30 @@ export function createLiveReminderHandler({
   }
 
   // ── 6. Test-recipient restriction ────────────────────────────────────────
-  const allowedTestNumber = (process.env.WHATSAPP_LIVE_TEST_NUMBER || '').trim();
+  let allowedTestNumberNormalized = null;
+  if (enforceTestRecipient) {
+    const allowedTestNumber =
+      (process.env.WHATSAPP_LIVE_TEST_NUMBER || '').trim();
 
-  if (
-    !allowedTestNumber ||
-    POISON.has(allowedTestNumber.toLowerCase())
-  ) {
-    return res.status(503).json({
-      ok: false,
-      error: 'WHATSAPP_TEST_NUMBER_NOT_CONFIGURED',
-    });
-  }
+    if (
+      !allowedTestNumber ||
+      POISON.has(allowedTestNumber.toLowerCase())
+    ) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_TEST_NUMBER_NOT_CONFIGURED',
+      });
+    }
 
-  const allowedTestNumberNormalized =
-    normalizeWhatsAppNumber(allowedTestNumber);
+    allowedTestNumberNormalized =
+      normalizeWhatsAppNumber(allowedTestNumber);
 
-  if (!allowedTestNumberNormalized) {
-    return res.status(503).json({
-      ok: false,
-      error: 'WHATSAPP_TEST_NUMBER_INVALID',
-    });
+    if (!allowedTestNumberNormalized) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_TEST_NUMBER_INVALID',
+      });
+    }
   }
 
   // Template configuration is also fail-closed.
@@ -2265,7 +2353,10 @@ export function createLiveReminderHandler({
     }
 
     // ── 9. Hard test-number allowlist ───────────────────────────────────────
-    if (destination !== allowedTestNumberNormalized) {
+    if (
+      enforceTestRecipient &&
+      destination !== allowedTestNumberNormalized
+    ) {
       return res.status(403).json({
         ok: false,
         error: 'TEST_RECIPIENT_ONLY',
@@ -2895,6 +2986,381 @@ export function createCanaryReminderHandler({
 }
 
 router.post('/process-due-reminder-canary', createCanaryReminderHandler());
+
+function formatRolloutRow(ae, {
+  status = ae.status,
+  result,
+  reasonCode = null,
+  whatsappSent = false,
+}) {
+  return {
+    automationEventId: ae.id,
+    eventType: ae.eventType,
+    status,
+    createdAt: formatSendingAuditDate(ae.createdAt),
+    scheduledAt: formatSendingAuditDate(ae.scheduledAt),
+    destination: ae.destinationNumberNormalized ? '[masked]' : null,
+    result,
+    reasonCode,
+    whatsappSent,
+  };
+}
+
+function sanitizeRolloutLiveResult(ae, response, status = ae.status) {
+  const body = response.body || {};
+
+  if (body.result === 'SENT' || body.whatsappSent === true) {
+    return {
+      row: formatRolloutRow(ae, {
+        status,
+        result: 'SENT',
+        reasonCode: body.result === 'SENT'
+          ? null
+          : canaryReasonCode(body.error, 'ROLLOUT_SEND_FINALIZATION_FAILED'),
+        whatsappSent: true,
+      }),
+      stopAfterAttempt: true,
+    };
+  }
+
+  if (body.error === 'WHATSAPP_SEND_UNCONFIRMED') {
+    return {
+      row: formatRolloutRow(ae, {
+        status,
+        result: 'UNCONFIRMED',
+        reasonCode: 'WHATSAPP_SEND_UNCONFIRMED',
+        whatsappSent: null,
+      }),
+      stopAfterAttempt: true,
+    };
+  }
+
+  if (body.result === 'CANCELLED' || body.result === 'SKIPPED') {
+    return {
+      row: formatRolloutRow(ae, {
+        status,
+        result: 'SKIPPED',
+        reasonCode: canaryReasonCode(body.skipReason),
+        whatsappSent: false,
+      }),
+      stopAfterAttempt: false,
+    };
+  }
+
+  if (body.result === 'ALREADY_PROCESSED') {
+    return {
+      row: formatRolloutRow(ae, {
+        status,
+        result: 'ALREADY_PROCESSED',
+        reasonCode: 'ALREADY_PROCESSED',
+        whatsappSent: false,
+      }),
+      stopAfterAttempt: false,
+    };
+  }
+
+  if (body.error === 'WHATSAPP_TEMPLATE_PARAMETER_MISSING') {
+    return {
+      row: formatRolloutRow(ae, {
+        status,
+        result: 'SKIPPED',
+        reasonCode: 'WHATSAPP_TEMPLATE_PARAMETER_MISSING',
+        whatsappSent: false,
+      }),
+      stopAfterAttempt: false,
+    };
+  }
+
+  return {
+    row: formatRolloutRow(ae, {
+      status,
+      result: 'UNCONFIRMED',
+      reasonCode: 'ROLLOUT_PROCESSING_UNKNOWN',
+      whatsappSent: null,
+    }),
+    // A generic live-handler failure can occur after provider dispatch but
+    // before the lock-owning transaction reports success. Treat it as
+    // indeterminate and stop this invocation rather than risking a second
+    // production send.
+    stopAfterAttempt: true,
+  };
+}
+
+function rolloutSummary(rows) {
+  return rows.reduce(
+    (summary, row) => {
+      summary.examined += 1;
+      if (row.result === 'SENT') summary.sent += 1;
+      else if (row.result === 'UNCONFIRMED') summary.unconfirmed += 1;
+      else if (
+        row.result === 'SKIPPED' ||
+        row.result === 'ALREADY_PROCESSED' ||
+        row.result === 'NOT_SENT'
+      ) {
+        summary.skipped += 1;
+      }
+      return summary;
+    },
+    {
+      examined: 0,
+      skipped: 0,
+      sent: 0,
+      unconfirmed: 0,
+    },
+  );
+}
+
+function rolloutPreviewOutcome(ae, eligibility, now) {
+  let reasonCode = eligibility.skipReason;
+
+  if (!reasonCode && !String(eligibility.user?.name || '').trim()) {
+    reasonCode = 'WHATSAPP_TEMPLATE_PARAMETER_MISSING';
+  }
+
+  return {
+    row: formatRolloutRow(ae, {
+      result: reasonCode ? 'SKIPPED' : 'ELIGIBLE',
+      reasonCode,
+      whatsappSent: false,
+    }),
+    now,
+  };
+}
+
+async function invokeRolloutLiveHandler(handler, req, automationEventId) {
+  const outcome = {
+    status: 200,
+    body: null,
+  };
+  const response = {
+    status(statusCode) {
+      outcome.status = statusCode;
+      return response;
+    },
+    json(body) {
+      outcome.body = body;
+      return response;
+    },
+  };
+
+  await handler(
+    {
+      headers: {
+        authorization: req.headers.authorization,
+      },
+      body: {
+        liveSend: true,
+        automationEventId,
+      },
+    },
+    response,
+  );
+
+  return outcome;
+}
+
+export function createRolloutReminderHandler({
+  database = prisma,
+  sendTemplate = sendWhatsAppTemplate,
+  providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
+  isRolloutWorkerEnabled = () =>
+    (process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED || '')
+      .trim()
+      .toLowerCase() === 'true',
+} = {}) {
+  return async (req, res) => {
+    if (!checkAuth(req, res, 'AUTOMATION-ROLLOUT')) return;
+
+    const body = req.body || {};
+    const allowedFields = new Set(['liveSend', 'preview', 'dryRun', 'limit']);
+    const unknownFields = Object.keys(body).filter(
+      (key) => !allowedFields.has(key),
+    );
+
+    if (unknownFields.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        error: 'UNKNOWN_FIELDS',
+      });
+    }
+
+    const preview = body.preview === true || body.dryRun === true;
+    const hasLiveSend = body.liveSend === true;
+
+    if (
+      (body.preview !== undefined && typeof body.preview !== 'boolean') ||
+      (body.dryRun !== undefined && typeof body.dryRun !== 'boolean') ||
+      (body.liveSend !== undefined && typeof body.liveSend !== 'boolean')
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_MODE',
+      });
+    }
+
+    if (preview && hasLiveSend) {
+      return res.status(400).json({
+        ok: false,
+        error: 'MODE_CONFLICT',
+      });
+    }
+
+    if (!preview && !hasLiveSend) {
+      return res.status(400).json({
+        ok: false,
+        error: 'LIVE_SEND_CONFIRMATION_REQUIRED',
+        message: 'liveSend must be boolean true unless preview or dryRun is true.',
+      });
+    }
+
+    const limit = parseRolloutCandidateLimit(body.limit);
+    if (typeof limit === 'object') {
+      return res.status(400).json({
+        ok: false,
+        error: 'INVALID_QUERY_PARAMETERS',
+        message: limit.error,
+      });
+    }
+
+    const watermark = parseRolloutWatermark();
+    if (!(watermark instanceof Date)) {
+      return res.status(503).json({
+        ok: false,
+        error: watermark.error,
+      });
+    }
+
+    const { templateName, languageCode } = getLesson1TemplateConfiguration();
+    if (!templateName || !languageCode) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
+      });
+    }
+
+    if (!preview && !isRolloutWorkerEnabled()) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_ROLLOUT_WORKER_DISABLED',
+      });
+    }
+
+    const now = new Date();
+
+    try {
+      const discovered = await database.automationEvent.findMany({
+        where: {
+          eventType: 'LESSON1_SIGNUP_REMINDER',
+          status: 'PENDING',
+          createdAt: { gte: watermark },
+          scheduledAt: { lte: now },
+        },
+        orderBy: [
+          { createdAt: 'asc' },
+          { id: 'asc' },
+        ],
+        take: limit + 1,
+        select: {
+          id: true,
+          eventType: true,
+          status: true,
+          userId: true,
+          createdAt: true,
+          scheduledAt: true,
+          destinationNumberNormalized: true,
+        },
+      });
+
+      const candidates = discovered.slice(0, limit);
+      const rows = [];
+      let stopAfterAttempt = false;
+
+      for (const ae of candidates) {
+        const eventDestination = getEventDestination(ae);
+
+        if (eventDestination.skipReason) {
+          rows.push(formatRolloutRow(ae, {
+            result: 'SKIPPED',
+            reasonCode: eventDestination.skipReason,
+            whatsappSent: false,
+          }));
+          continue;
+        }
+
+        if (
+          !ae.createdAt ||
+          !(ae.createdAt instanceof Date) ||
+          Number.isNaN(ae.createdAt.getTime()) ||
+          ae.createdAt < watermark
+        ) {
+          rows.push(formatRolloutRow(ae, {
+            result: 'SKIPPED',
+            reasonCode: 'ROLLOUT_WATERMARK_EXCLUDED',
+            whatsappSent: false,
+          }));
+          continue;
+        }
+
+        if (!preview) {
+          const liveHandler = createLiveReminderHandler({
+            database,
+            sendTemplate,
+            providerDispatchTimeoutMs,
+            enforceTestRecipient: false,
+            cancelInitialIneligible: true,
+            isLiveSendEnabled: isRolloutWorkerEnabled,
+          });
+          const liveOutcome = await invokeRolloutLiveHandler(
+            liveHandler,
+            req,
+            ae.id,
+          );
+          const rolloutOutcome = sanitizeRolloutLiveResult(
+            ae,
+            liveOutcome,
+            await getCanaryEventStatus(database, ae),
+          );
+          rows.push(rolloutOutcome.row);
+          stopAfterAttempt = rolloutOutcome.stopAfterAttempt;
+          if (stopAfterAttempt) break;
+          continue;
+        }
+
+        const eligibility = await getLiveReminderEligibility(ae, database);
+        if (
+          !eligibility.skipReason &&
+          await isLesson1Complete(ae.userId, database)
+        ) {
+          eligibility.skipReason = 'LESSON1_COMPLETE';
+        }
+        rows.push(rolloutPreviewOutcome(ae, eligibility, now).row);
+      }
+
+      const counts = rolloutSummary(rows);
+
+      return res.json({
+        ok: true,
+        worker: 'LESSON1_SIGNUP_REMINDER_ROLLOUT',
+        mode: preview ? 'preview' : 'live',
+        dryRun: preview,
+        generatedAt: now.toISOString(),
+        rolloutWatermark: watermark.toISOString(),
+        limit,
+        hasMore: discovered.length > candidates.length,
+        counts,
+        rows,
+      });
+    } catch {
+      console.error('[AUTOMATION-ROLLOUT] Database read or processing failed.');
+      return res.status(500).json({
+        ok: false,
+        error: 'INTERNAL_ERROR',
+      });
+    }
+  };
+}
+
+router.post('/process-due-reminder-rollout', createRolloutReminderHandler());
 
 // ---------------------------------------------------------------------------
 // processOneReminder — shared eligibility + atomic transition logic.
