@@ -59,6 +59,13 @@ function getLesson1TemplateConfiguration() {
   };
 }
 
+function isWhatsAppLiveSendEnabled() {
+  return (
+    (process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() ===
+    'true'
+  );
+}
+
 async function sendTemplateWithinDestinationLock(
   sendTemplate,
   message,
@@ -2136,9 +2143,7 @@ export function createLiveReminderHandler({
   providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
   cancelInitialIneligible = true,
   enforceTestRecipient = true,
-  isLiveSendEnabled = () =>
-    (process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() ===
-    'true',
+  isLiveSendEnabled = isWhatsAppLiveSendEnabled,
 } = {}) {
   return async (req, res) => {
   // ── 1. Existing automation auth ──────────────────────────────────────────
@@ -2803,9 +2808,7 @@ export function createCanaryReminderHandler({
   database = prisma,
   sendTemplate = sendWhatsAppTemplate,
   providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
-  isLiveSendEnabled = () =>
-    (process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() ===
-    'true',
+  isLiveSendEnabled = isWhatsAppLiveSendEnabled,
   isCanaryWorkerEnabled = () =>
     (process.env.WHATSAPP_CANARY_WORKER_ENABLED || '').trim().toLowerCase() ===
     'true',
@@ -3163,6 +3166,7 @@ export function createRolloutReminderHandler({
   database = prisma,
   sendTemplate = sendWhatsAppTemplate,
   providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
+  isLiveSendEnabled = isWhatsAppLiveSendEnabled,
   isRolloutWorkerEnabled = () =>
     (process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED || '')
       .trim()
@@ -3238,6 +3242,13 @@ export function createRolloutReminderHandler({
       });
     }
 
+    if (!preview && !isLiveSendEnabled()) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_LIVE_SEND_DISABLED',
+      });
+    }
+
     if (!preview && !isRolloutWorkerEnabled()) {
       return res.status(503).json({
         ok: false,
@@ -3308,7 +3319,8 @@ export function createRolloutReminderHandler({
             providerDispatchTimeoutMs,
             enforceTestRecipient: false,
             cancelInitialIneligible: true,
-            isLiveSendEnabled: isRolloutWorkerEnabled,
+            isLiveSendEnabled: () =>
+              isLiveSendEnabled() && isRolloutWorkerEnabled(),
           });
           const liveOutcome = await invokeRolloutLiveHandler(
             liveHandler,

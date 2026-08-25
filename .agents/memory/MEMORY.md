@@ -3,3 +3,4 @@
 - [Sending reconciliation safety](sending-reconciliation-safety.md) — uncertain sends may be terminalized only through evidence-gated, journaled SENDING transitions.
 - [Sending monitor partial indexes](sending-monitor-partial-indexes.md) — fallback age filtering uses a SQL-only partial index that Prisma schema metadata cannot model.
 - [Reminder rollout watermark](reminder-rollout-watermark.md) — rollout eligibility starts from immutable event creation time, never a moving send-time cutoff.
+- [Rollout send gates](rollout-send-gates.md) — production rollout composes the global kill switch with its worker gate; preview bypasses both.

@@ -138,7 +138,6 @@ function makeApp(provider = jest.fn()) {
     createRolloutReminderHandler({
       database: rolloutClient,
       sendTemplate: provider,
-      isRolloutWorkerEnabled: () => true,
     }),
   );
   return app;
@@ -296,6 +295,11 @@ beforeAll(async () => {
   ]);
 });
 
+beforeEach(() => {
+  process.env.WHATSAPP_LIVE_SEND_ENABLED = 'false';
+  process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED = 'false';
+});
+
 afterEach(async () => {
   await cleanup();
   jest.clearAllMocks();
@@ -331,6 +335,60 @@ describe('manual rollout worker PostgreSQL integration', () => {
       'postgresql://user:secret@example.test:5432/rollout_test',
       'postgresql://another:secret@example.test:5432/rollout_test',
     )).toThrow('TEST_DATABASE_URL must not target DATABASE_URL.');
+  });
+
+  test('global live gate blocks before discovery when rollout gate is enabled', async () => {
+    process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED = 'true';
+    process.env.WHATSAPP_LESSON1_ROLLOUT_WATERMARK =
+      new Date(Date.now() - 30 * 60_000).toISOString();
+    const provider = jest.fn(() => {
+      throw new Error('Provider must not run while global live sending is disabled.');
+    });
+    const findManySpy = jest.spyOn(rolloutClient.automationEvent, 'findMany');
+    const updateManySpy = jest.spyOn(rolloutClient.automationEvent, 'updateMany');
+    const transactionSpy = jest.spyOn(rolloutClient, '$transaction');
+
+    try {
+      const response = await rolloutRequest(makeApp(provider), { liveSend: true });
+
+      expect(response.status).toBe(503);
+      expect(response.body.error).toBe('WHATSAPP_LIVE_SEND_DISABLED');
+      expect(findManySpy).not.toHaveBeenCalled();
+      expect(updateManySpy).not.toHaveBeenCalled();
+      expect(transactionSpy).not.toHaveBeenCalled();
+      expect(provider).not.toHaveBeenCalled();
+    } finally {
+      findManySpy.mockRestore();
+      updateManySpy.mockRestore();
+      transactionSpy.mockRestore();
+    }
+  });
+
+  test('rollout gate blocks before discovery when global live gate is enabled', async () => {
+    process.env.WHATSAPP_LIVE_SEND_ENABLED = 'true';
+    process.env.WHATSAPP_LESSON1_ROLLOUT_WATERMARK =
+      new Date(Date.now() - 30 * 60_000).toISOString();
+    const provider = jest.fn(() => {
+      throw new Error('Provider must not run while rollout sending is disabled.');
+    });
+    const findManySpy = jest.spyOn(rolloutClient.automationEvent, 'findMany');
+    const updateManySpy = jest.spyOn(rolloutClient.automationEvent, 'updateMany');
+    const transactionSpy = jest.spyOn(rolloutClient, '$transaction');
+
+    try {
+      const response = await rolloutRequest(makeApp(provider), { liveSend: true });
+
+      expect(response.status).toBe(503);
+      expect(response.body.error).toBe('WHATSAPP_ROLLOUT_WORKER_DISABLED');
+      expect(findManySpy).not.toHaveBeenCalled();
+      expect(updateManySpy).not.toHaveBeenCalled();
+      expect(transactionSpy).not.toHaveBeenCalled();
+      expect(provider).not.toHaveBeenCalled();
+    } finally {
+      findManySpy.mockRestore();
+      updateManySpy.mockRestore();
+      transactionSpy.mockRestore();
+    }
   });
 
   test('ignores pre-watermark backlog and leaves preview candidates unchanged', async () => {
@@ -383,6 +441,8 @@ describe('manual rollout worker PostgreSQL integration', () => {
   });
 
   test('sends no more than one rollout candidate per invocation', async () => {
+    process.env.WHATSAPP_LIVE_SEND_ENABLED = 'true';
+    process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED = 'true';
     const watermark = new Date(Date.now() - 30 * 60_000);
     process.env.WHATSAPP_LESSON1_ROLLOUT_WATERMARK = watermark.toISOString();
     const provider = jest.fn().mockResolvedValue({
@@ -435,6 +495,8 @@ describe('manual rollout worker PostgreSQL integration', () => {
   });
 
   test('serializes STOP ahead of rollout provider dispatch', async () => {
+    process.env.WHATSAPP_LIVE_SEND_ENABLED = 'true';
+    process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED = 'true';
     const watermark = new Date(Date.now() - 30 * 60_000);
     process.env.WHATSAPP_LESSON1_ROLLOUT_WATERMARK = watermark.toISOString();
     const fixtureUser = await createUser(5);

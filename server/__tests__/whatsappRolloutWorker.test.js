@@ -61,7 +61,6 @@ function makeApp(options = {}) {
     createRolloutReminderHandler({
       database: mockPrisma,
       sendTemplate: mockSendWhatsAppTemplate,
-      isRolloutWorkerEnabled: () => true,
       ...options,
     }),
   );
@@ -140,6 +139,11 @@ function configureLiveReads(events) {
         : { ...event, status: 'SENDING' };
     },
   );
+}
+
+function enableLiveRolloutGates() {
+  process.env.WHATSAPP_LIVE_SEND_ENABLED = 'true';
+  process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED = 'true';
 }
 
 beforeEach(() => {
@@ -237,7 +241,7 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
     );
   });
 
-  test('preview is read-only and rejects a missing immutable destination', async () => {
+  test('preview is read-only with both live gates disabled', async () => {
     const event = makeEvent(FIRST_ID, 1, null);
     mockPrisma.automationEvent.findMany.mockResolvedValue([event]);
 
@@ -259,9 +263,11 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
     });
     expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
     expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 
-  test('live mode uses the rollout gate, ignores canary/live gates, and sends at most once', async () => {
+  test('live mode requires both gates and sends at most once', async () => {
+    enableLiveRolloutGates();
     const first = makeEvent(FIRST_ID, 1);
     const second = makeEvent(SECOND_ID, 2, '+919888888888');
     mockPrisma.automationEvent.findMany.mockResolvedValue([first, second]);
@@ -294,6 +300,7 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
   });
 
   test('stops after a post-dispatch transaction failure instead of trying another candidate', async () => {
+    enableLiveRolloutGates();
     const first = makeEvent(FIRST_ID, 1);
     const second = makeEvent(SECOND_ID, 2, '+919888888888');
     mockPrisma.automationEvent.findMany.mockResolvedValue([first, second]);
@@ -327,9 +334,23 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
     expect(mockSendWhatsAppTemplate).toHaveBeenCalledTimes(1);
   });
 
-  test('live mode fails closed when its worker gate is disabled', async () => {
+  test('live mode fails closed before discovery when the global live gate is disabled', async () => {
+    process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED = 'true';
+
+    const response = await rolloutRequest(makeApp(), { liveSend: true });
+
+    expect(response.status).toBe(503);
+    expect(response.body.error).toBe('WHATSAPP_LIVE_SEND_DISABLED');
+    expect(mockPrisma.automationEvent.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test('live mode fails closed before discovery when the rollout gate is disabled', async () => {
+    process.env.WHATSAPP_LIVE_SEND_ENABLED = 'true';
+
     const response = await rolloutRequest(
-      makeApp({ isRolloutWorkerEnabled: () => false }),
+      makeApp(),
       { liveSend: true },
     );
 
