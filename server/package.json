@@ -7,6 +7,7 @@
     "dev": "nodemon index.js",
     "build": "cd ../client && npm ci && npm run build && cd ../server && rm -rf dist && mkdir -p dist/public && cp -R ../client/dist/* dist/public/",
     "start": "NODE_ENV=production node index.js",
+    "run:lesson1-rollout": "node scripts/runLesson1ReminderRollout.js",
     "postinstall": "prisma generate",
     "seed": "node prisma/seed.js",
     "seed:quick-start": "node prisma/seed/quickStartSeed.js",
