@@ -141,13 +141,15 @@ async function createUser(index, {
 async function createEvent(index, user, {
   destinationNumberNormalized = user.whatsapp_number_normalized,
   scheduledAt,
+  eventType = 'LESSON1_SIGNUP_REMINDER',
+  status = 'PENDING',
 } = {}) {
   const event = await controlClient.automationEvent.create({
     data: {
       id: crypto.randomUUID(),
       userId: user.id,
-      eventType: 'LESSON1_SIGNUP_REMINDER',
-      status: 'PENDING',
+      eventType,
+      status,
       scheduledAt,
       destinationNumberNormalized,
       payload: {
@@ -396,15 +398,114 @@ describe('due-reminder preview PostgreSQL integration', () => {
     routeEventUpdate.mockRestore();
   });
 
+  test('targets exactly one event even when older due rows exist, without writes or provider calls', async () => {
+    const app = makeApp();
+    const routeTransaction = jest.spyOn(routeClient, '$transaction');
+    const routeEventUpdate = jest.spyOn(routeClient.automationEvent, 'updateMany');
+    const targetUser = await createUser(21);
+    const legacyUser = await createUser(22);
+    const nonDueUser = await createUser(23);
+    const wrongStatusUser = await createUser(24);
+    const wrongTypeUser = await createUser(25);
+
+    const targetEvent = await createEvent(21, targetUser, {
+      scheduledAt: new Date(Date.UTC(2000, 0, 1)),
+    });
+
+    const legacyEvent = await createEvent(22, legacyUser, {
+      scheduledAt: new Date(Date.UTC(1999, 0, 1)),
+    });
+    const nonDueEvent = await createEvent(23, nonDueUser, {
+      scheduledAt: new Date(Date.UTC(2999, 0, 1)),
+    });
+    const wrongStatusEvent = await createEvent(24, wrongStatusUser, {
+      scheduledAt: new Date(Date.UTC(1998, 0, 1)),
+      status: 'SENDING',
+    });
+    const wrongTypeEvent = await createEvent(25, wrongTypeUser, {
+      scheduledAt: new Date(Date.UTC(1997, 0, 1)),
+      eventType: 'DAY3_WEBINAR',
+    });
+
+    const before = await snapshotMonitoredRows();
+    try {
+      const response = await previewRequest(app, {
+        automationEventId: targetEvent.id,
+      });
+      const after = await snapshotMonitoredRows();
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        ok: true,
+        counts: {
+          examined: 1,
+          eligible: 1,
+          excluded: 0,
+        },
+      });
+      expect(response.body.rows).toHaveLength(1);
+      expect(response.body.rows[0]).toMatchObject({
+        automationEventId: targetEvent.id,
+        eventType: 'LESSON1_SIGNUP_REMINDER',
+        status: 'PENDING',
+        destination: '[masked]',
+        eligibility: {
+          decision: 'ELIGIBLE',
+          reasonCode: null,
+        },
+      });
+      expect(legacyEvent.id).not.toBe(response.body.rows[0].automationEventId);
+
+      const failClosedTargets = [
+        nonDueEvent.id,
+        wrongStatusEvent.id,
+        wrongTypeEvent.id,
+        crypto.randomUUID(),
+      ];
+      for (const automationEventId of failClosedTargets) {
+        const miss = await previewRequest(app, { automationEventId });
+        expect(miss.status).toBe(200);
+        expect(miss.body).toMatchObject({
+          ok: true,
+          counts: {
+            examined: 0,
+            eligible: 0,
+            excluded: 0,
+            exclusionReasons: {},
+          },
+          rows: [],
+        });
+      }
+
+      const serialized = JSON.stringify(response.body);
+      expect(serialized).not.toContain(targetUser.name);
+      expect(serialized).not.toContain(targetUser.email);
+      expect(serialized).not.toContain(targetUser.whatsapp_number_normalized);
+      expect(serialized).not.toContain('userId');
+      expect(serialized).not.toContain('rawProviderPayload');
+      expect(after).toEqual(before);
+      expect(routeTransaction).not.toHaveBeenCalled();
+      expect(routeEventUpdate).not.toHaveBeenCalled();
+      expect(previewProvider).not.toHaveBeenCalled();
+    } finally {
+      routeTransaction.mockRestore();
+      routeEventUpdate.mockRestore();
+    }
+  });
+
   test('rejects malformed preview requests before route database reads', async () => {
     const app = makeApp();
     const findManySpy = jest.spyOn(routeClient.automationEvent, 'findMany');
 
     const invalid = await previewRequest(app, { limit: ['1', '2'] });
     const unknown = await previewRequest(app, { extra: 'nope' });
+    const malformedId = await previewRequest(app, {
+      automationEventId: 'not-a-uuid',
+    });
 
     expect(invalid.status).toBe(400);
     expect(unknown.status).toBe(400);
+    expect(malformedId.status).toBe(400);
     expect(findManySpy).not.toHaveBeenCalled();
     expect(previewProvider).not.toHaveBeenCalled();
 

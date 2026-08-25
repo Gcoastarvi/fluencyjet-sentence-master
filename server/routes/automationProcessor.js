@@ -1100,7 +1100,7 @@ function formatDueReminderPreviewRow(ae, eligibility, now) {
 router.get('/due-reminder-preview', async (req, res) => {
   if (!checkAuth(req, res, 'AUTOMATION-DUE-REMINDER-PREVIEW')) return;
 
-  const allowedQueryFields = new Set(['limit']);
+  const allowedQueryFields = new Set(['limit', 'automationEventId']);
   const unknownFields = Object.keys(req.query || {}).filter(
     (key) => !allowedQueryFields.has(key),
   );
@@ -1127,6 +1127,21 @@ router.get('/due-reminder-preview', async (req, res) => {
     });
   }
 
+  const automationEventId = req.query?.automationEventId;
+  if (
+    automationEventId !== undefined &&
+    (
+      Array.isArray(automationEventId) ||
+      typeof automationEventId !== 'string' ||
+      !UUID_V4_RE.test(automationEventId)
+    )
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_AUTOMATION_EVENT_ID',
+    });
+  }
+
   const { templateName, languageCode } = getLesson1TemplateConfiguration();
   if (!templateName || !languageCode) {
     return res.status(503).json({
@@ -1140,6 +1155,9 @@ router.get('/due-reminder-preview', async (req, res) => {
   try {
     const dueEvents = await prisma.automationEvent.findMany({
       where: {
+        ...(automationEventId !== undefined
+          ? { id: automationEventId }
+          : {}),
         eventType: 'LESSON1_SIGNUP_REMINDER',
         status: 'PENDING',
         scheduledAt: { lte: now },

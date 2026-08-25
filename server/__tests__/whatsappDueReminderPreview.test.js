@@ -172,7 +172,17 @@ describe('GET /api/automation/due-reminder-preview', () => {
   test.each([
     ['unknown field', { unexpected: 'value' }],
     ['array limit', { limit: ['1', '2'] }],
+    ['array automation event ID', {
+      automationEventId: [
+        '11111111-1111-4111-8111-111111111111',
+        '22222222-2222-4222-8222-222222222222',
+      ],
+    }],
     ['malformed limit', { limit: 'not-a-number' }],
+    ['malformed automation event ID', { automationEventId: 'not-a-uuid' }],
+    ['non-v4 automation event ID', {
+      automationEventId: '11111111-1111-1111-8111-111111111111',
+    }],
     ['zero limit', { limit: '0' }],
     ['out-of-range limit', { limit: '11' }],
   ])('rejects %s before any Prisma access', async (_label, query) => {
@@ -183,11 +193,112 @@ describe('GET /api/automation/due-reminder-preview', () => {
 
     expect(response.status).toBe(400);
     expect(response.body.error).toMatch(
-      /UNKNOWN_QUERY_FIELDS|INVALID_QUERY_PARAMETERS/,
+      /UNKNOWN_QUERY_FIELDS|INVALID_QUERY_PARAMETERS|INVALID_AUTOMATION_EVENT_ID/,
     );
     expect(mockPrisma.automationEvent.findMany).not.toHaveBeenCalled();
     expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
     expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  test('targets one exact due event without exposing private fields or writing', async () => {
+    const targetId = '11111111-1111-4111-8111-111111111111';
+    const destination = '+919876543210';
+    const scheduledAt = new Date(Date.now() - 1_000);
+    const targetEvent = makeEvent(
+      targetId,
+      1,
+      scheduledAt,
+      destination,
+    );
+    mockPrisma.automationEvent.findMany.mockResolvedValue([targetEvent]);
+    configureEligibilityData({
+      users: new Map([[
+        1,
+        {
+          id: 1,
+          name: 'Private Target',
+          email: 'private-target@example.test',
+          whatsapp_consent: true,
+          has_access: false,
+          whatsapp_number_normalized: destination,
+          whatsapp_opted_out_at: null,
+        },
+      ]]),
+    });
+
+    const response = await request(makeApp())
+      .get('/api/automation/due-reminder-preview')
+      .query({ automationEventId: targetId })
+      .set(AUTH);
+
+    expect(response.status).toBe(200);
+    expect(response.body.counts).toMatchObject({
+      examined: 1,
+      eligible: 1,
+      excluded: 0,
+    });
+    expect(response.body.rows).toHaveLength(1);
+    expect(response.body.rows[0]).toMatchObject({
+      automationEventId: targetId,
+      destination: '[masked]',
+      eligibility: {
+        decision: 'ELIGIBLE',
+        reasonCode: null,
+      },
+    });
+    expect(JSON.stringify(response.body)).not.toContain('Private Target');
+    expect(JSON.stringify(response.body)).not.toContain(
+      'private-target@example.test',
+    );
+    expect(JSON.stringify(response.body)).not.toContain(destination);
+    expect(mockPrisma.automationEvent.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: targetId,
+          eventType: 'LESSON1_SIGNUP_REMINDER',
+          status: 'PENDING',
+          scheduledAt: { lte: expect.any(Date) },
+        },
+        orderBy: [
+          { scheduledAt: 'asc' },
+          { id: 'asc' },
+        ],
+        take: 10,
+      }),
+    );
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.update).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['not found', '33333333-3333-4333-8333-333333333333'],
+    ['non-due', '44444444-4444-4444-8444-444444444444'],
+    ['wrong status', '55555555-5555-4555-8555-555555555555'],
+    ['wrong type', '66666666-6666-4666-8666-666666666666'],
+  ])('returns an empty preview for a %s exact target', async (_label, targetId) => {
+    mockPrisma.automationEvent.findMany.mockResolvedValue([]);
+
+    const response = await request(makeApp())
+      .get('/api/automation/due-reminder-preview')
+      .query({ automationEventId: targetId })
+      .set(AUTH);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      ok: true,
+      counts: {
+        examined: 0,
+        eligible: 0,
+        excluded: 0,
+        exclusionReasons: {},
+      },
+      rows: [],
+    });
+    expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
   });
 
   test.each([
