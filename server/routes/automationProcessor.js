@@ -2543,6 +2543,7 @@ function canaryReasonCode(value, fallback = 'CANARY_PROCESSING_FAILED') {
 }
 
 function formatCanaryRow(ae, {
+  status = ae.status,
   result,
   reasonCode = null,
   whatsappSent = false,
@@ -2550,7 +2551,7 @@ function formatCanaryRow(ae, {
   return {
     automationEventId: ae.id,
     eventType: ae.eventType,
-    status: ae.status,
+    status,
     scheduledAt: formatSendingAuditDate(ae.scheduledAt),
     destination: ae.destinationNumberNormalized ? '[masked]' : null,
     result,
@@ -2559,12 +2560,22 @@ function formatCanaryRow(ae, {
   };
 }
 
-function sanitizeCanaryLiveResult(ae, response) {
+async function getCanaryEventStatus(database, ae) {
+  const currentEvent = await database.automationEvent.findUnique({
+    where: { id: ae.id },
+    select: { status: true },
+  });
+
+  return currentEvent?.status ?? ae.status;
+}
+
+function sanitizeCanaryLiveResult(ae, response, status = ae.status) {
   const body = response.body || {};
 
   if (body.result === 'SENT' || body.whatsappSent === true) {
     return {
       row: formatCanaryRow(ae, {
+        status,
         result: 'SENT',
         reasonCode: body.result === 'SENT'
           ? null
@@ -2578,6 +2589,7 @@ function sanitizeCanaryLiveResult(ae, response) {
   if (body.error === 'WHATSAPP_SEND_UNCONFIRMED') {
     return {
       row: formatCanaryRow(ae, {
+        status,
         result: 'UNCONFIRMED',
         reasonCode: 'WHATSAPP_SEND_UNCONFIRMED',
         whatsappSent: null,
@@ -2589,6 +2601,7 @@ function sanitizeCanaryLiveResult(ae, response) {
   if (body.result === 'CANCELLED' || body.result === 'SKIPPED') {
     return {
       row: formatCanaryRow(ae, {
+        status,
         result: 'SKIPPED',
         reasonCode: canaryReasonCode(body.skipReason),
         whatsappSent: false,
@@ -2600,6 +2613,7 @@ function sanitizeCanaryLiveResult(ae, response) {
   if (body.result === 'ALREADY_PROCESSED') {
     return {
       row: formatCanaryRow(ae, {
+        status,
         result: 'ALREADY_PROCESSED',
         reasonCode: 'ALREADY_PROCESSED',
         whatsappSent: false,
@@ -2610,6 +2624,7 @@ function sanitizeCanaryLiveResult(ae, response) {
 
   return {
     row: formatCanaryRow(ae, {
+      status,
       result: 'NOT_SENT',
       reasonCode: 'CANARY_PROCESSING_FAILED',
       whatsappSent: false,
@@ -2767,6 +2782,7 @@ export function createCanaryReminderHandler({
 
         if (eligibility.skipReason) {
           rows.push(formatCanaryRow(ae, {
+            status: await getCanaryEventStatus(database, ae),
             result: 'SKIPPED',
             reasonCode: canaryReasonCode(eligibility.skipReason),
             whatsappSent: false,
@@ -2778,6 +2794,7 @@ export function createCanaryReminderHandler({
 
         if (!learnerName) {
           rows.push(formatCanaryRow(ae, {
+            status: await getCanaryEventStatus(database, ae),
             result: 'SKIPPED',
             reasonCode: 'WHATSAPP_TEMPLATE_PARAMETER_MISSING',
             whatsappSent: false,
@@ -2789,6 +2806,7 @@ export function createCanaryReminderHandler({
 
         if (lesson1Complete) {
           rows.push(formatCanaryRow(ae, {
+            status: await getCanaryEventStatus(database, ae),
             result: 'SKIPPED',
             reasonCode: 'LESSON1_COMPLETE',
             whatsappSent: false,
@@ -2798,6 +2816,7 @@ export function createCanaryReminderHandler({
 
         if (eligibility.destination !== allowedTestNumberNormalized) {
           rows.push(formatCanaryRow(ae, {
+            status: await getCanaryEventStatus(database, ae),
             result: 'SKIPPED',
             reasonCode: 'TEST_RECIPIENT_ONLY',
             whatsappSent: false,
@@ -2810,7 +2829,11 @@ export function createCanaryReminderHandler({
           req,
           ae.id,
         );
-        const canaryOutcome = sanitizeCanaryLiveResult(ae, liveOutcome);
+        const canaryOutcome = sanitizeCanaryLiveResult(
+          ae,
+          liveOutcome,
+          await getCanaryEventStatus(database, ae),
+        );
         rows.push(canaryOutcome.row);
 
         if (canaryOutcome.stopAfterAttempt) {

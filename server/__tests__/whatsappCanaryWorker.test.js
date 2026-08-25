@@ -121,9 +121,18 @@ function configureEligibleUser(user = makeUser()) {
   mockPrisma.lessonModeProgress.findUnique.mockResolvedValue(null);
 }
 
-function configureLiveLifecycle(event = makeEvent()) {
+function configureLiveLifecycle(event = makeEvent(), finalStatus = 'SENT') {
   let exactRead = 0;
-  mockPrisma.automationEvent.findUnique.mockImplementation(async () => {
+  mockPrisma.automationEvent.findUnique.mockImplementation(async ({
+    where,
+    select,
+  } = {}) => {
+    if (select?.status) {
+      return {
+        status: where?.id === event.id ? finalStatus : 'PENDING',
+      };
+    }
+
     exactRead += 1;
     return exactRead === 1 ? event : { ...event, status: 'SENDING' };
   });
@@ -144,7 +153,7 @@ beforeEach(() => {
   process.env.WHATSAPP_LIVE_TEST_NUMBER = TEST_NUMBER;
   process.env.WHATSAPP_LESSON1_TEMPLATE_NAME = 'canary_template';
   process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE = 'en';
-  jest.clearAllMocks();
+  jest.resetAllMocks();
   mockPrisma.$transaction.mockImplementation(async (callback) =>
     callback(mockPrisma));
   mockPrisma.$executeRaw.mockResolvedValue(1);
@@ -281,12 +290,14 @@ describe('POST /api/automation/process-due-reminder-canary', () => {
     });
     expect(response.body.rows[0]).toMatchObject({
       automationEventId: legacy.id,
+      status: 'PENDING',
       result: 'SKIPPED',
       reasonCode: 'CONSENT_FALSE',
       destination: '[masked]',
     });
     expect(response.body.rows[1]).toMatchObject({
       automationEventId: target.id,
+      status: 'SENT',
       result: 'SENT',
       destination: '[masked]',
       whatsappSent: true,
@@ -305,6 +316,7 @@ describe('POST /api/automation/process-due-reminder-canary', () => {
     expect(response.status).toBe(200);
     expect(response.body.rows).toEqual([expect.objectContaining({
       automationEventId: TARGET_ID,
+      status: 'PENDING',
       result: 'SKIPPED',
       reasonCode: 'TEST_RECIPIENT_ONLY',
       destination: '[masked]',
@@ -359,6 +371,7 @@ describe('POST /api/automation/process-due-reminder-canary', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.rows[0]).toMatchObject({
+      status: 'SENT',
       result: 'SENT',
       reasonCode: null,
       whatsappSent: true,
@@ -389,13 +402,14 @@ describe('POST /api/automation/process-due-reminder-canary', () => {
     const event = makeEvent();
     mockPrisma.automationEvent.findMany.mockResolvedValue([event]);
     configureEligibleUser();
-    configureLiveLifecycle(event);
+    configureLiveLifecycle(event, 'SENDING');
     mockSendWhatsAppTemplate.mockRejectedValue(providerError);
 
     const response = await canaryRequest(makeApp());
 
     expect(response.status).toBe(200);
     expect(response.body.rows[0]).toMatchObject({
+      status: 'SENDING',
       result: 'UNCONFIRMED',
       reasonCode: 'WHATSAPP_SEND_UNCONFIRMED',
       whatsappSent: null,

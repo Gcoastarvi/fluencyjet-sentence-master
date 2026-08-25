@@ -396,11 +396,13 @@ describe('manual canary worker PostgreSQL integration', () => {
       firstTarget.id,
     ]);
     expect(response.body.rows[0]).toMatchObject({
+      status: 'PENDING',
       result: 'SKIPPED',
       reasonCode: 'CONSENT_FALSE',
       destination: '[masked]',
     });
     expect(response.body.rows[1]).toMatchObject({
+      status: 'SENT',
       result: 'SENT',
       reasonCode: null,
       destination: '[masked]',
@@ -457,6 +459,7 @@ describe('manual canary worker PostgreSQL integration', () => {
 
     expect(firstResponse.status).toBe(200);
     expect(firstResponse.body.rows[0]).toMatchObject({
+      status: 'SENDING',
       result: 'UNCONFIRMED',
       reasonCode: 'WHATSAPP_SEND_UNCONFIRMED',
       whatsappSent: null,
@@ -518,6 +521,7 @@ describe('manual canary worker PostgreSQL integration', () => {
       expect(stopResponse.status).toBe(200);
       expect(canaryResponse.status).toBe(200);
       expect(canaryResponse.body.rows[0]).toMatchObject({
+        status: 'CANCELLED',
         result: 'SKIPPED',
         reasonCode: 'CONSENT_FALSE',
         whatsappSent: false,
