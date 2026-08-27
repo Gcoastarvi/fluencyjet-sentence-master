@@ -12,6 +12,7 @@ import cookieParser from "cookie-parser";
 
 const mockPrisma = {
   $transaction: jest.fn(),
+  $executeRaw: jest.fn(),
   user: {
     findUnique: jest.fn(),
     update: jest.fn(),
@@ -25,6 +26,9 @@ const mockPrisma = {
     updateMany: jest.fn(),
   },
   lessonModeProgress: {
+    findUnique: jest.fn(),
+  },
+  userJourneyMilestone: {
     findUnique: jest.fn(),
   },
 };
@@ -124,6 +128,8 @@ beforeEach(() => {
     count: 1,
   });
   mockPrisma.lessonModeProgress.findUnique.mockResolvedValue(null);
+  mockPrisma.userJourneyMilestone.findUnique.mockResolvedValue(null);
+  mockPrisma.$executeRaw.mockResolvedValue(1);
   mockBcrypt.compare.mockResolvedValue(true);
   mockBcrypt.hash.mockResolvedValue("new-hashed-password");
   mockPrisma.$transaction.mockImplementation(async (callback) =>
@@ -184,6 +190,7 @@ describe("smart-signup WhatsApp identity safety", () => {
       expect.objectContaining({
         where: {
           userId: USER_ID,
+          productKey: "sentence_master",
           eventType: "LESSON1_SIGNUP_REMINDER",
           status: "PENDING",
         },
@@ -192,6 +199,7 @@ describe("smart-signup WhatsApp identity safety", () => {
     expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: USER_ID,
+        productKey: "sentence_master",
         eventType: "LESSON1_SIGNUP_REMINDER",
         status: "PENDING",
         destinationNumberNormalized: NEW_NUMBER,
@@ -492,6 +500,7 @@ describe("webinar registration WhatsApp identity safety", () => {
     expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledWith({
       where: {
         userId: USER_ID,
+        productKey: "sentence_master",
         eventType: "LESSON1_SIGNUP_REMINDER",
         status: "PENDING",
       },

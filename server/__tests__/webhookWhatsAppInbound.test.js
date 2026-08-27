@@ -246,7 +246,13 @@ describe('WhatsApp webhook inbound message processing', () => {
           userId: {
             in: [4201],
           },
-          eventType: 'LESSON1_SIGNUP_REMINDER',
+          eventType: {
+            in: [
+              'LESSON1_SIGNUP_REMINDER',
+              'LESSON1_WATCH_REMINDER',
+              'LEARNING_PATH_DISCOVERY_REMINDER',
+            ],
+          },
           status: 'PENDING',
         },
         data: {
@@ -376,7 +382,13 @@ describe('WhatsApp webhook inbound message processing', () => {
         userId: {
           in: [4201],
         },
-        eventType: 'LESSON1_SIGNUP_REMINDER',
+        eventType: {
+          in: [
+            'LESSON1_SIGNUP_REMINDER',
+            'LESSON1_WATCH_REMINDER',
+            'LEARNING_PATH_DISCOVERY_REMINDER',
+          ],
+        },
         status: 'PENDING',
       },
       data: {
@@ -425,7 +437,13 @@ describe('WhatsApp webhook inbound message processing', () => {
           userId: {
             in: [4201, 4202, 4203],
           },
-          eventType: 'LESSON1_SIGNUP_REMINDER',
+          eventType: {
+            in: [
+              'LESSON1_SIGNUP_REMINDER',
+              'LESSON1_WATCH_REMINDER',
+              'LEARNING_PATH_DISCOVERY_REMINDER',
+            ],
+          },
           status: 'PENDING',
         },
         data: {

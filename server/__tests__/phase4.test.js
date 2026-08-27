@@ -47,6 +47,9 @@ const mockPrisma = {
   lessonModeProgress: {
     findUnique: jest.fn(),
   },
+  userJourneyMilestone: {
+    findUnique: jest.fn(),
+  },
 };
 
 const mockSendWhatsAppTemplate = jest.fn();
@@ -174,6 +177,7 @@ beforeEach(() => {
   ]);
   mockPrisma.whatsAppPhoneSuppression.findUnique.mockResolvedValue(null);
   mockPrisma.lessonModeProgress.findUnique.mockResolvedValue(null);
+  mockPrisma.userJourneyMilestone.findUnique.mockResolvedValue(null);
 
   mockSendWhatsAppTemplate.mockResolvedValue({
     provider: 'meta',
@@ -559,6 +563,23 @@ describe(
       expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
     });
 
+    test('[L-15B] Signup reminder is cancelled at 10 sentences even when the lesson total is larger', async () => {
+      mockPrisma.lessonModeProgress.findUnique.mockResolvedValue({
+        completed: 10,
+        total: 20,
+      });
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('LESSON1_COMPLETE');
+      expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+    });
+
     test('[L-15A] Missing learner name → 422, no claim, no send', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(
         makeUser({ name: null }),
@@ -909,6 +930,57 @@ describe(
 
       expect(mockSendWhatsAppTemplate)
         .toHaveBeenCalledTimes(1);
+    });
+
+    test('[L-23] Watch reminder uses its fixed template through the existing safe live path', async () => {
+      const watchEvent = makeAe({
+        eventType: 'LESSON1_WATCH_REMINDER',
+        productKey: 'sentence_master',
+      });
+      mockPrisma.automationEvent.findUnique.mockImplementation(() =>
+        mockPrisma.automationEvent.findUnique.mock.calls.length === 1
+          ? watchEvent
+          : { ...watchEvent, status: 'SENDING' },
+      );
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('SENT');
+      expect(mockSendWhatsAppTemplate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          templateName: 'fj_watch_lesson1_v1',
+          languageCode: 'ta',
+        }),
+      );
+    });
+
+    test('[L-24] Final eligibility cancels watch after Lesson 1 is opened', async () => {
+      const watchEvent = makeAe({
+        eventType: 'LESSON1_WATCH_REMINDER',
+        productKey: 'sentence_master',
+      });
+      mockPrisma.automationEvent.findUnique.mockImplementation(() =>
+        mockPrisma.automationEvent.findUnique.mock.calls.length === 1
+          ? watchEvent
+          : { ...watchEvent, status: 'SENDING' },
+      );
+      mockPrisma.userJourneyMilestone.findUnique.mockResolvedValue({
+        id: 'opened-milestone',
+      });
+
+      const res = await liveRequest({
+        liveSend: true,
+        automationEventId: UUID1,
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body.result).toBe('CANCELLED');
+      expect(res.body.skipReason).toBe('LESSON1_OPENED');
+      expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
     });
   },
 );

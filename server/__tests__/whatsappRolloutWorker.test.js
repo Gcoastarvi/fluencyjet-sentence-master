@@ -227,7 +227,13 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
     expect(mockPrisma.automationEvent.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          eventType: 'LESSON1_SIGNUP_REMINDER',
+          eventType: {
+            in: [
+              'LESSON1_SIGNUP_REMINDER',
+              'LESSON1_WATCH_REMINDER',
+              'LEARNING_PATH_DISCOVERY_REMINDER',
+            ],
+          },
           status: 'PENDING',
           createdAt: { gte: new Date(WATERMARK) },
           scheduledAt: { lte: expect.any(Date) },

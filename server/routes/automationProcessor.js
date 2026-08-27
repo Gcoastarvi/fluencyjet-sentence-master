@@ -12,6 +12,16 @@ import prisma from '../db/client.js';
 import { sendWhatsAppTemplate } from '../services/whatsappProvider.js';
 import { normalizeWhatsAppNumber } from '../lib/whatsappNumber.js';
 import { acquireWhatsAppDestinationLock } from '../lib/whatsappDestinationLock.js';
+import {
+  BLOCK_A_REMINDER_EVENT_TYPES,
+  LEARNING_PATH_DISCOVERY_REMINDER,
+  LEARNING_PATH_EXPLORED,
+  LESSON1_OPENED,
+  LESSON1_SIGNUP_REMINDER,
+  LESSON1_WATCH_REMINDER,
+  SENTENCE_MASTER_PRODUCT_KEY,
+  hasJourneyMilestone,
+} from '../lib/whatsappJourney.js';
 
 const router = express.Router();
 
@@ -51,12 +61,43 @@ const ROLLOUT_WATERMARK_ENV_NAMES = [
 ];
 const ROLLOUT_WATERMARK_ISO_RE =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const BLOCK_A_REMINDER_EVENT_TYPE_SET =
+  new Set(BLOCK_A_REMINDER_EVENT_TYPES);
 
 function getLesson1TemplateConfiguration() {
   return {
     templateName: (process.env.WHATSAPP_LESSON1_TEMPLATE_NAME || '').trim(),
     languageCode: (process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE || '').trim(),
   };
+}
+
+export function getReminderTemplateConfiguration(eventType) {
+  const languageCode =
+    (process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE || '').trim();
+
+  if (eventType === LESSON1_SIGNUP_REMINDER) {
+    return {
+      templateName:
+        (process.env.WHATSAPP_LESSON1_TEMPLATE_NAME || '').trim(),
+      languageCode,
+    };
+  }
+
+  if (eventType === LESSON1_WATCH_REMINDER) {
+    return {
+      templateName: 'fj_watch_lesson1_v1',
+      languageCode,
+    };
+  }
+
+  if (eventType === LEARNING_PATH_DISCOVERY_REMINDER) {
+    return {
+      templateName: 'fj_discover_learning_path_v1',
+      languageCode,
+    };
+  }
+
+  return null;
 }
 
 function isWhatsAppLiveSendEnabled() {
@@ -183,6 +224,15 @@ function getEventDestination(ae) {
 }
 
 async function getLiveReminderEligibility(ae, database = prisma) {
+  const productKey = ae.productKey || SENTENCE_MASTER_PRODUCT_KEY;
+
+  if (
+    !BLOCK_A_REMINDER_EVENT_TYPE_SET.has(ae.eventType) ||
+    productKey !== SENTENCE_MASTER_PRODUCT_KEY
+  ) {
+    return { skipReason: 'UNSUPPORTED_REMINDER' };
+  }
+
   const eventDestination = getEventDestination(ae);
 
   if (eventDestination.skipReason) {
@@ -222,6 +272,30 @@ async function getLiveReminderEligibility(ae, database = prisma) {
     return { skipReason: phoneSkipReason };
   }
 
+  // Keep template-parameter validation ahead of business-completion
+  // classification. The final locked revalidation still executes the
+  // business check because the initial live path never claims a row without
+  // a usable learner name.
+  if (!String(user.name || '').trim()) {
+    return {
+      skipReason: null,
+      destination: eventDestination.destination,
+      user,
+    };
+  }
+
+  const businessSkipReason = await getReminderBusinessSkipReason(
+    {
+      ...ae,
+      productKey,
+    },
+    database,
+  );
+
+  if (businessSkipReason) {
+    return { skipReason: businessSkipReason };
+  }
+
   return {
     destination: eventDestination.destination,
     skipReason: null,
@@ -238,14 +312,42 @@ async function isLesson1Complete(userId, database = prisma) {
         mode: 'reorder',
       },
     },
-    select: { completed: true, total: true },
+    select: { completed: true },
   });
 
-  return (
-    lesson1 !== null &&
-    lesson1.total > 0 &&
-    lesson1.completed >= lesson1.total
-  );
+  return Number(lesson1?.completed || 0) >= 10;
+}
+
+async function getReminderBusinessSkipReason(ae, database = prisma) {
+  if (ae.eventType === LESSON1_SIGNUP_REMINDER) {
+    return await isLesson1Complete(ae.userId, database)
+      ? 'LESSON1_COMPLETE'
+      : null;
+  }
+
+  if (ae.eventType === LESSON1_WATCH_REMINDER) {
+    return await hasJourneyMilestone({
+      database,
+      userId: ae.userId,
+      productKey: ae.productKey,
+      milestoneType: LESSON1_OPENED,
+    })
+      ? 'LESSON1_OPENED'
+      : null;
+  }
+
+  if (ae.eventType === LEARNING_PATH_DISCOVERY_REMINDER) {
+    return await hasJourneyMilestone({
+      database,
+      userId: ae.userId,
+      productKey: ae.productKey,
+      milestoneType: LEARNING_PATH_EXPLORED,
+    })
+      ? 'LEARNING_PATH_EXPLORED'
+      : null;
+  }
+
+  return 'UNSUPPORTED_REMINDER';
 }
 
 // ---------------------------------------------------------------------------
@@ -1278,14 +1380,6 @@ router.get('/due-reminder-preview', async (req, res) => {
         eligibility.skipReason = 'WHATSAPP_TEMPLATE_PARAMETER_MISSING';
       }
 
-      const lesson1Complete =
-        !eligibility.skipReason &&
-        await isLesson1Complete(ae.userId, prisma);
-
-      if (lesson1Complete) {
-        eligibility.skipReason = 'LESSON1_COMPLETE';
-      }
-
       const row = formatDueReminderPreviewRow(ae, eligibility, now);
       rows.push(row);
 
@@ -2221,9 +2315,9 @@ export function createLiveReminderHandler({
   }
 
   // Template configuration is also fail-closed.
-  const { templateName, languageCode } = getLesson1TemplateConfiguration();
+  const { languageCode } = getLesson1TemplateConfiguration();
 
-  if (!templateName || !languageCode) {
+  if (!languageCode) {
     return res.status(503).json({
       ok: false,
       error: 'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
@@ -2243,10 +2337,23 @@ export function createLiveReminderHandler({
       });
     }
 
-    if (ae.eventType !== 'LESSON1_SIGNUP_REMINDER') {
+    if (!BLOCK_A_REMINDER_EVENT_TYPE_SET.has(ae.eventType)) {
       return res.status(400).json({
         ok: false,
         error: 'WRONG_EVENT_TYPE',
+      });
+    }
+
+    const eventTemplateConfiguration =
+      getReminderTemplateConfiguration(ae.eventType);
+
+    if (
+      !eventTemplateConfiguration?.templateName ||
+      !eventTemplateConfiguration.languageCode
+    ) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
       });
     }
 
@@ -2324,39 +2431,6 @@ export function createLiveReminderHandler({
       });
     }
 
-    const lesson1Complete = await isLesson1Complete(ae.userId, database);
-
-    if (lesson1Complete) {
-      if (!cancelInitialIneligible) {
-        return res.json({
-          ok: true,
-          result: 'SKIPPED',
-          aeId: ae.id,
-          skipReason: 'LESSON1_COMPLETE',
-          whatsappSent: false,
-        });
-      }
-
-      const result = await cancelRow(ae.id, 'LESSON1_COMPLETE', database);
-      if (result.count === 0) {
-        return res.json({
-          ok: true,
-          result: 'ALREADY_PROCESSED',
-          aeId: ae.id,
-          whatsappSent: false,
-        });
-      }
-      return res.json({
-        ok: true,
-        ...ineligibleResult(
-          ae,
-          'LESSON1_COMPLETE',
-          result.processedAt,
-          result.cancelledAt,
-        ),
-      });
-    }
-
     // ── 9. Hard test-number allowlist ───────────────────────────────────────
     if (
       enforceTestRecipient &&
@@ -2418,7 +2492,9 @@ export function createLiveReminderHandler({
       // check, not merely the earlier PENDING -> SENDING claim.
       if (
         !lockedEvent ||
-        lockedEvent.eventType !== 'LESSON1_SIGNUP_REMINDER' ||
+        lockedEvent.eventType !== ae.eventType ||
+        (lockedEvent.productKey || SENTENCE_MASTER_PRODUCT_KEY) !==
+          (ae.productKey || SENTENCE_MASTER_PRODUCT_KEY) ||
         lockedEvent.status !== 'SENDING' ||
         lockedEvent.destinationNumberNormalized !== destination
       ) {
@@ -2476,8 +2552,8 @@ export function createLiveReminderHandler({
           sendTemplate,
           {
             to: destination,
-            templateName,
-            languageCode,
+            templateName: eventTemplateConfiguration.templateName,
+            languageCode: eventTemplateConfiguration.languageCode,
             bodyParameters: [learnerName],
             automationEventId: lockedEvent.id,
           },
@@ -3234,8 +3310,8 @@ export function createRolloutReminderHandler({
       });
     }
 
-    const { templateName, languageCode } = getLesson1TemplateConfiguration();
-    if (!templateName || !languageCode) {
+    const { languageCode } = getLesson1TemplateConfiguration();
+    if (!languageCode) {
       return res.status(503).json({
         ok: false,
         error: 'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
@@ -3261,7 +3337,9 @@ export function createRolloutReminderHandler({
     try {
       const discovered = await database.automationEvent.findMany({
         where: {
-          eventType: 'LESSON1_SIGNUP_REMINDER',
+          eventType: {
+            in: BLOCK_A_REMINDER_EVENT_TYPES,
+          },
           status: 'PENDING',
           createdAt: { gte: watermark },
           scheduledAt: { lte: now },
@@ -3274,6 +3352,7 @@ export function createRolloutReminderHandler({
         select: {
           id: true,
           eventType: true,
+          productKey: true,
           status: true,
           userId: true,
           createdAt: true,
@@ -3339,12 +3418,6 @@ export function createRolloutReminderHandler({
         }
 
         const eligibility = await getLiveReminderEligibility(ae, database);
-        if (
-          !eligibility.skipReason &&
-          await isLesson1Complete(ae.userId, database)
-        ) {
-          eligibility.skipReason = 'LESSON1_COMPLETE';
-        }
         rows.push(rolloutPreviewOutcome(ae, eligibility, now).row);
       }
 

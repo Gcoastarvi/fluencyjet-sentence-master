@@ -379,6 +379,23 @@ export default function LessonDetail() {
   }, [dayNumber, difficulty]);
 
   useEffect(() => {
+    if (Number(dayNumber) !== 1 || difficulty !== "beginner") return;
+
+    api
+      .post("/funnel/journey-milestone", {
+        milestoneType: "LESSON1_OPENED",
+      })
+      .then((result) => {
+        if (!result?.ok) {
+          console.warn("[journey] Lesson 1 milestone was not recorded.");
+        }
+      })
+      .catch(() => {
+        console.warn("[journey] Lesson 1 milestone request failed.");
+      });
+  }, [dayNumber, difficulty]);
+
+  useEffect(() => {
     const lessonNum = Number(dayNumber || lessonId);
 
     if (!hasTrackAccess && freeAllowsLesson(lessonNum)) return;

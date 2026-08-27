@@ -4,3 +4,4 @@
 - [Sending monitor partial indexes](sending-monitor-partial-indexes.md) — fallback age filtering uses a SQL-only partial index that Prisma schema metadata cannot model.
 - [Reminder rollout watermark](reminder-rollout-watermark.md) — rollout eligibility starts from immutable event creation time, never a moving send-time cutoff.
 - [Rollout send gates](rollout-send-gates.md) — production rollout composes the global kill switch with its worker gate; preview bypasses both.
+- [WhatsApp journey serialization](whatsapp-journey-serialization.md) — milestone transitions and signup reconciliation share one learner/product lock; signup is obsolete at 10 sentences.

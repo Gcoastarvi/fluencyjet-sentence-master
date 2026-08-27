@@ -32,6 +32,7 @@ model User {
   league_history           LeagueHistory[]
   reset_tokens             PasswordResetToken[]
   whatsappSuppressionClearances WhatsAppPhoneSuppression[] @relation("WhatsAppSuppressionClearedBy")
+  journeyMilestones          UserJourneyMilestone[]
   track                    String               @default("BEGINNER")
   current_unit             Int                  @default(1)
   level_check_result       String?
@@ -286,6 +287,7 @@ model AutomationEvent {
   id                String                 @id @default(uuid())
   userId            Int
   eventType         AutomationType
+  productKey        String                 @default("sentence_master") @db.VarChar(80)
   status            AutomationStatus       @default(PENDING)
   payload           Json?
   destinationNumberNormalized String?       @db.VarChar(20)
@@ -299,11 +301,26 @@ model AutomationEvent {
   reconciliationJournal AutomationReconciliationJournal[]
 
   @@index([userId, eventType, status])
+  @@index([userId, productKey, eventType, status])
   @@index([status, scheduledAt])
   @@index([eventType, status, scheduledAt])
   @@index([eventType, status, processedAt])
   // The createdAt fallback index is partial and is intentionally defined in SQL
   // migration 20260824000200 because Prisma schema indexes cannot express it.
+}
+
+model UserJourneyMilestone {
+  id            String   @id @default(uuid())
+  userId        Int
+  productKey    String   @db.VarChar(80)
+  milestoneType String   @db.VarChar(80)
+  occurredAt    DateTime
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productKey, milestoneType])
+  @@index([productKey, milestoneType, occurredAt])
 }
 
 model WhatsAppMessageEvent {
@@ -421,6 +438,8 @@ enum AutomationType {
   DAY3_WEBINAR
   DAY5_UPGRADE
   LESSON1_SIGNUP_REMINDER
+  LESSON1_WATCH_REMINDER
+  LEARNING_PATH_DISCOVERY_REMINDER
 }
 
 enum AutomationStatus {

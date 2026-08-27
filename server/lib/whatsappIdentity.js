@@ -1,3 +1,9 @@
+import {
+  LESSON1_PRACTICE_COMPLETED,
+  SENTENCE_MASTER_PRODUCT_KEY,
+  acquireUserJourneyLock,
+} from "./whatsappJourney.js";
+
 export const LESSON1_SIGNUP_REMINDER = "LESSON1_SIGNUP_REMINDER";
 export const WHATSAPP_SUPPRESSION_CLEARANCE_SOURCE =
   "try-spoken-english-gym";
@@ -98,6 +104,7 @@ export async function cancelPendingLesson1Reminder(prisma, userId) {
   return prisma.automationEvent.updateMany({
     where: {
       userId,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
       eventType: LESSON1_SIGNUP_REMINDER,
       status: "PENDING",
     },
@@ -116,45 +123,61 @@ export async function reconcileLesson1SignupReminder({
   whatsappNumberNormalized,
   source = "try-spoken-english-gym",
 }) {
-  if (!whatsappConsent) {
-    await cancelPendingLesson1Reminder(prisma, userId);
-    return;
-  }
-
-  const lesson1Progress = await prisma.lessonModeProgress.findUnique({
-    where: {
-      userId_lessonId_mode: {
-        userId: String(userId),
-        lessonId: 1,
-        mode: "reorder",
-      },
-    },
-  });
-
-  const alreadyDone =
-    lesson1Progress &&
-    lesson1Progress.total > 0 &&
-    lesson1Progress.completed >= lesson1Progress.total;
-
-  // Cancel stale rows before creating a replacement. The database partial
-  // unique index remains the final protection against duplicate PENDING rows.
-  await cancelPendingLesson1Reminder(prisma, userId);
-
-  if (alreadyDone) {
-    return;
-  }
-
-  await prisma.automationEvent.create({
-    data: {
+  return prisma.$transaction(async (tx) => {
+    await acquireUserJourneyLock(
+      tx,
       userId,
-      eventType: LESSON1_SIGNUP_REMINDER,
-      status: "PENDING",
-      destinationNumberNormalized: whatsappNumberNormalized,
-      scheduledAt: new Date(Date.now() + 7 * 60 * 1000),
-      payload: {
-        whatsapp_number: whatsappNumber,
-        source,
+      SENTENCE_MASTER_PRODUCT_KEY,
+    );
+
+    const [lesson1Progress, practiceMilestone] = await Promise.all([
+      tx.lessonModeProgress.findUnique({
+        where: {
+          userId_lessonId_mode: {
+            userId: String(userId),
+            lessonId: 1,
+            mode: "reorder",
+          },
+        },
+        select: { completed: true },
+      }),
+      tx.userJourneyMilestone.findUnique({
+        where: {
+          userId_productKey_milestoneType: {
+            userId,
+            productKey: SENTENCE_MASTER_PRODUCT_KEY,
+            milestoneType: LESSON1_PRACTICE_COMPLETED,
+          },
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    await cancelPendingLesson1Reminder(tx, userId);
+
+    if (
+      !whatsappConsent ||
+      practiceMilestone ||
+      Number(lesson1Progress?.completed || 0) >= 10
+    ) {
+      return { created: false };
+    }
+
+    const automationEvent = await tx.automationEvent.create({
+      data: {
+        userId,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        eventType: LESSON1_SIGNUP_REMINDER,
+        status: "PENDING",
+        destinationNumberNormalized: whatsappNumberNormalized,
+        scheduledAt: new Date(Date.now() + 7 * 60 * 1000),
+        payload: {
+          whatsapp_number: whatsappNumber,
+          source,
+        },
       },
-    },
+    });
+
+    return { created: true, automationEvent };
   });
 }

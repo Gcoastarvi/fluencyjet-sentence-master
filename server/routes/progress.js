@@ -3,6 +3,13 @@ import express from "express";
 import prisma from "../db/client.js";
 import authRequired from "../middleware/authMiddleware.js";
 import { QUICK_START_DAY_NUMBER } from "../config/quickStart.js";
+import {
+  SENTENCE_MASTER_PRODUCT_KEY,
+  LESSON1_SIGNUP_REMINDER,
+  acquireUserJourneyLock,
+  cancelPendingAutomationEvents,
+  recordPracticeCompletionTransition,
+} from "../lib/whatsappJourney.js";
 
 import crypto from "crypto";
 
@@ -425,70 +432,78 @@ router.post("/lesson-mode", authRequired, async (req, res) => {
       ? Math.max(0, Math.trunc(totalRaw))
       : 0;
 
-    const existing = await prisma.lessonModeProgress.findUnique({
-      where: {
-        userId_lessonId_mode: {
-          userId,
-          lessonId,
-          mode,
-        },
-      },
-    });
+    const numericUserId = Number(userId);
+    const isLesson1InitialPractice = lessonId === 1 && mode === "reorder";
+    const occurredAt = new Date();
 
-    const nextCompleted = Math.max(
-      Number(existing?.completed || 0),
-      incomingCompleted,
-    );
-
-    const nextTotal = Math.max(Number(existing?.total || 0), incomingTotal);
-
-    const row = await prisma.lessonModeProgress.upsert({
-      where: {
-        userId_lessonId_mode: {
-          userId,
-          lessonId,
-          mode,
-        },
-      },
-      update: {
-        completed: nextCompleted,
-        total: nextTotal,
-      },
-      create: {
-        userId,
-        lessonId,
-        mode,
-        completed: nextCompleted,
-        total: nextTotal,
-      },
-    });
-
-    // ── Automation: cancel LESSON1_SIGNUP_REMINDER when Lesson 1 reorder hits 100% ──
-    // Isolated — never blocks progress response.
-    if (
-      lessonId === 1 &&
-      mode === "reorder" &&
-      row.total > 0 &&
-      row.completed >= row.total
-    ) {
-      try {
-        await prisma.automationEvent.updateMany({
-          where: {
-            userId:    parseInt(userId, 10),
-            eventType: "LESSON1_SIGNUP_REMINDER",
-            status:    "PENDING",
-          },
-          data: { status: "CANCELLED", cancelledAt: new Date() },
-        });
-      } catch (automationErr) {
-        console.error(
-          "LESSON1_SIGNUP_REMINDER cancellation error (progress):",
-          automationErr,
+    const row = await prisma.$transaction(async (tx) => {
+      if (isLesson1InitialPractice) {
+        await acquireUserJourneyLock(
+          tx,
+          numericUserId,
+          SENTENCE_MASTER_PRODUCT_KEY,
         );
-        // Do not rethrow — progress response must not be blocked.
       }
-    }
-    // ──────────────────────────────────────────────────────────────────────────
+
+      const existing = await tx.lessonModeProgress.findUnique({
+        where: {
+          userId_lessonId_mode: {
+            userId,
+            lessonId,
+            mode,
+          },
+        },
+      });
+
+      const previousCompleted = Number(existing?.completed || 0);
+      const nextCompleted = Math.max(previousCompleted, incomingCompleted);
+      const nextTotal = Math.max(Number(existing?.total || 0), incomingTotal);
+
+      const savedRow = await tx.lessonModeProgress.upsert({
+        where: {
+          userId_lessonId_mode: {
+            userId,
+            lessonId,
+            mode,
+          },
+        },
+        update: {
+          completed: nextCompleted,
+          total: nextTotal,
+        },
+        create: {
+          userId,
+          lessonId,
+          mode,
+          completed: nextCompleted,
+          total: nextTotal,
+        },
+      });
+
+      if (isLesson1InitialPractice) {
+        await recordPracticeCompletionTransition({
+          transaction: tx,
+          userId: numericUserId,
+          previousCompleted,
+          nextCompleted: savedRow.completed,
+          occurredAt,
+        });
+
+        // Preserve the old full-completion cancellation for historical users
+        // whose 10-sentence transition predates milestone tracking.
+        if (savedRow.total > 0 && savedRow.completed >= savedRow.total) {
+          await cancelPendingAutomationEvents({
+            transaction: tx,
+            userId: numericUserId,
+            productKey: SENTENCE_MASTER_PRODUCT_KEY,
+            eventTypes: [LESSON1_SIGNUP_REMINDER],
+            now: occurredAt,
+          });
+        }
+      }
+
+      return savedRow;
+    });
 
     return res.json({
       ok: true,

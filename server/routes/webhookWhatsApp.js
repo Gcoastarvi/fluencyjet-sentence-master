@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import prisma from '../db/client.js';
 import { normalizeWhatsAppWaId } from '../lib/whatsappNumber.js';
 import { acquireWhatsAppDestinationLock } from '../lib/whatsappDestinationLock.js';
+import { BLOCK_A_REMINDER_EVENT_TYPES } from '../lib/whatsappJourney.js';
 
 const router = express.Router();
 
@@ -431,7 +432,9 @@ async function processInboundMessages(payload) {
                 userId: {
                   in: userIds,
                 },
-                eventType: 'LESSON1_SIGNUP_REMINDER',
+                eventType: {
+                  in: BLOCK_A_REMINDER_EVENT_TYPES,
+                },
                 status: 'PENDING',
               },
               data: {

@@ -3,6 +3,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js";
+import { authRequired } from "../middleware/authMiddleware.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
 import {
   buildSmartSignupWhatsAppState,
@@ -11,6 +12,11 @@ import {
   clearWhatsAppPhoneSuppressionOnExplicitConsent,
   reconcileLesson1SignupReminder,
 } from "../lib/whatsappIdentity.js";
+import {
+  LEARNING_PATH_EXPLORED,
+  LESSON1_OPENED,
+  recordBlockAJourneyMilestone,
+} from "../lib/whatsappJourney.js";
 
 const router = express.Router();
 
@@ -346,6 +352,41 @@ router.post("/register-webinar", async (req, res) => {
     return res.status(500).json({
       ok: false,
       message: "Could not reserve webinar seat.",
+    });
+  }
+});
+
+router.post("/journey-milestone", authRequired, async (req, res) => {
+  const milestoneType = String(req.body?.milestoneType || "").trim();
+
+  if (![LESSON1_OPENED, LEARNING_PATH_EXPLORED].includes(milestoneType)) {
+    return res.status(400).json({
+      ok: false,
+      code: "INVALID_MILESTONE_TYPE",
+    });
+  }
+
+  try {
+    const result = await recordBlockAJourneyMilestone({
+      database: prisma,
+      userId: req.user.id,
+      milestoneType,
+    });
+
+    return res.json({
+      ok: true,
+      milestoneType,
+      recorded: result.created,
+      occurredAt: result.milestone.occurredAt,
+    });
+  } catch (error) {
+    console.error("[JOURNEY-MILESTONE] Failed to record milestone:", {
+      milestoneType,
+      code: error?.code || "UNKNOWN",
+    });
+    return res.status(500).json({
+      ok: false,
+      code: "MILESTONE_RECORD_FAILED",
     });
   }
 });
