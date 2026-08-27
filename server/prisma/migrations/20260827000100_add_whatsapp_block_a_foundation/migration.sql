@@ -1,11 +1,20 @@
 -- Phase 16B Block A: additive shared WhatsApp journey foundation.
 -- This migration preserves all historical AutomationEvent rows.
 
-ALTER TYPE "AutomationType"
-  ADD VALUE IF NOT EXISTS 'LESSON1_WATCH_REMINDER';
-
-ALTER TYPE "AutomationType"
-  ADD VALUE IF NOT EXISTS 'LEARNING_PATH_DISCOVERY_REMINDER';
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_type
+    WHERE typname = 'AutomationType'
+  ) THEN
+    ALTER TYPE "AutomationType"
+      ADD VALUE IF NOT EXISTS 'LESSON1_WATCH_REMINDER';
+    ALTER TYPE "AutomationType"
+      ADD VALUE IF NOT EXISTS 'LEARNING_PATH_DISCOVERY_REMINDER';
+  END IF;
+END
+$$;
 
 ALTER TABLE "AutomationEvent"
   ADD COLUMN IF NOT EXISTS "productKey" VARCHAR(80) NOT NULL

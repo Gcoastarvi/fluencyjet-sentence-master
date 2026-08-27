@@ -1,0 +1,42 @@
+Do NOT mark Task #26 complete yet.
+
+One required validation remains.
+
+You interpreted the migration restriction too strictly. The prohibition is against applying the migration to the production-connected DATABASE_URL.
+
+It IS permitted and required to apply the new additive Phase 16B migration to the isolated database referenced by TEST_DATABASE_URL, solely for integration testing.
+
+Please now:
+
+Explicitly verify that TEST_DATABASE_URL is present and that the command you intend to run is targeting TEST_DATABASE_URL, NOT the default DATABASE_URL.
+Before executing any migration command, report the exact command and confirm that the environment is scoped to TEST_DATABASE_URL.
+Do NOT print or expose the database URL/credentials.
+Apply the new additive migration ONLY to the isolated TEST database.
+Do not reset the test database unless absolutely necessary. Prefer the normal non-destructive migration/deploy mechanism.
+Run the DB-backed integration suites that previously failed because of schema drift.
+Run the real PostgreSQL concurrency/overlap test for the Block A milestone/signup-reminder race.
+Confirm the following specifically:
+concurrent/repeated 9→10 progress cannot create duplicate milestones
+concurrent/repeated trigger cannot create duplicate WATCH reminders
+signup reconciliation cannot recreate a stale signup reminder after 10-sentence completion
+Lesson 1 open cancels the pending watch reminder and creates only one discovery reminder
+learning-path exploration cancels the discovery reminder
+existing signup reminder regression still passes
+STOP/suppression/consent protections still pass
+Do NOT deploy.
+Do NOT push.
+Do NOT access or modify the production database.
+Do NOT send WhatsApp messages.
+
+When finished, report:
+
+migration command used
+confirmation that it targeted TEST_DATABASE_URL only
+DB-backed test suites run
+pass/fail counts
+concurrency test result
+any failures
+git status
+whether any source files changed during this validation
+
+Then STOP for human approval.

@@ -503,6 +503,9 @@ router.post("/lesson-mode", authRequired, async (req, res) => {
       }
 
       return savedRow;
+    }, {
+      maxWait: 5_000,
+      timeout: 15_000,
     });
 
     return res.json({

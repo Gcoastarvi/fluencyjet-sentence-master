@@ -179,5 +179,8 @@ export async function reconcileLesson1SignupReminder({
     });
 
     return { created: true, automationEvent };
+  }, {
+    maxWait: 5_000,
+    timeout: 15_000,
   });
 }

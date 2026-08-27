@@ -244,6 +244,9 @@ export async function recordBlockAJourneyMilestone({
     });
 
     return milestoneResult;
+  }, {
+    maxWait: 5_000,
+    timeout: 15_000,
   });
 }
 
