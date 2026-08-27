@@ -1,0 +1,580 @@
+# Phase 16B — Shared WhatsApp Foundation + Block A
+
+## Objective
+
+Implement the minimum shared foundation required for the next FluencyJet WhatsApp automations, and implement ONLY Block A:
+
+1. `fj_watch_lesson1_v1`
+2. `fj_discover_learning_path_v1`
+
+The existing production automation `fj_resume_lesson1_v1` / `LESSON1_SIGNUP_REMINDER` is already working with real users and MUST remain working.
+
+This is an implementation task, not a broad architecture/audit task.
+
+## CRITICAL SAFETY
+
+The default Replit `DATABASE_URL` points to the REAL Railway production database.
+
+`TEST_DATABASE_URL` is the isolated testing database.
+
+NEVER run destructive or development migration operations against the default `DATABASE_URL`.
+
+Do NOT:
+
+* run `prisma migrate reset`
+* reset any production schema
+* delete or modify production customer data
+* alter historical migrations
+* rewrite migration history
+* run destructive Prisma commands
+* deploy to Railway
+* push changes to production
+* change Railway variables
+* send any real WhatsApp messages
+* run live/provider dispatches
+* create another scheduler/cron
+* create another WhatsApp provider implementation
+
+If tests require a database, use `TEST_DATABASE_URL` explicitly.
+
+Do not assume an environment command is safe merely because it is running in Replit.
+
+## COST / SCOPE RULE
+
+Do not perform a broad repository audit.
+
+Inspect only the files needed to understand and implement:
+
+* Prisma schema / relevant existing migrations
+* AutomationEvent
+* existing `LESSON1_SIGNUP_REMINDER`
+* current automation worker/dispatcher
+* current lesson progress update path
+* Lesson 1 frontend/backend route
+* curriculum/learning-path frontend/backend route
+* existing cancellation/idempotency helpers
+* relevant tests
+
+Reuse existing patterns wherever possible.
+
+Do not build generic automation infrastructure beyond what the current seven-message journey requires.
+
+---
+
+# 1. EXISTING PRODUCTION BEHAVIOR TO PRESERVE
+
+Existing automation:
+
+`LESSON1_SIGNUP_REMINDER`
+
+Template:
+
+`fj_resume_lesson1_v1`
+
+Current production lifecycle:
+
+`PENDING → SENDING → SENT`
+
+Provider status events such as SENT / DELIVERED / READ / FAILED are stored separately through the existing WhatsApp webhook/message-event mechanism.
+
+Do NOT change this architecture.
+
+Existing WhatsApp safety machinery must remain authoritative:
+
+* WhatsApp consent
+* canonical phone normalization
+* immutable destination snapshot
+* phone/destination change protection
+* STOP / opt-out
+* suppression
+* shared-phone safety
+* advisory/destination locking
+* final locked eligibility immediately before dispatch
+* idempotency / duplicate-send prevention
+* no blind retry after provider uncertainty
+* providerMessageId
+* global live-send gate
+* rollout worker gate
+* rollout watermark
+* sanitized logging
+
+New event types must flow through this same machinery.
+
+---
+
+# 2. NEW AUTOMATION EVENT TYPES
+
+Add support for:
+
+`LESSON1_WATCH_REMINDER`
+
+Template:
+
+`fj_watch_lesson1_v1`
+
+And:
+
+`LEARNING_PATH_DISCOVERY_REMINDER`
+
+Template:
+
+`fj_discover_learning_path_v1`
+
+Do not build separate workers for these event types.
+
+Extend/generalize the existing worker/template-resolution mechanism safely.
+
+---
+
+# 3. MINIMAL PRODUCT IDENTITY
+
+Use a minimal stable product identity:
+
+`sentence_master`
+
+Add product awareness to AutomationEvent only to the minimum extent needed for future cancellation/eligibility safety.
+
+Preferred conceptual field:
+
+`productKey`
+
+Current value:
+
+`sentence_master`
+
+If adding a required field to existing rows, use a safe additive strategy compatible with existing historical records.
+
+Do NOT create:
+
+* Product catalog
+* SKU management
+* CRM
+* rule builder
+* generic automation journey builder
+* multi-channel engine
+
+---
+
+# 4. DURABLE USER JOURNEY MILESTONES
+
+Add a minimal durable first-occurrence milestone representation.
+
+Preferred conceptual model:
+
+`UserJourneyMilestone`
+
+Required conceptual fields:
+
+* id
+* userId
+* productKey
+* milestoneType
+* occurredAt
+* optional metadata JSON if genuinely useful
+* createdAt
+
+Enforce database-level uniqueness equivalent to:
+
+`userId + productKey + milestoneType`
+
+Initial milestone types required in this phase:
+
+`LESSON1_PRACTICE_COMPLETED`
+
+`LESSON1_OPENED`
+
+`LEARNING_PATH_EXPLORED`
+
+Follow existing naming/id conventions in the repository rather than introducing an unnecessary incompatible style.
+
+Do not turn milestone tracking into analytics infrastructure.
+
+---
+
+# 5. PRACTICE COMPLETION TRIGGER
+
+Existing server-side lesson/mode progress is authoritative.
+
+The first 10-sentence completion milestone must be created only when an accepted server-side progress update represents the first transition equivalent to:
+
+previous completed < 10
+
+to
+
+new completed >= 10
+
+for the relevant initial Lesson 1 practice.
+
+Record:
+
+`LESSON1_PRACTICE_COMPLETED`
+
+exactly once.
+
+Milestone recording must be idempotent and concurrency safe.
+
+On the FIRST successful occurrence:
+
+create exactly one:
+
+`LESSON1_WATCH_REMINDER`
+
+for the same learner/product.
+
+Schedule:
+
+approximately milestone occurrence + 15 minutes.
+
+Also cancel an applicable still-pending:
+
+`LESSON1_SIGNUP_REMINDER`
+
+because the learner has completed the practice.
+
+Do not delete its audit record.
+
+If existing final eligibility already prevents the signup reminder after practice completion, preserve that protection as well.
+
+Duplicate/replayed progress updates must not create duplicate milestones or duplicate automation events.
+
+---
+
+# 6. LESSON 1 OPENED DEFINITION
+
+For this phase:
+
+`LESSON1_OPENED` means:
+
+The authenticated learner successfully enters/loads the actual Lesson 1 learning/content experience.
+
+It does NOT require:
+
+* video completion
+* video percentage
+* Vimeo analytics
+* GA event
+* Meta browser event
+* watch-duration threshold
+
+Add the minimum authenticated server-side milestone call necessary.
+
+It should be safe to call repeatedly from the frontend; backend idempotency must make repeated calls harmless.
+
+On first occurrence of:
+
+`LESSON1_OPENED`
+
+perform both:
+
+### A. Cancel
+
+Any applicable still-PENDING:
+
+`LESSON1_WATCH_REMINDER`
+
+for the same learner/product.
+
+Do not delete the event.
+
+### B. Create
+
+Exactly one:
+
+`LEARNING_PATH_DISCOVERY_REMINDER`
+
+scheduled approximately:
+
+Lesson 1 opened time + 75 minutes.
+
+---
+
+# 7. LEARNING PATH EXPLORED DEFINITION
+
+For this phase:
+
+`LEARNING_PATH_EXPLORED` means:
+
+The authenticated learner deliberately opens the FluencyJet curriculum / learning-path experience.
+
+No scrolling-depth, time-on-page or complex analytics threshold is required.
+
+Add the minimum authenticated server-side milestone call.
+
+Frontend may safely call it repeatedly.
+
+Backend must persist the milestone exactly once.
+
+When this milestone first occurs:
+
+cancel any applicable still-PENDING:
+
+`LEARNING_PATH_DISCOVERY_REMINDER`
+
+for the same learner/product.
+
+Do not delete audit history.
+
+---
+
+# 8. FINAL ELIGIBILITY — WATCH LESSON REMINDER
+
+Before `LESSON1_WATCH_REMINDER` can enter provider dispatch, reuse the existing final locked eligibility system.
+
+In addition to ALL existing common WhatsApp safety rules, final eligibility must confirm that:
+
+* event still belongs to intended learner/product
+* event is still eligible/current
+* `LESSON1_OPENED` has NOT occurred
+* destination snapshot remains valid
+* WhatsApp consent remains valid
+* learner is not STOP/suppressed
+* no other existing safety condition makes dispatch inappropriate
+
+If Lesson 1 has already been opened, do NOT send.
+
+Cancel/skip using the existing audit-safe pattern.
+
+---
+
+# 9. FINAL ELIGIBILITY — DISCOVERY REMINDER
+
+Before `LEARNING_PATH_DISCOVERY_REMINDER` can enter provider dispatch, reuse the same final locked eligibility framework.
+
+In addition to common safety rules, verify:
+
+`LEARNING_PATH_EXPLORED` has NOT occurred.
+
+If it has occurred, do NOT send.
+
+Use the normal audit-safe cancellation/skip behavior.
+
+---
+
+# 10. AUTOMATION IDEMPOTENCY
+
+Reuse the application's existing AutomationEvent duplicate/idempotency mechanism wherever possible.
+
+Do NOT introduce a second competing idempotency architecture.
+
+If the current mechanism is too specific to `LESSON1_SIGNUP_REMINDER`, generalize it minimally.
+
+Desired invariant:
+
+For the same learner + product + business trigger, only one intended active automation event should exist.
+
+Milestone uniqueness must be database enforced.
+
+If an additional AutomationEvent idempotency field/index is truly required, keep it minimal and explain why in the final report.
+
+Do not add schema merely because it might be useful someday.
+
+---
+
+# 11. CANCELLATION
+
+Create/reuse one shared cancellation helper rather than embedding unrelated SQL/update logic in every feature.
+
+It should support conceptually:
+
+cancel still-pending events for:
+
+* user
+* product
+* specified event type(s)
+
+Preserve audit history.
+
+Do not delete AutomationEvent rows.
+
+Use the project's existing cancellation/status conventions if already present.
+
+Do not invent a parallel lifecycle if cancellation already exists.
+
+---
+
+# 12. SHARED HELPERS
+
+Prefer minimal reusable helpers equivalent to existing project style for:
+
+* record milestone once
+* query milestone existence
+* create automation event once
+* cancel pending automation event(s)
+* template resolution by eventType
+* final eligibility by eventType
+
+Do NOT over-engineer a generic rules engine.
+
+---
+
+# 13. TEMPLATE RESOLUTION
+
+Extend the existing template mapping to support:
+
+`LESSON1_SIGNUP_REMINDER`
+→ existing `fj_resume_lesson1_v1`
+
+`LESSON1_WATCH_REMINDER`
+→ `fj_watch_lesson1_v1`
+
+`LEARNING_PATH_DISCOVERY_REMINDER`
+→ `fj_discover_learning_path_v1`
+
+Existing signup behavior must remain unchanged.
+
+Do not send templates as part of development/testing.
+
+---
+
+# 14. DATABASE MIGRATION
+
+Create ONE additive migration covering the minimal Phase 16B shared schema additions.
+
+Do not modify historical migrations.
+
+Do not apply this migration to production.
+
+Do NOT run a migration command against the default production-connected `DATABASE_URL`.
+
+If generating/testing migration behavior requires a DB connection, explicitly use the isolated `TEST_DATABASE_URL`.
+
+If safely generating the migration automatically is questionable, create/review the additive migration file without applying it to production.
+
+The migration must preserve all current AutomationEvent data.
+
+---
+
+# 15. TESTS REQUIRED
+
+Add focused automated tests as part of this implementation.
+
+At minimum test:
+
+### Practice completion
+
+1. completed 9 → 10 creates `LESSON1_PRACTICE_COMPLETED`
+2. milestone is created once
+3. one `LESSON1_WATCH_REMINDER` is created
+4. scheduledAt is approximately +15 minutes
+5. repeated completion update creates no duplicate milestone/event
+6. existing pending signup reminder is cancelled appropriately
+7. concurrency cannot create duplicates
+
+### Lesson opened
+
+8. first Lesson 1 open creates `LESSON1_OPENED`
+9. duplicate opens remain idempotent
+10. pending watch reminder is cancelled
+11. exactly one `LEARNING_PATH_DISCOVERY_REMINDER` is created
+12. scheduledAt is approximately +75 minutes
+
+### Learning path
+
+13. first curriculum/path opening creates `LEARNING_PATH_EXPLORED`
+14. repeated opens remain idempotent
+15. pending discovery reminder is cancelled
+
+### Worker eligibility
+
+16. watch reminder is rejected if Lesson 1 was opened before dispatch
+17. discovery reminder is rejected if learning path was explored before dispatch
+18. existing STOP/suppression/consent/destination safety continues to apply
+19. no provider dispatch occurs during automated tests
+
+### Regression
+
+20. existing `LESSON1_SIGNUP_REMINDER` creation/eligibility behavior continues to pass
+21. existing STOP regression continues to pass
+22. existing `PENDING → SENDING → SENT` architecture is not changed
+23. existing webhook/message-event behavior is not changed
+
+Use deterministic/synthetic timestamps.
+
+Do NOT literally wait 15 or 75 minutes in tests.
+
+Use `TEST_DATABASE_URL` for DB-backed testing.
+
+---
+
+# 16. OUT OF SCOPE
+
+Do NOT implement:
+
+* checkout-help
+* any-questions
+* Razorpay payment.failed
+* purchase-success message
+* payment cancellation matrix beyond what Block A requires
+* new cron service
+* increased worker throughput
+* new Meta templates
+* new WhatsApp sender/provider
+* generic product catalog
+* CRM
+* generic automation UI
+* analytics platform
+* video completion tracking
+* live production canary
+* Railway deployment
+* environment variable changes
+
+These belong to later phases.
+
+---
+
+# 17. PRODUCTION WORKER
+
+Do NOT change the current production rollout policy merely to implement these event types.
+
+In particular, do not increase the current maximum provider sends per cron invocation in this phase.
+
+Worker capacity will be reviewed separately after correctness is proven.
+
+---
+
+# 18. GIT / DEPLOYMENT
+
+Do not push/deploy.
+
+Do not intentionally publish.
+
+If the Replit workflow automatically creates a local commit, that is acceptable, but report:
+
+* branch
+* HEAD
+* commit hash if applicable
+* git status
+
+Do not push it.
+
+---
+
+# 19. FINAL REPORT REQUIRED FROM YOU
+
+When implementation is complete, STOP and report:
+
+1. concise summary of implementation
+2. exact files changed
+3. Prisma schema changes
+4. migration directory/file created
+5. whether any migration command was executed
+6. exactly which DB/environment was used for any DB command
+7. tests added
+8. tests run
+9. test results
+10. any test failures or skipped tests
+11. any existing tests affected
+12. git branch
+13. HEAD
+14. git status
+15. whether an auto-commit occurred
+16. anything you could not safely complete
+17. any code/design issue that requires human decision
+
+Do NOT deploy.
+
+Do NOT send WhatsApp.
+
+Do NOT modify production data.
+
+STOP after reporting.
