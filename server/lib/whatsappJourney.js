@@ -170,6 +170,21 @@ export async function recordPracticeCompletionTransition({
     now: occurredAt,
   });
 
+  const existingLessonOpen = await transaction.userJourneyMilestone.findUnique({
+    where: {
+      userId_productKey_milestoneType: {
+        userId,
+        productKey,
+        milestoneType: LESSON1_OPENED,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (existingLessonOpen) {
+    return milestoneResult;
+  }
+
   const automationEvent = await createReminderEvent({
     transaction,
     userId,
@@ -219,6 +234,22 @@ export async function recordBlockAJourneyMilestone({
         eventTypes: [LESSON1_WATCH_REMINDER],
         now: occurredAt,
       });
+
+      const existingPathExploration =
+        await transaction.userJourneyMilestone.findUnique({
+          where: {
+            userId_productKey_milestoneType: {
+              userId,
+              productKey,
+              milestoneType: LEARNING_PATH_EXPLORED,
+            },
+          },
+          select: { id: true },
+        });
+
+      if (existingPathExploration) {
+        return milestoneResult;
+      }
 
       const automationEvent = await createReminderEvent({
         transaction,

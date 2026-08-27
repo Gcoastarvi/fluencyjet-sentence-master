@@ -71,6 +71,7 @@ const journeyClient = new PrismaClient({
 
 const runToken = crypto.randomInt(100_000_000, 999_999_999).toString();
 let user;
+const additionalUsers = [];
 
 function deferred() {
   let resolve;
@@ -80,11 +81,11 @@ function deferred() {
   return { promise, resolve };
 }
 
-async function applyProgress(client, incomingCompleted, hooks = {}) {
+async function applyProgress(client, incomingCompleted, hooks = {}, targetUser = user) {
   return client.$transaction(async (tx) => {
     await acquireUserJourneyLock(
       tx,
-      user.id,
+      targetUser.id,
       SENTENCE_MASTER_PRODUCT_KEY,
     );
     hooks.locked?.();
@@ -93,7 +94,7 @@ async function applyProgress(client, incomingCompleted, hooks = {}) {
     const existing = await tx.lessonModeProgress.findUnique({
       where: {
         userId_lessonId_mode: {
-          userId: String(user.id),
+          userId: String(targetUser.id),
           lessonId: 1,
           mode: "reorder",
         },
@@ -104,14 +105,14 @@ async function applyProgress(client, incomingCompleted, hooks = {}) {
     const saved = await tx.lessonModeProgress.upsert({
       where: {
         userId_lessonId_mode: {
-          userId: String(user.id),
+          userId: String(targetUser.id),
           lessonId: 1,
           mode: "reorder",
         },
       },
       update: { completed: nextCompleted, total: 20 },
       create: {
-        userId: String(user.id),
+        userId: String(targetUser.id),
         lessonId: 1,
         mode: "reorder",
         completed: nextCompleted,
@@ -121,7 +122,7 @@ async function applyProgress(client, incomingCompleted, hooks = {}) {
 
     await recordPracticeCompletionTransition({
       transaction: tx,
-      userId: user.id,
+      userId: targetUser.id,
       previousCompleted,
       nextCompleted: saved.completed,
       occurredAt: new Date(),
@@ -130,6 +131,38 @@ async function applyProgress(client, incomingCompleted, hooks = {}) {
     maxWait: 5_000,
     timeout: 15_000,
   });
+}
+
+async function createJourneyUser({ completed = null } = {}) {
+  const number = `+1995${crypto.randomInt(1000000, 9999999)}`;
+  const created = await control.user.create({
+    data: {
+      name: "Block A Reverse Order User",
+      email: `block-a-reverse-${crypto.randomInt(100000000, 999999999)}@example.test`,
+      password: "not-a-real-password",
+      whatsapp_number: number,
+      whatsapp_number_normalized: number,
+      whatsapp_consent: true,
+      whatsapp_consent_at: new Date(),
+      has_access: false,
+    },
+  });
+
+  additionalUsers.push(created);
+
+  if (completed !== null) {
+    await control.lessonModeProgress.create({
+      data: {
+        userId: String(created.id),
+        lessonId: 1,
+        mode: "reorder",
+        completed,
+        total: 20,
+      },
+    });
+  }
+
+  return created;
 }
 
 beforeAll(async () => {
@@ -175,15 +208,18 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (user) {
-    await control.automationEvent.deleteMany({ where: { userId: user.id } });
+  for (const cleanupUser of [user, ...additionalUsers]) {
+    if (!cleanupUser) continue;
+    await control.automationEvent.deleteMany({
+      where: { userId: cleanupUser.id },
+    });
     await control.userJourneyMilestone.deleteMany({
-      where: { userId: user.id },
+      where: { userId: cleanupUser.id },
     });
     await control.lessonModeProgress.deleteMany({
-      where: { userId: String(user.id) },
+      where: { userId: String(cleanupUser.id) },
     });
-    await control.user.deleteMany({ where: { id: user.id } });
+    await control.user.deleteMany({ where: { id: cleanupUser.id } });
   }
   await Promise.all([
     control.$disconnect(),
@@ -317,5 +353,118 @@ describe("Block A PostgreSQL journey concurrency", () => {
 
     expect(explorationMilestones).toBe(1);
     expect(activeDiscoveries).toBe(0);
+  });
+
+  test("prior Lesson 1 open prevents a later practice threshold from creating watch", async () => {
+    const reverseOrderUser = await createJourneyUser({ completed: 9 });
+    const occurredAt = new Date("2026-08-27T10:00:00.000Z");
+
+    await control.automationEvent.create({
+      data: {
+        userId: reverseOrderUser.id,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        eventType: LESSON1_SIGNUP_REMINDER,
+        status: "PENDING",
+        destinationNumberNormalized:
+          reverseOrderUser.whatsapp_number_normalized,
+        scheduledAt: new Date(occurredAt.getTime() + 60_000),
+      },
+    });
+
+    await recordBlockAJourneyMilestone({
+      database: journeyClient,
+      userId: reverseOrderUser.id,
+      milestoneType: LESSON1_OPENED,
+      occurredAt,
+    });
+    await applyProgress(progressClient, 10, {}, reverseOrderUser);
+
+    const [practiceMilestones, watches, activeSignups] = await Promise.all([
+      control.userJourneyMilestone.count({
+        where: {
+          userId: reverseOrderUser.id,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+          milestoneType: LESSON1_PRACTICE_COMPLETED,
+        },
+      }),
+      control.automationEvent.count({
+        where: {
+          userId: reverseOrderUser.id,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+          eventType: LESSON1_WATCH_REMINDER,
+        },
+      }),
+      control.automationEvent.count({
+        where: {
+          userId: reverseOrderUser.id,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+          eventType: LESSON1_SIGNUP_REMINDER,
+          status: { in: ["PENDING", "SENDING"] },
+        },
+      }),
+    ]);
+
+    expect(practiceMilestones).toBe(1);
+    expect(watches).toBe(0);
+    expect(activeSignups).toBe(0);
+  });
+
+  test("prior learning-path exploration prevents Lesson 1 open from creating discovery", async () => {
+    const reverseOrderUser = await createJourneyUser();
+    const occurredAt = new Date("2026-08-27T10:00:00.000Z");
+
+    await control.automationEvent.create({
+      data: {
+        userId: reverseOrderUser.id,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        eventType: LESSON1_WATCH_REMINDER,
+        status: "PENDING",
+        destinationNumberNormalized:
+          reverseOrderUser.whatsapp_number_normalized,
+        scheduledAt: new Date(occurredAt.getTime() + 60_000),
+      },
+    });
+
+    await recordBlockAJourneyMilestone({
+      database: journeyClient,
+      userId: reverseOrderUser.id,
+      milestoneType: LEARNING_PATH_EXPLORED,
+      occurredAt,
+    });
+    await recordBlockAJourneyMilestone({
+      database: progressClient,
+      userId: reverseOrderUser.id,
+      milestoneType: LESSON1_OPENED,
+      occurredAt,
+    });
+
+    const [openMilestones, discoveries, activeWatches] = await Promise.all([
+      control.userJourneyMilestone.count({
+        where: {
+          userId: reverseOrderUser.id,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+          milestoneType: LESSON1_OPENED,
+        },
+      }),
+      control.automationEvent.count({
+        where: {
+          userId: reverseOrderUser.id,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+          eventType: LEARNING_PATH_DISCOVERY_REMINDER,
+        },
+      }),
+      control.automationEvent.count({
+        where: {
+          userId: reverseOrderUser.id,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+          eventType: LESSON1_WATCH_REMINDER,
+          status: "PENDING",
+        },
+      }),
+    ]);
+
+    expect(openMilestones).toBe(1);
+    expect(discoveries).toBe(0);
+    expect(activeWatches).toBe(0);
   });
 });

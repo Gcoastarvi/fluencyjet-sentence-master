@@ -62,21 +62,6 @@ export default function LessonList({ difficulty }) {
 
   const { auth } = useAuth();
 
-  useEffect(() => {
-    api.api
-      .post("/funnel/journey-milestone", {
-        milestoneType: "LEARNING_PATH_EXPLORED",
-      })
-      .then((result) => {
-        if (!result?.ok) {
-          console.warn("[journey] Learning path milestone was not recorded.");
-        }
-      })
-      .catch(() => {
-        console.warn("[journey] Learning path milestone request failed.");
-      });
-  }, []);
-
   const storedUser = (() => {
     try {
       return JSON.parse(localStorage.getItem("user") || "null");

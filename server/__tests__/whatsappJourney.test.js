@@ -80,6 +80,32 @@ describe("WhatsApp Block A journey foundation", () => {
     });
   });
 
+  test("a prior Lesson 1 open prevents a later threshold from creating watch", async () => {
+    const tx = makeTransaction();
+    tx.userJourneyMilestone.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "milestone-open" });
+    tx.userJourneyMilestone.create.mockResolvedValue({
+      id: "milestone-practice",
+      userId: 42,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
+      milestoneType: LESSON1_PRACTICE_COMPLETED,
+      occurredAt,
+    });
+
+    const result = await recordPracticeCompletionTransition({
+      transaction: tx,
+      userId: 42,
+      previousCompleted: 9,
+      nextCompleted: 10,
+      occurredAt,
+    });
+
+    expect(result.created).toBe(true);
+    expect(tx.automationEvent.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.automationEvent.create).not.toHaveBeenCalled();
+  });
+
   test("non-crossing practice updates do not create milestones or reminders", async () => {
     const tx = makeTransaction();
 
@@ -136,6 +162,34 @@ describe("WhatsApp Block A journey foundation", () => {
         scheduledAt: new Date("2026-08-27T11:15:00.000Z"),
       }),
     });
+  });
+
+  test("a prior learning-path exploration prevents Lesson 1 open from creating discovery", async () => {
+    const tx = makeTransaction();
+    tx.userJourneyMilestone.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "milestone-path" });
+    tx.userJourneyMilestone.create.mockResolvedValue({
+      id: "milestone-open",
+      userId: 42,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
+      milestoneType: LESSON1_OPENED,
+      occurredAt,
+    });
+    const database = {
+      $transaction: jest.fn(async (callback) => callback(tx)),
+    };
+
+    const result = await recordBlockAJourneyMilestone({
+      database,
+      userId: 42,
+      milestoneType: LESSON1_OPENED,
+      occurredAt,
+    });
+
+    expect(result.created).toBe(true);
+    expect(tx.automationEvent.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.automationEvent.create).not.toHaveBeenCalled();
   });
 
   test("duplicate milestone requests are idempotent", async () => {

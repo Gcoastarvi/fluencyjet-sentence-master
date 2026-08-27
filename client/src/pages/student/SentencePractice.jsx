@@ -209,6 +209,32 @@ export default function SentencePractice() {
     navigate("/lessons", { replace: true });
   }
 
+  async function continueToFreeLessons() {
+    try {
+      const milestoneRequest = api.api.post("/funnel/journey-milestone", {
+        milestoneType: "LEARNING_PATH_EXPLORED",
+      });
+      const result = await Promise.race([
+        milestoneRequest,
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ ok: false, timedOut: true }), 1500),
+        ),
+      ]);
+
+      if (!result?.ok) {
+        console.warn(
+          result?.timedOut
+            ? "[journey] Learning path milestone request timed out."
+            : "[journey] Learning path milestone was not recorded.",
+        );
+      }
+    } catch {
+      console.warn("[journey] Learning path milestone request failed.");
+    } finally {
+      navigate("/b/lessons");
+    }
+  }
+
   function goNextLesson() {
     if (!nextLessonId) return goLessons();
     navigate(
@@ -2598,7 +2624,7 @@ export default function SentencePractice() {
                     safeMode,
                     safeMode === "audio" ? audioVariant : "",
                   );
-                  navigate("/b/lessons");
+                  continueToFreeLessons();
                 }}
                 className="mt-8 w-full rounded-2xl bg-white px-6 py-4 text-lg font-black text-emerald-800 shadow-lg transition hover:-translate-y-0.5"
               >
