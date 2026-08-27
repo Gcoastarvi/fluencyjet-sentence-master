@@ -1,0 +1,211 @@
+Phase 16C corrective pass — fix Block A production-canary findings only.
+
+IMPORTANT:
+This is a narrow corrective task. Do not perform another broad audit.
+Do not deploy.
+Do not push.
+Do not modify production data.
+Do not run production migrations.
+Do not send WhatsApp messages.
+Use TEST_DATABASE_URL only for DB-backed tests.
+
+The current deployed Phase 16B implementation passed tests but a production no-send canary exposed two logic defects and one frontend milestone-placement defect.
+
+PRODUCTION CANARY FINDING
+
+Observed milestone order for a fresh learner:
+
+LEARNING_PATH_EXPLORED
+→ LESSON1_OPENED
+→ LESSON1_PRACTICE_COMPLETED
+
+Yet the system subsequently created:
+
+LEARNING_PATH_DISCOVERY_REMINDER = PENDING
+LESSON1_WATCH_REMINDER = PENDING
+
+Those reminders were manually cancelled for the controlled test user.
+
+The existing final eligibility protections must remain unchanged, but stale reminders should not be created in the first place when their cancellation milestone already exists.
+
+========================================
+FIX 1 — REVERSE-ORDER WATCH REMINDER
+========================================
+
+File/logic:
+server/lib/whatsappJourney.js
+recordPracticeCompletionTransition(...)
+
+Current behavior:
+
+first 9→10 transition
+→ record LESSON1_PRACTICE_COMPLETED
+→ cancel LESSON1_SIGNUP_REMINDER
+→ always create LESSON1_WATCH_REMINDER
+
+Correct behavior:
+
+first 9→10 transition
+→ record LESSON1_PRACTICE_COMPLETED
+→ cancel pending LESSON1_SIGNUP_REMINDER
+→ while still inside the same transaction / learner-product lock:
+   check whether LESSON1_OPENED already exists
+
+If LESSON1_OPENED already exists:
+- DO NOT create LESSON1_WATCH_REMINDER
+
+If LESSON1_OPENED does not exist:
+- create exactly one LESSON1_WATCH_REMINDER at +15 minutes as currently designed
+
+Preserve all existing idempotency and concurrency behavior.
+
+========================================
+FIX 2 — REVERSE-ORDER DISCOVERY REMINDER
+========================================
+
+File/logic:
+server/lib/whatsappJourney.js
+recordBlockAJourneyMilestone(...)
+
+Current LESSON1_OPENED behavior:
+
+record milestone
+→ cancel pending WATCH
+→ always create LEARNING_PATH_DISCOVERY_REMINDER
+
+Correct behavior:
+
+record LESSON1_OPENED
+→ cancel pending LESSON1_WATCH_REMINDER
+→ while still inside same transaction / learner-product lock:
+   check whether LEARNING_PATH_EXPLORED already exists
+
+If LEARNING_PATH_EXPLORED already exists:
+- DO NOT create LEARNING_PATH_DISCOVERY_REMINDER
+
+If it does not exist:
+- create exactly one LEARNING_PATH_DISCOVERY_REMINDER at +75 minutes
+
+Preserve current final eligibility checks as a second fail-safe.
+
+========================================
+FIX 3 — LEARNING_PATH_EXPLORED SEMANTICS
+========================================
+
+Current defect:
+
+client/src/pages/student/LessonList.jsx records:
+
+LEARNING_PATH_EXPLORED
+
+inside a mount-time useEffect.
+
+This means merely landing/rendering /b/lessons or /i/lessons counts as intentional exploration.
+
+REMOVE that automatic milestone POST from LessonList mount.
+
+Instead, record LEARNING_PATH_EXPLORED only from explicit user-initiated navigation into the learning path / lesson-list experience.
+
+At minimum instrument the explicit post-practice CTA in:
+
+client/src/pages/student/SentencePractice.jsx
+
+Button text currently:
+
+“Continue to My 3 Free Lessons →”
+
+When that button is clicked:
+
+1. send/record LEARNING_PATH_EXPLORED through the existing authenticated:
+   POST /funnel/journey-milestone
+2. then navigate to /b/lessons
+
+Do not make navigation depend permanently on analytics success:
+- milestone request should be attempted safely
+- user must still be able to continue if the milestone call fails
+
+Also instrument other clearly explicit existing “Lessons” navigation actions such as Dashboard/Navbar if doing so is small and safe.
+
+Do NOT put the milestone back on LessonList page mount.
+
+Do NOT build new analytics infrastructure.
+
+========================================
+TESTS REQUIRED
+========================================
+
+Add focused regressions for the exact production finding.
+
+1. LESSON1_OPENED already exists
+   → later 9→10 completion
+   → practice milestone recorded
+   → signup reminder cancelled
+   → NO LESSON1_WATCH_REMINDER created
+
+2. LEARNING_PATH_EXPLORED already exists
+   → later LESSON1_OPENED
+   → lesson-open milestone recorded
+   → pending WATCH cancelled if applicable
+   → NO LEARNING_PATH_DISCOVERY_REMINDER created
+
+3. Normal-order behavior remains:
+   9→10 with lesson unopened
+   → exactly one WATCH +15m
+
+4. Normal LESSON1_OPENED with learning path unexplored
+   → exactly one DISCOVERY +75m
+
+5. Concurrent/repeated triggers remain duplicate-safe.
+
+6. Existing PostgreSQL overlap/concurrency suite passes.
+
+7. Existing STOP/suppression/consent tests pass.
+
+8. Existing LESSON1_SIGNUP_REMINDER regression passes.
+
+9. Frontend test or suitable source-level regression verifies:
+   LessonList mount no longer records LEARNING_PATH_EXPLORED.
+
+10. Explicit “Continue to My 3 Free Lessons” action records/attempts LEARNING_PATH_EXPLORED.
+
+No schema change should be necessary.
+Do not create a migration unless you find an unexpected genuine schema requirement; if so, STOP and report instead of creating it.
+
+========================================
+VALIDATION
+========================================
+
+Run:
+
+- focused Block A unit tests
+- TEST_DATABASE_URL PostgreSQL concurrency/integration tests
+- relevant frontend tests
+- client build
+- Prisma validate
+- git diff --check
+
+Do not touch production DB.
+
+========================================
+FINAL REPORT
+========================================
+
+Report and STOP:
+
+1. files changed
+2. exact logic corrected
+3. where LEARNING_PATH_EXPLORED is now triggered
+4. confirmation LessonList mount no longer fires it
+5. test suites and counts
+6. PostgreSQL concurrency result
+7. confirmation no schema/migration changes
+8. branch / HEAD / git status
+9. whether Agent auto-committed
+10. confirmation:
+   - no production DB writes
+   - no deployment
+   - no push
+   - no WhatsApp send
+
+Do not deploy or push.
+STOP for human review.
