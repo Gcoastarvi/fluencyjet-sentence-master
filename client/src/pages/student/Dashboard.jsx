@@ -17,6 +17,7 @@ import { lessonPathForTrack, normalizeTrack } from "../../lib/trackRoutes";
 import { lessonMeta } from "@/data/lessonMeta";
 import { overallLessonPct } from "@/lib/progressStore";
 import { freeAllowsLesson } from "../../lib/accessRules";
+import { recordLearningPathExplored } from "@/lib/journeyMilestones";
 
 const UI_TEXT = {
   en: {
@@ -1334,6 +1335,37 @@ export default function Dashboard() {
   const progressPercent = Math.min((summary.totalXP || 0) / 1000, 1);
   const offset = circumference - progressPercent * circumference;
 
+  async function handleLessonsNavigation() {
+    await recordLearningPathExplored();
+
+    const storedTrack =
+      typeof window !== "undefined"
+        ? localStorage.getItem("fj_track") ||
+          localStorage.getItem("fj_last_track")
+        : "";
+
+    const resolvedTrack = normalizeTrack(
+      user?.track || auth?.user?.track || storedTrack || "beginner",
+    );
+
+    navigate(
+      resolvedTrack === "intermediate" ? "/i/lessons" : "/b/lessons",
+    );
+  }
+
+  async function handleMobileNavigation(item) {
+    if (item.label === "My Progress" || item.label === "Profile") {
+      handleOpenProfile();
+      return;
+    }
+
+    if (item.label === UI_TEXT.en.lessons) {
+      await recordLearningPathExplored();
+    }
+
+    navigate(item.path);
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 md:pb-12 transition-all duration-500">
       {showAvatarPicker && (
@@ -1422,21 +1454,7 @@ export default function Dashboard() {
         <nav className="hidden md:flex absolute top-4 right-6 gap-6 text-[10px] font-black uppercase tracking-widest text-slate-400">
           {/* 🎯 THE DASHBOARD NAV FIX (Wrapped in curly braces to prevent text leak) */}
           <button
-            onClick={() => {
-              const storedTrack =
-                typeof window !== "undefined"
-                  ? localStorage.getItem("fj_track") ||
-                    localStorage.getItem("fj_last_track")
-                  : "";
-
-              const resolvedTrack = normalizeTrack(
-                user?.track || auth?.user?.track || storedTrack || "beginner",
-              );
-
-              navigate(
-                resolvedTrack === "intermediate" ? "/i/lessons" : "/b/lessons",
-              );
-            }}
+            onClick={handleLessonsNavigation}
           >
             Lessons
           </button>
@@ -2059,14 +2077,7 @@ export default function Dashboard() {
         {navItems.map((item) => (
           <button
             key={item.label}
-            onClick={() => {
-              if (item.label === "My Progress" || item.label === "Profile") {
-                handleOpenProfile();
-                return;
-              }
-
-              navigate(item.path);
-            }}
+            onClick={() => handleMobileNavigation(item)}
             className="flex flex-col items-center gap-1 group transition-all"
           >
             <span className="text-xl group-active:scale-125 transition-transform">

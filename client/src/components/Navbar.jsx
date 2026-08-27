@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { recordLearningPathExplored } from "@/lib/journeyMilestones";
 
 export default function Navbar() {
   const location = useLocation();
@@ -67,6 +68,12 @@ export default function Navbar() {
   function handleLogoutClick() {
     logout();
     navigate("/", { replace: true });
+  }
+
+  async function handleLessonsClick(event) {
+    event.preventDefault();
+    await recordLearningPathExplored();
+    navigate(lessonsHref);
   }
 
   const storedUser = (() => {
@@ -189,6 +196,7 @@ export default function Navbar() {
                   <Link
                     className="text-sm sm:text-base flex items-center gap-1"
                     to={lessonsHref}
+                    onClick={handleLessonsClick}
                   >
                     Lessons
                     {user?.current_unit && (
