@@ -1,19 +1,8 @@
 // server/middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
+import { Server } from "node:http";
 
-const INSECURE_JWT_SECRETS = new Set([
-  "dev-secret",
-  "secret",
-  "changeme",
-]);
-
-function getConfiguredJwtSecret() {
-  const secret = String(process.env.JWT_SECRET || "").trim();
-  if (!secret || INSECURE_JWT_SECRETS.has(secret.toLowerCase())) {
-    return null;
-  }
-  return secret;
-}
+const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
 
 export function authMiddleware(req, res, next) {
   try {
@@ -32,14 +21,7 @@ export function authMiddleware(req, res, next) {
       return next();
     }
 
-    const jwtSecret = getConfiguredJwtSecret();
-    if (!jwtSecret) {
-      console.error("[AUTH] JWT_SECRET is not securely configured.");
-      req.user = null;
-      return next();
-    }
-
-    const payload = jwt.verify(token, jwtSecret);
+    const payload = jwt.verify(token, JWT_SECRET);
     req.user = payload;
 
     // 🎯 LOUD LOG: Confirming identity

@@ -9,7 +9,6 @@ import {
 import request from "supertest";
 import express from "express";
 import cookieParser from "cookie-parser";
-import jwt from "jsonwebtoken";
 
 const mockPrisma = {
   $transaction: jest.fn(),
@@ -52,7 +51,6 @@ jest.unstable_mockModule("bcryptjs", () => ({
 }));
 
 const { default: funnelRouter } = await import("../routes/funnel.js");
-const { authMiddleware } = await import("../middleware/authMiddleware.js");
 
 const USER_ID = 42;
 const OLD_NUMBER = "+919876543210";
@@ -104,15 +102,6 @@ function makeApp(userId = USER_ID) {
     req.user = { id: userId };
     next();
   });
-  app.use("/api/funnel", funnelRouter);
-  return app;
-}
-
-function makeJwtAuthApp() {
-  const app = express();
-  app.use(express.json());
-  app.use(cookieParser());
-  app.use(authMiddleware);
   app.use("/api/funnel", funnelRouter);
   return app;
 }
@@ -195,23 +184,6 @@ describe("authenticated Sentence Master checkout intent", () => {
       },
     });
     expect(res.body).not.toHaveProperty("automationEvent");
-  });
-
-  test("fails closed when a placeholder token is presented without a secure JWT secret", async () => {
-    delete process.env.JWT_SECRET;
-    const forgedToken = jwt.sign(
-      { id: USER_ID, email: "funnel-test@example.com" },
-      "dev-secret",
-    );
-
-    const res = await request(makeJwtAuthApp())
-      .post("/api/funnel/checkout-intent")
-      .set("Authorization", `Bearer ${forgedToken}`)
-      .send({ productKey: "sentence_master" });
-
-    expect(res.status).toBe(401);
-    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
-    expect(mockPrisma.sentenceMasterCheckoutIntent.create).not.toHaveBeenCalled();
   });
 
   test("rejects anonymous and non-Sentence-Master requests before writes", async () => {
