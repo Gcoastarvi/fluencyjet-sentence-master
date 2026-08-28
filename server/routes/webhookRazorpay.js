@@ -2,6 +2,19 @@ import express from "express";
 import crypto from "crypto";
 import prisma from "../db/client.js";
 import { sendCapiPurchase } from "../lib/metaCapi.js";
+import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
+import { acquireWhatsAppDestinationLock } from "../lib/whatsappDestinationLock.js";
+import {
+  ANY_QUESTIONS_REMINDER,
+  CHECKOUT_HELP_REMINDER,
+  SENTENCE_MASTER_PRODUCT_KEY,
+  cancelPendingAutomationEvents,
+} from "../lib/whatsappJourney.js";
+import {
+  findExactSentenceMasterCheckoutIntent,
+  getCapturedPaymentTime,
+  productKeyForPaymentAmount,
+} from "../lib/purchaseAttribution.js";
 
 const router = express.Router();
 
@@ -140,7 +153,7 @@ router.post(
         .status(200)
         .json({ ok: true, skipped: true, reason: "currency_mismatch" });
     }
-    if (paymentStatus !== "captured" && paymentStatus !== "authorized") {
+    if (paymentStatus !== "captured") {
       console.warn(`[webhook/rzp] Unexpected payment status: ${paymentStatus}`);
       return res
         .status(200)
@@ -148,35 +161,103 @@ router.post(
     }
 
     const metaEventId = `${product.code}_purchase_${paymentId}`;
+    const capturedAt = getCapturedPaymentTime(paymentEntity);
 
     let record;
 
     try {
-      record = await prisma.spokenEnglishPurchase.create({
-        data: {
-          paymentLinkId,
-          paymentId,
-          amount,
-          currency,
-          status: paymentStatus,
-          customerEmail,
-          customerContact,
-          webhookEventId: dedupKey,
-          metaEventId,
-          metaDelivered: false,
+      const persistPurchase = async (tx, destination = null) => {
+        if (destination) {
+          await acquireWhatsAppDestinationLock(tx, destination);
+        }
+
+        // Re-read after the destination lock. A second authenticated intent
+        // may have committed since the pre-lock lookup, which must turn this
+        // payment into an unmatched audit record instead of guessing.
+        const attribution =
+          productKeyForPaymentAmount(amount) === SENTENCE_MASTER_PRODUCT_KEY
+            ? await findExactSentenceMasterCheckoutIntent({
+                database: tx,
+                customerEmail,
+                customerContact,
+                capturedAt,
+              })
+            : { intent: null, reason: "NOT_SENTENCE_MASTER" };
+        const intent = attribution.intent;
+        const productKey = productKeyForPaymentAmount(amount);
+
+        if (intent) {
+          await tx.user.update({
+            where: { id: intent.userId },
+            data: {
+              has_access: true,
+              plan: "PRO",
+              tier_level: "pro",
+            },
+          });
+
+          await cancelPendingAutomationEvents({
+            transaction: tx,
+            userId: intent.userId,
+            productKey: SENTENCE_MASTER_PRODUCT_KEY,
+            eventTypes: [CHECKOUT_HELP_REMINDER, ANY_QUESTIONS_REMINDER],
+          });
+        }
+
+        return tx.spokenEnglishPurchase.create({
+          data: {
+            paymentLinkId,
+            paymentId,
+            amount,
+            currency,
+            status: paymentStatus,
+            customerEmail,
+            customerContact,
+            userId: intent?.userId || null,
+            productKey,
+            sourceIntentId: intent?.id || null,
+            webhookEventId: dedupKey,
+            metaEventId,
+            metaDelivered: false,
+          },
+        });
+      };
+
+      // Lock the payment's canonical destination even when the first lookup
+      // found no intent. This closes the window where a reminder could pass
+      // its first read while purchase attribution is still being resolved.
+      const destination =
+        productKeyForPaymentAmount(amount) === SENTENCE_MASTER_PRODUCT_KEY
+          ? normalizeWhatsAppNumber(customerContact)
+          : null;
+      record = await prisma.$transaction(
+        (tx) => persistPurchase(tx, destination),
+        {
+          maxWait: 10_000,
+          timeout: 30_000,
         },
-      });
+      );
 
       console.log(
         `[webhook/rzp] Purchase saved product=${product.code} ` +
+          `attributedUserId=${record.userId || "none"} ` +
           `id=${record.id} paymentId=${paymentId}`,
       );
     } catch (err) {
       if (err.code === "P2002") {
-        console.log(
-          `[webhook/rzp] Concurrent duplicate insert for paymentId=${paymentId}`,
-        );
-        return res.status(200).json({ ok: true, duplicate: true });
+        const duplicate = await prisma.spokenEnglishPurchase.findFirst({
+          where: {
+            OR: [{ webhookEventId: dedupKey }, { paymentId }],
+          },
+          select: { id: true },
+        });
+
+        if (duplicate) {
+          console.log(
+            `[webhook/rzp] Concurrent duplicate insert for paymentId=${paymentId}`,
+          );
+          return res.status(200).json({ ok: true, duplicate: true });
+        }
       }
       console.error("[webhook/rzp] DB create failed:", err.message);
       return res.status(500).json({ ok: false, error: "DB error" });

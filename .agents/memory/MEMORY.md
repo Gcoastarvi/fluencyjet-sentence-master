@@ -5,3 +5,4 @@
 - [Reminder rollout watermark](reminder-rollout-watermark.md) — rollout eligibility starts from immutable event creation time, never a moving send-time cutoff.
 - [Rollout send gates](rollout-send-gates.md) — production rollout composes the global kill switch with its worker gate; preview bypasses both.
 - [WhatsApp journey serialization](whatsapp-journey-serialization.md) — milestone transitions and signup reconciliation share one learner/product lock; signup is obsolete at 10 sentences.
+- [Purchase attribution serialization](purchase-attribution-serialization.md) — consume one authenticated intent once; keep later payments unmatched and share destination locking through final send.

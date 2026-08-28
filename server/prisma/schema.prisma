@@ -8,46 +8,48 @@ datasource db {
 }
 
 model User {
-  id                       Int                  @id @default(autoincrement())
-  name                     String?              @db.VarChar(100)
-  email                    String               @unique @db.VarChar(191)
-  username                 String?              @unique @db.VarChar(50)
-  password                 String
-  avatar_url               String?
-  has_access               Boolean              @default(false)
-  tier_level               String               @default("free")
-  created_at               DateTime             @default(now())
-  isAdmin                  Boolean              @default(false)
-  lastActiveAt             DateTime?
-  xpTotal                  Int                  @default(0)
-  league                   String               @default("BRONZE")
-  daily_streak             Int                  @default(0)
-  plan                     String               @default("FREE")
-  payments                 Payment[]
-  user_badges              UserBadge[]
-  profile                  UserProfile?
-  progress                 UserProgress?
-  weekly                   UserWeeklyTotals?
-  xp_events                XpEvent[]
-  league_history           LeagueHistory[]
-  reset_tokens             PasswordResetToken[]
-  whatsappSuppressionClearances WhatsAppPhoneSuppression[] @relation("WhatsAppSuppressionClearedBy")
-  journeyMilestones          UserJourneyMilestone[]
-  track                    String               @default("BEGINNER")
-  current_unit             Int                  @default(1)
-  level_check_result       String?
-  level_check_score        Int?
-  level_check_completed_at DateTime?
+  id                            Int                            @id @default(autoincrement())
+  name                          String?                        @db.VarChar(100)
+  email                         String                         @unique @db.VarChar(191)
+  username                      String?                        @unique @db.VarChar(50)
+  password                      String
+  avatar_url                    String?
+  has_access                    Boolean                        @default(false)
+  tier_level                    String                         @default("free")
+  created_at                    DateTime                       @default(now())
+  isAdmin                       Boolean                        @default(false)
+  lastActiveAt                  DateTime?
+  xpTotal                       Int                            @default(0)
+  league                        String                         @default("BRONZE")
+  daily_streak                  Int                            @default(0)
+  plan                          String                         @default("FREE")
+  payments                      Payment[]
+  sentenceMasterCheckoutIntents SentenceMasterCheckoutIntent[]
+  spokenEnglishPurchases        SpokenEnglishPurchase[]
+  user_badges                   UserBadge[]
+  profile                       UserProfile?
+  progress                      UserProgress?
+  weekly                        UserWeeklyTotals?
+  xp_events                     XpEvent[]
+  league_history                LeagueHistory[]
+  reset_tokens                  PasswordResetToken[]
+  whatsappSuppressionClearances WhatsAppPhoneSuppression[]     @relation("WhatsAppSuppressionClearedBy")
+  journeyMilestones             UserJourneyMilestone[]
+  track                         String                         @default("BEGINNER")
+  current_unit                  Int                            @default(1)
+  level_check_result            String?
+  level_check_score             Int?
+  level_check_completed_at      DateTime?
 
   whatsapp_number            String?   @db.VarChar(30)
   whatsapp_number_normalized String?   @db.VarChar(20)
   whatsapp_consent           Boolean   @default(false)
-  whatsapp_consent_at     DateTime?
-  whatsapp_consent_source String?   @db.VarChar(150)
-  whatsapp_opted_out_at   DateTime?
-  current_status          String?   @db.VarChar(80)
-  main_goal               String?   @db.VarChar(120)
-  practice_commitment     String?   @db.VarChar(120)
+  whatsapp_consent_at        DateTime?
+  whatsapp_consent_source    String?   @db.VarChar(150)
+  whatsapp_opted_out_at      DateTime?
+  current_status             String?   @db.VarChar(80)
+  main_goal                  String?   @db.VarChar(120)
+  practice_commitment        String?   @db.VarChar(120)
 
   webinar_registered    Boolean   @default(false)
   webinar_registered_at DateTime?
@@ -64,6 +66,7 @@ model User {
 
   activation_completed      Boolean   @default(false)
   last_demo_video_viewed_at DateTime?
+
   @@index([whatsapp_number_normalized])
 }
 
@@ -190,21 +193,43 @@ model Payment {
 }
 
 model SpokenEnglishPurchase {
-  id               String   @id @default(cuid())
+  id               String                        @id @default(cuid())
   paymentLinkId    String?
-  paymentId        String   @unique
+  paymentId        String                        @unique
   amount           Int
-  currency         String   @default("INR")
+  currency         String                        @default("INR")
   status           String
   customerEmail    String?
   customerContact  String?
-  webhookEventId   String   @unique
+  userId           Int?
+  productKey       String?                       @db.VarChar(80)
+  sourceIntentId   String?                       @unique
+  sourceIntent     SentenceMasterCheckoutIntent? @relation(fields: [sourceIntentId], references: [id], onDelete: SetNull)
+  user             User?                         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  webhookEventId   String                        @unique
   metaEventId      String
-  metaDelivered    Boolean  @default(false)
+  metaDelivered    Boolean                       @default(false)
   metaError        String?
   metaResponseCode Int?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
+
+  @@index([userId, productKey, status])
+  @@index([productKey, status])
+}
+
+model SentenceMasterCheckoutIntent {
+  id                          String                 @id @default(cuid())
+  userId                      Int
+  productKey                  String                 @db.VarChar(80)
+  learnerEmail                String                 @db.VarChar(191)
+  destinationNumberNormalized String                 @db.VarChar(20)
+  createdAt                   DateTime
+  user                        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchase                    SpokenEnglishPurchase?
+
+  @@index([productKey, learnerEmail, destinationNumberNormalized, createdAt])
+  @@index([userId, productKey, createdAt])
 }
 
 model DiagnosticQuestion {
@@ -284,30 +309,30 @@ model UserDayProgress {
 }
 
 model AutomationEvent {
-  id                String                 @id @default(uuid())
-  userId            Int
-  eventType         AutomationType
-  productKey        String                 @default("sentence_master") @db.VarChar(80)
-  status            AutomationStatus       @default(PENDING)
-  payload           Json?
-  destinationNumberNormalized String?       @db.VarChar(20)
-  createdAt         DateTime               @default(now())
-  sentAt            DateTime?
-  scheduledAt       DateTime?
-  cancelledAt       DateTime?
-  processedAt       DateTime?
-  providerMessageId String?                @unique @db.VarChar(255)
-  sourceAutomationEventId String?
-  whatsappEvents    WhatsAppMessageEvent[]
-  reconciliationJournal AutomationReconciliationJournal[]
+  id                          String                            @id @default(uuid())
+  userId                      Int
+  eventType                   AutomationType
+  productKey                  String                            @default("sentence_master") @db.VarChar(80)
+  status                      AutomationStatus                  @default(PENDING)
+  payload                     Json?
+  destinationNumberNormalized String?                           @db.VarChar(20)
+  createdAt                   DateTime                          @default(now())
+  sentAt                      DateTime?
+  scheduledAt                 DateTime?
+  cancelledAt                 DateTime?
+  processedAt                 DateTime?
+  providerMessageId           String?                           @unique @db.VarChar(255)
+  sourceAutomationEventId     String?
+  whatsappEvents              WhatsAppMessageEvent[]
+  reconciliationJournal       AutomationReconciliationJournal[]
+  // The createdAt fallback index is partial and is intentionally defined in SQL
+  // migration 20260824000200 because Prisma schema indexes cannot express it.
 
   @@index([userId, eventType, status])
   @@index([userId, productKey, eventType, status])
   @@index([status, scheduledAt])
   @@index([eventType, status, scheduledAt])
   @@index([eventType, status, processedAt])
-  // The createdAt fallback index is partial and is intentionally defined in SQL
-  // migration 20260824000200 because Prisma schema indexes cannot express it.
 }
 
 model UserJourneyMilestone {
@@ -325,27 +350,27 @@ model UserJourneyMilestone {
 }
 
 model WhatsAppMessageEvent {
-  id                String           @id @default(uuid())
+  id                String                    @id @default(uuid())
   automationEventId String?
-  automationEvent   AutomationEvent? @relation(fields: [automationEventId], references: [id], onDelete: SetNull)
+  automationEvent   AutomationEvent?          @relation(fields: [automationEventId], references: [id], onDelete: SetNull)
   suppressionSource WhatsAppPhoneSuppression? @relation("WhatsAppSuppressionSource")
 
-  providerMessageId String    @db.VarChar(255)
-  eventType         String    @db.VarChar(50)
-  recipientWaId     String?   @db.VarChar(30)
-  senderWaId        String?   @db.VarChar(30)
-  senderNumberNormalized String? @db.VarChar(20)
-  inboundClassification  String? @db.VarChar(40)
-  inboundCommand         String? @db.VarChar(30)
-  eventTimestamp    DateTime?
+  providerMessageId      String    @db.VarChar(255)
+  eventType              String    @db.VarChar(50)
+  recipientWaId          String?   @db.VarChar(30)
+  senderWaId             String?   @db.VarChar(30)
+  senderNumberNormalized String?   @db.VarChar(20)
+  inboundClassification  String?   @db.VarChar(40)
+  inboundCommand         String?   @db.VarChar(30)
+  eventTimestamp         DateTime?
 
   errorCode    Int?
   errorTitle   String? @db.VarChar(255)
   errorDetails String?
   rawPayload   Json?
 
-  dedupKey  String   @unique @db.VarChar(64)
-  createdAt DateTime @default(now())
+  dedupKey               String                            @unique @db.VarChar(64)
+  createdAt              DateTime                          @default(now())
   reconciliationEvidence AutomationReconciliationJournal[] @relation("AutomationReconciliationEvidence")
 
   @@index([providerMessageId])
@@ -355,21 +380,21 @@ model WhatsAppMessageEvent {
 }
 
 model AutomationReconciliationJournal {
-  id                String                         @id @default(uuid())
+  id                String                 @id @default(uuid())
   automationEventId String
-  automationEvent   AutomationEvent                @relation(fields: [automationEventId], references: [id], onDelete: Restrict)
-  idempotencyKey    String                         @db.VarChar(128)
-  requestHash       String                         @db.Char(64)
+  automationEvent   AutomationEvent        @relation(fields: [automationEventId], references: [id], onDelete: Restrict)
+  idempotencyKey    String                 @db.VarChar(128)
+  requestHash       String                 @db.Char(64)
   action            ReconciliationAction
   decision          ReconciliationDecision
   priorStatus       AutomationStatus
   resultingStatus   AutomationStatus
-  reasonCode        String                         @db.VarChar(64)
+  reasonCode        String                 @db.VarChar(64)
   evidenceEventId   String?
-  evidenceEvent     WhatsAppMessageEvent?          @relation("AutomationReconciliationEvidence", fields: [evidenceEventId], references: [id], onDelete: SetNull)
-  evidenceStatus    String?                        @db.VarChar(20)
-  authMethod        String                         @db.VarChar(40)
-  createdAt         DateTime                       @default(now())
+  evidenceEvent     WhatsAppMessageEvent?  @relation("AutomationReconciliationEvidence", fields: [evidenceEventId], references: [id], onDelete: SetNull)
+  evidenceStatus    String?                @db.VarChar(20)
+  authMethod        String                 @db.VarChar(40)
+  createdAt         DateTime               @default(now())
 
   @@unique([automationEventId, idempotencyKey])
   @@index([automationEventId, createdAt])
@@ -377,19 +402,19 @@ model AutomationReconciliationJournal {
 }
 
 model WhatsAppPhoneSuppression {
-  phoneNumberNormalized String              @id @db.VarChar(20)
-  isOptedOut            Boolean             @default(true)
+  phoneNumberNormalized String                @id @db.VarChar(20)
+  isOptedOut            Boolean               @default(true)
   optedOutAt            DateTime?
-  optOutCommand         String?             @db.VarChar(30)
-  sourceEventId         String?             @unique
+  optOutCommand         String?               @db.VarChar(30)
+  sourceEventId         String?               @unique
   sourceEvent           WhatsAppMessageEvent? @relation("WhatsAppSuppressionSource", fields: [sourceEventId], references: [id], onDelete: SetNull)
   clearedAt             DateTime?
-  clearanceSource       String?             @db.VarChar(150)
-  clearanceReason       String?             @db.VarChar(255)
+  clearanceSource       String?               @db.VarChar(150)
+  clearanceReason       String?               @db.VarChar(255)
   clearedByUserId       Int?
-  clearedByUser         User?               @relation("WhatsAppSuppressionClearedBy", fields: [clearedByUserId], references: [id], onDelete: SetNull)
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  clearedByUser         User?                 @relation("WhatsAppSuppressionClearedBy", fields: [clearedByUserId], references: [id], onDelete: SetNull)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
 
   @@index([isOptedOut, optedOutAt])
   @@index([clearedByUserId])

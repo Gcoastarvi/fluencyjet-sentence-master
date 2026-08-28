@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { acquireWhatsAppDestinationLock } from "./whatsappDestinationLock.js";
 
 export const SENTENCE_MASTER_PRODUCT_KEY = "sentence_master";
 
@@ -159,9 +160,41 @@ export async function recordCheckoutIntent({
   return database.$transaction(async (transaction) => {
     await acquireUserJourneyLock(transaction, userId, productKey);
 
+    const initialUser = await transaction.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        whatsapp_number: true,
+        whatsapp_number_normalized: true,
+        whatsapp_consent: true,
+        has_access: true,
+      },
+    });
+
+    if (!initialUser) {
+      return { created: false, reason: "USER_NOT_FOUND" };
+    }
+
+    if (
+      !initialUser.whatsapp_consent ||
+      !initialUser.whatsapp_number_normalized
+    ) {
+      return { created: false, reason: "WHATSAPP_NOT_ELIGIBLE" };
+    }
+
+    if (initialUser.has_access) {
+      return { created: false, reason: "USER_HAS_ACCESS" };
+    }
+
+    await acquireWhatsAppDestinationLock(
+      transaction,
+      initialUser.whatsapp_number_normalized,
+    );
+
     const user = await transaction.user.findUnique({
       where: { id: userId },
       select: {
+        email: true,
         whatsapp_number: true,
         whatsapp_number_normalized: true,
         whatsapp_consent: true,
@@ -171,6 +204,13 @@ export async function recordCheckoutIntent({
 
     if (!user) {
       return { created: false, reason: "USER_NOT_FOUND" };
+    }
+
+    if (
+      user.whatsapp_number_normalized !==
+      initialUser.whatsapp_number_normalized
+    ) {
+      return { created: false, reason: "WHATSAPP_IDENTITY_CHANGED" };
     }
 
     if (!user.whatsapp_consent || !user.whatsapp_number_normalized) {
@@ -209,7 +249,17 @@ export async function recordCheckoutIntent({
       sourceMilestone: "CHECKOUT_INTENT",
     });
 
-    return { created: true, automationEvent };
+    const checkoutIntent = await transaction.sentenceMasterCheckoutIntent.create({
+      data: {
+        userId,
+        productKey,
+        learnerEmail: String(user.email).trim().toLowerCase(),
+        destinationNumberNormalized: user.whatsapp_number_normalized,
+        createdAt: occurredAt,
+      },
+    });
+
+    return { created: true, automationEvent, checkoutIntent };
   }, {
     maxWait: 5_000,
     timeout: 15_000,

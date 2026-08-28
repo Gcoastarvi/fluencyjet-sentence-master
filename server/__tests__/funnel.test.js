@@ -9,6 +9,7 @@ import {
 import request from "supertest";
 import express from "express";
 import cookieParser from "cookie-parser";
+import jwt from "jsonwebtoken";
 
 const mockPrisma = {
   $transaction: jest.fn(),
@@ -21,6 +22,9 @@ const mockPrisma = {
   automationEvent: {
     findFirst: jest.fn(),
     updateMany: jest.fn(),
+    create: jest.fn(),
+  },
+  sentenceMasterCheckoutIntent: {
     create: jest.fn(),
   },
   whatsAppPhoneSuppression: {
@@ -48,6 +52,7 @@ jest.unstable_mockModule("bcryptjs", () => ({
 }));
 
 const { default: funnelRouter } = await import("../routes/funnel.js");
+const { authMiddleware } = await import("../middleware/authMiddleware.js");
 
 const USER_ID = 42;
 const OLD_NUMBER = "+919876543210";
@@ -103,6 +108,15 @@ function makeApp(userId = USER_ID) {
   return app;
 }
 
+function makeJwtAuthApp() {
+  const app = express();
+  app.use(express.json());
+  app.use(cookieParser());
+  app.use(authMiddleware);
+  app.use("/api/funnel", funnelRouter);
+  return app;
+}
+
 function mockExistingUser(existingUser = makeUser()) {
   mockPrisma.user.findUnique.mockResolvedValue(existingUser);
   mockPrisma.user.update.mockImplementation(async ({ data }) => ({
@@ -126,6 +140,9 @@ beforeEach(() => {
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.automationEvent.findFirst.mockResolvedValue(null);
   mockPrisma.automationEvent.create.mockResolvedValue({ id: "event-1" });
+  mockPrisma.sentenceMasterCheckoutIntent.create.mockResolvedValue({
+    id: "checkout-intent-1",
+  });
   mockPrisma.whatsAppPhoneSuppression.updateMany.mockResolvedValue({
     count: 1,
   });
@@ -157,7 +174,7 @@ describe("authenticated Sentence Master checkout intent", () => {
       recorded: true,
       reason: null,
     });
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
     expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: USER_ID,
@@ -168,7 +185,33 @@ describe("authenticated Sentence Master checkout intent", () => {
         scheduledAt: expect.any(Date),
       }),
     });
+    expect(mockPrisma.sentenceMasterCheckoutIntent.create).toHaveBeenCalledWith({
+      data: {
+        userId: USER_ID,
+        productKey: "sentence_master",
+        learnerEmail: "funnel-test@example.com",
+        destinationNumberNormalized: OLD_NUMBER,
+        createdAt: expect.any(Date),
+      },
+    });
     expect(res.body).not.toHaveProperty("automationEvent");
+  });
+
+  test("fails closed when a placeholder token is presented without a secure JWT secret", async () => {
+    delete process.env.JWT_SECRET;
+    const forgedToken = jwt.sign(
+      { id: USER_ID, email: "funnel-test@example.com" },
+      "dev-secret",
+    );
+
+    const res = await request(makeJwtAuthApp())
+      .post("/api/funnel/checkout-intent")
+      .set("Authorization", `Bearer ${forgedToken}`)
+      .send({ productKey: "sentence_master" });
+
+    expect(res.status).toBe(401);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    expect(mockPrisma.sentenceMasterCheckoutIntent.create).not.toHaveBeenCalled();
   });
 
   test("rejects anonymous and non-Sentence-Master requests before writes", async () => {

@@ -373,6 +373,26 @@ async function getReminderBusinessSkipReason(ae, database = prisma) {
     ae.eventType === CHECKOUT_HELP_REMINDER ||
     ae.eventType === ANY_QUESTIONS_REMINDER
   ) {
+    // has_access is the primary entitlement flag. The purchase lookup is a
+    // second durable proof for the webhook path and protects this final gate
+    // if an older record has not yet reflected the legacy user flag.
+    if (typeof database.spokenEnglishPurchase?.findFirst === 'function') {
+      const attributedPurchase =
+        await database.spokenEnglishPurchase.findFirst({
+          where: {
+            userId: ae.userId,
+            productKey: SENTENCE_MASTER_PRODUCT_KEY,
+            sourceIntentId: { not: null },
+            status: 'captured',
+          },
+          select: { id: true },
+        });
+
+      if (attributedPurchase) {
+        return 'PURCHASE_ATTRIBUTED';
+      }
+    }
+
     return null;
   }
 

@@ -27,8 +27,12 @@ function makeTransaction() {
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       create: jest.fn(),
     },
+    sentenceMasterCheckoutIntent: {
+      create: jest.fn().mockResolvedValue({ id: "checkout-intent" }),
+    },
     user: {
       findUnique: jest.fn().mockResolvedValue({
+        email: "learner@example.test",
         whatsapp_number: "+91 98765 43210",
         whatsapp_number_normalized: "+919876543210",
         whatsapp_consent: true,
@@ -276,7 +280,7 @@ describe("WhatsApp Block B checkout journey", () => {
     });
 
     expect(result.created).toBe(true);
-    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
     expect(tx.automationEvent.findFirst).toHaveBeenCalledWith({
       where: {
         userId: 42,
@@ -298,6 +302,15 @@ describe("WhatsApp Block B checkout journey", () => {
         scheduledAt: new Date("2026-08-28T10:20:00.000Z"),
       }),
     });
+    expect(tx.sentenceMasterCheckoutIntent.create).toHaveBeenCalledWith({
+      data: {
+        userId: 42,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        learnerEmail: "learner@example.test",
+        destinationNumberNormalized: "+919876543210",
+        createdAt: occurredAt,
+      },
+    });
   });
 
   test.each([
@@ -310,6 +323,7 @@ describe("WhatsApp Block B checkout journey", () => {
   ) => {
     const tx = makeTransaction();
     tx.user.findUnique.mockResolvedValue({
+      email: "learner@example.test",
       whatsapp_number: "+91 98765 43210",
       whatsapp_number_normalized: "+919876543210",
       whatsapp_consent: true,

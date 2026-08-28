@@ -492,14 +492,22 @@ describe("Block B PostgreSQL checkout-intent concurrency", () => {
     expect(results.filter((result) => result.created)).toHaveLength(1);
     expect(results.filter((result) => !result.created)).toHaveLength(1);
 
-    const reminders = await control.automationEvent.findMany({
-      where: {
-        userId: checkoutUser.id,
-        productKey: SENTENCE_MASTER_PRODUCT_KEY,
-        eventType: CHECKOUT_HELP_REMINDER,
-      },
-      orderBy: { createdAt: "asc" },
-    });
+    const [reminders, intents] = await Promise.all([
+      control.automationEvent.findMany({
+        where: {
+          userId: checkoutUser.id,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+          eventType: CHECKOUT_HELP_REMINDER,
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+      control.sentenceMasterCheckoutIntent.findMany({
+        where: {
+          userId: checkoutUser.id,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        },
+      }),
+    ]);
 
     expect(reminders).toHaveLength(1);
     expect(reminders[0]).toMatchObject({
@@ -508,5 +516,15 @@ describe("Block B PostgreSQL checkout-intent concurrency", () => {
         checkoutUser.whatsapp_number_normalized,
       scheduledAt: new Date("2026-08-28T10:20:00.000Z"),
     });
+    expect(intents).toEqual([
+      expect.objectContaining({
+        userId: checkoutUser.id,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        learnerEmail: checkoutUser.email,
+        destinationNumberNormalized:
+          checkoutUser.whatsapp_number_normalized,
+        createdAt: occurredAt,
+      }),
+    ]);
   });
 });
