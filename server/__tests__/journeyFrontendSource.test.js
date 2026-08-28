@@ -55,4 +55,21 @@ describe("Block A frontend milestone placement", () => {
     );
     expect(navbarSource).toContain("onClick={handleLessonsClick}");
   });
+
+  test("Lesson Detail records exploration before both lesson-list controls navigate", () => {
+    const source = readClientSource("LessonDetail.jsx");
+
+    expect(source).toContain(
+      'import { recordLearningPathExplored } from "@/lib/journeyMilestones";',
+    );
+    expect(source).toContain(
+      "async function navigateToLessonsWithMilestone(destination)",
+    );
+    expect(source).toContain(
+      'onClick={() => navigateToLessonsWithMilestone("/lessons")}',
+    );
+    expect(source).toContain(
+      'navigateToLessonsWithMilestone(\n                    "/b/lessons?onboarding=1&source=spoken-english-challenge&focus=lesson-1",',
+    );
+  });
 });

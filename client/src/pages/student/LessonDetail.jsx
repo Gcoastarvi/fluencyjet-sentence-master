@@ -23,6 +23,7 @@ import { useAuth } from "../../context/AuthContext";
 
 import { readProgress, pct } from "@/lib/progressStore";
 import { freeAllowsLesson } from "../../lib/accessRules";
+import { recordLearningPathExplored } from "@/lib/journeyMilestones";
 
 // Audio v1 can be turned on later without refactor:
 const ENABLE_AUDIO = true;
@@ -1211,12 +1212,17 @@ export default function LessonDetail() {
     : legacyVideoUrl;
   const description = lesson?.description || lesson?.desc || "";
 
+  async function navigateToLessonsWithMilestone(destination) {
+    await recordLearningPathExplored();
+    navigate(destination);
+  }
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans text-slate-900">
       {/* 1. COMPACT HEADER */}
       <header className="sticky top-0 z-50 flex items-center justify-between border-b border-slate-100 bg-white/80 p-4 backdrop-blur-md max-w-2xl mx-auto w-full sm:rounded-b-3xl">
         <button
-          onClick={() => navigate("/lessons")}
+          onClick={() => navigateToLessonsWithMilestone("/lessons")}
           className="flex items-center gap-2 rounded-xl px-4 py-2 text-[10px] font-black tracking-[0.2em] text-slate-400 hover:text-slate-900 transition-all"
         >
           <span>←</span> BACK
@@ -1566,7 +1572,7 @@ export default function LessonDetail() {
                     placement: "sticky",
                   });
 
-                  navigate(
+                  navigateToLessonsWithMilestone(
                     "/b/lessons?onboarding=1&source=spoken-english-challenge&focus=lesson-1",
                   );
                 }}
