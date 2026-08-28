@@ -31,3 +31,16 @@ reconciliation path.
 **How to apply:** Keep the lifecycle and dependent writes atomic; on rollback
 after provider confirmation, persist only the provider correlation and outcome
 metadata, then require linked provider evidence for eventual reconciliation.
+
+For Checkout Help reconciliation, a valid evidence row `createdAt` is a
+conservative observed-at fallback when the provider event timestamp is absent.
+Choose the earliest reliable success-evidence timestamp; if none exists, leave
+the event unresolved.
+
+**Why:** A persisted evidence receipt time may delay the +24-hour follow-up but
+cannot backdate it, while terminalizing without any usable anchor can lose the
+dependent reminder permanently.
+
+**How to apply:** Prefer a valid non-future provider timestamp per evidence
+row, otherwise use that row's valid database creation time, and apply the
+existing source-specific exact-once scheduling transaction.

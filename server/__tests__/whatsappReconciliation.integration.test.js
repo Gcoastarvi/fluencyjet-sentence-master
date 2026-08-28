@@ -443,6 +443,7 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
   test('uses persisted evidence creation time when checkout-help provider timestamps are missing', async () => {
     const checkout = await createFixture(11, {
       eventType: 'CHECKOUT_HELP_REMINDER',
+      destinationNumber: `+177${runToken}1`,
     });
     const firstObservedAt = new Date(Date.now() - 10 * 60_000);
     const laterObservedAt = new Date(Date.now() - 5 * 60_000);
@@ -467,10 +468,38 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
       checkout.event.id,
       'MARK_SENT',
       undefined,
-      'checkout-created-at-anchor-11-replay',
+      'checkout-created-at-anchor-11',
     );
+    const firstJournal =
+      await controlClient.automationReconciliationJournal.findUnique({
+        where: {
+          automationEventId_idempotencyKey: {
+            automationEventId: checkout.event.id,
+            idempotencyKey: 'checkout-created-at-anchor-11',
+          },
+        },
+      });
 
-    expect(firstResponse.status).toBe(200);
+    expect({
+      status: firstResponse.status,
+      body: firstResponse.body,
+      journal: firstJournal && {
+        decision: firstJournal.decision,
+        reasonCode: firstJournal.reasonCode,
+        resultingStatus: firstJournal.resultingStatus,
+      },
+    }).toEqual({
+      status: 200,
+      body: expect.objectContaining({
+        ok: true,
+        resultingStatus: 'SENT',
+      }),
+      journal: {
+        decision: 'APPLIED',
+        reasonCode: 'MATCHING_SUCCESS_EVIDENCE',
+        resultingStatus: 'SENT',
+      },
+    });
     expect(replayResponse.status).toBe(200);
 
     const finalEvent = await controlClient.automationEvent.findUnique({

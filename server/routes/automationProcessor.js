@@ -706,8 +706,7 @@ function usableSuccessEvidenceTimestamp(evidence, now) {
 
   if (
     evidence.createdAt instanceof Date &&
-    !Number.isNaN(evidence.createdAt.getTime()) &&
-    evidence.createdAt.getTime() <= now.getTime()
+    !Number.isNaN(evidence.createdAt.getTime())
   ) {
     // The database creation time is when the matching provider evidence was
     // observed and persisted. It is conservative when the provider timestamp
