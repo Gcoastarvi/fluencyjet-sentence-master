@@ -19,6 +19,8 @@ const mockPrisma = {
   $transaction: jest.fn(),
   $executeRaw: jest.fn(),
   automationEvent: {
+    create: jest.fn(),
+    findFirst: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
     updateMany: jest.fn(),
@@ -118,6 +120,10 @@ function configureEligibleEvent(event) {
   mockPrisma.$transaction.mockImplementation(async (callback) =>
     callback(mockPrisma));
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
+  mockPrisma.automationEvent.findFirst.mockResolvedValue(null);
+  mockPrisma.automationEvent.create.mockResolvedValue({
+    id: 'any-questions-event',
+  });
   mockSendWhatsAppTemplate.mockResolvedValue({
     provider: 'mocked-provider',
     messageId: `wamid.rollout.${event.id}`,
@@ -232,6 +238,8 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
               'LESSON1_SIGNUP_REMINDER',
               'LESSON1_WATCH_REMINDER',
               'LEARNING_PATH_DISCOVERY_REMINDER',
+              'CHECKOUT_HELP_REMINDER',
+              'ANY_QUESTIONS_REMINDER',
             ],
           },
           status: 'PENDING',
@@ -304,6 +312,181 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
       expect.objectContaining({ to: TEST_NUMBER }),
     );
   });
+
+  test('live checkout-help send uses its template and atomically creates the 24-hour follow-up', async () => {
+    enableLiveRolloutGates();
+    const checkout = makeEvent(
+      FIRST_ID,
+      1,
+      TEST_NUMBER,
+      {
+        eventType: 'CHECKOUT_HELP_REMINDER',
+        productKey: 'sentence_master',
+      },
+    );
+    mockPrisma.automationEvent.findMany.mockResolvedValue([checkout]);
+    configureEligibleEvent(checkout);
+    configureLiveReads([checkout]);
+
+    const response = await rolloutRequest(makeApp(), {
+      liveSend: true,
+      limit: 1,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.counts.sent).toBe(1);
+    expect(mockSendWhatsAppTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: TEST_NUMBER,
+        templateName: 'fj_checkout_help_v1',
+        languageCode: 'en',
+      }),
+    );
+    const sentUpdate = mockPrisma.automationEvent.updateMany.mock.calls
+      .map(([call]) => call)
+      .find((call) => call.data?.status === 'SENT');
+    expect(sentUpdate).toBeDefined();
+    expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 1,
+        productKey: 'sentence_master',
+        eventType: 'ANY_QUESTIONS_REMINDER',
+        status: 'PENDING',
+        sourceAutomationEventId: FIRST_ID,
+        destinationNumberNormalized: TEST_NUMBER,
+        scheduledAt: new Date(
+          sentUpdate.data.sentAt.getTime() + 24 * 60 * 60 * 1000,
+        ),
+        payload: expect.objectContaining({
+          sourceAutomationEventId: FIRST_ID,
+          anchorSource: 'provider-confirmation',
+          anchorSentAt: sentUpdate.data.sentAt.toISOString(),
+        }),
+      }),
+    });
+  });
+
+  test('live any-questions send uses its template without creating another follow-up', async () => {
+    enableLiveRolloutGates();
+    const followUp = makeEvent(
+      FIRST_ID,
+      1,
+      TEST_NUMBER,
+      {
+        eventType: 'ANY_QUESTIONS_REMINDER',
+        productKey: 'sentence_master',
+        sourceAutomationEventId: SECOND_ID,
+      },
+    );
+    mockPrisma.automationEvent.findMany.mockResolvedValue([followUp]);
+    configureEligibleEvent(followUp);
+    configureLiveReads([followUp]);
+
+    const response = await rolloutRequest(makeApp(), {
+      liveSend: true,
+      limit: 1,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.counts.sent).toBe(1);
+    expect(mockSendWhatsAppTemplate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        templateName: 'fj_any_questions_v1',
+        languageCode: 'en',
+      }),
+    );
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
+  });
+
+  test('checkout reminders remain suppressed when the destination already has product access', async () => {
+    const checkout = makeEvent(
+      FIRST_ID,
+      1,
+      TEST_NUMBER,
+      {
+        eventType: 'CHECKOUT_HELP_REMINDER',
+        productKey: 'sentence_master',
+      },
+    );
+    mockPrisma.automationEvent.findMany.mockResolvedValue([checkout]);
+    mockPrisma.user.findUnique.mockResolvedValue(makeUser(1, TEST_NUMBER));
+    mockPrisma.user.findFirst.mockResolvedValue({ id: 1 });
+    mockPrisma.user.findMany.mockResolvedValue([{
+      has_access: true,
+      whatsapp_opted_out_at: null,
+    }]);
+    mockPrisma.whatsAppPhoneSuppression.findUnique.mockResolvedValue(null);
+
+    const response = await rolloutRequest(makeApp(), {
+      preview: true,
+      limit: 1,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.rows[0]).toMatchObject({
+      result: 'SKIPPED',
+      reasonCode: 'PHONE_HAS_ACCESS',
+      whatsappSent: false,
+    });
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    'CHECKOUT_HELP_REMINDER',
+    'ANY_QUESTIONS_REMINDER',
+  ])(
+    'preserves provider correlation when %s lifecycle finalization throws',
+    async (eventType) => {
+      enableLiveRolloutGates();
+      const event = makeEvent(FIRST_ID, 1, TEST_NUMBER, {
+        eventType,
+        productKey: 'sentence_master',
+        sourceAutomationEventId:
+          eventType === 'ANY_QUESTIONS_REMINDER' ? SECOND_ID : null,
+      });
+      mockPrisma.automationEvent.findMany.mockResolvedValue([event]);
+      configureEligibleEvent(event);
+      configureLiveReads([event]);
+      mockPrisma.automationEvent.updateMany
+        .mockResolvedValueOnce({ count: 1 })
+        .mockRejectedValueOnce(new Error('lifecycle write unavailable'))
+        .mockResolvedValueOnce({ count: 1 });
+
+      const response = await rolloutRequest(makeApp(), {
+        liveSend: true,
+        limit: 1,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.counts.sent).toBe(1);
+      expect(response.body.rows[0]).toMatchObject({
+        result: 'SENT',
+        reasonCode: 'SEND_FINALIZE_FAILED',
+        whatsappSent: true,
+      });
+      expect(mockSendWhatsAppTemplate).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.automationEvent.updateMany).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          where: {
+            id: FIRST_ID,
+            status: 'SENDING',
+            providerMessageId: null,
+          },
+          data: expect.objectContaining({
+            providerMessageId: `wamid.rollout.${FIRST_ID}`,
+            payload: expect.objectContaining({
+              whatsappDelivery: expect.objectContaining({
+                messageId: `wamid.rollout.${FIRST_ID}`,
+              }),
+            }),
+          }),
+        }),
+      );
+      expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
+    },
+  );
 
   test('stops after a post-dispatch transaction failure instead of trying another candidate', async () => {
     enableLiveRolloutGates();

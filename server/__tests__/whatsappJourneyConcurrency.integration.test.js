@@ -14,6 +14,7 @@ import {
 import { PrismaClient } from "@prisma/client";
 import { reconcileLesson1SignupReminder } from "../lib/whatsappIdentity.js";
 import {
+  CHECKOUT_HELP_REMINDER,
   LEARNING_PATH_DISCOVERY_REMINDER,
   LEARNING_PATH_EXPLORED,
   LESSON1_OPENED,
@@ -23,6 +24,7 @@ import {
   SENTENCE_MASTER_PRODUCT_KEY,
   acquireUserJourneyLock,
   recordBlockAJourneyMilestone,
+  recordCheckoutIntent,
   recordPracticeCompletionTransition,
 } from "../lib/whatsappJourney.js";
 
@@ -466,5 +468,45 @@ describe("Block A PostgreSQL journey concurrency", () => {
     expect(openMilestones).toBe(1);
     expect(discoveries).toBe(0);
     expect(activeWatches).toBe(0);
+  });
+});
+
+describe("Block B PostgreSQL checkout-intent concurrency", () => {
+  test("overlapping authenticated intents serialize to one active checkout-help reminder", async () => {
+    const checkoutUser = await createJourneyUser();
+    const occurredAt = new Date("2026-08-28T10:00:00.000Z");
+
+    const results = await Promise.all([
+      recordCheckoutIntent({
+        database: progressClient,
+        userId: checkoutUser.id,
+        occurredAt,
+      }),
+      recordCheckoutIntent({
+        database: journeyClient,
+        userId: checkoutUser.id,
+        occurredAt,
+      }),
+    ]);
+
+    expect(results.filter((result) => result.created)).toHaveLength(1);
+    expect(results.filter((result) => !result.created)).toHaveLength(1);
+
+    const reminders = await control.automationEvent.findMany({
+      where: {
+        userId: checkoutUser.id,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        eventType: CHECKOUT_HELP_REMINDER,
+      },
+      orderBy: { createdAt: "asc" },
+    });
+
+    expect(reminders).toHaveLength(1);
+    expect(reminders[0]).toMatchObject({
+      status: "PENDING",
+      destinationNumberNormalized:
+        checkoutUser.whatsapp_number_normalized,
+      scheduledAt: new Date("2026-08-28T10:20:00.000Z"),
+    });
   });
 });

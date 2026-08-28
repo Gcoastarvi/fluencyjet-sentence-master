@@ -1,5 +1,7 @@
 import { jest } from "@jest/globals";
 import {
+  ANY_QUESTIONS_REMINDER,
+  CHECKOUT_HELP_REMINDER,
   LEARNING_PATH_DISCOVERY_REMINDER,
   LEARNING_PATH_EXPLORED,
   LESSON1_OPENED,
@@ -8,7 +10,9 @@ import {
   LESSON1_WATCH_REMINDER,
   SENTENCE_MASTER_PRODUCT_KEY,
   recordBlockAJourneyMilestone,
+  recordCheckoutIntent,
   recordPracticeCompletionTransition,
+  scheduleAnyQuestionsAfterCheckoutHelpSent,
 } from "../lib/whatsappJourney.js";
 
 function makeTransaction() {
@@ -19,6 +23,7 @@ function makeTransaction() {
       create: jest.fn(),
     },
     automationEvent: {
+      findFirst: jest.fn(),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       create: jest.fn(),
     },
@@ -26,6 +31,8 @@ function makeTransaction() {
       findUnique: jest.fn().mockResolvedValue({
         whatsapp_number: "+91 98765 43210",
         whatsapp_number_normalized: "+919876543210",
+        whatsapp_consent: true,
+        has_access: false,
       }),
     },
   };
@@ -247,6 +254,156 @@ describe("WhatsApp Block A journey foundation", () => {
         }),
       }),
     );
+    expect(tx.automationEvent.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("WhatsApp Block B checkout journey", () => {
+  const occurredAt = new Date("2026-08-28T10:00:00.000Z");
+
+  test("records one eligible checkout-help reminder 20 minutes later under the journey lock", async () => {
+    const tx = makeTransaction();
+    tx.automationEvent.findFirst.mockResolvedValue(null);
+    tx.automationEvent.create.mockResolvedValue({ id: "checkout-help-event" });
+    const database = {
+      $transaction: jest.fn(async (callback) => callback(tx)),
+    };
+
+    const result = await recordCheckoutIntent({
+      database,
+      userId: 42,
+      occurredAt,
+    });
+
+    expect(result.created).toBe(true);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(tx.automationEvent.findFirst).toHaveBeenCalledWith({
+      where: {
+        userId: 42,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        eventType: {
+          in: [CHECKOUT_HELP_REMINDER, ANY_QUESTIONS_REMINDER],
+        },
+        status: { in: ["PENDING", "SENDING"] },
+      },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    });
+    expect(tx.automationEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 42,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        eventType: CHECKOUT_HELP_REMINDER,
+        status: "PENDING",
+        destinationNumberNormalized: "+919876543210",
+        scheduledAt: new Date("2026-08-28T10:20:00.000Z"),
+      }),
+    });
+  });
+
+  test.each([
+    [{ whatsapp_consent: false }, "WHATSAPP_NOT_ELIGIBLE"],
+    [{ whatsapp_number_normalized: null }, "WHATSAPP_NOT_ELIGIBLE"],
+    [{ has_access: true }, "USER_HAS_ACCESS"],
+  ])("does not create checkout help for an ineligible learner", async (
+    override,
+    reason,
+  ) => {
+    const tx = makeTransaction();
+    tx.user.findUnique.mockResolvedValue({
+      whatsapp_number: "+91 98765 43210",
+      whatsapp_number_normalized: "+919876543210",
+      whatsapp_consent: true,
+      has_access: false,
+      ...override,
+    });
+    const database = {
+      $transaction: jest.fn(async (callback) => callback(tx)),
+    };
+
+    const result = await recordCheckoutIntent({
+      database,
+      userId: 42,
+      occurredAt,
+    });
+
+    expect(result).toEqual({ created: false, reason });
+    expect(tx.automationEvent.findFirst).not.toHaveBeenCalled();
+    expect(tx.automationEvent.create).not.toHaveBeenCalled();
+  });
+
+  test("does not duplicate an active checkout-help reminder", async () => {
+    const tx = makeTransaction();
+    const existing = { id: "existing-checkout-help" };
+    tx.automationEvent.findFirst.mockResolvedValue(existing);
+    const database = {
+      $transaction: jest.fn(async (callback) => callback(tx)),
+    };
+
+    const result = await recordCheckoutIntent({
+      database,
+      userId: 42,
+      occurredAt,
+    });
+
+    expect(result).toEqual({
+      created: false,
+      reason: "ALREADY_ACTIVE",
+      automationEvent: existing,
+    });
+    expect(tx.automationEvent.create).not.toHaveBeenCalled();
+  });
+
+  test("schedules any-questions exactly once at authoritative SENT plus 24 hours", async () => {
+    const tx = makeTransaction();
+    tx.automationEvent.findFirst.mockResolvedValue(null);
+    tx.automationEvent.create.mockResolvedValue({ id: "any-questions-event" });
+    const sentAt = new Date("2026-08-28T10:20:00.000Z");
+    const checkoutHelpEvent = {
+      id: "checkout-help-event",
+      userId: 42,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
+      eventType: CHECKOUT_HELP_REMINDER,
+      status: "SENT",
+      destinationNumberNormalized: "+919876543210",
+    };
+
+    const result = await scheduleAnyQuestionsAfterCheckoutHelpSent({
+      transaction: tx,
+      checkoutHelpEvent,
+      sentAt,
+      anchorSource: "test-evidence",
+    });
+
+    expect(result.created).toBe(true);
+    expect(tx.automationEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 42,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        eventType: ANY_QUESTIONS_REMINDER,
+        status: "PENDING",
+        sourceAutomationEventId: "checkout-help-event",
+        destinationNumberNormalized: "+919876543210",
+        scheduledAt: new Date("2026-08-29T10:20:00.000Z"),
+        payload: expect.objectContaining({
+          sourceAutomationEventId: "checkout-help-event",
+          anchorSource: "test-evidence",
+          anchorSentAt: sentAt.toISOString(),
+        }),
+      }),
+    });
+
+    tx.automationEvent.findFirst.mockResolvedValue({
+      id: "existing-any-questions",
+      status: "CANCELLED",
+    });
+    tx.automationEvent.create.mockClear();
+    const duplicate = await scheduleAnyQuestionsAfterCheckoutHelpSent({
+      transaction: tx,
+      checkoutHelpEvent,
+      sentAt,
+    });
+    expect(duplicate.created).toBe(false);
+    expect(duplicate.reason).toBe("ALREADY_ACTIVE");
     expect(tx.automationEvent.create).not.toHaveBeenCalled();
   });
 });

@@ -19,6 +19,7 @@ const mockPrisma = {
     create: jest.fn(),
   },
   automationEvent: {
+    findFirst: jest.fn(),
     updateMany: jest.fn(),
     create: jest.fn(),
   },
@@ -123,6 +124,7 @@ beforeEach(() => {
     ...data,
   }));
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
+  mockPrisma.automationEvent.findFirst.mockResolvedValue(null);
   mockPrisma.automationEvent.create.mockResolvedValue({ id: "event-1" });
   mockPrisma.whatsAppPhoneSuppression.updateMany.mockResolvedValue({
     count: 1,
@@ -135,6 +137,58 @@ beforeEach(() => {
   mockPrisma.$transaction.mockImplementation(async (callback) =>
     callback(mockPrisma),
   );
+});
+
+describe("authenticated Sentence Master checkout intent", () => {
+  test("creates an eligible checkout-help reminder without returning event details", async () => {
+    mockPrisma.user.findUnique.mockResolvedValue(
+      makeUser({
+        whatsapp_consent: true,
+      }),
+    );
+
+    const res = await request(makeApp())
+      .post("/api/funnel/checkout-intent")
+      .send({ productKey: "sentence_master" });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      ok: true,
+      recorded: true,
+      reason: null,
+    });
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: USER_ID,
+        productKey: "sentence_master",
+        eventType: "CHECKOUT_HELP_REMINDER",
+        status: "PENDING",
+        destinationNumberNormalized: OLD_NUMBER,
+        scheduledAt: expect.any(Date),
+      }),
+    });
+    expect(res.body).not.toHaveProperty("automationEvent");
+  });
+
+  test("rejects anonymous and non-Sentence-Master requests before writes", async () => {
+    const anonymousApp = express();
+    anonymousApp.use(express.json());
+    anonymousApp.use("/api/funnel", funnelRouter);
+
+    let res = await request(anonymousApp)
+      .post("/api/funnel/checkout-intent")
+      .send({ productKey: "sentence_master" });
+    expect(res.status).toBe(401);
+
+    res = await request(makeApp())
+      .post("/api/funnel/checkout-intent")
+      .send({ productKey: "other_product" });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("INVALID_PRODUCT");
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
+  });
 });
 
 afterEach(() => {

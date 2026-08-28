@@ -1,5 +1,6 @@
 // client/src/components/marketing/LaunchOfferCard.jsx
 import { trackSpokenEnglishInitiateCheckout } from "../../lib/tracking";
+import { startSentenceMasterPaymentRedirect } from "../../lib/checkoutIntent";
 
 function OfferFeatureIcon({ type }) {
   const common = "h-5 w-5 stroke-current";
@@ -116,6 +117,12 @@ const features = [
 ];
 
 export default function LaunchOfferCard({ paymentUrl }) {
+  async function handlePurchase(event) {
+    event.preventDefault();
+    trackSpokenEnglishInitiateCheckout();
+    await startSentenceMasterPaymentRedirect(paymentUrl);
+  }
+
   return (
     <section className="mx-auto mt-10 w-full max-w-6xl px-4 sm:px-6">
       <div className="rounded-[2.5rem] bg-gradient-to-br from-lime-300/70 via-purple-500/45 to-purple-950 p-[2px] shadow-2xl shadow-purple-950/30">
@@ -202,7 +209,7 @@ export default function LaunchOfferCard({ paymentUrl }) {
 
                 <a
                   href={paymentUrl}
-                  onClick={trackSpokenEnglishInitiateCheckout}
+                  onClick={handlePurchase}
                   className="mt-6 flex w-full items-center justify-center rounded-2xl bg-gradient-to-r from-yellow-300 to-lime-400 px-6 py-5 text-center text-lg font-black text-slate-950 shadow-xl shadow-lime-300/30 transition hover:-translate-y-0.5 hover:shadow-2xl active:translate-y-0 sm:text-xl"
                 >
                   Get 1-Year Access for ₹1,199

@@ -13,14 +13,17 @@ import { sendWhatsAppTemplate } from '../services/whatsappProvider.js';
 import { normalizeWhatsAppNumber } from '../lib/whatsappNumber.js';
 import { acquireWhatsAppDestinationLock } from '../lib/whatsappDestinationLock.js';
 import {
-  BLOCK_A_REMINDER_EVENT_TYPES,
+  ANY_QUESTIONS_REMINDER,
+  CHECKOUT_HELP_REMINDER,
   LEARNING_PATH_DISCOVERY_REMINDER,
   LEARNING_PATH_EXPLORED,
   LESSON1_OPENED,
   LESSON1_SIGNUP_REMINDER,
   LESSON1_WATCH_REMINDER,
   SENTENCE_MASTER_PRODUCT_KEY,
+  WHATSAPP_REMINDER_EVENT_TYPES,
   hasJourneyMilestone,
+  scheduleAnyQuestionsAfterCheckoutHelpSent,
 } from '../lib/whatsappJourney.js';
 
 const router = express.Router();
@@ -61,8 +64,13 @@ const ROLLOUT_WATERMARK_ENV_NAMES = [
 ];
 const ROLLOUT_WATERMARK_ISO_RE =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-const BLOCK_A_REMINDER_EVENT_TYPE_SET =
-  new Set(BLOCK_A_REMINDER_EVENT_TYPES);
+const WHATSAPP_REMINDER_EVENT_TYPE_SET =
+  new Set(WHATSAPP_REMINDER_EVENT_TYPES);
+const RECONCILIABLE_REMINDER_EVENT_TYPE_SET = new Set([
+  LESSON1_SIGNUP_REMINDER,
+  CHECKOUT_HELP_REMINDER,
+  ANY_QUESTIONS_REMINDER,
+]);
 
 function getLesson1TemplateConfiguration() {
   return {
@@ -93,6 +101,20 @@ export function getReminderTemplateConfiguration(eventType) {
   if (eventType === LEARNING_PATH_DISCOVERY_REMINDER) {
     return {
       templateName: 'fj_discover_learning_path_v1',
+      languageCode,
+    };
+  }
+
+  if (eventType === CHECKOUT_HELP_REMINDER) {
+    return {
+      templateName: 'fj_checkout_help_v1',
+      languageCode,
+    };
+  }
+
+  if (eventType === ANY_QUESTIONS_REMINDER) {
+    return {
+      templateName: 'fj_any_questions_v1',
       languageCode,
     };
   }
@@ -227,7 +249,7 @@ async function getLiveReminderEligibility(ae, database = prisma) {
   const productKey = ae.productKey || SENTENCE_MASTER_PRODUCT_KEY;
 
   if (
-    !BLOCK_A_REMINDER_EVENT_TYPE_SET.has(ae.eventType) ||
+    !WHATSAPP_REMINDER_EVENT_TYPE_SET.has(ae.eventType) ||
     productKey !== SENTENCE_MASTER_PRODUCT_KEY
   ) {
     return { skipReason: 'UNSUPPORTED_REMINDER' };
@@ -345,6 +367,13 @@ async function getReminderBusinessSkipReason(ae, database = prisma) {
     })
       ? 'LEARNING_PATH_EXPLORED'
       : null;
+  }
+
+  if (
+    ae.eventType === CHECKOUT_HELP_REMINDER ||
+    ae.eventType === ANY_QUESTIONS_REMINDER
+  ) {
+    return null;
   }
 
   return 'UNSUPPORTED_REMINDER';
@@ -1534,7 +1563,7 @@ router.post('/reconcile-sending', async (req, res) => {
       });
     }
 
-    if (initialEvent.eventType !== 'LESSON1_SIGNUP_REMINDER') {
+    if (!RECONCILIABLE_REMINDER_EVENT_TYPE_SET.has(initialEvent.eventType)) {
       return res.status(400).json({
         ok: false,
         error: 'WRONG_EVENT_TYPE',
@@ -1575,7 +1604,9 @@ router.post('/reconcile-sending', async (req, res) => {
         where: { id: automationEventId },
         select: {
           id: true,
+          userId: true,
           eventType: true,
+          productKey: true,
           status: true,
           destinationNumberNormalized: true,
           providerMessageId: true,
@@ -1585,7 +1616,8 @@ router.post('/reconcile-sending', async (req, res) => {
 
       if (
         !event ||
-        event.eventType !== 'LESSON1_SIGNUP_REMINDER' ||
+        !RECONCILIABLE_REMINDER_EVENT_TYPE_SET.has(event.eventType) ||
+        event.eventType !== initialEvent.eventType ||
         event.destinationNumberNormalized !== initialDestination.destination
       ) {
         return {
@@ -1662,10 +1694,27 @@ router.post('/reconcile-sending', async (req, res) => {
           sentData.sentAt = sentEvidence.timestamp;
         }
 
+        if (
+          event.eventType === CHECKOUT_HELP_REMINDER &&
+          !event.sentAt &&
+          !sentData.sentAt
+        ) {
+          const firstReliableEvidenceTimestamp = successEvidence
+            .map((item) =>
+              usableProviderSentTimestamp(item.eventTimestamp, now),
+            )
+            .filter((timestamp) => timestamp !== null)
+            .sort((left, right) => left.getTime() - right.getTime())[0];
+
+          if (firstReliableEvidenceTimestamp) {
+            sentData.sentAt = firstReliableEvidenceTimestamp;
+          }
+        }
+
         const updated = await tx.automationEvent.updateMany({
           where: {
             id: event.id,
-            eventType: 'LESSON1_SIGNUP_REMINDER',
+            eventType: event.eventType,
             status: 'SENDING',
             providerMessageId: event.providerMessageId,
           },
@@ -1674,6 +1723,25 @@ router.post('/reconcile-sending', async (req, res) => {
 
         if (updated.count !== 1) {
           throw new Error('Reconciliation state changed during MARK_SENT.');
+        }
+
+        const authoritativeSentAt = event.sentAt || sentData.sentAt || null;
+        if (
+          event.eventType === CHECKOUT_HELP_REMINDER &&
+          authoritativeSentAt
+        ) {
+          await scheduleAnyQuestionsAfterCheckoutHelpSent({
+            transaction: tx,
+            checkoutHelpEvent: {
+              ...event,
+              status: 'SENT',
+              sentAt: authoritativeSentAt,
+            },
+            sentAt: authoritativeSentAt,
+            anchorSource: sentEvidence
+              ? 'provider-sent-evidence'
+              : 'provider-success-evidence',
+          });
         }
 
         const journal = await createReconciliationJournalEntry(
@@ -1735,7 +1803,7 @@ router.post('/reconcile-sending', async (req, res) => {
       const updated = await tx.automationEvent.updateMany({
         where: {
           id: event.id,
-          eventType: 'LESSON1_SIGNUP_REMINDER',
+          eventType: event.eventType,
           status: 'SENDING',
           providerMessageId: event.providerMessageId,
         },
@@ -2337,7 +2405,7 @@ export function createLiveReminderHandler({
       });
     }
 
-    if (!BLOCK_A_REMINDER_EVENT_TYPE_SET.has(ae.eventType)) {
+    if (!WHATSAPP_REMINDER_EVENT_TYPE_SET.has(ae.eventType)) {
       return res.status(400).json({
         ok: false,
         error: 'WRONG_EVENT_TYPE',
@@ -2637,21 +2705,20 @@ export function createLiveReminderHandler({
         });
 
         if (finalized.count === 0) {
-          console.error(
-            `[AUTOMATION-LIVE] FINALIZE_CONFLICT aeId=${ae.id} ` +
-            `messageId=${delivery.messageId}`,
-          );
+          throw new Error('SENDING_TO_SENT_CONFLICT');
+        }
 
-          return {
-            status: 500,
-            body: {
-              ok: false,
-              error: 'SEND_FINALIZE_CONFLICT',
-              aeId: ae.id,
-              providerMessageId: delivery.messageId,
-              whatsappSent: true,
+        if (lockedEvent.eventType === CHECKOUT_HELP_REMINDER) {
+          await scheduleAnyQuestionsAfterCheckoutHelpSent({
+            transaction: tx,
+            checkoutHelpEvent: {
+              ...lockedEvent,
+              status: 'SENT',
+              sentAt,
             },
-          };
+            sentAt,
+            anchorSource: 'provider-confirmation',
+          });
         }
       } catch (finalizeErr) {
         console.error(
@@ -2659,17 +2726,16 @@ export function createLiveReminderHandler({
           `messageId=${delivery.messageId} error=${finalizeErr.message}`,
         );
 
-        // Provider already confirmed the message. Never retry automatically.
-        return {
-          status: 500,
-          body: {
-            ok: false,
-            error: 'SEND_FINALIZE_FAILED',
-            aeId: ae.id,
-            providerMessageId: delivery.messageId,
-            whatsappSent: true,
-          },
-        };
+        // Every failure after provider confirmation is uncertain delivery, even
+        // when the primary lifecycle write itself failed. Roll back this
+        // transaction and persist only provider correlation outside it so
+        // linked webhook evidence can reconcile the still-SENDING event.
+        finalizeErr.providerConfirmed = true;
+        finalizeErr.providerMessageId = delivery.messageId;
+        finalizeErr.provider = delivery.provider || 'meta';
+        finalizeErr.providerSentAt = sentAt;
+        finalizeErr.providerPayload = nextPayload;
+        throw finalizeErr;
       }
 
       console.log(
@@ -2695,6 +2761,42 @@ export function createLiveReminderHandler({
     return res.status(response.status).json(response.body);
   } catch (err) {
     console.error('[AUTOMATION-LIVE] Unexpected error:', err.message);
+
+    if (err?.providerConfirmed) {
+      try {
+        const correlated = await database.automationEvent.updateMany({
+          where: {
+            id: automationEventId,
+            status: 'SENDING',
+            providerMessageId: null,
+          },
+          data: {
+            providerMessageId: err.providerMessageId,
+            payload: err.providerPayload,
+          },
+        });
+
+        if (correlated.count !== 1) {
+          console.error(
+            `[AUTOMATION-LIVE] PROVIDER_CORRELATION_CONFLICT ` +
+            `aeId=${automationEventId}`,
+          );
+        }
+      } catch (correlationErr) {
+        console.error(
+          `[AUTOMATION-LIVE] PROVIDER_CORRELATION_FAILED ` +
+          `aeId=${automationEventId} error=${correlationErr.message}`,
+        );
+      }
+
+      return res.status(500).json({
+        ok: false,
+        error: 'SEND_FINALIZE_FAILED',
+        aeId: automationEventId,
+        providerMessageId: err.providerMessageId,
+        whatsappSent: true,
+      });
+    }
 
     return res.status(500).json({
       ok: false,
@@ -3338,7 +3440,7 @@ export function createRolloutReminderHandler({
       const discovered = await database.automationEvent.findMany({
         where: {
           eventType: {
-            in: BLOCK_A_REMINDER_EVENT_TYPES,
+            in: WHATSAPP_REMINDER_EVENT_TYPES,
           },
           status: 'PENDING',
           createdAt: { gte: watermark },

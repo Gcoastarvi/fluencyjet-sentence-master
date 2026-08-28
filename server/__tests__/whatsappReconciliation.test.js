@@ -19,6 +19,8 @@ const mockPrisma = {
   $transaction: jest.fn(),
   $executeRaw: jest.fn(),
   automationEvent: {
+    create: jest.fn(),
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
     updateMany: jest.fn(),
   },
@@ -58,6 +60,8 @@ function makeApp() {
 function makeEvent(overrides = {}) {
   return {
     id: EVENT_ID,
+    userId: 42,
+    productKey: 'sentence_master',
     eventType: 'LESSON1_SIGNUP_REMINDER',
     status: 'SENDING',
     destinationNumberNormalized: DESTINATION,
@@ -102,6 +106,10 @@ beforeEach(() => {
     }),
   );
   mockPrisma.automationEvent.findUnique.mockResolvedValue(makeEvent());
+  mockPrisma.automationEvent.findFirst.mockResolvedValue(null);
+  mockPrisma.automationEvent.create.mockResolvedValue({
+    id: 'any-questions-event',
+  });
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
   mockPrisma.whatsAppMessageEvent.findMany.mockResolvedValue([]);
 });
@@ -186,6 +194,103 @@ describe('POST /api/automation/reconcile-sending', () => {
           authMethod: 'AUTOMATION_BEARER',
         }),
       });
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test('reconciles checkout help and atomically schedules one follow-up from the first reliable evidence timestamp', async () => {
+    const deliveredAt = new Date('2026-08-24T10:05:00.000Z');
+    const checkoutEvent = makeEvent({
+      eventType: 'CHECKOUT_HELP_REMINDER',
+    });
+    mockPrisma.automationEvent.findUnique.mockResolvedValue(checkoutEvent);
+    mockPrisma.whatsAppMessageEvent.findMany.mockResolvedValue([
+      makeEvidence({
+        id: 'later-read-evidence',
+        eventType: 'READ',
+        eventTimestamp: new Date('2026-08-24T10:10:00.000Z'),
+      }),
+      makeEvidence({
+        id: 'first-delivered-evidence',
+        eventType: 'DELIVERED',
+        eventTimestamp: deliveredAt,
+      }),
+    ]);
+
+    const response = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      action: 'MARK_SENT',
+    }, 'checkout-help-reconciliation');
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          eventType: 'CHECKOUT_HELP_REMINDER',
+        }),
+        data: expect.objectContaining({
+          status: 'SENT',
+          sentAt: deliveredAt,
+        }),
+      }),
+    );
+    expect(mockPrisma.automationEvent.findFirst).toHaveBeenCalledWith({
+      where: {
+        userId: 42,
+        productKey: 'sentence_master',
+        eventType: 'ANY_QUESTIONS_REMINDER',
+        sourceAutomationEventId: EVENT_ID,
+      },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+    expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 42,
+        productKey: 'sentence_master',
+        eventType: 'ANY_QUESTIONS_REMINDER',
+        status: 'PENDING',
+        sourceAutomationEventId: EVENT_ID,
+        destinationNumberNormalized: DESTINATION,
+        scheduledAt: new Date('2026-08-25T10:05:00.000Z'),
+        payload: expect.objectContaining({
+          sourceAutomationEventId: EVENT_ID,
+          anchorSource: 'provider-success-evidence',
+          anchorSentAt: deliveredAt.toISOString(),
+        }),
+      }),
+    });
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test('reconciles an any-questions confirmed send without creating another reminder', async () => {
+    const anyQuestionsEvent = makeEvent({
+      eventType: 'ANY_QUESTIONS_REMINDER',
+    });
+    mockPrisma.automationEvent.findUnique.mockResolvedValue(anyQuestionsEvent);
+    mockPrisma.whatsAppMessageEvent.findMany.mockResolvedValue([
+      makeEvidence({
+        eventType: 'SENT',
+        eventTimestamp: new Date('2026-08-24T10:15:00.000Z'),
+      }),
+    ]);
+
+    const response = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      action: 'MARK_SENT',
+    }, 'any-questions-reconciliation');
+
+    expect(response.status).toBe(200);
+    expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          eventType: 'ANY_QUESTIONS_REMINDER',
+          status: 'SENDING',
+        }),
+        data: expect.objectContaining({
+          status: 'SENT',
+        }),
+      }),
+    );
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
     expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
   });
 

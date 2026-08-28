@@ -7,6 +7,7 @@ import {
   trackSpokenEnglishInitiateCheckout,
   trackOfferWhatsAppClick,
 } from "../../lib/tracking";
+import { startSentenceMasterPaymentRedirect } from "../../lib/checkoutIntent";
 
 const VIMEO_VIDEO_ID = "1210087375";
 
@@ -165,7 +166,7 @@ function PurchaseButton({
   children = "Get 1-Year Access — ₹1,199",
   className = "",
 }) {
-  function handlePurchase() {
+  async function handlePurchase() {
     trackSpokenEnglishInitiateCheckout();
 
     if (!PAYMENT_URL || PAYMENT_URL.includes("PASTE_RAZORPAY")) {
@@ -175,9 +176,7 @@ function PurchaseButton({
       return;
     }
 
-    setTimeout(() => {
-      window.location.href = PAYMENT_URL;
-    }, 300);
+    await startSentenceMasterPaymentRedirect(PAYMENT_URL, 300);
   }
 
   return (

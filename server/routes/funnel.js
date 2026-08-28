@@ -16,6 +16,7 @@ import {
   LEARNING_PATH_EXPLORED,
   LESSON1_OPENED,
   recordBlockAJourneyMilestone,
+  recordCheckoutIntent,
 } from "../lib/whatsappJourney.js";
 
 const router = express.Router();
@@ -387,6 +388,48 @@ router.post("/journey-milestone", authRequired, async (req, res) => {
     return res.status(500).json({
       ok: false,
       code: "MILESTONE_RECORD_FAILED",
+    });
+  }
+});
+
+router.post("/checkout-intent", authRequired, async (req, res) => {
+  const allowedFields = new Set(["productKey"]);
+  const unknownFields = Object.keys(req.body || {}).filter(
+    (key) => !allowedFields.has(key),
+  );
+
+  if (unknownFields.length > 0) {
+    return res.status(400).json({
+      ok: false,
+      code: "UNKNOWN_FIELDS",
+    });
+  }
+
+  if (req.body?.productKey !== "sentence_master") {
+    return res.status(400).json({
+      ok: false,
+      code: "INVALID_PRODUCT",
+    });
+  }
+
+  try {
+    const result = await recordCheckoutIntent({
+      database: prisma,
+      userId: req.user.id,
+    });
+
+    return res.json({
+      ok: true,
+      recorded: result.created,
+      reason: result.created ? null : result.reason,
+    });
+  } catch (error) {
+    console.error("[CHECKOUT-INTENT] Failed to record checkout intent:", {
+      code: error?.code || "UNKNOWN",
+    });
+    return res.status(500).json({
+      ok: false,
+      code: "CHECKOUT_INTENT_RECORD_FAILED",
     });
   }
 });

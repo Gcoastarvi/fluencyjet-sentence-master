@@ -6,6 +6,8 @@ export const LESSON1_SIGNUP_REMINDER = "LESSON1_SIGNUP_REMINDER";
 export const LESSON1_WATCH_REMINDER = "LESSON1_WATCH_REMINDER";
 export const LEARNING_PATH_DISCOVERY_REMINDER =
   "LEARNING_PATH_DISCOVERY_REMINDER";
+export const CHECKOUT_HELP_REMINDER = "CHECKOUT_HELP_REMINDER";
+export const ANY_QUESTIONS_REMINDER = "ANY_QUESTIONS_REMINDER";
 
 export const LESSON1_PRACTICE_COMPLETED = "LESSON1_PRACTICE_COMPLETED";
 export const LESSON1_OPENED = "LESSON1_OPENED";
@@ -16,9 +18,19 @@ export const BLOCK_A_REMINDER_EVENT_TYPES = [
   LESSON1_WATCH_REMINDER,
   LEARNING_PATH_DISCOVERY_REMINDER,
 ];
+export const BLOCK_B_REMINDER_EVENT_TYPES = [
+  CHECKOUT_HELP_REMINDER,
+  ANY_QUESTIONS_REMINDER,
+];
+export const WHATSAPP_REMINDER_EVENT_TYPES = [
+  ...BLOCK_A_REMINDER_EVENT_TYPES,
+  ...BLOCK_B_REMINDER_EVENT_TYPES,
+];
 
 const WATCH_DELAY_MS = 15 * 60 * 1000;
 const DISCOVERY_DELAY_MS = 75 * 60 * 1000;
+const CHECKOUT_HELP_DELAY_MS = 20 * 60 * 1000;
+const ANY_QUESTIONS_DELAY_MS = 24 * 60 * 60 * 1000;
 
 export async function acquireUserJourneyLock(
   transaction,
@@ -136,6 +148,128 @@ async function createReminderEvent({
       },
     },
   });
+}
+
+export async function recordCheckoutIntent({
+  database,
+  userId,
+  occurredAt = new Date(),
+  productKey = SENTENCE_MASTER_PRODUCT_KEY,
+}) {
+  return database.$transaction(async (transaction) => {
+    await acquireUserJourneyLock(transaction, userId, productKey);
+
+    const user = await transaction.user.findUnique({
+      where: { id: userId },
+      select: {
+        whatsapp_number: true,
+        whatsapp_number_normalized: true,
+        whatsapp_consent: true,
+        has_access: true,
+      },
+    });
+
+    if (!user) {
+      return { created: false, reason: "USER_NOT_FOUND" };
+    }
+
+    if (!user.whatsapp_consent || !user.whatsapp_number_normalized) {
+      return { created: false, reason: "WHATSAPP_NOT_ELIGIBLE" };
+    }
+
+    if (user.has_access) {
+      return { created: false, reason: "USER_HAS_ACCESS" };
+    }
+
+    const existing = await transaction.automationEvent.findFirst({
+      where: {
+        userId,
+        productKey,
+        eventType: {
+          in: [CHECKOUT_HELP_REMINDER, ANY_QUESTIONS_REMINDER],
+        },
+        status: { in: ["PENDING", "SENDING"] },
+      },
+      orderBy: [
+        { createdAt: "asc" },
+        { id: "asc" },
+      ],
+    });
+
+    if (existing) {
+      return { created: false, reason: "ALREADY_ACTIVE", automationEvent: existing };
+    }
+
+    const automationEvent = await createReminderEvent({
+      transaction,
+      userId,
+      productKey,
+      eventType: CHECKOUT_HELP_REMINDER,
+      scheduledAt: new Date(occurredAt.getTime() + CHECKOUT_HELP_DELAY_MS),
+      sourceMilestone: "CHECKOUT_INTENT",
+    });
+
+    return { created: true, automationEvent };
+  }, {
+    maxWait: 5_000,
+    timeout: 15_000,
+  });
+}
+
+export async function scheduleAnyQuestionsAfterCheckoutHelpSent({
+  transaction,
+  checkoutHelpEvent,
+  sentAt,
+  anchorSource = "provider-sent",
+}) {
+  if (
+    !checkoutHelpEvent ||
+    checkoutHelpEvent.eventType !== CHECKOUT_HELP_REMINDER ||
+    checkoutHelpEvent.status !== "SENT" ||
+    !(sentAt instanceof Date) ||
+    Number.isNaN(sentAt.getTime())
+  ) {
+    return { created: false, reason: "NOT_AUTHORITATIVE_CHECKOUT_SENT" };
+  }
+
+  const existing = await transaction.automationEvent.findFirst({
+    where: {
+      userId: checkoutHelpEvent.userId,
+      productKey: checkoutHelpEvent.productKey || SENTENCE_MASTER_PRODUCT_KEY,
+      eventType: ANY_QUESTIONS_REMINDER,
+      sourceAutomationEventId: checkoutHelpEvent.id,
+    },
+    orderBy: [
+      { createdAt: "asc" },
+      { id: "asc" },
+    ],
+  });
+
+  if (existing) {
+    return { created: false, reason: "ALREADY_ACTIVE", automationEvent: existing };
+  }
+
+  const automationEvent = await transaction.automationEvent.create({
+    data: {
+      userId: checkoutHelpEvent.userId,
+      productKey:
+        checkoutHelpEvent.productKey || SENTENCE_MASTER_PRODUCT_KEY,
+      eventType: ANY_QUESTIONS_REMINDER,
+      status: "PENDING",
+      sourceAutomationEventId: checkoutHelpEvent.id,
+      destinationNumberNormalized:
+        checkoutHelpEvent.destinationNumberNormalized || null,
+      scheduledAt: new Date(sentAt.getTime() + ANY_QUESTIONS_DELAY_MS),
+      payload: {
+        source: "checkout-help-sent",
+        sourceAutomationEventId: checkoutHelpEvent.id,
+        anchorSource,
+        anchorSentAt: sentAt.toISOString(),
+      },
+    },
+  });
+
+  return { created: true, automationEvent };
 }
 
 export async function recordPracticeCompletionTransition({

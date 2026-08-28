@@ -896,7 +896,7 @@ describe(
 
       expect(res.status).toBe(500);
       expect(res.body.error)
-        .toBe('SEND_FINALIZE_CONFLICT');
+        .toBe('SEND_FINALIZE_FAILED');
 
       expect(res.body.providerMessageId)
         .toBe('wamid.TEST123');
@@ -905,6 +905,21 @@ describe(
 
       expect(mockSendWhatsAppTemplate)
         .toHaveBeenCalledTimes(1);
+
+      expect(mockPrisma.automationEvent.updateMany)
+        .toHaveBeenNthCalledWith(
+          3,
+          expect.objectContaining({
+            where: {
+              id: UUID1,
+              status: 'SENDING',
+              providerMessageId: null,
+            },
+            data: expect.objectContaining({
+              providerMessageId: 'wamid.TEST123',
+            }),
+          }),
+        );
     });
 
     test('[L-22] Finalize DB failure never retries provider', async () => {
@@ -930,6 +945,21 @@ describe(
 
       expect(mockSendWhatsAppTemplate)
         .toHaveBeenCalledTimes(1);
+
+      expect(mockPrisma.automationEvent.updateMany)
+        .toHaveBeenNthCalledWith(
+          3,
+          expect.objectContaining({
+            where: {
+              id: UUID1,
+              status: 'SENDING',
+              providerMessageId: null,
+            },
+            data: expect.objectContaining({
+              providerMessageId: 'wamid.TEST123',
+            }),
+          }),
+        );
     });
 
     test('[L-23] Watch reminder uses its fixed template through the existing safe live path', async () => {
