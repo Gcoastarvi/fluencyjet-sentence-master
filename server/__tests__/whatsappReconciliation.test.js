@@ -261,6 +261,98 @@ describe('POST /api/automation/reconcile-sending', () => {
     expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
   });
 
+  test('uses evidence createdAt as a conservative checkout anchor and keeps follow-up exact once', async () => {
+    const firstObservedAt = new Date('2026-08-24T10:05:00.000Z');
+    const laterObservedAt = new Date('2026-08-24T10:10:00.000Z');
+    const checkoutEvent = makeEvent({
+      eventType: 'CHECKOUT_HELP_REMINDER',
+    });
+    mockPrisma.automationEvent.findUnique.mockResolvedValue(checkoutEvent);
+    mockPrisma.whatsAppMessageEvent.findMany.mockResolvedValue([
+      makeEvidence({
+        id: 'later-read-without-provider-time',
+        eventType: 'READ',
+        eventTimestamp: null,
+        createdAt: laterObservedAt,
+      }),
+      makeEvidence({
+        id: 'first-delivered-without-provider-time',
+        eventType: 'DELIVERED',
+        eventTimestamp: null,
+        createdAt: firstObservedAt,
+      }),
+    ]);
+    mockPrisma.automationEvent.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 'any-questions-event' });
+
+    const first = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      action: 'MARK_SENT',
+    }, 'checkout-help-created-at-anchor');
+    const replay = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      action: 'MARK_SENT',
+    }, 'checkout-help-created-at-anchor-replay');
+
+    expect(first.status).toBe(200);
+    expect(replay.status).toBe(200);
+    expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'SENT',
+          sentAt: firstObservedAt,
+        }),
+      }),
+    );
+    expect(mockPrisma.automationEvent.create).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventType: 'ANY_QUESTIONS_REMINDER',
+        sourceAutomationEventId: EVENT_ID,
+        scheduledAt: new Date('2026-08-25T10:05:00.000Z'),
+        payload: expect.objectContaining({
+          anchorSentAt: firstObservedAt.toISOString(),
+        }),
+      }),
+    });
+  });
+
+  test('keeps checkout help unresolved when matching success evidence has no reliable timestamp', async () => {
+    const checkoutEvent = makeEvent({
+      eventType: 'CHECKOUT_HELP_REMINDER',
+    });
+    mockPrisma.automationEvent.findUnique.mockResolvedValue(checkoutEvent);
+    mockPrisma.whatsAppMessageEvent.findMany.mockResolvedValue([
+      makeEvidence({
+        eventTimestamp: null,
+        createdAt: null,
+      }),
+    ]);
+
+    const response = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      action: 'MARK_SENT',
+    }, 'checkout-help-missing-anchor');
+
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({
+      ok: false,
+      error: 'RECONCILIATION_NOT_APPLIED',
+      resultingStatus: 'SENDING',
+    });
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
+    expect(mockPrisma.automationReconciliationJournal.create)
+      .toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          decision: 'REJECTED',
+          resultingStatus: 'SENDING',
+          reasonCode: 'SUCCESS_EVIDENCE_TIMESTAMP_REQUIRED',
+        }),
+      });
+  });
+
   test('reconciles an any-questions confirmed send without creating another reminder', async () => {
     const anyQuestionsEvent = makeEvent({
       eventType: 'ANY_QUESTIONS_REMINDER',

@@ -183,13 +183,17 @@ async function createFixture(index, {
   return { number, user, event };
 }
 
-async function createEvidence(event, type) {
+async function createEvidence(event, type, {
+  eventTimestamp = new Date(Date.now() - 1_000),
+  createdAt,
+} = {}) {
   const evidence = await controlClient.whatsAppMessageEvent.create({
     data: {
       automationEventId: event.id,
       providerMessageId: event.providerMessageId,
       eventType: type,
-      eventTimestamp: new Date(Date.now() - 1_000),
+      eventTimestamp,
+      ...(createdAt ? { createdAt } : {}),
       dedupKey: crypto.randomBytes(32).toString('hex'),
     },
   });
@@ -434,6 +438,67 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
       ).toISOString(),
     );
     expect(reconciliationProvider).toHaveBeenCalledTimes(1);
+  });
+
+  test('uses persisted evidence creation time when checkout-help provider timestamps are missing', async () => {
+    const checkout = await createFixture(11, {
+      eventType: 'CHECKOUT_HELP_REMINDER',
+    });
+    const firstObservedAt = new Date(Date.now() - 10 * 60_000);
+    const laterObservedAt = new Date(Date.now() - 5 * 60_000);
+    const firstEvidence = await createEvidence(checkout.event, 'DELIVERED', {
+      eventTimestamp: null,
+      createdAt: firstObservedAt,
+    });
+    await createEvidence(checkout.event, 'READ', {
+      eventTimestamp: null,
+      createdAt: laterObservedAt,
+    });
+
+    const firstResponse = await postReconciliation(
+      makeApp(),
+      checkout.event.id,
+      'MARK_SENT',
+      undefined,
+      'checkout-created-at-anchor-11',
+    );
+    const replayResponse = await postReconciliation(
+      makeApp(),
+      checkout.event.id,
+      'MARK_SENT',
+      undefined,
+      'checkout-created-at-anchor-11-replay',
+    );
+
+    expect(firstResponse.status).toBe(200);
+    expect(replayResponse.status).toBe(200);
+
+    const finalEvent = await controlClient.automationEvent.findUnique({
+      where: { id: checkout.event.id },
+    });
+    expect(finalEvent?.status).toBe('SENT');
+    expect(finalEvent?.sentAt?.toISOString()).toBe(
+      firstEvidence.createdAt.toISOString(),
+    );
+
+    const followUps = await controlClient.automationEvent.findMany({
+      where: {
+        userId: checkout.user.id,
+        productKey: 'sentence_master',
+        eventType: 'ANY_QUESTIONS_REMINDER',
+        sourceAutomationEventId: checkout.event.id,
+      },
+    });
+    followUps.forEach((event) => testEventIds.add(event.id));
+    expect(followUps).toHaveLength(1);
+    expect(followUps[0].scheduledAt.toISOString()).toBe(
+      new Date(
+        firstEvidence.createdAt.getTime() + 24 * 60 * 60 * 1000,
+      ).toISOString(),
+    );
+    expect(followUps[0].payload).toMatchObject({
+      anchorSentAt: firstEvidence.createdAt.toISOString(),
+    });
   });
 
   test('preserves provider correlation when dependent follow-up finalization rolls back, then reconciles without resend', async () => {

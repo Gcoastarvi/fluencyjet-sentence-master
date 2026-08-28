@@ -697,6 +697,27 @@ function usableProviderSentTimestamp(eventTimestamp, now) {
   return eventTimestamp;
 }
 
+function usableSuccessEvidenceTimestamp(evidence, now) {
+  const providerTimestamp = usableProviderSentTimestamp(
+    evidence.eventTimestamp,
+    now,
+  );
+  if (providerTimestamp) return providerTimestamp;
+
+  if (
+    evidence.createdAt instanceof Date &&
+    !Number.isNaN(evidence.createdAt.getTime()) &&
+    evidence.createdAt.getTime() <= now.getTime()
+  ) {
+    // The database creation time is when the matching provider evidence was
+    // observed and persisted. It is conservative when the provider timestamp
+    // is absent: it can delay the follow-up, but never backdate it.
+    return evidence.createdAt;
+  }
+
+  return null;
+}
+
 async function findMatchingReconciliationEvidence(transaction, event) {
   if (!event.providerMessageId) return [];
 
@@ -1672,6 +1693,16 @@ router.post('/reconcile-sending', async (req, res) => {
           return formatReconciliationJournalResult(journal);
         }
 
+        const checkoutHelpSuccessEvidence =
+          event.eventType === CHECKOUT_HELP_REMINDER
+            ? successEvidence
+                .map((item) => ({
+                  item,
+                  timestamp: usableSuccessEvidenceTimestamp(item, now),
+                }))
+                .filter(({ timestamp }) => timestamp !== null)
+            : [];
+
         const sentEvidence = successEvidence
           .filter((item) => item.eventType === 'SENT')
           .map((item) => ({
@@ -1683,32 +1714,46 @@ router.post('/reconcile-sending', async (req, res) => {
             right.timestamp.getTime() - left.timestamp.getTime(),
           )[0];
 
+        const firstReliableSuccessEvidence = checkoutHelpSuccessEvidence
+          .sort((left, right) => {
+            const timestampDifference =
+              left.timestamp.getTime() - right.timestamp.getTime();
+            if (timestampDifference !== 0) return timestampDifference;
+            return String(left.item.id).localeCompare(String(right.item.id));
+          })[0];
+
+        if (
+          event.eventType === CHECKOUT_HELP_REMINDER &&
+          !event.sentAt &&
+          !firstReliableSuccessEvidence
+        ) {
+          const journal = await createReconciliationJournalEntry(
+            tx,
+            journalData({
+              event,
+              idempotencyKey,
+              requestHash,
+              action,
+              decision: 'REJECTED',
+              resultingStatus: event.status,
+              reasonCode: 'SUCCESS_EVIDENCE_TIMESTAMP_REQUIRED',
+              evidence: successEvidence[0],
+            }),
+          );
+          return formatReconciliationJournalResult(journal);
+        }
+
         const sentData = {
           status: 'SENT',
           processedAt: now,
         };
 
-        // DELIVERED and READ prove the message was sent but are later
-        // milestones, not trustworthy send timestamps.
-        if (sentEvidence && !event.sentAt) {
+        if (event.eventType === CHECKOUT_HELP_REMINDER && !event.sentAt) {
+          sentData.sentAt = firstReliableSuccessEvidence.timestamp;
+        } else if (sentEvidence && !event.sentAt) {
+          // DELIVERED and READ prove the message was sent but are later
+          // milestones, not trustworthy send timestamps.
           sentData.sentAt = sentEvidence.timestamp;
-        }
-
-        if (
-          event.eventType === CHECKOUT_HELP_REMINDER &&
-          !event.sentAt &&
-          !sentData.sentAt
-        ) {
-          const firstReliableEvidenceTimestamp = successEvidence
-            .map((item) =>
-              usableProviderSentTimestamp(item.eventTimestamp, now),
-            )
-            .filter((timestamp) => timestamp !== null)
-            .sort((left, right) => left.getTime() - right.getTime())[0];
-
-          if (firstReliableEvidenceTimestamp) {
-            sentData.sentAt = firstReliableEvidenceTimestamp;
-          }
         }
 
         const updated = await tx.automationEvent.updateMany({
