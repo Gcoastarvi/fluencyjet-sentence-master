@@ -217,10 +217,11 @@ export async function runScheduledLesson1Rollout({
   const config = readScheduledRolloutConfig(env);
 
   if (config.errorCode) {
-    if (
+    const intentionalPause =
       config.errorCode === 'WHATSAPP_LIVE_SEND_DISABLED' ||
-      config.errorCode === 'WHATSAPP_ROLLOUT_WORKER_DISABLED'
-    ) {
+      config.errorCode === 'WHATSAPP_ROLLOUT_WORKER_DISABLED';
+
+    if (intentionalPause) {
       logBlockedRun(logger, config.errorCode);
     } else {
       logConfigurationFailure(logger, config.errorCode);
@@ -228,7 +229,9 @@ export async function runScheduledLesson1Rollout({
 
     return {
       ok: false,
-      exitCode: SCHEDULED_ROLLOUT_EXIT_CODES.FAILURE,
+      exitCode: intentionalPause
+        ? SCHEDULED_ROLLOUT_EXIT_CODES.SUCCESS
+        : SCHEDULED_ROLLOUT_EXIT_CODES.FAILURE,
       errorCode: config.errorCode,
       requestCount: 0,
     };

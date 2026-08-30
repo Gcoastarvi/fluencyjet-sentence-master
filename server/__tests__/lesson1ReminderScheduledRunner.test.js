@@ -147,10 +147,10 @@ describe('scheduled Lesson 1 rollout runner', () => {
       'WHATSAPP_ROLLOUT_WORKER_DISABLED',
     ],
   ])(
-    'fails closed when the %s is disabled and does not dispatch',
+    'records a successful skipped run when the %s is disabled and does not dispatch',
     async (_label, overrides, errorCode) => {
       const fetchImpl = jest.fn();
-      const { logger } = makeLogger();
+      const { logger, output } = makeLogger();
 
       const result = await runScheduledLesson1Rollout({
         env: makeEnv(overrides),
@@ -160,11 +160,14 @@ describe('scheduled Lesson 1 rollout runner', () => {
 
       expect(result).toMatchObject({
         ok: false,
-        exitCode: SCHEDULED_ROLLOUT_EXIT_CODES.FAILURE,
+        exitCode: SCHEDULED_ROLLOUT_EXIT_CODES.SUCCESS,
         errorCode,
         requestCount: 0,
       });
       expect(fetchImpl).not.toHaveBeenCalled();
+      expect(output()).toContain(
+        `[AUTOMATION-ROLLOUT-SCHEDULED] blocked code=${errorCode}`,
+      );
     },
   );
 
