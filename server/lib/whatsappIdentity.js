@@ -3,6 +3,7 @@ import {
   SENTENCE_MASTER_PRODUCT_KEY,
   acquireUserJourneyLock,
 } from "./whatsappJourney.js";
+import { normalizeWhatsAppNumber } from "./whatsappNumber.js";
 
 export const LESSON1_SIGNUP_REMINDER = "LESSON1_SIGNUP_REMINDER";
 export const WHATSAPP_SUPPRESSION_CLEARANCE_SOURCE =
@@ -155,8 +156,15 @@ export async function reconcileLesson1SignupReminder({
 
     await cancelPendingLesson1Reminder(tx, userId);
 
+    const hasCanonicalDestination =
+      typeof whatsappNumberNormalized === "string" &&
+      whatsappNumberNormalized.trim() !== "" &&
+      normalizeWhatsAppNumber(whatsappNumberNormalized) ===
+        whatsappNumberNormalized;
+
     if (
       !whatsappConsent ||
+      !hasCanonicalDestination ||
       practiceMilestone ||
       Number(lesson1Progress?.completed || 0) >= 10
     ) {
