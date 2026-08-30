@@ -3537,10 +3537,15 @@ export function createRolloutReminderHandler({
 
       for (const ae of candidates) {
         const eventDestination = getEventDestination(ae);
+        const isSupportedReminder =
+          WHATSAPP_REMINDER_EVENT_TYPE_SET.has(ae.eventType) &&
+          (ae.productKey || SENTENCE_MASTER_PRODUCT_KEY) ===
+            SENTENCE_MASTER_PRODUCT_KEY;
 
         if (eventDestination.skipReason) {
           if (
             !preview &&
+            isSupportedReminder &&
             STRUCTURALLY_UNSENDABLE_DESTINATION_REASONS.has(
               eventDestination.skipReason,
             )

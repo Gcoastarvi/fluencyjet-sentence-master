@@ -348,6 +348,33 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
     expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
   });
 
+  test('does not retire a destination-invalid unsupported-product row', async () => {
+    enableLiveRolloutGates();
+    const event = makeEvent(
+      FIRST_ID,
+      1,
+      null,
+      { productKey: 'other_product' },
+    );
+    mockPrisma.automationEvent.findMany.mockResolvedValue([event]);
+
+    const response = await rolloutRequest(makeApp(), {
+      liveSend: true,
+      limit: 1,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.rows[0]).toMatchObject({
+      automationEventId: FIRST_ID,
+      status: 'PENDING',
+      result: 'SKIPPED',
+      reasonCode: 'MISSING_EVENT_DESTINATION',
+      whatsappSent: false,
+    });
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
   test('live mode requires both gates and sends at most once', async () => {
     enableLiveRolloutGates();
     const first = makeEvent(FIRST_ID, 1);
