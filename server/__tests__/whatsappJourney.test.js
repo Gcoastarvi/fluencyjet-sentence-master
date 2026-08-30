@@ -175,6 +175,87 @@ describe("WhatsApp Block A journey foundation", () => {
     });
   });
 
+  test.each([
+    ["null", null],
+    ["blank", "   "],
+    ["invalid", "not-a-phone-number"],
+    ["noncanonical", "919876543210"],
+  ])(
+    "records Lesson 1 open and cancels Watch without creating Discovery for a %s canonical destination",
+    async (_label, destinationNumberNormalized) => {
+      const tx = makeTransaction();
+      tx.user.findUnique.mockResolvedValue({
+        whatsapp_number: "+91 98765 43210",
+        whatsapp_number_normalized: destinationNumberNormalized,
+      });
+      tx.userJourneyMilestone.findUnique.mockResolvedValue(null);
+      tx.userJourneyMilestone.create.mockResolvedValue({
+        id: "milestone-open",
+        userId: 42,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        milestoneType: LESSON1_OPENED,
+        occurredAt,
+      });
+      const database = {
+        $transaction: jest.fn(async (callback) => callback(tx)),
+      };
+
+      const result = await recordBlockAJourneyMilestone({
+        database,
+        userId: 42,
+        milestoneType: LESSON1_OPENED,
+        occurredAt,
+      });
+
+      expect(result).toEqual({
+        created: true,
+        milestone: expect.objectContaining({
+          milestoneType: LESSON1_OPENED,
+        }),
+      });
+      expect(tx.user.findUnique).toHaveBeenCalledTimes(1);
+      expect(tx.automationEvent.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            eventType: { in: [LESSON1_WATCH_REMINDER] },
+          }),
+        }),
+      );
+      expect(tx.automationEvent.create).not.toHaveBeenCalled();
+    },
+  );
+
+  test("creates Discovery only from a valid canonical learner destination", async () => {
+    const tx = makeTransaction();
+    tx.userJourneyMilestone.findUnique.mockResolvedValue(null);
+    tx.userJourneyMilestone.create.mockResolvedValue({
+      id: "milestone-open",
+      userId: 42,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
+      milestoneType: LESSON1_OPENED,
+      occurredAt,
+    });
+    tx.automationEvent.create.mockResolvedValue({ id: "discovery-event" });
+    const database = {
+      $transaction: jest.fn(async (callback) => callback(tx)),
+    };
+
+    const result = await recordBlockAJourneyMilestone({
+      database,
+      userId: 42,
+      milestoneType: LESSON1_OPENED,
+      occurredAt,
+    });
+
+    expect(result.automationEvent).toEqual({ id: "discovery-event" });
+    expect(tx.automationEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventType: LEARNING_PATH_DISCOVERY_REMINDER,
+        destinationNumberNormalized: "+919876543210",
+      }),
+    });
+  });
+
   test("a prior learning-path exploration prevents Lesson 1 open from creating discovery", async () => {
     const tx = makeTransaction();
     tx.userJourneyMilestone.findUnique

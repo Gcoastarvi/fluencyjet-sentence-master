@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { acquireWhatsAppDestinationLock } from "./whatsappDestinationLock.js";
+import { normalizeWhatsAppNumber } from "./whatsappNumber.js";
 
 export const SENTENCE_MASTER_PRODUCT_KEY = "sentence_master";
 
@@ -133,14 +134,25 @@ async function createReminderEvent({
     },
   });
 
+  if (
+    eventType === LEARNING_PATH_DISCOVERY_REMINDER &&
+    (
+      typeof user?.whatsapp_number_normalized !== "string" ||
+      user.whatsapp_number_normalized.trim() === "" ||
+      normalizeWhatsAppNumber(user.whatsapp_number_normalized) !==
+        user.whatsapp_number_normalized
+    )
+  ) {
+    return null;
+  }
+
   return transaction.automationEvent.create({
     data: {
       userId,
       productKey,
       eventType,
       status: "PENDING",
-      destinationNumberNormalized:
-        user?.whatsapp_number_normalized || null,
+      destinationNumberNormalized: user?.whatsapp_number_normalized || null,
       scheduledAt,
       payload: {
         whatsapp_number: user?.whatsapp_number || null,
@@ -443,6 +455,10 @@ export async function recordBlockAJourneyMilestone({
         scheduledAt: new Date(occurredAt.getTime() + DISCOVERY_DELAY_MS),
         sourceMilestone: LESSON1_OPENED,
       });
+
+      if (!automationEvent) {
+        return milestoneResult;
+      }
 
       return {
         ...milestoneResult,

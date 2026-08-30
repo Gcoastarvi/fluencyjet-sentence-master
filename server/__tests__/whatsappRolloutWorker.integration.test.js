@@ -179,6 +179,7 @@ async function createUser(index, {
 }
 
 async function createEvent(user, {
+  eventType = 'LESSON1_SIGNUP_REMINDER',
   createdAt = new Date(),
   scheduledAt = new Date(Date.now() - 60_000),
   destinationNumberNormalized = user.whatsapp_number_normalized,
@@ -187,7 +188,7 @@ async function createEvent(user, {
     data: {
       id: crypto.randomUUID(),
       userId: user.id,
-      eventType: 'LESSON1_SIGNUP_REMINDER',
+      eventType,
       status: 'PENDING',
       createdAt,
       scheduledAt,
@@ -492,6 +493,84 @@ describe('manual rollout worker PostgreSQL integration', () => {
         providerMessageId: null,
       }),
     ]));
+  });
+
+  test('cancels a bad first limit-one candidate so the next run can process the later row', async () => {
+    process.env.WHATSAPP_LIVE_SEND_ENABLED = 'true';
+    process.env.WHATSAPP_ROLLOUT_WORKER_ENABLED = 'true';
+    const watermark = new Date(Date.now() - 30 * 60_000);
+    process.env.WHATSAPP_LESSON1_ROLLOUT_WATERMARK = watermark.toISOString();
+    const provider = jest.fn().mockResolvedValue({
+      provider: 'mocked-provider',
+      messageId: `wamid.rollout.${runToken}.starvation`,
+    });
+    const app = makeApp(provider);
+    const badUser = await createUser(6);
+    const eligibleUser = await createUser(7);
+    const badEvent = await createEvent(badUser, {
+      eventType: 'LEARNING_PATH_DISCOVERY_REMINDER',
+      createdAt: watermark,
+      destinationNumberNormalized: null,
+    });
+    const eligibleEvent = await createEvent(eligibleUser, {
+      createdAt: new Date(watermark.getTime() + 1),
+    });
+
+    const firstResponse = await rolloutRequest(app, {
+      liveSend: true,
+      limit: 1,
+    });
+    const retired = await controlClient.automationEvent.findUnique({
+      where: { id: badEvent.id },
+      select: { status: true, cancelledAt: true, processedAt: true },
+    });
+
+    expect(firstResponse.status).toBe(200);
+    expect(firstResponse.body).toMatchObject({
+      counts: {
+        examined: 1,
+        skipped: 1,
+        sent: 0,
+        unconfirmed: 0,
+      },
+      rows: [
+        expect.objectContaining({
+          automationEventId: badEvent.id,
+          status: 'CANCELLED',
+          result: 'SKIPPED',
+          reasonCode: 'MISSING_EVENT_DESTINATION',
+          whatsappSent: false,
+        }),
+      ],
+    });
+    expect(retired.status).toBe('CANCELLED');
+    expect(retired.cancelledAt).not.toBeNull();
+    expect(retired.processedAt).not.toBeNull();
+    expect(provider).not.toHaveBeenCalled();
+
+    const secondResponse = await rolloutRequest(app, {
+      liveSend: true,
+      limit: 1,
+    });
+    const eligible = await controlClient.automationEvent.findUnique({
+      where: { id: eligibleEvent.id },
+      select: { status: true, providerMessageId: true },
+    });
+
+    expect(secondResponse.status).toBe(200);
+    expect(secondResponse.body.rows).toEqual([
+      expect.objectContaining({
+        automationEventId: eligibleEvent.id,
+        result: 'SENT',
+        status: 'SENT',
+        whatsappSent: true,
+      }),
+    ]);
+    expect(eligible).toEqual({
+      status: 'SENT',
+      providerMessageId: `wamid.rollout.${runToken}.starvation`,
+    });
+    expect(provider).toHaveBeenCalledTimes(1);
   });
 
   test('serializes STOP ahead of rollout provider dispatch', async () => {

@@ -280,6 +280,74 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
     expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 
+  test.each([
+    ['missing', null, 'MISSING_EVENT_DESTINATION'],
+    ['invalid', '919999999999', 'INVALID_EVENT_DESTINATION'],
+  ])(
+    'live mode retires a %s immutable destination without calling the provider',
+    async (_label, destination, reasonCode) => {
+      enableLiveRolloutGates();
+      const event = makeEvent(FIRST_ID, 1, destination);
+      mockPrisma.automationEvent.findMany.mockResolvedValue([event]);
+      mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 1 });
+
+      const response = await rolloutRequest(makeApp(), {
+        liveSend: true,
+        limit: 1,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body.counts).toEqual({
+        examined: 1,
+        skipped: 1,
+        sent: 0,
+        unconfirmed: 0,
+      });
+      expect(response.body.rows[0]).toMatchObject({
+        automationEventId: FIRST_ID,
+        status: 'CANCELLED',
+        result: 'SKIPPED',
+        reasonCode,
+        whatsappSent: false,
+      });
+      expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledWith({
+        where: {
+          id: FIRST_ID,
+          status: 'PENDING',
+        },
+        data: {
+          status: 'CANCELLED',
+          cancelledAt: expect.any(Date),
+          processedAt: expect.any(Date),
+        },
+      });
+      expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+      expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
+    },
+  );
+
+  test('a live destination retirement race is idempotent and never dispatches', async () => {
+    enableLiveRolloutGates();
+    const event = makeEvent(FIRST_ID, 1, null);
+    mockPrisma.automationEvent.findMany.mockResolvedValue([event]);
+    mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 0 });
+
+    const response = await rolloutRequest(makeApp(), {
+      liveSend: true,
+      limit: 1,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.rows[0]).toMatchObject({
+      automationEventId: FIRST_ID,
+      result: 'ALREADY_PROCESSED',
+      reasonCode: 'ALREADY_PROCESSED',
+      whatsappSent: false,
+    });
+    expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledTimes(1);
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
   test('live mode requires both gates and sends at most once', async () => {
     enableLiveRolloutGates();
     const first = makeEvent(FIRST_ID, 1);

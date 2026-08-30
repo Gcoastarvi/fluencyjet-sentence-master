@@ -71,6 +71,10 @@ const RECONCILIABLE_REMINDER_EVENT_TYPE_SET = new Set([
   CHECKOUT_HELP_REMINDER,
   ANY_QUESTIONS_REMINDER,
 ]);
+const STRUCTURALLY_UNSENDABLE_DESTINATION_REASONS = new Set([
+  'MISSING_EVENT_DESTINATION',
+  'INVALID_EVENT_DESTINATION',
+]);
 
 function getLesson1TemplateConfiguration() {
   return {
@@ -3535,6 +3539,35 @@ export function createRolloutReminderHandler({
         const eventDestination = getEventDestination(ae);
 
         if (eventDestination.skipReason) {
+          if (
+            !preview &&
+            STRUCTURALLY_UNSENDABLE_DESTINATION_REASONS.has(
+              eventDestination.skipReason,
+            )
+          ) {
+            const cancellation = await cancelRow(
+              ae.id,
+              eventDestination.skipReason,
+              database,
+            );
+
+            if (cancellation.count === 0) {
+              rows.push(formatRolloutRow(ae, {
+                result: 'ALREADY_PROCESSED',
+                reasonCode: 'ALREADY_PROCESSED',
+                whatsappSent: false,
+              }));
+            } else {
+              rows.push(formatRolloutRow(ae, {
+                status: 'CANCELLED',
+                result: 'SKIPPED',
+                reasonCode: eventDestination.skipReason,
+                whatsappSent: false,
+              }));
+            }
+            continue;
+          }
+
           rows.push(formatRolloutRow(ae, {
             result: 'SKIPPED',
             reasonCode: eventDestination.skipReason,
