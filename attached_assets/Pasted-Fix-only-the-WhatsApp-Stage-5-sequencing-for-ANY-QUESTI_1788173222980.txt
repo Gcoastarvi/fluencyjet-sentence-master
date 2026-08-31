@@ -1,0 +1,43 @@
+Fix only the WhatsApp Stage 5 sequencing for ANY_QUESTIONS_REMINDER.
+
+Current problem: ANY_QUESTIONS_REMINDER is being scheduled immediately when CHECKOUT_HELP_REMINDER becomes internally SENT, which only means Meta accepted the message. We have now seen a real case where Meta later returned a FAILED delivery webhook with error 131049. In that situation the learner never received Checkout Help, but the next-day Any Questions reminder could already have been scheduled.
+
+Required behavior:
+
+Remove all scheduling of ANY_QUESTIONS_REMINDER from the internal Checkout Help SENT finalization paths.
+Continue marking Checkout Help internally SENT when Meta accepts it and returns a provider message ID. Do not change that existing lifecycle.
+Schedule ANY_QUESTIONS_REMINDER only when the WhatsApp webhook persists a DELIVERED status that can be linked to the originating CHECKOUT_HELP_REMINDER.
+The originating Checkout Help event must be CHECKOUT_HELP_REMINDER, product sentence_master, internally SENT, and linked by the same provider message ID / automation event.
+Set ANY_QUESTIONS_REMINDER.scheduledAt to exactly 24 hours after the Meta DELIVERED webhook eventTimestamp, not 24 hours after internal sentAt.
+Preserve the Checkout Help destination snapshot and set sourceAutomationEventId to the originating Checkout Help automation event.
+Make delivery processing idempotent. Duplicate DELIVERED webhooks for the same Checkout Help event must create at most one Any Questions reminder.
+A FAILED webhook must never create Any Questions.
+A SENT webhook alone must never create Any Questions.
+A later READ webhook must not create another Any Questions reminder.
+Preserve all existing purchase cancellation, consent, phone suppression, destination ownership/locking, opt-out, access, rollout, and provider-send behavior.
+Do not introduce a new database migration unless the existing schema genuinely cannot support this. Existing WhatsAppMessageEvent delivery fields and AutomationEvent.sourceAutomationEventId should be reused if sufficient.
+
+Add focused tests covering:
+
+DELIVERED creates exactly one Any Questions reminder.
+scheduledAt = DELIVERED eventTimestamp + 24 hours.
+duplicate DELIVERED does not create a duplicate.
+SENT webhook does not schedule.
+FAILED webhook does not schedule.
+READ does not create a second reminder.
+existing purchase cancellation still works.
+existing WhatsApp journey/reconciliation tests continue to pass.
+
+Run the focused test suite after the change.
+
+Do not work on payment-failed, purchase-success, authentication, UI, campaigns, or any unrelated task.
+
+When finished, tell me exactly:
+
+which behavior changed,
+which tests passed,
+whether a migration was needed,
+git status,
+and the commit hash.
+
+Do not deploy or push yet.
