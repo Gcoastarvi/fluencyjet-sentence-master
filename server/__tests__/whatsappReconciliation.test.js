@@ -197,7 +197,7 @@ describe('POST /api/automation/reconcile-sending', () => {
     expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
   });
 
-  test('reconciles checkout help and atomically schedules one follow-up from the first reliable evidence timestamp', async () => {
+  test('reconciles checkout help without scheduling the delivery-gated follow-up', async () => {
     const deliveredAt = new Date('2026-08-24T10:05:00.000Z');
     const checkoutEvent = makeEvent({
       eventType: 'CHECKOUT_HELP_REMINDER',
@@ -233,35 +233,11 @@ describe('POST /api/automation/reconcile-sending', () => {
         }),
       }),
     );
-    expect(mockPrisma.automationEvent.findFirst).toHaveBeenCalledWith({
-      where: {
-        userId: 42,
-        productKey: 'sentence_master',
-        eventType: 'ANY_QUESTIONS_REMINDER',
-        sourceAutomationEventId: EVENT_ID,
-      },
-      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-    });
-    expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        userId: 42,
-        productKey: 'sentence_master',
-        eventType: 'ANY_QUESTIONS_REMINDER',
-        status: 'PENDING',
-        sourceAutomationEventId: EVENT_ID,
-        destinationNumberNormalized: DESTINATION,
-        scheduledAt: new Date('2026-08-25T10:05:00.000Z'),
-        payload: expect.objectContaining({
-          sourceAutomationEventId: EVENT_ID,
-          anchorSource: 'provider-success-evidence',
-          anchorSentAt: deliveredAt.toISOString(),
-        }),
-      }),
-    });
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
     expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
   });
 
-  test('uses evidence createdAt as a conservative checkout anchor and keeps follow-up exact once', async () => {
+  test('uses evidence createdAt as a conservative SENT anchor without scheduling a follow-up', async () => {
     const firstObservedAt = new Date('2026-08-24T10:05:00.000Z');
     const laterObservedAt = new Date('2026-08-24T10:10:00.000Z');
     const checkoutEvent = makeEvent({
@@ -282,10 +258,6 @@ describe('POST /api/automation/reconcile-sending', () => {
         createdAt: firstObservedAt,
       }),
     ]);
-    mockPrisma.automationEvent.findFirst
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: 'any-questions-event' });
-
     const first = await reconciliationRequest({
       automationEventId: EVENT_ID,
       action: 'MARK_SENT',
@@ -305,17 +277,7 @@ describe('POST /api/automation/reconcile-sending', () => {
         }),
       }),
     );
-    expect(mockPrisma.automationEvent.create).toHaveBeenCalledTimes(1);
-    expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        eventType: 'ANY_QUESTIONS_REMINDER',
-        sourceAutomationEventId: EVENT_ID,
-        scheduledAt: new Date('2026-08-25T10:05:00.000Z'),
-        payload: expect.objectContaining({
-          anchorSentAt: firstObservedAt.toISOString(),
-        }),
-      }),
-    });
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
   });
 
   test('keeps checkout help unresolved when matching success evidence has no reliable timestamp', async () => {

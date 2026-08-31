@@ -4,11 +4,25 @@ import crypto from 'crypto';
 import request from 'supertest';
 
 const mockPrisma = {
+  $executeRaw: jest.fn(),
+  $transaction: jest.fn(),
   automationEvent: {
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
   },
   whatsAppMessageEvent: {
     create: jest.fn(),
+  },
+  user: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  whatsAppPhoneSuppression: {
+    findUnique: jest.fn(),
+  },
+  spokenEnglishPurchase: {
+    findFirst: jest.fn(),
   },
 };
 
@@ -73,13 +87,44 @@ describe('WhatsApp webhook outbound status processing', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    mockPrisma.$transaction.mockImplementation(
+      async (callback) => callback(mockPrisma),
+    );
+    mockPrisma.$executeRaw.mockResolvedValue(1);
     mockPrisma.automationEvent.findUnique.mockResolvedValue({
       id: '11111111-1111-4111-8111-111111111111',
+      userId: 42,
+      productKey: 'sentence_master',
+      eventType: 'CHECKOUT_HELP_REMINDER',
+      status: 'SENT',
+      providerMessageId: 'wamid.STATUS123',
+      destinationNumberNormalized: '+919842882773',
+    });
+    mockPrisma.automationEvent.findFirst.mockResolvedValue(null);
+    mockPrisma.automationEvent.create.mockResolvedValue({
+      id: 'any-questions-event',
     });
 
-    mockPrisma.whatsAppMessageEvent.create.mockResolvedValue({
-      id: 'event-test-id',
+    mockPrisma.whatsAppMessageEvent.create.mockImplementation(
+      async ({ data }) => ({
+        id: 'event-test-id',
+        ...data,
+      }),
+    );
+    mockPrisma.user.findUnique.mockResolvedValue({
+      whatsapp_number_normalized: '+919842882773',
+      whatsapp_consent: true,
+      whatsapp_opted_out_at: null,
+      has_access: false,
     });
+    mockPrisma.user.findMany.mockResolvedValue([
+      {
+        whatsapp_opted_out_at: null,
+        has_access: false,
+      },
+    ]);
+    mockPrisma.whatsAppPhoneSuppression.findUnique.mockResolvedValue(null);
+    mockPrisma.spokenEnglishPurchase.findFirst.mockResolvedValue(null);
   });
 
   test('records SENT and links it by providerMessageId', async () => {
@@ -100,6 +145,12 @@ describe('WhatsApp webhook outbound status processing', () => {
       },
       select: {
         id: true,
+        userId: true,
+        productKey: true,
+        eventType: true,
+        status: true,
+        providerMessageId: true,
+        destinationNumberNormalized: true,
       },
     });
 
@@ -119,9 +170,11 @@ describe('WhatsApp webhook outbound status processing', () => {
         dedupKey: expect.stringMatching(/^[a-f0-9]{64}$/),
       }),
     });
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
   });
 
-  test('records DELIVERED without changing AutomationEvent state', async () => {
+  test('records DELIVERED and schedules one follow-up at delivery plus 24 hours', async () => {
+    const deliveredAt = new Date(1787043610 * 1000);
     const res = await sendPayload(
       statusPayload({
         id: 'wamid.STATUS123',
@@ -139,9 +192,59 @@ describe('WhatsApp webhook outbound status processing', () => {
           eventType: 'DELIVERED',
         }),
       });
+    expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        userId: 42,
+        productKey: 'sentence_master',
+        eventType: 'ANY_QUESTIONS_REMINDER',
+        status: 'PENDING',
+        sourceAutomationEventId:
+          '11111111-1111-4111-8111-111111111111',
+        destinationNumberNormalized: '+919842882773',
+        scheduledAt: new Date(
+          deliveredAt.getTime() + 24 * 60 * 60 * 1000,
+        ),
+        payload: expect.objectContaining({
+          sourceAutomationEventId:
+            '11111111-1111-4111-8111-111111111111',
+          deliveryEvidenceEventId: 'event-test-id',
+          anchorSource: 'provider-delivered-webhook',
+          anchorDeliveredAt: deliveredAt.toISOString(),
+        }),
+      }),
+    });
   });
 
-  test('records READ even if no delivered event was observed', async () => {
+  test('persists DELIVERED without scheduling when checkout help is not internally SENT', async () => {
+    mockPrisma.automationEvent.findUnique.mockResolvedValue({
+      id: '11111111-1111-4111-8111-111111111111',
+      userId: 42,
+      productKey: 'sentence_master',
+      eventType: 'CHECKOUT_HELP_REMINDER',
+      status: 'SENDING',
+      providerMessageId: 'wamid.STATUS123',
+      destinationNumberNormalized: '+919842882773',
+    });
+
+    const res = await sendPayload(
+      statusPayload({
+        id: 'wamid.STATUS123',
+        status: 'delivered',
+        timestamp: '1787043610',
+        recipient_id: '919842882773',
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockPrisma.whatsAppMessageEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        eventType: 'DELIVERED',
+      }),
+    });
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
+  });
+
+  test('records READ without scheduling a follow-up', async () => {
     const res = await sendPayload(
       statusPayload({
         id: 'wamid.STATUS123',
@@ -159,6 +262,7 @@ describe('WhatsApp webhook outbound status processing', () => {
           eventType: 'READ',
         }),
       });
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
   });
 
   test('records FAILED with Meta error details', async () => {
@@ -193,6 +297,7 @@ describe('WhatsApp webhook outbound status processing', () => {
           errorDetails: 'Test failure details',
         }),
       });
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
   });
 
   test('unknown wamid is still recorded as an unlinked event', async () => {
@@ -236,6 +341,32 @@ describe('WhatsApp webhook outbound status processing', () => {
     );
 
     expect(res.status).toBe(200);
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
+  });
+
+  test('duplicate DELIVERED and later READ cannot create another follow-up', async () => {
+    const delivered = {
+      id: 'wamid.STATUS123',
+      status: 'delivered',
+      timestamp: '1787043650',
+      recipient_id: '919842882773',
+    };
+
+    const first = await sendPayload(statusPayload(delivered));
+    const duplicate = new Error('duplicate');
+    duplicate.code = 'P2002';
+    mockPrisma.whatsAppMessageEvent.create.mockRejectedValueOnce(duplicate);
+    const replay = await sendPayload(statusPayload(delivered));
+    const read = await sendPayload(statusPayload({
+      ...delivered,
+      status: 'read',
+      timestamp: '1787043660',
+    }));
+
+    expect(first.status).toBe(200);
+    expect(replay.status).toBe(200);
+    expect(read.status).toBe(200);
+    expect(mockPrisma.automationEvent.create).toHaveBeenCalledTimes(1);
   });
 
   test('unexpected database failure returns 500 for Meta retry', async () => {

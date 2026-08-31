@@ -23,7 +23,6 @@ import {
   SENTENCE_MASTER_PRODUCT_KEY,
   WHATSAPP_REMINDER_EVENT_TYPES,
   hasJourneyMilestone,
-  scheduleAnyQuestionsAfterCheckoutHelpSent,
 } from '../lib/whatsappJourney.js';
 
 const router = express.Router();
@@ -1793,25 +1792,6 @@ router.post('/reconcile-sending', async (req, res) => {
           throw new Error('Reconciliation state changed during MARK_SENT.');
         }
 
-        const authoritativeSentAt = event.sentAt || sentData.sentAt || null;
-        if (
-          event.eventType === CHECKOUT_HELP_REMINDER &&
-          authoritativeSentAt
-        ) {
-          await scheduleAnyQuestionsAfterCheckoutHelpSent({
-            transaction: tx,
-            checkoutHelpEvent: {
-              ...event,
-              status: 'SENT',
-              sentAt: authoritativeSentAt,
-            },
-            sentAt: authoritativeSentAt,
-            anchorSource: sentEvidence
-              ? 'provider-sent-evidence'
-              : 'provider-success-evidence',
-          });
-        }
-
         const journal = await createReconciliationJournalEntry(
           tx,
           journalData({
@@ -2776,18 +2756,6 @@ export function createLiveReminderHandler({
           throw new Error('SENDING_TO_SENT_CONFLICT');
         }
 
-        if (lockedEvent.eventType === CHECKOUT_HELP_REMINDER) {
-          await scheduleAnyQuestionsAfterCheckoutHelpSent({
-            transaction: tx,
-            checkoutHelpEvent: {
-              ...lockedEvent,
-              status: 'SENT',
-              sentAt,
-            },
-            sentAt,
-            anchorSource: 'provider-confirmation',
-          });
-        }
       } catch (finalizeErr) {
         console.error(
           `[AUTOMATION-LIVE] FINALIZE_FAILED aeId=${ae.id} ` +

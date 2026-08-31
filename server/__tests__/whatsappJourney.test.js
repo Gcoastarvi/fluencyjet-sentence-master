@@ -12,7 +12,7 @@ import {
   recordBlockAJourneyMilestone,
   recordCheckoutIntent,
   recordPracticeCompletionTransition,
-  scheduleAnyQuestionsAfterCheckoutHelpSent,
+  scheduleAnyQuestionsAfterCheckoutHelpDelivered,
 } from "../lib/whatsappJourney.js";
 
 function makeTransaction() {
@@ -23,6 +23,7 @@ function makeTransaction() {
       create: jest.fn(),
     },
     automationEvent: {
+      findUnique: jest.fn(),
       findFirst: jest.fn(),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       create: jest.fn(),
@@ -36,8 +37,21 @@ function makeTransaction() {
         whatsapp_number: "+91 98765 43210",
         whatsapp_number_normalized: "+919876543210",
         whatsapp_consent: true,
+        whatsapp_opted_out_at: null,
         has_access: false,
       }),
+      findMany: jest.fn().mockResolvedValue([
+        {
+          whatsapp_opted_out_at: null,
+          has_access: false,
+        },
+      ]),
+    },
+    whatsAppPhoneSuppression: {
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
+    spokenEnglishPurchase: {
+      findFirst: jest.fn().mockResolvedValue(null),
     },
   };
 }
@@ -448,28 +462,37 @@ describe("WhatsApp Block B checkout journey", () => {
     expect(tx.automationEvent.create).not.toHaveBeenCalled();
   });
 
-  test("schedules any-questions exactly once at authoritative SENT plus 24 hours", async () => {
+  test("schedules any-questions exactly once at authoritative DELIVERED plus 24 hours", async () => {
     const tx = makeTransaction();
     tx.automationEvent.findFirst.mockResolvedValue(null);
     tx.automationEvent.create.mockResolvedValue({ id: "any-questions-event" });
-    const sentAt = new Date("2026-08-28T10:20:00.000Z");
+    const deliveredAt = new Date("2026-08-28T10:25:00.000Z");
     const checkoutHelpEvent = {
       id: "checkout-help-event",
       userId: 42,
       productKey: SENTENCE_MASTER_PRODUCT_KEY,
       eventType: CHECKOUT_HELP_REMINDER,
       status: "SENT",
+      providerMessageId: "wamid.checkout-help",
       destinationNumberNormalized: "+919876543210",
     };
+    const deliveryEvent = {
+      id: "delivery-event",
+      automationEventId: checkoutHelpEvent.id,
+      providerMessageId: checkoutHelpEvent.providerMessageId,
+      eventType: "DELIVERED",
+      eventTimestamp: deliveredAt,
+    };
+    tx.automationEvent.findUnique.mockResolvedValue(checkoutHelpEvent);
 
-    const result = await scheduleAnyQuestionsAfterCheckoutHelpSent({
+    const result = await scheduleAnyQuestionsAfterCheckoutHelpDelivered({
       transaction: tx,
       checkoutHelpEvent,
-      sentAt,
-      anchorSource: "test-evidence",
+      deliveryEvent,
     });
 
     expect(result.created).toBe(true);
+    expect(tx.$executeRaw).toHaveBeenCalledTimes(2);
     expect(tx.automationEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: 42,
@@ -478,11 +501,12 @@ describe("WhatsApp Block B checkout journey", () => {
         status: "PENDING",
         sourceAutomationEventId: "checkout-help-event",
         destinationNumberNormalized: "+919876543210",
-        scheduledAt: new Date("2026-08-29T10:20:00.000Z"),
+        scheduledAt: new Date("2026-08-29T10:25:00.000Z"),
         payload: expect.objectContaining({
           sourceAutomationEventId: "checkout-help-event",
-          anchorSource: "test-evidence",
-          anchorSentAt: sentAt.toISOString(),
+          deliveryEvidenceEventId: "delivery-event",
+          anchorSource: "provider-delivered-webhook",
+          anchorDeliveredAt: deliveredAt.toISOString(),
         }),
       }),
     });
@@ -492,13 +516,83 @@ describe("WhatsApp Block B checkout journey", () => {
       status: "CANCELLED",
     });
     tx.automationEvent.create.mockClear();
-    const duplicate = await scheduleAnyQuestionsAfterCheckoutHelpSent({
+    const duplicate = await scheduleAnyQuestionsAfterCheckoutHelpDelivered({
       transaction: tx,
       checkoutHelpEvent,
-      sentAt,
+      deliveryEvent,
     });
     expect(duplicate.created).toBe(false);
     expect(duplicate.reason).toBe("ALREADY_ACTIVE");
+    expect(tx.automationEvent.create).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ["FAILED", new Date("2026-08-28T10:25:00.000Z")],
+    ["SENT", new Date("2026-08-28T10:25:00.000Z")],
+    ["READ", new Date("2026-08-28T10:25:00.000Z")],
+    ["DELIVERED", null],
+  ])("does not schedule any-questions from %s webhook evidence", async (
+    eventType,
+    eventTimestamp,
+  ) => {
+    const tx = makeTransaction();
+    const checkoutHelpEvent = {
+      id: "checkout-help-event",
+      userId: 42,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
+      eventType: CHECKOUT_HELP_REMINDER,
+      status: "SENT",
+      providerMessageId: "wamid.checkout-help",
+      destinationNumberNormalized: "+919876543210",
+    };
+
+    const result = await scheduleAnyQuestionsAfterCheckoutHelpDelivered({
+      transaction: tx,
+      checkoutHelpEvent,
+      deliveryEvent: {
+        id: "status-event",
+        automationEventId: checkoutHelpEvent.id,
+        providerMessageId: checkoutHelpEvent.providerMessageId,
+        eventType,
+        eventTimestamp,
+      },
+    });
+
+    expect(result.created).toBe(false);
+    expect(tx.automationEvent.create).not.toHaveBeenCalled();
+  });
+
+  test("does not schedule after an attributed purchase", async () => {
+    const tx = makeTransaction();
+    const deliveredAt = new Date("2026-08-28T10:25:00.000Z");
+    const checkoutHelpEvent = {
+      id: "checkout-help-event",
+      userId: 42,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
+      eventType: CHECKOUT_HELP_REMINDER,
+      status: "SENT",
+      providerMessageId: "wamid.checkout-help",
+      destinationNumberNormalized: "+919876543210",
+    };
+    tx.automationEvent.findUnique.mockResolvedValue(checkoutHelpEvent);
+    tx.spokenEnglishPurchase.findFirst.mockResolvedValue({ id: "purchase" });
+
+    const result = await scheduleAnyQuestionsAfterCheckoutHelpDelivered({
+      transaction: tx,
+      checkoutHelpEvent,
+      deliveryEvent: {
+        id: "delivery-event",
+        automationEventId: checkoutHelpEvent.id,
+        providerMessageId: checkoutHelpEvent.providerMessageId,
+        eventType: "DELIVERED",
+        eventTimestamp: deliveredAt,
+      },
+    });
+
+    expect(result).toEqual({
+      created: false,
+      reason: "PURCHASE_ATTRIBUTED",
+    });
     expect(tx.automationEvent.create).not.toHaveBeenCalled();
   });
 });

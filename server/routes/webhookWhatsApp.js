@@ -3,7 +3,10 @@ import crypto from 'crypto';
 import prisma from '../db/client.js';
 import { normalizeWhatsAppWaId } from '../lib/whatsappNumber.js';
 import { acquireWhatsAppDestinationLock } from '../lib/whatsappDestinationLock.js';
-import { WHATSAPP_REMINDER_EVENT_TYPES } from '../lib/whatsappJourney.js';
+import {
+  WHATSAPP_REMINDER_EVENT_TYPES,
+  scheduleAnyQuestionsAfterCheckoutHelpDelivered,
+} from '../lib/whatsappJourney.js';
 
 const router = express.Router();
 
@@ -218,16 +221,6 @@ async function processStatusEvents(payload) {
           errorDetails,
         } = normalizeMetaError(status);
 
-        const automationEvent =
-          await prisma.automationEvent.findUnique({
-            where: {
-              providerMessageId,
-            },
-            select: {
-              id: true,
-            },
-          });
-
         const dedupKey = makeStatusDedupKey({
           providerMessageId,
           eventType,
@@ -239,21 +232,59 @@ async function processStatusEvents(payload) {
         });
 
         try {
-          await prisma.whatsAppMessageEvent.create({
-            data: {
-              automationEventId: automationEvent?.id || null,
-              providerMessageId,
-              eventType,
-              recipientWaId,
-              senderWaId: null,
-              eventTimestamp,
-              errorCode,
-              errorTitle,
-              errorDetails,
-              rawPayload: status,
-              dedupKey,
-            },
+          const result = await prisma.$transaction(async (transaction) => {
+            const automationEvent =
+              await transaction.automationEvent.findUnique({
+                where: {
+                  providerMessageId,
+                },
+                select: {
+                  id: true,
+                  userId: true,
+                  productKey: true,
+                  eventType: true,
+                  status: true,
+                  providerMessageId: true,
+                  destinationNumberNormalized: true,
+                },
+              });
+
+            const persistedStatusEvent =
+              await transaction.whatsAppMessageEvent.create({
+                data: {
+                  automationEventId: automationEvent?.id || null,
+                  providerMessageId,
+                  eventType,
+                  recipientWaId,
+                  senderWaId: null,
+                  eventTimestamp,
+                  errorCode,
+                  errorTitle,
+                  errorDetails,
+                  rawPayload: status,
+                  dedupKey,
+                },
+              });
+
+            if (eventType === 'DELIVERED' && automationEvent) {
+              await scheduleAnyQuestionsAfterCheckoutHelpDelivered({
+                transaction,
+                checkoutHelpEvent: automationEvent,
+                deliveryEvent: persistedStatusEvent,
+              });
+            }
+
+            return { linked: Boolean(automationEvent) };
+          }, {
+            maxWait: 10_000,
+            timeout: 30_000,
           });
+
+          summary.processed += 1;
+
+          if (!result.linked) {
+            summary.unlinked += 1;
+          }
         } catch (error) {
           if (error?.code === 'P2002') {
             summary.duplicates += 1;
@@ -261,12 +292,6 @@ async function processStatusEvents(payload) {
           }
 
           throw error;
-        }
-
-        summary.processed += 1;
-
-        if (!automationEvent) {
-          summary.unlinked += 1;
         }
       }
     }

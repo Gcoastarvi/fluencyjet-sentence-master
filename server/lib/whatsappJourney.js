@@ -278,26 +278,151 @@ export async function recordCheckoutIntent({
   });
 }
 
-export async function scheduleAnyQuestionsAfterCheckoutHelpSent({
+export async function scheduleAnyQuestionsAfterCheckoutHelpDelivered({
   transaction,
   checkoutHelpEvent,
-  sentAt,
-  anchorSource = "provider-sent",
+  deliveryEvent,
 }) {
+  const destination = checkoutHelpEvent?.destinationNumberNormalized;
+  const deliveredAt = deliveryEvent?.eventTimestamp;
+
   if (
     !checkoutHelpEvent ||
     checkoutHelpEvent.eventType !== CHECKOUT_HELP_REMINDER ||
+    checkoutHelpEvent.productKey !== SENTENCE_MASTER_PRODUCT_KEY ||
     checkoutHelpEvent.status !== "SENT" ||
-    !(sentAt instanceof Date) ||
-    Number.isNaN(sentAt.getTime())
+    typeof checkoutHelpEvent.providerMessageId !== "string" ||
+    checkoutHelpEvent.providerMessageId.trim() === "" ||
+    !deliveryEvent ||
+    deliveryEvent.eventType !== "DELIVERED" ||
+    deliveryEvent.automationEventId !== checkoutHelpEvent.id ||
+    deliveryEvent.providerMessageId !== checkoutHelpEvent.providerMessageId ||
+    !(deliveredAt instanceof Date) ||
+    Number.isNaN(deliveredAt.getTime())
   ) {
-    return { created: false, reason: "NOT_AUTHORITATIVE_CHECKOUT_SENT" };
+    return { created: false, reason: "NOT_AUTHORITATIVE_CHECKOUT_DELIVERY" };
+  }
+
+  if (
+    typeof destination !== "string" ||
+    normalizeWhatsAppNumber(destination) !== destination
+  ) {
+    return { created: false, reason: "INVALID_EVENT_DESTINATION" };
+  }
+
+  await acquireUserJourneyLock(
+    transaction,
+    checkoutHelpEvent.userId,
+    checkoutHelpEvent.productKey,
+  );
+  await acquireWhatsAppDestinationLock(transaction, destination);
+
+  const lockedCheckoutHelpEvent =
+    await transaction.automationEvent.findUnique({
+      where: { id: checkoutHelpEvent.id },
+      select: {
+        id: true,
+        userId: true,
+        productKey: true,
+        eventType: true,
+        status: true,
+        providerMessageId: true,
+        destinationNumberNormalized: true,
+      },
+    });
+
+  if (
+    !lockedCheckoutHelpEvent ||
+    lockedCheckoutHelpEvent.userId !== checkoutHelpEvent.userId ||
+    lockedCheckoutHelpEvent.productKey !== SENTENCE_MASTER_PRODUCT_KEY ||
+    lockedCheckoutHelpEvent.eventType !== CHECKOUT_HELP_REMINDER ||
+    lockedCheckoutHelpEvent.status !== "SENT" ||
+    lockedCheckoutHelpEvent.providerMessageId !==
+      deliveryEvent.providerMessageId ||
+    lockedCheckoutHelpEvent.destinationNumberNormalized !== destination
+  ) {
+    return { created: false, reason: "CHECKOUT_HELP_STATE_CHANGED" };
+  }
+
+  const user = await transaction.user.findUnique({
+    where: { id: checkoutHelpEvent.userId },
+    select: {
+      whatsapp_number_normalized: true,
+      whatsapp_consent: true,
+      whatsapp_opted_out_at: true,
+      has_access: true,
+    },
+  });
+
+  if (!user) {
+    return { created: false, reason: "USER_NOT_FOUND" };
+  }
+
+  if (user.whatsapp_number_normalized !== destination) {
+    return { created: false, reason: "PHONE_IDENTITY_CHANGED" };
+  }
+
+  if (!user.whatsapp_consent) {
+    return { created: false, reason: "CONSENT_FALSE" };
+  }
+
+  if (user.whatsapp_opted_out_at) {
+    return { created: false, reason: "PHONE_OPTED_OUT" };
+  }
+
+  if (user.has_access) {
+    return { created: false, reason: "USER_HAS_ACCESS" };
+  }
+
+  const suppression =
+    await transaction.whatsAppPhoneSuppression.findUnique({
+      where: { phoneNumberNormalized: destination },
+      select: { isOptedOut: true },
+    });
+
+  if (suppression?.isOptedOut === true) {
+    return { created: false, reason: "PHONE_SUPPRESSED" };
+  }
+
+  const phoneUsers = await transaction.user.findMany({
+    where: { whatsapp_number_normalized: destination },
+    select: {
+      has_access: true,
+      whatsapp_opted_out_at: true,
+    },
+  });
+
+  if (phoneUsers.length === 0) {
+    return { created: false, reason: "PHONE_IDENTITY_NOT_FOUND" };
+  }
+
+  if (phoneUsers.some((phoneUser) => phoneUser.whatsapp_opted_out_at)) {
+    return { created: false, reason: "PHONE_OPTED_OUT" };
+  }
+
+  if (phoneUsers.some((phoneUser) => phoneUser.has_access === true)) {
+    return { created: false, reason: "PHONE_HAS_ACCESS" };
+  }
+
+  const attributedPurchase =
+    await transaction.spokenEnglishPurchase.findFirst({
+      where: {
+        userId: checkoutHelpEvent.userId,
+        productKey: SENTENCE_MASTER_PRODUCT_KEY,
+        sourceIntentId: { not: null },
+        status: "captured",
+      },
+      select: { id: true },
+    });
+
+  if (attributedPurchase) {
+    return { created: false, reason: "PURCHASE_ATTRIBUTED" };
   }
 
   const existing = await transaction.automationEvent.findFirst({
     where: {
       userId: checkoutHelpEvent.userId,
-      productKey: checkoutHelpEvent.productKey || SENTENCE_MASTER_PRODUCT_KEY,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
       eventType: ANY_QUESTIONS_REMINDER,
       sourceAutomationEventId: checkoutHelpEvent.id,
     },
@@ -314,19 +439,18 @@ export async function scheduleAnyQuestionsAfterCheckoutHelpSent({
   const automationEvent = await transaction.automationEvent.create({
     data: {
       userId: checkoutHelpEvent.userId,
-      productKey:
-        checkoutHelpEvent.productKey || SENTENCE_MASTER_PRODUCT_KEY,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
       eventType: ANY_QUESTIONS_REMINDER,
       status: "PENDING",
       sourceAutomationEventId: checkoutHelpEvent.id,
-      destinationNumberNormalized:
-        checkoutHelpEvent.destinationNumberNormalized || null,
-      scheduledAt: new Date(sentAt.getTime() + ANY_QUESTIONS_DELAY_MS),
+      destinationNumberNormalized: destination,
+      scheduledAt: new Date(deliveredAt.getTime() + ANY_QUESTIONS_DELAY_MS),
       payload: {
-        source: "checkout-help-sent",
+        source: "checkout-help-delivered",
         sourceAutomationEventId: checkoutHelpEvent.id,
-        anchorSource,
-        anchorSentAt: sentAt.toISOString(),
+        deliveryEvidenceEventId: deliveryEvent.id,
+        anchorSource: "provider-delivered-webhook",
+        anchorDeliveredAt: deliveredAt.toISOString(),
       },
     },
   });

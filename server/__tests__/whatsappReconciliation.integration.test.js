@@ -361,7 +361,7 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
     });
   });
 
-  test('creates exactly one 24-hour follow-up after direct and reconciled checkout-help SENT transitions', async () => {
+  test('does not create a delivery-gated follow-up from direct or reconciled checkout-help SENT transitions', async () => {
     const direct = await createFixture(8, {
       status: 'PENDING',
       providerMessageId: null,
@@ -385,9 +385,6 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
       status: 200,
       body: expect.objectContaining({ result: 'SENT' }),
     });
-    const directSent = await controlClient.automationEvent.findUnique({
-      where: { id: direct.event.id },
-    });
     const directFollowUps = await controlClient.automationEvent.findMany({
       where: {
         userId: direct.user.id,
@@ -396,11 +393,7 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
       },
     });
     directFollowUps.forEach((event) => testEventIds.add(event.id));
-    expect(directFollowUps).toHaveLength(1);
-    expect(directFollowUps[0].destinationNumberNormalized).toBe(direct.number);
-    expect(directFollowUps[0].scheduledAt.toISOString()).toBe(
-      new Date(directSent.sentAt.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-    );
+    expect(directFollowUps).toHaveLength(0);
 
     const reconciled = await createFixture(9, {
       eventType: 'CHECKOUT_HELP_REMINDER',
@@ -431,12 +424,7 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
       },
     });
     reconciledFollowUps.forEach((event) => testEventIds.add(event.id));
-    expect(reconciledFollowUps).toHaveLength(1);
-    expect(reconciledFollowUps[0].scheduledAt.toISOString()).toBe(
-      new Date(
-        evidence.eventTimestamp.getTime() + 24 * 60 * 60 * 1000,
-      ).toISOString(),
-    );
+    expect(reconciledFollowUps).toHaveLength(0);
     expect(reconciliationProvider).toHaveBeenCalledTimes(1);
   });
 
@@ -519,104 +507,7 @@ describe('WhatsApp reconciliation PostgreSQL integration', () => {
       },
     });
     followUps.forEach((event) => testEventIds.add(event.id));
-    expect(followUps).toHaveLength(1);
-    expect(followUps[0].scheduledAt.toISOString()).toBe(
-      new Date(
-        firstEvidence.createdAt.getTime() + 24 * 60 * 60 * 1000,
-      ).toISOString(),
-    );
-    expect(followUps[0].payload).toMatchObject({
-      anchorSentAt: firstEvidence.createdAt.toISOString(),
-    });
-  });
-
-  test('preserves provider correlation when dependent follow-up finalization rolls back, then reconciles without resend', async () => {
-    reconciliationProvider.mockClear();
-    const checkout = await createFixture(10, {
-      status: 'PENDING',
-      providerMessageId: null,
-      eventType: 'CHECKOUT_HELP_REMINDER',
-      destinationNumber: `+188${runToken}7`,
-    });
-    const blockingFollowUp = await controlClient.automationEvent.create({
-      data: {
-        userId: checkout.user.id,
-        productKey: 'sentence_master',
-        eventType: 'ANY_QUESTIONS_REMINDER',
-        status: 'PENDING',
-        sourceAutomationEventId: crypto.randomUUID(),
-        destinationNumberNormalized: checkout.number,
-        scheduledAt: new Date(Date.now() + 60_000),
-      },
-    });
-    testEventIds.add(blockingFollowUp.id);
-    process.env.WHATSAPP_LIVE_TEST_NUMBER = checkout.number;
-    const providerMessageId = `wamid.checkout.rollback.${runToken}`;
-    reconciliationProvider.mockResolvedValueOnce({
-      provider: 'test',
-      messageId: providerMessageId,
-    });
-
-    const failedFinalization = await request(makeApp())
-      .post('/live-test')
-      .set('Authorization', `Bearer ${automationSecret}`)
-      .send({ liveSend: true, automationEventId: checkout.event.id });
-
-    expect(failedFinalization.status).toBe(500);
-    expect(failedFinalization.body).toMatchObject({
-      error: 'SEND_FINALIZE_FAILED',
-      whatsappSent: true,
-      providerMessageId,
-    });
-    const uncertain = await controlClient.automationEvent.findUnique({
-      where: { id: checkout.event.id },
-    });
-    expect(uncertain).toMatchObject({
-      status: 'SENDING',
-      providerMessageId,
-      sentAt: null,
-    });
-
-    await controlClient.automationEvent.update({
-      where: { id: blockingFollowUp.id },
-      data: {
-        status: 'CANCELLED',
-        cancelledAt: new Date(),
-        processedAt: new Date(),
-      },
-    });
-    const evidence = await createEvidence(uncertain, 'SENT');
-    const reconciled = await postReconciliation(
-      makeApp(),
-      checkout.event.id,
-      'MARK_SENT',
-      undefined,
-      'checkout-rollback-reconciled-10',
-    );
-
-    expect(reconciled.status).toBe(200);
-    const finalEvent = await controlClient.automationEvent.findUnique({
-      where: { id: checkout.event.id },
-    });
-    expect(finalEvent.status).toBe('SENT');
-    expect(finalEvent.sentAt.toISOString()).toBe(
-      evidence.eventTimestamp.toISOString(),
-    );
-    const recoveredFollowUps = await controlClient.automationEvent.findMany({
-      where: {
-        userId: checkout.user.id,
-        eventType: 'ANY_QUESTIONS_REMINDER',
-        sourceAutomationEventId: checkout.event.id,
-      },
-    });
-    recoveredFollowUps.forEach((event) => testEventIds.add(event.id));
-    expect(recoveredFollowUps).toHaveLength(1);
-    expect(recoveredFollowUps[0].scheduledAt.toISOString()).toBe(
-      new Date(
-        evidence.eventTimestamp.getTime() + 24 * 60 * 60 * 1000,
-      ).toISOString(),
-    );
-    expect(reconciliationProvider).toHaveBeenCalledTimes(1);
+    expect(followUps).toHaveLength(0);
   });
 
   test('is idempotent, rejects conflicting action, and rolls back failed journal/state transactions', async () => {

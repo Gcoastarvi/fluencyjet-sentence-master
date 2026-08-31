@@ -408,7 +408,7 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
     );
   });
 
-  test('live checkout-help send uses its template and atomically creates the 24-hour follow-up', async () => {
+  test('live checkout-help send uses its template without scheduling the delivery-gated follow-up', async () => {
     enableLiveRolloutGates();
     const checkout = makeEvent(
       FIRST_ID,
@@ -437,28 +437,15 @@ describe('manual Lesson 1 WhatsApp rollout worker', () => {
         languageCode: 'en',
       }),
     );
-    const sentUpdate = mockPrisma.automationEvent.updateMany.mock.calls
-      .map(([call]) => call)
-      .find((call) => call.data?.status === 'SENT');
-    expect(sentUpdate).toBeDefined();
-    expect(mockPrisma.automationEvent.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        userId: 1,
-        productKey: 'sentence_master',
-        eventType: 'ANY_QUESTIONS_REMINDER',
-        status: 'PENDING',
-        sourceAutomationEventId: FIRST_ID,
-        destinationNumberNormalized: TEST_NUMBER,
-        scheduledAt: new Date(
-          sentUpdate.data.sentAt.getTime() + 24 * 60 * 60 * 1000,
-        ),
-        payload: expect.objectContaining({
-          sourceAutomationEventId: FIRST_ID,
-          anchorSource: 'provider-confirmation',
-          anchorSentAt: sentUpdate.data.sentAt.toISOString(),
+    expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'SENT',
+          providerMessageId: expect.any(String),
         }),
       }),
-    });
+    );
+    expect(mockPrisma.automationEvent.create).not.toHaveBeenCalled();
   });
 
   test('live any-questions send uses its template without creating another follow-up', async () => {
