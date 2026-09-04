@@ -402,7 +402,7 @@ export default function LessonDetail() {
     if (!hasTrackAccess && freeAllowsLesson(lessonNum)) return;
     if (hasTrackAccess) return;
 
-    navigate(`/webinar-preview-complete?from=lesson_${lessonNum}`, {
+    navigate("/spoken-english-offer?source=lesson1-curriculum&placement=sticky", {
       replace: true,
     });
   }, [
@@ -726,7 +726,7 @@ export default function LessonDetail() {
       : null;
 
   function goPaywall() {
-    navigate(`/webinar-preview-complete?from=lesson_${dayNumber}`);
+    navigate("/spoken-english-offer?source=lesson1-curriculum&placement=sticky");
   }
 
   console.log("[LessonDetail progress debug]", {
@@ -865,7 +865,7 @@ export default function LessonDetail() {
       ) {
         const action = data?.nextAction || null;
         const from = action?.from || `lesson_${lid}`;
-        const base = action?.url || `/webinar-preview-complete`;
+        const base = action?.url || "/spoken-english-offer?source=lesson1-curriculum&placement=sticky";
         const sep = String(base).includes("?") ? "&" : "?";
         const target = `${base}${sep}from=${encodeURIComponent(from)}`;
         navigate(target, { replace: true });

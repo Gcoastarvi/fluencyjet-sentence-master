@@ -873,8 +873,8 @@ export default function Dashboard() {
     // 1. Safety check for data
     if (!lessons || !Array.isArray(lessons)) return 0;
 
-    // 2. Look at the two free preview lessons
-    const trialLessons = lessons.slice(0, 2);
+    // 2. Look at the single free preview lesson
+    const trialLessons = lessons.slice(0, 1);
 
     // 3. Count how many have any progress (typing, reorder, or audio > 0)
     const count = trialLessons.filter((lesson) => {
@@ -1863,7 +1863,7 @@ export default function Dashboard() {
                         }
 
                         navigate(
-                          `/webinar-preview-complete?from=lesson_${lessonNum}`,
+                          "/spoken-english-offer?source=lesson1-curriculum&placement=sticky",
                         );
                       }}
                       className={`p-6 rounded-[2.5rem] border-2 transition-all cursor-pointer shadow-sm relative group

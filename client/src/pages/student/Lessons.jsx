@@ -403,7 +403,7 @@ export default function Lessons({ track = "beginner", basePath = "" }) {
             const routeBasePath = routeTrack === "INTERMEDIATE" ? "/i" : "/b";
 
             if (!isUnlocked) {
-              navigate(`/webinar-preview-complete?from=lesson_${dayNumber}`);
+              navigate("/spoken-english-offer?source=lesson1-curriculum&placement=sticky");
               return;
             }
 

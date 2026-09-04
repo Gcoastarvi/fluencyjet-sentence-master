@@ -48,7 +48,7 @@ function paywallResponse({ lessonId, freeLessons, plan = "BEGINNER" }) {
 
     nextAction: {
       type: process.env.LOCK_REDIRECT_TYPE || "PAYWALL",
-      url: process.env.LOCK_REDIRECT_URL || `/webinar-preview-complete`,
+      url: process.env.LOCK_REDIRECT_URL || "/spoken-english-offer?source=lesson1-curriculum&placement=sticky",
       from: `lesson_${lessonId}`,
     },
   };
@@ -78,12 +78,9 @@ function getUserTrack(userRow, diff) {
   return "BEGINNER";
 }
 
-function freeAllowsLesson(track, lessonIdNum) {
-  const freeMax = Number(
-    process.env.FREE_LESSON_MAX || process.env.FREE_BEGINNER_MAX || 2,
-  );
+function freeAllowsLesson(_track, lessonIdNum) {
   const n = Number(lessonIdNum);
-  return Number.isFinite(n) && n >= 1 && n <= freeMax;
+  return Number.isFinite(n) && n === 1;
 }
 
 function planForTrack(track) {

@@ -63,7 +63,10 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
   const isStarted = overallDone > 0;
 
   const handleClick = () => {
-    if (isLocked) return;
+    if (isLocked) {
+      navigate("/spoken-english-offer?source=lesson1-curriculum&placement=sticky");
+      return;
+    }
 
     const isIntermediate = window.location.pathname.startsWith("/i/");
     const basePath = isIntermediate ? "/i/lesson" : "/b/lesson";
@@ -89,7 +92,7 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
     const isFreeLesson = freeAllowsLesson(lessonKey);
 
     if (!hasTrackAccess && !isFreeLesson) {
-      navigate(`/webinar-preview-complete?from=lesson_${lessonKey}`, {
+      navigate("/spoken-english-offer?source=lesson1-curriculum&placement=sticky", {
         replace: true,
       });
       return;
@@ -148,14 +151,13 @@ export default function LessonCard({ lesson, displayNum, isLocked }) {
           <div className="flex items-center gap-4">
             <button
               onClick={handleClick}
-              disabled={isLocked}
               className={`px-9 py-4 rounded-2xl font-black text-base transition-all ${
                 isLocked
-                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                  ? "bg-amber-400 text-slate-950 cursor-pointer shadow-lg shadow-amber-200 hover:bg-amber-300 active:scale-95"
                   : "bg-indigo-600 text-white shadow-lg shadow-indigo-200 hover:bg-indigo-700 active:scale-95"
               }`}
             >
-              {isLocked ? "Locked 🔒" : isStarted ? "Continue →" : "Start →"}
+              {isLocked ? "Unlock Full Access →" : isStarted ? "Continue →" : "Start →"}
             </button>
           </div>
         </div>
