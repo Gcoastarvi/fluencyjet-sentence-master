@@ -7,12 +7,37 @@ import {
   trackSmartSignupView,
   trackSmartSignupCompleted,
 } from "@/lib/tracking";
-import { sendToFunnelSheet } from "@/lib/funnelSheet";
+import { sendToChallengeSignupSheet } from "@/lib/funnelSheet";
 import { useAuth } from "@/context/AuthContext";
 import "./TrySpokenEnglishGym.css";
 
 const CHALLENGE_STORAGE_KEY = "fj_guest_challenge_v1";
 const FULL_PRICE = "₹1,199";
+const ATTRIBUTION_KEYS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+  "campaign",
+  "adset",
+  "ad",
+];
+
+function collectAttributionParams(searchParams) {
+  const attribution = {};
+
+  for (const key of ATTRIBUTION_KEYS) {
+    const value =
+      searchParams.get(key) ||
+      localStorage.getItem(`fj_${key}`) ||
+      sessionStorage.getItem(`fj_${key}`);
+
+    attribution[key] = value || "";
+  }
+
+  return attribution;
+}
 
 const BENEFITS = [
   {
@@ -353,6 +378,7 @@ export default function TrySpokenEnglishGym() {
     setLoading(true);
 
     try {
+      const attribution = collectAttributionParams(searchParams);
       const payload = {
         name: name.trim(),
         email: email.trim().toLowerCase(),
@@ -403,14 +429,25 @@ export default function TrySpokenEnglishGym() {
 
       try {
         await Promise.race([
-          sendToFunnelSheet({
-            type: "whatsapp_trial_signup",
+          sendToChallengeSignupSheet({
+            type: "challenge_signup",
+            timestamp: new Date().toISOString(),
+            user_id: res.user?.id ?? null,
             name: payload.name,
             email: payload.email,
             whatsapp_number: payload.whatsapp_number,
+            whatsapp_consent: payload.whatsapp_consent,
             source,
-            track: "BEGINNER",
+            ...attribution,
             page_url: window.location.href,
+            level_check_result: payload.level_check_result,
+            level_check_score: payload.level_check_score,
+            track: userPayload.track || payload.track,
+            segment: payload.segment,
+            main_goal: payload.main_goal,
+            current_status: payload.current_status,
+            practice_commitment: payload.practice_commitment,
+            reserve_seat: payload.reserve_seat,
           }),
           new Promise((resolve) => setTimeout(resolve, 1200)),
         ]);

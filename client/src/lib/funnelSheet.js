@@ -1,6 +1,9 @@
 const FUNNEL_SHEET_WEBHOOK_URL =
   "https://script.google.com/macros/s/AKfycbzOBVbSDnZj07DUn3fZjlqozs7ll7AbeqTuwA50t1wgxDN9R66Bm4l_f9x7Q1-qR8LzEg/exec";
 
+const CHALLENGE_SIGNUP_SHEET_WEBHOOK_URL =
+  "https://script.google.com/macros/s/AKfycbxisbQmJ2ged7z39BLUPf2H-ywDeD_dpS494xDl4S4wztejyb8h8kTp8WRLttARcdXuUw/exec";
+
 function safeWindow() {
   return typeof window !== "undefined" ? window : null;
 }
@@ -54,5 +57,20 @@ export async function sendToFunnelSheet(payload = {}) {
     });
   } catch (error) {
     console.warn("[Funnel Sheet] Failed:", error);
+  }
+}
+
+export async function sendToChallengeSignupSheet(payload = {}) {
+  try {
+    await fetch(CHALLENGE_SIGNUP_SHEET_WEBHOOK_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.warn("[Challenge Signup Sheet] Failed:", error);
   }
 }
