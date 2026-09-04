@@ -11,15 +11,15 @@ const STORAGE_KEY = "fj_guest_challenge_v1";
 const QUESTIONS = [
   {
     id: "challenge-1",
-    tamil: "நான் ஒரு ஆசிரியர்.",
-    answer: "I am a teacher",
-    words: ["a", "teacher", "I", "am"],
+    tamil: "நான் ஆங்கிலம் கற்றுக்கொண்டிருக்கிறேன்.",
+    answer: "I am learning English",
+    words: ["learning", "English", "I", "am"],
   },
   {
     id: "challenge-2",
-    tamil: "நான் தினமும் ஆங்கிலம் பயிற்சி செய்கிறேன்.",
-    answer: "I practice English every day",
-    words: ["English", "every", "I", "day", "practice"],
+    tamil: "நான் பயிற்சி செய்யத் தயாராக இருக்கிறேன்.",
+    answer: "I am ready to practice",
+    words: ["practice", "ready", "I", "to", "am"],
   },
   {
     id: "challenge-3",
@@ -29,21 +29,21 @@ const QUESTIONS = [
   },
   {
     id: "challenge-4",
-    tamil: "எனக்கு ஆங்கிலம் பேச வேண்டும்.",
-    answer: "I want to speak English",
-    words: ["speak", "want", "English", "to", "I"],
+    tamil: "நான் தன்னம்பிக்கையுடன் பேச விரும்புகிறேன்.",
+    answer: "I want to speak confidently",
+    words: ["confidently", "speak", "want", "I", "to"],
   },
   {
     id: "challenge-5",
-    tamil: "நான் என் திறமைகளை மேம்படுத்த முயற்சி செய்கிறேன்.",
-    answer: "I am trying to improve my skills",
-    words: ["skills", "trying", "my", "I", "am", "improve", "to"],
+    tamil: "என்னால் ஆங்கிலம் புரிந்து கொள்ள முடியும்.",
+    answer: "I can understand English",
+    words: ["understand", "can", "English", "I"],
   },
   {
     id: "challenge-6",
-    tamil: "நாங்கள் இன்று வகுப்பில் இருக்கிறோம்.",
-    answer: "We are in class today",
-    words: ["today", "class", "are", "We", "in"],
+    tamil: "எனக்கு தினசரி பயிற்சி தேவை.",
+    answer: "I need daily practice",
+    words: ["daily", "practice", "need", "I"],
   },
   {
     id: "challenge-7",
