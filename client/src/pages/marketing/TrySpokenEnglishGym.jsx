@@ -540,8 +540,8 @@ export default function TrySpokenEnglishGym() {
                 </p>
                 <p>One-time payment. No monthly subscription.</p>
                 <p className="price-note">
-                  Create your free account. Try the quizzes first. Decide after you
-                  experience it.
+                  Create your free account. Try the quizzes first. Decide after
+                  you experience it.
                 </p>
               </div>
             </div>
@@ -634,15 +634,56 @@ export default function TrySpokenEnglishGym() {
                   />
                 </div>
 
-                <label className="consent-row">
+                <label
+                  className="consent-row"
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    padding: "16px 18px",
+                    margin: "18px 0",
+                    border: "1px solid #d9d6ff",
+                    borderRadius: "14px",
+                    background: "#f7f6ff",
+                    cursor: "pointer",
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={whatsappConsent}
                     onChange={(e) => setWhatsappConsent(e.target.checked)}
+                    style={{
+                      width: "22px",
+                      height: "22px",
+                      marginTop: "2px",
+                      flexShrink: 0,
+                      cursor: "pointer",
+                    }}
                   />
-                  <span>
-                    Send my practice reminders and useful FluencyJet updates
-                    through WhatsApp.
+
+                  <span style={{ lineHeight: "1.45" }}>
+                    <strong
+                      style={{
+                        display: "block",
+                        fontSize: "17px",
+                        fontWeight: 700,
+                        color: "#1f1f3d",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Get FluencyJet practice reminders on WhatsApp
+                    </strong>
+
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: "14px",
+                        color: "#5f6078",
+                      }}
+                    >
+                      Practice reminders + useful FluencyJet updates. You can
+                      opt out anytime.
+                    </span>
                   </span>
                 </label>
 
