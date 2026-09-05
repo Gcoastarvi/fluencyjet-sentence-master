@@ -525,8 +525,66 @@ model ProgramVersion {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  program Program @relation(fields: [programId], references: [id], onDelete: Restrict)
+  program      Program       @relation(fields: [programId], references: [id], onDelete: Restrict)
+  learningDays LearningDay[]
 
   @@unique([programId, versionKey])
   @@index([programId])
+}
+
+model LearningDay {
+  id               String   @id @default(cuid())
+  programVersionId String
+  dayNumber        Int
+  title            String   @db.VarChar(180)
+  summary          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  programVersion ProgramVersion @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+  activities     Activity[]
+
+  @@unique([programVersionId, dayNumber])
+  @@index([programVersionId])
+}
+
+model Activity {
+  id             String   @id @default(cuid())
+  learningDayId  String
+  key            String   @db.VarChar(100)
+  activityType   String   @db.VarChar(40)
+  evaluationMode String   @db.VarChar(40)
+  title          String   @db.VarChar(180)
+  orderIndex     Int
+  config         Json?
+  xpConfig       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  learningDay LearningDay    @relation(fields: [learningDayId], references: [id], onDelete: Restrict)
+  items       ActivityItem[]
+
+  @@unique([learningDayId, key])
+  @@unique([learningDayId, orderIndex])
+  @@index([learningDayId, activityType])
+}
+
+model ActivityItem {
+  id         String   @id @default(cuid())
+  activityId String
+  itemKey    String   @db.VarChar(100)
+  orderIndex Int
+  prompt     Json
+  payload    Json?
+  answerKey  Json?
+  hint       Json?
+  feedback   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  activity Activity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+
+  @@unique([activityId, itemKey])
+  @@unique([activityId, orderIndex])
+  @@index([activityId])
 }
