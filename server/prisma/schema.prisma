@@ -527,6 +527,7 @@ model ProgramVersion {
 
   program      Program       @relation(fields: [programId], references: [id], onDelete: Restrict)
   learningDays LearningDay[]
+  cohorts      Cohort[]
 
   @@unique([programId, versionKey])
   @@index([programId])
@@ -543,6 +544,7 @@ model LearningDay {
 
   programVersion ProgramVersion @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
   activities     Activity[]
+  liveSessions   LiveSession[]
 
   @@unique([programVersionId, dayNumber])
   @@index([programVersionId])
@@ -587,4 +589,38 @@ model ActivityItem {
   @@unique([activityId, itemKey])
   @@unique([activityId, orderIndex])
   @@index([activityId])
+}
+
+model Cohort {
+  id               String   @id @default(cuid())
+  programVersionId String
+  key              String   @unique @db.VarChar(120)
+  name             String   @db.VarChar(180)
+  timezone         String   @db.VarChar(64)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  programVersion ProgramVersion @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+  liveSessions   LiveSession[]
+
+  @@index([programVersionId])
+}
+
+model LiveSession {
+  id            String   @id @default(cuid())
+  cohortId      String
+  learningDayId String
+  startsAt      DateTime @db.Timestamptz(3)
+  endsAt        DateTime @db.Timestamptz(3)
+  appUnlockAt   DateTime @db.Timestamptz(3)
+  status        String   @default("SCHEDULED") @db.VarChar(30)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cohort      Cohort      @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  learningDay LearningDay @relation(fields: [learningDayId], references: [id], onDelete: Restrict)
+
+  @@unique([cohortId, learningDayId])
+  @@index([cohortId, startsAt])
+  @@index([learningDayId])
 }
