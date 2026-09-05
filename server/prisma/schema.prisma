@@ -67,6 +67,7 @@ model User {
   activation_completed      Boolean      @default(false)
   last_demo_video_viewed_at DateTime?
   cefrEnrollments           Enrollment[]
+  cefrXpEntries             XpLedger[]
 
   @@index([whatsapp_number_normalized])
 }
@@ -568,6 +569,8 @@ model Activity {
 
   learningDay LearningDay    @relation(fields: [learningDayId], references: [id], onDelete: Restrict)
   items       ActivityItem[]
+  attempts    Attempt[]
+  xpEntries   XpLedger[]
 
   @@unique([learningDayId, key])
   @@unique([learningDayId, orderIndex])
@@ -587,7 +590,8 @@ model ActivityItem {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  activity Activity @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  activity  Activity   @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  responses Response[]
 
   @@unique([activityId, itemKey])
   @@unique([activityId, orderIndex])
@@ -662,6 +666,8 @@ model Enrollment {
   programVersion    ProgramVersion     @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
   entitlementGrants EntitlementGrant[]
   cohortEnrollments CohortEnrollment[]
+  attempts          Attempt[]
+  xpEntries         XpLedger[]
 
   @@unique([userId, programVersionId])
   @@index([programVersionId, status])
@@ -705,4 +711,77 @@ model CohortEnrollment {
 
   @@index([enrollmentId, status])
   @@index([cohortId, status])
+}
+
+model Attempt {
+  id            String    @id @default(cuid())
+  enrollmentId  String
+  activityId    String
+  attemptNumber Int
+  status        String    @default("IN_PROGRESS") @db.VarChar(30)
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  activity   Activity   @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  responses  Response[]
+  xpEntries  XpLedger[]
+
+  @@unique([enrollmentId, activityId, attemptNumber])
+  @@index([enrollmentId, activityId])
+  @@index([activityId])
+}
+
+model Response {
+  id                String   @id @default(cuid())
+  attemptId         String
+  activityItemId    String
+  responseNumber    Int
+  submittedAnswer   Json
+  isCorrect         Boolean?
+  evaluationCode    String?  @db.VarChar(50)
+  score             Float?
+  hintUsed          Boolean  @default(false)
+  answerRevealed    Boolean  @default(false)
+  responseTimeMs    Int?
+  evaluationDetails Json?
+  submittedAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  attempt      Attempt      @relation(fields: [attemptId], references: [id], onDelete: Restrict)
+  activityItem ActivityItem @relation(fields: [activityItemId], references: [id], onDelete: Restrict)
+  xpEntries    XpLedger[]
+
+  @@unique([attemptId, activityItemId, responseNumber])
+  @@index([attemptId])
+  @@index([activityItemId])
+}
+
+model XpLedger {
+  id             String   @id @default(cuid())
+  userId         Int
+  enrollmentId   String
+  activityId     String?
+  attemptId      String?
+  responseId     String?
+  amount         Int
+  eventType      String   @db.VarChar(60)
+  ruleVersion    String?  @db.VarChar(40)
+  idempotencyKey String   @unique @db.VarChar(191)
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Restrict)
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  activity   Activity?  @relation(fields: [activityId], references: [id], onDelete: Restrict)
+  attempt    Attempt?   @relation(fields: [attemptId], references: [id], onDelete: Restrict)
+  response   Response?  @relation(fields: [responseId], references: [id], onDelete: Restrict)
+
+  @@index([enrollmentId, createdAt])
+  @@index([userId, createdAt])
+  @@index([activityId])
+  @@index([attemptId])
+  @@index([responseId])
 }
