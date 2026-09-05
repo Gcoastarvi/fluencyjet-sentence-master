@@ -488,3 +488,45 @@ enum ReconciliationDecision {
   APPLIED
   REJECTED
 }
+
+// -----------------------------------------------------------------------------
+// CEFR v2 — Platform identity
+// -----------------------------------------------------------------------------
+
+model Language {
+  id        String   @id @default(cuid())
+  code      String   @unique @db.VarChar(16)
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  programs Program[]
+}
+
+model Program {
+  id         String   @id @default(cuid())
+  languageId String
+  slug       String   @unique @db.VarChar(120)
+  name       String   @db.VarChar(150)
+  cefrLevel  String   @db.VarChar(16)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  language Language         @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  versions ProgramVersion[]
+
+  @@index([languageId])
+}
+
+model ProgramVersion {
+  id         String   @id @default(cuid())
+  programId  String
+  versionKey String   @db.VarChar(50)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  program Program @relation(fields: [programId], references: [id], onDelete: Restrict)
+
+  @@unique([programId, versionKey])
+  @@index([programId])
+}
