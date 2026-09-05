@@ -64,8 +64,9 @@ model User {
   adset        String? @db.VarChar(200)
   ad           String? @db.VarChar(200)
 
-  activation_completed      Boolean   @default(false)
+  activation_completed      Boolean      @default(false)
   last_demo_video_viewed_at DateTime?
+  cefrEnrollments           Enrollment[]
 
   @@index([whatsapp_number_normalized])
 }
@@ -512,8 +513,9 @@ model Program {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  language Language         @relation(fields: [languageId], references: [id], onDelete: Restrict)
-  versions ProgramVersion[]
+  language  Language         @relation(fields: [languageId], references: [id], onDelete: Restrict)
+  versions  ProgramVersion[]
+  offerings Offering[]
 
   @@index([languageId])
 }
@@ -528,6 +530,7 @@ model ProgramVersion {
   program      Program       @relation(fields: [programId], references: [id], onDelete: Restrict)
   learningDays LearningDay[]
   cohorts      Cohort[]
+  enrollments  Enrollment[]
 
   @@unique([programId, versionKey])
   @@index([programId])
@@ -600,8 +603,9 @@ model Cohort {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  programVersion ProgramVersion @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
-  liveSessions   LiveSession[]
+  programVersion    ProgramVersion     @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+  liveSessions      LiveSession[]
+  cohortEnrollments CohortEnrollment[]
 
   @@index([programVersionId])
 }
@@ -623,4 +627,82 @@ model LiveSession {
   @@unique([cohortId, learningDayId])
   @@index([cohortId, startsAt])
   @@index([learningDayId])
+}
+
+model Offering {
+  id             String   @id @default(cuid())
+  programId      String
+  productKey     String   @unique @db.VarChar(120)
+  name           String   @db.VarChar(180)
+  pricePaise     Int
+  currency       String   @default("INR") @db.VarChar(3)
+  startDayNumber Int
+  endDayNumber   Int
+  status         String   @default("ACTIVE") @db.VarChar(30)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  program           Program            @relation(fields: [programId], references: [id], onDelete: Restrict)
+  entitlementGrants EntitlementGrant[]
+
+  @@index([programId, status])
+}
+
+model Enrollment {
+  id               String    @id @default(cuid())
+  userId           Int
+  programVersionId String
+  status           String    @default("ACTIVE") @db.VarChar(30)
+  enrolledAt       DateTime  @default(now())
+  endedAt          DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  programVersion    ProgramVersion     @relation(fields: [programVersionId], references: [id], onDelete: Restrict)
+  entitlementGrants EntitlementGrant[]
+  cohortEnrollments CohortEnrollment[]
+
+  @@unique([userId, programVersionId])
+  @@index([programVersionId, status])
+}
+
+model EntitlementGrant {
+  id             String    @id @default(cuid())
+  enrollmentId   String
+  offeringId     String?
+  startDayNumber Int
+  endDayNumber   Int
+  status         String    @default("ACTIVE") @db.VarChar(30)
+  source         String    @db.VarChar(40)
+  sourceRef      String?   @db.VarChar(191)
+  grantedAt      DateTime  @default(now())
+  revokedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  offering   Offering?  @relation(fields: [offeringId], references: [id], onDelete: Restrict)
+
+  @@unique([source, sourceRef])
+  @@index([enrollmentId, status])
+  @@index([offeringId])
+}
+
+model CohortEnrollment {
+  id           String    @id @default(cuid())
+  enrollmentId String
+  cohortId     String
+  status       String    @default("ACTIVE") @db.VarChar(30)
+  source       String    @db.VarChar(40)
+  joinedAt     DateTime  @default(now())
+  leftAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
+  cohort     Cohort     @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+
+  @@index([enrollmentId, status])
+  @@index([cohortId, status])
 }
