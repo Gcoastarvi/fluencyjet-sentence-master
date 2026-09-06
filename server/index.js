@@ -27,6 +27,7 @@ import progressRouter from "./routes/progress.js";
 import leaderboardRouter from "./routes/leaderboard.js";
 import dashboardRouter from "./routes/dashboard.js";
 import lessonsRouter from "./routes/lessons.js";
+import cefrRouter from "./routes/cefr.js";
 import adminExercises from "./routes/adminExercises.js";
 import adminLessonsRouter from "./routes/adminLessons.js";
 import adminLessonsUpsertRouter from "./routes/adminLessonsUpsert.js";
@@ -263,6 +264,7 @@ app.use("/api/progress", progressRouter);
 app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/dashboard", dashboardRouter); // Student Dashboard
 app.use("/api/lessons", lessonsRouter); // Student Lessons
+app.use("/api/cefr", cefrRouter); // CEFR v2 learner programs
 app.use("/api/automation", automationProcessorRouter);
 
 // -----------------------------
