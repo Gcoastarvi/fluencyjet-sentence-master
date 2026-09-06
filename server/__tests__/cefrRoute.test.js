@@ -4,10 +4,15 @@ import express from "express";
 
 const mockGetCefrProgramOverview = jest.fn();
 const mockGetCefrDayDetail = jest.fn();
+const mockStartCefrActivityAttempt = jest.fn();
 
 jest.unstable_mockModule("../services/cefrAccessService.js", () => ({
   getCefrProgramOverview: mockGetCefrProgramOverview,
   getCefrDayDetail: mockGetCefrDayDetail,
+}));
+
+jest.unstable_mockModule("../services/cefrAttemptService.js", () => ({
+  startCefrActivityAttempt: mockStartCefrActivityAttempt,
 }));
 
 const { default: cefrRouter } = await import("../routes/cefr.js");
@@ -320,5 +325,134 @@ describe("GET /api/cefr/programs/:programSlug/days/:dayNumber", () => {
       programSlug: "german-a1",
       dayNumber: 1,
     });
+  });
+});
+
+describe("POST /api/cefr/programs/:programSlug/days/:dayNumber/activities/:activityId/attempts", () => {
+  const url =
+    "/api/cefr/programs/german-a1/days/1/activities/activity-1/attempts";
+
+  test("returns 401 when learner is not authenticated", async () => {
+    const res = await request(makeApp(null)).post(url);
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      ok: false,
+      message: "Unauthorized",
+    });
+
+    expect(mockStartCefrActivityAttempt).not.toHaveBeenCalled();
+  });
+
+  test("rejects an invalid day number", async () => {
+    const res = await request(makeApp()).post(
+      "/api/cefr/programs/german-a1/days/not-a-day/activities/activity-1/attempts",
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Invalid day number");
+    expect(mockStartCefrActivityAttempt).not.toHaveBeenCalled();
+  });
+
+  test("returns 404 when activity is not part of the unlocked day", async () => {
+    mockStartCefrActivityAttempt.mockResolvedValue({
+      type: "ACTIVITY_NOT_FOUND",
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({
+      ok: false,
+      code: "ACTIVITY_NOT_FOUND",
+      message: "Activity not found",
+    });
+  });
+
+  test("returns 403 when the day is locked", async () => {
+    mockStartCefrActivityAttempt.mockResolvedValue({
+      type: "DAY_LOCKED",
+      day: {
+        id: "day-1",
+        dayNumber: 1,
+        unlocked: false,
+        accessState: "SCHEDULED",
+      },
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("DAY_LOCKED");
+  });
+
+  test("returns 409 when multiple open Attempts already exist", async () => {
+    mockStartCefrActivityAttempt.mockResolvedValue({
+      type: "ATTEMPT_CONFLICT",
+      enrollmentId: "enrollment-1",
+      activityId: "activity-1",
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("ATTEMPT_CONFLICT");
+  });
+
+  test("returns 201 when a new Attempt is created", async () => {
+    mockStartCefrActivityAttempt.mockResolvedValue({
+      type: "OK",
+      resumed: false,
+      activity: {
+        id: "activity-1",
+        key: "greetings-reorder",
+        activityType: "REORDER",
+        evaluationMode: "AUTO",
+      },
+      attempt: {
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "IN_PROGRESS",
+      },
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(201);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.resumed).toBe(false);
+    expect(res.body.attempt.id).toBe("attempt-1");
+
+    expect(mockStartCefrActivityAttempt).toHaveBeenCalledWith({
+      userId: 42,
+      programSlug: "german-a1",
+      dayNumber: 1,
+      activityId: "activity-1",
+    });
+  });
+
+  test("returns 200 when an existing open Attempt is resumed", async () => {
+    mockStartCefrActivityAttempt.mockResolvedValue({
+      type: "OK",
+      resumed: true,
+      activity: {
+        id: "activity-1",
+        key: "greetings-reorder",
+        activityType: "REORDER",
+        evaluationMode: "AUTO",
+      },
+      attempt: {
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "IN_PROGRESS",
+      },
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.resumed).toBe(true);
+    expect(res.body.attempt.id).toBe("attempt-1");
   });
 });
