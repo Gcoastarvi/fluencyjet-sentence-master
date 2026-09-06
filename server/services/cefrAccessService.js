@@ -261,3 +261,109 @@ export async function getCefrProgramOverview({
     days,
   };
 }
+
+export async function getCefrDayDetail({
+  userId,
+  programSlug,
+  dayNumber,
+  now = new Date(),
+}) {
+  const overview = await getCefrProgramOverview({
+    userId,
+    programSlug,
+    now,
+  });
+
+  if (overview.type !== "OK") {
+    return overview;
+  }
+
+  const dayAccess =
+    overview.days.find((day) => day.dayNumber === dayNumber) || null;
+
+  if (!dayAccess) {
+    return {
+      type: "DAY_NOT_FOUND",
+      program: overview.program,
+      version: overview.version,
+      enrollment: overview.enrollment,
+      cohort: overview.cohort,
+    };
+  }
+
+  if (!dayAccess.unlocked) {
+    return {
+      type: "DAY_LOCKED",
+      program: overview.program,
+      version: overview.version,
+      enrollment: overview.enrollment,
+      cohort: overview.cohort,
+      day: dayAccess,
+    };
+  }
+
+  const learningDay = await prisma.learningDay.findFirst({
+    where: {
+      id: dayAccess.id,
+      programVersionId: overview.version.id,
+    },
+    select: {
+      id: true,
+      dayNumber: true,
+      title: true,
+      summary: true,
+      activities: {
+        orderBy: {
+          orderIndex: "asc",
+        },
+        select: {
+          id: true,
+          key: true,
+          activityType: true,
+          evaluationMode: true,
+          title: true,
+          orderIndex: true,
+          config: true,
+          items: {
+            orderBy: {
+              orderIndex: "asc",
+            },
+            select: {
+              id: true,
+              itemKey: true,
+              orderIndex: true,
+              prompt: true,
+              payload: true,
+              hint: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!learningDay) {
+    return {
+      type: "DAY_NOT_FOUND",
+      program: overview.program,
+      version: overview.version,
+      enrollment: overview.enrollment,
+      cohort: overview.cohort,
+    };
+  }
+
+  return {
+    type: "OK",
+    program: overview.program,
+    version: overview.version,
+    enrollment: overview.enrollment,
+    cohort: overview.cohort,
+    day: {
+      ...learningDay,
+      entitled: dayAccess.entitled,
+      unlocked: dayAccess.unlocked,
+      accessState: dayAccess.accessState,
+      liveSession: dayAccess.liveSession,
+    },
+  };
+}
