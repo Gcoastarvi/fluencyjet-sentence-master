@@ -5,6 +5,7 @@ import express from "express";
 const mockGetCefrProgramOverview = jest.fn();
 const mockGetCefrDayDetail = jest.fn();
 const mockStartCefrActivityAttempt = jest.fn();
+const mockCompleteCefrActivityAttempt = jest.fn();
 const mockSubmitCefrActivityResponse = jest.fn();
 
 jest.unstable_mockModule("../services/cefrAccessService.js", () => ({
@@ -14,6 +15,7 @@ jest.unstable_mockModule("../services/cefrAccessService.js", () => ({
 
 jest.unstable_mockModule("../services/cefrAttemptService.js", () => ({
   startCefrActivityAttempt: mockStartCefrActivityAttempt,
+  completeCefrActivityAttempt: mockCompleteCefrActivityAttempt,
 }));
 
 jest.unstable_mockModule("../services/cefrResponseService.js", () => ({
@@ -459,6 +461,150 @@ describe("POST /api/cefr/programs/:programSlug/days/:dayNumber/activities/:activ
     expect(res.body.ok).toBe(true);
     expect(res.body.resumed).toBe(true);
     expect(res.body.attempt.id).toBe("attempt-1");
+  });
+});
+
+describe("POST CEFR activity Attempt completion", () => {
+  const url =
+    "/api/cefr/programs/german-a1/days/1/activities/activity-1/attempts/attempt-1/complete";
+
+  test("returns 401 when learner is not authenticated", async () => {
+    const res = await request(makeApp(null)).post(url);
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      ok: false,
+      message: "Unauthorized",
+    });
+
+    expect(mockCompleteCefrActivityAttempt).not.toHaveBeenCalled();
+  });
+
+  test("rejects an invalid Attempt id", async () => {
+    const res = await request(makeApp()).post(
+      "/api/cefr/programs/german-a1/days/1/activities/activity-1/attempts/%20/complete",
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Invalid attempt id");
+    expect(mockCompleteCefrActivityAttempt).not.toHaveBeenCalled();
+  });
+
+  test("returns 404 when the Attempt does not belong to the learner", async () => {
+    mockCompleteCefrActivityAttempt.mockResolvedValue({
+      type: "ATTEMPT_NOT_FOUND",
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({
+      ok: false,
+      code: "ATTEMPT_NOT_FOUND",
+      message: "Attempt not found",
+    });
+  });
+
+  test("returns 409 when the Attempt is not open", async () => {
+    mockCompleteCefrActivityAttempt.mockResolvedValue({
+      type: "ATTEMPT_NOT_OPEN",
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("ATTEMPT_NOT_OPEN");
+  });
+
+  test("returns 409 with missing items when activity evidence is incomplete", async () => {
+    mockCompleteCefrActivityAttempt.mockResolvedValue({
+      type: "ACTIVITY_INCOMPLETE",
+      completedItemIds: ["item-1"],
+      missingItemIds: ["item-2"],
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(409);
+    expect(res.body).toEqual({
+      ok: false,
+      code: "ACTIVITY_INCOMPLETE",
+      message: "Activity is not complete",
+      completedItemIds: ["item-1"],
+      missingItemIds: ["item-2"],
+    });
+  });
+
+  test("returns 200 when the Attempt is completed", async () => {
+    mockCompleteCefrActivityAttempt.mockResolvedValue({
+      type: "OK",
+      alreadyCompleted: false,
+      program: {
+        id: "program-1",
+        slug: "german-a1",
+      },
+      version: {
+        id: "version-1",
+        versionKey: "2026-v1",
+      },
+      enrollment: {
+        id: "enrollment-1",
+      },
+      cohort: {
+        id: "cohort-1",
+      },
+      day: {
+        id: "day-1",
+        dayNumber: 1,
+      },
+      activity: {
+        id: "activity-1",
+        key: "greetings-reorder",
+        activityType: "REORDER",
+        evaluationMode: "AUTO",
+      },
+      attempt: {
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "COMPLETED",
+        completedAt: "2026-09-10T15:00:00.000Z",
+      },
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.alreadyCompleted).toBe(false);
+    expect(res.body.attempt.status).toBe("COMPLETED");
+
+    expect(mockCompleteCefrActivityAttempt).toHaveBeenCalledWith({
+      userId: 42,
+      programSlug: "german-a1",
+      dayNumber: 1,
+      activityId: "activity-1",
+      attemptId: "attempt-1",
+    });
+  });
+
+  test("returns 200 idempotently when the Attempt was already completed", async () => {
+    mockCompleteCefrActivityAttempt.mockResolvedValue({
+      type: "OK",
+      alreadyCompleted: true,
+      attempt: {
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "COMPLETED",
+        completedAt: "2026-09-10T15:00:00.000Z",
+      },
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.alreadyCompleted).toBe(true);
+    expect(res.body.attempt.status).toBe("COMPLETED");
   });
 });
 
