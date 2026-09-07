@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from "node:util";
 import prisma from "../db/client.js";
 import { getCefrDayDetail } from "./cefrAccessService.js";
 import { evaluateCefrSubmission } from "./cefrEvaluator.js";
+import { awardCefrResponseXp } from "./cefrXpService.js";
 
 const ATTEMPT_SELECT = {
   id: true,
@@ -122,6 +123,7 @@ function buildOkResult({
   attempt,
   response,
   idempotentReplay,
+  xp,
 }) {
   return {
     type: "OK",
@@ -142,7 +144,85 @@ function buildOkResult({
     attempt,
     response,
     idempotentReplay,
+    xp,
   };
+}
+
+function toPublicXpResult(xpResult) {
+  if (xpResult.type === "NO_AWARD") {
+    return {
+      ok: true,
+      xp: {
+        awarded: false,
+        amount: 0,
+      },
+    };
+  }
+
+  if (xpResult.type !== "OK") {
+    return {
+      ok: false,
+      error: xpResult.type,
+    };
+  }
+
+  return {
+    ok: true,
+    xp: {
+      awarded: true,
+      amount: xpResult.xp.amount,
+      eventType: xpResult.xp.eventType,
+      ruleVersion: xpResult.xp.ruleVersion,
+      idempotentReplay: xpResult.idempotentReplay,
+    },
+  };
+}
+
+async function finalizeResponseXp({
+  dayResult,
+  activity,
+  attempt,
+  response,
+  idempotentReplay,
+}) {
+  const xpResult = await awardCefrResponseXp({
+    responseId: response.id,
+  });
+
+  const publicXpResult = toPublicXpResult(xpResult);
+
+  if (!publicXpResult.ok) {
+    return {
+      type: "XP_AWARD_FAILED",
+      xpError: publicXpResult.error,
+      program: dayResult.program,
+      version: dayResult.version,
+      enrollment: dayResult.enrollment,
+      cohort: dayResult.cohort,
+      day: {
+        id: dayResult.day.id,
+        dayNumber: dayResult.day.dayNumber,
+      },
+      activity: {
+        id: activity.id,
+        key: activity.key,
+        activityType: activity.activityType,
+        evaluationMode: activity.evaluationMode,
+      },
+      attempt,
+      response,
+      idempotentReplay,
+    };
+  }
+
+  return buildOkResult({
+    dayResult,
+    activity,
+    attempt,
+    response,
+    idempotentReplay,
+    xp: publicXpResult.xp,
+  });
 }
 
 async function findLatestResponseNumber({
@@ -391,7 +471,7 @@ export async function submitCefrActivityResponse({
         };
       }
 
-      return buildOkResult({
+      return finalizeResponseXp({
         dayResult,
         activity,
         attempt,
@@ -476,7 +556,7 @@ export async function submitCefrActivityResponse({
     return appendResult;
   }
 
-  return buildOkResult({
+  return finalizeResponseXp({
     dayResult,
     activity,
     attempt,

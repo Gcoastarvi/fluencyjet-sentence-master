@@ -549,6 +549,16 @@ router.post(
         });
       }
 
+      if (result.type === "XP_AWARD_FAILED") {
+        console.error("CEFR XP finalization failed:", result.xpError);
+
+        return res.status(500).json({
+          ok: false,
+          code: "XP_AWARD_FAILED",
+          message: "Response saved but XP could not be finalized",
+        });
+      }
+
       if (result.type !== "OK") {
         console.error("Unexpected CEFR Response result:", result?.type);
 
@@ -569,6 +579,7 @@ router.post(
         activity: result.activity,
         attempt: result.attempt,
         response: result.response,
+        xp: result.xp,
       });
     } catch (err) {
       console.error(

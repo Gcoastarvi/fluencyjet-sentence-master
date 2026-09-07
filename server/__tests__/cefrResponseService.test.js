@@ -8,6 +8,7 @@ import {
 
 const mockGetCefrDayDetail = jest.fn();
 const mockEvaluateCefrSubmission = jest.fn();
+const mockAwardCefrResponseXp = jest.fn();
 
 const mockPrisma = {
   attempt: {
@@ -32,6 +33,10 @@ jest.unstable_mockModule("../services/cefrAccessService.js", () => ({
 
 jest.unstable_mockModule("../services/cefrEvaluator.js", () => ({
   evaluateCefrSubmission: mockEvaluateCefrSubmission,
+}));
+
+jest.unstable_mockModule("../services/cefrXpService.js", () => ({
+  awardCefrResponseXp: mockAwardCefrResponseXp,
 }));
 
 const { submitCefrActivityResponse } = await import(
@@ -95,6 +100,10 @@ function baseInput(overrides = {}) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockGetCefrDayDetail.mockResolvedValue(unlockedDayResult());
+  mockAwardCefrResponseXp.mockResolvedValue({
+    type: "NO_AWARD",
+    reason: "NOT_ELIGIBLE",
+  });
 });
 
 describe("submitCefrActivityResponse", () => {
@@ -765,4 +774,266 @@ describe("submitCefrActivityResponse", () => {
     expect(result.type).toBe("OK");
     expect(result.response.responseNumber).toBe(3);
   });
+
+  test("finalizes XP after persisting a successful Response", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "IN_PROGRESS",
+      completedAt: null,
+    });
+
+    mockPrisma.activityItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      answerKey: {
+        type: "TOKEN_SEQUENCE",
+        tokens: ["Guten", "Morgen."],
+      },
+      activity: {
+        evaluationMode: "AUTO",
+      },
+    });
+
+    mockEvaluateCefrSubmission.mockReturnValue({
+      ok: true,
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+    });
+
+    mockPrisma.response.findFirst.mockResolvedValue(null);
+    mockPrisma.response.create.mockResolvedValue({
+      id: "response-xp-1",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        tokens: ["Guten", "Morgen."],
+      },
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      submittedAt: new Date("2026-09-07T03:30:00.000Z"),
+    });
+
+    mockAwardCefrResponseXp.mockResolvedValue({
+      type: "OK",
+      idempotentReplay: false,
+      xp: {
+        id: "xp-1",
+        amount: 150,
+        eventType: "ITEM_FIRST_CORRECT",
+        ruleVersion: "cefr-xp-v1",
+        idempotencyKey: "internal-ledger-key",
+      },
+    });
+
+    const result = await submitCefrActivityResponse(baseInput());
+
+    expect(mockAwardCefrResponseXp).toHaveBeenCalledWith({
+      responseId: "response-xp-1",
+    });
+
+    expect(result.type).toBe("OK");
+    expect(result.response.id).toBe("response-xp-1");
+    expect(result.xp).toEqual({
+      awarded: true,
+      amount: 150,
+      eventType: "ITEM_FIRST_CORRECT",
+      ruleVersion: "cefr-xp-v1",
+      idempotentReplay: false,
+    });
+    expect(result.xp).not.toHaveProperty("id");
+    expect(result.xp).not.toHaveProperty("idempotencyKey");
+  });
+
+  test("repairs missing XP during an exact Response replay even after Attempt completion", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "COMPLETED",
+      completedAt: new Date("2026-09-07T03:31:00.000Z"),
+    });
+
+    mockPrisma.response.findFirst.mockResolvedValue({
+      id: "response-existing",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        tokens: ["Guten", "Morgen."],
+      },
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      idempotencyKey: "submission-repair",
+      submittedAt: new Date("2026-09-07T03:30:00.000Z"),
+    });
+
+    mockAwardCefrResponseXp.mockResolvedValue({
+      type: "OK",
+      idempotentReplay: false,
+      xp: {
+        id: "xp-repaired",
+        amount: 150,
+        eventType: "ITEM_FIRST_CORRECT",
+        ruleVersion: "cefr-xp-v1",
+        idempotencyKey: "internal-ledger-key",
+      },
+    });
+
+    const result = await submitCefrActivityResponse(
+      baseInput({
+        idempotencyKey: "submission-repair",
+      }),
+    );
+
+    expect(mockPrisma.activityItem.findFirst).not.toHaveBeenCalled();
+    expect(mockEvaluateCefrSubmission).not.toHaveBeenCalled();
+    expect(mockPrisma.response.create).not.toHaveBeenCalled();
+
+    expect(mockAwardCefrResponseXp).toHaveBeenCalledWith({
+      responseId: "response-existing",
+    });
+
+    expect(result.type).toBe("OK");
+    expect(result.idempotentReplay).toBe(true);
+    expect(result.response.id).toBe("response-existing");
+    expect(result.xp).toEqual({
+      awarded: true,
+      amount: 150,
+      eventType: "ITEM_FIRST_CORRECT",
+      ruleVersion: "cefr-xp-v1",
+      idempotentReplay: false,
+    });
+  });
+
+  test("returns zero public XP when the persisted Response is not eligible", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "IN_PROGRESS",
+      completedAt: null,
+    });
+
+    mockPrisma.activityItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      answerKey: {
+        type: "SINGLE_CHOICE",
+        correctOptionId: "option-b",
+      },
+      activity: {
+        evaluationMode: "AUTO",
+      },
+    });
+
+    mockEvaluateCefrSubmission.mockReturnValue({
+      ok: true,
+      isCorrect: false,
+      evaluationCode: "INCORRECT",
+      score: 0,
+    });
+
+    mockPrisma.response.findFirst.mockResolvedValue(null);
+    mockPrisma.response.create.mockResolvedValue({
+      id: "response-wrong",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        optionId: "option-a",
+      },
+      isCorrect: false,
+      evaluationCode: "INCORRECT",
+      score: 0,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      submittedAt: new Date("2026-09-07T03:30:00.000Z"),
+    });
+
+    const result = await submitCefrActivityResponse(
+      baseInput({
+        submittedAnswer: {
+          optionId: "option-a",
+        },
+      }),
+    );
+
+    expect(mockAwardCefrResponseXp).toHaveBeenCalledWith({
+      responseId: "response-wrong",
+    });
+    expect(result.type).toBe("OK");
+    expect(result.xp).toEqual({
+      awarded: false,
+      amount: 0,
+    });
+  });
+
+  test("reports XP_AWARD_FAILED after the Response is durable when XP configuration fails", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "IN_PROGRESS",
+      completedAt: null,
+    });
+
+    mockPrisma.activityItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      answerKey: {
+        type: "TOKEN_SEQUENCE",
+        tokens: ["Guten", "Morgen."],
+      },
+      activity: {
+        evaluationMode: "AUTO",
+      },
+    });
+
+    mockEvaluateCefrSubmission.mockReturnValue({
+      ok: true,
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+    });
+
+    mockPrisma.response.findFirst.mockResolvedValue(null);
+    mockPrisma.response.create.mockResolvedValue({
+      id: "response-durable",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        tokens: ["Guten", "Morgen."],
+      },
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      submittedAt: new Date("2026-09-07T03:30:00.000Z"),
+    });
+
+    mockAwardCefrResponseXp.mockResolvedValue({
+      type: "XP_CONFIG_ERROR",
+    });
+
+    const result = await submitCefrActivityResponse(baseInput());
+
+    expect(mockPrisma.response.create).toHaveBeenCalledTimes(1);
+    expect(mockAwardCefrResponseXp).toHaveBeenCalledWith({
+      responseId: "response-durable",
+    });
+
+    expect(result.type).toBe("XP_AWARD_FAILED");
+    expect(result.xpError).toBe("XP_CONFIG_ERROR");
+    expect(result.response.id).toBe("response-durable");
+  });
+
 });

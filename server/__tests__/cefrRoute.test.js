@@ -557,6 +557,13 @@ describe("POST CEFR activity item Response", () => {
         responseTimeMs: 900,
         submittedAt: "2026-09-07T03:30:00.000Z",
       },
+      xp: {
+        awarded: true,
+        amount: 150,
+        eventType: "ITEM_FIRST_CORRECT",
+        ruleVersion: "cefr-xp-v1",
+        idempotentReplay: false,
+      },
     });
 
     const res = await request(makeApp())
@@ -568,6 +575,13 @@ describe("POST CEFR activity item Response", () => {
     expect(res.body.ok).toBe(true);
     expect(res.body.idempotentReplay).toBe(false);
     expect(res.body.response.id).toBe("response-1");
+    expect(res.body.xp).toEqual({
+      awarded: true,
+      amount: 150,
+      eventType: "ITEM_FIRST_CORRECT",
+      ruleVersion: "cefr-xp-v1",
+      idempotentReplay: false,
+    });
 
     expect(mockSubmitCefrActivityResponse).toHaveBeenCalledWith({
       userId: 42,
@@ -695,4 +709,28 @@ describe("POST CEFR activity item Response", () => {
     expect(res.status).toBe(500);
     expect(res.body.code).toBe("EVALUATOR_CONFIG_ERROR");
   });
+
+  test("returns 500 when the Response is durable but XP finalization fails", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "XP_AWARD_FAILED",
+      xpError: "XP_CONFIG_ERROR",
+      response: {
+        id: "response-durable",
+        responseNumber: 1,
+      },
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-xp-failure")
+      .send(body);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({
+      ok: false,
+      code: "XP_AWARD_FAILED",
+      message: "Response saved but XP could not be finalized",
+    });
+  });
+
 });
