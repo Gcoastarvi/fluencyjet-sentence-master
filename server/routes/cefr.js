@@ -5,6 +5,7 @@ import {
   getCefrDayDetail,
 } from "../services/cefrAccessService.js";
 import { startCefrActivityAttempt } from "../services/cefrAttemptService.js";
+import { submitCefrActivityResponse } from "../services/cefrResponseService.js";
 
 const router = express.Router();
 
@@ -352,6 +353,232 @@ router.post(
       return res.status(500).json({
         ok: false,
         message: "Failed to start activity attempt",
+      });
+    }
+  },
+);
+
+// POST /api/cefr/programs/:programSlug/days/:dayNumber/activities/:activityId/attempts/:attemptId/items/:activityItemId/responses
+router.post(
+  "/programs/:programSlug/days/:dayNumber/activities/:activityId/attempts/:attemptId/items/:activityItemId/responses",
+  authRequired,
+  async (req, res) => {
+    try {
+      const programSlug = normalizeProgramSlug(req.params.programSlug);
+
+      if (!programSlug) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid program slug",
+        });
+      }
+
+      const dayNumber = normalizeDayNumber(req.params.dayNumber);
+
+      if (!dayNumber) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid day number",
+        });
+      }
+
+      const activityId = String(req.params.activityId || "").trim();
+      const attemptId = String(req.params.attemptId || "").trim();
+      const activityItemId = String(req.params.activityItemId || "").trim();
+
+      if (!activityId || activityId.length > 191) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid activity id",
+        });
+      }
+
+      if (!attemptId || attemptId.length > 191) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid attempt id",
+        });
+      }
+
+      if (!activityItemId || activityItemId.length > 191) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid activity item id",
+        });
+      }
+
+      const rawIdempotencyKey = req.get("Idempotency-Key");
+      const idempotencyKey =
+        typeof rawIdempotencyKey === "string"
+          ? rawIdempotencyKey.trim()
+          : "";
+
+      if (!idempotencyKey || idempotencyKey.length > 128) {
+        return res.status(400).json({
+          ok: false,
+          code: "INVALID_IDEMPOTENCY_KEY",
+          message: "Valid Idempotency-Key header required",
+        });
+      }
+
+      const result = await submitCefrActivityResponse({
+        userId: req.user.id,
+        programSlug,
+        dayNumber,
+        activityId,
+        attemptId,
+        activityItemId,
+        submittedAnswer: req.body?.submittedAnswer,
+        hintUsed: req.body?.hintUsed ?? false,
+        answerRevealed: req.body?.answerRevealed ?? false,
+        responseTimeMs: req.body?.responseTimeMs ?? null,
+        idempotencyKey,
+      });
+
+      if (result.type === "PROGRAM_NOT_FOUND") {
+        return res.status(404).json({
+          ok: false,
+          code: "PROGRAM_NOT_FOUND",
+          message: "Program not found",
+        });
+      }
+
+      if (result.type === "ENROLLMENT_REQUIRED") {
+        return res.status(403).json({
+          ok: false,
+          code: "ENROLLMENT_REQUIRED",
+          message: "Enrollment required",
+          program: result.program,
+        });
+      }
+
+      if (result.type === "COHORT_CONFLICT") {
+        return res.status(409).json({
+          ok: false,
+          code: "COHORT_CONFLICT",
+          message: "Multiple active cohort memberships found",
+        });
+      }
+
+      if (result.type === "COHORT_VERSION_MISMATCH") {
+        return res.status(409).json({
+          ok: false,
+          code: "COHORT_VERSION_MISMATCH",
+          message: "Cohort and enrollment curriculum versions do not match",
+        });
+      }
+
+      if (result.type === "DAY_NOT_FOUND") {
+        return res.status(404).json({
+          ok: false,
+          code: "DAY_NOT_FOUND",
+          message: "Day not found",
+        });
+      }
+
+      if (result.type === "DAY_LOCKED") {
+        return res.status(403).json({
+          ok: false,
+          code: "DAY_LOCKED",
+          message: "Day is locked",
+          day: result.day,
+        });
+      }
+
+      if (result.type === "ACTIVITY_NOT_FOUND") {
+        return res.status(404).json({
+          ok: false,
+          code: "ACTIVITY_NOT_FOUND",
+          message: "Activity not found",
+        });
+      }
+
+      if (result.type === "ACTIVITY_ITEM_NOT_FOUND") {
+        return res.status(404).json({
+          ok: false,
+          code: "ACTIVITY_ITEM_NOT_FOUND",
+          message: "Activity item not found",
+        });
+      }
+
+      if (result.type === "ATTEMPT_NOT_FOUND") {
+        return res.status(404).json({
+          ok: false,
+          code: "ATTEMPT_NOT_FOUND",
+          message: "Attempt not found",
+        });
+      }
+
+      if (result.type === "ATTEMPT_NOT_OPEN") {
+        return res.status(409).json({
+          ok: false,
+          code: "ATTEMPT_NOT_OPEN",
+          message: "Attempt is not open",
+        });
+      }
+
+      if (
+        result.type === "INVALID_IDEMPOTENCY_KEY" ||
+        result.type === "INVALID_SUBMISSION"
+      ) {
+        return res.status(400).json({
+          ok: false,
+          code: result.type,
+          message:
+            result.type === "INVALID_IDEMPOTENCY_KEY"
+              ? "Valid Idempotency-Key header required"
+              : "Invalid submission",
+        });
+      }
+
+      if (result.type === "IDEMPOTENCY_CONFLICT") {
+        return res.status(409).json({
+          ok: false,
+          code: "IDEMPOTENCY_CONFLICT",
+          message: "Idempotency key was already used with different evidence",
+        });
+      }
+
+      if (result.type === "EVALUATOR_CONFIG_ERROR") {
+        console.error("CEFR evaluator configuration error");
+
+        return res.status(500).json({
+          ok: false,
+          code: "EVALUATOR_CONFIG_ERROR",
+          message: "Unable to evaluate submission",
+        });
+      }
+
+      if (result.type !== "OK") {
+        console.error("Unexpected CEFR Response result:", result?.type);
+
+        return res.status(500).json({
+          ok: false,
+          message: "Failed to submit response",
+        });
+      }
+
+      return res.status(result.idempotentReplay ? 200 : 201).json({
+        ok: true,
+        idempotentReplay: result.idempotentReplay,
+        program: result.program,
+        version: result.version,
+        enrollment: result.enrollment,
+        cohort: result.cohort,
+        day: result.day,
+        activity: result.activity,
+        attempt: result.attempt,
+        response: result.response,
+      });
+    } catch (err) {
+      console.error(
+        "POST /api/cefr/programs/:programSlug/days/:dayNumber/activities/:activityId/attempts/:attemptId/items/:activityItemId/responses error:",
+        err,
+      );
+
+      return res.status(500).json({
+        ok: false,
+        message: "Failed to submit response",
       });
     }
   },

@@ -5,6 +5,7 @@ import express from "express";
 const mockGetCefrProgramOverview = jest.fn();
 const mockGetCefrDayDetail = jest.fn();
 const mockStartCefrActivityAttempt = jest.fn();
+const mockSubmitCefrActivityResponse = jest.fn();
 
 jest.unstable_mockModule("../services/cefrAccessService.js", () => ({
   getCefrProgramOverview: mockGetCefrProgramOverview,
@@ -13,6 +14,10 @@ jest.unstable_mockModule("../services/cefrAccessService.js", () => ({
 
 jest.unstable_mockModule("../services/cefrAttemptService.js", () => ({
   startCefrActivityAttempt: mockStartCefrActivityAttempt,
+}));
+
+jest.unstable_mockModule("../services/cefrResponseService.js", () => ({
+  submitCefrActivityResponse: mockSubmitCefrActivityResponse,
 }));
 
 const { default: cefrRouter } = await import("../routes/cefr.js");
@@ -454,5 +459,240 @@ describe("POST /api/cefr/programs/:programSlug/days/:dayNumber/activities/:activ
     expect(res.body.ok).toBe(true);
     expect(res.body.resumed).toBe(true);
     expect(res.body.attempt.id).toBe("attempt-1");
+  });
+});
+
+describe("POST CEFR activity item Response", () => {
+  const url =
+    "/api/cefr/programs/german-a1/days/1/activities/activity-1/attempts/attempt-1/items/item-1/responses";
+
+  const body = {
+    submittedAnswer: {
+      tokens: ["Guten", "Morgen."],
+    },
+    hintUsed: false,
+    answerRevealed: false,
+    responseTimeMs: 900,
+  };
+
+  test("returns 401 when learner is not authenticated", async () => {
+    const res = await request(makeApp(null))
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(401);
+    expect(mockSubmitCefrActivityResponse).not.toHaveBeenCalled();
+  });
+
+  test("requires an Idempotency-Key header", async () => {
+    const res = await request(makeApp()).post(url).send(body);
+
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      ok: false,
+      code: "INVALID_IDEMPOTENCY_KEY",
+      message: "Valid Idempotency-Key header required",
+    });
+
+    expect(mockSubmitCefrActivityResponse).not.toHaveBeenCalled();
+  });
+
+  test("rejects an Idempotency-Key longer than 128 characters", async () => {
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "x".repeat(129))
+      .send(body);
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("INVALID_IDEMPOTENCY_KEY");
+    expect(mockSubmitCefrActivityResponse).not.toHaveBeenCalled();
+  });
+
+  test("returns 201 for a newly persisted Response", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "OK",
+      idempotentReplay: false,
+      program: {
+        id: "program-1",
+        slug: "german-a1",
+      },
+      version: {
+        id: "version-1",
+        versionKey: "2026-v1",
+      },
+      enrollment: {
+        id: "enrollment-1",
+      },
+      cohort: {
+        id: "cohort-1",
+      },
+      day: {
+        id: "day-1",
+        dayNumber: 1,
+      },
+      activity: {
+        id: "activity-1",
+        key: "greetings-reorder",
+        activityType: "REORDER",
+        evaluationMode: "AUTO",
+      },
+      attempt: {
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "IN_PROGRESS",
+        completedAt: null,
+      },
+      response: {
+        id: "response-1",
+        attemptId: "attempt-1",
+        activityItemId: "item-1",
+        responseNumber: 1,
+        submittedAnswer: body.submittedAnswer,
+        isCorrect: true,
+        evaluationCode: "CORRECT",
+        score: 1,
+        hintUsed: false,
+        answerRevealed: false,
+        responseTimeMs: 900,
+        submittedAt: "2026-09-07T03:30:00.000Z",
+      },
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(201);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.idempotentReplay).toBe(false);
+    expect(res.body.response.id).toBe("response-1");
+
+    expect(mockSubmitCefrActivityResponse).toHaveBeenCalledWith({
+      userId: 42,
+      programSlug: "german-a1",
+      dayNumber: 1,
+      activityId: "activity-1",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      submittedAnswer: body.submittedAnswer,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: 900,
+      idempotencyKey: "response-key-1",
+    });
+  });
+
+  test("returns 200 for an idempotent replay", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "OK",
+      idempotentReplay: true,
+      response: {
+        id: "response-1",
+        responseNumber: 1,
+      },
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.idempotentReplay).toBe(true);
+    expect(res.body.response.id).toBe("response-1");
+  });
+
+  test("returns 403 when the day is locked", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "DAY_LOCKED",
+      day: {
+        id: "day-1",
+        dayNumber: 1,
+        accessState: "SCHEDULED",
+      },
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("DAY_LOCKED");
+  });
+
+  test("returns 404 when the ActivityItem is not part of the Activity", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "ACTIVITY_ITEM_NOT_FOUND",
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe("ACTIVITY_ITEM_NOT_FOUND");
+  });
+
+  test("returns 409 when the Attempt is not open", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "ATTEMPT_NOT_OPEN",
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("ATTEMPT_NOT_OPEN");
+  });
+
+  test("returns 400 for an invalid learner submission", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "INVALID_SUBMISSION",
+      evaluationCode: "INVALID_SUBMISSION",
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("INVALID_SUBMISSION");
+  });
+
+  test("returns 409 when an idempotency key is reused with different evidence", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "IDEMPOTENCY_CONFLICT",
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe("IDEMPOTENCY_CONFLICT");
+  });
+
+  test("fails closed when evaluator configuration is invalid", async () => {
+    mockSubmitCefrActivityResponse.mockResolvedValue({
+      type: "EVALUATOR_CONFIG_ERROR",
+      evaluationCode: "EVALUATOR_CONFIG_ERROR",
+    });
+
+    const res = await request(makeApp())
+      .post(url)
+      .set("Idempotency-Key", "response-key-1")
+      .send(body);
+
+    expect(res.status).toBe(500);
+    expect(res.body.code).toBe("EVALUATOR_CONFIG_ERROR");
   });
 });
