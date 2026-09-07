@@ -747,6 +747,7 @@ model Response {
   answerRevealed    Boolean  @default(false)
   responseTimeMs    Int?
   evaluationDetails Json?
+  idempotencyKey    String?  @db.VarChar(128)
   submittedAt       DateTime @default(now())
   createdAt         DateTime @default(now())
 
@@ -755,6 +756,7 @@ model Response {
   xpEntries    XpLedger[]
 
   @@unique([attemptId, activityItemId, responseNumber])
+  @@unique([attemptId, activityItemId, idempotencyKey])
   @@index([attemptId])
   @@index([activityItemId])
 }
