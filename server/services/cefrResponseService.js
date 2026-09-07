@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from "node:util";
+
 import prisma from "../db/client.js";
 import { getCefrDayDetail } from "./cefrAccessService.js";
 import { evaluateCefrSubmission } from "./cefrEvaluator.js";
@@ -23,6 +25,125 @@ const RESPONSE_SELECT = {
   responseTimeMs: true,
   submittedAt: true,
 };
+
+const IDEMPOTENCY_RESPONSE_SELECT = {
+  ...RESPONSE_SELECT,
+  idempotencyKey: true,
+};
+
+function normalizeIdempotencyKey(value) {
+  if (value === null || value === undefined) {
+    return {
+      ok: true,
+      value: null,
+    };
+  }
+
+  if (typeof value !== "string") {
+    return {
+      ok: false,
+      value: null,
+    };
+  }
+
+  const normalized = value.trim();
+
+  if (normalized.length === 0 || normalized.length > 128) {
+    return {
+      ok: false,
+      value: null,
+    };
+  }
+
+  return {
+    ok: true,
+    value: normalized,
+  };
+}
+
+function normalizeResponseTimeMs(value) {
+  return Number.isInteger(value) &&
+    value >= 0 &&
+    value <= 2147483647
+    ? value
+    : null;
+}
+
+function toPublicResponse(response) {
+  if (!response) {
+    return response;
+  }
+
+  const {
+    idempotencyKey: _idempotencyKey,
+    ...publicResponse
+  } = response;
+
+  return publicResponse;
+}
+
+function responseMatchesRequest({
+  response,
+  submittedAnswer,
+  hintUsed,
+  answerRevealed,
+  responseTimeMs,
+}) {
+  return (
+    isDeepStrictEqual(response.submittedAnswer, submittedAnswer) &&
+    response.hintUsed === hintUsed &&
+    response.answerRevealed === answerRevealed &&
+    response.responseTimeMs === responseTimeMs
+  );
+}
+
+async function findIdempotentResponse({
+  attemptId,
+  activityItemId,
+  idempotencyKey,
+}) {
+  if (idempotencyKey === null) {
+    return null;
+  }
+
+  return prisma.response.findFirst({
+    where: {
+      attemptId,
+      activityItemId,
+      idempotencyKey,
+    },
+    select: IDEMPOTENCY_RESPONSE_SELECT,
+  });
+}
+
+function buildOkResult({
+  dayResult,
+  activity,
+  attempt,
+  response,
+  idempotentReplay,
+}) {
+  return {
+    type: "OK",
+    program: dayResult.program,
+    version: dayResult.version,
+    enrollment: dayResult.enrollment,
+    cohort: dayResult.cohort,
+    day: {
+      id: dayResult.day.id,
+      dayNumber: dayResult.day.dayNumber,
+    },
+    activity: {
+      id: activity.id,
+      key: activity.key,
+      activityType: activity.activityType,
+      evaluationMode: activity.evaluationMode,
+    },
+    attempt,
+    response,
+    idempotentReplay,
+  };
+}
 
 async function findLatestResponseNumber({
   attemptId,
@@ -52,11 +173,16 @@ async function appendResponse({
   hintUsed,
   answerRevealed,
   responseTimeMs,
+  idempotencyKey,
   now,
 }) {
   const maxCreateAttempts = 4;
 
-  for (let createAttempt = 0; createAttempt < maxCreateAttempts; createAttempt += 1) {
+  for (
+    let createAttempt = 0;
+    createAttempt < maxCreateAttempts;
+    createAttempt += 1
+  ) {
     const latestResponseNumber = await findLatestResponseNumber({
       attemptId,
       activityItemId,
@@ -65,7 +191,7 @@ async function appendResponse({
     const responseNumber = latestResponseNumber + 1;
 
     try {
-      return await prisma.response.create({
+      const response = await prisma.response.create({
         data: {
           attemptId,
           activityItemId,
@@ -77,13 +203,50 @@ async function appendResponse({
           hintUsed,
           answerRevealed,
           responseTimeMs,
+          ...(idempotencyKey !== null ? { idempotencyKey } : {}),
           submittedAt: now,
         },
         select: RESPONSE_SELECT,
       });
+
+      return {
+        type: "OK",
+        response,
+        idempotentReplay: false,
+      };
     } catch (err) {
       if (err?.code !== "P2002") {
         throw err;
+      }
+
+      if (idempotencyKey !== null) {
+        const winner = await findIdempotentResponse({
+          attemptId,
+          activityItemId,
+          idempotencyKey,
+        });
+
+        if (winner) {
+          if (
+            !responseMatchesRequest({
+              response: winner,
+              submittedAnswer,
+              hintUsed,
+              answerRevealed,
+              responseTimeMs,
+            })
+          ) {
+            return {
+              type: "IDEMPOTENCY_CONFLICT",
+            };
+          }
+
+          return {
+            type: "OK",
+            response: toPublicResponse(winner),
+            idempotentReplay: true,
+          };
+        }
       }
 
       if (createAttempt === maxCreateAttempts - 1) {
@@ -106,8 +269,22 @@ export async function submitCefrActivityResponse({
   hintUsed = false,
   answerRevealed = false,
   responseTimeMs = null,
+  idempotencyKey = null,
   now = new Date(),
 }) {
+  const normalizedIdempotency = normalizeIdempotencyKey(idempotencyKey);
+
+  if (!normalizedIdempotency.ok) {
+    return {
+      type: "INVALID_IDEMPOTENCY_KEY",
+    };
+  }
+
+  const normalizedIdempotencyKey = normalizedIdempotency.value;
+  const normalizedHintUsed = Boolean(hintUsed);
+  const normalizedAnswerRevealed = Boolean(answerRevealed);
+  const normalizedResponseTimeMs = normalizeResponseTimeMs(responseTimeMs);
+
   const dayResult = await getCefrDayDetail({
     userId,
     programSlug,
@@ -192,6 +369,38 @@ export async function submitCefrActivityResponse({
     };
   }
 
+  if (normalizedIdempotencyKey !== null) {
+    const existingResponse = await findIdempotentResponse({
+      attemptId,
+      activityItemId,
+      idempotencyKey: normalizedIdempotencyKey,
+    });
+
+    if (existingResponse) {
+      if (
+        !responseMatchesRequest({
+          response: existingResponse,
+          submittedAnswer,
+          hintUsed: normalizedHintUsed,
+          answerRevealed: normalizedAnswerRevealed,
+          responseTimeMs: normalizedResponseTimeMs,
+        })
+      ) {
+        return {
+          type: "IDEMPOTENCY_CONFLICT",
+        };
+      }
+
+      return buildOkResult({
+        dayResult,
+        activity,
+        attempt,
+        response: toPublicResponse(existingResponse),
+        idempotentReplay: true,
+      });
+    }
+  }
+
   if (
     attempt.status !== "IN_PROGRESS" ||
     attempt.completedAt !== null
@@ -251,39 +460,27 @@ export async function submitCefrActivityResponse({
     };
   }
 
-  const response = await appendResponse({
+  const appendResult = await appendResponse({
     attemptId,
     activityItemId,
     submittedAnswer,
     evaluation,
-    hintUsed: Boolean(hintUsed),
-    answerRevealed: Boolean(answerRevealed),
-    responseTimeMs:
-      Number.isInteger(responseTimeMs) &&
-      responseTimeMs >= 0 &&
-      responseTimeMs <= 2147483647
-        ? responseTimeMs
-        : null,
+    hintUsed: normalizedHintUsed,
+    answerRevealed: normalizedAnswerRevealed,
+    responseTimeMs: normalizedResponseTimeMs,
+    idempotencyKey: normalizedIdempotencyKey,
     now,
   });
 
-  return {
-    type: "OK",
-    program: dayResult.program,
-    version: dayResult.version,
-    enrollment: dayResult.enrollment,
-    cohort: dayResult.cohort,
-    day: {
-      id: dayResult.day.id,
-      dayNumber: dayResult.day.dayNumber,
-    },
-    activity: {
-      id: activity.id,
-      key: activity.key,
-      activityType: activity.activityType,
-      evaluationMode: activity.evaluationMode,
-    },
+  if (appendResult.type !== "OK") {
+    return appendResult;
+  }
+
+  return buildOkResult({
+    dayResult,
+    activity,
     attempt,
-    response,
-  };
+    response: appendResult.response,
+    idempotentReplay: appendResult.idempotentReplay,
+  });
 }

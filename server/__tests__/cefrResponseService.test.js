@@ -176,6 +176,120 @@ describe("submitCefrActivityResponse", () => {
     expect(mockPrisma.activityItem.findFirst).not.toHaveBeenCalled();
   });
 
+  test("returns an existing Response for the same idempotency key without re-evaluating", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "IN_PROGRESS",
+      completedAt: null,
+    });
+
+    mockPrisma.response.findFirst.mockResolvedValue({
+      id: "response-1",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        tokens: ["Guten", "Morgen."],
+      },
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      idempotencyKey: "submission-abc",
+      submittedAt: new Date("2026-09-07T03:30:00.000Z"),
+    });
+
+    const result = await submitCefrActivityResponse(
+      baseInput({
+        idempotencyKey: "submission-abc",
+      }),
+    );
+
+    expect(mockPrisma.response.findFirst).toHaveBeenCalledWith({
+      where: {
+        attemptId: "attempt-1",
+        activityItemId: "item-1",
+        idempotencyKey: "submission-abc",
+      },
+      select: {
+        id: true,
+        attemptId: true,
+        activityItemId: true,
+        responseNumber: true,
+        submittedAnswer: true,
+        isCorrect: true,
+        evaluationCode: true,
+        score: true,
+        hintUsed: true,
+        answerRevealed: true,
+        responseTimeMs: true,
+        idempotencyKey: true,
+        submittedAt: true,
+      },
+    });
+
+    expect(mockPrisma.activityItem.findFirst).not.toHaveBeenCalled();
+    expect(mockEvaluateCefrSubmission).not.toHaveBeenCalled();
+    expect(mockPrisma.response.create).not.toHaveBeenCalled();
+
+    expect(result.type).toBe("OK");
+    expect(result.idempotentReplay).toBe(true);
+    expect(result.response.id).toBe("response-1");
+  });
+
+  test("returns an existing idempotent Response even if the Attempt has since completed", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "COMPLETED",
+      completedAt: new Date("2026-09-07T03:31:00.000Z"),
+    });
+
+    mockPrisma.response.findFirst.mockResolvedValue({
+      id: "response-1",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        tokens: ["Guten", "Morgen."],
+      },
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      idempotencyKey: "submission-abc",
+      submittedAt: new Date("2026-09-07T03:30:00.000Z"),
+    });
+
+    const result = await submitCefrActivityResponse(
+      baseInput({
+        idempotencyKey: "submission-abc",
+      }),
+    );
+
+    expect(result.type).toBe("OK");
+    expect(result.idempotentReplay).toBe(true);
+    expect(result.response.id).toBe("response-1");
+    expect(mockPrisma.activityItem.findFirst).not.toHaveBeenCalled();
+  });
+
+  test("rejects an invalid idempotency key", async () => {
+    const result = await submitCefrActivityResponse(
+      baseInput({
+        idempotencyKey: "x".repeat(129),
+      }),
+    );
+
+    expect(result.type).toBe("INVALID_IDEMPOTENCY_KEY");
+    expect(mockPrisma.attempt.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.response.create).not.toHaveBeenCalled();
+  });
+
   test("does not persist an invalid learner submission", async () => {
     mockPrisma.attempt.findFirst.mockResolvedValue({
       id: "attempt-1",
@@ -452,6 +566,128 @@ describe("submitCefrActivityResponse", () => {
 
     expect(result.type).toBe("OK");
     expect(result.response.responseNumber).toBe(2);
+  });
+
+  test("rejects reuse of the same idempotency key for a different submission", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "IN_PROGRESS",
+      completedAt: null,
+    });
+
+    mockPrisma.response.findFirst.mockResolvedValue({
+      id: "response-1",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        tokens: ["Guten", "Morgen."],
+      },
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      idempotencyKey: "submission-abc",
+      submittedAt: new Date("2026-09-07T03:30:00.000Z"),
+    });
+
+    const result = await submitCefrActivityResponse(
+      baseInput({
+        idempotencyKey: "submission-abc",
+        submittedAnswer: {
+          tokens: ["Guten", "Abend."],
+        },
+      }),
+    );
+
+    expect(result.type).toBe("IDEMPOTENCY_CONFLICT");
+    expect(mockPrisma.activityItem.findFirst).not.toHaveBeenCalled();
+    expect(mockEvaluateCefrSubmission).not.toHaveBeenCalled();
+    expect(mockPrisma.response.create).not.toHaveBeenCalled();
+  });
+
+  test("returns the concurrent idempotent winner after P2002 instead of appending a retry", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "IN_PROGRESS",
+      completedAt: null,
+    });
+
+    mockPrisma.activityItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      answerKey: {
+        type: "TOKEN_SEQUENCE",
+        tokens: ["Guten", "Morgen."],
+      },
+      activity: {
+        evaluationMode: "AUTO",
+      },
+    });
+
+    mockEvaluateCefrSubmission.mockReturnValue({
+      ok: true,
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+    });
+
+    const winner = {
+      id: "response-winner",
+      attemptId: "attempt-1",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        tokens: ["Guten", "Morgen."],
+      },
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      idempotencyKey: "submission-race",
+      submittedAt: new Date("2026-09-07T03:30:00.000Z"),
+    };
+
+    let idempotencyLookupCount = 0;
+
+    mockPrisma.response.findFirst.mockImplementation(async (args) => {
+      if (args?.where?.idempotencyKey === "submission-race") {
+        idempotencyLookupCount += 1;
+        return idempotencyLookupCount === 1 ? null : winner;
+      }
+
+      if (args?.orderBy?.responseNumber === "desc") {
+        return null;
+      }
+
+      return null;
+    });
+
+    const conflict = new Error("Unique constraint");
+    conflict.code = "P2002";
+    mockPrisma.response.create.mockRejectedValueOnce(conflict);
+
+    const result = await submitCefrActivityResponse(
+      baseInput({
+        idempotencyKey: "submission-race",
+      }),
+    );
+
+    expect(mockPrisma.response.create).toHaveBeenCalledTimes(1);
+    expect(
+      mockPrisma.response.create.mock.calls[0][0].data.idempotencyKey,
+    ).toBe("submission-race");
+
+    expect(idempotencyLookupCount).toBe(2);
+    expect(result.type).toBe("OK");
+    expect(result.idempotentReplay).toBe(true);
+    expect(result.response.id).toBe("response-winner");
+    expect(result.response.responseNumber).toBe(1);
   });
 
   test("retries with the next responseNumber after a concurrent unique-key race", async () => {
