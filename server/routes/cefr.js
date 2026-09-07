@@ -9,6 +9,7 @@ import {
   completeCefrActivityAttempt,
 } from "../services/cefrAttemptService.js";
 import { submitCefrActivityResponse } from "../services/cefrResponseService.js";
+import { getCefrLearnerProgress } from "../services/cefrProgressService.js";
 
 const router = express.Router();
 
@@ -111,6 +112,94 @@ function normalizeDayNumber(value) {
 
   return dayNumber;
 }
+
+// GET /api/cefr/programs/:programSlug/progress
+router.get(
+  "/programs/:programSlug/progress",
+  authRequired,
+  async (req, res) => {
+    try {
+      const programSlug = normalizeProgramSlug(req.params.programSlug);
+
+      if (!programSlug) {
+        return res.status(400).json({
+          ok: false,
+          message: "Invalid program slug",
+        });
+      }
+
+      const result = await getCefrLearnerProgress({
+        userId: req.user.id,
+        programSlug,
+      });
+
+      if (result.type === "PROGRAM_NOT_FOUND") {
+        return res.status(404).json({
+          ok: false,
+          code: "PROGRAM_NOT_FOUND",
+          message: "Program not found",
+        });
+      }
+
+      if (result.type === "ENROLLMENT_REQUIRED") {
+        return res.status(403).json({
+          ok: false,
+          code: "ENROLLMENT_REQUIRED",
+          message: "Enrollment required",
+          program: result.program,
+        });
+      }
+
+      if (result.type === "COHORT_CONFLICT") {
+        return res.status(409).json({
+          ok: false,
+          code: "COHORT_CONFLICT",
+          message: "Multiple active cohort memberships found",
+        });
+      }
+
+      if (result.type === "COHORT_VERSION_MISMATCH") {
+        return res.status(409).json({
+          ok: false,
+          code: "COHORT_VERSION_MISMATCH",
+          message: "Cohort and enrollment curriculum versions do not match",
+        });
+      }
+
+      if (result.type !== "OK") {
+        console.error(
+          "Unexpected CEFR learner progress result:",
+          result?.type,
+        );
+
+        return res.status(500).json({
+          ok: false,
+          message: "Failed to load learner progress",
+        });
+      }
+
+      return res.status(200).json({
+        ok: true,
+        program: result.program,
+        version: result.version,
+        enrollment: result.enrollment,
+        cohort: result.cohort,
+        totalXp: result.totalXp,
+        days: result.days,
+      });
+    } catch (err) {
+      console.error(
+        "GET /api/cefr/programs/:programSlug/progress error:",
+        err,
+      );
+
+      return res.status(500).json({
+        ok: false,
+        message: "Failed to load learner progress",
+      });
+    }
+  },
+);
 
 // GET /api/cefr/programs/:programSlug/days/:dayNumber
 router.get(

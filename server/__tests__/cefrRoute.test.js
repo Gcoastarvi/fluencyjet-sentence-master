@@ -7,6 +7,7 @@ const mockGetCefrDayDetail = jest.fn();
 const mockStartCefrActivityAttempt = jest.fn();
 const mockCompleteCefrActivityAttempt = jest.fn();
 const mockSubmitCefrActivityResponse = jest.fn();
+const mockGetCefrLearnerProgress = jest.fn();
 
 jest.unstable_mockModule("../services/cefrAccessService.js", () => ({
   getCefrProgramOverview: mockGetCefrProgramOverview,
@@ -20,6 +21,10 @@ jest.unstable_mockModule("../services/cefrAttemptService.js", () => ({
 
 jest.unstable_mockModule("../services/cefrResponseService.js", () => ({
   submitCefrActivityResponse: mockSubmitCefrActivityResponse,
+}));
+
+jest.unstable_mockModule("../services/cefrProgressService.js", () => ({
+  getCefrLearnerProgress: mockGetCefrLearnerProgress,
 }));
 
 const { default: cefrRouter } = await import("../routes/cefr.js");
@@ -180,6 +185,107 @@ describe("GET /api/cefr/programs/:programSlug", () => {
     expect(res.body.days[0].accessState).toBe("UNLOCKED");
 
     expect(mockGetCefrProgramOverview).toHaveBeenCalledWith({
+      userId: 42,
+      programSlug: "german-a1",
+    });
+  });
+});
+
+describe("GET /api/cefr/programs/:programSlug/progress", () => {
+  const url = "/api/cefr/programs/german-a1/progress";
+
+  test("returns 401 when learner is not authenticated", async () => {
+    const res = await request(makeApp(null)).get(url);
+
+    expect(res.status).toBe(401);
+    expect(res.body).toEqual({
+      ok: false,
+      message: "Unauthorized",
+    });
+
+    expect(mockGetCefrLearnerProgress).not.toHaveBeenCalled();
+  });
+
+  test("rejects an invalid program slug", async () => {
+    const res = await request(makeApp()).get(
+      "/api/cefr/programs/INVALID_SLUG!/progress",
+    );
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe("Invalid program slug");
+    expect(mockGetCefrLearnerProgress).not.toHaveBeenCalled();
+  });
+
+  test("returns 403 when learner has no active enrollment", async () => {
+    mockGetCefrLearnerProgress.mockResolvedValue({
+      type: "ENROLLMENT_REQUIRED",
+      program: {
+        id: "program-1",
+        slug: "german-a1",
+      },
+    });
+
+    const res = await request(makeApp()).get(url);
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("ENROLLMENT_REQUIRED");
+  });
+
+  test("returns durable learner progress", async () => {
+    mockGetCefrLearnerProgress.mockResolvedValue({
+      type: "OK",
+      program: {
+        id: "program-1",
+        slug: "german-a1",
+      },
+      version: {
+        id: "version-1",
+        versionKey: "2026-v1",
+      },
+      enrollment: {
+        id: "enrollment-1",
+        status: "ACTIVE",
+      },
+      cohort: {
+        id: "cohort-1",
+        key: "german-a1-sep-a",
+      },
+      totalXp: 225,
+      days: [
+        {
+          id: "day-1",
+          dayNumber: 1,
+          activityCount: 2,
+          completedActivityCount: 1,
+          completed: false,
+          activities: [
+            {
+              id: "activity-1",
+              completed: true,
+              earnedXp: 150,
+              latestAttempt: {
+                id: "attempt-1",
+                attemptNumber: 1,
+                status: "COMPLETED",
+              },
+              resume: {
+                completedItemIds: ["item-1"],
+                totalItems: 1,
+              },
+            },
+          ],
+        },
+      ],
+    });
+
+    const res = await request(makeApp()).get(url);
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+    expect(res.body.totalXp).toBe(225);
+    expect(res.body.days[0].completedActivityCount).toBe(1);
+
+    expect(mockGetCefrLearnerProgress).toHaveBeenCalledWith({
       userId: 42,
       programSlug: "german-a1",
     });
