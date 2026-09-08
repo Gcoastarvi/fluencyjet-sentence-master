@@ -7,6 +7,9 @@ import {
 } from "@jest/globals";
 
 const mockPrisma = {
+  attempt: {
+    findUnique: jest.fn(),
+  },
   response: {
     findUnique: jest.fn(),
   },
@@ -20,15 +23,17 @@ jest.unstable_mockModule("../db/client.js", () => ({
   default: mockPrisma,
 }));
 
-const { awardCefrResponseXp } = await import(
-  "../services/cefrXpService.js"
-);
+const {
+  awardCefrAttemptCompletionXp,
+  awardCefrResponseXp,
+} = await import("../services/cefrXpService.js");
 
 const XP_CONFIG = {
   ruleVersion: "cefr-xp-v1",
   firstCorrect: 150,
   retryCorrect: 75,
   selfAttestedComplete: 100,
+  activityCompletion: 300,
 };
 
 function responseEvidence(overrides = {}) {
@@ -73,6 +78,36 @@ function responseEvidence(overrides = {}) {
     activityItem: {
       ...base.activityItem,
       ...(overrides.activityItem || {}),
+    },
+  };
+}
+
+function attemptCompletionEvidence(overrides = {}) {
+  const base = {
+    id: "attempt-1",
+    attemptNumber: 1,
+    status: "COMPLETED",
+    completedAt: new Date("2026-09-08T10:00:00.000Z"),
+    enrollmentId: "enrollment-1",
+    activityId: "activity-1",
+    enrollment: {
+      userId: 42,
+    },
+    activity: {
+      xpConfig: XP_CONFIG,
+    },
+  };
+
+  return {
+    ...base,
+    ...overrides,
+    enrollment: {
+      ...base.enrollment,
+      ...(overrides.enrollment || {}),
+    },
+    activity: {
+      ...base.activity,
+      ...(overrides.activity || {}),
     },
   };
 }
@@ -316,5 +351,172 @@ describe("awardCefrResponseXp", () => {
     expect(result.type).toBe("OK");
     expect(result.idempotentReplay).toBe(true);
     expect(result.xp.id).toBe("xp-winner");
+  });
+});
+
+
+describe("awardCefrAttemptCompletionXp", () => {
+  test("returns ATTEMPT_NOT_FOUND when durable Attempt does not exist", async () => {
+    mockPrisma.attempt.findUnique.mockResolvedValue(null);
+
+    const result = await awardCefrAttemptCompletionXp({
+      attemptId: "missing-attempt",
+    });
+
+    expect(result.type).toBe("ATTEMPT_NOT_FOUND");
+    expect(mockPrisma.xpLedger.create).not.toHaveBeenCalled();
+  });
+
+  test("does not award completion XP while Attempt is still open", async () => {
+    mockPrisma.attempt.findUnique.mockResolvedValue(
+      attemptCompletionEvidence({
+        status: "IN_PROGRESS",
+        completedAt: null,
+      }),
+    );
+
+    const result = await awardCefrAttemptCompletionXp({
+      attemptId: "attempt-1",
+    });
+
+    expect(result.type).toBe("NO_AWARD");
+    expect(result.reason).toBe("ATTEMPT_NOT_COMPLETED");
+    expect(mockPrisma.xpLedger.create).not.toHaveBeenCalled();
+  });
+
+  test("does not award when Activity has no completion bonus configured", async () => {
+    const {
+      activityCompletion,
+      ...baseXpConfig
+    } = XP_CONFIG;
+
+    mockPrisma.attempt.findUnique.mockResolvedValue(
+      attemptCompletionEvidence({
+        activity: {
+          xpConfig: baseXpConfig,
+        },
+      }),
+    );
+
+    const result = await awardCefrAttemptCompletionXp({
+      attemptId: "attempt-1",
+    });
+
+    expect(activityCompletion).toBe(300);
+    expect(result.type).toBe("NO_AWARD");
+    expect(result.reason).toBe("NO_ACTIVITY_COMPLETION_BONUS");
+    expect(mockPrisma.xpLedger.create).not.toHaveBeenCalled();
+  });
+
+  test("awards configured Activity completion XP once", async () => {
+    mockPrisma.attempt.findUnique.mockResolvedValue(
+      attemptCompletionEvidence(),
+    );
+
+    mockPrisma.xpLedger.create.mockImplementation(async ({ data }) => ({
+      id: "xp-activity-1",
+      ...data,
+    }));
+
+    const result = await awardCefrAttemptCompletionXp({
+      attemptId: "attempt-1",
+    });
+
+    expect(mockPrisma.xpLedger.create).toHaveBeenCalledWith({
+      data: {
+        userId: 42,
+        enrollmentId: "enrollment-1",
+        activityId: "activity-1",
+        attemptId: "attempt-1",
+        amount: 300,
+        eventType: "ACTIVITY_COMPLETED",
+        ruleVersion: "cefr-xp-v1",
+        idempotencyKey:
+          "cefr:activity-completion:enrollment-1:activity-1",
+        metadata: {
+          attemptNumber: 1,
+        },
+      },
+    });
+
+    expect(result.type).toBe("OK");
+    expect(result.idempotentReplay).toBe(false);
+    expect(result.xp.amount).toBe(300);
+  });
+
+  test("returns existing Activity completion award instead of awarding twice", async () => {
+    mockPrisma.attempt.findUnique.mockResolvedValue(
+      attemptCompletionEvidence(),
+    );
+
+    mockPrisma.xpLedger.findUnique.mockResolvedValue({
+      id: "xp-existing-completion",
+      amount: 300,
+      eventType: "ACTIVITY_COMPLETED",
+      ruleVersion: "cefr-xp-v1",
+      attemptId: "attempt-old",
+      idempotencyKey:
+        "cefr:activity-completion:enrollment-1:activity-1",
+    });
+
+    const result = await awardCefrAttemptCompletionXp({
+      attemptId: "attempt-1",
+    });
+
+    expect(result.type).toBe("OK");
+    expect(result.idempotentReplay).toBe(true);
+    expect(result.xp.id).toBe("xp-existing-completion");
+    expect(mockPrisma.xpLedger.create).not.toHaveBeenCalled();
+  });
+
+  test("fails closed when Activity completion XP is malformed", async () => {
+    mockPrisma.attempt.findUnique.mockResolvedValue(
+      attemptCompletionEvidence({
+        activity: {
+          xpConfig: {
+            ...XP_CONFIG,
+            activityCompletion: "300",
+          },
+        },
+      }),
+    );
+
+    const result = await awardCefrAttemptCompletionXp({
+      attemptId: "attempt-1",
+    });
+
+    expect(result.type).toBe("XP_CONFIG_ERROR");
+    expect(mockPrisma.xpLedger.create).not.toHaveBeenCalled();
+  });
+
+  test("returns concurrent Activity completion ledger winner after P2002", async () => {
+    mockPrisma.attempt.findUnique.mockResolvedValue(
+      attemptCompletionEvidence(),
+    );
+
+    const conflict = new Error("Unique constraint");
+    conflict.code = "P2002";
+
+    mockPrisma.xpLedger.create.mockRejectedValueOnce(conflict);
+
+    mockPrisma.xpLedger.findUnique
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({
+        id: "xp-completion-winner",
+        amount: 300,
+        eventType: "ACTIVITY_COMPLETED",
+        ruleVersion: "cefr-xp-v1",
+        idempotencyKey:
+          "cefr:activity-completion:enrollment-1:activity-1",
+      });
+
+    const result = await awardCefrAttemptCompletionXp({
+      attemptId: "attempt-1",
+    });
+
+    expect(mockPrisma.xpLedger.create).toHaveBeenCalledTimes(1);
+    expect(result.type).toBe("OK");
+    expect(result.idempotentReplay).toBe(true);
+    expect(result.xp.id).toBe("xp-completion-winner");
   });
 });

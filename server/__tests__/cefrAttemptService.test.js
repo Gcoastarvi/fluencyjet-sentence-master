@@ -13,6 +13,7 @@ const mockPrisma = {
 };
 
 const mockGetCefrDayDetail = jest.fn();
+const mockAwardCefrAttemptCompletionXp = jest.fn();
 
 jest.unstable_mockModule("../db/client.js", () => ({
   default: mockPrisma,
@@ -20,6 +21,10 @@ jest.unstable_mockModule("../db/client.js", () => ({
 
 jest.unstable_mockModule("../services/cefrAccessService.js", () => ({
   getCefrDayDetail: mockGetCefrDayDetail,
+}));
+
+jest.unstable_mockModule("../services/cefrXpService.js", () => ({
+  awardCefrAttemptCompletionXp: mockAwardCefrAttemptCompletionXp,
 }));
 
 const {
@@ -69,6 +74,10 @@ beforeEach(() => {
   mockGetCefrDayDetail.mockResolvedValue(unlockedDayResult());
   mockPrisma.attempt.findMany.mockResolvedValue([]);
   mockPrisma.attempt.findFirst.mockResolvedValue(null);
+  mockAwardCefrAttemptCompletionXp.mockResolvedValue({
+    type: "NO_AWARD",
+    reason: "NO_ACTIVITY_COMPLETION_BONUS",
+  });
 });
 
 describe("startCefrActivityAttempt", () => {
@@ -533,4 +542,164 @@ describe("completeCefrActivityAttempt", () => {
     expect(result.alreadyCompleted).toBe(true);
     expect(result.attempt.status).toBe("COMPLETED");
   });
+
+  test("retries completion XP finalization for an already-completed Attempt", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-1",
+      attemptNumber: 1,
+      status: "COMPLETED",
+      startedAt: NOW,
+      completedAt: new Date("2026-09-10T15:10:00.000Z"),
+    });
+
+    mockAwardCefrAttemptCompletionXp.mockResolvedValue({
+      type: "OK",
+      idempotentReplay: true,
+      xp: {
+        id: "xp-activity-1",
+        amount: 300,
+        eventType: "ACTIVITY_COMPLETED",
+      },
+    });
+
+    const result = await completeCefrActivityAttempt({
+      userId: 42,
+      programSlug: "german-a1",
+      dayNumber: 1,
+      activityId: "activity-1",
+      attemptId: "attempt-1",
+      now: NOW,
+    });
+
+    expect(result.type).toBe("OK");
+    expect(result.alreadyCompleted).toBe(true);
+
+    expect(mockAwardCefrAttemptCompletionXp).toHaveBeenCalledWith({
+      attemptId: "attempt-1",
+    });
+
+    expect(mockPrisma.response.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.attempt.updateMany).not.toHaveBeenCalled();
+  });
+
+  test("finalizes Activity completion XP after durable Attempt completion", async () => {
+    mockPrisma.attempt.findFirst
+      .mockResolvedValueOnce({
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "IN_PROGRESS",
+        startedAt: NOW,
+        completedAt: null,
+      })
+      .mockResolvedValueOnce({
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "COMPLETED",
+        startedAt: NOW,
+        completedAt: NOW,
+      });
+
+    mockPrisma.response.findMany.mockResolvedValue([
+      {
+        activityItemId: "item-1",
+        isCorrect: true,
+        evaluationCode: "CORRECT",
+      },
+      {
+        activityItemId: "item-2",
+        isCorrect: true,
+        evaluationCode: "CORRECT",
+      },
+    ]);
+
+    mockAwardCefrAttemptCompletionXp.mockResolvedValue({
+      type: "OK",
+      idempotentReplay: false,
+      xp: {
+        id: "xp-activity-1",
+        amount: 300,
+        eventType: "ACTIVITY_COMPLETED",
+      },
+    });
+
+    const result = await completeCefrActivityAttempt({
+      userId: 42,
+      programSlug: "german-a1",
+      dayNumber: 1,
+      activityId: "activity-1",
+      attemptId: "attempt-1",
+      now: NOW,
+    });
+
+    expect(result.type).toBe("OK");
+    expect(result.alreadyCompleted).toBe(false);
+
+    expect(mockAwardCefrAttemptCompletionXp).toHaveBeenCalledWith({
+      attemptId: "attempt-1",
+    });
+
+    const completionOrder =
+      mockPrisma.attempt.updateMany.mock.invocationCallOrder[0];
+
+    const xpOrder =
+      mockAwardCefrAttemptCompletionXp.mock.invocationCallOrder[0];
+
+    expect(completionOrder).toBeLessThan(xpOrder);
+  });
+
+  test("keeps Attempt completion durable when completion XP finalization fails", async () => {
+    mockPrisma.attempt.findFirst
+      .mockResolvedValueOnce({
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "IN_PROGRESS",
+        startedAt: NOW,
+        completedAt: null,
+      })
+      .mockResolvedValueOnce({
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "COMPLETED",
+        startedAt: NOW,
+        completedAt: NOW,
+      });
+
+    mockPrisma.response.findMany.mockResolvedValue([
+      {
+        activityItemId: "item-1",
+        isCorrect: true,
+        evaluationCode: "CORRECT",
+      },
+      {
+        activityItemId: "item-2",
+        isCorrect: true,
+        evaluationCode: "CORRECT",
+      },
+    ]);
+
+    mockAwardCefrAttemptCompletionXp.mockResolvedValue({
+      type: "XP_CONFIG_ERROR",
+    });
+
+    const result = await completeCefrActivityAttempt({
+      userId: 42,
+      programSlug: "german-a1",
+      dayNumber: 1,
+      activityId: "activity-1",
+      attemptId: "attempt-1",
+      now: NOW,
+    });
+
+    expect(mockPrisma.attempt.updateMany).toHaveBeenCalledTimes(1);
+
+    expect(result.type).toBe("XP_AWARD_FAILED");
+    expect(result.xpError).toBe("XP_CONFIG_ERROR");
+
+    expect(result.attempt).toMatchObject({
+      id: "attempt-1",
+      status: "COMPLETED",
+      completedAt: NOW,
+    });
+  });
+
 });

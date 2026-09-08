@@ -1,5 +1,6 @@
 import prisma from "../db/client.js";
 import { getCefrDayDetail } from "./cefrAccessService.js";
+import { awardCefrAttemptCompletionXp } from "./cefrXpService.js";
 
 const ATTEMPT_SELECT = {
   id: true,
@@ -205,6 +206,48 @@ function buildCompletionResult({
   };
 }
 
+async function finalizeCompletionXp({
+  dayResult,
+  activity,
+  attempt,
+  alreadyCompleted,
+}) {
+  let xpResult;
+
+  try {
+    xpResult = await awardCefrAttemptCompletionXp({
+      attemptId: attempt.id,
+    });
+  } catch {
+    return {
+      type: "XP_AWARD_FAILED",
+      xpError: "XP_AWARD_ERROR",
+      attempt,
+    };
+  }
+
+  if (
+    xpResult?.type === "OK" ||
+    (
+      xpResult?.type === "NO_AWARD" &&
+      xpResult.reason === "NO_ACTIVITY_COMPLETION_BONUS"
+    )
+  ) {
+    return buildCompletionResult({
+      dayResult,
+      activity,
+      attempt,
+      alreadyCompleted,
+    });
+  }
+
+  return {
+    type: "XP_AWARD_FAILED",
+    xpError: xpResult?.type || "UNKNOWN_XP_RESULT",
+    attempt,
+  };
+}
+
 function hasCompletionEvidence({
   evaluationMode,
   response,
@@ -293,7 +336,7 @@ export async function completeCefrActivityAttempt({
     attempt.status === "COMPLETED" &&
     attempt.completedAt !== null
   ) {
-    return buildCompletionResult({
+    return finalizeCompletionXp({
       dayResult,
       activity,
       attempt,
@@ -410,7 +453,7 @@ export async function completeCefrActivityAttempt({
     };
   }
 
-  return buildCompletionResult({
+  return finalizeCompletionXp({
     dayResult,
     activity,
     attempt: completedAttempt,

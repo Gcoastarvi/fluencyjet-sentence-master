@@ -641,6 +641,34 @@ describe("POST CEFR activity Attempt completion", () => {
     });
   });
 
+  test("returns explicit 500 when Attempt completed but XP finalization failed", async () => {
+    mockCompleteCefrActivityAttempt.mockResolvedValue({
+      type: "XP_AWARD_FAILED",
+      xpError: "XP_CONFIG_ERROR",
+      attempt: {
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "COMPLETED",
+        completedAt: "2026-09-10T15:00:00.000Z",
+      },
+    });
+
+    const res = await request(makeApp()).post(url);
+
+    expect(res.status).toBe(500);
+    expect(res.body).toEqual({
+      ok: false,
+      code: "XP_AWARD_FAILED",
+      message: "Activity completed, but XP finalization failed",
+      attempt: {
+        id: "attempt-1",
+        attemptNumber: 1,
+        status: "COMPLETED",
+        completedAt: "2026-09-10T15:00:00.000Z",
+      },
+    });
+  });
+
   test("returns 200 when the Attempt is completed", async () => {
     mockCompleteCefrActivityAttempt.mockResolvedValue({
       type: "OK",

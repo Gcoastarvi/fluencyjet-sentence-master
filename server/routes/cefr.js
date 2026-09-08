@@ -601,6 +601,20 @@ router.post(
         });
       }
 
+      if (result.type === "XP_AWARD_FAILED") {
+        console.error(
+          "CEFR activity completion XP finalization failed:",
+          result.xpError,
+        );
+
+        return res.status(500).json({
+          ok: false,
+          code: "XP_AWARD_FAILED",
+          message: "Activity completed, but XP finalization failed",
+          attempt: result.attempt,
+        });
+      }
+
       if (result.type !== "OK") {
         console.error(
           "Unexpected CEFR attempt completion result:",

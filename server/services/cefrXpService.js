@@ -245,3 +245,148 @@ export async function awardCefrResponseXp({
     return buildResult(concurrentWinner, true);
   }
 }
+
+
+export async function awardCefrAttemptCompletionXp({
+  attemptId,
+}) {
+  if (
+    typeof attemptId !== "string" ||
+    attemptId.trim().length === 0
+  ) {
+    return {
+      type: "ATTEMPT_NOT_FOUND",
+    };
+  }
+
+  const attempt = await prisma.attempt.findUnique({
+    where: {
+      id: attemptId.trim(),
+    },
+    select: {
+      id: true,
+      attemptNumber: true,
+      status: true,
+      completedAt: true,
+      enrollmentId: true,
+      activityId: true,
+      enrollment: {
+        select: {
+          userId: true,
+        },
+      },
+      activity: {
+        select: {
+          xpConfig: true,
+        },
+      },
+    },
+  });
+
+  if (!attempt) {
+    return {
+      type: "ATTEMPT_NOT_FOUND",
+    };
+  }
+
+  if (
+    typeof attempt.enrollmentId !== "string" ||
+    typeof attempt.activityId !== "string" ||
+    !attempt.enrollment ||
+    !Number.isInteger(attempt.enrollment.userId) ||
+    !attempt.activity
+  ) {
+    return {
+      type: "EVIDENCE_CONFLICT",
+    };
+  }
+
+  if (
+    attempt.status !== "COMPLETED" ||
+    attempt.completedAt === null
+  ) {
+    return {
+      type: "NO_AWARD",
+      reason: "ATTEMPT_NOT_COMPLETED",
+    };
+  }
+
+  const idempotencyKey =
+    `cefr:activity-completion:${attempt.enrollmentId}:${attempt.activityId}`;
+
+  const existingAward = await prisma.xpLedger.findUnique({
+    where: {
+      idempotencyKey,
+    },
+  });
+
+  if (existingAward) {
+    return buildResult(existingAward, true);
+  }
+
+  const rawXpConfig = attempt.activity.xpConfig;
+  const xpConfig = normalizeXpConfig(rawXpConfig);
+
+  if (!xpConfig) {
+    return {
+      type: "XP_CONFIG_ERROR",
+    };
+  }
+
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      rawXpConfig,
+      "activityCompletion",
+    )
+  ) {
+    return {
+      type: "NO_AWARD",
+      reason: "NO_ACTIVITY_COMPLETION_BONUS",
+    };
+  }
+
+  if (!isPositiveInteger(rawXpConfig.activityCompletion)) {
+    return {
+      type: "XP_CONFIG_ERROR",
+    };
+  }
+
+  const data = {
+    userId: attempt.enrollment.userId,
+    enrollmentId: attempt.enrollmentId,
+    activityId: attempt.activityId,
+    attemptId: attempt.id,
+    amount: rawXpConfig.activityCompletion,
+    eventType: "ACTIVITY_COMPLETED",
+    ruleVersion: xpConfig.ruleVersion,
+    idempotencyKey,
+    metadata: {
+      attemptNumber: attempt.attemptNumber,
+    },
+  };
+
+  try {
+    const xp = await prisma.xpLedger.create({
+      data,
+    });
+
+    return buildResult(xp, false);
+  } catch (error) {
+    if (error?.code !== "P2002") {
+      throw error;
+    }
+
+    const concurrentWinner =
+      await prisma.xpLedger.findUnique({
+        where: {
+          idempotencyKey,
+        },
+      });
+
+    if (!concurrentWinner) {
+      throw error;
+    }
+
+    return buildResult(concurrentWinner, true);
+  }
+}
