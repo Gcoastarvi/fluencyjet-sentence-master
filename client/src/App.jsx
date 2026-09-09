@@ -50,6 +50,8 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import RouteTracker from "./components/RouteTracker";
 import Webinar from "./pages/Webinar";
 import SpokenEnglishThankYou from "./pages/marketing/SpokenEnglishThankYou";
+import CefrProgramPage from "./pages/learn/CefrProgramPage.jsx";
+import CefrDayPage from "./pages/learn/CefrDayPage.jsx";
 
 function PageLoader() {
   return (
@@ -311,6 +313,22 @@ export default function App() {
               <Route path="/upgrade" element={<Upgrade />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
+              <Route
+                path="/learn/:programSlug"
+                element={
+                  <ProtectedRoute>
+                    <CefrProgramPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/learn/:programSlug/day/:dayNumber"
+                element={
+                  <ProtectedRoute>
+                    <CefrDayPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/admin/curriculum" element={<CurriculumManager />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
