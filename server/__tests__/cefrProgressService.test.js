@@ -341,3 +341,73 @@ describe("getCefrLearnerProgress", () => {
     });
   });
 });
+
+test("does not expose activity metadata for a locked day", async () => {
+  mockGetCefrProgramOverview.mockResolvedValue({
+    ...overviewResult(),
+    days: [
+      {
+        id: "day-1",
+        dayNumber: 1,
+        entitled: true,
+        unlocked: true,
+        accessState: "UNLOCKED",
+      },
+      {
+        id: "day-2",
+        dayNumber: 2,
+        entitled: true,
+        unlocked: false,
+        accessState: "SCHEDULED",
+      },
+    ],
+  });
+
+  mockPrisma.learningDay.findMany.mockResolvedValue([
+    {
+      id: "day-1",
+      dayNumber: 1,
+      activities: [],
+    },
+    {
+      id: "day-2",
+      dayNumber: 2,
+      activities: [
+        {
+          id: "future-activity-1",
+          key: "future-secret-activity",
+          title: "Future Activity",
+          activityType: "MCQ",
+          evaluationMode: "AUTO",
+          orderIndex: 1,
+          items: [{ id: "future-item-1" }],
+          attempts: [],
+          xpEntries: [],
+        },
+      ],
+    },
+  ]);
+
+  const result = await getCefrLearnerProgress({
+    userId: 42,
+    programSlug: "german-a1",
+    now: NOW,
+  });
+
+  const lockedDay = result.days.find((day) => day.dayNumber === 2);
+
+  expect(lockedDay).toEqual(
+    expect.objectContaining({
+      unlocked: false,
+      accessState: "SCHEDULED",
+      activityCount: 0,
+      completedActivityCount: 0,
+      completed: false,
+      activities: [],
+    }),
+  );
+
+  expect(
+    JSON.stringify(lockedDay),
+  ).not.toContain("future-secret-activity");
+});

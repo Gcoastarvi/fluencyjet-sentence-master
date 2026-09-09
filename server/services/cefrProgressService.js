@@ -125,6 +125,18 @@ export async function getCefrLearnerProgress({
       dayNumber: learningDay.dayNumber,
     };
 
+    if (accessDay.unlocked !== true) {
+      return {
+        ...accessDay,
+        id: learningDay.id,
+        dayNumber: learningDay.dayNumber,
+        activityCount: 0,
+        completedActivityCount: 0,
+        completed: false,
+        activities: [],
+      };
+    }
+
     const activities = learningDay.activities.map((activity) => {
       const latestAttempt = activity.attempts[0] || null;
 
