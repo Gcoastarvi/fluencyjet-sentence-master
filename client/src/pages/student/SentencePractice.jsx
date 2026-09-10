@@ -147,12 +147,16 @@ export default function SentencePractice() {
     search.get("difficulty") || "beginner",
   ).toLowerCase();
 
+  const onboardingSource = search.get("source") || "";
+
   const isLesson1ChallengeOnboarding =
     lessonId === 1 &&
     difficulty === "beginner" &&
     safeMode === "reorder" &&
     search.get("onboarding") === "1" &&
-    search.get("source") === "spoken-english-challenge";
+    ["spoken-english-challenge", "spoken-english-vsl-trial"].includes(
+      onboardingSource,
+    );
 
   const showLesson1ConversionComplete =
     isLesson1ChallengeOnboarding && !hasPaidAccess;
@@ -2721,11 +2725,13 @@ export default function SentencePractice() {
                       difficulty: "beginner",
                       mode: "reorder",
                       cta: "watch_lesson_1_video",
-                      source: "spoken-english-challenge",
+                      source: onboardingSource,
                     });
 
                     navigate(
-                      "/b/lesson/1?difficulty=beginner&onboarding=1&source=spoken-english-challenge",
+                      `/b/lesson/1?difficulty=beginner&onboarding=1&source=${encodeURIComponent(
+                        onboardingSource,
+                      )}`,
                       { replace: true },
                     );
                   }}

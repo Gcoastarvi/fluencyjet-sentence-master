@@ -93,11 +93,14 @@ export default function LessonList({ difficulty }) {
     (hasManualAccess && effectivePlan === currentRouteTrack);
 
   const onboardingParams = new URLSearchParams(location.search);
+  const onboardingSource = onboardingParams.get("source") || "";
 
   const isLesson1ChallengeOnboarding =
     String(difficulty || "").toLowerCase() === "basic" &&
     onboardingParams.get("onboarding") === "1" &&
-    onboardingParams.get("source") === "spoken-english-challenge" &&
+    ["spoken-english-challenge", "spoken-english-vsl-trial"].includes(
+      onboardingSource,
+    ) &&
     onboardingParams.get("focus") === "lesson-1";
 
   const showLesson1CurriculumOnboarding =
@@ -108,7 +111,7 @@ export default function LessonList({ difficulty }) {
       track("lesson1_curriculum_offer_clicked", {
         lessonId: 1,
         difficulty: "beginner",
-        source: "spoken-english-challenge",
+        source: onboardingSource,
         placement,
       });
 

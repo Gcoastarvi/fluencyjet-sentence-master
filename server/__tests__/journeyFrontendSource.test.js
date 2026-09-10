@@ -68,8 +68,11 @@ describe("Block A frontend milestone placement", () => {
     expect(source).toContain(
       'onClick={() => navigateToLessonsWithMilestone("/lessons")}',
     );
+    expect(source).toContain('"spoken-english-challenge"');
+    expect(source).toContain('"spoken-english-vsl-trial"');
+    expect(source).toContain("source: onboardingSource");
     expect(source).toContain(
-      'navigateToLessonsWithMilestone(\n                    "/b/lessons?onboarding=1&source=spoken-english-challenge&focus=lesson-1",',
+      "`/b/lessons?onboarding=1&source=${encodeURIComponent(",
     );
   });
 });

@@ -6,8 +6,24 @@ import {
   trackVSLWhatsAppClick,
 } from "../../lib/tracking";
 
-const VIMEO_VIDEO_ID = "1210087375";
-const CTA_DELAY_MS = 3 * 60 * 1000;
+const VIMEO_VIDEO_ID = "1225256919";
+const CTA_DELAY_MS = 0;
+
+const TRIAL_SOURCE = "spoken-english-vsl-trial";
+
+const TRIAL_NEXT_PATH =
+  `/practice/reorder?lessonId=1&difficulty=beginner&onboarding=1&source=${TRIAL_SOURCE}`;
+
+function buildTrialSignupUrl() {
+  const params = new URLSearchParams(window.location.search);
+
+  // Preserve incoming campaign/UTM attribution, but force this funnel's
+  // canonical source and next destination.
+  params.set("source", TRIAL_SOURCE);
+  params.set("next", TRIAL_NEXT_PATH);
+
+  return `/try-spoken-english-gym?${params.toString()}#signup`;
+}
 
 function MarketingNavHider() {
   return (
@@ -48,7 +64,7 @@ export default function SpokenEnglishVSL() {
 
   const handleCtaClick = () => {
     trackVSLCTAClick();
-    window.location.href = "/spoken-english-offer";
+    window.location.href = buildTrialSignupUrl();
   };
 
   const handleWhatsAppClick = () => {
@@ -61,12 +77,15 @@ export default function SpokenEnglishVSL() {
       <main className="min-h-screen bg-gradient-to-b from-[#07031f] via-[#10053d] to-[#020617] text-white">
         <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-4 py-8 pb-10 text-center sm:px-6 lg:px-8">
           <h1 className="mx-auto max-w-4xl text-3xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            English பேசணும்… ஆனா{" "}
-            <span className="text-yellow-300">Grammar Mistake</span> பயமா?
+            Build English Sentences Faster.
+            <span className="block text-yellow-300">
+              Speak With Greater Confidence.
+            </span>
           </h1>
 
-          <h2 className="mx-auto mt-4 max-w-3xl text-xl font-black text-lime-300 sm:text-3xl">
-            Solution: Spoken English Gym for Tamil Learners
+          <h2 className="mx-auto mt-4 max-w-3xl text-lg font-bold leading-relaxed text-lime-300 sm:text-2xl">
+            Watch this short video, then try Lesson 1 FREE and experience
+            FluencyJet yourself.
           </h2>
 
           <div className="mt-8 w-full overflow-hidden rounded-3xl border border-white/20 bg-black shadow-2xl shadow-lime-400/10 sm:mt-10">
@@ -98,8 +117,12 @@ export default function SpokenEnglishVSL() {
                 onClick={handleCtaClick}
                 className="w-full rounded-2xl bg-gradient-to-r from-yellow-300 to-lime-400 px-6 py-5 text-lg font-black text-slate-950 shadow-xl shadow-lime-500/20 transition hover:scale-[1.02] hover:shadow-lime-500/30 active:scale-[0.99] sm:text-2xl"
               >
-                Yes, I want to Join the Spoken English Gym
+                Start Lesson 1 FREE →
               </button>
+
+              <p className="mt-3 text-sm font-semibold text-white/80 sm:text-base">
+                No payment required • Start practising in minutes
+              </p>
             </div>
           )}
 

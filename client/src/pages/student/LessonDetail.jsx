@@ -310,11 +310,15 @@ export default function LessonDetail() {
     effectivePlan === "PAID" ||
     (hasManualAccess && effectivePlan === currentRouteTrack);
 
+  const onboardingSource = searchParams.get("source") || "";
+
   const isLesson1ChallengeOnboarding =
     Number(dayNumber) === 1 &&
     difficulty === "beginner" &&
     searchParams.get("onboarding") === "1" &&
-    searchParams.get("source") === "spoken-english-challenge";
+    ["spoken-english-challenge", "spoken-english-vsl-trial"].includes(
+      onboardingSource,
+    );
 
   const showLesson1Onboarding = isLesson1ChallengeOnboarding && !hasTrackAccess;
 
@@ -1568,12 +1572,14 @@ export default function LessonDetail() {
                   track("lesson1_learning_path_clicked", {
                     lessonId: 1,
                     difficulty: "beginner",
-                    source: "spoken-english-challenge",
+                    source: onboardingSource,
                     placement: "sticky",
                   });
 
                   navigateToLessonsWithMilestone(
-                    "/b/lessons?onboarding=1&source=spoken-english-challenge&focus=lesson-1",
+                    `/b/lessons?onboarding=1&source=${encodeURIComponent(
+                      onboardingSource,
+                    )}&focus=lesson-1`,
                   );
                 }}
                 className="w-full rounded-2xl bg-indigo-600 px-6 py-4 text-base font-black text-white shadow-lg transition hover:bg-indigo-700 active:scale-[0.99] sm:text-lg"
