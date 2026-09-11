@@ -9,7 +9,7 @@ import {
 } from "../../lib/tracking";
 import { startSentenceMasterPaymentRedirect } from "../../lib/checkoutIntent";
 
-const VIMEO_VIDEO_ID = "1210087375";
+const VIMEO_VIDEO_ID = "1225256919";
 
 const PAYMENT_URL =
   import.meta.env.VITE_SPOKEN_ENGLISH_PAYMENT_URL ||
