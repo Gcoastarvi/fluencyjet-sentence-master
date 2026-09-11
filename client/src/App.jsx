@@ -50,6 +50,8 @@ import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import RouteTracker from "./components/RouteTracker";
 import Webinar from "./pages/Webinar";
 import SpokenEnglishThankYou from "./pages/marketing/SpokenEnglishThankYou";
+import GermanLiveClass from "./pages/GermanLiveClass";
+import GermanLiveThankYou from "./pages/GermanLiveThankYou";
 
 function PageLoader() {
   return (
@@ -511,7 +513,9 @@ export default function App() {
               {/* Fallback */}
               <Route path="*" element={<Home />} />
             </Route>
-          </Routes>
+                  <Route path="/german-live-class" element={<GermanLiveClass />} />
+        <Route path="/german-live-class/thank-you" element={<GermanLiveThankYou />} />
+      </Routes>
         </Suspense>
       </Router>
     </AuthProvider>
