@@ -534,15 +534,13 @@ export default function TrySpokenEnglishGym() {
               </div>
 
               <div className="hero-price">
-                <p className="price-kicker">TRY YOUR FIRST LESSON FOR FREE</p>
+                <p className="price-kicker">TRY LESSON 1 FREE</p>
                 <p className="price-main">
-                  Complete one-year access: <strong>{FULL_PRICE}</strong>
+                  Experience FluencyJet before you decide.
                 </p>
-                <p>One-time payment. No monthly subscription.</p>
-                <p className="price-note">
-                  Create your free account. Try the quizzes first. Decide after
-                  you experience it.
-                </p>
+                <p>✓ 10 sentence-building exercises</p>
+                <p>✓ Your progress will be saved</p>
+                <p className="price-note">✓ No payment required</p>
               </div>
             </div>
 
@@ -554,8 +552,8 @@ export default function TrySpokenEnglishGym() {
               <p className="signup-mini">YOUR NEXT STEP</p>
               <h2 id="signup-title">Try Spoken English Gym for FREE</h2>
               <p className="signup-intro">
-                Create your free account to save your progress and unlock your
-                free lessons.
+                Create your free account to save your progress and start Lesson 1
+                free.
               </p>
 
               {guestChallenge && (
@@ -707,12 +705,12 @@ export default function TrySpokenEnglishGym() {
                     ? "Creating Your Account..."
                     : guestChallenge
                       ? "Save My XP & Continue My Lessons"
-                      : "Create My Free Account & Continue"}
+                      : "Create Free Account & Start Lesson 1 →"}
                 </button>
 
                 <p className="form-microcopy">
-                  <strong>No payment now.</strong> Complete one-year access
-                  costs {FULL_PRICE} only if you decide to continue.
+                  <strong>No payment required.</strong> Try Lesson 1 first and
+                  decide later.
                 </p>
               </form>
 
@@ -867,7 +865,7 @@ export default function TrySpokenEnglishGym() {
           </div>
 
           <div className="reassurance-bar">
-            No card needed now · No automatic payment · No monthly subscription
+            No card needed · No payment required · Decide after Lesson 1
           </div>
         </div>
       </section>
@@ -953,11 +951,11 @@ export default function TrySpokenEnglishGym() {
             type="button"
             onClick={scrollToSignup}
           >
-            Create My Free Account &amp; Continue
+            Create Free Account &amp; Start Lesson 1 →
           </button>
 
           <p className="center-microcopy">
-            No payment now. Save your XP and experience FluencyJet first.
+            No payment required. Try Lesson 1 first and decide later.
           </p>
         </div>
       </section>
@@ -992,12 +990,11 @@ export default function TrySpokenEnglishGym() {
           <button className="final-cta" type="button" onClick={scrollToSignup}>
             {guestChallenge
               ? "Save My XP & Continue My Workout"
-              : "Create My Free Account & Continue"}
+              : "Create Free Account & Start Lesson 1 →"}
           </button>
 
           <small>
-            No payment now. Complete one-year access costs {FULL_PRICE} only if
-            you decide to continue.
+            No payment required. Try Lesson 1 first and decide later.
           </small>
         </div>
       </section>
