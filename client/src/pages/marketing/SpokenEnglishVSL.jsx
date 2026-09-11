@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import VSLTrialSignupModal from "./VSLTrialSignupModal";
 import {
   trackSpokenEnglishVSLView,
   trackVSLCTAVisible,
@@ -44,7 +46,9 @@ function MarketingNavHider() {
 }
 
 export default function SpokenEnglishVSL() {
+  const { isAuthenticated } = useAuth();
   const [showCta, setShowCta] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
 
   useEffect(() => {
     document.title = "Spoken English Gym for Tamil Learners | FluencyJet";
@@ -64,7 +68,13 @@ export default function SpokenEnglishVSL() {
 
   const handleCtaClick = () => {
     trackVSLCTAClick();
-    window.location.href = buildTrialSignupUrl();
+
+    if (isAuthenticated) {
+      window.location.href = TRIAL_NEXT_PATH;
+      return;
+    }
+
+    setShowSignupModal(true);
   };
 
   const handleWhatsAppClick = () => {
@@ -135,6 +145,14 @@ export default function SpokenEnglishVSL() {
           </footer>
         </section>
       </main>
+
+      <VSLTrialSignupModal
+        open={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        source={TRIAL_SOURCE}
+        nextPath={TRIAL_NEXT_PATH}
+        fallbackUrl={buildTrialSignupUrl()}
+      />
     </>
   );
 }
