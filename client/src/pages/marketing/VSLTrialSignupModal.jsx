@@ -194,20 +194,12 @@ export default function VSLTrialSignupModal({
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-violet-700">
-              Lesson 1 is free
-            </p>
-
             <h2
               id="vsl-signup-title"
-              className="mt-2 text-2xl font-black leading-tight text-slate-950 sm:text-3xl"
+              className="text-2xl font-black leading-tight text-slate-950 sm:text-3xl"
             >
-              You're one step away from Lesson 1
+              Register பண்ணி முதல் Lesson-ஐ FREE-யா Start பண்ணுங்க.
             </h2>
-
-            <p className="mt-2 text-sm leading-relaxed text-slate-600 sm:text-base">
-              Create your free account and start the 10-sentence practice.
-            </p>
           </div>
 
           <button
@@ -337,8 +329,8 @@ export default function VSLTrialSignupModal({
             className="w-full rounded-2xl bg-gradient-to-r from-violet-700 to-indigo-600 px-5 py-4 text-base font-black text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-60 sm:text-lg"
           >
             {loading
-              ? "Creating Your Account..."
-              : "Create Free Account & Start Lesson 1 →"}
+              ? "Starting..."
+              : "Start Practice →"}
           </button>
 
           <p className="text-center text-xs font-semibold text-slate-500 sm:text-sm">
