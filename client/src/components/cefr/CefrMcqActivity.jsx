@@ -69,7 +69,7 @@ export default function CefrMcqActivity({
               </span>
 
               <span className="text-base font-extrabold sm:text-lg">
-                {option.text}
+                {option.label ?? option.text}
               </span>
             </button>
           );
