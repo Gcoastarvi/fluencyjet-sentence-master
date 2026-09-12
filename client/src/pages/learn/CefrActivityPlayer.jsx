@@ -10,6 +10,7 @@ import {
 } from "@/api/cefrApi";
 
 import CefrMcqActivity from "@/components/cefr/CefrMcqActivity";
+import CefrReorderActivity from "@/components/cefr/CefrReorderActivity";
 
 function createIdempotencyKey() {
   if (
@@ -127,7 +128,7 @@ export default function CefrActivityPlayer() {
         return;
       }
 
-      if (loadedActivity.activityType !== "MCQ") {
+      if (!["MCQ", "REORDER"].includes(loadedActivity.activityType)) {
         setProgram(loadedProgram);
         setDay(loadedDay);
         setActivity(loadedActivity);
@@ -263,11 +264,11 @@ export default function CefrActivityPlayer() {
     pendingIdempotencyKeyRef.current = "";
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(submittedAnswer) {
     if (
       !attempt?.id ||
       !currentItem?.id ||
-      !selectedOptionId ||
+      !submittedAnswer ||
       submitting
     ) {
       return;
@@ -293,9 +294,7 @@ export default function CefrActivityPlayer() {
         activityId,
         attemptId: attempt.id,
         activityItemId: currentItem.id,
-        submittedAnswer: {
-          optionId: selectedOptionId,
-        },
+        submittedAnswer,
         hintUsed: false,
         answerRevealed: false,
         responseTimeMs,
@@ -332,6 +331,34 @@ export default function CefrActivityPlayer() {
         return [...previous, currentItem.id];
       });
     }
+  }
+
+  function handleMcqSubmit() {
+    if (!selectedOptionId) return;
+
+    return handleSubmit({
+      optionId: selectedOptionId,
+    });
+  }
+
+  function handleReorderSubmit(tokens) {
+    if (!Array.isArray(tokens) || tokens.length === 0) {
+      return;
+    }
+
+    return handleSubmit({
+      tokens,
+    });
+  }
+
+  function handleReorderAnswerChange() {
+    if (result?.isCorrect === true) return;
+
+    setResult(null);
+    setXpAward(null);
+    setSubmissionError("");
+
+    pendingIdempotencyKeyRef.current = "";
   }
 
   function handleContinue() {
@@ -519,14 +546,27 @@ export default function CefrActivityPlayer() {
 
         {!allItemsComplete && currentItem && (
           <div className="mt-7">
-            <CefrMcqActivity
-              item={currentItem}
-              selectedOptionId={selectedOptionId}
-              result={result}
-              submitting={submitting}
-              onSelect={handleSelect}
-              onSubmit={handleSubmit}
-            />
+            {activity?.activityType === "MCQ" && (
+              <CefrMcqActivity
+                item={currentItem}
+                selectedOptionId={selectedOptionId}
+                result={result}
+                submitting={submitting}
+                onSelect={handleSelect}
+                onSubmit={handleMcqSubmit}
+              />
+            )}
+
+            {activity?.activityType === "REORDER" && (
+              <CefrReorderActivity
+                item={currentItem}
+                activityTitle={activity?.title}
+                result={result}
+                submitting={submitting}
+                onAnswerChange={handleReorderAnswerChange}
+                onSubmit={handleReorderSubmit}
+              />
+            )}
 
             {submissionError && (
               <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
@@ -582,7 +622,7 @@ export default function CefrActivityPlayer() {
             >
               {completing
                 ? "Finishing..."
-                : "Complete Quick Win"}
+                : `Complete ${activity?.title || "Activity"}`}
             </button>
           </div>
         )}
