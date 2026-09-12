@@ -52,6 +52,7 @@ import Webinar from "./pages/Webinar";
 import SpokenEnglishThankYou from "./pages/marketing/SpokenEnglishThankYou";
 import CefrProgramPage from "./pages/learn/CefrProgramPage.jsx";
 import CefrDayPage from "./pages/learn/CefrDayPage.jsx";
+import CefrActivityPlayer from "./pages/learn/CefrActivityPlayer.jsx";
 
 function PageLoader() {
   return (
@@ -326,6 +327,14 @@ export default function App() {
                 element={
                   <ProtectedRoute>
                     <CefrDayPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/learn/:programSlug/day/:dayNumber/activity/:activityId"
+                element={
+                  <ProtectedRoute>
+                    <CefrActivityPlayer />
                   </ProtectedRoute>
                 }
               />

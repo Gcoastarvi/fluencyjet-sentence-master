@@ -21,13 +21,24 @@ function activityLabel(activity) {
   );
 }
 
-function ActivityCard({ activity, index }) {
+function ActivityCard({
+  programSlug,
+  dayNumber,
+  activity,
+  index,
+}) {
   const itemCount = Array.isArray(activity.items)
     ? activity.items.length
     : 0;
 
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+  const card = (
+    <div
+      className={`rounded-3xl border bg-white p-5 shadow-sm transition sm:p-6 ${
+        activity.activityType === "MCQ"
+          ? "border-indigo-100 hover:-translate-y-0.5 hover:shadow-md"
+          : "border-slate-200"
+      }`}
+    >
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-sm font-black text-indigo-700">
           {index + 1}
@@ -57,13 +68,39 @@ function ActivityCard({ activity, index }) {
                 : "Auto checked"}
             </p>
 
-            <span className="text-sm font-black text-slate-400">
-              Practice player next
+            <span
+              className={`text-sm font-black ${
+                activity.activityType === "MCQ"
+                  ? "text-indigo-700"
+                  : "text-slate-400"
+              }`}
+            >
+              {activity.activityType === "MCQ"
+                ? "Start →"
+                : "Practice player next"}
             </span>
           </div>
         </div>
       </div>
     </div>
+  );
+
+  if (activity.activityType !== "MCQ") {
+    return card;
+  }
+
+  const activityPath =
+    `/learn/${encodeURIComponent(programSlug)}` +
+    `/day/${encodeURIComponent(dayNumber)}` +
+    `/activity/${encodeURIComponent(activity.id)}`;
+
+  return (
+    <Link
+      to={activityPath}
+      className="block"
+    >
+      {card}
+    </Link>
   );
 }
 
@@ -280,6 +317,8 @@ export default function CefrDayPage() {
             {activities.map((activity, index) => (
               <ActivityCard
                 key={activity.id}
+                programSlug={programSlug}
+                dayNumber={day?.dayNumber}
                 activity={activity}
                 index={index}
               />
