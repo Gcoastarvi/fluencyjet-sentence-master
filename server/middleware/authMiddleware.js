@@ -2,8 +2,6 @@
 import jwt from "jsonwebtoken";
 import { Server } from "node:http";
 
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret";
-
 export function authMiddleware(req, res, next) {
   try {
     const authHeader = req.headers.authorization || "";
@@ -21,7 +19,13 @@ export function authMiddleware(req, res, next) {
       return next();
     }
 
-    const payload = jwt.verify(token, JWT_SECRET);
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      throw new Error("JWT_SECRET is not configured");
+    }
+
+    const payload = jwt.verify(token, jwtSecret);
     req.user = payload;
 
     // 🎯 LOUD LOG: Confirming identity
