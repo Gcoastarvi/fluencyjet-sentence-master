@@ -313,6 +313,7 @@ model AutomationEvent {
   userId                      Int
   eventType                   AutomationType
   productKey                  String                            @default("sentence_master") @db.VarChar(80)
+  campaignKey                 String?                           @db.VarChar(120)
   status                      AutomationStatus                  @default(PENDING)
   payload                     Json?
   destinationNumberNormalized String?                           @db.VarChar(20)
@@ -333,6 +334,7 @@ model AutomationEvent {
   @@index([status, scheduledAt])
   @@index([eventType, status, scheduledAt])
   @@index([eventType, status, processedAt])
+  @@unique([campaignKey, userId])
 }
 
 model UserJourneyMilestone {
@@ -468,6 +470,7 @@ enum AutomationType {
   LEARNING_PATH_DISCOVERY_REMINDER
   CHECKOUT_HELP_REMINDER
   ANY_QUESTIONS_REMINDER
+  WHATSAPP_BROADCAST
 }
 
 enum AutomationStatus {

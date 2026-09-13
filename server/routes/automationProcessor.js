@@ -57,6 +57,15 @@ const DEFAULT_DUE_REMINDER_PREVIEW_LIMIT = 10;
 const MAX_DUE_REMINDER_PREVIEW_LIMIT = 10;
 const DEFAULT_ROLLOUT_CANDIDATE_LIMIT = 10;
 const MAX_ROLLOUT_CANDIDATE_LIMIT = 10;
+const MAX_BROADCAST_USERS = 100;
+const WHATSAPP_BROADCAST = 'WHATSAPP_BROADCAST';
+const BROADCAST_CAMPAIGN_KEY_RE = /^[a-z0-9][a-z0-9._-]{0,119}$/i;
+const APPROVED_BROADCAST_TEMPLATES = Object.freeze({
+  b1_fj_continue_practice_v1: Object.freeze({
+    templateName: 'b1_fj_continue_practice_v1',
+    languageCode: 'ta',
+  }),
+});
 const ROLLOUT_WATERMARK_ENV_NAMES = [
   'WHATSAPP_LESSON1_ROLLOUT_WATERMARK',
   'WHATSAPP_ROLLOUT_WATERMARK',
@@ -65,6 +74,10 @@ const ROLLOUT_WATERMARK_ISO_RE =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const WHATSAPP_REMINDER_EVENT_TYPE_SET =
   new Set(WHATSAPP_REMINDER_EVENT_TYPES);
+const WHATSAPP_SENDABLE_EVENT_TYPE_SET = new Set([
+  ...WHATSAPP_REMINDER_EVENT_TYPES,
+  WHATSAPP_BROADCAST,
+]);
 const RECONCILIABLE_REMINDER_EVENT_TYPE_SET = new Set([
   LESSON1_SIGNUP_REMINDER,
   CHECKOUT_HELP_REMINDER,
@@ -82,7 +95,7 @@ function getLesson1TemplateConfiguration() {
   };
 }
 
-export function getReminderTemplateConfiguration(eventType) {
+export function getReminderTemplateConfiguration(eventType, payload = null) {
   const languageCode =
     (process.env.WHATSAPP_LESSON1_TEMPLATE_LANGUAGE || '').trim();
 
@@ -122,6 +135,17 @@ export function getReminderTemplateConfiguration(eventType) {
     };
   }
 
+  if (eventType === WHATSAPP_BROADCAST) {
+    const templateName =
+      payload?.broadcast &&
+      typeof payload.broadcast === 'object' &&
+      !Array.isArray(payload.broadcast)
+        ? String(payload.broadcast.templateName || '').trim()
+        : '';
+
+    return APPROVED_BROADCAST_TEMPLATES[templateName] || null;
+  }
+
   return null;
 }
 
@@ -153,7 +177,11 @@ async function sendTemplateWithinDestinationLock(
 async function getPhoneLevelSkipReason(
   ownerUserId,
   normalizedNumber,
-  { checkDurableSuppression = false, database = prisma } = {},
+  {
+    checkDurableSuppression = false,
+    allowExistingAccess = false,
+    database = prisma,
+  } = {},
 ) {
   if (checkDurableSuppression) {
     const suppression = await database.whatsAppPhoneSuppression.findUnique({
@@ -208,11 +236,75 @@ async function getPhoneLevelSkipReason(
 
   // Do not send a Lesson 1 acquisition reminder when any account sharing
   // this WhatsApp destination already has product access.
-  if (phoneUsers.some((u) => u.has_access === true)) {
+  if (
+    !allowExistingAccess &&
+    phoneUsers.some((u) => u.has_access === true)
+  ) {
     return 'PHONE_HAS_ACCESS';
   }
 
   return null;
+}
+
+async function hasBroadcastAccess(user, database) {
+  if (user.has_access === true) return true;
+
+  if (typeof database.spokenEnglishPurchase?.findFirst !== 'function') {
+    return false;
+  }
+
+  const purchase = await database.spokenEnglishPurchase.findFirst({
+    where: {
+      userId: user.id,
+      productKey: SENTENCE_MASTER_PRODUCT_KEY,
+      status: 'captured',
+    },
+    select: { id: true },
+  });
+
+  return Boolean(purchase);
+}
+
+async function getBroadcastEligibility(ae, database = prisma) {
+  const eventDestination = getEventDestination(ae);
+  if (eventDestination.skipReason) return eventDestination;
+
+  const user = await database.user.findUnique({
+    where: { id: ae.userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      whatsapp_consent: true,
+      has_access: true,
+    },
+  });
+
+  if (!user) return { skipReason: 'USER_NOT_FOUND' };
+  if (!user.whatsapp_consent) return { skipReason: 'CONSENT_FALSE' };
+  if (await hasBroadcastAccess(user, database)) {
+    return { skipReason: 'USER_HAS_ACCESS' };
+  }
+
+  const phoneSkipReason = await getPhoneLevelSkipReason(
+    user.id,
+    eventDestination.destination,
+    {
+      checkDurableSuppression: true,
+      database,
+    },
+  );
+  if (phoneSkipReason) return { skipReason: phoneSkipReason };
+
+  if (!String(user.name || '').trim()) {
+    return { skipReason: 'WHATSAPP_TEMPLATE_PARAMETER_MISSING' };
+  }
+
+  return {
+    destination: eventDestination.destination,
+    skipReason: null,
+    user,
+  };
 }
 
 function getEventDestination(ae) {
@@ -250,6 +342,13 @@ function getEventDestination(ae) {
 
 async function getLiveReminderEligibility(ae, database = prisma) {
   const productKey = ae.productKey || SENTENCE_MASTER_PRODUCT_KEY;
+
+  if (
+    ae.eventType === WHATSAPP_BROADCAST &&
+    productKey === SENTENCE_MASTER_PRODUCT_KEY
+  ) {
+    return getBroadcastEligibility(ae, database);
+  }
 
   if (
     !WHATSAPP_REMINDER_EVENT_TYPE_SET.has(ae.eventType) ||
@@ -2430,16 +2529,6 @@ export function createLiveReminderHandler({
     }
   }
 
-  // Template configuration is also fail-closed.
-  const { languageCode } = getLesson1TemplateConfiguration();
-
-  if (!languageCode) {
-    return res.status(503).json({
-      ok: false,
-      error: 'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
-    });
-  }
-
   try {
     // ── 7. Fetch exact reminder ─────────────────────────────────────────────
     const ae = await database.automationEvent.findUnique({
@@ -2453,7 +2542,7 @@ export function createLiveReminderHandler({
       });
     }
 
-    if (!WHATSAPP_REMINDER_EVENT_TYPE_SET.has(ae.eventType)) {
+    if (!WHATSAPP_SENDABLE_EVENT_TYPE_SET.has(ae.eventType)) {
       return res.status(400).json({
         ok: false,
         error: 'WRONG_EVENT_TYPE',
@@ -2461,7 +2550,7 @@ export function createLiveReminderHandler({
     }
 
     const eventTemplateConfiguration =
-      getReminderTemplateConfiguration(ae.eventType);
+      getReminderTemplateConfiguration(ae.eventType, ae.payload);
 
     if (
       !eventTemplateConfiguration?.templateName ||
@@ -2843,6 +2932,216 @@ export function createLiveReminderHandler({
 }
 
 router.post('/process-due-reminder-live', createLiveReminderHandler());
+
+export function createWhatsAppBroadcastHandler({ database = prisma } = {}) {
+  return async (req, res) => {
+    if (!checkAuth(req, res, 'AUTOMATION-BROADCAST')) return;
+
+    const body = req.body || {};
+    const allowedFields = new Set([
+      'campaignKey',
+      'templateName',
+      'userIds',
+      'scheduledAt',
+      'preview',
+    ]);
+    const unknownFields = Object.keys(body).filter(
+      (field) => !allowedFields.has(field),
+    );
+    if (unknownFields.length > 0) {
+      return res.status(400).json({ ok: false, error: 'UNKNOWN_FIELDS' });
+    }
+
+    if (typeof body.preview !== 'boolean') {
+      return res.status(400).json({ ok: false, error: 'PREVIEW_REQUIRED' });
+    }
+
+    const campaignKey = String(body.campaignKey || '').trim();
+    if (!BROADCAST_CAMPAIGN_KEY_RE.test(campaignKey)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_CAMPAIGN_KEY' });
+    }
+
+    const templateName = String(body.templateName || '').trim();
+    const template = APPROVED_BROADCAST_TEMPLATES[templateName];
+    if (!template) {
+      return res.status(400).json({ ok: false, error: 'TEMPLATE_NOT_APPROVED' });
+    }
+
+    if (
+      !Array.isArray(body.userIds) ||
+      body.userIds.length === 0 ||
+      body.userIds.length > MAX_BROADCAST_USERS ||
+      body.userIds.some((id) => !Number.isSafeInteger(id) || id <= 0)
+    ) {
+      return res.status(400).json({ ok: false, error: 'INVALID_USER_IDS' });
+    }
+
+    const userIds = [...new Set(body.userIds)];
+    const scheduledAt = new Date(body.scheduledAt);
+    if (
+      typeof body.scheduledAt !== 'string' ||
+      Number.isNaN(scheduledAt.getTime())
+    ) {
+      return res.status(400).json({ ok: false, error: 'INVALID_SCHEDULED_AT' });
+    }
+
+    try {
+      const [users, existingEvents] = await Promise.all([
+        database.user.findMany({
+          where: { id: { in: userIds } },
+          select: {
+            id: true,
+            whatsapp_number_normalized: true,
+          },
+        }),
+        database.automationEvent.findMany({
+          where: {
+            campaignKey,
+            userId: { in: userIds },
+          },
+          select: {
+            id: true,
+            userId: true,
+            status: true,
+          },
+        }),
+      ]);
+
+      const usersById = new Map(users.map((user) => [user.id, user]));
+      const existingByUserId = new Map(
+        existingEvents.map((event) => [event.userId, event]),
+      );
+      const rows = [];
+      const schedulable = [];
+
+      for (const userId of userIds) {
+        const existing = existingByUserId.get(userId);
+        if (existing) {
+          rows.push({
+            userId,
+            decision: 'EXCLUDED',
+            reasonCode: 'ALREADY_SCHEDULED',
+            automationEventId: existing.id,
+          });
+          continue;
+        }
+
+        const selectedUser = usersById.get(userId);
+        if (!selectedUser) {
+          rows.push({
+            userId,
+            decision: 'EXCLUDED',
+            reasonCode: 'USER_NOT_FOUND',
+            automationEventId: null,
+          });
+          continue;
+        }
+
+        const candidate = {
+          userId,
+          eventType: WHATSAPP_BROADCAST,
+          productKey: SENTENCE_MASTER_PRODUCT_KEY,
+          campaignKey,
+          status: 'PENDING',
+          scheduledAt,
+          destinationNumberNormalized:
+            selectedUser.whatsapp_number_normalized,
+          payload: {
+            broadcast: {
+              templateName: template.templateName,
+              languageCode: template.languageCode,
+            },
+          },
+        };
+        const eligibility = await getBroadcastEligibility(candidate, database);
+
+        if (eligibility.skipReason) {
+          rows.push({
+            userId,
+            decision: 'EXCLUDED',
+            reasonCode: eligibility.skipReason,
+            automationEventId: null,
+          });
+          continue;
+        }
+
+        rows.push({
+          userId,
+          decision: body.preview ? 'ELIGIBLE' : 'SCHEDULED',
+          reasonCode: null,
+          automationEventId: null,
+        });
+        schedulable.push(candidate);
+      }
+
+      let scheduledCount = 0;
+      if (!body.preview) {
+        for (const candidate of schedulable) {
+          const row = rows.find(
+            (entry) =>
+              entry.userId === candidate.userId &&
+              entry.decision === 'SCHEDULED',
+          );
+
+          try {
+            const created = await database.automationEvent.create({
+              data: candidate,
+              select: { id: true },
+            });
+            row.automationEventId = created.id;
+            scheduledCount += 1;
+          } catch (error) {
+            if (error?.code !== 'P2002') throw error;
+
+            const existing = await database.automationEvent.findUnique({
+              where: {
+                campaignKey_userId: {
+                  campaignKey,
+                  userId: candidate.userId,
+                },
+              },
+              select: { id: true },
+            });
+            row.decision = 'EXCLUDED';
+            row.reasonCode = 'ALREADY_SCHEDULED';
+            row.automationEventId = existing?.id || null;
+          }
+        }
+      }
+
+      const eligibleCount = rows.filter(
+        (row) => row.decision === 'ELIGIBLE' || row.decision === 'SCHEDULED',
+      ).length;
+      const excludedCount = rows.length - eligibleCount;
+
+      return res.json({
+        ok: true,
+        mode: body.preview ? 'preview' : 'scheduled',
+        campaignKey,
+        template: {
+          name: template.templateName,
+          languageCode: template.languageCode,
+          bodyParameters: ['learnerName'],
+        },
+        scheduledAt: scheduledAt.toISOString(),
+        counts: {
+          requested: body.userIds.length,
+          uniqueUsers: userIds.length,
+          eligible: eligibleCount,
+          excluded: excludedCount,
+          scheduled: scheduledCount,
+        },
+        whatsappSent: false,
+        rows,
+      });
+    } catch (error) {
+      console.error('[AUTOMATION-BROADCAST] Scheduling failed:', error.message);
+      return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR' });
+    }
+  };
+}
+
+router.post('/whatsapp-broadcast', createWhatsAppBroadcastHandler());
 
 function canaryReasonCode(value, fallback = 'CANARY_PROCESSING_FAILED') {
   return typeof value === 'string' && /^[A-Z0-9_]{1,64}$/.test(value)
