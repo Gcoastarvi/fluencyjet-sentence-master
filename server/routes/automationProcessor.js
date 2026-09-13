@@ -3143,6 +3143,189 @@ export function createWhatsAppBroadcastHandler({ database = prisma } = {}) {
 
 router.post('/whatsapp-broadcast', createWhatsAppBroadcastHandler());
 
+const DEFAULT_BROADCAST_WORKER_LIMIT = 25;
+const MAX_BROADCAST_WORKER_LIMIT = 100;
+
+function parseBroadcastWorkerLimit(value) {
+  if (value === undefined) return DEFAULT_BROADCAST_WORKER_LIMIT;
+  if (
+    !Number.isSafeInteger(value) ||
+    value < 1 ||
+    value > MAX_BROADCAST_WORKER_LIMIT
+  ) {
+    return null;
+  }
+  return value;
+}
+
+function sanitizeBroadcastLiveOutcome(ae, outcome) {
+  const body = outcome.body || {};
+
+  if (body.result === 'SENT' || body.whatsappSent === true) {
+    return {
+      row: {
+        automationEventId: ae.id,
+        result: 'SENT',
+        reasonCode: null,
+        whatsappSent: true,
+      },
+      stop: false,
+    };
+  }
+
+  if (body.result === 'CANCELLED' || body.result === 'SKIPPED') {
+    return {
+      row: {
+        automationEventId: ae.id,
+        result: 'SKIPPED',
+        reasonCode: canaryReasonCode(body.skipReason),
+        whatsappSent: false,
+      },
+      stop: false,
+    };
+  }
+
+  if (body.result === 'ALREADY_PROCESSED' || body.result === 'NOT_DUE') {
+    return {
+      row: {
+        automationEventId: ae.id,
+        result: body.result,
+        reasonCode: body.result,
+        whatsappSent: false,
+      },
+      stop: false,
+    };
+  }
+
+  return {
+    row: {
+      automationEventId: ae.id,
+      result: 'UNCONFIRMED',
+      reasonCode:
+        body.error === 'WHATSAPP_SEND_UNCONFIRMED'
+          ? 'WHATSAPP_SEND_UNCONFIRMED'
+          : 'BROADCAST_PROCESSING_UNKNOWN',
+      whatsappSent: null,
+    },
+    stop: true,
+  };
+}
+
+export function createWhatsAppBroadcastWorkerHandler({
+  database = prisma,
+  sendTemplate = sendWhatsAppTemplate,
+  providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
+  isLiveSendEnabled = isWhatsAppLiveSendEnabled,
+  isBroadcastWorkerEnabled = () =>
+    (process.env.WHATSAPP_BROADCAST_WORKER_ENABLED || '')
+      .trim()
+      .toLowerCase() === 'true',
+  liveHandlerFactory = createLiveReminderHandler,
+} = {}) {
+  return async (req, res) => {
+    if (!checkAuth(req, res, 'AUTOMATION-BROADCAST-WORKER')) return;
+
+    const body = req.body || {};
+    const allowedFields = new Set(['liveSend', 'campaignKey', 'limit']);
+    const unknownFields = Object.keys(body).filter(
+      (field) => !allowedFields.has(field),
+    );
+    if (unknownFields.length > 0) {
+      return res.status(400).json({ ok: false, error: 'UNKNOWN_FIELDS' });
+    }
+
+    if (body.liveSend !== true) {
+      return res.status(400).json({
+        ok: false,
+        error: 'LIVE_SEND_CONFIRMATION_REQUIRED',
+      });
+    }
+
+    const campaignKey = String(body.campaignKey || '').trim();
+    if (!BROADCAST_CAMPAIGN_KEY_RE.test(campaignKey)) {
+      return res.status(400).json({ ok: false, error: 'INVALID_CAMPAIGN_KEY' });
+    }
+
+    const limit = parseBroadcastWorkerLimit(body.limit);
+    if (limit === null) {
+      return res.status(400).json({ ok: false, error: 'INVALID_LIMIT' });
+    }
+
+    if (!isLiveSendEnabled()) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_LIVE_SEND_DISABLED',
+      });
+    }
+    if (!isBroadcastWorkerEnabled()) {
+      return res.status(503).json({
+        ok: false,
+        error: 'WHATSAPP_BROADCAST_WORKER_DISABLED',
+      });
+    }
+
+    const now = new Date();
+    try {
+      const candidates = await database.automationEvent.findMany({
+        where: {
+          eventType: WHATSAPP_BROADCAST,
+          campaignKey,
+          status: 'PENDING',
+          scheduledAt: { lte: now },
+        },
+        orderBy: [{ scheduledAt: 'asc' }, { id: 'asc' }],
+        take: limit,
+        select: {
+          id: true,
+        },
+      });
+
+      const liveHandler = liveHandlerFactory({
+        database,
+        sendTemplate,
+        providerDispatchTimeoutMs,
+        enforceTestRecipient: false,
+        cancelInitialIneligible: true,
+        isLiveSendEnabled: () =>
+          isLiveSendEnabled() && isBroadcastWorkerEnabled(),
+      });
+      const rows = [];
+
+      for (const candidate of candidates) {
+        const outcome = await invokeRolloutLiveHandler(
+          liveHandler,
+          req,
+          candidate.id,
+        );
+        const sanitized = sanitizeBroadcastLiveOutcome(candidate, outcome);
+        rows.push(sanitized.row);
+        if (sanitized.stop) break;
+      }
+
+      const counts = rolloutSummary(rows);
+      return res.json({
+        ok: true,
+        worker: 'WHATSAPP_BROADCAST',
+        mode: 'live',
+        campaignKey,
+        limit,
+        counts,
+        rows,
+      });
+    } catch {
+      console.error(
+        '[AUTOMATION-BROADCAST-WORKER] Database read or processing failed.',
+      );
+      return res.status(500).json({ ok: false, error: 'INTERNAL_ERROR' });
+    }
+  };
+}
+
+router.post(
+  '/process-due-whatsapp-broadcast',
+  createWhatsAppBroadcastWorkerHandler(),
+);
+
 function canaryReasonCode(value, fallback = 'CANARY_PROCESSING_FAILED') {
   return typeof value === 'string' && /^[A-Z0-9_]{1,64}$/.test(value)
     ? value
