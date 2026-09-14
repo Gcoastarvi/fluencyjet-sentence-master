@@ -11,6 +11,7 @@ import {
 
 import CefrMcqActivity from "@/components/cefr/CefrMcqActivity";
 import CefrReorderActivity from "@/components/cefr/CefrReorderActivity";
+import CefrTypingActivity from "@/components/cefr/CefrTypingActivity";
 
 function createIdempotencyKey() {
   if (
@@ -128,7 +129,7 @@ export default function CefrActivityPlayer() {
         return;
       }
 
-      if (!["MCQ", "REORDER"].includes(loadedActivity.activityType)) {
+      if (!["MCQ", "REORDER", "TYPING"].includes(loadedActivity.activityType)) {
         setProgram(loadedProgram);
         setDay(loadedDay);
         setActivity(loadedActivity);
@@ -361,6 +362,26 @@ export default function CefrActivityPlayer() {
     pendingIdempotencyKeyRef.current = "";
   }
 
+  function handleTypingSubmit(text) {
+    if (typeof text !== "string" || !text.trim()) {
+      return;
+    }
+
+    return handleSubmit({
+      text,
+    });
+  }
+
+  function handleTypingAnswerChange() {
+    if (result?.isCorrect === true) return;
+
+    setResult(null);
+    setXpAward(null);
+    setSubmissionError("");
+
+    pendingIdempotencyKeyRef.current = "";
+  }
+
   function handleContinue() {
     if (!currentItem) return;
 
@@ -565,6 +586,17 @@ export default function CefrActivityPlayer() {
                 submitting={submitting}
                 onAnswerChange={handleReorderAnswerChange}
                 onSubmit={handleReorderSubmit}
+              />
+            )}
+
+            {activity?.activityType === "TYPING" && (
+              <CefrTypingActivity
+                item={currentItem}
+                activityTitle={activity?.title}
+                result={result}
+                submitting={submitting}
+                onAnswerChange={handleTypingAnswerChange}
+                onSubmit={handleTypingSubmit}
               />
             )}
 
