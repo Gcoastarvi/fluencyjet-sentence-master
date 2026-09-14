@@ -33,6 +33,13 @@ function internalAuthorization() {
   return true;
 }
 
+function maskWhatsAppNumber(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return null;
+  const visible = digits.slice(-4);
+  return `${'•'.repeat(Math.max(4, digits.length - visible.length))}${visible}`;
+}
+
 function requireStuckBroadcast(event, now = new Date()) {
   const processedAtMs = event.processedAt
     ? new Date(event.processedAt).getTime()
@@ -345,17 +352,29 @@ router.get('/campaigns/:campaignKey/events', async (req, res) => {
         sentAt: true,
         cancelledAt: true,
         providerMessageId: true,
+        destinationNumberNormalized: true,
       },
     });
+    const users = await prisma.user.findMany({
+      where: { id: { in: [...new Set(events.map((event) => event.userId))] } },
+      select: { id: true, name: true },
+    });
+    const namesByUserId = new Map(users.map((user) => [user.id, user.name]));
     return res.json({
       ok: true,
       campaignKey: req.params.campaignKey,
-      events: events.map(({ providerMessageId, ...event }) => {
+      events: events.map(({
+        providerMessageId,
+        destinationNumberNormalized,
+        ...event
+      }) => {
         const processedAtMs = event.processedAt
           ? new Date(event.processedAt).getTime()
           : Number.NaN;
         return {
           ...event,
+          learnerName: namesByUserId.get(event.userId) || null,
+          whatsappNumberMasked: maskWhatsAppNumber(destinationNumberNormalized),
           providerMessageIdPresent: Boolean(providerMessageId),
           quarantinable:
             event.status === 'SENDING' &&

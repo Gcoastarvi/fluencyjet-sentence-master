@@ -245,7 +245,11 @@ describe('admin WhatsApp contract', () => {
         sentAt: null,
         cancelledAt: null,
         providerMessageId: 'wamid.secret',
+        destinationNumberNormalized: '919876543210',
       },
+    ]);
+    mockPrisma.user.findMany.mockResolvedValue([
+      { id: 7, name: 'Naren' },
     ]);
     const response = await adminRequest(
       'get',
@@ -254,11 +258,18 @@ describe('admin WhatsApp contract', () => {
     expect(response.body.events[0]).toMatchObject({
       id: 'event-1',
       userId: 7,
+      learnerName: 'Naren',
+      whatsappNumberMasked: '••••••••3210',
       status: 'SENDING',
       providerMessageIdPresent: true,
       quarantinable: true,
     });
     expect(JSON.stringify(response.body)).not.toContain('wamid.secret');
+    expect(JSON.stringify(response.body)).not.toContain('919876543210');
+    expect(mockPrisma.user.findMany).toHaveBeenCalledWith({
+      where: { id: { in: [7] } },
+      select: { id: true, name: true },
+    });
   });
 
   test('quarantine injects exact reconciliation contract and idempotency header', async () => {
