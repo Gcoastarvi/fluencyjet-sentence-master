@@ -14,7 +14,6 @@ function AdminDashboard() {
   const [accessSearch, setAccessSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [broadcastMsg, setBroadcastMsg] = useState("");
   const [bulkEmails, setBulkEmails] = useState("");
   const [bulkTrack, setBulkTrack] = useState("INTERMEDIATE");
   const [isBuying, setIsBuying] = useState(false);
@@ -408,36 +407,6 @@ function AdminDashboard() {
     avgXPPerUser,
     dailyActiveUsers,
   } = stats;
-
-  {
-    /* 📢 Global Broadcast Tool */
-  }
-  <div className="mt-8 p-8 bg-indigo-900 rounded-[3rem] text-white shadow-2xl shadow-indigo-200">
-    <h3 className="text-xl font-black uppercase tracking-tighter mb-4">
-      Global Broadcast
-    </h3>
-    <div className="flex gap-4">
-      <input
-        type="text"
-        placeholder="Type a message for all students..."
-        value={broadcastMsg}
-        onChange={(e) => setBroadcastMsg(e.target.value)} // 🎯 Update state directly
-        className="flex-grow p-4 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-white/40 font-bold focus:ring-2 focus:ring-white outline-none"
-      />
-      <button
-        onClick={async () => {
-          if (!broadcastMsg) return alert("Please enter a message.");
-          // 🎯 Logic is now clean and error-free
-          console.log("Sending Broadcast:", broadcastMsg);
-          alert("Broadcast Sent! 🚀");
-          setBroadcastMsg(""); // Clear after sending
-        }}
-        className="px-8 py-4 bg-white text-indigo-900 font-black rounded-2xl hover:bg-indigo-50 transition-all active:scale-95"
-      >
-        Send to All
-      </button>
-    </div>
-  </div>;
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen font-sans">

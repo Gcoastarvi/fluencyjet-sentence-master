@@ -32,6 +32,7 @@ import adminLessonsRouter from "./routes/adminLessons.js";
 import adminLessonsUpsertRouter from "./routes/adminLessonsUpsert.js";
 import meRouter from "./routes/me.js";
 import automationProcessorRouter from "./routes/automationProcessor.js";
+import whatsappAdminRouter from "./routes/whatsappAdmin.js";
 // import shopRouter from "./routes/shop.js";
 import userRoutes from "./routes/user.js";
 import adminAuthRouter from "./routes/adminAuth.js";
@@ -243,6 +244,7 @@ app.use((req, res, next) => {
 
 // 🎯 THE HEADQUARTERS: One door, properly authenticated
 app.use("/api/admin", adminRouter);
+app.use("/api/admin/whatsapp", whatsappAdminRouter);
 
 /* --------------------------------------------------
    API routes

@@ -60,7 +60,7 @@ const MAX_ROLLOUT_CANDIDATE_LIMIT = 10;
 const MAX_BROADCAST_USERS = 100;
 const WHATSAPP_BROADCAST = 'WHATSAPP_BROADCAST';
 const BROADCAST_CAMPAIGN_KEY_RE = /^[a-z0-9][a-z0-9._-]{0,119}$/i;
-const APPROVED_BROADCAST_TEMPLATES = Object.freeze({
+export const APPROVED_BROADCAST_TEMPLATES = Object.freeze({
   b1_fj_continue_practice_v1: Object.freeze({
     templateName: 'b1_fj_continue_practice_v1',
     languageCode: 'ta',
@@ -156,10 +156,18 @@ export function getReminderTemplateConfiguration(eventType, payload = null) {
   return null;
 }
 
-function isWhatsAppLiveSendEnabled() {
+export function isWhatsAppLiveSendEnabled() {
   return (
     (process.env.WHATSAPP_LIVE_SEND_ENABLED || '').trim().toLowerCase() ===
     'true'
+  );
+}
+
+export function isWhatsAppBroadcastWorkerEnabled() {
+  return (
+    (process.env.WHATSAPP_BROADCAST_WORKER_ENABLED || '')
+      .trim()
+      .toLowerCase() === 'true'
   );
 }
 
@@ -1609,8 +1617,16 @@ router.get('/due-reminder-preview', async (req, res) => {
 // attempts and narrowly scoped broadcast quarantine. It never calls a
 // provider, retries, discovers work, or returns an event to PENDING.
 // ---------------------------------------------------------------------------
-router.post('/reconcile-sending', async (req, res) => {
-  if (!checkAuth(req, res, 'AUTOMATION-RECONCILIATION')) return;
+export async function reconcileSendingHandler(
+  req,
+  res,
+  {
+    database = prisma,
+    authorize = checkAuth,
+    validateLockedEvent = null,
+  } = {},
+) {
+  if (!authorize(req, res, 'AUTOMATION-RECONCILIATION')) return;
 
   const allowedFields = new Set([
     'automationEventId',
@@ -1701,7 +1717,7 @@ router.post('/reconcile-sending', async (req, res) => {
 
   try {
     const existingJournal =
-      await prisma.automationReconciliationJournal.findUnique({
+      await database.automationReconciliationJournal.findUnique({
         where: {
           automationEventId_idempotencyKey: {
             automationEventId,
@@ -1720,7 +1736,7 @@ router.post('/reconcile-sending', async (req, res) => {
 
     // This pre-lock lookup is only to derive the canonical lock key. The event
     // is re-read inside the transaction after the lock is held.
-    const initialEvent = await prisma.automationEvent.findUnique({
+    const initialEvent = await database.automationEvent.findUnique({
       where: { id: automationEventId },
       select: {
         id: true,
@@ -1779,7 +1795,7 @@ router.post('/reconcile-sending', async (req, res) => {
       });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await database.$transaction(async (tx) => {
       await acquireWhatsAppDestinationLock(tx, initialDestination.destination);
 
       // Re-check idempotency after serialization so same-event duplicate
@@ -1811,6 +1827,7 @@ router.post('/reconcile-sending', async (req, res) => {
           status: true,
           destinationNumberNormalized: true,
           providerMessageId: true,
+           processedAt: true,
           sentAt: true,
         },
       });
@@ -1851,6 +1868,11 @@ router.post('/reconcile-sending', async (req, res) => {
           }),
         );
         return formatReconciliationJournalResult(journal);
+      }
+
+      if (validateLockedEvent) {
+        const validationResult = validateLockedEvent(event, now);
+        if (validationResult) return validationResult;
       }
 
       const evidence = await findMatchingReconciliationEvidence(tx, event, {
@@ -2059,7 +2081,11 @@ router.post('/reconcile-sending', async (req, res) => {
       error: 'INTERNAL_ERROR',
     });
   }
-});
+}
+
+router.post('/reconcile-sending', (req, res) =>
+  reconcileSendingHandler(req, res),
+);
 
 // ---------------------------------------------------------------------------
 // POST /api/automation/process-due-reminders   (Phase 2 – single reminder)
@@ -2523,10 +2549,11 @@ export function createLiveReminderHandler({
   cancelInitialIneligible = true,
   enforceTestRecipient = true,
   isLiveSendEnabled = isWhatsAppLiveSendEnabled,
+  authorize = checkAuth,
 } = {}) {
   return async (req, res) => {
   // ── 1. Existing automation auth ──────────────────────────────────────────
-  if (!checkAuth(req, res, 'AUTOMATION-LIVE')) return;
+  if (!authorize(req, res, 'AUTOMATION-LIVE')) return;
 
   // ── 2. Global live-send kill switch ──────────────────────────────────────
   if (!isLiveSendEnabled()) {
@@ -3003,9 +3030,12 @@ export function createLiveReminderHandler({
 
 router.post('/process-due-reminder-live', createLiveReminderHandler());
 
-export function createWhatsAppBroadcastHandler({ database = prisma } = {}) {
+export function createWhatsAppBroadcastHandler({
+  database = prisma,
+  authorize = checkAuth,
+} = {}) {
   return async (req, res) => {
-    if (!checkAuth(req, res, 'AUTOMATION-BROADCAST')) return;
+    if (!authorize(req, res, 'AUTOMATION-BROADCAST')) return;
 
     const body = req.body || {};
     const allowedFields = new Set([
@@ -3286,14 +3316,12 @@ export function createWhatsAppBroadcastWorkerHandler({
   sendTemplate = sendWhatsAppTemplate,
   providerDispatchTimeoutMs = PROVIDER_DISPATCH_TIMEOUT_MS,
   isLiveSendEnabled = isWhatsAppLiveSendEnabled,
-  isBroadcastWorkerEnabled = () =>
-    (process.env.WHATSAPP_BROADCAST_WORKER_ENABLED || '')
-      .trim()
-      .toLowerCase() === 'true',
+  isBroadcastWorkerEnabled = isWhatsAppBroadcastWorkerEnabled,
   liveHandlerFactory = createLiveReminderHandler,
+  authorize = checkAuth,
 } = {}) {
   return async (req, res) => {
-    if (!checkAuth(req, res, 'AUTOMATION-BROADCAST-WORKER')) return;
+    if (!authorize(req, res, 'AUTOMATION-BROADCAST-WORKER')) return;
 
     const body = req.body || {};
     const allowedFields = new Set(['liveSend', 'campaignKey', 'limit']);
@@ -3356,6 +3384,7 @@ export function createWhatsAppBroadcastWorkerHandler({
         providerDispatchTimeoutMs,
         enforceTestRecipient: false,
         cancelInitialIneligible: true,
+        authorize,
         isLiveSendEnabled: () =>
           isLiveSendEnabled() && isBroadcastWorkerEnabled(),
       });

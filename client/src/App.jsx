@@ -109,6 +109,7 @@ const AdminUsers = lazy(() => import("./pages/admin/AdminUsers.jsx"));
 const AdminUserDetail = lazy(() => import("./pages/admin/AdminUserDetail.jsx"));
 const AdminXP = lazy(() => import("./pages/admin/AdminXP.jsx"));
 const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics.jsx"));
+const WhatsAppBroadcast = lazy(() => import("./pages/admin/WhatsAppBroadcast.jsx"));
 const CurriculumManager = lazy(() => import("./pages/admin/CurriculumManager"));
 
 // Legal pages - lazy loaded
@@ -482,6 +483,14 @@ export default function App() {
                 element={
                   <ProtectedAdminRoute>
                     <AdminAnalytics />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/whatsapp-broadcast"
+                element={
+                  <ProtectedAdminRoute>
+                    <WhatsAppBroadcast />
                   </ProtectedAdminRoute>
                 }
               />

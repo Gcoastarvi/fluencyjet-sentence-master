@@ -47,6 +47,13 @@ export default function AdminSidebar() {
         >
           XP Logs
         </NavLink>
+
+        <NavLink
+          to="/admin/whatsapp-broadcast"
+          className={({ isActive }) => (isActive ? activeStyle : linkStyle)}
+        >
+          WhatsApp Broadcast
+        </NavLink>
       </nav>
 
       <div className="p-6 border-t">
