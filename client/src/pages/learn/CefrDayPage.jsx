@@ -34,7 +34,7 @@ function ActivityCard({
   const card = (
     <div
       className={`rounded-3xl border bg-white p-5 shadow-sm transition sm:p-6 ${
-        activity.activityType === "MCQ"
+        ["MCQ", "REORDER"].includes(activity.activityType)
           ? "border-indigo-100 hover:-translate-y-0.5 hover:shadow-md"
           : "border-slate-200"
       }`}
@@ -70,12 +70,12 @@ function ActivityCard({
 
             <span
               className={`text-sm font-black ${
-                activity.activityType === "MCQ"
+                ["MCQ", "REORDER"].includes(activity.activityType)
                   ? "text-indigo-700"
                   : "text-slate-400"
               }`}
             >
-              {activity.activityType === "MCQ"
+              {["MCQ", "REORDER"].includes(activity.activityType)
                 ? "Start →"
                 : "Practice player next"}
             </span>
@@ -85,7 +85,7 @@ function ActivityCard({
     </div>
   );
 
-  if (activity.activityType !== "MCQ") {
+  if (!["MCQ", "REORDER"].includes(activity.activityType)) {
     return card;
   }
 
