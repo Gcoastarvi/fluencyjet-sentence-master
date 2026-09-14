@@ -1,4 +1,7 @@
-import { resolveCefrAudioAssetUrl } from "@/utils/cefrMedia";
+import {
+  isCefrAudioAssetReady,
+  resolveCefrAudioAssetUrl,
+} from "@/utils/cefrMedia";
 
 export default function CefrListeningActivity({
   item,
@@ -15,10 +18,14 @@ export default function CefrListeningActivity({
     : [];
 
   const audioAssetKey = item?.payload?.audioAssetKey || "";
-  const audioUrl =
-    assetStatus === "READY"
-      ? resolveCefrAudioAssetUrl(audioAssetKey)
-      : null;
+
+  const assetReady =
+    assetStatus === "READY" ||
+    isCefrAudioAssetReady(audioAssetKey);
+
+  const audioUrl = assetReady
+    ? resolveCefrAudioAssetUrl(audioAssetKey)
+    : null;
 
   const isCorrect = result?.isCorrect === true;
   const isWrong = result?.isCorrect === false;
