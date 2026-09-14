@@ -850,6 +850,80 @@ describe("submitCefrActivityResponse", () => {
     expect(result.xp).not.toHaveProperty("idempotencyKey");
   });
 
+  test("returns zero public XP when the item-success XP already exists", async () => {
+    mockPrisma.attempt.findFirst.mockResolvedValue({
+      id: "attempt-2",
+      attemptNumber: 2,
+      status: "IN_PROGRESS",
+      completedAt: null,
+    });
+
+    mockPrisma.activityItem.findFirst.mockResolvedValue({
+      id: "item-1",
+      answerKey: {
+        type: "SINGLE_CHOICE",
+        correctOptionId: "option-b",
+      },
+      activity: {
+        evaluationMode: "AUTO",
+      },
+    });
+
+    mockEvaluateCefrSubmission.mockReturnValue({
+      ok: true,
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+    });
+
+    mockPrisma.response.findFirst.mockResolvedValue(null);
+
+    mockPrisma.response.create.mockResolvedValue({
+      id: "response-repeat-success",
+      attemptId: "attempt-2",
+      activityItemId: "item-1",
+      responseNumber: 1,
+      submittedAnswer: {
+        optionId: "option-b",
+      },
+      isCorrect: true,
+      evaluationCode: "CORRECT",
+      score: 1,
+      hintUsed: false,
+      answerRevealed: false,
+      responseTimeMs: null,
+      submittedAt: new Date("2026-09-14T14:58:26.925Z"),
+    });
+
+    mockAwardCefrResponseXp.mockResolvedValue({
+      type: "OK",
+      idempotentReplay: true,
+      xp: {
+        id: "xp-existing",
+        amount: 150,
+        eventType: "ITEM_FIRST_CORRECT",
+        ruleVersion: "cefr-xp-v1",
+        idempotencyKey: "cefr:item-success:enrollment-1:item-1",
+      },
+    });
+
+    const result = await submitCefrActivityResponse(
+      baseInput({
+        submittedAnswer: {
+          optionId: "option-b",
+        },
+      }),
+    );
+
+    expect(result.type).toBe("OK");
+
+    expect(result.xp).toEqual({
+      awarded: false,
+      amount: 0,
+      idempotentReplay: true,
+    });
+  });
+
   test("repairs missing XP during an exact Response replay even after Attempt completion", async () => {
     mockPrisma.attempt.findFirst.mockResolvedValue({
       id: "attempt-1",

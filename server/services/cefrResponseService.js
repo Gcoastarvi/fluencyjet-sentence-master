@@ -166,6 +166,17 @@ function toPublicXpResult(xpResult) {
     };
   }
 
+  if (xpResult.idempotentReplay === true) {
+    return {
+      ok: true,
+      xp: {
+        awarded: false,
+        amount: 0,
+        idempotentReplay: true,
+      },
+    };
+  }
+
   return {
     ok: true,
     xp: {
@@ -173,7 +184,7 @@ function toPublicXpResult(xpResult) {
       amount: xpResult.xp.amount,
       eventType: xpResult.xp.eventType,
       ruleVersion: xpResult.xp.ruleVersion,
-      idempotentReplay: xpResult.idempotentReplay,
+      idempotentReplay: false,
     },
   };
 }
