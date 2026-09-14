@@ -10,6 +10,7 @@ import {
 } from "@/api/cefrApi";
 
 import CefrMcqActivity from "@/components/cefr/CefrMcqActivity";
+import CefrListeningActivity from "@/components/cefr/CefrListeningActivity";
 import CefrReorderActivity from "@/components/cefr/CefrReorderActivity";
 import CefrTypingActivity from "@/components/cefr/CefrTypingActivity";
 
@@ -129,7 +130,7 @@ export default function CefrActivityPlayer() {
         return;
       }
 
-      if (!["MCQ", "REORDER", "TYPING"].includes(loadedActivity.activityType)) {
+      if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ"].includes(loadedActivity.activityType)) {
         setProgram(loadedProgram);
         setDay(loadedDay);
         setActivity(loadedActivity);
@@ -570,6 +571,19 @@ export default function CefrActivityPlayer() {
             {activity?.activityType === "MCQ" && (
               <CefrMcqActivity
                 item={currentItem}
+                selectedOptionId={selectedOptionId}
+                result={result}
+                submitting={submitting}
+                onSelect={handleSelect}
+                onSubmit={handleMcqSubmit}
+              />
+            )}
+
+            {activity?.activityType === "LISTENING_MCQ" && (
+              <CefrListeningActivity
+                item={currentItem}
+                activityTitle={activity?.title}
+                assetStatus={activity?.config?.assetStatus}
                 selectedOptionId={selectedOptionId}
                 result={result}
                 submitting={submitting}
