@@ -49,6 +49,7 @@ const AUTH = { Authorization: `Bearer ${SECRET}` };
 const EVENT_ID = '11111111-1111-4111-8111-111111111111';
 const DESTINATION = '+919999999999';
 const PROVIDER_ID = 'wamid.reconciliation-sensitive';
+const BROADCAST_CAMPAIGN = 'b1_2026_09_12';
 
 function makeApp() {
   const app = express();
@@ -445,6 +446,289 @@ describe('POST /api/automation/reconcile-sending', () => {
           evidenceStatus: 'READ',
         }),
       });
+  });
+
+  test('quarantines an exact broadcast campaign with unknown outcome under the destination lock', async () => {
+    const broadcastEvent = makeEvent({
+      eventType: 'WHATSAPP_BROADCAST',
+      campaignKey: BROADCAST_CAMPAIGN,
+      providerMessageId: null,
+    });
+    mockPrisma.automationEvent.findUnique.mockResolvedValue(broadcastEvent);
+
+    const response = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      campaignKey: BROADCAST_CAMPAIGN,
+      action: 'QUARANTINE',
+      reasonCode: 'OUTCOME_UNKNOWN',
+    }, 'broadcast-outcome-unknown');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      ok: true,
+      action: 'QUARANTINE',
+      automationEventId: EVENT_ID,
+      resultingStatus: 'CANCELLED',
+    });
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.whatsAppMessageEvent.findMany).toHaveBeenCalledWith({
+      where: {
+        automationEventId: EVENT_ID,
+        eventType: {
+          in: ['SENT', 'DELIVERED', 'READ', 'FAILED'],
+        },
+      },
+      select: {
+        id: true,
+        eventType: true,
+        eventTimestamp: true,
+        createdAt: true,
+      },
+    });
+    expect(mockPrisma.automationEvent.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: EVENT_ID,
+        eventType: 'WHATSAPP_BROADCAST',
+        campaignKey: BROADCAST_CAMPAIGN,
+        status: 'SENDING',
+        providerMessageId: null,
+      },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: expect.any(Date),
+        processedAt: expect.any(Date),
+      },
+    });
+    expect(mockPrisma.automationReconciliationJournal.create)
+      .toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: 'QUARANTINE',
+          decision: 'APPLIED',
+          priorStatus: 'SENDING',
+          resultingStatus: 'CANCELLED',
+          reasonCode: 'OUTCOME_UNKNOWN',
+          evidenceEventId: null,
+          evidenceStatus: null,
+        }),
+      });
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [
+      {
+        automationEventId: EVENT_ID,
+        action: 'QUARANTINE',
+        reasonCode: 'OUTCOME_UNKNOWN',
+      },
+      400,
+      'CAMPAIGN_KEY_REQUIRED',
+    ],
+    [
+      {
+        automationEventId: EVENT_ID,
+        campaignKey: 'another_campaign',
+        action: 'QUARANTINE',
+        reasonCode: 'OUTCOME_UNKNOWN',
+      },
+      409,
+      'CAMPAIGN_KEY_MISMATCH',
+    ],
+    [
+      {
+        automationEventId: EVENT_ID,
+        campaignKey: BROADCAST_CAMPAIGN,
+        action: 'MARK_SENT',
+      },
+      400,
+      'INVALID_BROADCAST_RECONCILIATION',
+    ],
+    [
+      {
+        automationEventId: EVENT_ID,
+        campaignKey: BROADCAST_CAMPAIGN,
+        action: 'QUARANTINE',
+        reasonCode: 'FAILED_EVIDENCE',
+      },
+      400,
+      'INVALID_BROADCAST_RECONCILIATION',
+    ],
+  ])('rejects broadcast reconciliation outside its exact scope', async (
+    body,
+    status,
+    error,
+  ) => {
+    mockPrisma.automationEvent.findUnique.mockResolvedValue(makeEvent({
+      eventType: 'WHATSAPP_BROADCAST',
+      campaignKey: BROADCAST_CAMPAIGN,
+      providerMessageId: null,
+    }));
+
+    const response = await reconciliationRequest(
+      body,
+      `broadcast-invalid-${error}`,
+    );
+
+    expect(response.status).toBe(status);
+    expect(response.body.error).toBe(error);
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test.each(['SENT', 'DELIVERED', 'READ', 'FAILED'])(
+    'rejects broadcast quarantine when %s evidence appears under lock',
+    async (eventType) => {
+      mockPrisma.automationEvent.findUnique.mockResolvedValue(makeEvent({
+        eventType: 'WHATSAPP_BROADCAST',
+        campaignKey: BROADCAST_CAMPAIGN,
+        providerMessageId: null,
+      }));
+      mockPrisma.whatsAppMessageEvent.findMany.mockResolvedValue([
+        makeEvidence({ eventType }),
+      ]);
+
+      const response = await reconciliationRequest({
+        automationEventId: EVENT_ID,
+        campaignKey: BROADCAST_CAMPAIGN,
+        action: 'QUARANTINE',
+        reasonCode: 'OUTCOME_UNKNOWN',
+      }, `broadcast-evidence-${eventType.toLowerCase()}`);
+
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({
+        ok: false,
+        error: 'RECONCILIATION_NOT_APPLIED',
+        resultingStatus: 'SENDING',
+      });
+      expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+      expect(mockPrisma.automationReconciliationJournal.create)
+        .toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            decision: 'REJECTED',
+            resultingStatus: 'SENDING',
+            reasonCode:
+              eventType === 'FAILED'
+                ? 'FAILED_EVIDENCE_AVAILABLE'
+                : 'SUCCESS_EVIDENCE_PRESENT',
+            evidenceStatus: eventType,
+          }),
+        });
+      expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+    },
+  );
+
+  test('preserves reminder evidence behavior when providerMessageId is absent', async () => {
+    mockPrisma.automationEvent.findUnique.mockResolvedValue(makeEvent({
+      providerMessageId: null,
+    }));
+    mockPrisma.whatsAppMessageEvent.findMany.mockResolvedValue([
+      makeEvidence({ eventType: 'SENT' }),
+    ]);
+
+    const response = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      action: 'MARK_SENT',
+    }, 'reminder-null-provider-id');
+
+    expect(response.status).toBe(409);
+    expect(mockPrisma.whatsAppMessageEvent.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test('does not extend the reminder request contract with campaignKey', async () => {
+    const response = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      campaignKey: BROADCAST_CAMPAIGN,
+      action: 'QUARANTINE',
+      reasonCode: 'OUTCOME_UNKNOWN',
+    }, 'reminder-campaign-key');
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe('UNKNOWN_FIELDS');
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test('replays an identical broadcast quarantine idempotently', async () => {
+    const requestHash = crypto
+      .createHash('sha256')
+      .update(
+        JSON.stringify({
+          automationEventId: EVENT_ID,
+          action: 'QUARANTINE',
+          reasonCode: 'OUTCOME_UNKNOWN',
+          campaignKey: BROADCAST_CAMPAIGN,
+        }),
+      )
+      .digest('hex');
+    mockPrisma.automationReconciliationJournal.findUnique.mockResolvedValue({
+      id: 'broadcast-journal-replay',
+      automationEventId: EVENT_ID,
+      requestHash,
+      action: 'QUARANTINE',
+      decision: 'APPLIED',
+      resultingStatus: 'CANCELLED',
+    });
+
+    const response = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      campaignKey: BROADCAST_CAMPAIGN,
+      action: 'QUARANTINE',
+      reasonCode: 'OUTCOME_UNKNOWN',
+    }, 'broadcast-replay');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      ok: true,
+      action: 'QUARANTINE',
+      automationEventId: EVENT_ID,
+      resultingStatus: 'CANCELLED',
+      reconciliationId: 'broadcast-journal-replay',
+    });
+    expect(mockPrisma.automationEvent.findUnique).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
+  });
+
+  test('journals and rejects a broadcast that is no longer SENDING under lock', async () => {
+    mockPrisma.automationEvent.findUnique
+      .mockResolvedValueOnce(makeEvent({
+        eventType: 'WHATSAPP_BROADCAST',
+        campaignKey: BROADCAST_CAMPAIGN,
+        providerMessageId: null,
+      }))
+      .mockResolvedValueOnce(makeEvent({
+        eventType: 'WHATSAPP_BROADCAST',
+        campaignKey: BROADCAST_CAMPAIGN,
+        providerMessageId: null,
+        status: 'CANCELLED',
+      }));
+
+    const response = await reconciliationRequest({
+      automationEventId: EVENT_ID,
+      campaignKey: BROADCAST_CAMPAIGN,
+      action: 'QUARANTINE',
+      reasonCode: 'OUTCOME_UNKNOWN',
+    }, 'broadcast-not-sending');
+
+    expect(response.status).toBe(409);
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.whatsAppMessageEvent.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.automationEvent.updateMany).not.toHaveBeenCalled();
+    expect(mockPrisma.automationReconciliationJournal.create)
+      .toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          action: 'QUARANTINE',
+          decision: 'REJECTED',
+          priorStatus: 'CANCELLED',
+          resultingStatus: 'CANCELLED',
+          reasonCode: 'NOT_SENDING',
+        }),
+      });
+    expect(mockSendWhatsAppTemplate).not.toHaveBeenCalled();
   });
 
   test('replays an identical idempotent request without transaction or provider access', async () => {

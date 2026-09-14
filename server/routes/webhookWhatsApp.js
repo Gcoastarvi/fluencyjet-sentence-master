@@ -233,21 +233,44 @@ async function processStatusEvents(payload) {
 
         try {
           const result = await prisma.$transaction(async (transaction) => {
-            const automationEvent =
+            const automationEventSelect = {
+              id: true,
+              userId: true,
+              productKey: true,
+              eventType: true,
+              status: true,
+              providerMessageId: true,
+              destinationNumberNormalized: true,
+            };
+            const initialAutomationEvent =
               await transaction.automationEvent.findUnique({
                 where: {
                   providerMessageId,
                 },
-                select: {
-                  id: true,
-                  userId: true,
-                  productKey: true,
-                  eventType: true,
-                  status: true,
-                  providerMessageId: true,
-                  destinationNumberNormalized: true,
-                },
+                select: automationEventSelect,
               });
+            let automationEvent = initialAutomationEvent;
+
+            if (initialAutomationEvent?.destinationNumberNormalized) {
+              await acquireWhatsAppDestinationLock(
+                transaction,
+                initialAutomationEvent.destinationNumberNormalized,
+              );
+              automationEvent =
+                await transaction.automationEvent.findUnique({
+                  where: {
+                    providerMessageId,
+                  },
+                  select: automationEventSelect,
+                });
+
+              if (
+                automationEvent?.destinationNumberNormalized !==
+                initialAutomationEvent.destinationNumberNormalized
+              ) {
+                automationEvent = null;
+              }
+            }
 
             const persistedStatusEvent =
               await transaction.whatsAppMessageEvent.create({

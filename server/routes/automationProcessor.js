@@ -83,6 +83,13 @@ const RECONCILIABLE_REMINDER_EVENT_TYPE_SET = new Set([
   CHECKOUT_HELP_REMINDER,
   ANY_QUESTIONS_REMINDER,
 ]);
+
+function isReconciliableEventType(eventType) {
+  return (
+    RECONCILIABLE_REMINDER_EVENT_TYPE_SET.has(eventType) ||
+    eventType === WHATSAPP_BROADCAST
+  );
+}
 const STRUCTURALLY_UNSENDABLE_DESTINATION_REASONS = new Set([
   'MISSING_EVENT_DESTINATION',
   'INVALID_EVENT_DESTINATION',
@@ -720,6 +727,7 @@ function reconciliationRequestHash({
   automationEventId,
   action,
   reasonCode,
+  campaignKey,
 }) {
   return crypto
     .createHash('sha256')
@@ -728,6 +736,7 @@ function reconciliationRequestHash({
         automationEventId,
         action,
         reasonCode: reasonCode ?? null,
+        ...(campaignKey === undefined ? {} : { campaignKey }),
       }),
     )
     .digest('hex');
@@ -839,13 +848,19 @@ function usableSuccessEvidenceTimestamp(evidence, now) {
   return null;
 }
 
-async function findMatchingReconciliationEvidence(transaction, event) {
-  if (!event.providerMessageId) return [];
+async function findMatchingReconciliationEvidence(
+  transaction,
+  event,
+  { allowMissingProviderMessageId = false } = {},
+) {
+  if (!event.providerMessageId && !allowMissingProviderMessageId) return [];
 
   return transaction.whatsAppMessageEvent.findMany({
     where: {
       automationEventId: event.id,
-      providerMessageId: event.providerMessageId,
+      ...(event.providerMessageId
+        ? { providerMessageId: event.providerMessageId }
+        : {}),
       eventType: {
         in: [...PROVIDER_SUCCESS_STATUSES, PROVIDER_FAILURE_STATUS],
       },
@@ -1590,9 +1605,9 @@ router.get('/due-reminder-preview', async (req, res) => {
 // ---------------------------------------------------------------------------
 // POST /api/automation/reconcile-sending
 //
-// Explicit, single-event operator reconciliation for uncertain Lesson 1
-// reminder attempts. It never calls a provider, retries, discovers work, or
-// returns an event to PENDING.
+// Explicit, single-event operator reconciliation for uncertain reminder
+// attempts and narrowly scoped broadcast quarantine. It never calls a
+// provider, retries, discovers work, or returns an event to PENDING.
 // ---------------------------------------------------------------------------
 router.post('/reconcile-sending', async (req, res) => {
   if (!checkAuth(req, res, 'AUTOMATION-RECONCILIATION')) return;
@@ -1601,6 +1616,7 @@ router.post('/reconcile-sending', async (req, res) => {
     'automationEventId',
     'action',
     'reasonCode',
+    'campaignKey',
   ]);
   const unknownFields = Object.keys(req.body || {}).filter(
     (key) => !allowedFields.has(key),
@@ -1616,6 +1632,7 @@ router.post('/reconcile-sending', async (req, res) => {
   const automationEventId = req.body?.automationEventId;
   const action = req.body?.action;
   const reasonCode = req.body?.reasonCode;
+  const campaignKey = req.body?.campaignKey;
   const idempotencyKey = req.get('Idempotency-Key');
 
   if (
@@ -1662,10 +1679,24 @@ router.post('/reconcile-sending', async (req, res) => {
     });
   }
 
+  if (
+    campaignKey !== undefined &&
+    (
+      typeof campaignKey !== 'string' ||
+      !BROADCAST_CAMPAIGN_KEY_RE.test(campaignKey)
+    )
+  ) {
+    return res.status(400).json({
+      ok: false,
+      error: 'INVALID_CAMPAIGN_KEY',
+    });
+  }
+
   const requestHash = reconciliationRequestHash({
     automationEventId,
     action,
     reasonCode,
+    campaignKey,
   });
 
   try {
@@ -1694,6 +1725,7 @@ router.post('/reconcile-sending', async (req, res) => {
       select: {
         id: true,
         eventType: true,
+        campaignKey: true,
         destinationNumberNormalized: true,
       },
     });
@@ -1705,10 +1737,36 @@ router.post('/reconcile-sending', async (req, res) => {
       });
     }
 
-    if (!RECONCILIABLE_REMINDER_EVENT_TYPE_SET.has(initialEvent.eventType)) {
+    if (!isReconciliableEventType(initialEvent.eventType)) {
       return res.status(400).json({
         ok: false,
         error: 'WRONG_EVENT_TYPE',
+      });
+    }
+
+    if (initialEvent.eventType === WHATSAPP_BROADCAST) {
+      if (campaignKey === undefined) {
+        return res.status(400).json({
+          ok: false,
+          error: 'CAMPAIGN_KEY_REQUIRED',
+        });
+      }
+      if (campaignKey !== initialEvent.campaignKey) {
+        return res.status(409).json({
+          ok: false,
+          error: 'CAMPAIGN_KEY_MISMATCH',
+        });
+      }
+      if (action !== 'QUARANTINE' || reasonCode !== 'OUTCOME_UNKNOWN') {
+        return res.status(400).json({
+          ok: false,
+          error: 'INVALID_BROADCAST_RECONCILIATION',
+        });
+      }
+    } else if (campaignKey !== undefined) {
+      return res.status(400).json({
+        ok: false,
+        error: 'UNKNOWN_FIELDS',
       });
     }
 
@@ -1748,6 +1806,7 @@ router.post('/reconcile-sending', async (req, res) => {
           id: true,
           userId: true,
           eventType: true,
+          campaignKey: true,
           productKey: true,
           status: true,
           destinationNumberNormalized: true,
@@ -1758,8 +1817,13 @@ router.post('/reconcile-sending', async (req, res) => {
 
       if (
         !event ||
-        !RECONCILIABLE_REMINDER_EVENT_TYPE_SET.has(event.eventType) ||
+        !isReconciliableEventType(event.eventType) ||
         event.eventType !== initialEvent.eventType ||
+        event.campaignKey !== initialEvent.campaignKey ||
+        (
+          event.eventType === WHATSAPP_BROADCAST &&
+          event.campaignKey !== campaignKey
+        ) ||
         event.destinationNumberNormalized !== initialDestination.destination
       ) {
         return {
@@ -1789,7 +1853,10 @@ router.post('/reconcile-sending', async (req, res) => {
         return formatReconciliationJournalResult(journal);
       }
 
-      const evidence = await findMatchingReconciliationEvidence(tx, event);
+      const evidence = await findMatchingReconciliationEvidence(tx, event, {
+        allowMissingProviderMessageId:
+          event.eventType === WHATSAPP_BROADCAST,
+      });
       const successEvidence = evidence
         .filter((item) => PROVIDER_SUCCESS_STATUSES.has(item.eventType))
         .sort(sortEvidenceNewestFirst);
@@ -1951,6 +2018,9 @@ router.post('/reconcile-sending', async (req, res) => {
         where: {
           id: event.id,
           eventType: event.eventType,
+          ...(event.eventType === WHATSAPP_BROADCAST
+            ? { campaignKey }
+            : {}),
           status: 'SENDING',
           providerMessageId: event.providerMessageId,
         },

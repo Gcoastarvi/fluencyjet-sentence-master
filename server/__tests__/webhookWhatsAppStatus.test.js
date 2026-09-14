@@ -153,6 +153,13 @@ describe('WhatsApp webhook outbound status processing', () => {
         destinationNumberNormalized: true,
       },
     });
+    expect(mockPrisma.automationEvent.findUnique).toHaveBeenCalledTimes(2);
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    expect(
+      mockPrisma.$executeRaw.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      mockPrisma.whatsAppMessageEvent.create.mock.invocationCallOrder[0],
+    );
 
     expect(mockPrisma.whatsAppMessageEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -322,6 +329,7 @@ describe('WhatsApp webhook outbound status processing', () => {
           eventType: 'SENT',
         }),
       });
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
   });
 
   test('duplicate webhook retry is acknowledged with HTTP 200', async () => {
