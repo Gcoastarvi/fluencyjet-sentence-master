@@ -2,6 +2,7 @@ const SAFE_ASSET_KEY = /^[a-z0-9][a-z0-9-]*$/i;
 
 const READY_AUDIO_ASSET_KEYS = new Set([
   "de-a1-d1-listening-01",
+  "de-a1-d1-listening-02",
 ]);
 
 export function isCefrAudioAssetReady(audioAssetKey) {
