@@ -11,6 +11,7 @@ import {
 
 import CefrMcqActivity from "@/components/cefr/CefrMcqActivity";
 import CefrListeningActivity from "@/components/cefr/CefrListeningActivity";
+import CefrAudioRepeatActivity from "@/components/cefr/CefrAudioRepeatActivity";
 import CefrReorderActivity from "@/components/cefr/CefrReorderActivity";
 import CefrTypingActivity from "@/components/cefr/CefrTypingActivity";
 
@@ -130,7 +131,7 @@ export default function CefrActivityPlayer() {
         return;
       }
 
-      if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ"].includes(loadedActivity.activityType)) {
+      if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT"].includes(loadedActivity.activityType)) {
         setProgram(loadedProgram);
         setDay(loadedDay);
         setActivity(loadedActivity);
@@ -324,7 +325,11 @@ export default function CefrActivityPlayer() {
     setResult(savedResponse);
     setXpAward(response.data?.xp || null);
 
-    if (savedResponse?.isCorrect === true) {
+    const itemCompleted =
+      savedResponse?.isCorrect === true ||
+      savedResponse?.evaluationCode === "SELF_ATTESTED_COMPLETE";
+
+    if (itemCompleted) {
       setCompletedItemIds((previous) => {
         if (previous.includes(currentItem.id)) {
           return previous;
@@ -592,6 +597,17 @@ export default function CefrActivityPlayer() {
               />
             )}
 
+            {activity?.activityType === "AUDIO_REPEAT" && (
+              <CefrAudioRepeatActivity
+                item={currentItem}
+                activityTitle={activity?.title}
+                assetStatus={activity?.config?.assetStatus}
+                result={result}
+                submitting={submitting}
+                onSubmit={handleSubmit}
+              />
+            )}
+
             {activity?.activityType === "REORDER" && (
               <CefrReorderActivity
                 item={currentItem}
@@ -620,7 +636,8 @@ export default function CefrActivityPlayer() {
               </div>
             )}
 
-            {result?.isCorrect === true && (
+            {(result?.isCorrect === true ||
+              result?.evaluationCode === "SELF_ATTESTED_COMPLETE") && (
               <div className="mt-4">
                 {Number(xpAward?.amount || 0) > 0 && (
                   <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center font-black text-amber-800">
