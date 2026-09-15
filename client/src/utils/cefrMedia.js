@@ -4,6 +4,7 @@ const READY_AUDIO_ASSET_KEYS = new Set([
   "de-a1-d1-listening-01",
   "de-a1-d1-listening-02",
   "de-a1-d1-listening-03",
+  "de-a1-d1-listening-04",
 ]);
 
 export function isCefrAudioAssetReady(audioAssetKey) {
