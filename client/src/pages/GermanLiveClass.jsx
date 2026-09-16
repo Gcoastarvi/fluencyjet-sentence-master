@@ -1,7 +1,7 @@
 import React from "react";
 import "./GermanLiveClass.css";
 
-const RAZORPAY_URL = "ADD_RAZORPAY_LINK_HERE";
+const RAZORPAY_URL = "https://rzp.io/rzp/U6XIWv3";
 
 function goToPayment() {
   if (RAZORPAY_URL === "ADD_RAZORPAY_LINK_HERE") {
