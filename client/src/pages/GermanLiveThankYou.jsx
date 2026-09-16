@@ -80,17 +80,17 @@ export default function GermanLiveThankYou() {
             <div className="glc-reminder-grid">
 
               <div>
-                <strong>Friday, Sep 18</strong>
+                <strong>Friday, Sep 25</strong>
                 <span>7:00 PM – 8:00 PM</span>
               </div>
 
               <div>
-                <strong>Saturday, Sep 19</strong>
+                <strong>Saturday, Sep 26</strong>
                 <span>7:00 PM – 8:00 PM</span>
               </div>
 
               <div>
-                <strong>Sunday, Sep 20</strong>
+                <strong>Sunday, Sep 27</strong>
                 <span>11:00 AM – 12:30 PM</span>
               </div>
 

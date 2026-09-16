@@ -14,7 +14,7 @@ function goToPayment() {
 const days = [
   {
     day: "DAY 1",
-    date: "Friday, September 18",
+    date: "Friday, September 25",
     time: "7:00 PM – 8:00 PM",
     title: "Meet & Introduce Yourself",
     points: [
@@ -30,7 +30,7 @@ const days = [
   },
   {
     day: "DAY 2",
-    date: "Saturday, September 19",
+    date: "Saturday, September 26",
     time: "7:00 PM – 8:00 PM",
     title: "Build Your Personal Profile",
     points: [
@@ -46,7 +46,7 @@ const days = [
   },
   {
     day: "DAY 3",
-    date: "Sunday, September 20",
+    date: "Sunday, September 27",
     time: "11:00 AM – 12:30 PM",
     title: "Put Everything Together",
     points: [
@@ -76,59 +76,84 @@ export default function GermanLiveClass() {
       <section className="glc-hero">
         <div className="glc-container glc-hero-grid">
 
-          <div>
+          <div className="glc-hero-copy">
+
             <div className="glc-eyebrow">
-              🇩🇪 3-DAY LIVE GERMAN A1 STARTER PROGRAM
+              🇩🇪 3-DAY LIVE GERMAN A1 STARTER • SEPT 25–27
             </div>
 
             <h1>
-              Start German in
-              <span> 3 Days</span>
+              Germany in Your Plans?
+              <span> Start With the Language.</span>
             </h1>
 
+            <div className="glc-hero-secondary">
+              Start German in 3 Days
+            </div>
+
             <p className="glc-hero-text">
-              Build and speak your first German sentences — even if you know
+              Build and speak your first German sentences LIVE —
+              even if you know
               <strong> zero German today.</strong>
             </p>
 
             <div className="glc-pills">
-              <span>✓ LIVE Online</span>
+              <span>✓ 3 LIVE Classes</span>
               <span>✓ Absolute Beginners</span>
               <span>✓ English + German</span>
-              <span>✓ App Practice</span>
+              <span>✓ FluencyJet App Practice</span>
             </div>
 
             <div className="glc-price-box">
+
               <div>
                 <small>Complete 3-Day Program</small>
                 <strong>₹199</strong>
               </div>
 
-              <button onClick={goToPayment} className="glc-main-button">
+              <button
+                className="glc-main-button"
+                onClick={goToPayment}
+              >
                 JOIN THE LIVE CLASS — ₹199
               </button>
+
             </div>
 
-            <p className="glc-small">
-              No prior German knowledge required.
-            </p>
+            <div className="glc-hero-trust">
+              3 LIVE sessions • Day 1 & 2 recordings • Private WhatsApp group
+            </div>
+
           </div>
 
           <div className="glc-germany-visual">
-            <div className="glc-flag-circle">🇩🇪</div>
-
-            <div className="glc-deutsch">DEUTSCH</div>
-
-            <p>Your first step towards German A1 starts here.</p>
 
             <div className="glc-trainer-small">
-              <div className="glc-trainer-avatar">S</div>
+
+              <div className="glc-trainer-avatar">
+                S
+              </div>
+
               <div>
                 <small>LIVE TRAINER</small>
                 <strong>Sukanya</strong>
                 <span>English + German</span>
               </div>
+
             </div>
+
+            <div className="glc-germany-small">
+              YOUR FIRST STEP
+            </div>
+
+            <div className="glc-deutsch">
+              DEUTSCH
+            </div>
+
+            <p>
+              Learn → Practise → Retrieve → Speak
+            </p>
+
           </div>
 
         </div>
@@ -140,21 +165,21 @@ export default function GermanLiveClass() {
 
           <div className="glc-date-card">
             <b>DAY 1</b>
-            <h3>Friday, September 18</h3>
+            <h3>Friday, September 25</h3>
             <strong>7:00 PM – 8:00 PM</strong>
             <p>Meet & Introduce Yourself</p>
           </div>
 
           <div className="glc-date-card">
             <b>DAY 2</b>
-            <h3>Saturday, September 19</h3>
+            <h3>Saturday, September 26</h3>
             <strong>7:00 PM – 8:00 PM</strong>
             <p>Build Your Personal Profile</p>
           </div>
 
           <div className="glc-date-card">
             <b>DAY 3</b>
-            <h3>Sunday, September 20</h3>
+            <h3>Sunday, September 27</h3>
             <strong>11:00 AM – 12:30 PM</strong>
             <p>Integrate, Speak & See Your A1 Roadmap</p>
           </div>
@@ -162,33 +187,218 @@ export default function GermanLiveClass() {
         </div>
       </section>
 
-      {/* PROBLEM */}
+      {/* WHY GERMAN */}
       <section className="glc-section glc-soft">
-        <div className="glc-container glc-narrow glc-center">
 
-          <div className="glc-section-label">START FROM ZERO</div>
+        <div className="glc-container">
 
-          <h2>
-            Want to learn German...
-            <br />
-            but don't know where to begin?
-          </h2>
+          <div className="glc-section-intro glc-center">
 
-          <p className="glc-lead">
-            German can look difficult at first — new pronunciation, unfamiliar
-            words, sentence structures and grammar.
-          </p>
+            <div className="glc-section-label">
+              WHY START GERMAN?
+            </div>
 
-          <p className="glc-lead">
-            But you don't need to understand all of German before you start
-            using it.
-          </p>
+            <h2>
+              German Can Open More Than a Language
+            </h2>
 
-          <h3 className="glc-red-text">
-            You just need the right first steps.
-          </h3>
+            <p className="glc-lead">
+              Whether your goal is study, career, exams or life connected
+              to Germany, the first step is the same:
+              <strong> start building your German foundation.</strong>
+            </p>
+
+          </div>
+
+          <div className="glc-reason-grid">
+
+            <div className="glc-reason-card">
+
+              <div className="glc-card-icon">
+                🎓
+              </div>
+
+              <h3>
+                Study in Germany
+              </h3>
+
+              <p>
+                Start building the language foundation that can support
+                your studies and everyday communication.
+              </p>
+
+            </div>
+
+            <div className="glc-reason-card">
+
+              <div className="glc-card-icon">
+                💼
+              </div>
+
+              <h3>
+                Career Opportunities
+              </h3>
+
+              <p>
+                German can be useful for professionals exploring
+                opportunities connected to German-speaking markets.
+              </p>
+
+            </div>
+
+            <div className="glc-reason-card">
+
+              <div className="glc-card-icon">
+                🇩🇪
+              </div>
+
+              <h3>
+                Life in Germany
+              </h3>
+
+              <p>
+                German can make everyday communication and integration
+                easier if Germany is part of your future.
+              </p>
+
+            </div>
+
+            <div className="glc-reason-card">
+
+              <div className="glc-card-icon">
+                📝
+              </div>
+
+              <h3>
+                Goethe / CEFR Journey
+              </h3>
+
+              <p>
+                A1 is the first CEFR milestone. Start with the basics
+                and build systematically.
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="glc-inline-cta glc-center">
+
+            <button
+              className="glc-main-button"
+              onClick={goToPayment}
+            >
+              START YOUR FIRST 3 DAYS — ₹199
+            </button>
+
+          </div>
 
         </div>
+
+      </section>
+
+
+      {/* WHO SHOULD JOIN */}
+      <section className="glc-section">
+
+        <div className="glc-container">
+
+          <div className="glc-section-intro glc-center">
+
+            <div className="glc-section-label">
+              IS THIS FOR YOU?
+            </div>
+
+            <h2>
+              Start From Wherever You Are Today
+            </h2>
+
+          </div>
+
+          <div className="glc-audience-grid">
+
+            <div className="glc-audience-card">
+
+              <div className="glc-card-icon">
+                🎓
+              </div>
+
+              <h3>
+                Students Planning Germany
+              </h3>
+
+              <p>
+                You want to start preparing before future studies
+                or opportunities.
+              </p>
+
+            </div>
+
+            <div className="glc-audience-card">
+
+              <div className="glc-card-icon">
+                💼
+              </div>
+
+              <h3>
+                Working Professionals
+              </h3>
+
+              <p>
+                You are exploring German for career or international
+                opportunities.
+              </p>
+
+            </div>
+
+            <div className="glc-audience-card">
+
+              <div className="glc-card-icon">
+                📝
+              </div>
+
+              <h3>
+                Future A1 Learners
+              </h3>
+
+              <p>
+                You want a clear starting point before beginning
+                serious A1 preparation.
+              </p>
+
+            </div>
+
+            <div className="glc-audience-card">
+
+              <div className="glc-card-icon">
+                🌱
+              </div>
+
+              <h3>
+                Absolute Beginners
+              </h3>
+
+              <p>
+                You are interested in German but do not know
+                where or how to begin.
+              </p>
+
+            </div>
+
+          </div>
+
+          <div className="glc-no-experience">
+
+            <strong>No German required.</strong>
+
+            <span>No grammar knowledge required.</span>
+
+            <span>No previous course required.</span>
+
+          </div>
+
+        </div>
+
       </section>
 
       {/* DAYS */}
@@ -280,15 +490,141 @@ export default function GermanLiveClass() {
         </div>
       </section>
 
-      {/* APP */}
+      {/* FLUENCYJET DIFFERENCE */}
       <section className="glc-section">
+
+        <div className="glc-container">
+
+          <div className="glc-section-intro glc-center">
+
+            <div className="glc-section-label">
+              THE FLUENCYJET DIFFERENCE
+            </div>
+
+            <h2>
+              Watching German Lessons Is Not Enough.
+            </h2>
+
+            <p className="glc-lead">
+              To build a language, you need to
+              <strong> retrieve and use what you learn.</strong>
+            </p>
+
+          </div>
+
+          <div className="glc-learning-system">
+
+            <div className="glc-learning-step">
+
+              <div className="glc-step-number">
+                1
+              </div>
+
+              <h3>
+                LIVE CLASS
+              </h3>
+
+              <strong>
+                Understand it.
+              </strong>
+
+              <p>
+                Learn new German clearly with your trainer.
+              </p>
+
+            </div>
+
+            <div className="glc-arrow">
+              →
+            </div>
+
+            <div className="glc-learning-step">
+
+              <div className="glc-step-number">
+                2
+              </div>
+
+              <h3>
+                FLUENCYJET
+              </h3>
+
+              <strong>
+                Practise it.
+              </strong>
+
+              <p>
+                Actively work with what you just learned.
+              </p>
+
+            </div>
+
+            <div className="glc-arrow">
+              →
+            </div>
+
+            <div className="glc-learning-step">
+
+              <div className="glc-step-number">
+                3
+              </div>
+
+              <h3>
+                RETRIEVAL
+              </h3>
+
+              <strong>
+                Remember it.
+              </strong>
+
+              <p>
+                Bring German back from memory instead of only rewatching.
+              </p>
+
+            </div>
+
+            <div className="glc-arrow">
+              →
+            </div>
+
+            <div className="glc-learning-step">
+
+              <div className="glc-step-number">
+                4
+              </div>
+
+              <h3>
+                SPEAKING
+              </h3>
+
+              <strong>
+                Use it.
+              </strong>
+
+              <p>
+                Turn what you know into usable German.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* APP PRACTICE */}
+      <section className="glc-section glc-soft">
+
         <div className="glc-container glc-two-column">
 
           <div className="glc-phone-area">
 
             <div className="glc-phone">
 
-              <small>FluencyJet German Practice</small>
+              <small>
+                FluencyJet German Practice
+              </small>
 
               <div className="glc-phone-title">
                 Ich bin ...
@@ -296,6 +632,14 @@ export default function GermanLiveClass() {
 
               <div className="glc-practice-line"></div>
               <div className="glc-practice-line short"></div>
+
+              <div className="glc-phone-options">
+
+                <span>Listening Practice</span>
+                <span>Sentence Practice</span>
+                <span>Active Recall</span>
+
+              </div>
 
               <button>
                 Practise →
@@ -308,21 +652,23 @@ export default function GermanLiveClass() {
           <div>
 
             <div className="glc-section-label">
-              NOT JUST A LIVE CLASS
+              3-DAY APP PRACTICE INCLUDED
             </div>
 
             <h2>
-              Practise what you learn.
+              Don't Just Attend.
+              <br />
+              Practise What You Learn.
             </h2>
 
             <p className="glc-lead">
               Every participant receives
-              <strong> 3-day FluencyJet app practice access</strong>.
+              <strong> 3-day FluencyJet German practice access.</strong>
             </p>
 
             <p className="glc-lead">
-              Learn something with the trainer — then actively practise,
-              retrieve and use it.
+              Reinforce what Sukanya teaches LIVE through active
+              practice instead of relying only on videos.
             </p>
 
             <div className="glc-learning-loop">
@@ -336,6 +682,7 @@ export default function GermanLiveClass() {
           </div>
 
         </div>
+
       </section>
 
       {/* WHAT YOU GET */}
@@ -361,7 +708,7 @@ export default function GermanLiveClass() {
             <div>✓ Day 2 recording</div>
             <div>✓ Private participant WhatsApp group</div>
             <div>✓ German A1 roadmap on Day 3</div>
-            <div>✓ Opportunity to continue to full A1</div>
+            <div>✓ Clear roadmap for continuing towards German A1</div>
 
           </div>
 
@@ -387,12 +734,8 @@ export default function GermanLiveClass() {
 
       {/* TRAINER */}
       <section className="glc-section">
-        <div className="glc-container glc-trainer-grid">
 
-          <div className="glc-photo-placeholder">
-            <div>S</div>
-            <span>Trainer photo coming soon</span>
-          </div>
+        <div className="glc-container glc-trainer-clean">
 
           <div>
 
@@ -400,45 +743,176 @@ export default function GermanLiveClass() {
               YOUR LIVE TRAINER
             </div>
 
-            <h2>Meet Sukanya</h2>
+            <h2>
+              Learn LIVE With Sukanya
+            </h2>
 
             <p className="glc-lead">
-              Sukanya will guide you step by step through this beginner German
-              program using clear English explanations and practical German.
+              Sukanya will guide absolute beginners step by step
+              using clear English explanations and practical German.
             </p>
 
             <p className="glc-lead">
-              The class is designed for learners from anywhere in India.
+              The goal is not to overwhelm you with grammar.
+              The goal is to help you
+              <strong> understand, practise and start using German.</strong>
             </p>
+
+          </div>
+
+          <div className="glc-trainer-info-card">
+
+            <div className="glc-trainer-letter">
+              S
+            </div>
+
+            <h3>
+              Sukanya
+            </h3>
+
+            <span>
+              German Trainer
+            </span>
+
+            <div className="glc-trainer-badges">
+
+              <div>
+                ✓ English + German
+              </div>
+
+              <div>
+                ✓ Absolute-Beginner Friendly
+              </div>
+
+              <div>
+                ✓ LIVE Interactive Teaching
+              </div>
+
+              <div>
+                ✓ Guided Practice
+              </div>
+
+            </div>
 
           </div>
 
         </div>
+
       </section>
 
-      {/* HONEST POSITIONING */}
-      <section className="glc-dark-section">
+      {/* LANGUAGE LEARNING TRACK RECORD */}
+      <section className="glc-section glc-proof-section">
+
+        <div className="glc-container">
+
+          <div className="glc-section-intro glc-center">
+
+            <div className="glc-section-label">
+              LANGUAGE-LEARNING EXPERIENCE
+            </div>
+
+            <h2>
+              Experience With Structured Language Learning
+            </h2>
+
+            <p className="glc-lead">
+              Our broader language-training experience includes past learners
+              who have cleared internationally recognised
+              <strong> DELF French examinations.</strong>
+            </p>
+
+            <p className="glc-proof-disclosure">
+              These are broader language-learning results, not German
+              Goethe results. German-specific learner results will be
+              published as our German cohorts progress.
+            </p>
+
+          </div>
+
+          <div className="glc-proof-grid">
+
+            <div className="glc-proof-card">
+
+              <div className="glc-proof-icon">
+                🏅
+              </div>
+
+              <h3>
+                International Exam Experience
+              </h3>
+
+              <p>
+                Past learners from our language-training work have
+                successfully completed recognised language examinations.
+              </p>
+
+            </div>
+
+            <div className="glc-proof-card">
+
+              <div className="glc-proof-icon">
+                📚
+              </div>
+
+              <h3>
+                CEFR-Oriented Learning
+              </h3>
+
+              <p>
+                We understand the importance of structured progression
+                from one language level to the next.
+              </p>
+
+            </div>
+
+            <div className="glc-proof-card">
+
+              <div className="glc-proof-icon">
+                ⚡
+              </div>
+
+              <h3>
+                Practice, Not Just Videos
+              </h3>
+
+              <p>
+                FluencyJet combines trainer-led learning with active
+                practice and retrieval.
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* REAL URGENCY */}
+      <section className="glc-urgency">
 
         <div className="glc-container glc-narrow glc-center">
 
           <div className="glc-section-label glc-yellow">
-            IMPORTANT
+            CLASSES BEGIN FRIDAY, SEPTEMBER 25
           </div>
 
           <h2>
-            This is a German A1 starter.
-            <br />
-            Not “A1 in 3 days.”
+            Your First German Class Is Just Days Away.
           </h2>
 
           <p>
-            German A1 requires structured learning and practice.
+            Join all three LIVE sessions and experience German
+            before deciding how far you want to take it.
           </p>
 
-          <p>
-            These three days help you start correctly, speak your first useful
-            German and understand the path towards A1.
-          </p>
+          <button
+            className="glc-main-button glc-large-button"
+            onClick={goToPayment}
+          >
+            RESERVE MY SEAT — ₹199
+          </button>
 
         </div>
 
@@ -532,7 +1006,7 @@ export default function GermanLiveClass() {
           </h2>
 
           <p>
-            September 18, 19 & 20
+            September 25, 26 & 27
             <br />
             LIVE Online • English + German
           </p>
