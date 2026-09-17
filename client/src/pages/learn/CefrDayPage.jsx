@@ -11,6 +11,7 @@ const ACTIVITY_LABELS = {
   AUDIO_REPEAT: "Say It",
   GROUPED_FIELDS: "Write It",
   SPEAKING_PROMPT: "Speak It",
+  FINAL_CHALLENGE: "Final Challenge",
 };
 
 function activityLabel(activity) {
@@ -34,7 +35,7 @@ function ActivityCard({
   const card = (
     <div
       className={`rounded-3xl border bg-white p-5 shadow-sm transition sm:p-6 ${
-        ["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT"].includes(activity.activityType)
+        ["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT", "FINAL_CHALLENGE", "SPEAKING_PROMPT"].includes(activity.activityType)
           ? "border-indigo-100 hover:-translate-y-0.5 hover:shadow-md"
           : "border-slate-200"
       }`}
@@ -70,12 +71,12 @@ function ActivityCard({
 
             <span
               className={`text-sm font-black ${
-                ["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT"].includes(activity.activityType)
+                ["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT", "FINAL_CHALLENGE", "SPEAKING_PROMPT"].includes(activity.activityType)
                   ? "text-indigo-700"
                   : "text-slate-400"
               }`}
             >
-              {["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT"].includes(activity.activityType)
+              {["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT", "FINAL_CHALLENGE", "SPEAKING_PROMPT"].includes(activity.activityType)
                 ? "Start →"
                 : "Practice player next"}
             </span>
@@ -85,7 +86,7 @@ function ActivityCard({
     </div>
   );
 
-  if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT"].includes(activity.activityType)) {
+  if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT", "FINAL_CHALLENGE", "SPEAKING_PROMPT"].includes(activity.activityType)) {
     return card;
   }
 

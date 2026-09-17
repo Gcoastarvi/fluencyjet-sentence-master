@@ -14,6 +14,7 @@ import CefrListeningActivity from "@/components/cefr/CefrListeningActivity";
 import CefrAudioRepeatActivity from "@/components/cefr/CefrAudioRepeatActivity";
 import CefrReorderActivity from "@/components/cefr/CefrReorderActivity";
 import CefrTypingActivity from "@/components/cefr/CefrTypingActivity";
+import CefrFinalChallengeActivity from "@/components/cefr/CefrFinalChallengeActivity";
 
 function createIdempotencyKey() {
   if (
@@ -88,6 +89,10 @@ export default function CefrActivityPlayer() {
     items.length > 0 &&
     items.every((item) => completedSet.has(item.id));
 
+  const currentItemCompleted =
+    result?.isCorrect === true ||
+    result?.evaluationCode === "SELF_ATTESTED_COMPLETE";
+
   const dayPath =
     `/learn/${encodeURIComponent(programSlug)}` +
     `/day/${encodeURIComponent(dayNumber)}`;
@@ -132,7 +137,7 @@ export default function CefrActivityPlayer() {
         return;
       }
 
-      if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT"].includes(loadedActivity.activityType)) {
+      if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT", "FINAL_CHALLENGE", "SPEAKING_PROMPT"].includes(loadedActivity.activityType)) {
         setProgram(loadedProgram);
         setDay(loadedDay);
         setActivity(loadedActivity);
@@ -586,7 +591,7 @@ export default function CefrActivityPlayer() {
           />
         </div>
 
-        {!allItemsComplete && currentItem && (
+        {(!allItemsComplete || currentItemCompleted) && currentItem && (
           <div className="mt-7">
             {activity?.activityType === "MCQ" && (
               <CefrMcqActivity
@@ -623,6 +628,18 @@ export default function CefrActivityPlayer() {
               />
             )}
 
+            {["FINAL_CHALLENGE", "SPEAKING_PROMPT"].includes(
+              activity?.activityType,
+            ) && (
+              <CefrFinalChallengeActivity
+                item={currentItem}
+                activityTitle={activity?.title}
+                result={result}
+                submitting={submitting}
+                onSubmit={handleSubmit}
+              />
+            )}
+
             {activity?.activityType === "REORDER" && (
               <CefrReorderActivity
                 item={currentItem}
@@ -651,8 +668,7 @@ export default function CefrActivityPlayer() {
               </div>
             )}
 
-            {(result?.isCorrect === true ||
-              result?.evaluationCode === "SELF_ATTESTED_COMPLETE") && (
+            {currentItemCompleted && (
               <div className="mt-4">
                 {Number(xpAward?.amount || 0) > 0 && (
                   <div className="mb-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-center font-black text-amber-800">
@@ -672,7 +688,7 @@ export default function CefrActivityPlayer() {
           </div>
         )}
 
-        {allItemsComplete && (
+        {allItemsComplete && !currentItemCompleted && (
           <div className="mt-7 rounded-[2rem] border border-emerald-200 bg-white p-7 text-center shadow-sm">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-2xl">
               ✓
