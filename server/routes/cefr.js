@@ -637,6 +637,7 @@ router.post(
         day: result.day,
         activity: result.activity,
         attempt: result.attempt,
+        xp: result.xp,
       });
     } catch (err) {
       console.error(

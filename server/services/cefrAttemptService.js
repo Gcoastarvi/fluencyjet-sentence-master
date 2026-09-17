@@ -184,6 +184,7 @@ function buildCompletionResult({
   activity,
   attempt,
   alreadyCompleted,
+  xp,
 }) {
   return {
     type: "OK",
@@ -203,6 +204,36 @@ function buildCompletionResult({
       evaluationMode: activity.evaluationMode,
     },
     attempt,
+    xp,
+  };
+}
+
+function toPublicCompletionXpResult(xpResult) {
+  if (xpResult.type === "NO_AWARD") {
+    return {
+      awarded: false,
+      amount: 0,
+    };
+  }
+
+  if (xpResult.type !== "OK") {
+    return null;
+  }
+
+  if (xpResult.idempotentReplay === true) {
+    return {
+      awarded: false,
+      amount: 0,
+      idempotentReplay: true,
+    };
+  }
+
+  return {
+    awarded: true,
+    amount: xpResult.xp.amount,
+    eventType: xpResult.xp.eventType,
+    ruleVersion: xpResult.xp.ruleVersion,
+    idempotentReplay: false,
   };
 }
 
@@ -238,6 +269,7 @@ async function finalizeCompletionXp({
       activity,
       attempt,
       alreadyCompleted,
+      xp: toPublicCompletionXpResult(xpResult),
     });
   }
 

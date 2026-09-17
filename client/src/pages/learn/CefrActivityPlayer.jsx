@@ -64,6 +64,7 @@ export default function CefrActivityPlayer() {
   const [completing, setCompleting] = useState(false);
   const [completionError, setCompletionError] = useState("");
   const [activityCompleted, setActivityCompleted] = useState(false);
+  const [completionXp, setCompletionXp] = useState(null);
 
   const pendingIdempotencyKeyRef = useRef("");
   const itemStartedAtRef = useRef(Date.now());
@@ -238,6 +239,7 @@ export default function CefrActivityPlayer() {
       setXpAward(null);
       setSubmissionError("");
       setCompletionError("");
+      setCompletionXp(null);
 
       pendingIdempotencyKeyRef.current = "";
       itemStartedAtRef.current = Date.now();
@@ -449,6 +451,7 @@ export default function CefrActivityPlayer() {
       response.data?.attempt || attempt,
     );
 
+    setCompletionXp(response.data?.xp || null);
     setActivityCompleted(true);
   }
 
@@ -513,6 +516,18 @@ export default function CefrActivityPlayer() {
             <p className="mt-3 text-sm font-medium text-slate-600">
               Great work. Your progress has been saved.
             </p>
+
+            {completionXp?.awarded === true &&
+              Number(completionXp?.amount || 0) > 0 && (
+                <div className="mx-auto mt-5 max-w-sm rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-amber-700">
+                    Activity completion bonus
+                  </p>
+                  <p className="mt-1 text-2xl font-black text-amber-900">
+                    +{completionXp.amount} XP
+                  </p>
+                </div>
+              )}
 
             <Link
               to={dayPath}

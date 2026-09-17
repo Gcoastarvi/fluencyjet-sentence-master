@@ -573,6 +573,11 @@ describe("completeCefrActivityAttempt", () => {
 
     expect(result.type).toBe("OK");
     expect(result.alreadyCompleted).toBe(true);
+    expect(result.xp).toEqual({
+      awarded: false,
+      amount: 0,
+      idempotentReplay: true,
+    });
 
     expect(mockAwardCefrAttemptCompletionXp).toHaveBeenCalledWith({
       attemptId: "attempt-1",
@@ -633,6 +638,13 @@ describe("completeCefrActivityAttempt", () => {
 
     expect(result.type).toBe("OK");
     expect(result.alreadyCompleted).toBe(false);
+    expect(result.xp).toEqual({
+      awarded: true,
+      amount: 300,
+      eventType: "ACTIVITY_COMPLETED",
+      ruleVersion: undefined,
+      idempotentReplay: false,
+    });
 
     expect(mockAwardCefrAttemptCompletionXp).toHaveBeenCalledWith({
       attemptId: "attempt-1",

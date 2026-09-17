@@ -703,6 +703,13 @@ describe("POST CEFR activity Attempt completion", () => {
         status: "COMPLETED",
         completedAt: "2026-09-10T15:00:00.000Z",
       },
+      xp: {
+        awarded: true,
+        amount: 200,
+        eventType: "ACTIVITY_COMPLETED",
+        ruleVersion: "cefr-xp-v1",
+        idempotentReplay: false,
+      },
     });
 
     const res = await request(makeApp()).post(url);
@@ -711,6 +718,13 @@ describe("POST CEFR activity Attempt completion", () => {
     expect(res.body.ok).toBe(true);
     expect(res.body.alreadyCompleted).toBe(false);
     expect(res.body.attempt.status).toBe("COMPLETED");
+    expect(res.body.xp).toEqual({
+      awarded: true,
+      amount: 200,
+      eventType: "ACTIVITY_COMPLETED",
+      ruleVersion: "cefr-xp-v1",
+      idempotentReplay: false,
+    });
 
     expect(mockCompleteCefrActivityAttempt).toHaveBeenCalledWith({
       userId: 42,
