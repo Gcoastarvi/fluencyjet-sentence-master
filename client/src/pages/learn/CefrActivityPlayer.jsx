@@ -15,6 +15,7 @@ import CefrAudioRepeatActivity from "@/components/cefr/CefrAudioRepeatActivity";
 import CefrReorderActivity from "@/components/cefr/CefrReorderActivity";
 import CefrTypingActivity from "@/components/cefr/CefrTypingActivity";
 import CefrFinalChallengeActivity from "@/components/cefr/CefrFinalChallengeActivity";
+import CefrGroupedFieldsActivity from "@/components/cefr/CefrGroupedFieldsActivity";
 
 function createIdempotencyKey() {
   if (
@@ -137,7 +138,7 @@ export default function CefrActivityPlayer() {
         return;
       }
 
-      if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT", "FINAL_CHALLENGE", "SPEAKING_PROMPT"].includes(loadedActivity.activityType)) {
+      if (!["MCQ", "REORDER", "TYPING", "LISTENING_MCQ", "AUDIO_REPEAT", "GROUPED_FIELDS", "FINAL_CHALLENGE", "SPEAKING_PROMPT"].includes(loadedActivity.activityType)) {
         setProgram(loadedProgram);
         setDay(loadedDay);
         setActivity(loadedActivity);
@@ -636,6 +637,17 @@ export default function CefrActivityPlayer() {
                 activityTitle={activity?.title}
                 result={result}
                 submitting={submitting}
+                onSubmit={handleSubmit}
+              />
+            )}
+
+            {activity?.activityType === "GROUPED_FIELDS" && (
+              <CefrGroupedFieldsActivity
+                item={currentItem}
+                activityTitle={activity?.title}
+                result={result}
+                submitting={submitting}
+                onAnswerChange={handleTypingAnswerChange}
                 onSubmit={handleSubmit}
               />
             )}
