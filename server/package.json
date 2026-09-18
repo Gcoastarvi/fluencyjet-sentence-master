@@ -11,6 +11,7 @@
     "postinstall": "prisma generate",
     "seed": "node prisma/seed.js",
     "seed:quick-start": "node prisma/seed/quickStartSeed.js",
+    "validate:cefr": "node scripts/validateCefrCurriculum.js",
     "test": "node --experimental-vm-modules node_modules/.bin/jest --runInBand",
     "test:phase2": "node --experimental-vm-modules node_modules/.bin/jest phase2 --runInBand",
     "test:phase3": "node --experimental-vm-modules node_modules/.bin/jest phase3 --runInBand",

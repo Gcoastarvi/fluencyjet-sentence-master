@@ -7,6 +7,10 @@ import {
   DAYS,
 } from "./cefrGermanA1Seed.js";
 
+import {
+  assertValidCefrCurriculum,
+} from "../../services/cefrCurriculumValidator.js";
+
 const PROD_CONFIRMATION = `german-a1:${VERSION_KEY}:production`;
 
 function fail(message) {
@@ -591,6 +595,12 @@ async function assertImportedCurriculum(
 }
 
 async function importGermanA1() {
+  assertValidCefrCurriculum({ days: DAYS });
+
+  console.log(
+    "CEFR German A1 curriculum validation passed.",
+  );
+
   const target = assertImportEnvironment();
   const databaseTarget = sanitizedDatabaseTarget();
 
