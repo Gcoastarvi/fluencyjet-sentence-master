@@ -4,6 +4,9 @@ import schoolFoundationFormA from "../../data/memory/schoolFoundationFormA";
 import { trackEvent } from "../../lib/tracking";
 import ReorderExerciseCard from "../../components/practice/ReorderExerciseCard";
 
+const MEMORY_SESSION_PERSISTENCE_ENABLED =
+  import.meta.env.VITE_MEMORY_SESSION_PERSISTENCE_ENABLED === "true";
+
 function getSelectedTrack() {
   try {
     return window.sessionStorage.getItem("memory_track");
@@ -301,6 +304,14 @@ export default function MemoryChallengeTest() {
   }, [phase, recallSecondsRemaining]);
 
   function startImmediateStudy() {
+    try {
+      window.sessionStorage.removeItem("memory_form_a_public_token");
+      window.sessionStorage.removeItem("memory_form_a_owner_token");
+      window.sessionStorage.removeItem("memory_form_a_lead_saved");
+    } catch {
+      // The benchmark can continue even if sessionStorage is unavailable.
+    }
+
     setStudySecondsRemaining(immediateModule.studySeconds);
     setPhase("study");
 
@@ -437,30 +448,90 @@ export default function MemoryChallengeTest() {
     };
 
     try {
-      const response = await fetch("/api/memory/score", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          trackId: schoolFoundationFormA.trackId,
-          form: schoolFoundationFormA.form,
-          responses,
-        }),
-      });
+      let result = null;
 
-      const payload = await response.json().catch(() => null);
+      if (MEMORY_SESSION_PERSISTENCE_ENABLED) {
+        try {
+          const sessionResponse = await fetch("/api/memory/session", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              trackId: schoolFoundationFormA.trackId,
+              form: schoolFoundationFormA.form,
+              responses,
+            }),
+          });
 
-      if (!response.ok || !payload?.ok || !payload?.result) {
-        throw new Error(
-          payload?.message || "Unable to score your benchmark.",
-        );
+          const sessionPayload = await sessionResponse
+            .json()
+            .catch(() => null);
+
+          if (
+            !sessionResponse.ok ||
+            !sessionPayload?.ok ||
+            !sessionPayload?.session?.result ||
+            !sessionPayload?.session?.publicToken ||
+            !sessionPayload?.session?.ownerToken
+          ) {
+            throw new Error(
+              sessionPayload?.message ||
+                "Unable to save this benchmark session.",
+            );
+          }
+
+          result = sessionPayload.session.result;
+
+          try {
+            window.sessionStorage.setItem(
+              "memory_form_a_public_token",
+              sessionPayload.session.publicToken,
+            );
+
+            window.sessionStorage.setItem(
+              "memory_form_a_owner_token",
+              sessionPayload.session.ownerToken,
+            );
+          } catch {
+            // The result can still be shown if browser storage is unavailable.
+          }
+        } catch (sessionError) {
+          console.error(
+            "Memory session persistence failed; falling back to scoring:",
+            sessionError,
+          );
+        }
+      }
+
+      if (!result) {
+        const response = await fetch("/api/memory/score", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            trackId: schoolFoundationFormA.trackId,
+            form: schoolFoundationFormA.form,
+            responses,
+          }),
+        });
+
+        const payload = await response.json().catch(() => null);
+
+        if (!response.ok || !payload?.ok || !payload?.result) {
+          throw new Error(
+            payload?.message || "Unable to score your benchmark.",
+          );
+        }
+
+        result = payload.result;
       }
 
       try {
         window.sessionStorage.setItem(
           "memory_form_a_result",
-          JSON.stringify(payload.result),
+          JSON.stringify(result),
         );
       } catch {
         // Navigation can continue even if result persistence fails.
@@ -470,7 +541,7 @@ export default function MemoryChallengeTest() {
         funnel: "amaze_memory",
         track: schoolFoundationFormA.trackId,
         form: schoolFoundationFormA.form,
-        score: payload.result.totalScore,
+        score: result.totalScore,
       });
 
       navigate("/memory-challenge/result");

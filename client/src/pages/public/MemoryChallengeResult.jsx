@@ -10,12 +10,23 @@ const DOMAIN_LABELS = {
   delayed: "Delayed Recall",
 };
 
+const MEMORY_SESSION_PERSISTENCE_ENABLED =
+  import.meta.env.VITE_MEMORY_SESSION_PERSISTENCE_ENABLED === "true";
+
 function readSessionJson(key, fallback) {
   try {
     const raw = window.sessionStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
+  }
+}
+
+function readSessionValue(key) {
+  try {
+    return window.sessionStorage.getItem(key);
+  } catch {
+    return null;
   }
 }
 
@@ -58,6 +69,27 @@ export default function MemoryChallengeResult() {
   const [result, setResult] = useState(() => readStoredResult());
   const [status, setStatus] = useState(result ? "ready" : "recovering");
   const [errorMessage, setErrorMessage] = useState("");
+
+  const [ownerToken] = useState(() =>
+    readSessionValue("memory_form_a_owner_token"),
+  );
+
+  const [leadSaved, setLeadSaved] = useState(
+    () => readSessionValue("memory_form_a_lead_saved") === "true",
+  );
+
+  const [leadStatus, setLeadStatus] = useState("idle");
+  const [leadError, setLeadError] = useState("");
+
+  const [leadForm, setLeadForm] = useState({
+    learnerName: "",
+    studentClass: "",
+    parentGuardianName: "",
+    whatsappNumber: "",
+    email: "",
+    state: "",
+    whatsappConsent: false,
+  });
 
   async function recoverResult() {
     setStatus("recovering");
@@ -117,6 +149,78 @@ export default function MemoryChallengeResult() {
           : "Unable to calculate your result.",
       );
       setStatus("error");
+    }
+  }
+
+  function updateLeadField(event) {
+    const { name, value, type, checked } = event.target;
+
+    setLeadForm((current) => ({
+      ...current,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  }
+
+  async function submitLead(event) {
+    event.preventDefault();
+
+    if (!ownerToken) {
+      setLeadError(
+        "This benchmark session is not available for saving yet.",
+      );
+      return;
+    }
+
+    setLeadStatus("saving");
+    setLeadError("");
+
+    try {
+      const response = await fetch("/api/memory/session/lead", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ownerToken,
+          ...leadForm,
+        }),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || !payload?.ok || !payload?.lead?.saved) {
+        throw new Error(
+          payload?.message || "Unable to save your report details.",
+        );
+      }
+
+      try {
+        window.sessionStorage.setItem(
+          "memory_form_a_lead_saved",
+          "true",
+        );
+      } catch {
+        // Success can still be shown if browser storage is unavailable.
+      }
+
+      setLeadSaved(true);
+      setLeadStatus("saved");
+
+      trackEvent("memory_lead", {
+        funnel: "amaze_memory",
+        track: "school_foundation",
+        form: "A",
+      });
+    } catch (error) {
+      console.error("Memory lead capture failed:", error);
+
+      setLeadError(
+        error instanceof Error
+          ? error.message
+          : "Unable to save your report details.",
+      );
+
+      setLeadStatus("error");
     }
   }
 
@@ -398,6 +502,181 @@ export default function MemoryChallengeResult() {
             </p>
           </div>
         </section>
+
+        {MEMORY_SESSION_PERSISTENCE_ENABLED && ownerToken && (
+          <section className="mt-6 rounded-[2rem] border border-indigo-200 bg-white p-6 shadow-sm sm:p-8">
+            {leadSaved ? (
+              <div className="text-center">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+                  Report details saved
+                </p>
+
+                <h2 className="mt-3 text-2xl font-black text-slate-950">
+                  Your benchmark is saved
+                </h2>
+
+                <p className="mt-3 font-medium leading-7 text-slate-600">
+                  Your parent or guardian contact has been linked to this
+                  Study Recall Benchmark.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
+                  Save your benchmark
+                </p>
+
+                <h2 className="mt-3 text-2xl font-black text-slate-950">
+                  Save this report &amp; continue
+                </h2>
+
+                <p className="mt-3 font-medium leading-7 text-slate-600">
+                  Add a parent or guardian contact so this benchmark can stay
+                  connected to your Study Recall journey.
+                </p>
+
+                <form
+                  className="mt-7 space-y-5"
+                  onSubmit={submitLead}
+                >
+                  <div>
+                    <label className="block text-sm font-black text-slate-800">
+                      Student name
+                    </label>
+                    <input
+                      type="text"
+                      name="learnerName"
+                      value={leadForm.learnerName}
+                      onChange={updateLeadField}
+                      required
+                      maxLength={100}
+                      autoComplete="name"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-slate-800">
+                      Class
+                    </label>
+                    <select
+                      name="studentClass"
+                      value={leadForm.studentClass}
+                      onChange={updateLeadField}
+                      required
+                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                    >
+                      <option value="">Select class</option>
+                      <option value="6">Class 6</option>
+                      <option value="7">Class 7</option>
+                      <option value="8">Class 8</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-slate-800">
+                      Parent / guardian name
+                    </label>
+                    <input
+                      type="text"
+                      name="parentGuardianName"
+                      value={leadForm.parentGuardianName}
+                      onChange={updateLeadField}
+                      required
+                      maxLength={100}
+                      autoComplete="name"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-slate-800">
+                      Parent / guardian WhatsApp
+                    </label>
+                    <input
+                      type="tel"
+                      name="whatsappNumber"
+                      value={leadForm.whatsappNumber}
+                      onChange={updateLeadField}
+                      required
+                      maxLength={30}
+                      autoComplete="tel"
+                      inputMode="tel"
+                      placeholder="98765 43210"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-slate-800">
+                      State
+                    </label>
+                    <input
+                      type="text"
+                      name="state"
+                      value={leadForm.state}
+                      onChange={updateLeadField}
+                      required
+                      maxLength={100}
+                      autoComplete="address-level1"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-black text-slate-800">
+                      Email{" "}
+                      <span className="font-medium text-slate-500">
+                        (optional)
+                      </span>
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={leadForm.email}
+                      onChange={updateLeadField}
+                      maxLength={191}
+                      autoComplete="email"
+                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <label className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
+                    <input
+                      type="checkbox"
+                      name="whatsappConsent"
+                      checked={leadForm.whatsappConsent}
+                      onChange={updateLeadField}
+                      required
+                      className="mt-1 h-4 w-4"
+                    />
+
+                    <span className="text-sm font-medium leading-6 text-slate-600">
+                      I agree to receive my benchmark report and Study Memory
+                      Lab updates on WhatsApp.
+                    </span>
+                  </label>
+
+                  {leadError && (
+                    <p className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">
+                      {leadError}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={leadStatus === "saving"}
+                    className="w-full rounded-2xl bg-indigo-600 px-6 py-4 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {leadStatus === "saving"
+                      ? "Saving..."
+                      : "Save My Report"}
+                  </button>
+                </form>
+              </>
+            )}
+          </section>
+        )}
 
         <p className="mt-6 text-center text-xs font-medium leading-5 text-slate-500">
           This educational benchmark reflects performance on these specific
