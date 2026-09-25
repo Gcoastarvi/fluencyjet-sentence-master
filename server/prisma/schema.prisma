@@ -255,6 +255,65 @@ model DiagnosticAttempt {
   createdAt    DateTime  @default(now())
 }
 
+model MemoryAssessmentSession {
+  id          String @id @default(uuid())
+  publicToken String @unique @default(uuid())
+  ownerToken  String @unique @default(uuid())
+
+  trackId String @db.VarChar(50)
+  status  String @default("FORM_A_COMPLETED") @db.VarChar(40)
+
+  // Baseline: Form A
+  formAAnswers        Json
+  formAResult         Json
+  formAScore          Decimal  @db.Decimal(5, 2)
+  formARetentionRatio Decimal? @db.Decimal(6, 3)
+  formACompletedAt    DateTime @default(now())
+
+  // Lead / ownership
+  learnerName        String? @db.VarChar(100)
+  studentClass       String? @db.VarChar(30)
+  studyCategory      String? @db.VarChar(100)
+  parentGuardianName String? @db.VarChar(100)
+
+  whatsappNumber           String? @db.VarChar(30)
+  whatsappNumberNormalized String? @db.VarChar(20)
+  whatsappContactRole      String? @db.VarChar(40)
+
+  whatsappConsent       Boolean   @default(false)
+  whatsappConsentAt     DateTime?
+  whatsappConsentSource String?   @db.VarChar(150)
+
+  email          String?   @db.VarChar(191)
+  state          String?   @db.VarChar(100)
+  leadCapturedAt DateTime?
+
+  // Later: matched Form B
+  formBAnswers        Json?
+  formBResult         Json?
+  formBScore          Decimal?  @db.Decimal(5, 2)
+  formBRetentionRatio Decimal?  @db.Decimal(6, 3)
+  formBCompletedAt    DateTime?
+
+  // Acquisition attribution
+  utmSource   String? @db.VarChar(150)
+  utmMedium   String? @db.VarChar(150)
+  utmCampaign String? @db.VarChar(200)
+  utmContent  String? @db.VarChar(200)
+  utmTerm     String? @db.VarChar(200)
+  source      String? @db.VarChar(150)
+  campaign    String? @db.VarChar(200)
+  adset       String? @db.VarChar(200)
+  ad          String? @db.VarChar(200)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([whatsappNumberNormalized])
+  @@index([trackId, createdAt])
+  @@index([createdAt])
+}
+
 model UserProfile {
   userId        Int           @id
   level         UserLevel
@@ -329,12 +388,12 @@ model AutomationEvent {
   // The createdAt fallback index is partial and is intentionally defined in SQL
   // migration 20260824000200 because Prisma schema indexes cannot express it.
 
+  @@unique([campaignKey, userId])
   @@index([userId, eventType, status])
   @@index([userId, productKey, eventType, status])
   @@index([status, scheduledAt])
   @@index([eventType, status, scheduledAt])
   @@index([eventType, status, processedAt])
-  @@unique([campaignKey, userId])
 }
 
 model UserJourneyMilestone {
