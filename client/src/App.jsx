@@ -37,6 +37,10 @@ import SpokenEnglishVSL from "./pages/marketing/SpokenEnglishVSL";
 import SpokenEnglishOffer from "./pages/marketing/SpokenEnglishOffer";
 import SpokenEnglishOfferV2 from "./pages/marketing/SpokenEnglishOfferV2";
 import SpokenEnglishChallenge from "./pages/public/SpokenEnglishChallenge";
+import MemoryChallenge from "./pages/public/MemoryChallenge";
+import MemoryChallengeStart from "./pages/public/MemoryChallengeStart";
+import MemoryChallengeTest from "./pages/public/MemoryChallengeTest";
+import MemoryChallengeResult from "./pages/public/MemoryChallengeResult";
 import TrySpokenEnglishGym from "./pages/marketing/TrySpokenEnglishGym";
 import VocabularyVSL from "./pages/marketing/VocabularyVSL";
 import VocabularyCourse from "./pages/marketing/VocabularyCourse";
@@ -250,6 +254,19 @@ export default function App() {
             <Route
               path="/spoken-english-challenge"
               element={<SpokenEnglishChallenge />}
+            />
+            <Route path="/memory-challenge" element={<MemoryChallenge />} />
+            <Route
+              path="/memory-challenge/start"
+              element={<MemoryChallengeStart />}
+            />
+            <Route
+              path="/memory-challenge/test"
+              element={<MemoryChallengeTest />}
+            />
+            <Route
+              path="/memory-challenge/result"
+              element={<MemoryChallengeResult />}
             />
             <Route path="/vocabulary-vsl" element={<VocabularyVSL />} />
             <Route path="/vocabulary-course" element={<VocabularyCourse />} />

@@ -18,6 +18,7 @@ dotenv.config({ path: path.join(__dirname, "..", ".env") });
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import funnelRouter from "./routes/funnel.js";
+import memoryRouter from "./routes/memory.js";
 import billingRouter from "./routes/billing.js";
 import diagnosticRoutes from "./routes/diagnostic.js";
 import quizzesRouter from "./routes/quizzes.js";
@@ -69,9 +70,14 @@ const envCorsOrigins = (process.env.CORS_ORIGINS || "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const replitPreviewOrigin = process.env.REPLIT_DEV_DOMAIN
+  ? `https://${process.env.REPLIT_DEV_DOMAIN}`
+  : null;
+
 const trustedOrigins = [
   process.env.FRONTEND_URL,
   process.env.APP_URL,
+  replitPreviewOrigin,
   "https://www.fluencyjet.com",
   "https://api.fluencyjet.com",
   "https://fluencyjet.com",
@@ -164,9 +170,8 @@ function isAllowedOrigin(origin) {
   // Railway apps (frontend/backend often differ)
   if (/^https:\/\/.*\.up\.railway\.app$/.test(origin)) return true;
 
-  // Replit previews
-  if (/\.replit\.dev$/.test(origin)) return true;
-  if (/\.repl\.co$/.test(origin)) return true;
+  // Current Replit preview only
+  if (replitPreviewOrigin && origin === replitPreviewOrigin) return true;
 
   return false;
 }
@@ -253,6 +258,7 @@ app.use("/api/admin/whatsapp", whatsappAdminRouter);
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/funnel", funnelRouter);
+app.use("/api/memory", memoryRouter);
 app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
