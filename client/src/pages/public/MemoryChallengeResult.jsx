@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
+import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 
 const DOMAIN_LABELS = {
   immediate: "Immediate Recall",
@@ -68,6 +69,12 @@ function formatScore(value) {
 }
 
 export default function MemoryChallengeResult() {
+  const selectedTrack =
+    readSessionValue("memory_track");
+
+  const assessment =
+    getMemoryAssessment(selectedTrack);
+
   const [result, setResult] = useState(() => readStoredResult());
   const [status, setStatus] = useState(result ? "ready" : "recovering");
   const [errorMessage, setErrorMessage] = useState("");
@@ -118,8 +125,8 @@ export default function MemoryChallengeResult() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          trackId: "school_foundation",
-          form: "A",
+          trackId: assessment?.trackId || selectedTrack,
+          form: assessment?.form || "A",
           responses,
         }),
       });
@@ -210,8 +217,8 @@ export default function MemoryChallengeResult() {
 
       trackEvent("memory_lead", {
         funnel: "amaze_memory",
-        track: "school_foundation",
-        form: "A",
+        track: result?.trackId || assessment?.trackId || selectedTrack,
+        form: result?.form || assessment?.form || "A",
       });
     } catch (error) {
       console.error("Memory lead capture failed:", error);
@@ -569,9 +576,16 @@ export default function MemoryChallengeResult() {
                       className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
                     >
                       <option value="">Select class</option>
-                      <option value="6">Class 6</option>
-                      <option value="7">Class 7</option>
-                      <option value="8">Class 8</option>
+                      {(assessment?.studentClasses || []).map(
+                        (studentClass) => (
+                          <option
+                            key={studentClass}
+                            value={studentClass}
+                          >
+                            Class {studentClass}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
 

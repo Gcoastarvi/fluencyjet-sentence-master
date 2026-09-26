@@ -11,6 +11,7 @@ import express from "express";
 const mockPrisma = {
   memoryAssessmentSession: {
     create: jest.fn(),
+    findUnique: jest.fn(),
     updateMany: jest.fn(),
   },
 };
@@ -41,6 +42,10 @@ const VALID_LEAD = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+
+  mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValue({
+    trackId: "school_foundation",
+  });
 
   mockPrisma.memoryAssessmentSession.updateMany.mockResolvedValue({
     count: 1,
@@ -106,6 +111,75 @@ describe("PATCH /api/memory/session/lead", () => {
     expect(call.data.whatsappConsentAt).toEqual(
       call.data.leadCapturedAt,
     );
+  });
+
+  test("saves a Class 9–12 lead using the track stored on the session", async () => {
+    mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValueOnce({
+      trackId: "school_advanced",
+    });
+
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send({
+        ...VALID_LEAD,
+        studentClass: "11",
+      });
+
+    expect(res.status).toBe(200);
+
+    expect(res.body).toEqual({
+      ok: true,
+      lead: {
+        saved: true,
+      },
+    });
+
+    expect(
+      mockPrisma.memoryAssessmentSession.findUnique,
+    ).toHaveBeenCalledWith({
+      where: {
+        ownerToken: VALID_LEAD.ownerToken,
+      },
+      select: {
+        trackId: true,
+      },
+    });
+
+    const call =
+      mockPrisma.memoryAssessmentSession.updateMany.mock.calls[0][0];
+
+    expect(call.where).toEqual({
+      ownerToken: VALID_LEAD.ownerToken,
+      trackId: "school_advanced",
+    });
+
+    expect(call.data.studentClass).toBe("11");
+  });
+
+  test("rejects a Class 6–8 value for a Class 9–12 session", async () => {
+    mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValueOnce({
+      trackId: "school_advanced",
+    });
+
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send({
+        ...VALID_LEAD,
+        studentClass: "7",
+      });
+
+    expect(res.status).toBe(400);
+
+    expect(res.body).toEqual({
+      ok: false,
+      code: "INVALID_STUDENT_CLASS",
+      message:
+        "Class must be 9, 10, 11, or 12 for this assessment.",
+    });
+
+    expect(
+      mockPrisma.memoryAssessmentSession.updateMany,
+    ).not.toHaveBeenCalled();
   });
 
   test("allows email to be omitted", async () => {

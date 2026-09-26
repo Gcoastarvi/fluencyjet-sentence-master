@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import schoolFoundationFormA from "../../data/memory/schoolFoundationFormA";
+import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 import { trackEvent } from "../../lib/tracking";
 import ReorderExerciseCard from "../../components/practice/ReorderExerciseCard";
 
@@ -53,47 +53,57 @@ export default function MemoryChallengeTest() {
 
   const [scoringError, setScoringError] = useState("");
 
+  const [selectedTrack] = useState(() => getSelectedTrack());
+
+  const assessment = useMemo(
+    () => getMemoryAssessment(selectedTrack),
+    [selectedTrack],
+  );
+
+  // Use the foundation config only as a safe initialization fallback.
+  // Unsupported tracks are blocked before the assessment UI is rendered.
+  const assessmentConfig =
+    assessment?.config || getMemoryAssessment("school_foundation").config;
+
   const immediateModule = useMemo(
     () =>
-      schoolFoundationFormA.modules.find(
+      assessmentConfig.modules.find(
         (module) => module.id === "immediate",
       ),
-    [],
+    [assessmentConfig],
   );
 
   const orderedModule = useMemo(
     () =>
-      schoolFoundationFormA.modules.find(
+      assessmentConfig.modules.find(
         (module) => module.id === "ordered",
       ),
-    [],
+    [assessmentConfig],
   );
 
   const associationModule = useMemo(
     () =>
-      schoolFoundationFormA.modules.find(
+      assessmentConfig.modules.find(
         (module) => module.id === "association",
       ),
-    [],
+    [assessmentConfig],
   );
 
   const academicModule = useMemo(
     () =>
-      schoolFoundationFormA.modules.find(
+      assessmentConfig.modules.find(
         (module) => module.id === "academic",
       ),
-    [],
+    [assessmentConfig],
   );
 
   const delayedModule = useMemo(
     () =>
-      schoolFoundationFormA.modules.find(
+      assessmentConfig.modules.find(
         (module) => module.id === "delayed",
       ),
-    [],
+    [assessmentConfig],
   );
-
-  const [selectedTrack] = useState(() => getSelectedTrack());
 
   const [phase, setPhase] = useState("intro");
 
@@ -322,8 +332,8 @@ export default function MemoryChallengeTest() {
 
       trackEvent("memory_test_started", {
         funnel: "amaze_memory",
-        track: schoolFoundationFormA.trackId,
-        form: schoolFoundationFormA.form,
+        track: assessmentConfig.trackId,
+        form: assessmentConfig.form,
       });
     }
   }
@@ -460,8 +470,8 @@ export default function MemoryChallengeTest() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              trackId: schoolFoundationFormA.trackId,
-              form: schoolFoundationFormA.form,
+              trackId: assessmentConfig.trackId,
+              form: assessmentConfig.form,
               responses,
             }),
           });
@@ -513,8 +523,8 @@ export default function MemoryChallengeTest() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            trackId: schoolFoundationFormA.trackId,
-            form: schoolFoundationFormA.form,
+            trackId: assessmentConfig.trackId,
+            form: assessmentConfig.form,
             responses,
           }),
         });
@@ -541,8 +551,8 @@ export default function MemoryChallengeTest() {
 
       trackEvent("memory_test_completed", {
         funnel: "amaze_memory",
-        track: schoolFoundationFormA.trackId,
-        form: schoolFoundationFormA.form,
+        track: assessmentConfig.trackId,
+        form: assessmentConfig.form,
         score: result.totalScore,
       });
 
@@ -575,8 +585,8 @@ export default function MemoryChallengeTest() {
 
       trackEvent("memory_module_completed", {
         funnel: "amaze_memory",
-        track: schoolFoundationFormA.trackId,
-        form: schoolFoundationFormA.form,
+        track: assessmentConfig.trackId,
+        form: assessmentConfig.form,
         module: delayedModule.id,
         answer_count: delayedRecalledItems.length,
       });
@@ -617,8 +627,8 @@ export default function MemoryChallengeTest() {
 
       trackEvent("memory_module_completed", {
         funnel: "amaze_memory",
-        track: schoolFoundationFormA.trackId,
-        form: schoolFoundationFormA.form,
+        track: assessmentConfig.trackId,
+        form: assessmentConfig.form,
         module: academicModule.id,
         answer_count: Object.keys(cleanAnswers).length,
       });
@@ -669,8 +679,8 @@ export default function MemoryChallengeTest() {
 
       trackEvent("memory_module_completed", {
         funnel: "amaze_memory",
-        track: schoolFoundationFormA.trackId,
-        form: schoolFoundationFormA.form,
+        track: assessmentConfig.trackId,
+        form: assessmentConfig.form,
         module: associationModule.id,
         answer_count: Object.keys(cleanAnswers).length,
       });
@@ -732,8 +742,8 @@ export default function MemoryChallengeTest() {
 
       trackEvent("memory_module_completed", {
         funnel: "amaze_memory",
-        track: schoolFoundationFormA.trackId,
-        form: schoolFoundationFormA.form,
+        track: assessmentConfig.trackId,
+        form: assessmentConfig.form,
         module: orderedModule.id,
         answer_count: submittedOrder.length,
       });
@@ -759,8 +769,8 @@ export default function MemoryChallengeTest() {
 
       trackEvent("memory_module_completed", {
         funnel: "amaze_memory",
-        track: schoolFoundationFormA.trackId,
-        form: schoolFoundationFormA.form,
+        track: assessmentConfig.trackId,
+        form: assessmentConfig.form,
         module: immediateModule.id,
         answer_count: recalledItems.length,
       });
@@ -769,7 +779,7 @@ export default function MemoryChallengeTest() {
     setPhase("module_complete");
   }
 
-  if (selectedTrack !== "school_foundation") {
+  if (!assessment) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-10">
         <div className="mx-auto max-w-xl rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-sm">
@@ -778,7 +788,7 @@ export default function MemoryChallengeTest() {
           </h1>
 
           <p className="mt-3 leading-7 text-slate-600">
-            Select Class 6–8 before beginning this benchmark.
+            Select your learner group before beginning this benchmark.
           </p>
 
           <a
@@ -811,12 +821,13 @@ export default function MemoryChallengeTest() {
             </div>
 
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Study 10 items
+              Study {immediateModule.scoring.maxRaw} items
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-600">
               You will have {immediateModule.studySeconds} seconds to study
-              them. When the timer ends, all 10 items will disappear.
+              them. When the timer ends, all{" "}
+              {immediateModule.scoring.maxRaw} items will disappear.
             </p>
 
             <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-900">
@@ -829,7 +840,7 @@ export default function MemoryChallengeTest() {
               onClick={startImmediateStudy}
               className="mt-7 w-full rounded-2xl bg-indigo-600 px-6 py-4 text-base font-black text-white transition hover:bg-indigo-700"
             >
-              Start 30-Second Study
+              Start {immediateModule.studySeconds}-Second Study
             </button>
           </div>
         </div>

@@ -75,6 +75,108 @@ const FORM_A = {
   },
 };
 
+
+const SCHOOL_ADVANCED_FORM_A = {
+  trackId: "school_advanced",
+  form: "A",
+
+  immediate: {
+    weight: 20,
+    items: [
+      "lantern",
+      "falcon",
+      "anchor",
+      "helmet",
+      "violin",
+      "ladder",
+      "compass",
+      "marble",
+      "jacket",
+      "river",
+      "camera",
+      "walnut",
+    ],
+  },
+
+  ordered: {
+    weight: 15,
+    correctOrder: [
+      "moon",
+      "chair",
+      "drum",
+      "train",
+      "orange",
+      "ring",
+      "horse",
+      "shell",
+    ],
+  },
+
+  association: {
+    weight: 20,
+    answers: {
+      bridge: "63",
+      planet: "28",
+      feather: "74",
+      orchid: "51",
+      basket: "36",
+      castle: "92",
+    },
+  },
+
+  academic: {
+    weight: 25,
+    answers: {
+      location: [
+        "beside a shallow freshwater lake in the northern hills",
+        "beside a shallow freshwater lake",
+        "near a shallow freshwater lake in the northern hills",
+        "near a shallow freshwater lake",
+        "in the northern hills",
+      ],
+
+      reed: [
+        "mavin",
+      ],
+
+      bird_species: [
+        "42",
+        "forty two",
+        "42 bird species",
+        "forty two bird species",
+      ],
+
+      arrival_months: [
+        "november and january",
+        "november to january",
+        "november through january",
+        "between november and january",
+      ],
+
+      reeds_planted: [
+        "600",
+        "six hundred",
+        "600 reeds",
+        "600 additional reeds",
+        "six hundred reeds",
+        "six hundred additional reeds",
+      ],
+
+      water_depth_frequency: [
+        "twice each month",
+        "twice a month",
+        "two times a month",
+        "2 times a month",
+      ],
+    },
+  },
+
+  delayed: {
+    weight: 20,
+    source: "immediate",
+  },
+};
+
 function round(value, places = 2) {
   const factor = 10 ** places;
   return Math.round((value + Number.EPSILON) * factor) / factor;
@@ -336,6 +438,74 @@ export function scoreSchoolFoundationFormA({
   return {
     trackId: FORM_A.trackId,
     form: FORM_A.form,
+    totalScore,
+    maxScore: 100,
+    modules,
+    retentionRatio,
+  };
+}
+
+
+export function scoreSchoolAdvancedFormA({
+  immediateAnswers,
+  orderedAnswers,
+  associationAnswers,
+  academicAnswers,
+  delayedAnswers,
+} = {}) {
+  const immediate = scoreConceptRecall(
+    immediateAnswers,
+    SCHOOL_ADVANCED_FORM_A.immediate.items,
+    SCHOOL_ADVANCED_FORM_A.immediate.weight,
+  );
+
+  const ordered = scoreOrderedRecall(
+    orderedAnswers,
+    SCHOOL_ADVANCED_FORM_A.ordered.correctOrder,
+    SCHOOL_ADVANCED_FORM_A.ordered.weight,
+  );
+
+  const association = scoreAssociationRecall(
+    associationAnswers,
+    SCHOOL_ADVANCED_FORM_A.association.answers,
+    SCHOOL_ADVANCED_FORM_A.association.weight,
+  );
+
+  const academic = scoreAcademicRecall(
+    academicAnswers,
+    SCHOOL_ADVANCED_FORM_A.academic.answers,
+    SCHOOL_ADVANCED_FORM_A.academic.weight,
+  );
+
+  const delayed = scoreConceptRecall(
+    delayedAnswers,
+    SCHOOL_ADVANCED_FORM_A.immediate.items,
+    SCHOOL_ADVANCED_FORM_A.delayed.weight,
+  );
+
+  const modules = {
+    immediate,
+    ordered,
+    association,
+    academic,
+    delayed,
+  };
+
+  const totalScore = round(
+    Object.values(modules).reduce(
+      (sum, moduleScore) => sum + moduleScore.weightedScore,
+      0,
+    ),
+  );
+
+  const retentionRatio =
+    immediate.correct > 0
+      ? round(delayed.correct / immediate.correct, 3)
+      : null;
+
+  return {
+    trackId: SCHOOL_ADVANCED_FORM_A.trackId,
+    form: SCHOOL_ADVANCED_FORM_A.form,
     totalScore,
     maxScore: 100,
     modules,
