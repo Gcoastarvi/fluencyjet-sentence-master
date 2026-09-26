@@ -7,6 +7,8 @@ import ReorderExerciseCard from "../../components/practice/ReorderExerciseCard";
 const MEMORY_SESSION_PERSISTENCE_ENABLED =
   import.meta.env.VITE_MEMORY_SESSION_PERSISTENCE_ENABLED === "true";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+
 function getSelectedTrack() {
   try {
     return window.sessionStorage.getItem("memory_track");
@@ -452,7 +454,7 @@ export default function MemoryChallengeTest() {
 
       if (MEMORY_SESSION_PERSISTENCE_ENABLED) {
         try {
-          const sessionResponse = await fetch("/api/memory/session", {
+          const sessionResponse = await fetch(`${API_BASE}/api/memory/session`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -505,7 +507,7 @@ export default function MemoryChallengeTest() {
       }
 
       if (!result) {
-        const response = await fetch("/api/memory/score", {
+        const response = await fetch(`${API_BASE}/api/memory/score`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

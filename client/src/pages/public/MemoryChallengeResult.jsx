@@ -13,6 +13,8 @@ const DOMAIN_LABELS = {
 const MEMORY_SESSION_PERSISTENCE_ENABLED =
   import.meta.env.VITE_MEMORY_SESSION_PERSISTENCE_ENABLED === "true";
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+
 function readSessionJson(key, fallback) {
   try {
     const raw = window.sessionStorage.getItem(key);
@@ -110,7 +112,7 @@ export default function MemoryChallengeResult() {
     }
 
     try {
-      const response = await fetch("/api/memory/score", {
+      const response = await fetch(`${API_BASE}/api/memory/score`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -175,7 +177,7 @@ export default function MemoryChallengeResult() {
     setLeadError("");
 
     try {
-      const response = await fetch("/api/memory/session/lead", {
+      const response = await fetch(`${API_BASE}/api/memory/session/lead`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
