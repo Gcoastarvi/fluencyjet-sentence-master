@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 
 export default function MemoryChallengeStart() {
   const navigate = useNavigate();
@@ -11,7 +12,9 @@ export default function MemoryChallengeStart() {
     selectedTrack = null;
   }
 
-  if (selectedTrack !== "school_foundation") {
+  const assessment = getMemoryAssessment(selectedTrack);
+
+  if (!assessment) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-10">
         <div className="mx-auto max-w-xl rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-sm">
@@ -20,7 +23,7 @@ export default function MemoryChallengeStart() {
           </h1>
 
           <p className="mt-3 text-slate-600">
-            Select Class 6–8 before starting the benchmark.
+            Select your learner group before starting the benchmark.
           </p>
 
           <Link
@@ -39,7 +42,7 @@ export default function MemoryChallengeStart() {
       <div className="mx-auto max-w-2xl">
         <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.07)] sm:p-9">
           <p className="text-sm font-black uppercase tracking-[0.16em] text-indigo-600">
-            Class 6–8
+            {assessment.label}
           </p>
 
           <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">

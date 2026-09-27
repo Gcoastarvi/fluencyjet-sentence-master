@@ -2,7 +2,11 @@
 import express from "express";
 import prisma from "../db/client.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
-import { scoreSchoolFoundationFormA } from "../services/memoryAssessmentScorer.js";
+import {
+  scoreAdvancedFormA,
+  scoreSchoolAdvancedFormA,
+  scoreSchoolFoundationFormA,
+} from "../services/memoryAssessmentScorer.js";
 
 const router = express.Router();
 
@@ -47,7 +51,7 @@ function cleanAnswerObject(value, allowedKeys, maxLength = 500) {
   return cleaned;
 }
 
-function sanitizeFormAResponses(responses) {
+function sanitizeSchoolFoundationFormAResponses(responses) {
   const source =
     responses && typeof responses === "object" && !Array.isArray(responses)
       ? responses
@@ -90,6 +94,188 @@ function sanitizeFormAResponses(responses) {
       100,
     ),
   };
+}
+
+
+function sanitizeSchoolAdvancedFormAResponses(responses) {
+  const source =
+    responses && typeof responses === "object" && !Array.isArray(responses)
+      ? responses
+      : {};
+
+  return {
+    immediateAnswers: cleanAnswerArray(
+      source.immediateAnswers,
+      12,
+      100,
+    ),
+
+    orderedAnswers: cleanAnswerArray(
+      source.orderedAnswers,
+      8,
+      50,
+    ),
+
+    associationAnswers: cleanAnswerObject(
+      source.associationAnswers,
+      [
+        "bridge",
+        "planet",
+        "feather",
+        "orchid",
+        "basket",
+        "castle",
+      ],
+      20,
+    ),
+
+    academicAnswers: cleanAnswerObject(
+      source.academicAnswers,
+      [
+        "location",
+        "reed",
+        "bird_species",
+        "arrival_months",
+        "reeds_planted",
+        "water_depth_frequency",
+      ],
+      500,
+    ),
+
+    delayedAnswers: cleanAnswerArray(
+      source.delayedAnswers,
+      12,
+      100,
+    ),
+  };
+}
+
+
+function sanitizeAdvancedFormAResponses(responses) {
+  const source =
+    responses && typeof responses === "object" && !Array.isArray(responses)
+      ? responses
+      : {};
+
+  return {
+    immediateAnswers: cleanAnswerArray(
+      source.immediateAnswers,
+      14,
+      100,
+    ),
+
+    orderedAnswers: cleanAnswerArray(
+      source.orderedAnswers,
+      10,
+      50,
+    ),
+
+    associationAnswers: cleanAnswerObject(
+      source.associationAnswers,
+      [
+        "library",
+        "volcano",
+        "ribbon",
+        "temple",
+        "diamond",
+        "coffee",
+        "forest",
+      ],
+      20,
+    ),
+
+    academicAnswers: cleanAnswerObject(
+      source.academicAnswers,
+      [
+        "homes_served",
+        "battery_capacity",
+        "diesel_reduction",
+        "network_zones",
+        "sensor_frequency",
+        "physical_inspection",
+        "future_plan",
+      ],
+      500,
+    ),
+
+    delayedAnswers: cleanAnswerArray(
+      source.delayedAnswers,
+      14,
+      100,
+    ),
+  };
+}
+
+function getAssessmentDefinition(trackId, form) {
+  if (form !== "A") return null;
+
+  if (trackId === "school_foundation") {
+    return {
+      trackId: "school_foundation",
+      form: "A",
+      sanitizeResponses: sanitizeSchoolFoundationFormAResponses,
+      score: scoreSchoolFoundationFormA,
+    };
+  }
+
+  if (trackId === "school_advanced") {
+    return {
+      trackId: "school_advanced",
+      form: "A",
+      sanitizeResponses: sanitizeSchoolAdvancedFormAResponses,
+      score: scoreSchoolAdvancedFormA,
+    };
+  }
+
+  if (trackId === "advanced") {
+    return {
+      trackId: "advanced",
+      form: "A",
+      sanitizeResponses: sanitizeAdvancedFormAResponses,
+      score: scoreAdvancedFormA,
+    };
+  }
+
+  return null;
+}
+
+
+const ADVANCED_STUDY_CATEGORIES = [
+  "NEET",
+  "JEE",
+  "CAT",
+  "UPSC",
+  "TNPSC",
+  "BANK_EXAMS",
+  "WORKING_PROFESSIONAL",
+  "OTHER",
+];
+
+const LEAD_TRACK_RULES = {
+  school_foundation: {
+    leadType: "school",
+    allowedStudentClasses: ["6", "7", "8"],
+    invalidClassMessage:
+      "Class must be 6, 7, or 8 for this assessment.",
+  },
+
+  school_advanced: {
+    leadType: "school",
+    allowedStudentClasses: ["9", "10", "11", "12"],
+    invalidClassMessage:
+      "Class must be 9, 10, 11, or 12 for this assessment.",
+  },
+
+  advanced: {
+    leadType: "advanced",
+    allowedStudyCategories: ADVANCED_STUDY_CATEGORIES,
+    invalidStudyCategoryMessage:
+      "Please choose a valid study or exam category.",
+  },
+};
+
+function getLeadTrackRule(trackId) {
+  return LEAD_TRACK_RULES[trackId] || null;
 }
 
 function sanitizeAttribution(value) {
@@ -141,7 +327,9 @@ router.post("/score", (req, res) => {
     const form = cleanString(body.form).toUpperCase();
     const responses = body.responses;
 
-    if (trackId !== "school_foundation" || form !== "A") {
+    const assessment = getAssessmentDefinition(trackId, form);
+
+    if (!assessment) {
       return res.status(400).json({
         ok: false,
         code: "UNSUPPORTED_MEMORY_ASSESSMENT",
@@ -161,7 +349,7 @@ router.post("/score", (req, res) => {
       });
     }
 
-    const result = scoreSchoolFoundationFormA({
+    const result = assessment.score({
       immediateAnswers: responses.immediateAnswers,
       orderedAnswers: responses.orderedAnswers,
       associationAnswers: responses.associationAnswers,
@@ -200,7 +388,9 @@ router.post("/session", async (req, res) => {
     const form = cleanString(body.form).toUpperCase();
     const responses = body.responses;
 
-    if (trackId !== "school_foundation" || form !== "A") {
+    const assessment = getAssessmentDefinition(trackId, form);
+
+    if (!assessment) {
       return res.status(400).json({
         ok: false,
         code: "UNSUPPORTED_MEMORY_ASSESSMENT",
@@ -220,9 +410,10 @@ router.post("/session", async (req, res) => {
       });
     }
 
-    const storedResponses = sanitizeFormAResponses(responses);
+    const storedResponses =
+      assessment.sanitizeResponses(responses);
 
-    const result = scoreSchoolFoundationFormA({
+    const result = assessment.score({
       immediateAnswers: storedResponses.immediateAnswers,
       orderedAnswers: storedResponses.orderedAnswers,
       associationAnswers: storedResponses.associationAnswers,
@@ -270,7 +461,7 @@ router.post("/session", async (req, res) => {
 
 // PATCH /api/memory/session/lead
 //
-// Attach parent/guardian contact details to an existing anonymous
+// Attach track-appropriate lead/contact details to an existing anonymous
 // assessment session.
 //
 // Security:
@@ -284,6 +475,7 @@ router.patch("/session/lead", async (req, res) => {
     const ownerToken = cleanString(body.ownerToken, 100);
     const learnerName = cleanString(body.learnerName, 100);
     const studentClass = cleanString(body.studentClass, 30);
+    const studyCategory = cleanString(body.studyCategory, 100);
     const parentGuardianName = cleanString(
       body.parentGuardianName,
       100,
@@ -303,26 +495,12 @@ router.patch("/session/lead", async (req, res) => {
       });
     }
 
-    if (
-      !learnerName ||
-      !studentClass ||
-      !parentGuardianName ||
-      !whatsappNumber ||
-      !state
-    ) {
+    if (!learnerName || !whatsappNumber || !state) {
       return res.status(400).json({
         ok: false,
         code: "MEMORY_LEAD_FIELDS_REQUIRED",
         message:
-          "Student name, class, parent or guardian name, WhatsApp number, and state are required.",
-      });
-    }
-
-    if (!["6", "7", "8"].includes(studentClass)) {
-      return res.status(400).json({
-        ok: false,
-        code: "INVALID_STUDENT_CLASS",
-        message: "Class must be 6, 7, or 8 for this assessment.",
+          "Learner name, WhatsApp number, and state are required.",
       });
     }
 
@@ -354,23 +532,111 @@ router.patch("/session/lead", async (req, res) => {
       });
     }
 
+    // Do not trust a browser-supplied track.
+    // Resolve the assessment track from the private owner token.
+    const session =
+      await prisma.memoryAssessmentSession.findUnique({
+        where: {
+          ownerToken,
+        },
+
+        select: {
+          trackId: true,
+        },
+      });
+
+    if (!session) {
+      return res.status(404).json({
+        ok: false,
+        code: "MEMORY_SESSION_NOT_FOUND",
+        message: "Assessment session was not found.",
+      });
+    }
+
+    const leadTrackRule = getLeadTrackRule(session.trackId);
+
+    if (!leadTrackRule) {
+      return res.status(400).json({
+        ok: false,
+        code: "UNSUPPORTED_MEMORY_ASSESSMENT",
+        message:
+          "This assessment track is not currently available for lead capture.",
+      });
+    }
+
+    let trackLeadData;
+
+    if (leadTrackRule.leadType === "school") {
+      if (!studentClass || !parentGuardianName) {
+        return res.status(400).json({
+          ok: false,
+          code: "MEMORY_LEAD_FIELDS_REQUIRED",
+          message:
+            "Student name, class, parent or guardian name, WhatsApp number, and state are required.",
+        });
+      }
+
+      if (
+        !leadTrackRule.allowedStudentClasses.includes(studentClass)
+      ) {
+        return res.status(400).json({
+          ok: false,
+          code: "INVALID_STUDENT_CLASS",
+          message: leadTrackRule.invalidClassMessage,
+        });
+      }
+
+      trackLeadData = {
+        studentClass,
+        studyCategory: null,
+        parentGuardianName,
+        whatsappContactRole: "PARENT_GUARDIAN",
+      };
+    } else {
+      if (!studyCategory) {
+        return res.status(400).json({
+          ok: false,
+          code: "MEMORY_LEAD_FIELDS_REQUIRED",
+          message: "Study or exam category is required.",
+        });
+      }
+
+      if (
+        !leadTrackRule.allowedStudyCategories.includes(
+          studyCategory,
+        )
+      ) {
+        return res.status(400).json({
+          ok: false,
+          code: "INVALID_STUDY_CATEGORY",
+          message:
+            leadTrackRule.invalidStudyCategoryMessage,
+        });
+      }
+
+      trackLeadData = {
+        studentClass: null,
+        studyCategory,
+        parentGuardianName: null,
+        whatsappContactRole: "LEARNER",
+      };
+    }
+
     const capturedAt = new Date();
 
     const updated =
       await prisma.memoryAssessmentSession.updateMany({
         where: {
           ownerToken,
-          trackId: "school_foundation",
+          trackId: session.trackId,
         },
 
         data: {
           learnerName,
-          studentClass,
-          parentGuardianName,
+          ...trackLeadData,
 
           whatsappNumber,
           whatsappNumberNormalized,
-          whatsappContactRole: "PARENT_GUARDIAN",
 
           whatsappConsent: true,
           whatsappConsentAt: capturedAt,

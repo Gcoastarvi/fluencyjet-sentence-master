@@ -266,7 +266,7 @@ describe("POST /api/memory/session", () => {
       .post("/api/memory/session")
       .send({
         trackId: "advanced",
-        form: "A",
+        form: "B",
         responses: {},
       });
 

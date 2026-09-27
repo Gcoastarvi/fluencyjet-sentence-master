@@ -1,6 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { trackEvent } from "../../lib/tracking";
 
+const FORM_A_SESSION_KEYS = [
+  "memory_form_a_immediate_answers",
+  "memory_form_a_ordered_answers",
+  "memory_form_a_association_answers",
+  "memory_form_a_academic_answers",
+  "memory_form_a_delayed_answers",
+  "memory_form_a_result",
+  "memory_form_a_public_token",
+  "memory_form_a_owner_token",
+  "memory_form_a_lead_saved",
+];
+
+function clearPreviousFormAAssessment() {
+  try {
+    for (const key of FORM_A_SESSION_KEYS) {
+      window.sessionStorage.removeItem(key);
+    }
+  } catch {
+    // Track selection can continue if browser storage is unavailable.
+  }
+}
+
 const TRACKS = [
   {
     id: "school_foundation",
@@ -13,21 +35,24 @@ const TRACKS = [
     id: "school_advanced",
     title: "Class 9–12",
     description: "For secondary and higher-secondary students.",
-    badge: "Coming next",
-    available: false,
+    badge: "Available now",
+    available: true,
   },
   {
     id: "advanced",
     title: "Advanced",
     description: "College, competitive exams and professional learning.",
-    badge: "Coming next",
-    available: false,
+    badge: "Available now",
+    available: true,
   },
 ];
 
 export default function MemoryChallenge() {
   const [selectedTrack, setSelectedTrack] = useState(null);
   const trackedLandingView = useRef(false);
+
+  const selectedTrackConfig =
+    TRACKS.find((track) => track.id === selectedTrack) || null;
 
   useEffect(() => {
     document.title = "Free Study Recall Benchmark | Amaze Memory";
@@ -44,6 +69,7 @@ export default function MemoryChallenge() {
   function handleTrackSelect(track) {
     if (!track.available) return;
 
+    clearPreviousFormAAssessment();
     setSelectedTrack(track.id);
 
     try {
@@ -135,7 +161,7 @@ export default function MemoryChallenge() {
 
                   {isSelected && (
                     <div className="mt-4 rounded-xl bg-white px-4 py-3 text-sm font-bold text-indigo-700 shadow-sm">
-                      ✓ Class 6–8 benchmark selected
+                      ✓ {track.title} benchmark selected
                     </div>
                   )}
                 </button>
@@ -143,11 +169,12 @@ export default function MemoryChallenge() {
             })}
           </div>
 
-          {selectedTrack === "school_foundation" && (
+          {selectedTrackConfig?.available && (
             <>
               <div className="mt-6 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5">
                 <p className="font-black text-emerald-900">
-                  You're ready for the Class 6–8 Study Recall Benchmark.
+                  You're ready for the {selectedTrackConfig.title} Study Recall
+                  Benchmark.
                 </p>
                 <p className="mt-2 text-sm font-medium leading-6 text-emerald-800">
                   It will check Immediate Recall, Ordered Recall, Association

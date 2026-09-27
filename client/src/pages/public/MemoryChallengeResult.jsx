@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
+import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 
 const DOMAIN_LABELS = {
   immediate: "Immediate Recall",
@@ -68,6 +69,12 @@ function formatScore(value) {
 }
 
 export default function MemoryChallengeResult() {
+  const selectedTrack =
+    readSessionValue("memory_track");
+
+  const assessment =
+    getMemoryAssessment(selectedTrack);
+
   const [result, setResult] = useState(() => readStoredResult());
   const [status, setStatus] = useState(result ? "ready" : "recovering");
   const [errorMessage, setErrorMessage] = useState("");
@@ -86,6 +93,7 @@ export default function MemoryChallengeResult() {
   const [leadForm, setLeadForm] = useState({
     learnerName: "",
     studentClass: "",
+    studyCategory: "",
     parentGuardianName: "",
     whatsappNumber: "",
     email: "",
@@ -118,8 +126,8 @@ export default function MemoryChallengeResult() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          trackId: "school_foundation",
-          form: "A",
+          trackId: assessment?.trackId || selectedTrack,
+          form: assessment?.form || "A",
           responses,
         }),
       });
@@ -210,8 +218,8 @@ export default function MemoryChallengeResult() {
 
       trackEvent("memory_lead", {
         funnel: "amaze_memory",
-        track: "school_foundation",
-        form: "A",
+        track: result?.trackId || assessment?.trackId || selectedTrack,
+        form: result?.form || assessment?.form || "A",
       });
     } catch (error) {
       console.error("Memory lead capture failed:", error);
@@ -349,6 +357,9 @@ export default function MemoryChallengeResult() {
     result.retentionRatio === undefined
       ? null
       : Math.round(result.retentionRatio * 100);
+
+  const isAdvancedLead =
+    assessment?.leadType === "advanced";
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12">
@@ -518,8 +529,9 @@ export default function MemoryChallengeResult() {
                 </h2>
 
                 <p className="mt-3 font-medium leading-7 text-slate-600">
-                  Your parent or guardian contact has been linked to this
-                  Study Recall Benchmark.
+                  {isAdvancedLead
+                    ? "Your contact details have been linked to this Study Recall Benchmark."
+                    : "Your parent or guardian contact has been linked to this Study Recall Benchmark."}
                 </p>
               </div>
             ) : (
@@ -533,8 +545,9 @@ export default function MemoryChallengeResult() {
                 </h2>
 
                 <p className="mt-3 font-medium leading-7 text-slate-600">
-                  Add a parent or guardian contact so this benchmark can stay
-                  connected to your Study Recall journey.
+                  {isAdvancedLead
+                    ? "Add your details so this benchmark can stay connected to your Study Recall journey."
+                    : "Add a parent or guardian contact so this benchmark can stay connected to your Study Recall journey."}
                 </p>
 
                 <form
@@ -543,7 +556,7 @@ export default function MemoryChallengeResult() {
                 >
                   <div>
                     <label className="block text-sm font-black text-slate-800">
-                      Student name
+                      {isAdvancedLead ? "Your name" : "Student name"}
                     </label>
                     <input
                       type="text"
@@ -557,43 +570,88 @@ export default function MemoryChallengeResult() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-black text-slate-800">
-                      Class
-                    </label>
-                    <select
-                      name="studentClass"
-                      value={leadForm.studentClass}
-                      onChange={updateLeadField}
-                      required
-                      className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
-                    >
-                      <option value="">Select class</option>
-                      <option value="6">Class 6</option>
-                      <option value="7">Class 7</option>
-                      <option value="8">Class 8</option>
-                    </select>
-                  </div>
+                  {isAdvancedLead ? (
+                    <div>
+                      <label className="block text-sm font-black text-slate-800">
+                        Study / exam category
+                      </label>
+
+                      <select
+                        name="studyCategory"
+                        value={leadForm.studyCategory}
+                        onChange={updateLeadField}
+                        required
+                        className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                      >
+                        <option value="">
+                          Select your category
+                        </option>
+
+                        {(assessment?.studyCategories || []).map(
+                          (category) => (
+                            <option
+                              key={category.value}
+                              value={category.value}
+                            >
+                              {category.label}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="block text-sm font-black text-slate-800">
+                          Class
+                        </label>
+
+                        <select
+                          name="studentClass"
+                          value={leadForm.studentClass}
+                          onChange={updateLeadField}
+                          required
+                          className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                        >
+                          <option value="">Select class</option>
+
+                          {(assessment?.studentClasses || []).map(
+                            (studentClass) => (
+                              <option
+                                key={studentClass}
+                                value={studentClass}
+                              >
+                                Class {studentClass}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-black text-slate-800">
+                          Parent / guardian name
+                        </label>
+
+                        <input
+                          type="text"
+                          name="parentGuardianName"
+                          value={leadForm.parentGuardianName}
+                          onChange={updateLeadField}
+                          required
+                          maxLength={100}
+                          autoComplete="name"
+                          className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <div>
                     <label className="block text-sm font-black text-slate-800">
-                      Parent / guardian name
-                    </label>
-                    <input
-                      type="text"
-                      name="parentGuardianName"
-                      value={leadForm.parentGuardianName}
-                      onChange={updateLeadField}
-                      required
-                      maxLength={100}
-                      autoComplete="name"
-                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-black text-slate-800">
-                      Parent / guardian WhatsApp
+                      {isAdvancedLead
+                        ? "Your WhatsApp number"
+                        : "Parent / guardian WhatsApp"}
                     </label>
                     <input
                       type="tel"
