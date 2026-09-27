@@ -292,7 +292,7 @@ describe("Class 9–12 Memory API", () => {
       .post("/api/memory/score")
       .send({
         trackId: "advanced",
-        form: "A",
+        form: "B",
         responses: PERFECT_RESPONSES,
       });
 

@@ -42,8 +42,8 @@ const TRACKS = [
     id: "advanced",
     title: "Advanced",
     description: "College, competitive exams and professional learning.",
-    badge: "Coming next",
-    available: false,
+    badge: "Available now",
+    available: true,
   },
 ];
 

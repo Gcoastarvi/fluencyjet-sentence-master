@@ -104,7 +104,7 @@ describe("POST /api/memory/score", () => {
       .post("/api/memory/score")
       .send({
         trackId: "advanced",
-        form: "A",
+        form: "B",
         responses: {},
       });
 

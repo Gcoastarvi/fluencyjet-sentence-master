@@ -319,4 +319,124 @@ describe("PATCH /api/memory/session/lead", () => {
       message: "Unable to save the assessment details right now.",
     });
   });
+
+  test("accepts an Advanced learner lead without school or guardian fields", async () => {
+    mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValueOnce({
+      trackId: "advanced",
+    });
+
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send({
+        ownerToken: VALID_LEAD.ownerToken,
+
+        learnerName: "Priya",
+        studyCategory: "UPSC",
+
+        whatsappNumber: "98765 43210",
+        whatsappConsent: true,
+        email: "priya@example.com",
+        state: "Tamil Nadu",
+
+        // Browser-supplied school/guardian/track data must not control
+        // how an Advanced session is persisted.
+        trackId: "school_foundation",
+        studentClass: "7",
+        parentGuardianName: "Should Be Ignored",
+      });
+
+    expect(res.status).toBe(200);
+
+    expect(res.body).toEqual({
+      ok: true,
+      lead: {
+        saved: true,
+      },
+    });
+
+    expect(
+      mockPrisma.memoryAssessmentSession.updateMany,
+    ).toHaveBeenCalledTimes(1);
+
+    const call =
+      mockPrisma.memoryAssessmentSession.updateMany.mock.calls[0][0];
+
+    expect(call.where).toEqual({
+      ownerToken: VALID_LEAD.ownerToken,
+      trackId: "advanced",
+    });
+
+    expect(call.data).toMatchObject({
+      learnerName: "Priya",
+
+      studentClass: null,
+      studyCategory: "UPSC",
+      parentGuardianName: null,
+
+      whatsappNumber: "98765 43210",
+      whatsappNumberNormalized: "+919876543210",
+      whatsappContactRole: "LEARNER",
+
+      whatsappConsent: true,
+      whatsappConsentSource:
+        "memory-challenge-result-lead-form",
+
+      email: "priya@example.com",
+      state: "Tamil Nadu",
+
+      status: "LEAD_CAPTURED",
+    });
+  });
+
+  test("rejects an invalid Advanced study category", async () => {
+    mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValueOnce({
+      trackId: "advanced",
+    });
+
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send({
+        ownerToken: VALID_LEAD.ownerToken,
+        learnerName: "Priya",
+        studyCategory: "INVALID_CATEGORY",
+        whatsappNumber: "98765 43210",
+        whatsappConsent: true,
+        state: "Tamil Nadu",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe(
+      "INVALID_STUDY_CATEGORY",
+    );
+
+    expect(
+      mockPrisma.memoryAssessmentSession.updateMany,
+    ).not.toHaveBeenCalled();
+  });
+
+  test("requires a study category for an Advanced session", async () => {
+    mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValueOnce({
+      trackId: "advanced",
+    });
+
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send({
+        ownerToken: VALID_LEAD.ownerToken,
+        learnerName: "Priya",
+        whatsappNumber: "98765 43210",
+        whatsappConsent: true,
+        state: "Tamil Nadu",
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe(
+      "MEMORY_LEAD_FIELDS_REQUIRED",
+    );
+
+    expect(
+      mockPrisma.memoryAssessmentSession.updateMany,
+    ).not.toHaveBeenCalled();
+  });
+
 });

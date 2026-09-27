@@ -177,6 +177,127 @@ const SCHOOL_ADVANCED_FORM_A = {
   },
 };
 
+
+const ADVANCED_FORM_A = {
+  trackId: "advanced",
+  form: "A",
+
+  immediate: {
+    weight: 20,
+    items: [
+      "telescope",
+      "glacier",
+      "kettle",
+      "sparrow",
+      "velvet",
+      "tractor",
+      "needle",
+      "pyramid",
+      "coconut",
+      "magnet",
+      "pillow",
+      "desert",
+      "mirror",
+      "hammer",
+    ],
+  },
+
+  ordered: {
+    weight: 15,
+    correctOrder: [
+      "desk",
+      "lemon",
+      "bell",
+      "ship",
+      "coin",
+      "zebra",
+      "window",
+      "brush",
+      "pearl",
+      "eagle",
+    ],
+  },
+
+  association: {
+    weight: 20,
+    answers: {
+      library: "84",
+      volcano: "27",
+      ribbon: "65",
+      temple: "39",
+      diamond: "72",
+      coffee: "46",
+      forest: "91",
+    },
+  },
+
+  academic: {
+    weight: 25,
+    answers: {
+      homes_served: [
+        "180",
+        "180 homes",
+        "one hundred eighty",
+        "one hundred and eighty",
+        "one hundred eighty homes",
+        "one hundred and eighty homes",
+      ],
+
+      battery_capacity: [
+        "2.4 megawatt-hours",
+        "2.4 megawatt hours",
+        "2.4 megawatt-hour",
+        "2.4 megawatt hour",
+        "2.4 mwh",
+      ],
+
+      diesel_reduction: [
+        "38",
+        "38 percent",
+        "38 per cent",
+        "thirty eight percent",
+        "thirty-eight percent",
+        "thirty eight per cent",
+      ],
+
+      network_zones: [
+        "4",
+        "four",
+        "4 zones",
+        "four zones",
+      ],
+
+      sensor_frequency: [
+        "every 15 minutes",
+        "every fifteen minutes",
+        "15 minutes",
+        "fifteen minutes",
+      ],
+
+      physical_inspection: [
+        "each friday",
+        "every friday",
+        "on friday",
+        "friday",
+      ],
+
+      future_plan: [
+        "a second microgrid for the eastern valley",
+        "second microgrid for the eastern valley",
+        "a second microgrid",
+        "second microgrid",
+        "microgrid for the eastern valley",
+        "eastern valley",
+      ],
+    },
+  },
+
+  delayed: {
+    weight: 20,
+    source: "immediate",
+  },
+};
+
 function round(value, places = 2) {
   const factor = 10 ** places;
   return Math.round((value + Number.EPSILON) * factor) / factor;
@@ -517,3 +638,70 @@ export {
   conceptMatches,
   normalizeText,
 };
+
+export function scoreAdvancedFormA({
+  immediateAnswers,
+  orderedAnswers,
+  associationAnswers,
+  academicAnswers,
+  delayedAnswers,
+} = {}) {
+  const immediate = scoreConceptRecall(
+    immediateAnswers,
+    ADVANCED_FORM_A.immediate.items,
+    ADVANCED_FORM_A.immediate.weight,
+  );
+
+  const ordered = scoreOrderedRecall(
+    orderedAnswers,
+    ADVANCED_FORM_A.ordered.correctOrder,
+    ADVANCED_FORM_A.ordered.weight,
+  );
+
+  const association = scoreAssociationRecall(
+    associationAnswers,
+    ADVANCED_FORM_A.association.answers,
+    ADVANCED_FORM_A.association.weight,
+  );
+
+  const academic = scoreAcademicRecall(
+    academicAnswers,
+    ADVANCED_FORM_A.academic.answers,
+    ADVANCED_FORM_A.academic.weight,
+  );
+
+  const delayed = scoreConceptRecall(
+    delayedAnswers,
+    ADVANCED_FORM_A.immediate.items,
+    ADVANCED_FORM_A.delayed.weight,
+  );
+
+  const modules = {
+    immediate,
+    ordered,
+    association,
+    academic,
+    delayed,
+  };
+
+  const totalScore = round(
+    Object.values(modules).reduce(
+      (sum, moduleResult) => sum + moduleResult.weightedScore,
+      0,
+    ),
+  );
+
+  const retentionRatio =
+    immediate.correct > 0
+      ? round(delayed.correct / immediate.correct, 3)
+      : null;
+
+  return {
+    trackId: ADVANCED_FORM_A.trackId,
+    form: ADVANCED_FORM_A.form,
+    totalScore,
+    maxScore: 100,
+    modules,
+    retentionRatio,
+  };
+}

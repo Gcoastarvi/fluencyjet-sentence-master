@@ -3,6 +3,7 @@ import express from "express";
 import prisma from "../db/client.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
 import {
+  scoreAdvancedFormA,
   scoreSchoolAdvancedFormA,
   scoreSchoolFoundationFormA,
 } from "../services/memoryAssessmentScorer.js";
@@ -149,6 +150,62 @@ function sanitizeSchoolAdvancedFormAResponses(responses) {
   };
 }
 
+
+function sanitizeAdvancedFormAResponses(responses) {
+  const source =
+    responses && typeof responses === "object" && !Array.isArray(responses)
+      ? responses
+      : {};
+
+  return {
+    immediateAnswers: cleanAnswerArray(
+      source.immediateAnswers,
+      14,
+      100,
+    ),
+
+    orderedAnswers: cleanAnswerArray(
+      source.orderedAnswers,
+      10,
+      50,
+    ),
+
+    associationAnswers: cleanAnswerObject(
+      source.associationAnswers,
+      [
+        "library",
+        "volcano",
+        "ribbon",
+        "temple",
+        "diamond",
+        "coffee",
+        "forest",
+      ],
+      20,
+    ),
+
+    academicAnswers: cleanAnswerObject(
+      source.academicAnswers,
+      [
+        "homes_served",
+        "battery_capacity",
+        "diesel_reduction",
+        "network_zones",
+        "sensor_frequency",
+        "physical_inspection",
+        "future_plan",
+      ],
+      500,
+    ),
+
+    delayedAnswers: cleanAnswerArray(
+      source.delayedAnswers,
+      14,
+      100,
+    ),
+  };
+}
+
 function getAssessmentDefinition(trackId, form) {
   if (form !== "A") return null;
 
@@ -170,21 +227,50 @@ function getAssessmentDefinition(trackId, form) {
     };
   }
 
+  if (trackId === "advanced") {
+    return {
+      trackId: "advanced",
+      form: "A",
+      sanitizeResponses: sanitizeAdvancedFormAResponses,
+      score: scoreAdvancedFormA,
+    };
+  }
+
   return null;
 }
 
 
+const ADVANCED_STUDY_CATEGORIES = [
+  "NEET",
+  "JEE",
+  "CAT",
+  "UPSC",
+  "TNPSC",
+  "BANK_EXAMS",
+  "WORKING_PROFESSIONAL",
+  "OTHER",
+];
+
 const LEAD_TRACK_RULES = {
   school_foundation: {
+    leadType: "school",
     allowedStudentClasses: ["6", "7", "8"],
     invalidClassMessage:
       "Class must be 6, 7, or 8 for this assessment.",
   },
 
   school_advanced: {
+    leadType: "school",
     allowedStudentClasses: ["9", "10", "11", "12"],
     invalidClassMessage:
       "Class must be 9, 10, 11, or 12 for this assessment.",
+  },
+
+  advanced: {
+    leadType: "advanced",
+    allowedStudyCategories: ADVANCED_STUDY_CATEGORIES,
+    invalidStudyCategoryMessage:
+      "Please choose a valid study or exam category.",
   },
 };
 
@@ -375,7 +461,7 @@ router.post("/session", async (req, res) => {
 
 // PATCH /api/memory/session/lead
 //
-// Attach parent/guardian contact details to an existing anonymous
+// Attach track-appropriate lead/contact details to an existing anonymous
 // assessment session.
 //
 // Security:
@@ -389,6 +475,7 @@ router.patch("/session/lead", async (req, res) => {
     const ownerToken = cleanString(body.ownerToken, 100);
     const learnerName = cleanString(body.learnerName, 100);
     const studentClass = cleanString(body.studentClass, 30);
+    const studyCategory = cleanString(body.studyCategory, 100);
     const parentGuardianName = cleanString(
       body.parentGuardianName,
       100,
@@ -408,18 +495,12 @@ router.patch("/session/lead", async (req, res) => {
       });
     }
 
-    if (
-      !learnerName ||
-      !studentClass ||
-      !parentGuardianName ||
-      !whatsappNumber ||
-      !state
-    ) {
+    if (!learnerName || !whatsappNumber || !state) {
       return res.status(400).json({
         ok: false,
         code: "MEMORY_LEAD_FIELDS_REQUIRED",
         message:
-          "Student name, class, parent or guardian name, WhatsApp number, and state are required.",
+          "Learner name, WhatsApp number, and state are required.",
       });
     }
 
@@ -483,14 +564,62 @@ router.patch("/session/lead", async (req, res) => {
       });
     }
 
-    if (
-      !leadTrackRule.allowedStudentClasses.includes(studentClass)
-    ) {
-      return res.status(400).json({
-        ok: false,
-        code: "INVALID_STUDENT_CLASS",
-        message: leadTrackRule.invalidClassMessage,
-      });
+    let trackLeadData;
+
+    if (leadTrackRule.leadType === "school") {
+      if (!studentClass || !parentGuardianName) {
+        return res.status(400).json({
+          ok: false,
+          code: "MEMORY_LEAD_FIELDS_REQUIRED",
+          message:
+            "Student name, class, parent or guardian name, WhatsApp number, and state are required.",
+        });
+      }
+
+      if (
+        !leadTrackRule.allowedStudentClasses.includes(studentClass)
+      ) {
+        return res.status(400).json({
+          ok: false,
+          code: "INVALID_STUDENT_CLASS",
+          message: leadTrackRule.invalidClassMessage,
+        });
+      }
+
+      trackLeadData = {
+        studentClass,
+        studyCategory: null,
+        parentGuardianName,
+        whatsappContactRole: "PARENT_GUARDIAN",
+      };
+    } else {
+      if (!studyCategory) {
+        return res.status(400).json({
+          ok: false,
+          code: "MEMORY_LEAD_FIELDS_REQUIRED",
+          message: "Study or exam category is required.",
+        });
+      }
+
+      if (
+        !leadTrackRule.allowedStudyCategories.includes(
+          studyCategory,
+        )
+      ) {
+        return res.status(400).json({
+          ok: false,
+          code: "INVALID_STUDY_CATEGORY",
+          message:
+            leadTrackRule.invalidStudyCategoryMessage,
+        });
+      }
+
+      trackLeadData = {
+        studentClass: null,
+        studyCategory,
+        parentGuardianName: null,
+        whatsappContactRole: "LEARNER",
+      };
     }
 
     const capturedAt = new Date();
@@ -504,12 +633,10 @@ router.patch("/session/lead", async (req, res) => {
 
         data: {
           learnerName,
-          studentClass,
-          parentGuardianName,
+          ...trackLeadData,
 
           whatsappNumber,
           whatsappNumberNormalized,
-          whatsappContactRole: "PARENT_GUARDIAN",
 
           whatsappConsent: true,
           whatsappConsentAt: capturedAt,
