@@ -597,7 +597,12 @@ function PurchaseButton({
   children = "Get 1-Year Access + All 9 Bonuses — ₹799",
   className = "",
 }) {
+  const [isOpeningCheckout, setIsOpeningCheckout] = useState(false);
+
   async function handlePurchase() {
+    if (isOpeningCheckout) return;
+
+    setIsOpeningCheckout(true);
     trackVocabularyInitiateCheckout({
       placement,
       source: "vocabulary-course",
@@ -621,6 +626,8 @@ function PurchaseButton({
       );
 
       openVocabularyFallback(destination);
+    } finally {
+      setIsOpeningCheckout(false);
     }
   }
 
@@ -628,10 +635,11 @@ function PurchaseButton({
     <button
       type="button"
       onClick={handlePurchase}
+      disabled={isOpeningCheckout}
       data-testid={`vocabulary-payment-${placement}`}
       className={`w-full rounded-2xl bg-gradient-to-r from-yellow-300 via-yellow-300 to-lime-400 px-6 py-5 text-center text-lg font-black text-slate-950 shadow-xl shadow-lime-500/20 transition hover:-translate-y-0.5 hover:shadow-lime-500/30 active:scale-[0.99] sm:text-xl ${className}`}
     >
-      {children}
+      {isOpeningCheckout ? "Opening secure checkout..." : children}
     </button>
   );
 }
