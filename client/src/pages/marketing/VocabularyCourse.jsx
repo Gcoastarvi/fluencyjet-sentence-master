@@ -6,6 +6,7 @@ import {
   trackVocabularyInitiateCheckout,
   trackVocabularyCourseWhatsAppClick,
 } from "../../lib/tracking";
+import { api } from "../../api/apiClient";
 
 const PAYMENT_URL =
   import.meta.env.VITE_VOCABULARY_PAYMENT_URL || "https://rzp.io/l/oiniUKO";
@@ -25,6 +26,289 @@ const ALLOWED_FORWARD_PARAMS = [
   "source",
   "fbclid",
 ];
+
+const VOCABULARY_VISITOR_ID_KEY = "fj_vocab_visitor_id";
+const VOCABULARY_FBC_KEY = "fj_vocab_fbc";
+
+function readCookie(name) {
+  if (typeof document === "undefined") return null;
+
+  const prefix = `${name}=`;
+  const parts = document.cookie ? document.cookie.split(";") : [];
+
+  for (const rawPart of parts) {
+    const part = rawPart.trim();
+
+    if (part.startsWith(prefix)) {
+      try {
+        return decodeURIComponent(part.slice(prefix.length));
+      } catch {
+        return part.slice(prefix.length);
+      }
+    }
+  }
+
+  return null;
+}
+
+function getVocabularyVisitorId() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const existing = window.localStorage.getItem(
+      VOCABULARY_VISITOR_ID_KEY,
+    );
+
+    if (existing) return existing;
+
+    const id =
+      typeof window.crypto?.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : `vocab_${Date.now()}_${Math.random()
+            .toString(36)
+            .slice(2, 12)}`;
+
+    window.localStorage.setItem(
+      VOCABULARY_VISITOR_ID_KEY,
+      id,
+    );
+
+    return id;
+  } catch {
+    return `vocab_${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 12)}`;
+  }
+}
+
+function getVocabularyFbc(searchParams) {
+  const cookieFbc = readCookie("_fbc");
+
+  if (cookieFbc) {
+    try {
+      window.localStorage.setItem(
+        VOCABULARY_FBC_KEY,
+        cookieFbc,
+      );
+    } catch {
+      // localStorage may be unavailable; cookie value is still usable.
+    }
+
+    return cookieFbc;
+  }
+
+  const fbclid = searchParams.get("fbclid");
+
+  if (fbclid) {
+    const generated = `fb.1.${Date.now()}.${fbclid}`;
+
+    try {
+      window.localStorage.setItem(
+        VOCABULARY_FBC_KEY,
+        generated,
+      );
+    } catch {
+      // Ignore storage failures.
+    }
+
+    return generated;
+  }
+
+  try {
+    return (
+      window.localStorage.getItem(VOCABULARY_FBC_KEY) ||
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
+function buildVocabularyCheckoutAttribution() {
+  const searchParams = new URLSearchParams(
+    window.location.search,
+  );
+
+  return {
+    visitorId: getVocabularyVisitorId(),
+
+    fbclid: searchParams.get("fbclid") || null,
+    fbc: getVocabularyFbc(searchParams),
+    fbp: readCookie("_fbp"),
+
+    utmSource: searchParams.get("utm_source") || null,
+    utmMedium: searchParams.get("utm_medium") || null,
+    utmCampaign: searchParams.get("utm_campaign") || null,
+    utmContent: searchParams.get("utm_content") || null,
+    utmTerm: searchParams.get("utm_term") || null,
+
+    source:
+      searchParams.get("source") ||
+      searchParams.get("utm_source") ||
+      "vocabulary-course",
+
+    landingPage: window.location.href,
+  };
+}
+
+let razorpayScriptPromise = null;
+
+function loadRazorpayCheckout() {
+  if (typeof window === "undefined") {
+    return Promise.reject(
+      new Error("Razorpay requires a browser"),
+    );
+  }
+
+  if (window.Razorpay) {
+    return Promise.resolve(true);
+  }
+
+  if (razorpayScriptPromise) {
+    return razorpayScriptPromise;
+  }
+
+  razorpayScriptPromise = new Promise(
+    (resolve, reject) => {
+      const existing = document.querySelector(
+        'script[src="https://checkout.razorpay.com/v1/checkout.js"]',
+      );
+
+      if (existing) {
+        existing.addEventListener(
+          "load",
+          () => resolve(true),
+          { once: true },
+        );
+
+        existing.addEventListener(
+          "error",
+          () =>
+            reject(
+              new Error(
+                "Unable to load Razorpay checkout",
+              ),
+            ),
+          { once: true },
+        );
+
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src =
+        "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+
+      script.onload = () => resolve(true);
+      script.onerror = () => {
+        razorpayScriptPromise = null;
+        reject(
+          new Error("Unable to load Razorpay checkout"),
+        );
+      };
+
+      document.body.appendChild(script);
+    },
+  );
+
+  return razorpayScriptPromise;
+}
+
+async function openVocabularyRazorpayCheckout({
+  fallbackDestination,
+}) {
+  const attribution =
+    buildVocabularyCheckoutAttribution();
+
+  const result = await api.post(
+    "/vocabulary/create-order",
+    attribution,
+  );
+
+  if (!result.ok || !result.data?.orderId) {
+    throw new Error(
+      result.error || "Unable to create Razorpay order",
+    );
+  }
+
+  await loadRazorpayCheckout();
+
+  if (typeof window.Razorpay !== "function") {
+    throw new Error("Razorpay Checkout unavailable");
+  }
+
+  const {
+    keyId,
+    orderId,
+    amount,
+    currency,
+  } = result.data;
+
+  const checkout = new window.Razorpay({
+    key: keyId,
+    amount,
+    currency,
+    order_id: orderId,
+
+    name: "FluencyJet",
+    description:
+      "Vocabulary Challenge — 1-Year Access",
+
+    handler(response) {
+      const params = new URLSearchParams();
+
+      if (response?.razorpay_payment_id) {
+        params.set(
+          "razorpay_payment_id",
+          response.razorpay_payment_id,
+        );
+      }
+
+      if (response?.razorpay_order_id) {
+        params.set(
+          "razorpay_order_id",
+          response.razorpay_order_id,
+        );
+      }
+
+      const query = params.toString();
+
+      window.location.href = query
+        ? `/vocabulary-thank-you?${query}`
+        : "/vocabulary-thank-you";
+    },
+
+    modal: {
+      ondismiss() {
+        console.log(
+          "[vocabulary/checkout] Razorpay checkout dismissed",
+        );
+      },
+    },
+
+    theme: {
+      color: "#84cc16",
+    },
+  });
+
+  checkout.on("payment.failed", (response) => {
+    console.warn(
+      "[vocabulary/checkout] Razorpay payment failed",
+      response?.error?.code || "unknown",
+    );
+  });
+
+  checkout.open();
+
+  return true;
+}
+
+function openVocabularyFallback(destination) {
+  if (destination) {
+    window.location.href = destination;
+  }
+}
 
 const DELIVERABLES = [
   {
@@ -313,7 +597,7 @@ function PurchaseButton({
   children = "Get 1-Year Access + All 9 Bonuses — ₹799",
   className = "",
 }) {
-  function handlePurchase() {
+  async function handlePurchase() {
     trackVocabularyInitiateCheckout({
       placement,
       source: "vocabulary-course",
@@ -326,9 +610,18 @@ function PurchaseButton({
       return;
     }
 
-    window.setTimeout(() => {
-      window.location.href = destination;
-    }, 250);
+    try {
+      await openVocabularyRazorpayCheckout({
+        fallbackDestination: destination,
+      });
+    } catch (error) {
+      console.warn(
+        "[vocabulary/checkout] New checkout unavailable — using payment-link fallback:",
+        error?.message || error,
+      );
+
+      openVocabularyFallback(destination);
+    }
   }
 
   return (
