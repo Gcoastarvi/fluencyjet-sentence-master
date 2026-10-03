@@ -16,6 +16,9 @@ const mockPrisma = {
   sentenceMasterCheckoutIntent: {
     findMany: jest.fn(),
   },
+  vocabularyCheckoutIntent: {
+    findUnique: jest.fn(),
+  },
   spokenEnglishPurchase: {
     findFirst: jest.fn(),
     create: jest.fn(),
@@ -110,6 +113,12 @@ beforeEach(() => {
   mockPrisma.sentenceMasterCheckoutIntent.findMany.mockResolvedValue([
     makeIntent(),
   ]);
+  mockPrisma.vocabularyCheckoutIntent.findUnique.mockResolvedValue(null);
+  mockSendCapiPurchase.mockResolvedValue({
+    status: 200,
+    ok: true,
+    body: '{"events_received":1}',
+  });
   mockPrisma.user.update.mockResolvedValue({ id: 42, has_access: true });
   mockPrisma.automationEvent.updateMany.mockResolvedValue({ count: 2 });
   mockPrisma.spokenEnglishPurchase.create.mockImplementation(async ({ data }) => ({
@@ -294,4 +303,91 @@ describe("verified Razorpay Sentence Master capture attribution", () => {
     expect(mockPrisma.spokenEnglishPurchase.create).not.toHaveBeenCalled();
     expect(mockPrisma.user.update).not.toHaveBeenCalled();
   });
+
+  test("enriches Vocabulary CAPI Purchase from exact Razorpay order attribution", async () => {
+    process.env.META_PIXEL_ID = "pixel_test_123";
+    process.env.META_CAPI_ACCESS_TOKEN = "token_test_123";
+
+    mockPrisma.vocabularyCheckoutIntent.findUnique.mockResolvedValue({
+      id: "vocab-intent-1",
+      visitorId: "visitor_abc123",
+
+      fbclid: "fbclid_test_123",
+      fbc: "fb.1.123456789.fbclid_test_123",
+      fbp: "fb.1.123456789.987654321",
+
+      utmSource: "facebook",
+      utmMedium: "paid_social",
+      utmCampaign: "vocab_creative_test",
+      utmContent: "ai_video_1",
+      utmTerm: "english_vocabulary",
+      source: "vocabulary-course",
+
+      landingPage:
+        "https://www.fluencyjet.com/vocabulary-course?utm_content=ai_video_1",
+
+      clientIp: "49.12.34.56",
+      clientUserAgent: "FluencyJet-Test-Browser/1.0",
+    });
+
+    const response = await postWebhook(
+      makeApp(),
+      makePayload({
+        id: "pay_vocabulary_order_1",
+        amount: 79900,
+        order_id: "order_vocab_123",
+      }),
+      "event_vocabulary_order_1",
+    );
+
+    expect(response.status).toBe(200);
+
+    expect(
+      mockPrisma.vocabularyCheckoutIntent.findUnique,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          razorpayOrderId: "order_vocab_123",
+        },
+      }),
+    );
+
+    expect(
+      mockPrisma.spokenEnglishPurchase.create,
+    ).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        paymentId: "pay_vocabulary_order_1",
+        razorpayOrderId: "order_vocab_123",
+        vocabularyCheckoutIntentId: "vocab-intent-1",
+        amount: 79900,
+        currency: "INR",
+      }),
+    });
+
+    expect(mockSendCapiPurchase).toHaveBeenCalledTimes(1);
+
+    expect(mockSendCapiPurchase).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pixelId: "pixel_test_123",
+        accessToken: "token_test_123",
+
+        eventId:
+          "vocabulary_challenge_799_purchase_pay_vocabulary_order_1",
+
+        value: 799,
+        currency: "INR",
+
+        email: "learner@example.test",
+        phone: DESTINATION,
+
+        externalId: "visitor_abc123",
+        fbc: "fb.1.123456789.fbclid_test_123",
+        fbp: "fb.1.123456789.987654321",
+
+        clientIpAddress: "49.12.34.56",
+        clientUserAgent: "FluencyJet-Test-Browser/1.0",
+      }),
+    );
+  });
+
 });

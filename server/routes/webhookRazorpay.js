@@ -20,6 +20,7 @@ const router = express.Router();
 
 const EXPECTED_CURRENCY = "INR";
 const EXPECTED_EVENT = "payment.captured";
+const VOCABULARY_AMOUNT_PAISE = 79900;
 
 const PRODUCTS_BY_AMOUNT = {
   79900: {
@@ -105,6 +106,7 @@ router.post(
     }
 
     const paymentId = paymentEntity.id;
+    const razorpayOrderId = paymentEntity.order_id || null;
     const amount = paymentEntity.amount;
     const currency = paymentEntity.currency;
     const paymentStatus = paymentEntity.status;
@@ -160,6 +162,54 @@ router.post(
         .json({ ok: true, skipped: true, reason: "status_not_captured" });
     }
 
+    let vocabularyIntent = null;
+
+    if (amount === VOCABULARY_AMOUNT_PAISE && razorpayOrderId) {
+      try {
+        vocabularyIntent = await prisma.vocabularyCheckoutIntent.findUnique({
+          where: {
+            razorpayOrderId,
+          },
+          select: {
+            id: true,
+            visitorId: true,
+            fbclid: true,
+            fbc: true,
+            fbp: true,
+            utmSource: true,
+            utmMedium: true,
+            utmCampaign: true,
+            utmContent: true,
+            utmTerm: true,
+            source: true,
+            landingPage: true,
+            clientIp: true,
+            clientUserAgent: true,
+          },
+        });
+
+        if (vocabularyIntent) {
+          console.log(
+            `[webhook/rzp] Vocabulary checkout intent matched orderId=${razorpayOrderId} intent=${vocabularyIntent.id}`,
+          );
+        } else {
+          console.log(
+            `[webhook/rzp] No Vocabulary checkout intent for orderId=${razorpayOrderId}`,
+          );
+        }
+      } catch (err) {
+        console.error(
+          "[webhook/rzp] Vocabulary checkout intent lookup failed:",
+          err.message,
+        );
+
+        return res.status(500).json({
+          ok: false,
+          error: "DB error",
+        });
+      }
+    }
+
     const metaEventId = `${product.code}_purchase_${paymentId}`;
     const capturedAt = getCapturedPaymentTime(paymentEntity);
 
@@ -208,6 +258,8 @@ router.post(
           data: {
             paymentLinkId,
             paymentId,
+            razorpayOrderId,
+            vocabularyCheckoutIntentId: vocabularyIntent?.id || null,
             amount,
             currency,
             status: paymentStatus,
@@ -285,6 +337,13 @@ router.post(
       contentIds: product.contentIds,
       email: customerEmail,
       phone: customerContact,
+
+      // Rich browser/ad matching for the new Vocabulary order flow.
+      externalId: vocabularyIntent?.visitorId || null,
+      fbc: vocabularyIntent?.fbc || null,
+      fbp: vocabularyIntent?.fbp || null,
+      clientIpAddress: vocabularyIntent?.clientIp || null,
+      clientUserAgent: vocabularyIntent?.clientUserAgent || null,
     });
 
     const errorSnippet = capiResult.ok
