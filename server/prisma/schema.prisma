@@ -193,26 +193,29 @@ model Payment {
 }
 
 model SpokenEnglishPurchase {
-  id               String                        @id @default(cuid())
-  paymentLinkId    String?
-  paymentId        String                        @unique
-  amount           Int
-  currency         String                        @default("INR")
-  status           String
-  customerEmail    String?
-  customerContact  String?
-  userId           Int?
-  productKey       String?                       @db.VarChar(80)
-  sourceIntentId   String?                       @unique
-  sourceIntent     SentenceMasterCheckoutIntent? @relation(fields: [sourceIntentId], references: [id], onDelete: SetNull)
-  user             User?                         @relation(fields: [userId], references: [id], onDelete: SetNull)
-  webhookEventId   String                        @unique
-  metaEventId      String
-  metaDelivered    Boolean                       @default(false)
-  metaError        String?
-  metaResponseCode Int?
-  createdAt        DateTime                      @default(now())
-  updatedAt        DateTime                      @updatedAt
+  id                         String                        @id @default(cuid())
+  paymentLinkId              String?
+  paymentId                  String                        @unique
+  razorpayOrderId            String?                       @unique
+  vocabularyCheckoutIntentId String?                       @unique
+  vocabularyCheckoutIntent   VocabularyCheckoutIntent?     @relation(fields: [vocabularyCheckoutIntentId], references: [id], onDelete: SetNull)
+  amount                     Int
+  currency                   String                        @default("INR")
+  status                     String
+  customerEmail              String?
+  customerContact            String?
+  userId                     Int?
+  productKey                 String?                       @db.VarChar(80)
+  sourceIntentId             String?                       @unique
+  sourceIntent               SentenceMasterCheckoutIntent? @relation(fields: [sourceIntentId], references: [id], onDelete: SetNull)
+  user                       User?                         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  webhookEventId             String                        @unique
+  metaEventId                String
+  metaDelivered              Boolean                       @default(false)
+  metaError                  String?
+  metaResponseCode           Int?
+  createdAt                  DateTime                      @default(now())
+  updatedAt                  DateTime                      @updatedAt
 
   @@index([userId, productKey, status])
   @@index([productKey, status])
@@ -230,6 +233,46 @@ model SentenceMasterCheckoutIntent {
 
   @@index([productKey, learnerEmail, destinationNumberNormalized, createdAt])
   @@index([userId, productKey, createdAt])
+}
+
+model VocabularyCheckoutIntent {
+  id String @id @default(cuid())
+
+  razorpayOrderId String @unique
+  amount          Int    @default(79900)
+  currency        String @default("INR")
+  productKey      String @default("vocabulary_challenge_799") @db.VarChar(80)
+
+  // First-party browser/session identity
+  visitorId String? @db.VarChar(191)
+
+  // Meta attribution
+  fbclid String? @db.Text
+  fbc    String? @db.Text
+  fbp    String? @db.Text
+
+  // Campaign attribution
+  utmSource   String? @db.VarChar(150)
+  utmMedium   String? @db.VarChar(150)
+  utmCampaign String? @db.VarChar(200)
+  utmContent  String? @db.VarChar(200)
+  utmTerm     String? @db.VarChar(200)
+  source      String? @db.VarChar(150)
+
+  // Original browser context
+  landingPage     String? @db.Text
+  clientIp        String? @db.VarChar(100)
+  clientUserAgent String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchase SpokenEnglishPurchase?
+
+  @@index([createdAt])
+  @@index([utmCampaign])
+  @@index([utmContent])
+  @@index([fbclid])
 }
 
 model DiagnosticQuestion {
