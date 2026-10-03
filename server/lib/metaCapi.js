@@ -41,6 +41,11 @@ export async function sendCapiPurchase({
   contentIds,
   email,
   phone,
+  externalId,
+  fbc,
+  fbp,
+  clientIpAddress,
+  clientUserAgent,
 }) {
   try {
     const userData = {};
@@ -50,6 +55,40 @@ export async function sendCapiPurchase({
 
     const normalPhone = normalizePhone(phone);
     if (normalPhone) userData.ph = [sha256hex(normalPhone)];
+
+    // external_id is customer/browser identity and must be hashed.
+    if (externalId && typeof externalId === "string") {
+      const normalizedExternalId = externalId.trim();
+      if (normalizedExternalId) {
+        userData.external_id = [sha256hex(normalizedExternalId)];
+      }
+    }
+
+    // Meta browser/click identifiers are sent unhashed.
+    if (fbc && typeof fbc === "string" && fbc.trim()) {
+      userData.fbc = fbc.trim();
+    }
+
+    if (fbp && typeof fbp === "string" && fbp.trim()) {
+      userData.fbp = fbp.trim();
+    }
+
+    // Original browser request context is also sent unhashed.
+    if (
+      clientIpAddress &&
+      typeof clientIpAddress === "string" &&
+      clientIpAddress.trim()
+    ) {
+      userData.client_ip_address = clientIpAddress.trim();
+    }
+
+    if (
+      clientUserAgent &&
+      typeof clientUserAgent === "string" &&
+      clientUserAgent.trim()
+    ) {
+      userData.client_user_agent = clientUserAgent.trim();
+    }
 
     const event = {
       event_name: "Purchase",
