@@ -20,6 +20,7 @@ import authRouter from "./routes/auth.js";
 import funnelRouter from "./routes/funnel.js";
 import memoryRouter from "./routes/memory.js";
 import billingRouter from "./routes/billing.js";
+import vocabularyCheckoutRouter from "./routes/vocabularyCheckout.js";
 import diagnosticRoutes from "./routes/diagnostic.js";
 import quizzesRouter from "./routes/quizzes.js";
 
@@ -261,6 +262,7 @@ app.use("/api/funnel", funnelRouter);
 app.use("/api/memory", memoryRouter);
 app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
+app.use("/api/vocabulary", vocabularyCheckoutRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
 // app.use("/api/shop", shopRouter);
 
