@@ -29,6 +29,9 @@ const ALLOWED_FORWARD_PARAMS = [
 
 const VOCABULARY_VISITOR_ID_KEY = "fj_vocab_visitor_id";
 const VOCABULARY_FBC_KEY = "fj_vocab_fbc";
+const VOCABULARY_ATTRIBUTION_STORAGE_KEY = "fj_vocab_attribution_v1";
+const VOCABULARY_ATTRIBUTION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 
 function readCookie(name) {
   if (typeof document === "undefined") return null;
@@ -100,18 +103,21 @@ function getVocabularyFbc(searchParams) {
   const fbclid = searchParams.get("fbclid");
 
   if (fbclid) {
-    const generated = `fb.1.${Date.now()}.${fbclid}`;
+    const value =
+      cookieFbc && cookieFbc.endsWith(`.${fbclid}`)
+        ? cookieFbc
+        : `fb.1.${Date.now()}.${fbclid}`;
 
     try {
       window.localStorage.setItem(
         VOCABULARY_FBC_KEY,
-        generated,
+        value,
       );
     } catch {
       // Ignore storage failures.
     }
 
-    return generated;
+    return value;
   }
 
   try {
@@ -124,31 +130,172 @@ function getVocabularyFbc(searchParams) {
   }
 }
 
+function getSavedVocabularyAttribution() {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.localStorage.getItem(
+      VOCABULARY_ATTRIBUTION_STORAGE_KEY,
+    );
+
+    if (!raw) return {};
+
+    const saved = JSON.parse(raw);
+
+    if (
+      !saved?.capturedAt ||
+      Date.now() - Number(saved.capturedAt) >
+        VOCABULARY_ATTRIBUTION_MAX_AGE_MS
+    ) {
+      window.localStorage.removeItem(
+        VOCABULARY_ATTRIBUTION_STORAGE_KEY,
+      );
+      return {};
+    }
+
+    return saved;
+  } catch {
+    return {};
+  }
+}
+
+function saveVocabularyAttribution(payload) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(
+      VOCABULARY_ATTRIBUTION_STORAGE_KEY,
+      JSON.stringify(payload),
+    );
+  } catch {
+    // Checkout must continue even if storage is unavailable.
+  }
+}
+
 function buildVocabularyCheckoutAttribution() {
   const searchParams = new URLSearchParams(
     window.location.search,
   );
 
-  return {
+  const saved = getSavedVocabularyAttribution();
+
+  const currentFbclid =
+    searchParams.get("fbclid") || null;
+
+  const hasCurrentAttribution = [
+    "fbclid",
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "campaign_id",
+    "adset_id",
+    "ad_id",
+    "placement",
+  ].some((key) => searchParams.get(key));
+
+  const currentFbc = currentFbclid
+    ? getVocabularyFbc(searchParams)
+    : null;
+
+  const attribution = {
     visitorId: getVocabularyVisitorId(),
 
-    fbclid: searchParams.get("fbclid") || null,
-    fbc: getVocabularyFbc(searchParams),
-    fbp: readCookie("_fbp"),
+    fbclid:
+      currentFbclid ||
+      saved.fbclid ||
+      null,
 
-    utmSource: searchParams.get("utm_source") || null,
-    utmMedium: searchParams.get("utm_medium") || null,
-    utmCampaign: searchParams.get("utm_campaign") || null,
-    utmContent: searchParams.get("utm_content") || null,
-    utmTerm: searchParams.get("utm_term") || null,
+    fbc:
+      currentFbc ||
+      saved.fbc ||
+      readCookie("_fbc") ||
+      null,
+
+    fbp:
+      readCookie("_fbp") ||
+      saved.fbp ||
+      null,
+
+    utmSource:
+      searchParams.get("utm_source") ||
+      saved.utmSource ||
+      null,
+
+    utmMedium:
+      searchParams.get("utm_medium") ||
+      saved.utmMedium ||
+      null,
+
+    utmCampaign:
+      searchParams.get("utm_campaign") ||
+      saved.utmCampaign ||
+      null,
+
+    utmContent:
+      searchParams.get("utm_content") ||
+      saved.utmContent ||
+      null,
+
+    utmTerm:
+      searchParams.get("utm_term") ||
+      saved.utmTerm ||
+      null,
 
     source:
       searchParams.get("source") ||
       searchParams.get("utm_source") ||
+      saved.source ||
       "vocabulary-course",
 
-    landingPage: window.location.href,
+    landingPage:
+      hasCurrentAttribution
+        ? window.location.href
+        : saved.landingPage || window.location.href,
   };
+
+  if (hasCurrentAttribution) {
+    saveVocabularyAttribution({
+      ...saved,
+
+      fbclid: attribution.fbclid,
+      fbc: attribution.fbc,
+      fbp: attribution.fbp,
+
+      utmSource: attribution.utmSource,
+      utmMedium: attribution.utmMedium,
+      utmCampaign: attribution.utmCampaign,
+      utmContent: attribution.utmContent,
+      utmTerm: attribution.utmTerm,
+
+      campaignId:
+        searchParams.get("campaign_id") ||
+        saved.campaignId ||
+        null,
+
+      adsetId:
+        searchParams.get("adset_id") ||
+        saved.adsetId ||
+        null,
+
+      adId:
+        searchParams.get("ad_id") ||
+        saved.adId ||
+        null,
+
+      placement:
+        searchParams.get("placement") ||
+        saved.placement ||
+        null,
+
+      source: attribution.source,
+      landingPage: window.location.href,
+      capturedAt: Date.now(),
+    });
+  }
+
+  return attribution;
 }
 
 let razorpayScriptPromise = null;

@@ -23,6 +23,100 @@ const COURSE_PAGE_PATH = "/vocabulary-course";
 
 const WATCH_PROGRESS_STORAGE_KEY = "fj_vocabulary_vsl_active_watch_time_ms";
 
+const VOCABULARY_ATTRIBUTION_STORAGE_KEY = "fj_vocab_attribution_v1";
+const VOCABULARY_ATTRIBUTION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+function readVocabularyCookie(name) {
+  if (typeof document === "undefined") return null;
+
+  const prefix = `${name}=`;
+
+  for (const rawPart of (document.cookie || "").split(";")) {
+    const part = rawPart.trim();
+
+    if (part.startsWith(prefix)) {
+      try {
+        return decodeURIComponent(part.slice(prefix.length));
+      } catch {
+        return part.slice(prefix.length);
+      }
+    }
+  }
+
+  return null;
+}
+
+function persistVocabularyAttribution() {
+  if (typeof window === "undefined") return;
+
+  const params = new URLSearchParams(window.location.search);
+
+  const fbclid = params.get("fbclid");
+
+  const hasPaidAttribution = [
+    "fbclid",
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "campaign_id",
+    "adset_id",
+    "ad_id",
+    "placement",
+  ].some((key) => params.get(key));
+
+  if (!hasPaidAttribution) return;
+
+  const cookieFbc = readVocabularyCookie("_fbc");
+
+  const fbc =
+    fbclid
+      ? cookieFbc && cookieFbc.endsWith(`.${fbclid}`)
+        ? cookieFbc
+        : `fb.1.${Date.now()}.${fbclid}`
+      : cookieFbc;
+
+  const payload = {
+    fbclid: fbclid || null,
+    fbc: fbc || null,
+    fbp: readVocabularyCookie("_fbp"),
+
+    utmSource: params.get("utm_source") || null,
+    utmMedium: params.get("utm_medium") || null,
+    utmCampaign: params.get("utm_campaign") || null,
+    utmContent: params.get("utm_content") || null,
+    utmTerm: params.get("utm_term") || null,
+
+    campaignId: params.get("campaign_id") || null,
+    adsetId: params.get("adset_id") || null,
+    adId: params.get("ad_id") || null,
+    placement: params.get("placement") || null,
+
+    source:
+      params.get("source") ||
+      params.get("utm_source") ||
+      "vocabulary-vsl",
+
+    landingPage: window.location.href,
+    capturedAt: Date.now(),
+  };
+
+  try {
+    window.localStorage.setItem(
+      VOCABULARY_ATTRIBUTION_STORAGE_KEY,
+      JSON.stringify(payload),
+    );
+
+    if (fbc) {
+      window.localStorage.setItem("fj_vocab_fbc", fbc);
+    }
+  } catch {
+    // Funnel must continue even if localStorage is unavailable.
+  }
+}
+
+
 const ALLOWED_FORWARD_PARAMS = [
   "utm_source",
   "utm_medium",
@@ -109,6 +203,10 @@ function buildCourseDestination() {
 }
 
 export default function VocabularyVSL() {
+  useEffect(() => {
+    persistVocabularyAttribution();
+  }, []);
+
   const iframeRef = useRef(null);
   const playerRef = useRef(null);
   const ctaTrackedRef = useRef(false);
