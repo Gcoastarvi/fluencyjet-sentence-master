@@ -2,6 +2,9 @@
 FROM node:22-alpine AS client-build
 WORKDIR /app/client
 
+ARG VITE_MEMORY_PARENT_VSL_ID
+ARG VITE_MEMORY_ADVANCED_VSL_ID
+
 COPY client/package*.json ./
 RUN npm ci
 
