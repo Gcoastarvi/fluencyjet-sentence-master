@@ -22,6 +22,13 @@ const EXPECTED_CURRENCY = "INR";
 const EXPECTED_EVENT = "payment.captured";
 const VOCABULARY_AMOUNT_PAISE = 79900;
 
+const MEMORY_MASTERCLASS_PRODUCT_KEY = "memory_masterclass_99";
+const MEMORY_MASTERCLASS_VALUE = 99;
+const MEMORY_MASTERCLASS_CONTENT_NAME =
+  "Amaze Memory Live Study Memory Class";
+const MEMORY_MASTERCLASS_EVENT_SOURCE_URL =
+  "https://www.fluencyjet.com/memory-masterclass/thank-you";
+
 const PRODUCTS_BY_AMOUNT = {
   79900: {
     code: "vocabulary_challenge_799",
@@ -115,6 +122,276 @@ router.post(
     const paymentLinkId = null; // payment.captured carries no page/link entity
 
     const dedupKey = eventId || `noeid_${paymentId}`;
+
+    // Memory Masterclass is intentionally NOT identified by amount.
+    // Match only the exact Razorpay order created by our Memory checkout.
+    let memoryIntent = null;
+
+    if (razorpayOrderId) {
+      try {
+        memoryIntent =
+          await prisma.memoryMasterclassCheckoutIntent.findUnique({
+            where: {
+              razorpayOrderId,
+            },
+            select: {
+              id: true,
+              memoryAssessmentSessionId: true,
+              razorpayOrderId: true,
+
+              amount: true,
+              currency: true,
+              productKey: true,
+
+              eventKey: true,
+              trackId: true,
+
+              visitorId: true,
+              fbclid: true,
+              fbc: true,
+              fbp: true,
+
+              landingPage: true,
+              clientIp: true,
+              clientUserAgent: true,
+            },
+          });
+      } catch (err) {
+        console.error(
+          "[webhook/rzp] Memory checkout intent lookup failed:",
+          err.message,
+        );
+
+        return res.status(500).json({
+          ok: false,
+          error: "DB error",
+        });
+      }
+    }
+
+    if (memoryIntent) {
+      // The order id identifies the product; the stored checkout intent
+      // remains authoritative for amount/currency/product identity.
+      if (
+        memoryIntent.productKey !==
+          MEMORY_MASTERCLASS_PRODUCT_KEY ||
+        amount !== memoryIntent.amount ||
+        currency !== memoryIntent.currency ||
+        memoryIntent.currency !== EXPECTED_CURRENCY
+      ) {
+        console.warn(
+          `[webhook/rzp] Memory checkout mismatch orderId=${razorpayOrderId} ` +
+            `paymentAmount=${amount} intentAmount=${memoryIntent.amount} ` +
+            `paymentCurrency=${currency} intentCurrency=${memoryIntent.currency}`,
+        );
+
+        return res.status(200).json({
+          ok: true,
+          skipped: true,
+          reason: "memory_checkout_mismatch",
+        });
+      }
+
+      if (paymentStatus !== "captured") {
+        console.warn(
+          `[webhook/rzp] Unexpected Memory payment status: ${paymentStatus}`,
+        );
+
+        return res.status(200).json({
+          ok: true,
+          skipped: true,
+          reason: "status_not_captured",
+        });
+      }
+
+      try {
+        const existingMemoryPurchase =
+          await prisma.memoryMasterclassPurchase.findFirst({
+            where: {
+              OR: [
+                { webhookEventId: dedupKey },
+                { paymentId },
+                { razorpayOrderId },
+                { checkoutIntentId: memoryIntent.id },
+              ],
+            },
+            select: {
+              id: true,
+            },
+          });
+
+        if (existingMemoryPurchase) {
+          console.log(
+            `[webhook/rzp] Duplicate Memory purchase paymentId=${paymentId}`,
+          );
+
+          return res.status(200).json({
+            ok: true,
+            duplicate: true,
+          });
+        }
+      } catch (err) {
+        console.error(
+          "[webhook/rzp] Memory idempotency check failed:",
+          err.message,
+        );
+
+        return res.status(500).json({
+          ok: false,
+          error: "DB error",
+        });
+      }
+
+      const memoryMetaEventId =
+        `${MEMORY_MASTERCLASS_PRODUCT_KEY}_purchase_${paymentId}`;
+
+      let memoryRecord;
+
+      try {
+        memoryRecord =
+          await prisma.memoryMasterclassPurchase.create({
+            data: {
+              checkoutIntentId: memoryIntent.id,
+
+              razorpayOrderId,
+              paymentId,
+
+              amount,
+              currency,
+              productKey: MEMORY_MASTERCLASS_PRODUCT_KEY,
+              status: paymentStatus,
+
+              customerEmail,
+              customerContact,
+
+              webhookEventId: dedupKey,
+
+              metaEventId: memoryMetaEventId,
+              metaDelivered: false,
+            },
+          });
+
+        console.log(
+          `[webhook/rzp] Memory purchase saved intent=${memoryIntent.id} ` +
+            `id=${memoryRecord.id} paymentId=${paymentId}`,
+        );
+      } catch (err) {
+        if (err.code === "P2002") {
+          const duplicate =
+            await prisma.memoryMasterclassPurchase.findFirst({
+              where: {
+                OR: [
+                  { webhookEventId: dedupKey },
+                  { paymentId },
+                  { razorpayOrderId },
+                  { checkoutIntentId: memoryIntent.id },
+                ],
+              },
+              select: {
+                id: true,
+              },
+            });
+
+          if (duplicate) {
+            console.log(
+              `[webhook/rzp] Concurrent duplicate Memory insert paymentId=${paymentId}`,
+            );
+
+            return res.status(200).json({
+              ok: true,
+              duplicate: true,
+            });
+          }
+        }
+
+        console.error(
+          "[webhook/rzp] Memory purchase create failed:",
+          err.message,
+        );
+
+        return res.status(500).json({
+          ok: false,
+          error: "DB error",
+        });
+      }
+
+      const pixelId = process.env.META_PIXEL_ID;
+      const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
+
+      if (!pixelId || !accessToken) {
+        console.warn(
+          "[webhook/rzp] META_PIXEL_ID or META_CAPI_ACCESS_TOKEN not set — Memory CAPI skipped",
+        );
+
+        return res.status(200).json({
+          ok: true,
+          product: MEMORY_MASTERCLASS_PRODUCT_KEY,
+          paymentId,
+          capiSkipped: true,
+        });
+      }
+
+      const memoryCapiResult = await sendCapiPurchase({
+        pixelId,
+        accessToken,
+
+        eventId: memoryMetaEventId,
+        eventTime: Date.now(),
+
+        eventSourceUrl:
+          MEMORY_MASTERCLASS_EVENT_SOURCE_URL,
+
+        value: MEMORY_MASTERCLASS_VALUE,
+        currency: EXPECTED_CURRENCY,
+
+        contentName: MEMORY_MASTERCLASS_CONTENT_NAME,
+        contentIds: [MEMORY_MASTERCLASS_PRODUCT_KEY],
+
+        email: customerEmail,
+        phone: customerContact,
+
+        externalId: memoryIntent.visitorId || null,
+        fbc: memoryIntent.fbc || null,
+        fbp: memoryIntent.fbp || null,
+
+        clientIpAddress: memoryIntent.clientIp || null,
+        clientUserAgent:
+          memoryIntent.clientUserAgent || null,
+      });
+
+      try {
+        await prisma.memoryMasterclassPurchase.update({
+          where: {
+            id: memoryRecord.id,
+          },
+          data: {
+            metaDelivered: memoryCapiResult.ok,
+          },
+        });
+      } catch (err) {
+        console.error(
+          "[webhook/rzp] Failed to update Memory CAPI status:",
+          err.message,
+        );
+      }
+
+      if (memoryCapiResult.ok) {
+        console.log(
+          `[webhook/rzp] Memory CAPI Purchase delivered eventId=${memoryMetaEventId} status=${memoryCapiResult.status}`,
+        );
+      } else {
+        console.warn(
+          `[webhook/rzp] Memory CAPI delivery failed status=${memoryCapiResult.status}`,
+        );
+      }
+
+      return res.status(200).json({
+        ok: true,
+        product: MEMORY_MASTERCLASS_PRODUCT_KEY,
+        paymentId,
+        capiDelivered: memoryCapiResult.ok,
+      });
+    }
 
     try {
       const existing = await prisma.spokenEnglishPurchase.findFirst({

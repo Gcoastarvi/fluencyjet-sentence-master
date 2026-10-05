@@ -19,6 +19,14 @@ const mockPrisma = {
   vocabularyCheckoutIntent: {
     findUnique: jest.fn(),
   },
+  memoryMasterclassCheckoutIntent: {
+    findUnique: jest.fn(),
+  },
+  memoryMasterclassPurchase: {
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+  },
   spokenEnglishPurchase: {
     findFirst: jest.fn(),
     create: jest.fn(),
@@ -101,6 +109,30 @@ function makeIntent(overrides = {}) {
   };
 }
 
+function makeMemoryIntent(overrides = {}) {
+  return {
+    id: "memory-intent-1",
+    memoryAssessmentSessionId: "memory-session-1",
+    razorpayOrderId: "order_memory_123",
+    amount: 9900,
+    currency: "INR",
+    productKey: "memory_masterclass_99",
+    eventKey: "2026-10-18_1700_ist",
+    trackId: "school_foundation",
+
+    visitorId: "memory-visitor-1",
+    fbclid: "memory-fbclid-1",
+    fbc: "fb.1.123456789.memory-fbclid-1",
+    fbp: "fb.1.123456789.987654321",
+    landingPage:
+      "https://www.fluencyjet.com/memory-challenge/result",
+    clientIp: "49.12.34.56",
+    clientUserAgent: "FluencyJet-Memory-Test/1.0",
+
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   jest.resetAllMocks();
   process.env.RAZORPAY_WEBHOOK_SECRET = WEBHOOK_SECRET;
@@ -114,6 +146,29 @@ beforeEach(() => {
     makeIntent(),
   ]);
   mockPrisma.vocabularyCheckoutIntent.findUnique.mockResolvedValue(null);
+
+  mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(
+    null,
+  );
+
+  mockPrisma.memoryMasterclassPurchase.findFirst.mockResolvedValue(
+    null,
+  );
+
+  mockPrisma.memoryMasterclassPurchase.create.mockImplementation(
+    async ({ data }) => ({
+      id: "memory-purchase-1",
+      ...data,
+    }),
+  );
+
+  mockPrisma.memoryMasterclassPurchase.update.mockImplementation(
+    async ({ data }) => ({
+      id: "memory-purchase-1",
+      ...data,
+    }),
+  );
+
   mockSendCapiPurchase.mockResolvedValue({
     status: 200,
     ok: true,
@@ -390,4 +445,202 @@ describe("verified Razorpay Sentence Master capture attribution", () => {
     );
   });
 
+});
+
+describe("verified Razorpay Memory Masterclass capture", () => {
+  test("matches the exact Razorpay order and persists one dedicated Memory purchase", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(
+      makeMemoryIntent(),
+    );
+
+    const response = await postWebhook(
+      makeApp(),
+      makePayload({
+        id: "pay_memory_1",
+        order_id: "order_memory_123",
+        amount: 9900,
+      }),
+      "event_memory_1",
+    );
+
+    expect(response.status).toBe(200);
+
+    expect(
+      mockPrisma.memoryMasterclassCheckoutIntent.findUnique,
+    ).toHaveBeenCalledWith({
+      where: {
+        razorpayOrderId: "order_memory_123",
+      },
+      select: expect.objectContaining({
+        id: true,
+        memoryAssessmentSessionId: true,
+        razorpayOrderId: true,
+        amount: true,
+        currency: true,
+        productKey: true,
+        trackId: true,
+      }),
+    });
+
+    expect(
+      mockPrisma.memoryMasterclassPurchase.create,
+    ).toHaveBeenCalledTimes(1);
+
+    expect(
+      mockPrisma.memoryMasterclassPurchase.create,
+    ).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        checkoutIntentId: "memory-intent-1",
+        razorpayOrderId: "order_memory_123",
+        paymentId: "pay_memory_1",
+
+        amount: 9900,
+        currency: "INR",
+        productKey: "memory_masterclass_99",
+        status: "captured",
+
+        customerEmail: "learner@example.test",
+        customerContact: DESTINATION,
+
+        webhookEventId: "event_memory_1",
+        metaEventId:
+          "memory_masterclass_99_purchase_pay_memory_1",
+        metaDelivered: false,
+      }),
+    });
+
+    expect(
+      mockPrisma.spokenEnglishPurchase.create,
+    ).not.toHaveBeenCalled();
+
+    expect(response.body).toMatchObject({
+      ok: true,
+      product: "memory_masterclass_99",
+      paymentId: "pay_memory_1",
+    });
+  });
+
+  test("duplicate Memory webhook exits without creating another purchase", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(
+      makeMemoryIntent(),
+    );
+
+    mockPrisma.memoryMasterclassPurchase.findFirst.mockResolvedValue({
+      id: "memory-purchase-existing",
+    });
+
+    const response = await postWebhook(
+      makeApp(),
+      makePayload({
+        id: "pay_memory_duplicate",
+        order_id: "order_memory_123",
+        amount: 9900,
+      }),
+      "event_memory_duplicate",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      ok: true,
+      duplicate: true,
+    });
+
+    expect(
+      mockPrisma.memoryMasterclassPurchase.create,
+    ).not.toHaveBeenCalled();
+
+    expect(
+      mockPrisma.spokenEnglishPurchase.create,
+    ).not.toHaveBeenCalled();
+  });
+
+  test("rejects a Memory order when captured amount differs from the stored checkout intent", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(
+      makeMemoryIntent(),
+    );
+
+    const response = await postWebhook(
+      makeApp(),
+      makePayload({
+        id: "pay_memory_wrong_amount",
+        order_id: "order_memory_123",
+        amount: 100,
+      }),
+      "event_memory_wrong_amount",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      ok: true,
+      skipped: true,
+      reason: "memory_checkout_mismatch",
+    });
+
+    expect(
+      mockPrisma.memoryMasterclassPurchase.create,
+    ).not.toHaveBeenCalled();
+
+    expect(
+      mockPrisma.spokenEnglishPurchase.create,
+    ).not.toHaveBeenCalled();
+  });
+
+  test("rejects a Memory order when captured currency differs from the stored checkout intent", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(
+      makeMemoryIntent(),
+    );
+
+    const response = await postWebhook(
+      makeApp(),
+      makePayload({
+        id: "pay_memory_wrong_currency",
+        order_id: "order_memory_123",
+        amount: 9900,
+        currency: "USD",
+      }),
+      "event_memory_wrong_currency",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      ok: true,
+      skipped: true,
+      reason: "memory_checkout_mismatch",
+    });
+
+    expect(
+      mockPrisma.memoryMasterclassPurchase.create,
+    ).not.toHaveBeenCalled();
+  });
+
+  test("an unknown ₹99 order is not guessed to be a Memory purchase", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(
+      null,
+    );
+
+    const response = await postWebhook(
+      makeApp(),
+      makePayload({
+        id: "pay_unknown_99",
+        order_id: "order_unknown_99",
+        amount: 9900,
+      }),
+      "event_unknown_99",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      ok: true,
+      skipped: true,
+      reason: "unsupported_product_amount",
+    });
+
+    expect(
+      mockPrisma.memoryMasterclassPurchase.create,
+    ).not.toHaveBeenCalled();
+
+    expect(
+      mockPrisma.spokenEnglishPurchase.create,
+    ).not.toHaveBeenCalled();
+  });
 });

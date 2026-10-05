@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
+import MemoryMasterclassOffer from "../../components/memory/MemoryMasterclassOffer";
 
 const DOMAIN_LABELS = {
   immediate: "Immediate Recall",
@@ -511,33 +512,16 @@ export default function MemoryChallengeResult() {
             </p>
 
             <p className="mt-2 text-sm font-bold text-slate-600">
-              Complete during the Live Study Memory Lab
+              Take your Second Study Memory Test after the live class
             </p>
           </div>
         </section>
 
-        {MEMORY_SESSION_PERSISTENCE_ENABLED && ownerToken && (
+        {MEMORY_SESSION_PERSISTENCE_ENABLED && ownerToken && !leadSaved && (
           <section className="mt-6 rounded-[2rem] border border-indigo-200 bg-white p-6 shadow-sm sm:p-8">
-            {leadSaved ? (
-              <div className="text-center">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
-                  Report details saved
-                </p>
-
-                <h2 className="mt-3 text-2xl font-black text-slate-950">
-                  Your benchmark is saved
-                </h2>
-
-                <p className="mt-3 font-medium leading-7 text-slate-600">
-                  {isAdvancedLead
-                    ? "Your contact details have been linked to this Study Recall Benchmark."
-                    : "Your parent or guardian contact has been linked to this Study Recall Benchmark."}
-                </p>
-              </div>
-            ) : (
               <>
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
-                  Save your benchmark
+                  Save your Study Memory Score
                 </p>
 
                 <h2 className="mt-3 text-2xl font-black text-slate-950">
@@ -547,7 +531,7 @@ export default function MemoryChallengeResult() {
                 <p className="mt-3 font-medium leading-7 text-slate-600">
                   {isAdvancedLead
                     ? "Add your details so this benchmark can stay connected to your Study Recall journey."
-                    : "Add a parent or guardian contact so this benchmark can stay connected to your Study Recall journey."}
+                    : "Add a parent or guardian contact so your Study Memory Score can stay connected to this journey."}
                 </p>
 
                 <form
@@ -734,8 +718,15 @@ export default function MemoryChallengeResult() {
                   </button>
                 </form>
               </>
-            )}
           </section>
+        )}
+
+        {leadSaved && result && (
+          <MemoryMasterclassOffer
+            trackId={result.trackId || assessment?.trackId || selectedTrack}
+            score={result.totalScore}
+            ownerToken={ownerToken}
+          />
         )}
 
         <p className="mt-6 text-center text-xs font-medium leading-5 text-slate-500">

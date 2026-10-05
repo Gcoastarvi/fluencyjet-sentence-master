@@ -45,6 +45,7 @@ import TrySpokenEnglishGym from "./pages/marketing/TrySpokenEnglishGym";
 import VocabularyVSL from "./pages/marketing/VocabularyVSL";
 import VocabularyCourse from "./pages/marketing/VocabularyCourse";
 import VocabularyThankYou from "./pages/marketing/VocabularyThankYou";
+import MemoryMasterclassThankYou from "./pages/public/MemoryMasterclassThankYou";
 import WebinarAttend from "./pages/student/WebinarAttend";
 import WebinarPreviewComplete from "./pages/student/WebinarAttend";
 
@@ -267,6 +268,10 @@ export default function App() {
             <Route
               path="/memory-challenge/result"
               element={<MemoryChallengeResult />}
+            />
+            <Route
+              path="/memory-masterclass/thank-you"
+              element={<MemoryMasterclassThankYou />}
             />
             <Route path="/vocabulary-vsl" element={<VocabularyVSL />} />
             <Route path="/vocabulary-course" element={<VocabularyCourse />} />

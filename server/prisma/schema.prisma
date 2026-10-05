@@ -352,6 +352,8 @@ model MemoryAssessmentSession {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  masterclassCheckoutIntents MemoryMasterclassCheckoutIntent[]
+
   @@index([whatsappNumberNormalized])
   @@index([trackId, createdAt])
   @@index([createdAt])
@@ -592,4 +594,87 @@ enum ReconciliationAction {
 enum ReconciliationDecision {
   APPLIED
   REJECTED
+}
+
+model MemoryMasterclassCheckoutIntent {
+  id String @id @default(cuid())
+
+  memoryAssessmentSessionId String
+  memoryAssessmentSession   MemoryAssessmentSession @relation(fields: [memoryAssessmentSessionId], references: [id], onDelete: Restrict)
+
+  razorpayOrderId String @unique
+
+  amount     Int    @default(9900)
+  currency   String @default("INR")
+  productKey String @default("memory_masterclass_99") @db.VarChar(80)
+
+  // The exact live-class instance purchased.
+  eventKey      String   @db.VarChar(100)
+  eventStartsAt DateTime
+  eventEndsAt   DateTime
+  eventTimezone String   @default("Asia/Kolkata") @db.VarChar(80)
+
+  // Snapshot of the learner segment at checkout.
+  trackId String @db.VarChar(50)
+
+  // First-party browser/session identity.
+  visitorId String? @db.VarChar(191)
+
+  // Meta attribution captured at checkout.
+  fbclid String? @db.Text
+  fbc    String? @db.Text
+  fbp    String? @db.Text
+
+  // Campaign attribution snapshot.
+  utmSource   String? @db.VarChar(150)
+  utmMedium   String? @db.VarChar(150)
+  utmCampaign String? @db.VarChar(200)
+  utmContent  String? @db.VarChar(200)
+  utmTerm     String? @db.VarChar(200)
+  source      String? @db.VarChar(150)
+
+  landingPage     String? @db.Text
+  clientIp        String? @db.VarChar(100)
+  clientUserAgent String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchase MemoryMasterclassPurchase?
+
+  @@index([memoryAssessmentSessionId])
+  @@index([eventKey])
+  @@index([createdAt])
+  @@index([utmCampaign])
+  @@index([fbclid])
+}
+
+model MemoryMasterclassPurchase {
+  id String @id @default(cuid())
+
+  checkoutIntentId String @unique
+  checkoutIntent   MemoryMasterclassCheckoutIntent @relation(fields: [checkoutIntentId], references: [id], onDelete: Restrict)
+
+  razorpayOrderId String @unique
+  paymentId       String @unique
+
+  amount     Int
+  currency   String @default("INR")
+  productKey String @default("memory_masterclass_99") @db.VarChar(80)
+  status     String @db.VarChar(40)
+
+  customerEmail   String? @db.VarChar(191)
+  customerContact String? @db.VarChar(40)
+
+  webhookEventId String? @unique @db.VarChar(191)
+
+  // Reserved for reliable Meta Purchase delivery.
+  metaEventId   String?  @unique @db.VarChar(191)
+  metaDelivered Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([paymentId])
 }
