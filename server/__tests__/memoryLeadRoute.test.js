@@ -182,6 +182,69 @@ describe("PATCH /api/memory/session/lead", () => {
     ).not.toHaveBeenCalled();
   });
 
+  test("allows State and email to be omitted", async () => {
+    const payload = {
+      ...VALID_LEAD,
+    };
+
+    delete payload.state;
+    delete payload.email;
+
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send(payload);
+
+    expect(res.status).toBe(200);
+
+    const data =
+      mockPrisma.memoryAssessmentSession.updateMany.mock.calls[0][0]
+        .data;
+
+    expect(data.state).toBeNull();
+    expect(data.email).toBeNull();
+  });
+
+  test("allows parent or guardian name to be omitted for a school lead", async () => {
+    const payload = {
+      ...VALID_LEAD,
+    };
+
+    delete payload.parentGuardianName;
+    delete payload.state;
+    delete payload.email;
+
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send(payload);
+
+    expect(res.status).toBe(200);
+
+    const data =
+      mockPrisma.memoryAssessmentSession.updateMany.mock.calls[0][0]
+        .data;
+
+    expect(data.studentClass).toBe("7");
+    expect(data.parentGuardianName).toBeNull();
+    expect(data.whatsappContactRole).toBe("PARENT_GUARDIAN");
+  });
+
+  test("stores a consent version for the exact WhatsApp wording", async () => {
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send(VALID_LEAD);
+
+    expect(res.status).toBe(200);
+
+    const data =
+      mockPrisma.memoryAssessmentSession.updateMany.mock.calls[0][0]
+        .data;
+
+    expect(data.whatsappConsent).toBe(true);
+    expect(data.whatsappConsentVersion).toBe(
+      "memory_challenge_v1",
+    );
+  });
+
   test("allows email to be omitted", async () => {
     const payload = {
       ...VALID_LEAD,

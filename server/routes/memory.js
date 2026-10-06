@@ -484,7 +484,7 @@ router.patch("/session/lead", async (req, res) => {
       body.whatsappNumber,
       30,
     );
-    const state = cleanString(body.state, 100);
+    const state = optionalString(body.state, 100);
     const email = optionalString(body.email, 191);
 
     if (!ownerToken) {
@@ -495,12 +495,12 @@ router.patch("/session/lead", async (req, res) => {
       });
     }
 
-    if (!learnerName || !whatsappNumber || !state) {
+    if (!learnerName || !whatsappNumber) {
       return res.status(400).json({
         ok: false,
         code: "MEMORY_LEAD_FIELDS_REQUIRED",
         message:
-          "Learner name, WhatsApp number, and state are required.",
+          "Learner name and WhatsApp number are required.",
       });
     }
 
@@ -567,12 +567,12 @@ router.patch("/session/lead", async (req, res) => {
     let trackLeadData;
 
     if (leadTrackRule.leadType === "school") {
-      if (!studentClass || !parentGuardianName) {
+      if (!studentClass) {
         return res.status(400).json({
           ok: false,
           code: "MEMORY_LEAD_FIELDS_REQUIRED",
           message:
-            "Student name, class, parent or guardian name, WhatsApp number, and state are required.",
+            "Student name, class, and WhatsApp number are required.",
         });
       }
 
@@ -589,7 +589,7 @@ router.patch("/session/lead", async (req, res) => {
       trackLeadData = {
         studentClass,
         studyCategory: null,
-        parentGuardianName,
+        parentGuardianName: parentGuardianName || null,
         whatsappContactRole: "PARENT_GUARDIAN",
       };
     } else {
@@ -642,6 +642,8 @@ router.patch("/session/lead", async (req, res) => {
           whatsappConsentAt: capturedAt,
           whatsappConsentSource:
             "memory-challenge-result-lead-form",
+          whatsappConsentVersion:
+            "memory_challenge_v1",
 
           email,
           state,

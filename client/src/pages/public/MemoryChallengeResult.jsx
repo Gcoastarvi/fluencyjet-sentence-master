@@ -97,8 +97,6 @@ export default function MemoryChallengeResult() {
     studyCategory: "",
     parentGuardianName: "",
     whatsappNumber: "",
-    email: "",
-    state: "",
     whatsappConsent: false,
   });
 
@@ -166,9 +164,21 @@ export default function MemoryChallengeResult() {
   function updateLeadField(event) {
     const { name, value, type, checked } = event.target;
 
+    let nextValue = type === "checkbox" ? checked : value;
+
+    if (name === "whatsappNumber") {
+      const digits = value.replace(/\D/g, "");
+
+      if (/^91\d{10}$/.test(digits)) {
+        nextValue = digits.slice(2);
+      } else {
+        nextValue = digits.slice(0, 10);
+      }
+    }
+
     setLeadForm((current) => ({
       ...current,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: nextValue,
     }));
   }
 
@@ -178,6 +188,13 @@ export default function MemoryChallengeResult() {
     if (!ownerToken) {
       setLeadError(
         "This benchmark session is not available for saving yet.",
+      );
+      return;
+    }
+
+    if (!leadForm.whatsappConsent) {
+      setLeadError(
+        "Please confirm that we can send your Study Memory Score to this WhatsApp number.",
       );
       return;
     }
@@ -521,17 +538,17 @@ export default function MemoryChallengeResult() {
           <section className="mt-6 rounded-[2rem] border border-indigo-200 bg-white p-6 shadow-sm sm:p-8">
               <>
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
-                  Save your Study Memory Score
+                  SAVE YOUR RESULT
                 </p>
 
                 <h2 className="mt-3 text-2xl font-black text-slate-950">
-                  Save this report &amp; continue
+                  Get your Study Memory Score on WhatsApp
                 </h2>
 
                 <p className="mt-3 font-medium leading-7 text-slate-600">
                   {isAdvancedLead
-                    ? "Add your details so this benchmark can stay connected to your Study Recall journey."
-                    : "Add a parent or guardian contact so your Study Memory Score can stay connected to this journey."}
+                    ? "Enter your WhatsApp number. We'll send your score so you can save it and compare your progress later."
+                    : "Enter a parent or guardian WhatsApp number. We'll send your score so you can save it and compare your progress later."}
                 </p>
 
                 <form
@@ -557,7 +574,7 @@ export default function MemoryChallengeResult() {
                   {isAdvancedLead ? (
                     <div>
                       <label className="block text-sm font-black text-slate-800">
-                        Study / exam category
+                        Preparing for
                       </label>
 
                       <select
@@ -567,9 +584,7 @@ export default function MemoryChallengeResult() {
                         required
                         className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
                       >
-                        <option value="">
-                          Select your category
-                        </option>
+                        <option value="">Select your category</option>
 
                         {(assessment?.studyCategories || []).map(
                           (category) => (
@@ -584,51 +599,32 @@ export default function MemoryChallengeResult() {
                       </select>
                     </div>
                   ) : (
-                    <>
-                      <div>
-                        <label className="block text-sm font-black text-slate-800">
-                          Class
-                        </label>
+                    <div>
+                      <label className="block text-sm font-black text-slate-800">
+                        Class
+                      </label>
 
-                        <select
-                          name="studentClass"
-                          value={leadForm.studentClass}
-                          onChange={updateLeadField}
-                          required
-                          className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
-                        >
-                          <option value="">Select class</option>
+                      <select
+                        name="studentClass"
+                        value={leadForm.studentClass}
+                        onChange={updateLeadField}
+                        required
+                        className="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                      >
+                        <option value="">Select class</option>
 
-                          {(assessment?.studentClasses || []).map(
-                            (studentClass) => (
-                              <option
-                                key={studentClass}
-                                value={studentClass}
-                              >
-                                Class {studentClass}
-                              </option>
-                            ),
-                          )}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-black text-slate-800">
-                          Parent / guardian name
-                        </label>
-
-                        <input
-                          type="text"
-                          name="parentGuardianName"
-                          value={leadForm.parentGuardianName}
-                          onChange={updateLeadField}
-                          required
-                          maxLength={100}
-                          autoComplete="name"
-                          className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
-                        />
-                      </div>
-                    </>
+                        {(assessment?.studentClasses || []).map(
+                          (studentClass) => (
+                            <option
+                              key={studentClass}
+                              value={studentClass}
+                            >
+                              Class {studentClass}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
                   )}
 
                   <div>
@@ -637,69 +633,70 @@ export default function MemoryChallengeResult() {
                         ? "Your WhatsApp number"
                         : "Parent / guardian WhatsApp"}
                     </label>
-                    <input
-                      type="tel"
-                      name="whatsappNumber"
-                      value={leadForm.whatsappNumber}
-                      onChange={updateLeadField}
-                      required
-                      maxLength={30}
-                      autoComplete="tel"
-                      inputMode="tel"
-                      placeholder="98765 43210"
-                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
-                    />
+
+                    <div className="mt-2 flex overflow-hidden rounded-2xl border border-slate-300 bg-white focus-within:border-indigo-500">
+                      <div className="flex shrink-0 items-center gap-2 border-r border-slate-200 bg-slate-50 px-4 font-bold text-slate-700">
+                        <span aria-hidden="true">🇮🇳</span>
+                        <span>+91</span>
+                      </div>
+
+                      <input
+                        type="tel"
+                        name="whatsappNumber"
+                        value={leadForm.whatsappNumber}
+                        onChange={updateLeadField}
+                        required
+                        maxLength={30}
+                        autoComplete="tel"
+                        inputMode="tel"
+                        placeholder="98765 43210"
+                        className="min-w-0 flex-1 px-4 py-3 text-slate-950 outline-none"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-black text-slate-800">
-                      State
-                    </label>
-                    <input
-                      type="text"
-                      name="state"
-                      value={leadForm.state}
-                      onChange={updateLeadField}
-                      required
-                      maxLength={100}
-                      autoComplete="address-level1"
-                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
-                    />
-                  </div>
+                  {!isAdvancedLead && (
+                    <div>
+                      <label className="block text-sm font-black text-slate-800">
+                        Parent / guardian name{" "}
+                        <span className="font-medium text-slate-500">
+                          (optional)
+                        </span>
+                      </label>
 
-                  <div>
-                    <label className="block text-sm font-black text-slate-800">
-                      Email{" "}
-                      <span className="font-medium text-slate-500">
-                        (optional)
+                      <input
+                        type="text"
+                        name="parentGuardianName"
+                        value={leadForm.parentGuardianName}
+                        onChange={updateLeadField}
+                        maxLength={100}
+                        autoComplete="name"
+                        className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl bg-slate-50 p-4">
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        name="whatsappConsent"
+                        checked={leadForm.whatsappConsent}
+                        onChange={updateLeadField}
+                        className="mt-1 h-5 w-5 shrink-0"
+                      />
+
+                      <span className="text-sm font-black leading-6 text-slate-800">
+                        Send my Study Memory Score to this WhatsApp number.
                       </span>
                     </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={leadForm.email}
-                      onChange={updateLeadField}
-                      maxLength={191}
-                      autoComplete="email"
-                      className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
-                    />
+
+                    <p className="mt-2 pl-8 text-xs font-medium leading-5 text-slate-500 sm:text-sm">
+                      I also agree to receive Memory Masterclass updates,
+                      helpful study tips and occasional relevant FluencyJet
+                      offers on WhatsApp. I can opt out anytime.
+                    </p>
                   </div>
-
-                  <label className="flex items-start gap-3 rounded-2xl bg-slate-50 p-4">
-                    <input
-                      type="checkbox"
-                      name="whatsappConsent"
-                      checked={leadForm.whatsappConsent}
-                      onChange={updateLeadField}
-                      required
-                      className="mt-1 h-4 w-4"
-                    />
-
-                    <span className="text-sm font-medium leading-6 text-slate-600">
-                      I agree to receive my benchmark report and Study Memory
-                      Lab updates on WhatsApp.
-                    </span>
-                  </label>
 
                   {leadError && (
                     <p className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">
@@ -714,7 +711,7 @@ export default function MemoryChallengeResult() {
                   >
                     {leadStatus === "saving"
                       ? "Saving..."
-                      : "Save My Report"}
+                      : "Send My Score on WhatsApp →"}
                   </button>
                 </form>
               </>

@@ -323,9 +323,10 @@ model MemoryAssessmentSession {
   whatsappNumberNormalized String? @db.VarChar(20)
   whatsappContactRole      String? @db.VarChar(40)
 
-  whatsappConsent       Boolean   @default(false)
-  whatsappConsentAt     DateTime?
-  whatsappConsentSource String?   @db.VarChar(150)
+  whatsappConsent        Boolean   @default(false)
+  whatsappConsentAt      DateTime?
+  whatsappConsentSource  String?   @db.VarChar(150)
+  whatsappConsentVersion String?   @db.VarChar(80)
 
   email          String?   @db.VarChar(191)
   state          String?   @db.VarChar(100)
