@@ -328,6 +328,13 @@ model MemoryAssessmentSession {
   whatsappConsentSource  String?   @db.VarChar(150)
   whatsappConsentVersion String?   @db.VarChar(80)
 
+  // Study Memory Score WhatsApp delivery
+  whatsappScoreDeliveryStatus        String?  @db.VarChar(30)
+  whatsappScoreDeliveryAttempts      Int      @default(0)
+  whatsappScoreDeliveryLastAttemptAt DateTime?
+  whatsappScoreDeliveryAcceptedAt    DateTime?
+  whatsappScoreDeliveryError         String?  @db.VarChar(500)
+
   email          String?   @db.VarChar(191)
   state          String?   @db.VarChar(100)
   leadCapturedAt DateTime?
@@ -356,6 +363,7 @@ model MemoryAssessmentSession {
   masterclassCheckoutIntents MemoryMasterclassCheckoutIntent[]
 
   @@index([whatsappNumberNormalized])
+  @@index([whatsappScoreDeliveryStatus])
   @@index([trackId, createdAt])
   @@index([createdAt])
 }

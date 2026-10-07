@@ -8,6 +8,8 @@ import {
 import request from "supertest";
 import express from "express";
 
+const mockDeliverMemoryScoreWhatsApp = jest.fn();
+
 const mockPrisma = {
   memoryAssessmentSession: {
     create: jest.fn(),
@@ -18,6 +20,10 @@ const mockPrisma = {
 
 jest.unstable_mockModule("../db/client.js", () => ({
   default: mockPrisma,
+}));
+
+jest.unstable_mockModule("../services/memoryScoreWhatsApp.js", () => ({
+  deliverMemoryScoreWhatsApp: mockDeliverMemoryScoreWhatsApp,
 }));
 
 const { default: memoryRouter } = await import("../routes/memory.js");
@@ -45,6 +51,12 @@ beforeEach(() => {
 
   mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValue({
     trackId: "school_foundation",
+    formAScore: 68,
+  });
+
+  mockDeliverMemoryScoreWhatsApp.mockResolvedValue({
+    ok: true,
+    providerStatus: "attempted",
   });
 
   mockPrisma.memoryAssessmentSession.updateMany.mockResolvedValue({
@@ -142,6 +154,7 @@ describe("PATCH /api/memory/session/lead", () => {
       },
       select: {
         trackId: true,
+        formAScore: true,
       },
     });
 
@@ -500,6 +513,47 @@ describe("PATCH /api/memory/session/lead", () => {
     expect(
       mockPrisma.memoryAssessmentSession.updateMany,
     ).not.toHaveBeenCalled();
+  });
+
+
+  test("triggers WhatsApp score delivery after successful lead persistence using the trusted session score", async () => {
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send(VALID_LEAD);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({
+      ok: true,
+      lead: {
+        saved: true,
+      },
+    });
+
+    expect(mockDeliverMemoryScoreWhatsApp).toHaveBeenCalledTimes(1);
+
+    expect(mockDeliverMemoryScoreWhatsApp).toHaveBeenCalledWith({
+      ownerToken: VALID_LEAD.ownerToken,
+      trackId: "school_foundation",
+      learnerName: "Arun",
+      parentGuardianName: "Kumar",
+      whatsappContactRole: "PARENT_GUARDIAN",
+      whatsappNumberNormalized: "+919876543210",
+      formAScore: 68,
+    });
+  });
+
+  test("does not wait for WANotifier before returning successful lead capture", async () => {
+    mockDeliverMemoryScoreWhatsApp.mockImplementationOnce(
+      () => new Promise(() => {}),
+    );
+
+    const res = await request(makeApp())
+      .patch("/api/memory/session/lead")
+      .send(VALID_LEAD);
+
+    expect(res.status).toBe(200);
+    expect(res.body.lead.saved).toBe(true);
+    expect(mockDeliverMemoryScoreWhatsApp).toHaveBeenCalledTimes(1);
   });
 
 });

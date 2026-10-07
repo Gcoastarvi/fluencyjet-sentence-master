@@ -7,6 +7,9 @@ import {
   scoreSchoolAdvancedFormA,
   scoreSchoolFoundationFormA,
 } from "../services/memoryAssessmentScorer.js";
+import {
+  deliverMemoryScoreWhatsApp,
+} from "../services/memoryScoreWhatsApp.js";
 
 const router = express.Router();
 
@@ -542,6 +545,7 @@ router.patch("/session/lead", async (req, res) => {
 
         select: {
           trackId: true,
+          formAScore: true,
         },
       });
 
@@ -660,6 +664,25 @@ router.patch("/session/lead", async (req, res) => {
         message: "Assessment session was not found.",
       });
     }
+
+    // Lead persistence is authoritative.
+    // Score delivery runs separately and must never break this HTTP response.
+    void deliverMemoryScoreWhatsApp({
+      ownerToken,
+      trackId: session.trackId,
+      learnerName,
+      parentGuardianName:
+        trackLeadData.parentGuardianName,
+      whatsappContactRole:
+        trackLeadData.whatsappContactRole,
+      whatsappNumberNormalized,
+      formAScore: session.formAScore,
+    }).catch((error) => {
+      console.error(
+        "[memory/whatsapp-score] unexpected delivery error:",
+        error?.message || error,
+      );
+    });
 
     return res.json({
       ok: true,
