@@ -52,4 +52,4 @@ WORKDIR /app/server
 
 EXPOSE 8080
 
-CMD ["node", "index.js"]
+CMD ["sh", "-c", "node scripts/deploy.js && node index.js"]
