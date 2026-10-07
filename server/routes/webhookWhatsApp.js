@@ -69,6 +69,93 @@ function verifyMetaSignature(rawBody, signatureHeader, appSecret) {
 }
 
 
+
+const WANOTIFIER_FORWARD_TIMEOUT_MS = 2000;
+
+async function forwardWebhookToWanotifier(rawBody, signatureHeader) {
+  const enabled =
+    String(process.env.WANOTIFIER_WEBHOOK_FORWARD_ENABLED || '')
+      .trim()
+      .toLowerCase() === 'true';
+
+  if (!enabled) {
+    return { skipped: true, reason: 'DISABLED' };
+  }
+
+  const url = String(
+    process.env.WANOTIFIER_WEBHOOK_FORWARD_URL || '',
+  ).trim();
+
+  if (!url) {
+    console.warn(
+      '[webhook/whatsapp] WANotifier forwarding enabled but URL missing',
+    );
+
+    return { skipped: true, reason: 'URL_NOT_CONFIGURED' };
+  }
+
+  const controller = new AbortController();
+
+  const timeout = setTimeout(
+    () => controller.abort(),
+    WANOTIFIER_FORWARD_TIMEOUT_MS,
+  );
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    if (signatureHeader) {
+      headers['X-Hub-Signature-256'] = String(signatureHeader);
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: rawBody,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      console.warn(
+        `[webhook/whatsapp] WANotifier forward failed status=${response.status}`,
+      );
+
+      return {
+        ok: false,
+        status: response.status,
+      };
+    }
+
+    console.log(
+      `[webhook/whatsapp] WANotifier forward succeeded status=${response.status}`,
+    );
+
+    return {
+      ok: true,
+      status: response.status,
+    };
+  } catch (error) {
+    const message =
+      error?.name === 'AbortError'
+        ? 'TIMEOUT'
+        : String(error?.message || error);
+
+    console.warn(
+      '[webhook/whatsapp] WANotifier forward error:',
+      message,
+    );
+
+    return {
+      ok: false,
+      error: message,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 const TRACKED_STATUS_TYPES = new Set([
   'sent',
   'delivered',
@@ -641,6 +728,10 @@ router.post(
         error: 'WEBHOOK_PROCESSING_FAILED',
       });
     }
+
+    // WANotifier is a secondary consumer of the authenticated Meta webhook.
+    // Its failure must never break the existing FluencyJet webhook lifecycle.
+    await forwardWebhookToWanotifier(rawBody, signature);
 
     console.log(
       `[webhook/whatsapp] Authenticated webhook received entries=${entryCount} ` +
