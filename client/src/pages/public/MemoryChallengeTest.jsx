@@ -816,23 +816,28 @@ export default function MemoryChallengeTest() {
               </p>
 
               <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
-                Immediate Recall
+                Quick Memory
               </span>
             </div>
 
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Study {immediateModule.scoring.maxRaw} items
+              Quick Memory 🧠
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-              You will have {immediateModule.studySeconds} seconds to study
-              them. When the timer ends, all{" "}
-              {immediateModule.scoring.maxRaw} items will disappear.
+              How many of these {immediateModule.scoring.maxRaw} can you remember?
+              <br />
+              <span className="mt-2 inline-block font-medium text-slate-600">
+                You get <strong>{immediateModule.studySeconds} seconds</strong>{" "}
+                to look at {immediateModule.scoring.maxRaw} items. Then they{" "}
+                <strong>disappear!</strong>
+              </span>
             </p>
 
             <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-900">
-              Do not write the items down or take a screenshot. Just study them
-              carefully and try to remember as many as possible.
+              👀 <strong>Watch carefully!</strong>
+              <br />
+              No writing. No screenshots. Just use your memory.
             </div>
 
             <button
@@ -840,7 +845,7 @@ export default function MemoryChallengeTest() {
               onClick={startImmediateStudy}
               className="mt-7 w-full rounded-2xl bg-indigo-600 px-6 py-4 text-base font-black text-white transition hover:bg-indigo-700"
             >
-              Start {immediateModule.studySeconds}-Second Study
+              I'M READY — START {immediateModule.studySeconds} SECONDS →
             </button>
           </div>
         </div>
@@ -862,7 +867,7 @@ export default function MemoryChallengeTest() {
               </p>
 
               <h1 className="mt-1 text-2xl font-black sm:text-3xl">
-                Immediate Recall
+                Quick Memory
               </h1>
             </div>
 
@@ -885,7 +890,7 @@ export default function MemoryChallengeTest() {
           </div>
 
           <p className="mt-6 text-center text-base font-bold text-slate-300">
-            {immediateModule.instructions.study}
+            Remember as many as you can. They will disappear when the timer ends.
           </p>
 
           <section className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-4">
@@ -902,7 +907,7 @@ export default function MemoryChallengeTest() {
           </section>
 
           <p className="mt-7 text-center text-sm font-medium text-slate-400">
-            Keep studying until the timer ends.
+            Keep looking — you've got this!
           </p>
         </div>
       </main>
@@ -922,18 +927,18 @@ export default function MemoryChallengeTest() {
             </p>
 
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-              Now recall the items
+              Now, what can you remember? 🤔
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-300">
-              The study items are hidden. You will have{" "}
-              {immediateModule.recallSeconds} seconds to enter as many as you
-              remember.
+              The {immediateModule.scoring.maxRaw} items are hidden. You have{" "}
+              <strong>{immediateModule.recallSeconds} seconds</strong> to enter
+              as many as you can remember.
             </p>
 
             <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm font-medium leading-6 text-slate-300">
-              Order does not matter. Enter one item at a time. You will not be
-              shown whether an answer is correct.
+              Any order is okay. Enter one item at a time. You won't see the
+              correct answers yet.
             </div>
 
             <button
@@ -941,7 +946,7 @@ export default function MemoryChallengeTest() {
               onClick={startImmediateRecall}
               className="mt-7 w-full rounded-2xl bg-indigo-500 px-6 py-4 font-black text-white transition hover:bg-indigo-400"
             >
-              Start 60-Second Recall
+              START {immediateModule.recallSeconds}-SECOND MEMORY CHECK →
             </button>
           </div>
         </div>
@@ -989,7 +994,7 @@ export default function MemoryChallengeTest() {
 
           <div className="mt-7 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <p className="font-black text-slate-950">
-              Enter one remembered item at a time
+              Enter everything you remember
             </p>
 
             <p className="mt-1 text-sm font-medium text-slate-500">
@@ -1009,7 +1014,7 @@ export default function MemoryChallengeTest() {
                 value={recallInput}
                 onChange={(event) => setRecallInput(event.target.value)}
                 disabled={recalledItems.length >= maxItems}
-                placeholder="Type an item you remember"
+                placeholder="Type something you remember"
                 autoComplete="off"
                 className="min-w-0 flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-4 text-base font-bold text-slate-950 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 disabled:bg-slate-100"
               />
@@ -1043,8 +1048,7 @@ export default function MemoryChallengeTest() {
             )}
 
             <p className="mt-5 text-xs font-medium leading-5 text-slate-500">
-              Duplicate entries are ignored. No correctness feedback is shown
-              during the benchmark.
+              Any order is okay. Duplicates are ignored.
             </p>
 
             <button
@@ -1052,7 +1056,7 @@ export default function MemoryChallengeTest() {
               onClick={finishImmediateRecall}
               className="mt-7 w-full rounded-2xl border border-slate-300 bg-white px-6 py-4 font-black text-slate-800 transition hover:bg-slate-50"
             >
-              Finish Part 1
+              FINISH PART 1 →
             </button>
           </div>
         </div>
@@ -1073,16 +1077,18 @@ export default function MemoryChallengeTest() {
             </div>
 
             <p className="mt-6 text-sm font-black uppercase tracking-[0.16em] text-indigo-300">
-              Part 1 of 5 completed
+              Part 1 complete
             </p>
 
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-              Immediate Recall recorded
+              Nice! First challenge done. 🎯
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-300">
-              Your responses have been saved for scoring later. No answers are
-              revealed during Form A.
+              Your answers are saved.
+              <br />
+              <strong>4 more quick challenges</strong> to discover your Study
+              Memory Score.
             </p>
 
             <button
@@ -1090,7 +1096,7 @@ export default function MemoryChallengeTest() {
               onClick={() => setPhase("ordered_intro")}
               className="mt-8 w-full rounded-2xl bg-indigo-500 px-6 py-4 font-black text-white transition hover:bg-indigo-400"
             >
-              Continue to Part 2
+              CONTINUE TO PART 2 →
             </button>
           </div>
         </div>
@@ -1112,22 +1118,22 @@ export default function MemoryChallengeTest() {
               </p>
 
               <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
-                Ordered Recall
+                Remember the Order
               </span>
             </div>
 
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Remember the exact order
+              Remember the Order 🔢
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-              You will have {orderedModule.studySeconds} seconds to study 6
-              items in sequence.
+              Can you remember all {orderedModule.items.length} in the right order?
             </p>
 
             <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-900">
-              Remember both the items and their positions. After the timer ends,
-              the sequence will disappear.
+              You get <strong>{orderedModule.studySeconds} seconds</strong> to study{" "}
+              {orderedModule.items.length} items. Remember what they are and
+              where they come. Then they disappear.
             </div>
 
             <button
@@ -1135,7 +1141,7 @@ export default function MemoryChallengeTest() {
               onClick={startOrderedStudy}
               className="mt-7 w-full rounded-2xl bg-indigo-600 px-6 py-4 text-base font-black text-white transition hover:bg-indigo-700"
             >
-              Start 20-Second Study
+              I'M READY — START {orderedModule.studySeconds} SECONDS →
             </button>
           </div>
         </div>
@@ -1157,7 +1163,7 @@ export default function MemoryChallengeTest() {
               </p>
 
               <h1 className="mt-1 text-2xl font-black sm:text-3xl">
-                Ordered Recall
+                Remember the Order
               </h1>
             </div>
 
@@ -1180,7 +1186,8 @@ export default function MemoryChallengeTest() {
           </div>
 
           <p className="mt-6 text-center text-base font-bold text-slate-300">
-            {orderedModule.instructions.study}
+            Look from 1 to {orderedModule.items.length} carefully. Try to remember
+            the exact order.
           </p>
 
           <section className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -1201,7 +1208,7 @@ export default function MemoryChallengeTest() {
           </section>
 
           <p className="mt-7 text-center text-sm font-medium text-slate-400">
-            Remember the exact sequence from 1 to 6.
+            Remember the exact order from 1 to {orderedModule.items.length}.
           </p>
         </div>
       </main>
@@ -1221,17 +1228,17 @@ export default function MemoryChallengeTest() {
             </p>
 
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-              Now rebuild the sequence
+              Can you rebuild the order?
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-300">
-              The original sequence is hidden. You will have{" "}
-              {orderedModule.recallSeconds} seconds to arrange the shuffled
-              cards into the order you remember.
+              The original order is hidden. You have{" "}
+              <strong>{orderedModule.recallSeconds} seconds</strong> to put the
+              shuffled cards back in the order you remember.
             </p>
 
             <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm font-medium leading-6 text-slate-300">
-              You will not be told which positions are correct during Form A.
+              Tap the cards from first to last. You won't see the correct order yet.
             </div>
 
             <button
@@ -1239,7 +1246,7 @@ export default function MemoryChallengeTest() {
               onClick={startOrderedRecall}
               className="mt-7 w-full rounded-2xl bg-indigo-500 px-6 py-4 font-black text-white transition hover:bg-indigo-400"
             >
-              Start 40-Second Reorder
+              START {orderedModule.recallSeconds}-SECOND ORDER CHALLENGE →
             </button>
           </div>
         </div>
@@ -1262,7 +1269,7 @@ export default function MemoryChallengeTest() {
           onClick={finishOrderedRecall}
           className="w-full rounded-2xl bg-indigo-600 px-5 py-4 font-black text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
-          Finish Part 2
+          FINISH PART 2 →
         </button>
 
         {orderedAnswer.length > 0 && (
@@ -1277,8 +1284,8 @@ export default function MemoryChallengeTest() {
 
         {!allPlaced && (
           <p className="text-center text-xs font-bold text-slate-500">
-            Arrange all 6 cards to finish early. If time runs out, your current
-            sequence will be recorded automatically.
+            Arrange all {orderedModule.items.length} cards to finish. If time runs
+            out, your current order will be saved automatically.
           </p>
         )}
       </div>
@@ -1294,7 +1301,7 @@ export default function MemoryChallengeTest() {
               </p>
 
               <h1 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">
-                Rebuild the sequence
+                Rebuild the Order
               </h1>
             </div>
 
@@ -1318,12 +1325,12 @@ export default function MemoryChallengeTest() {
 
           <div className="mt-7">
             <ReorderExerciseCard
-              title="Ordered Recall"
-              subtitle={orderedModule.instructions.recall}
+              title="Remember the Order"
+              subtitle="Tap the cards in the same order you studied them."
               answer={orderedAnswer}
               tiles={orderedTiles}
               status="idle"
-              answerPlaceholder="Tap the cards in the order you remember"
+              answerPlaceholder="Tap the cards from first to last"
               onTileClick={handleOrderedTileClick}
               onAnswerClick={handleOrderedAnswerClick}
               footer={footer}
@@ -1347,16 +1354,17 @@ export default function MemoryChallengeTest() {
             </div>
 
             <p className="mt-6 text-sm font-black uppercase tracking-[0.16em] text-indigo-300">
-              Part 2 of 5 completed
+              Part 2 complete
             </p>
 
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-              Ordered Recall recorded
+              Two challenges done! 🙌
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-300">
-              Your sequence has been saved for scoring later. No correct
-              positions are revealed during Form A.
+              Your answer is saved.
+              <br />
+              You're getting closer to your <strong>Study Memory Score</strong>.
             </p>
 
             <button
@@ -1364,7 +1372,7 @@ export default function MemoryChallengeTest() {
               onClick={() => setPhase("association_intro")}
               className="mt-8 w-full rounded-2xl bg-indigo-500 px-6 py-4 font-black text-white transition hover:bg-indigo-400"
             >
-              Continue to Part 3
+              CONTINUE TO PART 3 →
             </button>
           </div>
         </div>
@@ -1386,22 +1394,22 @@ export default function MemoryChallengeTest() {
               </p>
 
               <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
-                Association Recall
+                Match & Remember
               </span>
             </div>
 
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Remember each word-number pair
+              Match & Remember 🔗
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-              You will have {associationModule.studySeconds} seconds to study
-              five pairs.
+              Which number belongs to each word?
             </p>
 
             <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-900">
-              Try to connect each word with its number. After the timer ends,
-              all five pairs will disappear.
+              You get <strong>{associationModule.studySeconds} seconds</strong> to
+              study {associationModule.pairs.length} word-number pairs. Try to
+              connect each word with its number. Then the pairs disappear.
             </div>
 
             <button
@@ -1409,7 +1417,7 @@ export default function MemoryChallengeTest() {
               onClick={startAssociationStudy}
               className="mt-7 w-full rounded-2xl bg-indigo-600 px-6 py-4 text-base font-black text-white transition hover:bg-indigo-700"
             >
-              Start 40-Second Study
+              I'M READY — START {associationModule.studySeconds} SECONDS →
             </button>
           </div>
         </div>
@@ -1431,7 +1439,7 @@ export default function MemoryChallengeTest() {
               </p>
 
               <h1 className="mt-1 text-2xl font-black sm:text-3xl">
-                Association Recall
+                Match & Remember
               </h1>
             </div>
 
@@ -1454,7 +1462,8 @@ export default function MemoryChallengeTest() {
           </div>
 
           <p className="mt-6 text-center text-base font-bold text-slate-300">
-            {associationModule.instructions.study}
+            Look at each word and its number carefully. Try to remember which
+            number belongs to each word.
           </p>
 
           <section className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -1495,18 +1504,18 @@ export default function MemoryChallengeTest() {
             </p>
 
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-              Now recall the numbers
+              Which number belonged to each word?
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-300">
-              The pairs are hidden. You will have{" "}
-              {associationModule.recallSeconds} seconds to enter the number
-              that belonged to each word.
+              The pairs are hidden. You have{" "}
+              <strong>{associationModule.recallSeconds} seconds</strong> to
+              enter the number you remember for each word.
             </p>
 
             <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm font-medium leading-6 text-slate-300">
-              The words will appear in a different order. No answers or
-              correctness feedback will be shown during Form A.
+              The words will appear in a different order. You won't see the
+              correct answers yet.
             </div>
 
             <button
@@ -1514,7 +1523,7 @@ export default function MemoryChallengeTest() {
               onClick={startAssociationRecall}
               className="mt-7 w-full rounded-2xl bg-indigo-500 px-6 py-4 font-black text-white transition hover:bg-indigo-400"
             >
-              Start 45-Second Recall
+              START {associationModule.recallSeconds}-SECOND MEMORY CHECK →
             </button>
           </div>
         </div>
@@ -1605,8 +1614,8 @@ export default function MemoryChallengeTest() {
           </section>
 
           <p className="mt-5 text-center text-xs font-medium leading-5 text-slate-500">
-            Enter only the number you remember. You may leave an answer blank
-            if you are unsure.
+            Not sure? Give your best answer. You can leave one blank if you
+            really don't remember.
           </p>
 
           <button
@@ -1614,7 +1623,7 @@ export default function MemoryChallengeTest() {
             onClick={finishAssociationRecall}
             className="mt-6 w-full rounded-2xl bg-indigo-600 px-6 py-4 font-black text-white transition hover:bg-indigo-700"
           >
-            Finish Part 3
+            FINISH PART 3 →
           </button>
         </div>
       </main>
@@ -1634,16 +1643,18 @@ export default function MemoryChallengeTest() {
             </div>
 
             <p className="mt-6 text-sm font-black uppercase tracking-[0.16em] text-indigo-300">
-              Part 3 of 5 completed
+              Part 3 complete
             </p>
 
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-              Association Recall recorded
+              3 Done. Just 2 to Go! 🚀
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-300">
-              Your responses have been saved for scoring later. The correct
-              word-number pairs are not revealed during Form A.
+              Your answers are saved.
+              <br />
+              Keep going — your <strong>Study Memory Score</strong> is getting
+              closer.
             </p>
 
             <button
@@ -1651,7 +1662,7 @@ export default function MemoryChallengeTest() {
               onClick={() => setPhase("academic_intro")}
               className="mt-8 w-full rounded-2xl bg-indigo-500 px-6 py-4 font-black text-white transition hover:bg-indigo-400"
             >
-              Continue to Part 4
+              CONTINUE TO PART 4 →
             </button>
           </div>
         </div>
@@ -1673,22 +1684,22 @@ export default function MemoryChallengeTest() {
               </p>
 
               <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700">
-                Academic Recall
+                Study & Remember
               </span>
             </div>
 
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-              Read and remember
+              Study & Remember 📖
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-              You will have {academicModule.studySeconds} seconds to read a
-              short passage carefully.
+              How much can you remember from a short passage?
             </p>
 
             <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-sm font-medium leading-6 text-amber-900">
-              Important: the passage will disappear when the timer ends. Read
-              for meaning and try to remember the important details.
+              You get <strong>{academicModule.studySeconds} seconds</strong> to
+              read. The passage will disappear when the timer ends. Read for
+              meaning and remember the important facts.
             </div>
 
             <button
@@ -1696,7 +1707,7 @@ export default function MemoryChallengeTest() {
               onClick={startAcademicStudy}
               className="mt-7 w-full rounded-2xl bg-indigo-600 px-6 py-4 text-base font-black text-white transition hover:bg-indigo-700"
             >
-              Start 60-Second Reading
+              I'M READY — START READING →
             </button>
           </div>
         </div>
@@ -1718,7 +1729,7 @@ export default function MemoryChallengeTest() {
               </p>
 
               <h1 className="mt-1 text-2xl font-black sm:text-3xl">
-                Academic Recall
+                Study & Remember
               </h1>
             </div>
 
@@ -1755,7 +1766,7 @@ export default function MemoryChallengeTest() {
           </article>
 
           <p className="mt-6 text-center text-sm font-medium text-slate-400">
-            The passage will disappear when the timer reaches zero.
+            Read for meaning. Try to remember the important details.
           </p>
         </div>
       </main>
@@ -1779,13 +1790,14 @@ export default function MemoryChallengeTest() {
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-300">
-              The passage is hidden. Answer the five questions using only what
-              you remember.
+              The passage is hidden. Answer{" "}
+              <strong>{academicModule.questions.length} questions</strong> using
+              only what you remember.
             </p>
 
             <div className="mt-6 rounded-2xl border border-slate-700 bg-slate-900 p-4 text-sm font-medium leading-6 text-slate-300">
-              This section is untimed. You will not see correct answers or
-              correctness feedback during Form A.
+              Take your time. This part is not timed. You won't see the correct
+              answers yet.
             </div>
 
             <button
@@ -1793,7 +1805,7 @@ export default function MemoryChallengeTest() {
               onClick={startAcademicRecall}
               className="mt-7 w-full rounded-2xl bg-indigo-500 px-6 py-4 font-black text-white transition hover:bg-indigo-400"
             >
-              Answer 5 Questions
+              ANSWER {academicModule.questions.length} QUESTIONS →
             </button>
           </div>
         </div>
@@ -1861,8 +1873,8 @@ export default function MemoryChallengeTest() {
           </section>
 
           <p className="mt-5 text-center text-xs font-medium leading-5 text-slate-500">
-            Answer from memory only. You may leave a question blank if you are
-            unsure.
+            Answer each question from memory. If you're unsure, give your best
+            answer.
           </p>
 
           <button
@@ -1870,7 +1882,7 @@ export default function MemoryChallengeTest() {
             onClick={finishAcademicRecall}
             className="mt-6 w-full rounded-2xl bg-indigo-600 px-6 py-4 font-black text-white transition hover:bg-indigo-700"
           >
-            Finish Part 4
+            FINISH PART 4 →
           </button>
         </div>
       </main>
@@ -1890,15 +1902,17 @@ export default function MemoryChallengeTest() {
             </div>
 
             <p className="mt-6 text-sm font-black uppercase tracking-[0.16em] text-indigo-300">
-              Part 4 of 5 completed
+              Part 4 complete
             </p>
 
             <h1 className="mt-4 text-3xl font-black sm:text-4xl">
-              Academic Recall recorded
+              Almost there! ⭐
             </h1>
 
             <p className="mt-4 text-base font-medium leading-7 text-slate-300">
-              Your responses have been saved. Continue when you are ready.
+              You've finished <strong>4 of 5 challenges</strong>.
+              <br />
+              Just one final memory check before your score.
             </p>
 
             <button
@@ -1906,7 +1920,7 @@ export default function MemoryChallengeTest() {
               onClick={startDelayedRecall}
               className="mt-8 w-full rounded-2xl bg-indigo-500 px-6 py-4 font-black text-white transition hover:bg-indigo-400"
             >
-              Continue
+              CONTINUE TO FINAL CHALLENGE →
             </button>
           </div>
         </div>
@@ -1926,11 +1940,11 @@ export default function MemoryChallengeTest() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">
-                Final memory check
+                FINAL CHALLENGE — PART 5 OF 5
               </p>
 
               <h1 className="mt-1 text-2xl font-black text-slate-950 sm:text-3xl">
-                Think back to Part 1
+                Can you still remember the items from Part 1? 🧠
               </h1>
             </div>
 
@@ -1954,11 +1968,14 @@ export default function MemoryChallengeTest() {
 
           <div className="mt-7 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <p className="text-lg font-black text-slate-950">
-              What were the original items?
+              🔁 Same items from Part 1
             </p>
 
             <p className="mt-2 text-sm font-medium leading-6 text-slate-600">
-              {delayedModule.instructions.recall}
+              At the beginning of this test, you studied{" "}
+              <strong>{maxItems} items</strong> for{" "}
+              <strong>{immediateModule.studySeconds} seconds</strong>. Now enter
+              those <strong>same {maxItems} items again</strong> from memory.
             </p>
 
             <p className="mt-3 text-sm font-bold text-slate-500">
@@ -1980,7 +1997,7 @@ export default function MemoryChallengeTest() {
                   setDelayedRecallInput(event.target.value)
                 }
                 disabled={delayedRecalledItems.length >= maxItems}
-                placeholder="Type an item you remember"
+                placeholder="Type an item you still remember"
                 autoComplete="off"
                 className="min-w-0 flex-1 rounded-2xl border border-slate-300 bg-white px-4 py-4 text-base font-bold text-slate-950 outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 disabled:bg-slate-100"
               />
@@ -2014,7 +2031,8 @@ export default function MemoryChallengeTest() {
             )}
 
             <p className="mt-5 text-xs font-medium leading-5 text-slate-500">
-              Duplicate entries are ignored. No correctness feedback is shown.
+              Any order is okay. Duplicates are ignored. Don't go back — just use
+              your memory.
             </p>
 
             <button
@@ -2022,7 +2040,7 @@ export default function MemoryChallengeTest() {
               onClick={finishDelayedRecall}
               className="mt-7 w-full rounded-2xl bg-indigo-600 px-6 py-4 font-black text-white transition hover:bg-indigo-700"
             >
-              Finish Benchmark
+              FINISH & SEE MY STUDY MEMORY SCORE →
             </button>
           </div>
         </div>

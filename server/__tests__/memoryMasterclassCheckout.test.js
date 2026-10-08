@@ -95,6 +95,78 @@ afterEach(() => {
 });
 
 describe("Memory Masterclass ₹99 Razorpay checkout", () => {
+  test.each([
+    ["school_foundation", "School contact", "Learner", "School contact"],
+    ["school_senior", null, "Senior learner", "Senior learner"],
+    ["advanced", null, "Advanced learner", "Advanced learner"],
+  ])("loads editable purchaser prefill for %s without creating an order", async (
+    trackId, parentGuardianName, learnerName, expectedName,
+  ) => {
+    mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValue({
+      ...eligibleSession,
+      trackId,
+      parentGuardianName,
+      learnerName,
+      email: "contact@example.test",
+      whatsappNumber: "9876543210",
+    });
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/checkout-details")
+      .send({ ownerToken: "private_owner_token_123", trackId: "untrusted" });
+    expect(response.status).toBe(200);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.body).toEqual({
+      ok: true,
+      details: {
+        name: expectedName,
+        email: "contact@example.test",
+        phone: "9876543210",
+      },
+    });
+    expect(mockPrisma.memoryAssessmentSession.findUnique).toHaveBeenCalledWith({
+      where: { ownerToken: "private_owner_token_123" },
+      select: expect.objectContaining({ email: true, learnerName: true }),
+    });
+    expect(mockOrderCreate).not.toHaveBeenCalled();
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create).not.toHaveBeenCalled();
+  });
+
+  test("prefill returns empty optional details when no values are stored", async () => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/checkout-details")
+      .send({ ownerToken: "private_owner_token_123" });
+    expect(response.body.details).toEqual({ name: "", email: "", phone: "" });
+  });
+
+  test("a public token cannot retrieve purchaser details", async () => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/checkout-details")
+      .send({ publicToken: eligibleSession.publicToken });
+    expect(response.status).toBe(400);
+    expect(mockPrisma.memoryAssessmentSession.findUnique).not.toHaveBeenCalled();
+  });
+
+  test("an unknown owner cannot retrieve purchaser details", async () => {
+    mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValue(null);
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/checkout-details")
+      .send({ ownerToken: "unknown_owner" });
+    expect(response.status).toBe(404);
+    expect(response.body.details).toBeUndefined();
+  });
+
+  test("prefill requires completed lead capture", async () => {
+    mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValue({
+      ...eligibleSession,
+      whatsappConsent: false,
+    });
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/checkout-details")
+      .send({ ownerToken: "private_owner_token_123" });
+    expect(response.status).toBe(409);
+    expect(response.body.details).toBeUndefined();
+  });
+
   test("creates a server-locked ₹99 order tied to the assessment session", async () => {
     const response = await request(makeApp())
       .post("/api/memory-masterclass/create-order")

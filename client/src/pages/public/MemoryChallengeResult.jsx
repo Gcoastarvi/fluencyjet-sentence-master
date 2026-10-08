@@ -5,11 +5,19 @@ import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 import MemoryMasterclassOffer from "../../components/memory/MemoryMasterclassOffer";
 
 const DOMAIN_LABELS = {
-  immediate: "Immediate Recall",
-  ordered: "Ordered Recall",
-  association: "Association Recall",
-  academic: "Academic Recall",
-  delayed: "Delayed Recall",
+  immediate: "Quick Memory",
+  ordered: "Remember the Order",
+  association: "Match & Remember",
+  academic: "Study & Remember",
+  delayed: "Remember Later",
+};
+
+const DOMAIN_DESCRIPTIONS = {
+  immediate: "Remembered right away.",
+  ordered: "Remembered the correct order.",
+  association: "Remembered what belonged together.",
+  academic: "Remembered important details from reading.",
+  delayed: "Remembered Part 1 after some time.",
 };
 
 const MEMORY_SESSION_PERSISTENCE_ENABLED =
@@ -187,7 +195,7 @@ export default function MemoryChallengeResult() {
 
     if (!ownerToken) {
       setLeadError(
-        "This benchmark session is not available for saving yet.",
+        "This test session is not available for saving yet.",
       );
       return;
     }
@@ -281,7 +289,7 @@ export default function MemoryChallengeResult() {
             </h1>
 
             <p className="mt-4 font-medium text-slate-300">
-              Your saved benchmark responses are being scored.
+              Your saved test answers are being scored.
             </p>
           </div>
         </div>
@@ -324,15 +332,15 @@ export default function MemoryChallengeResult() {
       <main className="min-h-screen bg-slate-50 px-4 py-10">
         <div className="mx-auto max-w-xl rounded-[2rem] border border-slate-200 bg-white p-7 text-center shadow-sm">
           <p className="text-sm font-black uppercase tracking-[0.16em] text-indigo-600">
-            Study Recall Benchmark
+            Study Memory Test
           </p>
 
           <h1 className="mt-4 text-3xl font-black text-slate-950">
-            No saved benchmark found
+            No saved test found
           </h1>
 
           <p className="mt-4 font-medium leading-7 text-slate-600">
-            Complete the benchmark first to generate your Study Recall result.
+            Complete the test first to generate your Study Memory result.
           </p>
 
           <Link
@@ -370,6 +378,9 @@ export default function MemoryChallengeResult() {
     (domain) => Number(domain.percentage) === opportunityPercentage,
   );
 
+  const allDomainsTied =
+    strongestPercentage === opportunityPercentage;
+
   const retentionPercent =
     result.retentionRatio === null ||
     result.retentionRatio === undefined
@@ -384,11 +395,11 @@ export default function MemoryChallengeResult() {
       <div className="mx-auto max-w-3xl">
         <div className="rounded-[2rem] bg-slate-950 p-6 text-white shadow-xl sm:p-9">
           <p className="text-sm font-black uppercase tracking-[0.16em] text-indigo-300">
-            Free Study Recall Benchmark
+            Free Study Memory Test
           </p>
 
           <h1 className="mt-3 text-3xl font-black sm:text-4xl">
-            Your Study Recall Score
+            Your Study Memory Score
           </h1>
 
           <div className="mt-7 flex items-end gap-2">
@@ -401,14 +412,15 @@ export default function MemoryChallengeResult() {
           </div>
 
           <p className="mt-5 max-w-2xl text-sm font-medium leading-6 text-slate-300">
-            This is your performance on today&apos;s Study Recall Benchmark.
-            It is not an IQ test, diagnosis, or permanent measure of memory.
+            This is your <strong>starting score</strong> from today&apos;s
+            5 memory challenges. It shows how much you remembered today —
+            <strong>not how intelligent you are</strong>.
           </p>
         </div>
 
         <section className="mt-6 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <h2 className="text-xl font-black text-slate-950">
-            Your recall profile today
+            How you did in each challenge
           </h2>
 
           <div className="mt-6 space-y-5">
@@ -419,6 +431,11 @@ export default function MemoryChallengeResult() {
                     <p className="font-black text-slate-900">
                       {domain.label}
                     </p>
+
+                    <p className="mt-1 text-xs font-medium text-slate-500">
+                      {DOMAIN_DESCRIPTIONS[domain.key]}
+                    </p>
+
                     <p className="mt-1 text-xs font-bold text-slate-500">
                       {domain.correct} / {domain.maxRaw} correct
                     </p>
@@ -445,69 +462,89 @@ export default function MemoryChallengeResult() {
           </div>
         </section>
 
-        <section className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
-              Strongest performance today
+        {allDomainsTied ? (
+          <section className="mt-6 rounded-[2rem] border border-indigo-200 bg-indigo-50 p-6 sm:p-7">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
+              Your starting point today
             </p>
 
-            <p className="mt-3 text-xl font-black text-slate-950">
-              {strongestDomains.map((domain) => domain.label).join(" & ")}
-            </p>
+            <h2 className="mt-3 text-xl font-black text-slate-950">
+              Your scores were the same across all 5 challenges.
+            </h2>
 
-            <p className="mt-1 font-bold text-slate-600">
-              {formatScore(strongestPercentage)}%
+            <p className="mt-3 font-medium leading-7 text-slate-600">
+              That gives you a clear starting point. Your Second Study Memory
+              Test will show which areas improve.
             </p>
-          </div>
+          </section>
+        ) : (
+          <section className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-[2rem] border border-emerald-200 bg-emerald-50 p-6">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">
+                You did best at
+              </p>
 
-          <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6">
-            <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">
-              Biggest opportunity today
-            </p>
+              <p className="mt-3 text-xl font-black text-slate-950">
+                {strongestDomains.map((domain) => domain.label).join(" & ")}
+              </p>
 
-            <p className="mt-3 text-xl font-black text-slate-950">
-              {opportunityDomains.map((domain) => domain.label).join(" & ")}
-            </p>
+              <p className="mt-1 font-bold text-slate-600">
+                {formatScore(strongestPercentage)}%
+              </p>
+            </div>
 
-            <p className="mt-1 font-bold text-slate-600">
-              {formatScore(opportunityPercentage)}%
-            </p>
-          </div>
-        </section>
+            <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6">
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">
+                Best area to improve
+              </p>
+
+              <p className="mt-3 text-xl font-black text-slate-950">
+                {opportunityDomains.map((domain) => domain.label).join(" & ")}
+              </p>
+
+              <p className="mt-1 font-bold text-slate-600">
+                {formatScore(opportunityPercentage)}%
+              </p>
+            </div>
+          </section>
+        )}
 
         <section className="mt-6 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-            Retention check
+            Remember Later
           </p>
 
           <h2 className="mt-2 text-xl font-black text-slate-950">
-            Part 1 remembered later
+            How much of Part 1 stayed in your memory?
           </h2>
 
           {retentionPercent === null ? (
             <p className="mt-3 font-medium leading-7 text-slate-600">
-              A retention ratio cannot be calculated because no Part 1 item
-              was scored as correct.
+              We can&apos;t compare Part 1 with the later check yet because no
+              Part 1 items were correct in the first check.
+              <span className="font-black text-slate-900">
+                {" "}That&apos;s okay — this is your starting point.
+              </span>
             </p>
           ) : (
             <p className="mt-3 font-medium leading-7 text-slate-600">
-              You recalled the equivalent of{" "}
+              Your later memory score was{" "}
               <span className="font-black text-slate-950">
                 {retentionPercent}%
               </span>{" "}
-              of your Immediate Recall score during the later memory check.
+              of your first Part 1 score.
             </p>
           )}
         </section>
 
         <section className="mt-6 rounded-[2rem] border border-indigo-200 bg-indigo-50 p-6 text-center sm:p-8">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
-            Your Study Recall Journey
+            Your Memory Progress
           </p>
 
           <div className="mt-5 rounded-2xl bg-white p-5">
             <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-              Before training
+              Today
             </p>
 
             <p className="mt-2 text-3xl font-black text-slate-950">
@@ -521,7 +558,7 @@ export default function MemoryChallengeResult() {
 
           <div className="rounded-2xl border border-dashed border-indigo-300 bg-white/70 p-5">
             <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
-              After training
+              After the live class
             </p>
 
             <p className="mt-2 text-3xl font-black text-slate-950">
@@ -723,13 +760,17 @@ export default function MemoryChallengeResult() {
             trackId={result.trackId || assessment?.trackId || selectedTrack}
             score={result.totalScore}
             ownerToken={ownerToken}
+            leadDetails={{
+              name: leadForm.parentGuardianName || leadForm.learnerName,
+              email: leadForm.email || "",
+              phone: leadForm.whatsappNumber,
+            }}
           />
         )}
 
         <p className="mt-6 text-center text-xs font-medium leading-5 text-slate-500">
-          This educational benchmark reflects performance on these specific
-          exercises today and should not be interpreted as a clinical,
-          neuropsychological, or medical assessment.
+          This educational memory test shows your performance on these
+          challenges today. It is not an IQ test, medical test or diagnosis.
         </p>
       </div>
     </main>

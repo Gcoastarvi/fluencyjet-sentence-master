@@ -45,6 +45,66 @@ function getClientIp(req) {
   return cleanString(req.ip, 100);
 }
 
+// Return only checkout prefill details to the private session owner.
+// Never look up personal details using the shareable publicToken.
+router.post("/checkout-details", async (req, res) => {
+  res.set("Cache-Control", "no-store");
+  const ownerToken = cleanString(req.body?.ownerToken, 100);
+  if (!ownerToken) {
+    return res.status(400).json({
+      ok: false,
+      code: "MEMORY_OWNER_TOKEN_REQUIRED",
+      message: "Assessment ownership token is required.",
+    });
+  }
+  try {
+    const session = await prisma.memoryAssessmentSession.findUnique({
+      where: { ownerToken },
+      select: {
+        status: true,
+        leadCapturedAt: true,
+        whatsappConsent: true,
+        learnerName: true,
+        parentGuardianName: true,
+        email: true,
+        whatsappNumber: true,
+        whatsappNumberNormalized: true,
+      },
+    });
+    if (!session) {
+      return res.status(404).json({
+        ok: false,
+        code: "MEMORY_SESSION_NOT_FOUND",
+        message: "Assessment session was not found.",
+      });
+    }
+    if (
+      session.status !== "LEAD_CAPTURED" ||
+      !session.leadCapturedAt ||
+      session.whatsappConsent !== true
+    ) {
+      return res.status(409).json({
+        ok: false,
+        code: "MEMORY_LEAD_CAPTURE_REQUIRED",
+        message: "Please save the Study Memory Test report before checkout.",
+      });
+    }
+    return res.json({
+      ok: true,
+      details: {
+        name: session.parentGuardianName || session.learnerName || "",
+        email: session.email || "",
+        phone: session.whatsappNumber || session.whatsappNumberNormalized || "",
+      },
+    });
+  } catch {
+    return res.status(500).json({
+      ok: false,
+      message: "Unable to load registration details.",
+    });
+  }
+});
+
 // POST /api/memory-masterclass/create-order
 //
 // Security:

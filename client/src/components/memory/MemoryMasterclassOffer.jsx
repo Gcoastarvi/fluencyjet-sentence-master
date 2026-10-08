@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { trackEvent } from "../../lib/tracking";
 import { api } from "../../api/apiClient";
 import { MEMORY_MASTERCLASS_CONFIG } from "../../data/memory/masterclassConfig";
+import MemoryPurchaserDetails from "./MemoryPurchaserDetails";
 
 const MEMORY_VISITOR_ID_KEY = "fj_memory_visitor_id";
 const MEMORY_FBC_KEY = "fj_memory_fbc";
@@ -197,11 +198,14 @@ export default function MemoryMasterclassOffer({
   trackId,
   score,
   ownerToken,
+  leadDetails,
 }) {
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [isCheckoutStarting, setIsCheckoutStarting] =
     useState(false);
   const [openFaq, setOpenFaq] = useState(0);
+  const [checkoutPlacement, setCheckoutPlacement] = useState(null);
+  const [purchaserDetails, setPurchaserDetails] = useState(null);
 
   const isAdvanced = trackId === "advanced";
 
@@ -254,6 +258,15 @@ export default function MemoryMasterclassOffer({
     }
 
     setCheckoutMessage("");
+    setCheckoutPlacement(placement);
+  }
+
+  async function startCheckout(purchaser) {
+    if (isCheckoutStarting || !ownerToken) return;
+    if (!purchaser.name || !purchaser.email || !purchaser.phone) return;
+    const placement = checkoutPlacement;
+    setPurchaserDetails(purchaser);
+    setCheckoutMessage("");
     setIsCheckoutStarting(true);
 
     try {
@@ -298,6 +311,11 @@ export default function MemoryMasterclassOffer({
 
         name: "Amaze Memory",
         description: `${name} — ${dateLabel}, ${startTime} ${timezone}`,
+        prefill: {
+          name: purchaser.name,
+          email: purchaser.email,
+          contact: purchaser.phone,
+        },
 
         handler(response) {
           const params = new URLSearchParams();
@@ -357,6 +375,7 @@ export default function MemoryMasterclassOffer({
       });
 
       checkout.open();
+      setCheckoutPlacement(null);
     } catch (error) {
       console.error(
         "[memory-masterclass/checkout] Unable to open checkout:",
@@ -373,6 +392,20 @@ export default function MemoryMasterclassOffer({
 
   return (
     <section className="mt-8 overflow-hidden rounded-[2rem] border border-indigo-200 bg-white shadow-xl">
+      {checkoutPlacement && (
+        <MemoryPurchaserDetails
+          ownerToken={ownerToken}
+          initialDetails={purchaserDetails || leadDetails}
+          hasEditedDetails={Boolean(purchaserDetails)}
+          busy={isCheckoutStarting}
+          message={checkoutMessage}
+          onClose={(details) => {
+            setPurchaserDetails(details);
+            setCheckoutPlacement(null);
+          }}
+          onSubmit={startCheckout}
+        />
+      )}
       <div className="bg-emerald-50 px-6 py-7 text-center sm:px-8">
         <p className="text-xs font-black uppercase tracking-[0.16em] text-emerald-700">
           Report saved ✓
