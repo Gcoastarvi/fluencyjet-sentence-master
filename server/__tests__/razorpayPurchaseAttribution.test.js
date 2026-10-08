@@ -119,6 +119,9 @@ function makeMemoryIntent(overrides = {}) {
     productKey: "memory_masterclass_99",
     eventKey: "2026-10-18_1700_ist",
     trackId: "school_foundation",
+    purchaserName: "Purchaser Contact",
+    purchaserEmail: "buyer@example.test",
+    purchaserPhone: "+919123456789",
 
     visitorId: "memory-visitor-1",
     fbclid: "memory-fbclid-1",
@@ -448,6 +451,87 @@ describe("verified Razorpay Sentence Master capture attribution", () => {
 });
 
 describe("verified Razorpay Memory Masterclass capture", () => {
+  test("copies only the intent snapshot, preserving distinct Razorpay audit and CAPI identity", async () => {
+    process.env.META_PIXEL_ID = "test-pixel";
+    process.env.META_CAPI_ACCESS_TOKEN = "test-token";
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent());
+    const response = await postWebhook(makeApp(), makePayload({
+      id: "pay_memory_snapshot",
+      order_id: "order_memory_123",
+      amount: 9900,
+      email: "provider@example.test",
+      contact: "+919999999999",
+      name: "Provider name",
+      notes: {
+        purchaserName: "Untrusted note name",
+        purchaserEmail: "note@example.test",
+        purchaserPhone: "+918888888888",
+      },
+    }), "event_memory_snapshot");
+    expect(response.status).toBe(200);
+    expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        purchaserName: "Purchaser Contact",
+        purchaserEmail: "buyer@example.test",
+        purchaserPhone: "+919123456789",
+        customerEmail: "provider@example.test",
+        customerContact: "+919999999999",
+      }),
+    });
+    expect(mockSendCapiPurchase).toHaveBeenCalledWith(expect.objectContaining({
+      email: "provider@example.test",
+      phone: "+919999999999",
+      externalId: "memory-visitor-1",
+      fbc: "fb.1.123456789.memory-fbclid-1",
+      fbp: "fb.1.123456789.987654321",
+    }));
+  });
+
+  test("captures historical null snapshots without inventing purchaser identity", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent({
+      purchaserName: null, purchaserEmail: null, purchaserPhone: null,
+    }));
+    const response = await postWebhook(makeApp(), makePayload({
+      id: "pay_memory_historical", order_id: "order_memory_123", amount: 9900,
+    }), "event_memory_historical");
+    expect(response.status).toBe(200);
+    expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        purchaserName: null, purchaserEmail: null, purchaserPhone: null,
+        customerEmail: "learner@example.test", customerContact: DESTINATION,
+      }),
+    });
+  });
+
+  test("keeps the purchaser snapshot even when provider email and phone are absent", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent());
+    const response = await postWebhook(makeApp(), makePayload({
+      id: "pay_memory_no_provider_identity",
+      order_id: "order_memory_123", amount: 9900, email: null, contact: null,
+    }), "event_memory_no_provider_identity");
+    expect(response.status).toBe(200);
+    expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        purchaserName: "Purchaser Contact",
+        purchaserEmail: "buyer@example.test",
+        purchaserPhone: "+919123456789",
+        customerEmail: null, customerContact: null,
+      }),
+    });
+  });
+
+  test("rejects invalid signatures before looking up or persisting purchaser identity", async () => {
+    const response = await request(makeApp()).post("/api/webhooks/razorpay")
+      .set("Content-Type", "application/json")
+      .set("X-Razorpay-Signature", "invalid")
+      .send(JSON.stringify(makePayload({
+        id: "pay_memory_bad_signature", order_id: "order_memory_123", amount: 9900,
+      })));
+    expect(response.status).toBe(400);
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.findUnique).not.toHaveBeenCalled();
+    expect(mockPrisma.memoryMasterclassPurchase.create).not.toHaveBeenCalled();
+  });
+
   test("matches the exact Razorpay order and persists one dedicated Memory purchase", async () => {
     mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(
       makeMemoryIntent(),
@@ -479,6 +563,9 @@ describe("verified Razorpay Memory Masterclass capture", () => {
         currency: true,
         productKey: true,
         trackId: true,
+        purchaserName: true,
+        purchaserEmail: true,
+        purchaserPhone: true,
       }),
     });
 
@@ -501,6 +588,9 @@ describe("verified Razorpay Memory Masterclass capture", () => {
 
         customerEmail: "learner@example.test",
         customerContact: DESTINATION,
+        purchaserName: "Purchaser Contact",
+        purchaserEmail: "buyer@example.test",
+        purchaserPhone: "+919123456789",
 
         webhookEventId: "event_memory_1",
         metaEventId:

@@ -145,6 +145,9 @@ router.post(
 
               eventKey: true,
               trackId: true,
+              purchaserName: true,
+              purchaserEmail: true,
+              purchaserPhone: true,
 
               visitorId: true,
               fbclid: true,
@@ -260,6 +263,10 @@ router.post(
               currency,
               productKey: MEMORY_MASTERCLASS_PRODUCT_KEY,
               status: paymentStatus,
+
+              purchaserName: memoryIntent.purchaserName ?? null,
+              purchaserEmail: memoryIntent.purchaserEmail ?? null,
+              purchaserPhone: memoryIntent.purchaserPhone ?? null,
 
               customerEmail,
               customerContact,

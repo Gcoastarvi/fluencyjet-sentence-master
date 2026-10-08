@@ -613,6 +613,11 @@ model MemoryMasterclassCheckoutIntent {
 
   razorpayOrderId String @unique
 
+  // Normalized purchaser snapshot; nullable for historical checkout intents.
+  purchaserName  String? @db.VarChar(100)
+  purchaserEmail String? @db.VarChar(191)
+  purchaserPhone String? @db.VarChar(40)
+
   amount     Int    @default(9900)
   currency   String @default("INR")
   productKey String @default("memory_masterclass_99") @db.VarChar(80)
@@ -674,6 +679,11 @@ model MemoryMasterclassPurchase {
 
   customerEmail   String? @db.VarChar(191)
   customerContact String? @db.VarChar(40)
+
+  // Copied from the checkout intent, separate from Razorpay's audit values.
+  purchaserName  String? @db.VarChar(100)
+  purchaserEmail String? @db.VarChar(191)
+  purchaserPhone String? @db.VarChar(40)
 
   webhookEventId String? @unique @db.VarChar(191)
 

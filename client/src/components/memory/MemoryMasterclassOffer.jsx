@@ -278,6 +278,9 @@ export default function MemoryMasterclassOffer({
         {
           ownerToken,
           ...attribution,
+          purchaserName: purchaser.name,
+          purchaserEmail: purchaser.email,
+          purchaserPhone: purchaser.phone,
         },
       );
 

@@ -67,6 +67,17 @@ const eligibleSession = {
   source: "memory-challenge",
 };
 
+const purchaserInput = {
+  purchaserName: "  Purchaser   Contact  ",
+  purchaserEmail: " Buyer@Example.Test ",
+  purchaserPhone: "98765 43210",
+};
+const purchaserSnapshot = {
+  purchaserName: "Purchaser Contact",
+  purchaserEmail: "buyer@example.test",
+  purchaserPhone: "+919876543210",
+};
+
 beforeEach(() => {
   jest.resetAllMocks();
 
@@ -174,6 +185,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
       .set("X-Forwarded-For", "49.12.34.56, 10.0.0.1")
       .send({
         ownerToken: "private_owner_token_123",
+        ...purchaserInput,
 
         visitorId: "visitor_memory_123",
         fbclid: "fbclid_memory_123",
@@ -189,6 +201,9 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
         productKey: "fake_product",
         trackId: "advanced",
         eventKey: "fake_event",
+        memoryAssessmentSessionId: "fake_session",
+        publicToken: "fake_public_token",
+        score: 100,
       });
 
     expect(response.status).toBe(200);
@@ -218,6 +233,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
           productKey: "memory_masterclass_99",
           eventKey: "2026-10-18_1700_ist",
           trackId: "school_foundation",
+          ...purchaserSnapshot,
         },
       }),
     );
@@ -231,6 +247,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
     ).toHaveBeenCalledWith({
       data: expect.objectContaining({
         memoryAssessmentSessionId: "memory_session_123",
+        ...purchaserSnapshot,
 
         razorpayOrderId: "order_memory_123",
 
@@ -305,6 +322,78 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
     ).not.toHaveBeenCalled();
   });
 
+  test.each(["purchaserName", "purchaserEmail", "purchaserPhone"])(
+    "requires %s for every new order before contacting Razorpay",
+    async (field) => {
+      const response = await request(makeApp())
+        .post("/api/memory-masterclass/create-order")
+        .send({
+          ownerToken: "private_owner_token_123",
+          ...purchaserInput,
+          [field]: undefined,
+        });
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe("MEMORY_PURCHASER_DETAILS_INVALID");
+      expect(mockOrderCreate).not.toHaveBeenCalled();
+      expect(mockPrisma.memoryMasterclassCheckoutIntent.create).not.toHaveBeenCalled();
+    },
+  );
+
+  test("rejects an old client with no purchaser fields for a new attempt", async () => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/create-order")
+      .send({ ownerToken: "private_owner_token_123" });
+    expect(response.status).toBe(400);
+    expect(mockOrderCreate).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ["purchaserName", "   "],
+    ["purchaserName", null],
+    ["purchaserName", { name: "Not a string" }],
+    ["purchaserName", "a".repeat(101)],
+    ["purchaserName", "Invalid\u0000Name"],
+    ["purchaserEmail", "not-an-email"],
+    ["purchaserEmail", "invalid @example.test"],
+    ["purchaserEmail", "a".repeat(180) + "@example.test"],
+    ["purchaserEmail", 123],
+    ["purchaserPhone", "letters9876543210"],
+    ["purchaserPhone", "123"],
+    ["purchaserPhone", "------------"],
+    ["purchaserPhone", "+01234567890"],
+    ["purchaserPhone", "+1234567890123456"],
+    ["purchaserPhone", " ".repeat(5)],
+    ["purchaserPhone", ["9876543210"]],
+  ])("rejects invalid %s input %j without creating an order", async (field, value) => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/create-order")
+      .send({ ownerToken: "private_owner_token_123", ...purchaserInput, [field]: value });
+    expect(response.status).toBe(400);
+    expect(mockOrderCreate).not.toHaveBeenCalled();
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create).not.toHaveBeenCalled();
+  });
+
+  test("supports Unicode names and explicit international phone numbers within notes limits", async () => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/create-order")
+      .send({
+        ownerToken: "private_owner_token_123",
+        purchaserName: "  Jose\u0301 Kumar  ",
+        purchaserEmail: " jose@example.test ",
+        purchaserPhone: "+44 (7700) 900-123",
+      });
+    expect(response.status).toBe(200);
+    const identity = {
+      purchaserName: "José Kumar",
+      purchaserEmail: "jose@example.test",
+      purchaserPhone: "+447700900123",
+    };
+    expect(mockOrderCreate.mock.calls[0][0].notes).toMatchObject(identity);
+    expect(Object.keys(mockOrderCreate.mock.calls[0][0].notes).length).toBeLessThanOrEqual(15);
+    expect(Object.values(mockOrderCreate.mock.calls[0][0].notes).every(value => value.length <= 256)).toBe(true);
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data).toMatchObject(identity);
+  });
+
   test("rejects an owner token that does not match a session", async () => {
     mockPrisma.memoryAssessmentSession.findUnique.mockResolvedValue(
       null,
@@ -359,6 +448,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
       .post("/api/memory-masterclass/create-order")
       .send({
         ownerToken: "private_owner_token_123",
+        ...purchaserInput,
 
         amount: 100,
         currency: "USD",
@@ -377,6 +467,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
           productKey: "memory_masterclass_99",
           eventKey: "2026-10-18_1700_ist",
           trackId: "school_foundation",
+          ...purchaserSnapshot,
         },
       }),
     );
@@ -402,6 +493,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
       .post("/api/memory-masterclass/create-order")
       .send({
         ownerToken: "private_owner_token_123",
+        ...purchaserInput,
       });
 
     expect(response.status).toBe(500);

@@ -1,6 +1,7 @@
 import express from "express";
 import Razorpay from "razorpay";
 import prisma from "../db/client.js";
+import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
 
 const router = express.Router();
 
@@ -43,6 +44,43 @@ function getClientIp(req) {
   }
 
   return cleanString(req.ip, 100);
+}
+
+function validatePurchaserDetails(body) {
+  const fields = ["purchaserName", "purchaserEmail", "purchaserPhone"];
+  if (fields.some((field) =>
+    typeof body[field] !== "string" || !body[field].trim()
+  )) {
+    return { error: "Name, Email, and Phone are required." };
+  }
+
+  // Reject oversized/control-character input rather than silently truncating
+  // the identity snapshot. These limits also fit Razorpay's 256-char notes.
+  const rawName = body.purchaserName.trim();
+  const purchaserName = rawName.normalize("NFC").replace(/\s+/g, " ");
+  const purchaserEmail = body.purchaserEmail.trim().toLowerCase();
+  const rawPhone = body.purchaserPhone.trim();
+  if (
+    purchaserName.length > 100 ||
+    /[\u0000-\u001f\u007f]/.test(rawName)
+  ) {
+    return { error: "Please enter a valid Name of up to 100 characters." };
+  }
+  if (
+    purchaserEmail.length > 191 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(purchaserEmail) ||
+    /[\u0000-\u001f\u007f]/.test(purchaserEmail)
+  ) {
+    return { error: "Please enter a valid Email address." };
+  }
+  if (rawPhone.length > 30 || !/^\+?[0-9 ()-]+$/.test(rawPhone)) {
+    return { error: "Please enter a valid Phone number." };
+  }
+  const purchaserPhone = normalizeWhatsAppNumber(rawPhone);
+  if (!purchaserPhone || !/^\+[1-9]\d{7,14}$/.test(purchaserPhone)) {
+    return { error: "Please enter a valid Phone number with a country code." };
+  }
+  return { purchaserName, purchaserEmail, purchaserPhone };
 }
 
 // Return only checkout prefill details to the private session owner.
@@ -168,6 +206,15 @@ router.post("/create-order", async (req, res) => {
       });
     }
 
+    const purchaser = validatePurchaserDetails(body);
+    if (purchaser.error) {
+      return res.status(400).json({
+        ok: false,
+        code: "MEMORY_PURCHASER_DETAILS_INVALID",
+        message: purchaser.error,
+      });
+    }
+
     const razorpay = getRazorpayClient();
 
     const receipt = `memory_${Date.now().toString(36)}`;
@@ -181,6 +228,9 @@ router.post("/create-order", async (req, res) => {
         productKey: MEMORY_MASTERCLASS_PRODUCT_KEY,
         eventKey: MEMORY_MASTERCLASS_EVENT.key,
         trackId: session.trackId,
+        purchaserName: purchaser.purchaserName,
+        purchaserEmail: purchaser.purchaserEmail,
+        purchaserPhone: purchaser.purchaserPhone,
       },
     });
 
@@ -190,6 +240,9 @@ router.post("/create-order", async (req, res) => {
           memoryAssessmentSessionId: session.id,
 
           razorpayOrderId: order.id,
+          purchaserName: purchaser.purchaserName,
+          purchaserEmail: purchaser.purchaserEmail,
+          purchaserPhone: purchaser.purchaserPhone,
 
           amount: MEMORY_MASTERCLASS_AMOUNT,
           currency: MEMORY_MASTERCLASS_CURRENCY,
