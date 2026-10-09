@@ -106,6 +106,24 @@ afterEach(() => {
 });
 
 describe("Memory Masterclass ₹99 Razorpay checkout", () => {
+  test("public event GET exposes only schedule/group data without authorization or side effects", async () => {
+    const response = await request(makeApp())
+      .get("/api/memory-masterclass/event")
+      .query({ amount: 1, eventKey: "fake_event", whatsappGroupUrl: "https://example.com" });
+    expect(response.status).toBe(200);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.body.ok).toBe(true);
+    expect(Object.keys(response.body.event).sort()).toEqual([
+      "key", "startsAt", "endsAt", "timezone", "dateISO", "dateLabel",
+      "startTime", "endTime", "timezoneLabel", "whatsappGroupUrl",
+    ].sort());
+    expect(response.body.event.key).toBe("2026-10-18_1700_ist");
+    expect(response.body.event.whatsappGroupUrl).toBe("https://chat.whatsapp.com/IUwQal62p4kDvJxIS9892s");
+    expect(mockOrderCreate).not.toHaveBeenCalled();
+    expect(mockPrisma.memoryAssessmentSession.findUnique).not.toHaveBeenCalled();
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create).not.toHaveBeenCalled();
+  });
+
   test.each([
     ["school_foundation", "School contact", "Learner", "School contact"],
     ["school_senior", null, "Senior learner", "Senior learner"],
@@ -201,6 +219,10 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
         productKey: "fake_product",
         trackId: "advanced",
         eventKey: "fake_event",
+        eventStartsAt: "2099-01-01T00:00:00.000Z",
+        eventEndsAt: "2099-01-01T01:00:00.000Z",
+        eventTimezone: "UTC",
+        whatsappGroupUrl: "https://example.com",
         memoryAssessmentSessionId: "fake_session",
         publicToken: "fake_public_token",
         score: 100,

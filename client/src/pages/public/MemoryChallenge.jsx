@@ -49,6 +49,7 @@ const TRACKS = [
 
 export default function MemoryChallenge() {
   const [selectedTrack, setSelectedTrack] = useState(null);
+  const [coachImageAvailable, setCoachImageAvailable] = useState(true);
   const trackedLandingView = useRef(false);
 
   const selectedTrackConfig =
@@ -86,29 +87,47 @@ export default function MemoryChallenge() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12">
-      <div className="mx-auto max-w-3xl">
-        <header className="text-center">
-          <div className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
-            Free Study Memory Test
+    <main className="min-h-screen bg-slate-50 px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-5xl">
+        <header className="rounded-[2rem] border border-indigo-100 bg-gradient-to-br from-white via-white to-indigo-50/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.06)] sm:p-9">
+          <div className="grid items-center gap-5 sm:grid-cols-[minmax(0,1fr)_220px] sm:gap-10">
+            <div>
+              <div className="inline-flex rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
+                Free Study Memory Test
+              </div>
+
+              <p className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+                BrainoDad
+              </p>
+
+              <h1 className="mt-2 text-[2rem] font-black leading-[1.08] tracking-tight text-slate-950 sm:text-5xl">
+                You studied it. But how much can you REALLY remember?
+              </h1>
+
+              <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600 sm:text-lg">
+                Take this free <span className="font-black text-slate-900">5-part memory test</span>{" "}
+                and discover your{" "}
+                <span className="font-black text-slate-900">Study Memory Score</span>.
+              </p>
+            </div>
+
+            {coachImageAvailable && (
+              <figure className="flex items-center gap-3 border-t border-indigo-100 pt-4 sm:block sm:border-0 sm:pt-0">
+                <img
+                  src="/images/memory-challenge-hero.webp"
+                  alt="Aravind Pasupathy, Memory Coach"
+                  onError={() => setCoachImageAvailable(false)}
+                  className="h-[76px] w-[66px] shrink-0 rounded-xl object-cover object-top ring-1 ring-indigo-100 sm:mx-auto sm:h-60 sm:w-48 sm:rounded-2xl"
+                />
+                <figcaption className="max-w-[220px] text-xs font-semibold leading-5 text-slate-600 sm:mx-auto sm:mt-3 sm:text-center sm:text-sm">
+                  Aravind Pasupathy — Memory Coach &amp; Guinness World Record Holder
+                </figcaption>
+              </figure>
+            )}
           </div>
-
-          <p className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-slate-500">
-            BrainoDad
-          </p>
-
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 sm:text-5xl">
-            You studied it. But how much can you REALLY remember?
-          </h1>
-
-          <p className="mx-auto mt-4 max-w-2xl text-base font-medium leading-7 text-slate-600 sm:text-lg">
-            Take this free <span className="font-black text-slate-900">5-part memory test</span>{" "}
-            and discover your{" "}
-            <span className="font-black text-slate-900">Study Memory Score</span>.
-          </p>
         </header>
 
-        <section className="mt-8 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.07)] sm:p-8">
+        <section className="mt-5 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_20px_60px_rgba(15,23,42,0.07)] sm:mt-7 sm:p-8">
           <div className="mb-5">
             <p className="text-sm font-black uppercase tracking-[0.14em] text-indigo-600">
               Step 1

@@ -2,6 +2,10 @@ import express from "express";
 import Razorpay from "razorpay";
 import prisma from "../db/client.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
+import {
+  MEMORY_MASTERCLASS_EVENT,
+  getPublicMemoryMasterclassEvent,
+} from "../config/memoryMasterclassEvent.js";
 
 const router = express.Router();
 
@@ -9,12 +13,10 @@ const MEMORY_MASTERCLASS_AMOUNT = 9900;
 const MEMORY_MASTERCLASS_CURRENCY = "INR";
 const MEMORY_MASTERCLASS_PRODUCT_KEY = "memory_masterclass_99";
 
-const MEMORY_MASTERCLASS_EVENT = {
-  key: "2026-10-18_1700_ist",
-  startsAt: new Date("2026-10-18T11:30:00.000Z"),
-  endsAt: new Date("2026-10-18T13:30:00.000Z"),
-  timezone: "Asia/Kolkata",
-};
+router.get("/event", (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  return res.json({ ok: true, event: getPublicMemoryMasterclassEvent() });
+});
 
 function getRazorpayClient() {
   const key_id = process.env.RAZORPAY_KEY_ID;

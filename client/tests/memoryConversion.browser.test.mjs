@@ -7,6 +7,7 @@ import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { getPublicMemoryMasterclassEvent } from "../../server/config/memoryMasterclassEvent.js";
 
 const app = "http://127.0.0.1:3000";
 const debug = "http://127.0.0.1:9223";
@@ -32,7 +33,12 @@ after(async () => {
   if (profile) await rm(profile, { recursive: true, force: true, maxRetries: 5 });
 });
 
-async function fixture({ track = "school_foundation", score = 39, video = true, mobile = false, saved = false, failLead = false } = {}) {
+async function fixture({
+  track = "school_foundation", score = 39, video = true, vslOverrides = false,
+  mobile = false, saved = false, failLead = false, failEvent = false,
+  event = getPublicMemoryMasterclassEvent(), path = "/memory-challenge/result",
+  heroAvailable = false,
+} = {}) {
   const target = await (await fetch(`${debug}/json/new?about:blank`, { method: "PUT" })).json();
   const socket = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise(resolve => socket.addEventListener("open", resolve, { once: true }));
@@ -59,6 +65,12 @@ async function fixture({ track = "school_foundation", score = 39, video = true, 
   }
   async function intercept({ requestId, request, resourceType }) {
     const url = new URL(request.url);
+    if (url.pathname === "/images/memory-challenge-hero.webp") {
+      // Exercise the layout without pretending the real portrait has been uploaded.
+      return heroAvailable
+        ? fulfill(requestId, '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="275"><rect width="220" height="275" fill="#e0e7ff"/></svg>', "image/svg+xml")
+        : fulfill(requestId, "", "text/plain", 404);
+    }
     if (url.pathname === "/src/pages/public/MemoryChallengeResult.jsx") {
       const source = (await (await fetch(request.url)).text()).replace(
         /const MEMORY_SESSION_PERSISTENCE_ENABLED =[\s\S]*?;/,
@@ -68,12 +80,17 @@ async function fixture({ track = "school_foundation", score = 39, video = true, 
     }
     if (url.pathname === "/src/data/memory/masterclassConfig.js") {
       const source = (await (await fetch(request.url)).text())
-        .replace(/parentVimeoId:[\s\S]*?,/, `parentVimeoId: "${video ? "111111111" : ""}",`)
-        .replace(/advancedVimeoId:[\s\S]*?,/, `advancedVimeoId: "${video ? "222222222" : ""}",`);
+        .replace(/parentVimeoId:[\s\S]*?,/, `parentVimeoId: "${video ? (vslOverrides ? "111111111" : "1234364593") : ""}",`)
+        .replace(/advancedVimeoId:[\s\S]*?,/, `advancedVimeoId: "${video ? (vslOverrides ? "222222222" : "1234364777") : ""}",`);
       return fulfill(requestId, source, "application/javascript");
     }
     if (url.pathname.startsWith("/api/")) {
       apiRequests.push(url.pathname);
+      if (url.pathname === "/api/memory-masterclass/event") {
+        return fulfill(requestId, JSON.stringify(failEvent
+          ? { ok: false, message: "Fixture event unavailable" }
+          : { ok: true, event }), "application/json", failEvent ? 503 : 200);
+      }
       if (url.pathname.endsWith("/memory/session/lead")) {
         leadRequests.push(JSON.parse(request.postData || "{}"));
         return fulfill(requestId, JSON.stringify(failLead
@@ -101,7 +118,15 @@ async function fixture({ track = "school_foundation", score = 39, video = true, 
       if (message.error) operation.reject(new Error(message.error.message));
       else operation.resolve(message.result);
     } else if (message.method === "Fetch.requestPaused") {
-      intercept(message.params).catch(error => errors.push(error.message));
+      intercept(message.params).catch(error => {
+        // StrictMode/unmount aborts the event fetch. Chromium can invalidate its
+        // paused request before fulfillment; this is not an application error.
+        if (error.message === "Invalid InterceptionId." &&
+            new URL(message.params.request.url).pathname === "/api/memory-masterclass/event") {
+          return;
+        }
+        errors.push(`${message.params.request.url}: ${error.message}`);
+      });
     } else if (message.method === "Runtime.exceptionThrown") {
       errors.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);
     } else if (message.method === "Log.entryAdded" && message.params.entry.text.includes("module script")) {
@@ -115,7 +140,7 @@ async function fixture({ track = "school_foundation", score = 39, video = true, 
   }
   async function waitFor(expression) {
     for (let i = 0; i < 100; i++) {
-      if (await evaluate(expression)) return;
+      if (await evaluate(`document.body && (${expression})`)) return;
       await pause(50);
     }
     const state = await evaluate('({url:location.href, text:document.body.innerText.slice(0,500), keys:Object.keys(sessionStorage), desktop:matchMedia("(min-width: 1024px) and (hover: hover) and (pointer: fine)").matches, pointer:matchMedia("(pointer: fine)").matches, hover:matchMedia("(hover: hover)").matches})');
@@ -150,8 +175,14 @@ async function fixture({ track = "school_foundation", score = 39, video = true, 
     }))});
     ${saved ? 'sessionStorage.setItem("memory_form_a_lead_saved", "true");' : ""}
   ` });
-  await send("Page.navigate", { url: `${app}/memory-challenge/result` });
-  await waitFor(saved ? '!!document.querySelector("#memory-masterclass-saved-score")' : '!!document.querySelector("#memory-whatsapp-form")');
+  await send("Page.navigate", { url: `${app}${path}` });
+  if (path === "/memory-challenge/result") {
+    await waitFor(saved ? '!!document.querySelector("#memory-masterclass-saved-score")' : '!!document.querySelector("#memory-whatsapp-form")');
+  } else if (path === "/memory-masterclass/thank-you") {
+    await waitFor('document.body.innerText.toLowerCase().includes("registration received")');
+  } else {
+    await waitFor('document.body.innerText.includes("Choose your class or study level")');
+  }
 
   async function submit() {
     await evaluate(`(() => {
@@ -194,14 +225,17 @@ async function fixture({ track = "school_foundation", score = 39, video = true, 
 for (const track of ["school_foundation", "school_advanced", "advanced"]) {
   test(`${track}: save opens correct VSL; X/Escape and replay target saved headline`, async () => {
     const page = await fixture({ track, score: track === "advanced" ? 70 : track === "school_advanced" ? 40 : 39 });
+    assert.equal(await page.evaluate('!!document.querySelector("[name=parentGuardianName]")'), false);
+    assert.equal(await page.evaluate('document.body.innerText.includes("Parent / guardian name")'), false);
     await page.submit();
     await page.waitFor('!!document.querySelector("dialog[open] iframe")');
     assert.equal(page.leadRequests.length, 1);
     assert.equal(page.leadRequests[0].ownerToken, "fixture-owner-token");
     assert.equal(page.leadRequests[0].whatsappConsent, true);
     assert.ok(!("score" in page.leadRequests[0]));
+    assert.ok(!("parentGuardianName" in page.leadRequests[0]));
     const video = await page.evaluate('document.querySelector("dialog iframe").src');
-    assert.ok(video.includes(track === "advanced" ? "/222222222?" : "/111111111?"));
+    assert.ok(video.includes(track === "advanced" ? "/1234364777?" : "/1234364593?"));
     assert.equal(await page.evaluate('!!document.querySelector("#memory-whatsapp-form")'), false);
     assert.equal(await page.evaluate('sessionStorage.getItem("memory_form_a_lead_saved")'), "true");
     assert.equal(await page.evaluate('document.querySelector("dialog").innerText.includes("₹99")'), false);
@@ -210,7 +244,10 @@ for (const track of ["school_foundation", "school_advanced", "advanced"]) {
     assert.equal(await page.evaluate('document.querySelectorAll("dialog[open]").length'), 1);
     await page.evaluate('document.querySelector("dialog button[aria-label=Close]").click()');
     await page.headlineVisible();
-    assert.equal(await page.evaluate('document.querySelector("iframe")?.src?.includes("111111111") || false'), false);
+    // Testimonial videos remain; only the just-closed VSL must be absent.
+    assert.equal(await page.evaluate(
+      `[...document.querySelectorAll("iframe")].some(frame => frame.src === ${JSON.stringify(video)})`,
+    ), false);
     await page.evaluate('[...document.querySelectorAll("button")].find(button => button.textContent.includes("Watch the 4-minute video again")).click()');
     await page.waitFor('!!document.querySelector("dialog[open] iframe")');
     await page.escape();
@@ -285,4 +322,101 @@ test("mobile VSL fits viewport and existing ₹99 CTA still opens purchaser deta
   assert.equal(page.apiRequests.some(path => path.endsWith("/create-order")), false);
   assert.equal(await page.evaluate('document.querySelectorAll("dialog input[required]").length'), 3);
   await page.close();
+});
+
+test("VSL configuration overrides still map both school tracks and advanced correctly", async () => {
+  for (const track of ["school_foundation", "school_advanced", "advanced"]) {
+    const page = await fixture({ track, vslOverrides: true });
+    await page.submit();
+    await page.waitFor('!!document.querySelector("dialog[open] iframe")');
+    const source = await page.evaluate('document.querySelector("dialog iframe").src');
+    assert.ok(source.includes(track === "advanced" ? "/222222222?" : "/111111111?"));
+    await page.close();
+  }
+});
+
+const nextWeeklyEvent = {
+  key: "2026-10-25_1800_ist",
+  startsAt: "2026-10-25T12:30:00.000Z",
+  endsAt: "2026-10-25T14:30:00.000Z",
+  timezone: "Asia/Kolkata",
+  dateISO: "2026-10-25",
+  dateLabel: "Sunday, 25 October",
+  startTime: "6:00 PM",
+  endTime: "8:00 PM",
+  timezoneLabel: "IST",
+  whatsappGroupUrl: "https://chat.whatsapp.com/NextWeeklyGroup",
+};
+
+test("offer uses the public weekly schedule everywhere, not old hardcoded dates", async () => {
+  const page = await fixture({ saved: true, event: nextWeeklyEvent });
+  await page.waitFor('document.body.innerText.includes("Sunday, 25 October")');
+  const text = await page.evaluate('document.body.innerText');
+  assert.ok(text.includes("6:00 PM–8:00 PM IST"));
+  assert.ok(text.includes("Sunday, 25 October · 6:00 PM IST · ₹99"));
+  assert.ok(!text.includes("18 October"));
+  assert.ok(!text.includes("5:00 PM"));
+  assert.ok(page.apiRequests.includes("/api/memory-masterclass/event"));
+  assert.equal(page.apiRequests.some(path => path.endsWith("/create-order")), false);
+  await page.close();
+});
+
+test("thank-you uses current weekly schedule and a prominent safe WhatsApp group CTA", async () => {
+  const page = await fixture({ path: "/memory-masterclass/thank-you", event: nextWeeklyEvent });
+  await page.waitFor('!![...document.querySelectorAll("a")].find(a => a.textContent.includes("JOIN THE WHATSAPP GROUP"))');
+  const link = await page.evaluate(`(() => {
+    const a = [...document.querySelectorAll("a")].find(a => a.textContent.includes("JOIN THE WHATSAPP GROUP"));
+    return { text: a.textContent.trim(), href: a.href, target: a.target, rel: a.rel };
+  })()`);
+  assert.equal(link.text, "JOIN THE WHATSAPP GROUP →");
+  assert.equal(link.href, nextWeeklyEvent.whatsappGroupUrl);
+  assert.equal(link.target, "_blank");
+  assert.ok(link.rel.includes("noopener") && link.rel.includes("noreferrer"));
+  const text = await page.evaluate('document.body.innerText');
+  assert.ok(text.includes("Sunday, 25 October"));
+  assert.ok(text.includes("6:00 PM–8:00 PM IST"));
+  assert.ok(text.includes("class reminders and joining updates"));
+  assert.ok(text.includes("Return to my Study Memory Score"));
+  assert.ok(!text.includes("18 October"));
+  assert.equal(page.leadRequests.length, 0);
+  assert.equal(page.apiRequests.some(path => path.endsWith("/create-order")), false);
+  await page.close();
+});
+
+test("unavailable public event fails explicitly without an old schedule or unsafe group link", async () => {
+  const page = await fixture({ path: "/memory-masterclass/thank-you", failEvent: true });
+  await page.waitFor('document.body.innerText.includes("Class details could not be loaded")');
+  assert.equal(await page.evaluate('!![...document.querySelectorAll("a")].find(a => a.textContent.includes("JOIN THE WHATSAPP GROUP"))'), false);
+  assert.equal(await page.evaluate('document.body.innerText.includes("18 October")'), false);
+  await page.evaluate('[...document.querySelectorAll("button")].find(b => b.textContent.includes("Retry class details")).click()');
+  await page.waitFor('document.body.innerText.includes("Class details could not be loaded")');
+  assert.ok(page.apiRequests.filter(path => path === "/api/memory-masterclass/event").length >= 2);
+  await page.close();
+});
+
+test("landing hero gracefully handles the pending portrait and preserves level selection on desktop/mobile", async () => {
+  for (const mobile of [false, true]) {
+    const page = await fixture({ path: "/memory-challenge", mobile });
+    await page.waitFor('!document.querySelector("img[src=\\"/images/memory-challenge-hero.webp\\"]")');
+    assert.equal(await page.evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    await page.evaluate('[...document.querySelectorAll("button")].find(b => b.textContent.includes("Class 6–8")).click()');
+    await page.waitFor('!!document.querySelector("a[href=\\"/memory-challenge/start\\"]")');
+    assert.equal(await page.evaluate('sessionStorage.getItem("memory_track")'), "school_foundation");
+    assert.equal(page.leadRequests.length, 0);
+    await page.close();
+  }
+});
+
+test("uploaded portrait has the exact credibility caption and stays compact on mobile", async () => {
+  for (const mobile of [false, true]) {
+    const page = await fixture({ path: "/memory-challenge", mobile, heroAvailable: true });
+    await page.waitFor('document.querySelector("img[src=\\"/images/memory-challenge-hero.webp\\"]")?.naturalWidth > 0');
+    assert.ok(await page.evaluate(`document.body.innerText.includes("Aravind Pasupathy — Memory Coach & Guinness World Record Holder")`));
+    assert.equal(await page.evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    if (mobile) {
+      const width = await page.evaluate('document.querySelector("img[src=\\"/images/memory-challenge-hero.webp\\"]").getBoundingClientRect().width');
+      assert.ok(width <= 120, `Mobile portrait must be compact, got ${width}`);
+    }
+    await page.close();
+  }
 });

@@ -1,15 +1,15 @@
 import { Link } from "react-router-dom";
 import { MEMORY_MASTERCLASS_CONFIG } from "../../data/memory/masterclassConfig";
+import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent";
 
 export default function MemoryMasterclassThankYou() {
   const {
     name,
-    dateLabel,
-    startTime,
-    endTime,
-    timezone,
     price,
   } = MEMORY_MASTERCLASS_CONFIG;
+  const { event, error, retry } = useMemoryMasterclassEvent();
+  const dateLabel = event?.dateLabel || (error ? "Class schedule unavailable" : "Loading class schedule…");
+  const timeRange = event ? `${event.startTime}–${event.endTime} ${event.timezoneLabel}` : "";
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-950 via-indigo-950 to-slate-950 px-4 py-10 text-white sm:px-6 sm:py-16">
@@ -33,6 +33,33 @@ export default function MemoryMasterclassThankYou() {
             updates and joining instructions.
           </p>
 
+          <div className="mt-7 rounded-2xl border border-emerald-300/30 bg-emerald-300/10 p-5">
+            <h2 className="text-lg font-black text-white">Join the class WhatsApp group</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-white/80">
+              This is where we’ll share class reminders and joining updates.
+              Join now so you know when and how to attend.
+            </p>
+            {event && (
+              <a
+                href={event.whatsappGroupUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-emerald-300 px-5 py-4 text-base font-black text-slate-950 transition hover:bg-emerald-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-emerald-200"
+              >
+                JOIN THE WHATSAPP GROUP →
+              </a>
+            )}
+            {!event && !error && <p className="mt-4 text-sm" role="status">Loading the class group link…</p>}
+            {error && (
+              <div className="mt-4 text-sm" role="alert">
+                <p>{error}</p>
+                <button type="button" onClick={retry} className="mt-2 font-bold underline underline-offset-4">
+                  Retry class details
+                </button>
+              </div>
+            )}
+          </div>
+
           <div className="mx-auto mt-8 grid max-w-2xl gap-3 text-left sm:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
               <p className="text-2xl">📅</p>
@@ -45,7 +72,7 @@ export default function MemoryMasterclassThankYou() {
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
               <p className="text-2xl">⏰</p>
               <h2 className="mt-3 font-black">
-                {startTime}–{endTime} {timezone}
+                {timeRange || dateLabel}
               </h2>
               <p className="mt-2 text-sm leading-6 text-white/65">
                 Please join a few minutes early.
@@ -106,7 +133,7 @@ export default function MemoryMasterclassThankYou() {
             </p>
 
             <p className="mt-3 text-2xl font-black">
-              {dateLabel} · {startTime}–{endTime} {timezone}
+              {event ? `${dateLabel} · ${timeRange}` : dateLabel}
             </p>
 
             <p className="mt-2 font-bold text-slate-600">

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { trackEvent } from "../../lib/tracking";
 import { api } from "../../api/apiClient";
-import { MEMORY_MASTERCLASS_CONFIG } from "../../data/memory/masterclassConfig";
+import { MEMORY_MASTERCLASS_CONFIG, getMemoryVslId } from "../../data/memory/masterclassConfig";
+import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent";
 import MemoryPurchaserDetails from "./MemoryPurchaserDetails";
 
 const MEMORY_VISITOR_ID_KEY = "fj_memory_visitor_id";
@@ -213,41 +214,44 @@ export default function MemoryMasterclassOffer({
 
   const {
     name,
-    dateLabel,
-    startTime,
-    endTime,
-    timezone,
     price,
-    parentVimeoId,
-    advancedVimeoId,
   } = MEMORY_MASTERCLASS_CONFIG;
 
-  const vimeoId = isAdvanced
-    ? advancedVimeoId
-    : parentVimeoId;
+  const { event, error: eventError, retry: retryEvent } = useMemoryMasterclassEvent();
+  const dateLabel = event?.dateLabel || (eventError ? "Class schedule unavailable" : "Loading class schedule…");
+  const timeRange = event ? `${event.startTime}–${event.endTime} ${event.timezoneLabel}` : "";
+  const scheduleSummary = event
+    ? `${event.dateLabel} · ${event.startTime} ${event.timezoneLabel} · ₹${price}`
+    : dateLabel;
+  const vimeoId = getMemoryVslId(trackId);
 
   const ctaText = isAdvanced
     ? `Book My Seat — ₹${price}`
     : `Book My Child's Seat — ₹${price}`;
 
   useEffect(() => {
+    if (!event) return;
     trackEvent("memory_offer_view", {
       funnel: "amaze_memory",
       track: trackId,
       score,
-      event_date: "2026-10-18",
+      event_date: event.dateISO,
       price,
     });
-  }, [trackId, score, price]);
+  }, [trackId, score, price, event]);
 
   async function handleCheckout(placement) {
     if (isCheckoutStarting) return;
+    if (!event) {
+      setCheckoutMessage("Please wait for the class schedule to load before opening checkout.");
+      return;
+    }
 
     trackEvent("memory_offer_click", {
       funnel: "amaze_memory",
       track: trackId,
       score,
-      event_date: "2026-10-18",
+      event_date: event.dateISO,
       price,
       placement,
     });
@@ -264,7 +268,7 @@ export default function MemoryMasterclassOffer({
   }
 
   async function startCheckout(purchaser) {
-    if (isCheckoutStarting || !ownerToken) return;
+    if (isCheckoutStarting || !ownerToken || !event) return;
     if (!purchaser.name || !purchaser.email || !purchaser.phone) return;
     const placement = checkoutPlacement;
     setPurchaserDetails(purchaser);
@@ -315,7 +319,7 @@ export default function MemoryMasterclassOffer({
         order_id: orderId,
 
         name: "Amaze Memory",
-        description: `${name} — ${dateLabel}, ${startTime} ${timezone}`,
+        description: `${name} — ${event.dateLabel}, ${event.startTime} ${event.timezoneLabel}`,
         prefill: {
           name: purchaser.name,
           email: purchaser.email,
@@ -374,7 +378,7 @@ export default function MemoryMasterclassOffer({
         funnel: "amaze_memory",
         track: trackId,
         score,
-        event_date: "2026-10-18",
+        event_date: event.dateISO,
         price,
         placement,
       });
@@ -444,8 +448,16 @@ export default function MemoryMasterclassOffer({
         </h3>
 
         <p className="mt-2 text-lg font-bold text-white/90">
-          {startTime}–{endTime} {timezone}
+          {timeRange}
         </p>
+        {eventError && (
+          <div className="mt-3 text-sm" role="alert">
+            <p>{eventError}</p>
+            <button type="button" onClick={retryEvent} className="mt-2 font-bold underline underline-offset-4">
+              Retry class details
+            </button>
+          </div>
+        )}
 
         <div className="mt-5 flex flex-wrap justify-center gap-2 text-sm font-bold">
           <span className="rounded-full bg-white/10 px-4 py-2">
@@ -628,7 +640,7 @@ export default function MemoryMasterclassOffer({
             </button>
 
             <p className="mt-3 text-sm font-bold text-slate-500">
-              Sunday, 18 October · 5:00 PM IST · ₹{price}
+              {scheduleSummary}
             </p>
           </div>
         </div>
@@ -698,7 +710,7 @@ export default function MemoryMasterclassOffer({
             </button>
 
             <p className="mt-3 text-sm font-bold text-white/60">
-              Sunday, 18 October · 5:00 PM IST · ₹{price}
+              {scheduleSummary}
             </p>
           </div>
         </div>
@@ -771,11 +783,11 @@ export default function MemoryMasterclassOffer({
 
             <div className="mt-8 grid gap-3 text-left sm:grid-cols-2">
               <div className="rounded-2xl bg-white p-4 font-bold text-slate-700 shadow-sm">
-                📅 Sunday, 18 October
+                📅 {dateLabel}
               </div>
 
               <div className="rounded-2xl bg-white p-4 font-bold text-slate-700 shadow-sm">
-                🕔 5:00 PM–7:00 PM IST
+                🕔 {timeRange || dateLabel}
               </div>
 
               <div className="rounded-2xl bg-white p-4 font-bold text-slate-700 shadow-sm">
@@ -911,7 +923,7 @@ export default function MemoryMasterclassOffer({
             </button>
 
             <p className="mt-3 text-sm font-bold text-slate-500">
-              Sunday, 18 October · 5:00 PM IST · ₹{price}
+              {scheduleSummary}
             </p>
           </div>
         </div>

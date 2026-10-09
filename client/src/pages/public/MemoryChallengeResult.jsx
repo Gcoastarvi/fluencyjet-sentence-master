@@ -6,7 +6,7 @@ import MemoryMasterclassOffer from "../../components/memory/MemoryMasterclassOff
 import MemoryVslModal from "../../components/memory/MemoryVslModal";
 import MemoryScoreRescue from "../../components/memory/MemoryScoreRescue";
 import { getMemoryScoreBand } from "../../components/memory/memoryScoreBand";
-import { MEMORY_MASTERCLASS_CONFIG } from "../../data/memory/masterclassConfig";
+import { getMemoryVslId } from "../../data/memory/masterclassConfig";
 
 const DOMAIN_LABELS = {
   immediate: "Quick Memory",
@@ -110,9 +110,7 @@ export default function MemoryChallengeResult() {
   const rescueShown = useRef(false);
   const activeTrackId = result?.trackId || assessment?.trackId || selectedTrack;
   const isAdvancedLead = activeTrackId === "advanced";
-  const vimeoId = isAdvancedLead
-    ? MEMORY_MASTERCLASS_CONFIG.advancedVimeoId
-    : MEMORY_MASTERCLASS_CONFIG.parentVimeoId;
+  const vimeoId = getMemoryVslId(activeTrackId);
   const scoreBand = getMemoryScoreBand(result?.totalScore, isAdvancedLead);
 
   function openVsl() {
@@ -187,7 +185,6 @@ export default function MemoryChallengeResult() {
     learnerName: "",
     studentClass: "",
     studyCategory: "",
-    parentGuardianName: "",
     whatsappNumber: "",
     whatsappConsent: false,
   });
@@ -799,26 +796,6 @@ export default function MemoryChallengeResult() {
                     </div>
                   </div>
 
-                  {!isAdvancedLead && (
-                    <div>
-                      <label className="block text-sm font-black text-slate-800">
-                        Parent / guardian name{" "}
-                        <span className="font-medium text-slate-500">
-                          (optional)
-                        </span>
-                      </label>
-
-                      <input
-                        type="text"
-                        name="parentGuardianName"
-                        value={leadForm.parentGuardianName}
-                        onChange={updateLeadField}
-                        maxLength={100}
-                        autoComplete="name"
-                        className="mt-2 w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-950 outline-none focus:border-indigo-500"
-                      />
-                    </div>
-                  )}
 
                   <div className="rounded-2xl bg-slate-50 p-4">
                     <label className="flex cursor-pointer items-start gap-3">
@@ -870,7 +847,7 @@ export default function MemoryChallengeResult() {
             savedScoreRef={savedScoreRef}
             onWatchVideo={openVsl}
             leadDetails={{
-              name: leadForm.parentGuardianName || leadForm.learnerName,
+              name: leadForm.learnerName,
               email: leadForm.email || "",
               phone: leadForm.whatsappNumber,
             }}
