@@ -199,6 +199,8 @@ export default function MemoryMasterclassOffer({
   score,
   ownerToken,
   leadDetails,
+  savedScoreRef,
+  onWatchVideo,
 }) {
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [isCheckoutStarting, setIsCheckoutStarting] =
@@ -414,10 +416,15 @@ export default function MemoryMasterclassOffer({
           Report saved ✓
         </p>
 
-        <h2 className="mt-3 text-2xl font-black text-slate-950 sm:text-3xl">
+        <h2
+          id="memory-masterclass-saved-score"
+          ref={savedScoreRef}
+          tabIndex={-1}
+          className="mt-3 scroll-mt-24 text-2xl font-black text-slate-950 outline-none sm:text-3xl"
+        >
           {isAdvanced
             ? "Your Study Memory Score is saved"
-            : "Your child's Study Memory Score is saved"}
+            : "Your child’s Study Memory Score is saved"}
         </h2>
 
         <p className="mx-auto mt-3 max-w-2xl font-medium leading-7 text-slate-600">
@@ -468,38 +475,17 @@ export default function MemoryMasterclassOffer({
           </h3>
         </div>
 
-        <div className="mx-auto mt-7 max-w-4xl overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-950 shadow-lg">
-          {vimeoId ? (
-            <div className="relative w-full pb-[56.25%]">
-              <iframe
-                className="absolute inset-0 h-full w-full"
-                src={`https://player.vimeo.com/video/${vimeoId}?title=0&byline=0&portrait=0`}
-                title={
-                  isAdvanced
-                    ? "Competitive Exam Study Memory Class Video"
-                    : "Parent Study Memory Class Video"
-                }
-                loading="lazy"
-                allow="autoplay; fullscreen; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          ) : (
-            <div className="flex min-h-[260px] items-center justify-center px-6 py-12 text-center text-white">
-              <div>
-                <p className="text-sm font-black uppercase tracking-[0.16em] text-indigo-300">
-                  VSL placeholder
-                </p>
-
-                <p className="mt-3 text-xl font-black">
-                  {isAdvanced
-                    ? "Competitive Exam VSL will appear here."
-                    : "Parent VSL will appear here."}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
+        {vimeoId && onWatchVideo && (
+          <div className="mt-5 text-center">
+            <button
+              type="button"
+              onClick={onWatchVideo}
+              className="rounded-xl border border-indigo-200 bg-indigo-50 px-5 py-3 text-sm font-black text-indigo-700 transition hover:bg-indigo-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600"
+            >
+              Watch the 4-minute video again
+            </button>
+          </div>
+        )}
 
         <div className="mx-auto mt-8 max-w-xl text-center">
           <button

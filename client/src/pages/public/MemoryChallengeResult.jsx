@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 import MemoryMasterclassOffer from "../../components/memory/MemoryMasterclassOffer";
+import MemoryVslModal from "../../components/memory/MemoryVslModal";
+import MemoryScoreRescue from "../../components/memory/MemoryScoreRescue";
+import { getMemoryScoreBand } from "../../components/memory/memoryScoreBand";
+import { MEMORY_MASTERCLASS_CONFIG } from "../../data/memory/masterclassConfig";
 
 const DOMAIN_LABELS = {
   immediate: "Quick Memory",
@@ -98,6 +102,86 @@ export default function MemoryChallengeResult() {
 
   const [leadStatus, setLeadStatus] = useState("idle");
   const [leadError, setLeadError] = useState("");
+  const [vslOpen, setVslOpen] = useState(false);
+  const [rescueOpen, setRescueOpen] = useState(false);
+  const [scrollAfterVideo, setScrollAfterVideo] = useState(false);
+  const savedScoreRef = useRef(null);
+  const whatsappFormRef = useRef(null);
+  const rescueShown = useRef(false);
+  const activeTrackId = result?.trackId || assessment?.trackId || selectedTrack;
+  const isAdvancedLead = activeTrackId === "advanced";
+  const vimeoId = isAdvancedLead
+    ? MEMORY_MASTERCLASS_CONFIG.advancedVimeoId
+    : MEMORY_MASTERCLASS_CONFIG.parentVimeoId;
+  const scoreBand = getMemoryScoreBand(result?.totalScore, isAdvancedLead);
+
+  function openVsl() {
+    setRescueOpen(false);
+    if (vimeoId) {
+      setVslOpen(true);
+    } else {
+      setScrollAfterVideo(true);
+    }
+  }
+
+  function closeVsl() {
+    setVslOpen(false);
+    setScrollAfterVideo(true);
+  }
+
+  function returnToWhatsAppForm() {
+    setRescueOpen(false);
+    requestAnimationFrame(() => {
+      const form = whatsappFormRef.current;
+      if (!form) return;
+      form.querySelector("input:not([disabled])")?.focus({ preventScroll: true });
+      form.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+    });
+  }
+
+  useEffect(() => {
+    if (!scrollAfterVideo || !leadSaved) return;
+    const frame = requestAnimationFrame(() => {
+      const headline = savedScoreRef.current;
+      if (!headline) return;
+      headline.focus({ preventScroll: true });
+      headline.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start",
+      });
+      setScrollAfterVideo(false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [scrollAfterVideo, leadSaved]);
+
+  useEffect(() => {
+    if (
+      !MEMORY_SESSION_PERSISTENCE_ENABLED || !ownerToken ||
+      !result?.modules || leadSaved || vslOpen || rescueOpen ||
+      rescueShown.current || readSessionValue("memory_score_rescue_shown") === "true"
+    ) return;
+
+    function handleExit(event) {
+      // A real desktop pointer leaving through the top edge only; never back,
+      // touch, tab visibility changes, or movement between page elements.
+      if (
+        event.relatedTarget !== null || event.clientY > 0 ||
+        !window.matchMedia("(min-width: 1024px) and (hover: hover) and (pointer: fine)").matches
+      ) return;
+      rescueShown.current = true;
+      try {
+        window.sessionStorage.setItem("memory_score_rescue_shown", "true");
+      } catch {
+        // The in-memory guard still prevents repeated prompts on this page.
+      }
+      setRescueOpen(true);
+    }
+    document.addEventListener("mouseout", handleExit);
+    return () => document.removeEventListener("mouseout", handleExit);
+  }, [ownerToken, result, leadSaved, vslOpen, rescueOpen]);
 
   const [leadForm, setLeadForm] = useState({
     learnerName: "",
@@ -247,6 +331,7 @@ export default function MemoryChallengeResult() {
         track: result?.trackId || assessment?.trackId || selectedTrack,
         form: result?.form || assessment?.form || "A",
       });
+      openVsl();
     } catch (error) {
       console.error("Memory lead capture failed:", error);
 
@@ -386,9 +471,6 @@ export default function MemoryChallengeResult() {
     result.retentionRatio === undefined
       ? null
       : Math.round(result.retentionRatio * 100);
-
-  const isAdvancedLead =
-    assessment?.leadType === "advanced";
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12">
@@ -574,22 +656,47 @@ export default function MemoryChallengeResult() {
         {MEMORY_SESSION_PERSISTENCE_ENABLED && ownerToken && !leadSaved && (
           <section className="mt-6 rounded-[2rem] border border-indigo-200 bg-white p-6 shadow-sm sm:p-8">
               <>
+                {scoreBand && (
+                  <div className="mb-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-left sm:p-5">
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
+                      {scoreBand.title}
+                    </p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-700">
+                      {scoreBand.message}
+                    </p>
+                    <p className="mt-3 text-sm font-black leading-6 text-slate-950">
+                      {scoreBand.bridge}
+                    </p>
+                  </div>
+                )}
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-indigo-700">
                   SAVE YOUR RESULT
                 </p>
 
                 <h2 className="mt-3 text-2xl font-black text-slate-950">
-                  Get your Study Memory Score on WhatsApp
+                  {isAdvancedLead
+                    ? "Save your score & see how to improve it"
+                    : "Save this score & see how to improve it"}
                 </h2>
 
                 <p className="mt-3 font-medium leading-7 text-slate-600">
                   {isAdvancedLead
-                    ? "Enter your WhatsApp number. We'll send your score so you can save it and compare your progress later."
-                    : "Enter a parent or guardian WhatsApp number. We'll send your score so you can save it and compare your progress later."}
+                    ? "Enter your WhatsApp number. We’ll save this score on WhatsApp, then show you a short 4-minute video that explains why we forget and how we can remember more."
+                    : "Enter a parent or guardian WhatsApp number. We’ll save this score on WhatsApp, then show you a short 4-minute video that explains why students forget and how they can remember more."}
                 </p>
 
+                <ul className="mt-4 space-y-2 text-sm font-bold text-indigo-800">
+                  {[
+                    "Save this score on WhatsApp",
+                    isAdvancedLead ? "See why you forget" : "See why students forget",
+                    "See how to remember more",
+                  ].map((benefit) => <li key={benefit}>✓ {benefit}</li>)}
+                </ul>
+
                 <form
-                  className="mt-7 space-y-5"
+                  id="memory-whatsapp-form"
+                  ref={whatsappFormRef}
+                  className="mt-7 scroll-mt-24 space-y-5"
                   onSubmit={submitLead}
                 >
                   <div>
@@ -748,7 +855,7 @@ export default function MemoryChallengeResult() {
                   >
                     {leadStatus === "saving"
                       ? "Saving..."
-                      : "Send My Score on WhatsApp →"}
+                      : "SAVE MY SCORE & SHOW ME HOW →"}
                   </button>
                 </form>
               </>
@@ -760,11 +867,24 @@ export default function MemoryChallengeResult() {
             trackId={result.trackId || assessment?.trackId || selectedTrack}
             score={result.totalScore}
             ownerToken={ownerToken}
+            savedScoreRef={savedScoreRef}
+            onWatchVideo={openVsl}
             leadDetails={{
               name: leadForm.parentGuardianName || leadForm.learnerName,
               email: leadForm.email || "",
               phone: leadForm.whatsappNumber,
             }}
+          />
+        )}
+
+        {vslOpen && vimeoId && (
+          <MemoryVslModal vimeoId={vimeoId} isAdvanced={isAdvancedLead} onClose={closeVsl} />
+        )}
+        {rescueOpen && !leadSaved && !vslOpen && (
+          <MemoryScoreRescue
+            isAdvanced={isAdvancedLead}
+            onClose={() => setRescueOpen(false)}
+            onSave={returnToWhatsAppForm}
           />
         )}
 
