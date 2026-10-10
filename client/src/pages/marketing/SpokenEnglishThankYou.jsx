@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { trackFjMetaCustom } from "../../lib/metaPixel";
 
 const LEVEL_CHECK_URL =
   "/level-check?source=spoken_english_purchase";
@@ -144,8 +145,7 @@ export default function SpokenEnglishThankYou() {
         currency: "INR",
       });
 
-      window.fbq?.(
-        "trackCustom",
+      trackFjMetaCustom(
         "SpokenEnglishThankYouViewed",
         {
           value: 1199,

@@ -46,6 +46,7 @@ export async function sendCapiPurchase({
   fbp,
   clientIpAddress,
   clientUserAgent,
+  testEventCode = process.env.META_TEST_EVENT_CODE || null,
 }) {
   try {
     const userData = {};
@@ -108,8 +109,8 @@ export async function sendCapiPurchase({
 
     const requestBody = { data: [event] };
 
-    if (process.env.META_TEST_EVENT_CODE) {
-      requestBody.test_event_code = process.env.META_TEST_EVENT_CODE;
+    if (testEventCode) {
+      requestBody.test_event_code = testEventCode;
     }
 
     const url = `${CAPI_BASE}/${CAPI_VERSION}/${pixelId}/events?access_token=${accessToken}`;

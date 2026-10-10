@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { Link, useNavigate } from "react-router-dom";
 import "./SpokenEnglishChallenge.css";
 import ReorderExerciseCard from "@/components/practice/ReorderExerciseCard";
+import { trackFjMetaCustom } from "../../lib/metaPixel";
 
 const XP_PER_SENTENCE = 150;
 const STORAGE_KEY = "fj_guest_challenge_v1";
@@ -100,9 +101,7 @@ function createAttemptId() {
 
 function trackEvent(eventName, parameters = {}) {
   try {
-    if (typeof window.fbq === "function") {
-      window.fbq("trackCustom", eventName, parameters);
-    }
+    trackFjMetaCustom(eventName, parameters);
 
     if (typeof window.gtag === "function") {
       window.gtag("event", eventName, parameters);

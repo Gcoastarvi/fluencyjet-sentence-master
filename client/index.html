@@ -31,6 +31,13 @@
 
     <!-- Meta Pixel Base Code -->
     <script>
+      // Local/Preview validation is offline by default. Real Meta Test Events
+      // requires deliberate per-tab opt-in; automated tests use a fake fbq.
+      const metaPreview = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ||
+        location.hostname.endsWith(".replit.dev");
+      let metaQaOptIn = false;
+      try { metaQaOptIn = sessionStorage.getItem("fj_meta_qa_opt_in") === "true"; } catch {}
+      if (!metaPreview || metaQaOptIn) {
       !(function (f, b, e, v, n, t, s) {
         if (f.fbq) return;
         n = f.fbq = function () {
@@ -55,7 +62,8 @@
         "https://connect.facebook.net/en_US/fbevents.js",
       );
 
-      fbq("init", "1246171816816642");
+      // Route-aware application tracking initializes each Pixel once.
+      }
     </script>
     <!-- End Meta Pixel Base Code -->
     <style>
@@ -135,15 +143,7 @@
   </head>
 
   <body class="bg-gray-50 text-gray-800">
-    <!-- Meta Pixel noscript fallback -->
-    <noscript>
-      <img
-        height="1"
-        width="1"
-        style="display: none"
-        src="https://www.facebook.com/tr?id=1246171816816642&ev=PageView&noscript=1"
-      />
-    </noscript>
+    <!-- META_PIXEL_NOSCRIPT -->
 
     <div id="root"></div>
         </div>

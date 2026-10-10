@@ -1,4 +1,5 @@
 // client/src/lib/tracking.js
+import { dispatchMetaEvent, dispatchMetaPageView } from "./metaPixel.js";
 const GA_MEASUREMENT_ID = "G-3PFCRYL9TC";
 
 function safeWindow() {
@@ -21,9 +22,7 @@ export function trackPageView(path) {
       });
     }
 
-    if (w.fbq) {
-      w.fbq("track", "PageView");
-    }
+    dispatchMetaPageView(pagePath);
   } catch (error) {
     console.warn("[tracking] page_view failed:", error);
   }
@@ -38,22 +37,22 @@ export function trackEvent(eventName, params = {}) {
       w.gtag("event", eventName, params);
     }
 
-    if (w.fbq) {
-      w.fbq("trackCustom", eventName, params);
-    }
+    const memory = eventName.startsWith("memory_");
+    dispatchMetaEvent(eventName, params, {
+      memory, custom: true,
+      view: memory && /_view(ed)?$/.test(eventName),
+    });
   } catch (error) {
     console.warn("[tracking] custom event failed:", eventName, error);
   }
 }
 
-export function trackMetaStandard(eventName, params = {}) {
+export function trackMetaStandard(eventName, params = {}, options = {}) {
   const w = safeWindow();
   if (!w || !eventName) return;
 
   try {
-    if (w.fbq) {
-      w.fbq("track", eventName, params);
-    }
+    dispatchMetaEvent(eventName, params, options);
   } catch (error) {
     console.warn("[tracking] meta standard event failed:", eventName, error);
   }

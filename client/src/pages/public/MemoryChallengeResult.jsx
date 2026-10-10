@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
+import { trackMemoryLead } from "../../lib/metaPixel";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 import MemoryMasterclassOffer from "../../components/memory/MemoryMasterclassOffer";
 import MemoryVslModal from "../../components/memory/MemoryVslModal";
@@ -325,6 +326,11 @@ export default function MemoryChallengeResult() {
 
       trackEvent("memory_lead", {
         funnel: "amaze_memory",
+        track: result?.trackId || assessment?.trackId || selectedTrack,
+        form: result?.form || assessment?.form || "A",
+      });
+      void trackMemoryLead({
+        assessmentKey: readSessionValue("memory_form_a_public_token") || ownerToken,
         track: result?.trackId || assessment?.trackId || selectedTrack,
         form: result?.form || assessment?.form || "A",
       });

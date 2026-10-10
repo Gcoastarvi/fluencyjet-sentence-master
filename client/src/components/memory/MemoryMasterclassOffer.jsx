@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { trackEvent } from "../../lib/tracking";
+import { trackMemoryCheckout } from "../../lib/metaPixel";
 import { api } from "../../api/apiClient";
 import { MEMORY_MASTERCLASS_CONFIG, getMemoryVslId } from "../../data/memory/masterclassConfig";
 import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent";
@@ -374,6 +375,8 @@ export default function MemoryMasterclassOffer({
         setIsCheckoutStarting(false);
       });
 
+      checkout.open();
+      trackMemoryCheckout({ orderId, amount, currency, track: trackId, source: "assessment" });
       trackEvent("memory_checkout_open", {
         funnel: "amaze_memory",
         track: trackId,
@@ -383,7 +386,6 @@ export default function MemoryMasterclassOffer({
         placement,
       });
 
-      checkout.open();
       setCheckoutPlacement(null);
     } catch (error) {
       console.error(

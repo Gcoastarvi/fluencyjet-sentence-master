@@ -93,7 +93,8 @@ async function fixture({
     }
     if (url.pathname.startsWith("/api/")) {
       apiRequests.push(url.pathname);
-      if (url.pathname === "/api/memory-masterclass/standalone/create-order") {
+      if (url.pathname === "/api/memory-masterclass/standalone/create-order" ||
+          url.pathname === "/api/memory-masterclass/create-order") {
         checkoutRequests.push(JSON.parse(request.postData || "{}"));
         return fulfill(requestId, JSON.stringify(failCheckout ? {
           ok: false, message: "Fixture checkout unavailable",
@@ -175,6 +176,10 @@ async function fixture({
     key => [key, { correct: 2, maxRaw: 5, percentage: 40, weightedScore: 8, maxWeighted: 20 }],
   ));
   await send("Page.addScriptToEvaluateOnNewDocument", { source: `
+    // Capture dispatch only. No real SDK, ad-account requests or conversions.
+    window.metaCalls = [];
+    window.fbq = (...args) => window.metaCalls.push(args);
+    localStorage.clear();
     // Headless Chromium has no physical mouse. Model desktop hardware only;
     // leave viewport/reduced-motion queries and the production logic intact.
     ${!mobile ? `
@@ -293,6 +298,9 @@ for (const [audience, schoolLevel, videoId] of [
     })()`);
     await page.evaluate('document.querySelector("dialog form").requestSubmit()');
     await page.waitFor('window.fixtureCheckoutOpened === true');
+    assert.deepEqual(await page.evaluate('window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "InitiateCheckout").map(c => [c[1], c[3].value, c[4].eventID])'),
+      [["1998316064175555", 99, "memory_checkout_order_fixture_standalone"]]);
+    assert.equal(await page.evaluate('window.metaCalls.some(c => /^trackSingle/.test(c[0]) && c[1] === "1246171816816642")'), false);
     assert.equal(page.checkoutRequests.length, 1);
     assert.deepEqual(
       Object.fromEntries(Object.entries(page.checkoutRequests[0]).filter(([key]) =>
@@ -323,6 +331,7 @@ for (const [audience, schoolLevel, videoId] of [
     assert.equal(await page.evaluate('!!document.querySelector("a[href=\\"/memory-challenge/result\\"]")'), false);
     await page.waitFor('!!document.querySelector("a[href^=\\"https://chat.whatsapp.com/\\"]")');
     assert.ok(await page.evaluate('!!document.querySelector("a[href^=\\"https://chat.whatsapp.com/\\"]")'));
+    assert.equal(await page.evaluate('window.metaCalls.some(c => c[2] === "Purchase")'), false);
     await page.close();
   });
 }
@@ -565,4 +574,92 @@ test("uploaded portrait has the exact credibility caption and stays compact on m
     }
     await page.close();
   }
+});
+
+test("memory Lead fires only on saved success, once, and never reaches FJ", async () => {
+  const failed = await fixture({ failLead: true });
+  assert.equal(await failed.evaluate('window.metaCalls.some(c => c[2] === "Lead")'), false);
+  await failed.submit();
+  await failed.waitFor('document.body.innerText.includes("Fixture save failed")');
+  assert.equal(await failed.evaluate('window.metaCalls.some(c => c[2] === "Lead")'), false);
+  await failed.close();
+
+  for (const track of ["school_foundation", "school_advanced", "advanced"]) {
+    const page = await fixture({ track });
+    assert.equal(await page.evaluate('window.metaCalls.some(c => c[2] === "Lead")'), false);
+    await page.submit();
+    await page.waitFor('window.metaCalls.some(c => c[0] === "trackSingle" && c[2] === "Lead")');
+    const leads = await page.evaluate('window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "Lead")');
+    assert.equal(leads.length, 1);
+    assert.equal(leads[0][1], "1998316064175555");
+    assert.match(leads[0][4].eventID, /^memory_lead_[a-f0-9]{64}$/);
+    assert.ok(!JSON.stringify(leads).includes("fixture-owner-token"));
+    assert.equal(await page.evaluate('window.metaCalls.some(c => /^trackSingle/.test(c[0]) && c[1] === "1246171816816642")'), false);
+    await page.close();
+  }
+});
+
+async function registerPurchaser(page) {
+  await page.evaluate(`(() => {
+    const form = document.querySelector("dialog form");
+    for (const [name, value] of [["name","Memory Buyer"],["email","buyer@example.test"],["phone","9876543210"]]) {
+      const input = form.querySelector("[name="+name+"]");
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, value);
+      input.dispatchEvent(new Event("input", {bubbles:true}));
+    }
+  })()`);
+  await page.evaluate('document.querySelector("dialog form").requestSubmit()');
+}
+
+test("assessment-linked checkout emits InitiateCheckout only after order creation and SDK open", async () => {
+  const page = await fixture({ saved: true, track: "advanced" });
+  await page.waitFor(`document.body.innerText.includes(${JSON.stringify(getPublicMemoryMasterclassEvent().dateLabel)})`);
+  await page.evaluate(`window.Razorpay = function(options) {
+    window.fixturePayment = options;
+    this.on = function() {};
+    this.open = function() { window.fixtureCheckoutOpened = true; };
+  }`);
+  await page.evaluate('[...document.querySelectorAll("button")].find(b => b.textContent.includes("Book My Seat") && !b.disabled).click()');
+  await page.waitFor('document.querySelector("dialog[open]")?.innerText.includes("Registration details")');
+  assert.equal(await page.evaluate('window.metaCalls.some(c => c[2] === "InitiateCheckout")'), false);
+  await registerPurchaser(page);
+  await page.waitFor('window.fixtureCheckoutOpened === true');
+  const events = await page.evaluate('window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "InitiateCheckout")');
+  assert.equal(events.length, 1);
+  assert.equal(events[0][1], "1998316064175555");
+  assert.equal(events[0][3].value, 99);
+  assert.equal(page.checkoutRequests[0].ownerToken, "fixture-owner-token");
+  await page.close();
+});
+
+test("failed create-order or SDK open does not count a memory checkout", async () => {
+  for (const failOrder of [true, false]) {
+    const page = await fixture({ path: "/memory-challenge/video/advanced", failCheckout: failOrder });
+    await page.evaluate(`window.Razorpay = function() {
+      this.on = function() {};
+      this.open = function() { throw new Error("Fixture open failed"); };
+    }`);
+    await page.evaluate('document.querySelector("[data-placement=below_video]").click()');
+    await page.waitFor('!!document.querySelector("dialog[open]")');
+    await registerPurchaser(page);
+    await page.waitFor(`document.body.innerText.includes(${JSON.stringify(failOrder ? "Fixture checkout unavailable" : "Fixture open failed")})`);
+    assert.equal(await page.evaluate('window.metaCalls.some(c => c[2] === "InitiateCheckout" || c[2] === "memory_checkout_open")'), false);
+    await page.close();
+  }
+});
+
+test("real React SPA memory → vocabulary → spoken-English → memory separates Pixels and PageViews", async () => {
+  const page = await fixture({ path: "/memory-challenge/video/school" });
+  const routes = ["/vocabulary-vsl", "/spoken-english-offer", "/memory-challenge", "/Memory-Challenge"];
+  for (const [i, route] of routes.entries()) {
+    await page.evaluate(`history.pushState({}, "", ${JSON.stringify(route)}); window.dispatchEvent(new PopStateEvent("popstate"))`);
+    await page.waitFor(`window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "PageView").length === ${i + 2}`);
+  }
+  const views = await page.evaluate('window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "PageView").map(c => c[1])');
+  assert.deepEqual(views, ["1998316064175555","1246171816816642","1246171816816642","1998316064175555","1998316064175555"]);
+  assert.equal(await page.evaluate('window.metaCalls.filter(c => c[0] === "init").length'), 2);
+  const englishEvents = await page.evaluate('window.metaCalls.filter(c => /^trackSingle/.test(c[0]) && /spoken_english|vocabulary/.test(c[2]))');
+  assert.ok(englishEvents.length > 0);
+  assert.ok(englishEvents.every(c => c[1] === "1246171816816642"));
+  await page.close();
 });
