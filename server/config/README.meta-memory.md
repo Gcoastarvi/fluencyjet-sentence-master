@@ -142,6 +142,41 @@ Known pre-existing limitation: failed/skipped CAPI has no automatic retry here;
 duplicate captures return before resending. Do not replay historical purchases
 or relax payment idempotency to work around this.
 
-The shared CAPI helper still uses Graph API v19.0. Verify supported-version
-compatibility and real delivery separately before release; this safety
-regression does not change server API versions or production configuration.
+## API versions and controlled QA
+
+The server-owned destination resolver explicitly selects v26.0 for BrainoDad
+Memory (including future server-derived memory products). Memory uses Bearer
+authorization, never putting its token in the URL or event JSON. Delivery is
+acknowledged only when HTTP succeeds and Meta returns events_received >= 1.
+Errors are returned without automatic retries or a fallback dataset.
+
+FJ deliberately retains v19.0, its query authentication, event payloads,
+test-code defaults and response handling. Meta lists v19.0 as expired May 21,
+2026. FJ needs a separate owner-approved compatibility migration; this release
+does not migrate active English/vocabulary campaigns or claim FJ is supported.
+Meta lists v26.0 as released July 29, 2026; its current CAPI documentation shows
+the v26.0 /events endpoint with the same Purchase payload/test_event_code format.
+
+Mocked HTTP and signed-webhook tests verify routing and payloads, not live token
+authorization, Meta receipt or dataset permissions. Before manual Purchase QA,
+use an isolated QA backend/database with confirmed Razorpay Test Mode keys and
+a test webhook signing secret. Omit WANOTIFIER_MEMORY_SCORE_URL (delivery is
+skipped) or mock delivery ONLY in that QA environment. NODE_ENV=test does not
+automatically select TEST_DATABASE_URL or test payment credentials here.
+Do not start the existing backend with unverified shared credentials.
+
+For browser-only Preview QA, use a fresh standalone tab on a memory VSL page
+and the documented per-tab opt-in. Do not visit non-memory routes while opted
+in: that would enable real FJ browser events. Remove the flag and reload before
+leaving memory. Do not add Preview permissions to FJ or modify live campaigns.
+There is no QA opt-in UI/banner; the flag is deliberate tester permission,
+not a substitute for production advertising consent.
+
+Configure the dedicated server-only MEMORY token and test event code using
+the approved QA backend's secret store, never VITE variables or browser storage.
+Meta Test Events is not a guaranteed ad-measurement sandbox: its current CAPI
+documentation says test_event_code events are not dropped and are used for
+targeting/measurement. Obtain owner approval and ensure the BrainoDad dataset
+is not feeding active campaigns/audiences before sending synthetic purchases.
+Existing external tags/Event Setup Tool rules, consent and real SDK matching
+checks remain release gates.

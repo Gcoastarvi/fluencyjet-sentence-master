@@ -345,6 +345,7 @@ router.post(
       const memoryCapiResult = await sendCapiPurchase({
         pixelId: memoryDestination.pixelId,
         accessToken: memoryDestination.accessToken,
+        apiVersion: memoryDestination.apiVersion,
         testEventCode: memoryDestination.testEventCode,
 
         eventId: memoryMetaEventId,
@@ -619,6 +620,7 @@ router.post(
     const capiResult = await sendCapiPurchase({
       pixelId,
       accessToken,
+      apiVersion: destination.apiVersion,
       testEventCode: destination.testEventCode,
       eventId: metaEventId,
       eventTime: Date.now(),

@@ -1,6 +1,6 @@
 import crypto from "crypto";
+import { FJ_CAPI_VERSION, MEMORY_CAPI_VERSION, MEMORY_PIXEL_ID } from "../config/metaTracking.js";
 
-const CAPI_VERSION = "v19.0";
 const CAPI_BASE = "https://graph.facebook.com";
 
 function sha256hex(value) {
@@ -32,6 +32,7 @@ function normalizePhone(raw) {
 export async function sendCapiPurchase({
   pixelId,
   accessToken,
+  apiVersion = FJ_CAPI_VERSION,
   eventId,
   eventTime,
   eventSourceUrl,
@@ -46,9 +47,27 @@ export async function sendCapiPurchase({
   fbp,
   clientIpAddress,
   clientUserAgent,
-  testEventCode = process.env.META_TEST_EVENT_CODE || null,
+  testEventCode,
 }) {
+  const memory = pixelId === MEMORY_PIXEL_ID;
+  // Only Memory changes authentication/error handling. Legacy FJ callers keep
+  // their existing URL, payload, default test code and response semantics.
+  const redact = value => {
+    const text = String(value || "");
+    if (!memory || typeof accessToken !== "string" || !accessToken.trim()) return text;
+    const forms = [accessToken, accessToken.trim()];
+    // Even a malformed credential must not make the error handler throw.
+    try { forms.push(encodeURIComponent(accessToken)); } catch {}
+    return forms.reduce((message, token) => message.replaceAll(token, "[REDACTED]"), text);
+  };
   try {
+    if (memory && (apiVersion !== MEMORY_CAPI_VERSION ||
+        typeof accessToken !== "string" || !accessToken.trim())) {
+      return { status: 0, ok: false, body: "Memory CAPI requires its dedicated token and supported version" };
+    }
+    if (![FJ_CAPI_VERSION, MEMORY_CAPI_VERSION].includes(apiVersion)) {
+      return { status: 0, ok: false, body: "Unsupported Meta CAPI version" };
+    }
     const userData = {};
 
     const normalEmail = normalizeEmail(email);
@@ -109,21 +128,36 @@ export async function sendCapiPurchase({
 
     const requestBody = { data: [event] };
 
-    if (testEventCode) {
-      requestBody.test_event_code = testEventCode;
+    const effectiveTestCode = testEventCode === undefined
+      ? (memory ? process.env.MEMORY_META_TEST_EVENT_CODE : process.env.META_TEST_EVENT_CODE)
+      : testEventCode;
+    if (effectiveTestCode) {
+      requestBody.test_event_code = effectiveTestCode;
     }
 
-    const url = `${CAPI_BASE}/${CAPI_VERSION}/${pixelId}/events?access_token=${accessToken}`;
+    const endpoint = `${CAPI_BASE}/${apiVersion}/${pixelId}/events`;
+    const url = memory ? endpoint : `${endpoint}?access_token=${accessToken}`;
+    const headers = { "Content-Type": "application/json" };
+    if (memory) headers.Authorization = `Bearer ${accessToken.trim()}`;
 
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify(requestBody),
     });
 
     const responseText = await res.text();
+    if (memory) {
+      let accepted = false;
+      try {
+        const response = JSON.parse(responseText);
+        accepted = Number.isInteger(response.events_received) &&
+          response.events_received >= 1 && !response.error;
+      } catch {}
+      return { status: res.status, ok: res.ok && accepted, body: redact(responseText) };
+    }
     return { status: res.status, ok: res.ok, body: responseText };
   } catch (err) {
-    return { status: 0, ok: false, body: err.message || "fetch error" };
+    return { status: 0, ok: false, body: redact(err.message || "fetch error") };
   }
 }
