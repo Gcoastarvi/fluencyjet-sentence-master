@@ -2,10 +2,11 @@ import { afterEach, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { webcrypto } from "node:crypto";
 import { readFileSync } from "node:fs";
+import * as currentTracking from "./tracking.js";
 import {
   FJ_PIXEL_ID, MEMORY_PIXEL_ID, MEMORY_ROUTE_PREFIXES, isMemoryRoute,
   dispatchMetaEvent, trackMemoryLead, trackMemoryCheckout, memoryPurchaseEventId,
-  setMetaConsent,
+    setMetaConsent, initializeMetaDocument, captureMetaDocument,
 } from "./metaPixel.js";
 import { trackPageView, trackEvent, trackMetaStandard } from "./tracking.js";
 import { MEMORY_ROUTE_PREFIXES as serverPrefixes, renderMetaPixelHtml } from "../../../server/config/metaTracking.js";
@@ -15,7 +16,9 @@ const originalWindow = globalThis.window;
 const originalDocument = globalThis.document;
 function go(path) {
   const url = new URL(path, "https://www.fluencyjet.com");
-  window.location = url;
+  if (isMemoryRoute(url.pathname) !== isMemoryRoute(window.location.pathname)) {
+    globalThis.window = { ...window, location: url }; // a new browser document
+  } else window.location = url;
 }
 beforeEach(() => {
   calls = []; ga = []; storage = new Map();
@@ -48,17 +51,69 @@ test("memory routes, retests, and products have strict prefix boundaries", () =>
   ]) assert.equal(isMemoryRoute(path), false, path);
 });
 
-test("SPA memory → vocabulary → memory → German routes only to their own Pixel", () => {
+test("fresh memory/FJ documents each initialize only their owner; FJ PageView calls retain prior semantics", () => {
   for (const path of ["/memory-challenge", "/vocabulary-course", "/memory-challenge/result", "/german"]) {
     go(path); trackPageView(path); trackPageView(path); // StrictMode duplicate
   }
   assert.deepEqual(events().map(call => [call[1], call[2]]), [
-    [MEMORY_PIXEL_ID, "PageView"], [FJ_PIXEL_ID, "PageView"],
-    [MEMORY_PIXEL_ID, "PageView"], [FJ_PIXEL_ID, "PageView"],
+    [MEMORY_PIXEL_ID, "PageView"], [FJ_PIXEL_ID, "PageView"], [FJ_PIXEL_ID, "PageView"],
+    [MEMORY_PIXEL_ID, "PageView"], [FJ_PIXEL_ID, "PageView"], [FJ_PIXEL_ID, "PageView"],
   ]);
-  assert.equal(calls.filter(call => call[0] === "init").length, 2);
-  assert.ok(calls.filter(call => call[0] === "set").every(call => call[2] === false));
+  assert.equal(calls.filter(call => call[0] === "init").length, 4);
+  assert.deepEqual(calls.filter(call => call[0] === "set"), [
+    ["set", "autoConfig", false, MEMORY_PIXEL_ID],
+    ["set", "autoConfig", false, MEMORY_PIXEL_ID],
+  ]);
   assert.equal(ga.length, 8); // Existing GA behavior is not silently rewritten.
+});
+
+test("an illegally changed pathname cannot initialize a second Pixel in an existing document", () => {
+  captureMetaDocument(window);
+  initializeMetaDocument(window);
+  window.location = new URL("https://www.fluencyjet.com/spoken-english-offer");
+  trackPageView("/spoken-english-offer");
+  trackMetaStandard("Lead");
+  assert.deepEqual(calls.filter(c => c[0] === "init"), [["init", MEMORY_PIXEL_ID]]);
+  assert.equal(events().length, 0);
+});
+
+test("coded FJ Lead/PageView/Vocabulary/English checkout events match the pre-feature baseline", () => {
+  // Captured from the pre-feature helper with mock browser APIs. Keep the
+  // regression portable to shallow CI checkouts, without Git-history access.
+  const baseline = JSON.parse(readFileSync(new URL("../../tests/fixtures/fjTrackingBaseline.json", import.meta.url), "utf8"));
+  const outputs = [baseline];
+  for (const module of [currentTracking]) {
+    const meta = [], analytics = [];
+    globalThis.window = {
+      location: new URL("https://www.fluencyjet.com/vocabulary-course?source=fixture"),
+      fbq: (...args) => meta.push(args), gtag: (...args) => analytics.push(args),
+    };
+    module.trackPageView("/vocabulary-course?source=fixture");
+    module.trackPageView("/vocabulary-course?source=fixture");
+    module.trackLevelCheckComplete({ score: 77, track: "beginner", source: "fixture" });
+    module.trackSignupComplete({ method: "email", track: "beginner" });
+    module.trackVocabularyVSLView();
+    module.trackVocabularyCourseView({ source: "fixture" });
+    module.trackVocabularyInitiateCheckout({ placement: "footer", source: "fixture" });
+    module.trackVocabularyInitiateCheckout({ placement: "footer", source: "fixture" });
+    module.trackSpokenEnglishInitiateCheckout();
+    module.trackSpokenEnglishInitiateCheckout();
+    module.trackEvent("SpokenEnglishThankYouViewed", { value: 1199, currency: "INR" });
+    outputs.push({
+      analytics,
+      meta: meta.filter(c => ["track", "trackCustom", "trackSingle", "trackSingleCustom"].includes(c[0]))
+        .map(c => {
+          const event = c.slice(c[0].includes("Single") ? 2 : 1);
+          return [c[0].includes("Custom") ? "custom" : "standard", event[0], event[1] || {}];
+        }),
+    });
+    if (module === currentTracking) {
+      assert.deepEqual(meta.filter(c => c[0] === "init"), [["init", FJ_PIXEL_ID]]);
+      assert.equal(meta.filter(c => c[0] === "set").length, 0);
+    }
+  }
+  // JSON transport omits optional undefined properties (e.g. main_goal).
+  assert.deepEqual(JSON.parse(JSON.stringify(outputs[1])), outputs[0]);
 });
 
 test("memory query-only views deduplicate; going away and returning counts a new visit", () => {

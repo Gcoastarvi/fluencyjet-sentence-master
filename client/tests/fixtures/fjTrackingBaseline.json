@@ -1,0 +1,34 @@
+{
+  "analytics": [
+    ["event","page_view",{"page_title":"Memory Challenge","page_location":"https://www.fluencyjet.com/vocabulary-course?source=fixture","page_path":"/vocabulary-course?source=fixture","send_to":"G-3PFCRYL9TC"}],
+    ["event","page_view",{"page_title":"Memory Challenge","page_location":"https://www.fluencyjet.com/vocabulary-course?source=fixture","page_path":"/vocabulary-course?source=fixture","send_to":"G-3PFCRYL9TC"}],
+    ["event","level_check_complete",{"score":77,"track":"beginner","segment":"general","source":"fixture"}],
+    ["event","CompleteLevelCheck",{"score":77,"track":"beginner","segment":"general","source":"fixture"}],
+    ["event","sign_up",{"method":"email","track":"beginner"}],
+    ["event","vocabulary_vsl_page_view",{"funnel":"vocabulary","product":"vocabulary-masterclass-799"}],
+    ["event","vocabulary_course_page_view",{"funnel":"vocabulary","product":"vocabulary-challenge-799","source":"fixture","value":799,"currency":"INR"}],
+    ["event","begin_checkout",{"currency":"INR","value":799,"items":[{"item_id":"vocabulary-challenge-799","item_name":"FluencyJet Vocabulary Challenge","item_category":"English Vocabulary","price":799,"quantity":1}],"placement":"footer","source":"fixture"}],
+    ["event","vocabulary_payment_cta_click",{"funnel":"vocabulary","product":"vocabulary-challenge-799","placement":"footer","source":"fixture","value":799,"currency":"INR"}],
+    ["event","begin_checkout",{"currency":"INR","value":1199,"items":[{"item_name":"Spoken English Gym 1-Year Access","price":1199,"quantity":1}]}],
+    ["event","spoken_english_offer_payment_cta_click",{}],
+    ["event","SpokenEnglishThankYouViewed",{"value":1199,"currency":"INR"}]
+  ],
+  "meta": [
+    ["standard","PageView",{}],
+    ["standard","PageView",{}],
+    ["custom","level_check_complete",{"score":77,"track":"beginner","segment":"general","source":"fixture"}],
+    ["custom","CompleteLevelCheck",{"score":77,"track":"beginner","segment":"general","source":"fixture"}],
+    ["standard","Lead",{"content_name":"FluencyJet Level Check Completed","content_category":"general","source":"fixture","segment":"general","track":"beginner","score":77}],
+    ["custom","sign_up",{"method":"email","track":"beginner"}],
+    ["standard","CompleteRegistration",{"method":"email","track":"beginner"}],
+    ["standard","ViewContent",{"content_name":"Vocabulary Masterclass VSL","content_ids":["vocabulary-masterclass-799"],"content_type":"product","value":799,"currency":"INR"}],
+    ["custom","vocabulary_vsl_page_view",{"funnel":"vocabulary","product":"vocabulary-masterclass-799"}],
+    ["standard","ViewContent",{"content_name":"FluencyJet Vocabulary Challenge","content_ids":["vocabulary-challenge-799"],"content_type":"product","content_category":"English Vocabulary","value":799,"currency":"INR","source":"fixture"}],
+    ["custom","vocabulary_course_page_view",{"funnel":"vocabulary","product":"vocabulary-challenge-799","source":"fixture","value":799,"currency":"INR"}],
+    ["standard","InitiateCheckout",{"content_name":"FluencyJet Vocabulary Challenge","content_ids":["vocabulary-challenge-799"],"content_type":"product","content_category":"English Vocabulary","value":799,"currency":"INR","num_items":1,"placement":"footer","source":"fixture"}],
+    ["custom","vocabulary_payment_cta_click",{"funnel":"vocabulary","product":"vocabulary-challenge-799","placement":"footer","source":"fixture","value":799,"currency":"INR"}],
+    ["standard","InitiateCheckout",{"content_name":"Spoken English Gym","content_ids":["spoken-english-gym"],"content_type":"product","value":1199,"currency":"INR","num_items":1}],
+    ["custom","spoken_english_offer_payment_cta_click",{}],
+    ["custom","SpokenEnglishThankYouViewed",{"value":1199,"currency":"INR"}]
+  ]
+}

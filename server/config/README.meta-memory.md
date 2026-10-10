@@ -13,16 +13,32 @@ or alter ads/campaigns until the owner approves a release.
   practice routes) remain FJ. Prefix lookalikes are not memory routes.
 - Client and server route registries are tested together. Register any future
   memory route in both registries before release.
-- Only `trackSingle` / `trackSingleCustom` is used. Route guards reject delayed
-  callbacks from the other funnel. SPA visits initialize each Pixel once.
-- Meta PageViews deduplicate repeated effects. Returning after visiting another
-  route is a new view. Memory query-only changes are not new views. Existing GA4
-  calls and English query-string PageViews are retained.
-- Automatic event discovery is disabled for BOTH Pixels. This is necessary to
-  prevent automatic events bypassing the route guard after SPA navigation.
-  Application-defined FJ events/payloads/cooldowns are preserved. Review any
-  externally configured automatic/Event Setup Tool events before deployment:
-  their behavior is outside this repository and must not be assumed unchanged.
+- Each browser document initializes ONLY its owner Pixel, before React renders.
+  FJ keeps its account-controlled auto configuration: no FJ autoConfig override.
+  BrainoDad uses autoConfig false for manually instrumented memory events.
+  Cross-funnel Link/navigate/history transitions create a fresh document;
+  native links already do so. Same-funnel SPA behavior remains intact.
+  A render boundary prevents foreign components/effects mounting while a
+  fresh document is loading. Back/forward and restored documents are guarded.
+- Only trackSingle / trackSingleCustom is used by the application. Both URL and
+  immutable document-owner guards reject cross-funnel callbacks.
+- FJ's prior manually coded PageView behavior is retained, including repeated
+  calls/StrictMode effects. Memory alone suppresses duplicate/query-only views.
+  GA4 calls, FJ event payloads/triggers and checkout cooldowns are unchanged.
+- FJ's reviewed account settings are automatic events OFF, automatic no-code
+  events OFF, detailed page/product metadata ON, automatic website matching ON.
+  Do not change these settings in code or Meta. Real SDK metadata/matching,
+  external tags and Event Setup Tool interactions still need owner-approved
+  validation before release. No automatic Lead/Purchase detection was added.
+- Cookies, local/session storage, exact URLs/query/hash and native new-tab
+  behavior remain. Meaningful JSON-shaped Router state (e.g. auth return-to)
+  is handed off through short-lived same-origin session storage, not URLs.
+  If that state cannot be preserved, navigation fails explicitly rather than
+  silently dropping it. Non-JSON Router state needs separate compatibility work.
+  Memory documents and cross-funnel navigation use no-referrer so memory
+  assessment/payment URLs do not reach FJ as implicit referrer metadata.
+  Existing FJ referrer policy is restored on cached-document return. BFCache
+  restoration records a coded PageView, not a Lead/Purchase, and re-arms navigation.
 - Production Express renders a route-specific no-script PageView fallback.
   A different static host must implement that fallback or leave the placeholder
   empty; never restore a global FJ fallback on memory URLs.
@@ -99,9 +115,11 @@ deliberate manual Meta Test Events session only:
 5. Registration opening/cancelling should not show InitiateCheckout. A valid
    Razorpay test-mode order/open should show one, value 99/INR. A thank-you load
    should show PageView only, never Purchase.
-6. Navigate WITHIN the SPA to vocabulary/spoken English/German, then back to
-   memory. Events must switch destination, not broadcast to both. A plain
-   refresh does not verify SPA behavior.
+6. Navigate through the app to vocabulary/spoken English/German, then back to
+   memory. Cross-funnel navigation must create a fresh document with one Pixel;
+   same-funnel transitions remain SPA. Test links, redirects and back/forward.
+   Check FJ metadata/automatic matching still work on FJ pages but never inspect
+   memory forms/player/registration. A plain refresh alone is not sufficient.
 7. In the approved test backend, configure the dedicated MEMORY token/test code.
    Deliver a signed Razorpay test-mode capture for its stored order. Check
    Purchase, value 99/INR, correct event ID, and correct BrainoDad dataset.
@@ -116,6 +134,14 @@ Tests prove code routing, not access-token authorization, Event Manager receipt,
 external automatic rules or production settings. Those require owner-approved
 manual checks. This branch must NOT be published just to perform these checks.
 
+Use a fresh standalone QA tab/full document reload after code changes, not
+an old hot-reloaded SDK document. Previously registered Pixels cannot be
+unloaded in place; pre-change tabs are not evidence of the new isolation.
+
 Known pre-existing limitation: failed/skipped CAPI has no automatic retry here;
 duplicate captures return before resending. Do not replay historical purchases
 or relax payment idempotency to work around this.
+
+The shared CAPI helper still uses Graph API v19.0. Verify supported-version
+compatibility and real delivery separately before release; this safety
+regression does not change server API versions or production configuration.

@@ -39,6 +39,7 @@ async function fixture({
   event = getPublicMemoryMasterclassEvent(), path = "/memory-challenge/result",
   heroAvailable = false,
   failCheckout = false,
+  navigationProbe = false,
 } = {}) {
   const target = await (await fetch(`${debug}/json/new?about:blank`, { method: "PUT" })).json();
   const socket = new WebSocket(target.webSocketDebuggerUrl);
@@ -67,6 +68,25 @@ async function fixture({
   }
   async function intercept({ requestId, request, resourceType }) {
     const url = new URL(request.url);
+    if (navigationProbe && url.pathname === "/src/components/RouteTracker.jsx" &&
+        !url.searchParams.has("fixture_original")) {
+      // Test-only wrapper inside the REAL Router: exercise Link/useNavigate
+      // without adding QA routes or hooks to application source.
+      const compiled = await (await fetch(request.url)).text();
+      const react = compiled.match(/from\s*["']([^"']*\/react\.js[^"']*)["']/)[1];
+      const router = compiled.match(/from\s*["']([^"']*\/react-router-dom\.js[^"']*)["']/)[1];
+      return fulfill(requestId, `
+        import React from ${JSON.stringify(react)};
+        import {Link,useNavigate} from ${JSON.stringify(router)};
+        import Original from "/src/components/RouteTracker.jsx?fixture_original=1";
+        export default function Probe() {
+          window.fixtureNavigate = useNavigate();
+          return React.createElement(React.Fragment, null, React.createElement(Original),
+            React.createElement(Link, {id:"fixture-memory-link", to:"/memory-challenge/video/school?utm_source=fixture#video"}, "Fixture Memory"),
+            React.createElement(Link, {id:"fixture-fj-link", to:"/vocabulary-vsl?utm_source=fixture#video"}, "Fixture English"));
+        }
+      `, "application/javascript");
+    }
     if (url.pathname === "/images/memory-challenge-hero.webp") {
       // Exercise the layout without pretending the real portrait has been uploaded.
       return heroAvailable
@@ -152,12 +172,16 @@ async function fixture({
   });
   async function evaluate(expression) {
     const response = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
-    if (response.exceptionDetails) throw new Error(response.exceptionDetails.text);
+    if (response.exceptionDetails) throw new Error(response.exceptionDetails.exception?.description || response.exceptionDetails.text);
     return response.result.value;
   }
   async function waitFor(expression) {
-    for (let i = 0; i < 100; i++) {
-      if (await evaluate(`document.body && (${expression})`)) return;
+    for (let i = 0; i < 200; i++) {
+      try {
+        if (await evaluate(`document.body && (${expression})`)) return;
+      } catch (error) {
+        if (!/context|navigat|reading 'value'/i.test(error.message)) throw error;
+      }
       await pause(50);
     }
     const state = await evaluate('({url:location.href, text:document.body.innerText.slice(0,500), keys:Object.keys(sessionStorage), desktop:matchMedia("(min-width: 1024px) and (hover: hover) and (pointer: fine)").matches, pointer:matchMedia("(pointer: fine)").matches, hover:matchMedia("(hover: hover)").matches})');
@@ -176,10 +200,38 @@ async function fixture({
     key => [key, { correct: 2, maxRaw: 5, percentage: 40, weightedScore: 8, maxWeighted: 20 }],
   ));
   await send("Page.addScriptToEvaluateOnNewDocument", { source: `
+    // about:blank iframe documents can inherit parent sessionStorage.
+    // Record only application documents, not transient video-frame documents.
+    if (window.top === window) {
     // Capture dispatch only. No real SDK, ad-account requests or conversions.
+    const fixtureFirstLoad = !sessionStorage.getItem("memory_fixture_seeded");
+    if (fixtureFirstLoad) {
+      localStorage.clear(); sessionStorage.clear();
+      sessionStorage.setItem("memory_fixture_seeded", "true");
+      sessionStorage.setItem("fixture_pixel_documents", "[]");
+    }
+    // Stub SDK; all external requests remain intercepted. Persist document
+    // records across reloads to catch second-Pixel init/foreign DOM exposure.
+    sessionStorage.setItem("fj_meta_qa_opt_in", "true");
+    window.fixtureDocumentId = crypto.randomUUID();
+    window.fixtureNativePush = history.pushState.bind(history);
     window.metaCalls = [];
-    window.fbq = (...args) => window.metaCalls.push(args);
-    localStorage.clear();
+    const record = {id:window.fixtureDocumentId, initialPath:location.pathname, calls:[], leaks:[]};
+    const persist = () => {
+      const records = JSON.parse(sessionStorage.getItem("fixture_pixel_documents"));
+      const i = records.findIndex(r => r.id === record.id);
+      if (i < 0) records.push(record); else records[i] = record;
+      sessionStorage.setItem("fixture_pixel_documents", JSON.stringify(records));
+    };
+    const scan = () => {
+      if (record.calls.some(c => c[0] === "init" && c[1] === "1246171816816642") &&
+          document.querySelector("#memory-whatsapp-form,#memory-masterclass-saved-score,[data-placement=below_video],#memory-route-not-found")) {
+        record.leaks.push("FJ could inspect memory DOM"); persist();
+      }
+    };
+    new MutationObserver(scan).observe(document, {childList:true,subtree:true});
+    window.fbq = (...args) => { window.metaCalls.push(args); record.calls.push(args); scan(); persist(); };
+    persist();
     // Headless Chromium has no physical mouse. Model desktop hardware only;
     // leave viewport/reduced-motion queries and the production logic intact.
     ${!mobile ? `
@@ -188,21 +240,26 @@ async function fixture({
         .replace(/\\(hover:\\s*hover\\)/g, "(min-width: 0px)")
         .replace(/\\(pointer:\\s*fine\\)/g, "(min-width: 0px)"));
     ` : ""}
-    sessionStorage.clear();
-    ${!path.startsWith("/memory-challenge/video/") ? `
+    ${!path.startsWith("/memory-challenge/video/") ? `if (fixtureFirstLoad) {
     sessionStorage.setItem("memory_track", ${JSON.stringify(track)});
     sessionStorage.setItem("memory_form_a_owner_token", "fixture-owner-token");
     sessionStorage.setItem("memory_form_a_result", ${JSON.stringify(JSON.stringify({
       trackId: track, form: "A", totalScore: score, maxScore: 100, modules, retentionRatio: 1,
     }))});
     ${saved ? 'sessionStorage.setItem("memory_form_a_lead_saved", "true");' : ""}
+    }
     ` : ""}
+    }
   ` });
   await send("Page.navigate", { url: `${app}${path}` });
   if (path === "/memory-challenge/result") {
     await waitFor(saved ? '!!document.querySelector("#memory-masterclass-saved-score")' : '!!document.querySelector("#memory-whatsapp-form")');
   } else if (path.startsWith("/memory-masterclass/thank-you")) {
     await waitFor('document.body.innerText.toLowerCase().includes("registration received")');
+  } else if (navigationProbe) {
+    await waitFor('typeof window.fixtureNavigate === "function"');
+  } else if (path.startsWith("/memory-products/")) {
+    await waitFor('!!document.querySelector("#memory-route-not-found")');
   } else if (path.startsWith("/memory-challenge/video/")) {
     await waitFor(failEvent
       ? 'document.body.innerText.includes("Class details could not be loaded")'
@@ -258,7 +315,7 @@ for (const [audience, schoolLevel, videoId] of [
     const page = await fixture({
       path: `/memory-challenge/video/${audience}`, mobile: true, heroAvailable: true,
     });
-    assert.equal(await page.evaluate('sessionStorage.length'), 0);
+    assert.equal(await page.evaluate('Object.keys(sessionStorage).filter(k=>/^memory_(track|form_)/.test(k)).length'), 0);
     assert.equal(await page.evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
     assert.ok(await page.evaluate(`document.querySelector("iframe").src.includes(${JSON.stringify(videoId)})`));
     assert.ok(await page.evaluate(`document.querySelector("h1").textContent.includes(${JSON.stringify(
@@ -648,18 +705,98 @@ test("failed create-order or SDK open does not count a memory checkout", async (
   }
 });
 
-test("real React SPA memory → vocabulary → spoken-English → memory separates Pixels and PageViews", async () => {
-  const page = await fixture({ path: "/memory-challenge/video/school" });
-  const routes = ["/vocabulary-vsl", "/spoken-english-offer", "/memory-challenge", "/Memory-Challenge"];
-  for (const [i, route] of routes.entries()) {
-    await page.evaluate(`history.pushState({}, "", ${JSON.stringify(route)}); window.dispatchEvent(new PopStateEvent("popstate"))`);
-    await page.waitFor(`window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "PageView").length === ${i + 2}`);
+async function documentId(page) {
+  return page.evaluate("window.fixtureDocumentId");
+}
+async function assertPixelDocuments(page) {
+  await page.waitFor('window.metaCalls.some(c => c[0] === "init")');
+  const records = await page.evaluate('JSON.parse(sessionStorage.getItem("fixture_pixel_documents"))');
+  for (const record of records) {
+    const path = record.initialPath.toLowerCase();
+    const memory = ["/memory-challenge","/memory-masterclass","/memory-retest","/memory-products"]
+      .some(prefix => path === prefix || path.startsWith(prefix + "/"));
+    const pixel = memory ? "1998316064175555" : "1246171816816642";
+    assert.deepEqual(record.calls.filter(c => c[0] === "init"), [["init", pixel]]);
+    assert.deepEqual(record.calls.filter(c => c[0] === "set"), memory ? [["set","autoConfig",false,pixel]] : []);
+    assert.ok(record.calls.filter(c => /^trackSingle/.test(c[0])).every(c => c[1] === pixel));
+    assert.deepEqual(record.leaks, []);
   }
-  const views = await page.evaluate('window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "PageView").map(c => c[1])');
-  assert.deepEqual(views, ["1998316064175555","1246171816816642","1246171816816642","1998316064175555","1998316064175555"]);
-  assert.equal(await page.evaluate('window.metaCalls.filter(c => c[0] === "init").length'), 2);
-  const englishEvents = await page.evaluate('window.metaCalls.filter(c => /^trackSingle/.test(c[0]) && /spoken_english|vocabulary/.test(c[2]))');
-  assert.ok(englishEvents.length > 0);
-  assert.ok(englishEvents.every(c => c[1] === "1246171816816642"));
+}
+
+test("real Link and navigate cross documents; same-funnel SPA retains document, data and attribution", async () => {
+  const page = await fixture({ path: "/memory-challenge/video/school", navigationProbe: true });
+  const initial = await documentId(page);
+  await page.evaluate(`sessionStorage.setItem("memory_form_a_owner_token","fixture-owned");
+    localStorage.setItem("fixture_auth_marker","retained");
+    document.cookie="_fbc=fixture-click; path=/";
+    window.fixtureNavigate("/memory-challenge/video/advanced?utm_source=wa#video")`);
+  await page.waitFor('location.pathname === "/memory-challenge/video/advanced"');
+  assert.equal(await documentId(page), initial);
+  await page.evaluate('document.querySelector("#fixture-fj-link").click()');
+  await page.waitFor(`window.fixtureDocumentId !== ${JSON.stringify(initial)} && location.pathname === "/vocabulary-vsl" && window.fixtureNavigate`);
+  const fj = await documentId(page);
+  assert.equal(await page.evaluate('document.referrer'), "");
+  assert.equal(await page.evaluate('location.search + location.hash'), "?utm_source=fixture#video");
+  assert.equal(await page.evaluate('sessionStorage.getItem("memory_form_a_owner_token")'), "fixture-owned");
+  assert.equal(await page.evaluate('localStorage.getItem("fixture_auth_marker")'), "retained");
+  assert.ok(await page.evaluate('document.cookie.includes("_fbc=fixture-click")'));
+  await page.evaluate('window.fixtureNavigate("/spoken-english-offer")');
+  await page.waitFor('location.pathname === "/spoken-english-offer"');
+  assert.equal(await documentId(page), fj);
+  await page.evaluate('document.querySelector("#fixture-memory-link").click()');
+  await page.waitFor(`window.fixtureDocumentId !== ${JSON.stringify(fj)} && location.pathname === "/memory-challenge/video/school" && window.fixtureNavigate`);
+  await assertPixelDocuments(page);
+  await page.close();
+});
+
+test("cross-funnel replace redirects preserve Router return state and URL without registering another Pixel", async () => {
+  const page = await fixture({ path: "/vocabulary-vsl", navigationProbe: true });
+  const before = await documentId(page);
+  await page.evaluate('window.fixtureNavigate("/memory-challenge/video/advanced?utm_campaign=return#video",{replace:true,state:{from:"/vocabulary-vsl",source:"fixture"}})');
+  await page.waitFor(`window.fixtureDocumentId !== ${JSON.stringify(before)} && location.pathname === "/memory-challenge/video/advanced" && window.fixtureNavigate`);
+  assert.deepEqual(await page.evaluate("history.state.usr"), {from:"/vocabulary-vsl",source:"fixture"});
+  assert.equal(await page.evaluate("location.search + location.hash"), "?utm_campaign=return#video");
+  await assertPixelDocuments(page);
+  await page.close();
+});
+
+test("browser back/forward restores the correct document owner; legacy foreign popstate reloads before DOM exposure", async () => {
+  const page = await fixture({ path: "/memory-challenge/video/school", navigationProbe: true });
+  await page.evaluate('document.querySelector("#fixture-fj-link").click()');
+  await page.waitFor('location.pathname === "/vocabulary-vsl" && window.fixtureNavigate');
+  await page.evaluate("history.back()");
+  await page.waitFor('location.pathname === "/memory-challenge/video/school" && document.querySelector("#fixture-fj-link") && window.metaCalls.some(c=>c[0]==="init"&&c[1]==="1998316064175555")');
+  assert.ok(await page.evaluate('window.metaCalls.filter(c=>c[0]==="init").every(c=>c[1]==="1998316064175555")'));
+  // Exercise BFCache pageshow even if this Chromium/debugger evicts the page.
+  await page.evaluate('window.dispatchEvent(new PageTransitionEvent("pageshow",{persisted:true})); document.querySelector("#fixture-fj-link").click()');
+  await page.waitFor('location.pathname === "/vocabulary-vsl" && document.querySelector("#fixture-memory-link") && window.metaCalls.some(c=>c[0]==="init"&&c[1]==="1246171816816642")');
+  await page.evaluate("history.back()");
+  await page.waitFor('location.pathname === "/memory-challenge/video/school" && document.querySelector("#fixture-fj-link") && window.metaCalls.some(c=>c[0]==="init"&&c[1]==="1998316064175555")');
+  await page.evaluate("history.forward()");
+  await page.waitFor('location.pathname === "/vocabulary-vsl" && window.fixtureNavigate');
+  const fj = await documentId(page);
+  await page.evaluate('window.fixtureNativePush({}, "", "/memory-challenge/result"); window.dispatchEvent(new PopStateEvent("popstate"))');
+  await page.waitFor(`window.fixtureDocumentId !== ${JSON.stringify(fj)} && location.pathname === "/memory-challenge/result"`);
+  await assertPixelDocuments(page);
+  await page.close();
+});
+
+test("native cross-funnel links preserve browser semantics while redacting memory referrers", async () => {
+  const page = await fixture({ path: "/memory-challenge/video/school", navigationProbe: true });
+  const before = await documentId(page);
+  await page.evaluate(`const link=document.createElement("a"); link.href="/vocabulary-vsl?utm_source=native";
+    link.textContent="Native"; document.body.append(link); link.click()`);
+  await page.waitFor(`window.fixtureDocumentId !== ${JSON.stringify(before)} && location.pathname === "/vocabulary-vsl" && window.fixtureNavigate`);
+  assert.equal(await page.evaluate("document.referrer"), "");
+  assert.equal(await page.evaluate("location.search"), "?utm_source=native");
+  await assertPixelDocuments(page);
+  await page.close();
+});
+
+test("unknown memory routes stay in memory's document, never the English Home fallback", async () => {
+  const page = await fixture({ path: "/memory-products/future" });
+  await page.waitFor('!!document.querySelector("#memory-route-not-found")');
+  await assertPixelDocuments(page);
+  assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="Lead"||c[2]==="Purchase")'), false);
   await page.close();
 });

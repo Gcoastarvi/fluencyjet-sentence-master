@@ -2,6 +2,9 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./index.css"; // ✅ Tailwind styles import (only once)
+import { bootMetaDocument } from "./lib/metaDocument";
+
+bootMetaDocument();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

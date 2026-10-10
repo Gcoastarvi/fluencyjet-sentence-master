@@ -29,43 +29,8 @@
       });
     </script>
 
-    <!-- Meta Pixel Base Code -->
-    <script>
-      // Local/Preview validation is offline by default. Real Meta Test Events
-      // requires deliberate per-tab opt-in; automated tests use a fake fbq.
-      const metaPreview = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ||
-        location.hostname.endsWith(".replit.dev");
-      let metaQaOptIn = false;
-      try { metaQaOptIn = sessionStorage.getItem("fj_meta_qa_opt_in") === "true"; } catch {}
-      if (!metaPreview || metaQaOptIn) {
-      !(function (f, b, e, v, n, t, s) {
-        if (f.fbq) return;
-        n = f.fbq = function () {
-          n.callMethod
-            ? n.callMethod.apply(n, arguments)
-            : n.queue.push(arguments);
-        };
-        if (!f._fbq) f._fbq = n;
-        n.push = n;
-        n.loaded = !0;
-        n.version = "2.0";
-        n.queue = [];
-        t = b.createElement(e);
-        t.async = !0;
-        t.src = v;
-        s = b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t, s);
-      })(
-        window,
-        document,
-        "script",
-        "https://connect.facebook.net/en_US/fbevents.js",
-      );
-
-      // Route-aware application tracking initializes each Pixel once.
-      }
-    </script>
-    <!-- End Meta Pixel Base Code -->
+    <!-- Meta SDK boots in main.jsx after the document boundary is installed.
+         Only the active funnel's Pixel is initialized, before React renders. -->
     <style>
       html,
       body,

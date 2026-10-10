@@ -21,7 +21,7 @@ const states = new WeakMap();
 function stateFor(w) {
   if (!states.has(w)) states.set(w, {
     initialized: new Set(), conversions: new Set(), views: new Set(),
-    route: null, lastPageView: null,
+    route: null, lastPageView: null, memory: isMemoryRoute(w.location.pathname),
   });
   const state = states.get(w);
   const route = w.location.pathname + w.location.search;
@@ -30,6 +30,37 @@ function stateFor(w) {
     state.views.clear();
   }
   return state;
+}
+
+function initializePixel(w, state) {
+  const pixelId = state.memory ? MEMORY_PIXEL_ID : FJ_PIXEL_ID;
+  if (!state.initialized.has(pixelId)) {
+    // Memory is manually instrumented. FJ metadata/matching remain controlled
+    // by its existing account settings; do not override FJ autoConfig.
+    if (state.memory) w.fbq("set", "autoConfig", false, pixelId);
+    w.fbq("init", pixelId);
+    state.initialized.add(pixelId);
+  }
+}
+
+export function captureMetaDocument(w = window) {
+  stateFor(w);
+}
+
+export function restoreMetaDocumentView(w = window) {
+  const state = stateFor(w);
+  state.lastPageView = null;
+  state.views.clear();
+}
+
+export function initializeMetaDocument(w = window) {
+  if (typeof w.fbq !== "function" || w.fjMetaConsent === false) return false;
+  const state = stateFor(w);
+  if (state.memory !== isMemoryRoute(w.location.pathname)) return false;
+  try { initializePixel(w, state); return true; } catch {
+    console.warn("[meta] document initialization failed");
+    return false;
+  }
 }
 
 function privateFieldsRemoved(params) {
@@ -52,6 +83,7 @@ export function dispatchMetaEvent(eventName, params = {}, {
   if (isMemoryRoute(w.location.pathname) !== memory) return false;
   const pixelId = memory ? MEMORY_PIXEL_ID : FJ_PIXEL_ID;
   const state = stateFor(w);
+  if (state.memory !== memory) return false;
   const key = `${pixelId}:${eventName}:${eventID || ""}`;
   if (once && eventID) {
     if (state.conversions.has(key)) return false;
@@ -60,12 +92,7 @@ export function dispatchMetaEvent(eventName, params = {}, {
   const viewKey = `${key}:${JSON.stringify(params)}`;
   if (view && state.views.has(viewKey)) return false;
   try {
-    if (!state.initialized.has(pixelId)) {
-      // SDK auto-discovery is not route-scoped and could leak across SPA visits.
-      w.fbq("set", "autoConfig", false, pixelId);
-      w.fbq("init", pixelId);
-      state.initialized.add(pixelId);
-    }
+    initializePixel(w, state);
     const args = [
       custom ? "trackSingleCustom" : "trackSingle", pixelId, eventName,
       memory ? privateFieldsRemoved(params) : params,
@@ -93,7 +120,9 @@ export function dispatchMetaPageView(path) {
   // not represent a new step or conversion.
   const key = memory ? String(path).split(/[?#]/)[0] : path;
   const state = stateFor(w);
-  if (state.lastPageView === key) return false;
+  // Keep prior manually coded FJ PageView semantics, including repeated calls.
+  // Only memory applies the new duplicate/query-only suppression.
+  if (memory && state.lastPageView === key) return false;
   if (!dispatchMetaEvent("PageView", {}, { memory })) return false;
   state.lastPageView = key;
   return true;
