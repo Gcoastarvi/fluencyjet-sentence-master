@@ -9,6 +9,7 @@ export default function MemoryPurchaserDetails({
   message,
   onClose,
   onSubmit,
+  standaloneSchool = false,
 }) {
   const dialogRef = useRef(null);
   const editedFields = useRef(new Set());
@@ -18,10 +19,11 @@ export default function MemoryPurchaserDetails({
     phone: initialDetails?.phone || "",
   }));
   const [prefillMessage, setPrefillMessage] = useState("");
+  const [schoolLevel, setSchoolLevel] = useState(initialDetails?.schoolLevel || "");
 
   useEffect(() => {
     dialogRef.current.showModal();
-    if (hasEditedDetails) return;
+    if (hasEditedDetails || !ownerToken) return;
     let active = true;
     api.post("/memory-masterclass/checkout-details", { ownerToken })
       .then((result) => {
@@ -67,7 +69,8 @@ export default function MemoryPurchaserDetails({
       phoneInput.reportValidity();
       return;
     }
-    onSubmit(purchaser);
+    if (standaloneSchool && !schoolLevel) return;
+    onSubmit(standaloneSchool ? { ...purchaser, schoolLevel } : purchaser);
   }
 
   return (
@@ -76,7 +79,7 @@ export default function MemoryPurchaserDetails({
       aria-labelledby="memory-purchaser-title"
       onCancel={(event) => {
         event.preventDefault();
-        if (!busy) onClose(details);
+        if (!busy) onClose(standaloneSchool ? { ...details, schoolLevel } : details);
       }}
       className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl bg-white p-6 text-slate-950 shadow-2xl backdrop:bg-slate-950/70 sm:p-8"
     >
@@ -84,6 +87,24 @@ export default function MemoryPurchaserDetails({
         Registration details
       </h2>
       <form onSubmit={submit} className="mt-6 space-y-4">
+        {standaloneSchool && (
+          <label className="block text-sm font-bold" htmlFor="memory-purchaser-class">
+            Class
+            <select
+              id="memory-purchaser-class"
+              name="schoolLevel"
+              required
+              value={schoolLevel}
+              onChange={(event) => setSchoolLevel(event.target.value)}
+              disabled={busy}
+              className="mt-2 block w-full rounded-xl border border-slate-300 px-4 py-3 font-medium"
+            >
+              <option value="">Choose class</option>
+              <option value="6-8">Class 6–8</option>
+              <option value="9-12">Class 9–12</option>
+            </select>
+          </label>
+        )}
         <label className="block text-sm font-bold" htmlFor="memory-purchaser-name">
           Name
           <input
@@ -147,7 +168,7 @@ export default function MemoryPurchaserDetails({
         <button
           type="button"
           disabled={busy}
-          onClick={() => onClose(details)}
+          onClick={() => onClose(standaloneSchool ? { ...details, schoolLevel } : details)}
           className="w-full rounded-xl px-4 py-2 font-bold text-slate-600 disabled:opacity-60"
         >
           Cancel

@@ -38,6 +38,7 @@ async function fixture({
   mobile = false, saved = false, failLead = false, failEvent = false,
   event = getPublicMemoryMasterclassEvent(), path = "/memory-challenge/result",
   heroAvailable = false,
+  failCheckout = false,
 } = {}) {
   const target = await (await fetch(`${debug}/json/new?about:blank`, { method: "PUT" })).json();
   const socket = new WebSocket(target.webSocketDebuggerUrl);
@@ -47,6 +48,7 @@ async function fixture({
   const errors = [];
   const leadRequests = [];
   const apiRequests = [];
+  const checkoutRequests = [];
 
   function send(method, params = {}) {
     return new Promise((resolve, reject) => {
@@ -86,6 +88,15 @@ async function fixture({
     }
     if (url.pathname.startsWith("/api/")) {
       apiRequests.push(url.pathname);
+      if (url.pathname === "/api/memory-masterclass/standalone/create-order") {
+        checkoutRequests.push(JSON.parse(request.postData || "{}"));
+        return fulfill(requestId, JSON.stringify(failCheckout ? {
+          ok: false, message: "Fixture checkout unavailable",
+        } : {
+          ok: true, orderId: "order_fixture_standalone", keyId: "fixture_key",
+          amount: 9900, currency: "INR",
+        }), "application/json", failCheckout ? 503 : 200);
+      }
       if (url.pathname === "/api/memory-masterclass/event") {
         return fulfill(requestId, JSON.stringify(failEvent
           ? { ok: false, message: "Fixture event unavailable" }
@@ -168,18 +179,24 @@ async function fixture({
         .replace(/\\(pointer:\\s*fine\\)/g, "(min-width: 0px)"));
     ` : ""}
     sessionStorage.clear();
+    ${!path.startsWith("/memory-challenge/video/") ? `
     sessionStorage.setItem("memory_track", ${JSON.stringify(track)});
     sessionStorage.setItem("memory_form_a_owner_token", "fixture-owner-token");
     sessionStorage.setItem("memory_form_a_result", ${JSON.stringify(JSON.stringify({
       trackId: track, form: "A", totalScore: score, maxScore: 100, modules, retentionRatio: 1,
     }))});
     ${saved ? 'sessionStorage.setItem("memory_form_a_lead_saved", "true");' : ""}
+    ` : ""}
   ` });
   await send("Page.navigate", { url: `${app}${path}` });
   if (path === "/memory-challenge/result") {
     await waitFor(saved ? '!!document.querySelector("#memory-masterclass-saved-score")' : '!!document.querySelector("#memory-whatsapp-form")');
-  } else if (path === "/memory-masterclass/thank-you") {
+  } else if (path.startsWith("/memory-masterclass/thank-you")) {
     await waitFor('document.body.innerText.toLowerCase().includes("registration received")');
+  } else if (path.startsWith("/memory-challenge/video/")) {
+    await waitFor(failEvent
+      ? 'document.body.innerText.includes("Class details could not be loaded")'
+      : '!!document.querySelector("[data-placement=below_video]:not([disabled])")');
   } else {
     await waitFor('document.body.innerText.includes("Choose your class or study level")');
   }
@@ -219,8 +236,131 @@ async function fixture({
     socket.close();
     await fetch(`${debug}/json/close/${target.id}`);
   }
-  return { evaluate, waitFor, submit, exit, escape, headlineVisible, close, leadRequests, apiRequests };
+  return { evaluate, waitFor, submit, exit, escape, headlineVisible, close, leadRequests, apiRequests, checkoutRequests };
 }
+
+for (const [audience, schoolLevel, videoId] of [
+  ["school", "6-8", "1234364593"],
+  ["school", "9-12", "1234364593"],
+  ["advanced", null, "1234364777"],
+]) {
+  test(`standalone ${audience}/${schoolLevel}: fresh device video, registration and secure checkout`, async () => {
+    const page = await fixture({
+      path: `/memory-challenge/video/${audience}`, mobile: true, heroAvailable: true,
+    });
+    assert.equal(await page.evaluate('sessionStorage.length'), 0);
+    assert.equal(await page.evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+    assert.ok(await page.evaluate(`document.querySelector("iframe").src.includes(${JSON.stringify(videoId)})`));
+    assert.ok(await page.evaluate(`document.querySelector("h1").textContent.includes(${JSON.stringify(
+      audience === "school" ? "Your child’s Study Memory Score" : "Your Study Memory Score",
+    )})`));
+    assert.ok(await page.evaluate('document.body.innerText.includes("Sunday, 18 October")'));
+    assert.ok(await page.evaluate('document.body.innerText.includes("270")'));
+    assert.ok(await page.evaluate('document.body.innerText.includes("2011")'));
+    assert.equal(page.leadRequests.length, 0);
+    assert.equal(page.apiRequests.some(path => path.includes("/memory/session")), false);
+    await page.evaluate(`
+      window.Razorpay = class {
+        constructor(options) { window.fixturePayment = options; }
+        on() {}
+        open() { window.fixtureCheckoutOpened = true; }
+      };
+      document.querySelector("[data-placement=below_video]").click();
+    `);
+    await page.waitFor('!!document.querySelector("dialog[open]")');
+    assert.equal(await page.evaluate('document.querySelectorAll("dialog input[required]").length'), 3);
+    assert.equal(await page.evaluate('!!document.querySelector("dialog select[required]")'), audience === "school");
+    assert.equal(page.apiRequests.includes("/api/memory-masterclass/checkout-details"), false);
+    await page.evaluate('document.querySelector("dialog form").requestSubmit()');
+    assert.equal(page.checkoutRequests.length, 0);
+    await page.evaluate(`(() => {
+      const form = document.querySelector("dialog form");
+      const values = {name:"VSL Buyer",email:"vsl@example.test",phone:"9876543210"};
+      for (const input of form.querySelectorAll("input")) {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, values[input.name]);
+        input.dispatchEvent(new Event("input", {bubbles:true}));
+      }
+      const select = form.querySelector("select");
+      if (select) {
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(select, ${JSON.stringify(schoolLevel)});
+        select.dispatchEvent(new Event("change", {bubbles:true}));
+      }
+    })()`);
+    await page.evaluate('document.querySelector("dialog form").requestSubmit()');
+    await page.waitFor('window.fixtureCheckoutOpened === true');
+    assert.equal(page.checkoutRequests.length, 1);
+    assert.deepEqual(
+      Object.fromEntries(Object.entries(page.checkoutRequests[0]).filter(([key]) =>
+        ["audience", "schoolLevel", "purchaserName", "purchaserEmail", "purchaserPhone"].includes(key))),
+      {
+        audience, ...(schoolLevel ? { schoolLevel } : {}),
+        purchaserName: "VSL Buyer", purchaserEmail: "vsl@example.test", purchaserPhone: "9876543210",
+      },
+    );
+    for (const field of ["ownerToken", "amount", "trackId", "eventKey", "score", "memoryAssessmentSessionId"]) {
+      assert.equal(page.checkoutRequests[0][field], undefined);
+    }
+    assert.deepEqual(await page.evaluate('window.fixturePayment.prefill'),
+      {name:"VSL Buyer",email:"vsl@example.test",contact:"9876543210"});
+    assert.equal(await page.evaluate('window.fixturePayment.amount'), 9900);
+    assert.equal(await page.evaluate('window.fixturePayment.order_id'), "order_fixture_standalone");
+    assert.equal(await page.evaluate('!!document.querySelector("dialog[open]")'), false);
+    await page.evaluate('window.fixturePayment.modal.ondismiss()');
+    await page.waitFor('!document.querySelector("[data-placement=below_video]").disabled');
+    await page.evaluate('document.querySelector("[data-placement=after_credibility]").click()');
+    await page.waitFor('!!document.querySelector("dialog[open]")');
+    assert.equal(await page.evaluate('document.querySelector("[name=name]").value'), "VSL Buyer");
+    await page.escape();
+    await page.waitFor('!document.querySelector("dialog[open]")');
+    await page.evaluate('window.fixturePayment.handler({razorpay_payment_id:"pay_fixture",razorpay_order_id:"order_fixture_standalone"})');
+    await page.waitFor('document.body.innerText.includes("Explore the Memory Challenge")');
+    assert.equal(await page.evaluate('new URLSearchParams(location.search).get("source")'), "standalone_vsl");
+    assert.equal(await page.evaluate('!!document.querySelector("a[href=\\"/memory-challenge/result\\"]")'), false);
+    assert.ok(await page.evaluate('!!document.querySelector("a[href^=\\"https://chat.whatsapp.com/\\"]")'));
+    await page.close();
+  });
+}
+
+test("standalone event failure disables both checkout CTAs without assessment requests", async () => {
+  const page = await fixture({ path: "/memory-challenge/video/advanced", failEvent: true });
+  assert.equal(await page.evaluate('document.querySelectorAll("[data-placement][disabled]").length'), 2);
+  assert.equal(page.checkoutRequests.length, 0);
+  assert.equal(page.leadRequests.length, 0);
+  await page.close();
+});
+
+test("standalone mobile sticky CTA stays away from video and hides for registration", async () => {
+  const page = await fixture({ path: "/memory-challenge/video/school", mobile: true });
+  assert.equal(await page.evaluate('!!document.querySelector("[data-placement=sticky_mobile]")'), false);
+  await page.evaluate('document.querySelector("[data-placement=after_credibility]").scrollIntoView()');
+  await page.waitFor('!!document.querySelector("[data-placement=sticky_mobile]")');
+  assert.ok(await page.evaluate('document.querySelector("iframe").getBoundingClientRect().bottom <= 0'));
+  await page.evaluate('document.querySelector("[data-placement=sticky_mobile]").click()');
+  await page.waitFor('!!document.querySelector("dialog[open]")');
+  assert.equal(await page.evaluate('!!document.querySelector("[data-placement=sticky_mobile]")'), false);
+  await page.escape();
+  await page.waitFor('!document.querySelector("dialog[open]")');
+  await page.close();
+});
+
+test("standalone registration preserves editable details after a failed order", async () => {
+  const page = await fixture({ path: "/memory-challenge/video/advanced", failCheckout: true });
+  await page.evaluate('document.querySelector("[data-placement=below_video]").click()');
+  await page.waitFor('!!document.querySelector("dialog[open]")');
+  await page.evaluate(`(() => {
+    const values = {name:"Test purchaser",email:"purchaser@example.test",phone:"9876543210"};
+    for (const input of document.querySelectorAll("dialog input")) {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(input, values[input.name]);
+      input.dispatchEvent(new Event("input", {bubbles:true}));
+    }
+  })()`);
+  await page.evaluate('document.querySelector("dialog form").requestSubmit()');
+  await page.waitFor('!!document.querySelector("dialog [role=alert]")');
+  assert.equal(page.checkoutRequests.length, 1);
+  assert.equal(await page.evaluate('document.querySelector("[name=name]").value'), "Test purchaser");
+  assert.equal(await page.evaluate('document.querySelector("dialog button[type=submit]").disabled'), false);
+  await page.close();
+});
 
 for (const track of ["school_foundation", "school_advanced", "advanced"]) {
   test(`${track}: save opens correct VSL; X/Escape and replay target saved headline`, async () => {

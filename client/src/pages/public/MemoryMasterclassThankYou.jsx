@@ -1,8 +1,11 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { MEMORY_MASTERCLASS_CONFIG } from "../../data/memory/masterclassConfig";
 import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent";
 
 export default function MemoryMasterclassThankYou() {
+  const [params] = useSearchParams();
+  // Presentation only; this parameter is not evidence of a verified purchase.
+  const standalone = params.get("source") === "standalone_vsl";
   const {
     name,
     price,
@@ -110,9 +113,10 @@ export default function MemoryMasterclassThankYou() {
               </li>
 
               <li>
-                <strong className="text-white">2.</strong> Watch the WhatsApp
-                number used in your Study Memory Test for class reminders and
-                joining instructions.
+                <strong className="text-white">2.</strong>{" "}
+                {standalone
+                  ? "Join the WhatsApp group above for class reminders and joining updates."
+                  : "Watch the WhatsApp number used in your Study Memory Test for class reminders and joining instructions."}
               </li>
 
               <li>
@@ -141,18 +145,18 @@ export default function MemoryMasterclassThankYou() {
             </p>
           </div>
 
-          <p className="mx-auto mt-7 max-w-2xl text-sm leading-6 text-white/55">
+          {!standalone && <p className="mx-auto mt-7 max-w-2xl text-sm leading-6 text-white/55">
             If you used a different family member&apos;s phone during the
             assessment, make sure the person receiving the WhatsApp updates can
             forward the class information to the student.
-          </p>
+          </p>}
 
           <div className="mt-8 border-t border-white/10 pt-6">
             <Link
-              to="/memory-challenge/result"
+              to={standalone ? "/memory-challenge" : "/memory-challenge/result"}
               className="text-sm font-bold text-indigo-200 underline underline-offset-4 hover:text-white"
             >
-              Return to my Study Memory Score
+              {standalone ? "Explore the Memory Challenge" : "Return to my Study Memory Score"}
             </Link>
           </div>
         </section>

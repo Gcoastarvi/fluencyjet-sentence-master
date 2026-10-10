@@ -22,6 +22,7 @@ import memoryRouter from "./routes/memory.js";
 import billingRouter from "./routes/billing.js";
 import vocabularyCheckoutRouter from "./routes/vocabularyCheckout.js";
 import memoryMasterclassCheckoutRouter from "./routes/memoryMasterclassCheckout.js";
+import memoryMasterclassStandaloneCheckoutRouter from "./routes/memoryMasterclassStandaloneCheckout.js";
 import diagnosticRoutes from "./routes/diagnostic.js";
 import quizzesRouter from "./routes/quizzes.js";
 
@@ -265,6 +266,7 @@ app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/vocabulary", vocabularyCheckoutRouter);
 app.use("/api/memory-masterclass", memoryMasterclassCheckoutRouter);
+app.use("/api/memory-masterclass/standalone", memoryMasterclassStandaloneCheckoutRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
 // app.use("/api/shop", shopRouter);
 

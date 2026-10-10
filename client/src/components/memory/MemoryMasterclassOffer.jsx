@@ -99,7 +99,7 @@ function getMemoryFbc(searchParams) {
   }
 }
 
-function buildMemoryCheckoutAttribution() {
+export function buildMemoryCheckoutAttribution() {
   if (typeof window === "undefined") {
     return {};
   }
@@ -132,7 +132,7 @@ function buildMemoryCheckoutAttribution() {
 
 let razorpayScriptPromise = null;
 
-function loadRazorpayCheckout() {
+export function loadRazorpayCheckout() {
   if (typeof window === "undefined") {
     return Promise.reject(
       new Error("Razorpay requires a browser"),

@@ -608,8 +608,10 @@ enum ReconciliationDecision {
 model MemoryMasterclassCheckoutIntent {
   id String @id @default(cuid())
 
-  memoryAssessmentSessionId String
-  memoryAssessmentSession   MemoryAssessmentSession @relation(fields: [memoryAssessmentSessionId], references: [id], onDelete: Restrict)
+  memoryAssessmentSessionId String?
+  memoryAssessmentSession   MemoryAssessmentSession? @relation(fields: [memoryAssessmentSessionId], references: [id], onDelete: Restrict)
+
+  checkoutSource String @default("assessment") @db.VarChar(40)
 
   razorpayOrderId String @unique
 
@@ -665,6 +667,9 @@ model MemoryMasterclassCheckoutIntent {
 
 model MemoryMasterclassPurchase {
   id String @id @default(cuid())
+
+  checkoutSource String @default("assessment") @db.VarChar(40)
+  trackId String? @db.VarChar(50)
 
   checkoutIntentId String @unique
   checkoutIntent   MemoryMasterclassCheckoutIntent @relation(fields: [checkoutIntentId], references: [id], onDelete: Restrict)

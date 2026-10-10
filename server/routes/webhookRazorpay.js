@@ -137,6 +137,7 @@ router.post(
             select: {
               id: true,
               memoryAssessmentSessionId: true,
+              checkoutSource: true,
               razorpayOrderId: true,
 
               amount: true,
@@ -255,6 +256,8 @@ router.post(
           await prisma.memoryMasterclassPurchase.create({
             data: {
               checkoutIntentId: memoryIntent.id,
+              checkoutSource: memoryIntent.checkoutSource || "assessment",
+              trackId: memoryIntent.trackId,
 
               razorpayOrderId,
               paymentId,

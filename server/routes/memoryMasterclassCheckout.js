@@ -18,7 +18,7 @@ router.get("/event", (_req, res) => {
   return res.json({ ok: true, event: getPublicMemoryMasterclassEvent() });
 });
 
-function getRazorpayClient() {
+export function getRazorpayClient() {
   const key_id = process.env.RAZORPAY_KEY_ID;
   const key_secret = process.env.RAZORPAY_KEY_SECRET;
 
@@ -48,7 +48,7 @@ function getClientIp(req) {
   return cleanString(req.ip, 100);
 }
 
-function validatePurchaserDetails(body) {
+export function validatePurchaserDetails(body) {
   const fields = ["purchaserName", "purchaserEmail", "purchaserPhone"];
   if (fields.some((field) =>
     typeof body[field] !== "string" || !body[field].trim()

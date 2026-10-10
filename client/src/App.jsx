@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 
 import { useEffect, lazy, Suspense } from "react";
+import MemoryChallengeVideo from "./pages/public/MemoryChallengeVideo";
 
 import Navbar from "./components/Navbar";
 import { AuthProvider } from "./context/AuthContext";
@@ -257,6 +258,8 @@ export default function App() {
               element={<SpokenEnglishChallenge />}
             />
             <Route path="/memory-challenge" element={<MemoryChallenge />} />
+            <Route path="/memory-challenge/video/school" element={<MemoryChallengeVideo audience="school" />} />
+            <Route path="/memory-challenge/video/advanced" element={<MemoryChallengeVideo audience="advanced" />} />
             <Route
               path="/memory-challenge/start"
               element={<MemoryChallengeStart />}

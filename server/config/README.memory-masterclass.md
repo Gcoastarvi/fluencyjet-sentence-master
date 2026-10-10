@@ -1,5 +1,35 @@
 # Weekly Memory Masterclass settings
 
+## Permanent WhatsApp video links
+
+- `/memory-challenge/video/school` uses the configured school VSL for both
+  school levels. Registration requires choosing Class 6–8 or Class 9–12.
+- `/memory-challenge/video/advanced` uses the configured advanced VSL.
+
+Both pages work without assessment state or an owner token. Their separate
+`POST /api/memory-masterclass/standalone/create-order` endpoint validates the
+registration and allowlisted audience/level. It fixes ₹99, INR, product and
+weekly event server-side. It never creates an assessment or WhatsApp consent.
+Intents and purchases use `checkoutSource=standalone_vsl`; intent campaign
+source is `whatsapp_vsl`. Current-device attribution is optional.
+
+The assessment checkout still requires its existing owner token and captured
+lead. Apply the additive `20261010120000_add_memory_standalone_checkout`
+migration before starting a backend containing these changes, and generate the
+Prisma client during installation/build. The deployment migration script runs
+`prisma migrate deploy`. No existing assessment or purchase is deleted.
+
+Standalone success redirects to the existing thank-you route with
+`source=standalone_vsl` for presentation only. This query parameter is not
+payment verification; the signature-verified webhook remains authoritative.
+No 30-minute follow-up scheduling is added by these pages. Configure the stable
+links in the external follow-up separately, using the published domain. Vimeo
+must allow that domain to embed the videos.
+
+The migration SQL regression fixture can be run with `psql -v ON_ERROR_STOP=1
+-f server/__tests__/fixtures/memoryStandaloneMigration.sql` **only in a
+disposable, empty test database**, never an application database.
+
 Edit **`server/config/memoryMasterclassEvent.js`**, in
 `MEMORY_MASTERCLASS_WEEKLY_SETTINGS`:
 

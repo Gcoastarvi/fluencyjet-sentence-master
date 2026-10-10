@@ -39,6 +39,8 @@ jest.unstable_mockModule("../db/client.js", () => ({
 
 const { default: memoryMasterclassCheckoutRouter } =
   await import("../routes/memoryMasterclassCheckout.js");
+const { default: standaloneRouter } =
+  await import("../routes/memoryMasterclassStandaloneCheckout.js");
 
 function makeApp() {
   const app = express();
@@ -48,6 +50,7 @@ function makeApp() {
     "/api/memory-masterclass",
     memoryMasterclassCheckoutRouter,
   );
+  app.use("/api/memory-masterclass/standalone", standaloneRouter);
   return app;
 }
 
@@ -103,6 +106,87 @@ beforeEach(() => {
 afterEach(() => {
   delete process.env.RAZORPAY_KEY_ID;
   delete process.env.RAZORPAY_KEY_SECRET;
+});
+
+describe("public standalone Memory checkout", () => {
+  test.each([
+    ["school", "6-8", "school_foundation"],
+    ["school", "9-12", "school_advanced"],
+    ["advanced", undefined, "advanced"],
+  ])("%s / %s derives %s with no assessment ownership", async (audience, schoolLevel, trackId) => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/standalone/create-order")
+      .send({
+        audience, schoolLevel, ...purchaserInput,
+        amount: 1, price: 1, currency: "USD", productKey: "fake",
+        trackId: "untrusted", eventKey: "fake", eventStartsAt: "2099-01-01",
+        eventEndsAt: "2099-01-02", eventTimezone: "UTC",
+        memoryAssessmentSessionId: "fake", score: 100, ownerToken: "fake",
+        source: "fake", checkoutSource: "fake",
+        visitorId: "current-device", utmCampaign: "whatsapp-video",
+      });
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ amount: 9900, currency: "INR" });
+    expect(mockPrisma.memoryAssessmentSession.findUnique).not.toHaveBeenCalled();
+    expect(mockOrderCreate).toHaveBeenCalledWith(expect.objectContaining({
+      amount: 9900, currency: "INR",
+      notes: {
+        productKey: "memory_masterclass_99", eventKey: "2026-10-18_1700_ist",
+        trackId, checkoutSource: "standalone_vsl", ...purchaserSnapshot,
+      },
+    }));
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        memoryAssessmentSessionId: null,
+        trackId, checkoutSource: "standalone_vsl", source: "whatsapp_vsl",
+        amount: 9900, currency: "INR", productKey: "memory_masterclass_99",
+        ...purchaserSnapshot,
+        eventKey: "2026-10-18_1700_ist",
+        eventStartsAt: new Date("2026-10-18T11:30:00Z"),
+        eventEndsAt: new Date("2026-10-18T13:30:00Z"),
+        eventTimezone: "Asia/Kolkata",
+        visitorId: "current-device", utmCampaign: "whatsapp-video",
+        fbc: null, fbp: null,
+      }),
+    });
+  });
+
+  test.each([
+    {}, { audience: "unknown" }, { audience: "school" },
+    { audience: "school", schoolLevel: "college" },
+    { audience: "school", schoolLevel: "school_foundation" },
+    { audience: "advanced", schoolLevel: "6-8" },
+  ])("rejects invalid audience/level %j before provider access", async (selection) => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/standalone/create-order")
+      .send({ ...selection, ...purchaserInput });
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("MEMORY_AUDIENCE_INVALID");
+    expect(mockOrderCreate).not.toHaveBeenCalled();
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ["purchaserName", undefined], ["purchaserEmail", undefined], ["purchaserPhone", undefined],
+    ["purchaserName", " "], ["purchaserName", "bad\nname"],
+    ["purchaserEmail", "not-email"], ["purchaserPhone", "123"],
+  ])("rejects invalid %s=%s before provider access", async (field, value) => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/standalone/create-order")
+      .send({ audience: "advanced", ...purchaserInput, [field]: value });
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("MEMORY_PURCHASER_DETAILS_INVALID");
+    expect(mockOrderCreate).not.toHaveBeenCalled();
+  });
+
+  test("intent persistence failure fails closed without returning an order", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.create.mockRejectedValue(new Error("db unavailable"));
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/standalone/create-order")
+      .send({ audience: "advanced", ...purchaserInput });
+    expect(response.status).toBe(500);
+    expect(response.body.orderId).toBeUndefined();
+  });
 });
 
 describe("Memory Masterclass ₹99 Razorpay checkout", () => {

@@ -451,6 +451,49 @@ describe("verified Razorpay Sentence Master capture attribution", () => {
 });
 
 describe("verified Razorpay Memory Masterclass capture", () => {
+  test.each(["school_foundation", "school_advanced", "advanced"])(
+    "standalone %s capture persists source/track/identity without an assessment",
+    async (trackId) => {
+      process.env.META_PIXEL_ID = "test-pixel";
+      process.env.META_CAPI_ACCESS_TOKEN = "test-token";
+      mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent({
+        memoryAssessmentSessionId: null,
+        checkoutSource: "standalone_vsl",
+        trackId,
+      }));
+      const response = await postWebhook(makeApp(), makePayload({
+        id: `pay_standalone_${trackId}`,
+        order_id: "order_memory_123", amount: 9900,
+        email: "provider@example.test", contact: "+919999999999",
+        notes: { trackId: "fake", checkoutSource: "fake", purchaserName: "Fake" },
+      }), `event_standalone_${trackId}`);
+      expect(response.status).toBe(200);
+      expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          checkoutSource: "standalone_vsl", trackId,
+          purchaserName: "Purchaser Contact",
+          purchaserEmail: "buyer@example.test",
+          purchaserPhone: "+919123456789",
+          customerEmail: "provider@example.test", customerContact: "+919999999999",
+          amount: 9900, currency: "INR",
+        }),
+      });
+      expect(mockSendCapiPurchase).toHaveBeenCalledWith(expect.objectContaining({
+        value: 99, externalId: "memory-visitor-1",
+      }));
+    },
+  );
+
+  test("historical assessment intents default to assessment source", async () => {
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent());
+    const response = await postWebhook(makeApp(), makePayload({
+      id: "pay_historical", order_id: "order_memory_123", amount: 9900,
+    }), "event_historical");
+    expect(response.status).toBe(200);
+    expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ checkoutSource: "assessment", trackId: "school_foundation" }),
+    });
+  });
   test("copies only the intent snapshot, preserving distinct Razorpay audit and CAPI identity", async () => {
     process.env.META_PIXEL_ID = "test-pixel";
     process.env.META_CAPI_ACCESS_TOKEN = "test-token";
@@ -558,6 +601,7 @@ describe("verified Razorpay Memory Masterclass capture", () => {
       select: expect.objectContaining({
         id: true,
         memoryAssessmentSessionId: true,
+              checkoutSource: true,
         razorpayOrderId: true,
         amount: true,
         currency: true,
