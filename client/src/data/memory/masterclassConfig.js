@@ -3,11 +3,11 @@ export const MEMORY_MASTERCLASS_CONFIG = {
 
   price: 99,
 
-  parentVimeoId:
-    import.meta.env?.VITE_MEMORY_PARENT_VSL_ID || "1234364593",
+  // Final funnel videos are authoritative; stale build-time env overrides
+  // must not replace them with older/dummy videos.
+  parentVimeoId: "1234364593",
 
-  advancedVimeoId:
-    import.meta.env?.VITE_MEMORY_ADVANCED_VSL_ID || "1234364777",
+  advancedVimeoId: "1234364777",
 };
 
 export function getMemoryVslId(trackId, config = MEMORY_MASTERCLASS_CONFIG) {

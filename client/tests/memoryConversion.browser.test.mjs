@@ -81,9 +81,14 @@ async function fixture({
       return fulfill(requestId, source, "application/javascript");
     }
     if (url.pathname === "/src/data/memory/masterclassConfig.js") {
-      const source = (await (await fetch(request.url)).text())
-        .replace(/parentVimeoId:[\s\S]*?,/, `parentVimeoId: "${video ? (vslOverrides ? "111111111" : "1234364593") : ""}",`)
-        .replace(/advancedVimeoId:[\s\S]*?,/, `advancedVimeoId: "${video ? (vslOverrides ? "222222222" : "1234364777") : ""}",`);
+      let source = (await (await fetch(request.url)).text());
+      // Default page/modal tests exercise the real application config.
+      // Inject alternate IDs only for explicit fixture/missing-ID cases.
+      if (!video || vslOverrides) {
+        source = source
+          .replace(/parentVimeoId:[\s\S]*?,/, `parentVimeoId: "${video ? "111111111" : ""}",`)
+          .replace(/advancedVimeoId:[\s\S]*?,/, `advancedVimeoId: "${video ? "222222222" : ""}",`);
+      }
       return fulfill(requestId, source, "application/javascript");
     }
     if (url.pathname.startsWith("/api/")) {
@@ -316,6 +321,7 @@ for (const [audience, schoolLevel, videoId] of [
     await page.waitFor('document.body.innerText.includes("Explore the Memory Challenge")');
     assert.equal(await page.evaluate('new URLSearchParams(location.search).get("source")'), "standalone_vsl");
     assert.equal(await page.evaluate('!!document.querySelector("a[href=\\"/memory-challenge/result\\"]")'), false);
+    await page.waitFor('!!document.querySelector("a[href^=\\"https://chat.whatsapp.com/\\"]")');
     assert.ok(await page.evaluate('!!document.querySelector("a[href^=\\"https://chat.whatsapp.com/\\"]")'));
     await page.close();
   });
