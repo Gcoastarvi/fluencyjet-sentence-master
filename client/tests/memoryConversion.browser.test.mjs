@@ -825,6 +825,9 @@ test("failed create-order or SDK open does not count a memory checkout", async (
       path: audience === "assessment" ? "/memory-challenge/result" : `/memory-challenge/video/${audience}`,
       saved: audience === "assessment", track: "advanced", failCheckout: failOrder,
     });
+    // The result offer mounts before its public schedule request completes.
+    // Wait for real readiness, just as the successful assessment checkout test does.
+    await page.waitFor(`document.body.innerText.includes(${JSON.stringify(getPublicMemoryMasterclassEvent().dateLabel)})`);
     await page.evaluate(`window.Razorpay = function() {
       this.on = function() {};
       this.open = function() {
@@ -846,8 +849,13 @@ test("failed create-order or SDK open does not count a memory checkout", async (
       })()`);
     }
     await registerPurchaser(page);
-    await page.waitFor(`document.body.innerText.includes(${JSON.stringify(failOrder ? "Fixture checkout unavailable" : "Fixture open failed")})`);
+    const errorMessage = audience === "assessment"
+      ? "Secure checkout could not be opened. Please try again."
+      : failOrder ? "Fixture checkout unavailable" : "Fixture open failed";
+    await page.waitFor(`document.body.innerText.includes(${JSON.stringify(errorMessage)})`);
+    assert.equal(page.checkoutRequests.length, 1);
     assert.equal(await page.evaluate('window.metaCalls.some(c => c[2] === "InitiateCheckout" || c[2] === "memory_checkout_open")'), false);
+    assert.equal(await page.evaluate('window.metaCalls.some(c => c[2] === "Purchase")'), false);
     assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), failOrder ? [] : ["open throws"]);
     await page.close();
   }
