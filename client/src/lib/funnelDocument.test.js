@@ -10,6 +10,10 @@ afterEach(() => { globalThis.window = originalWindow; });
 function fixture(path = "/vocabulary-course", storage = new Map(), host = "www.fluencyjet.com") {
   const moves = [], nativeCalls = [], listeners = {}, calls = [], scripts = [], nodes = [];
   const w = {
+    memoryMetaConsentVerified: true,
+    localStorage: { getItem: () => JSON.stringify({
+      granted: true, version: "memory_meta_v1", expiresAt: "2099-01-01",
+    }) },
     sessionStorage: {
       getItem: key => storage.get(key),
       setItem: (key, value) => storage.set(key, value),

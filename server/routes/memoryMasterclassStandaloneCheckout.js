@@ -1,6 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import prisma from "../db/client.js";
+import { memoryConsentSnapshot } from "../services/memoryMetaConsent.js";
 import { getRazorpayClient, validatePurchaserDetails } from "./memoryMasterclassCheckout.js";
 import { MEMORY_MASTERCLASS_EVENT } from "../config/memoryMasterclassEvent.js";
 
@@ -45,6 +46,7 @@ router.post("/create-order", orderLimiter, async (req, res) => {
     });
   }
   try {
+    const consent = await memoryConsentSnapshot(body.memoryMetaConsentReceipt);
     const order = await getRazorpayClient().orders.create({
       amount: 9900, currency: "INR", receipt: `memory_vsl_${Date.now().toString(36)}`,
       notes: {
@@ -55,6 +57,7 @@ router.post("/create-order", orderLimiter, async (req, res) => {
     });
     const intent = await prisma.memoryMasterclassCheckoutIntent.create({
       data: {
+        ...consent,
         memoryAssessmentSessionId: null,
         checkoutSource: "standalone_vsl",
         source: "whatsapp_vsl",
@@ -66,18 +69,18 @@ router.post("/create-order", orderLimiter, async (req, res) => {
         eventEndsAt: MEMORY_MASTERCLASS_EVENT.endsAt,
         eventTimezone: MEMORY_MASTERCLASS_EVENT.timezone,
         trackId,
-        visitorId: clean(body.visitorId, 191),
-        fbclid: clean(body.fbclid, 2000),
-        fbc: clean(body.fbc, 2000),
-        fbp: clean(body.fbp, 2000),
+        visitorId: consent.metaConsentGranted ? clean(body.visitorId, 191) : null,
+        fbclid: consent.metaConsentGranted ? clean(body.fbclid, 2000) : null,
+        fbc: consent.metaConsentGranted ? clean(body.fbc, 2000) : null,
+        fbp: consent.metaConsentGranted ? clean(body.fbp, 2000) : null,
         utmSource: clean(body.utmSource, 150),
         utmMedium: clean(body.utmMedium, 150),
         utmCampaign: clean(body.utmCampaign, 200),
         utmContent: clean(body.utmContent, 200),
         utmTerm: clean(body.utmTerm, 200),
         landingPage: clean(body.landingPage, 2000),
-        clientIp: clean(req.ip, 100),
-        clientUserAgent: clean(req.headers["user-agent"], 2000),
+        clientIp: null,
+        clientUserAgent: consent.metaConsentGranted ? clean(req.headers["user-agent"], 2000) : null,
       },
     });
     return res.json({

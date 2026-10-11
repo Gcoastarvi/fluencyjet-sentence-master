@@ -11,3 +11,8 @@ project-brain/
 
 content.csv
 out/
+
+# Local configuration must never ship in the frontend build.
+**/.env
+**/.env.*
+/.release-qa/

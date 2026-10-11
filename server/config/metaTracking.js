@@ -16,6 +16,8 @@ export function isMemoryRoute(path = "") {
 }
 
 export function renderMetaPixelHtml(html, path) {
+  // No JS means no verified Memory consent. Never bypass the opt-in gate.
+  if (isMemoryRoute(path)) return html.replace("<!-- META_PIXEL_NOSCRIPT -->", "");
   const pixelId = isMemoryRoute(path) ? MEMORY_PIXEL_ID : FJ_PIXEL_ID;
   return html.replace("<!-- META_PIXEL_NOSCRIPT -->",
     `<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=${pixelId}&amp;ev=PageView&amp;noscript=1" /></noscript>`);
@@ -25,6 +27,9 @@ export function renderMetaPixelHtml(html, path) {
 // Future memory products share this fail-closed destination boundary.
 export function getCapiDestination(productKey, env = process.env) {
   if (typeof productKey === "string" && productKey.startsWith("memory_")) {
+    if (env.NODE_ENV === "production" && env.MEMORY_META_TEST_EVENT_CODE) {
+      return { enabled: false, reason: "memory_test_code_in_production" };
+    }
     if (env.MEMORY_META_PIXEL_ID && env.MEMORY_META_PIXEL_ID !== MEMORY_PIXEL_ID) {
       return { enabled: false, reason: "memory_pixel_mismatch" };
     }

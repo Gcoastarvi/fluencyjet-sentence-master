@@ -126,7 +126,7 @@ test.each(['{"events_received":0}', '{"error":{"code":190}}', "invalid JSON"])(
     jest.spyOn(globalThis, "fetch").mockResolvedValue({
       status: 200, ok: true, text: async () => body,
     });
-    expect(await sendCapiPurchase(memory())).toEqual({ status: 200, ok: false, body });
+    expect(await sendCapiPurchase(memory())).toEqual(expect.objectContaining({ status: 200, ok: false, body }));
   },
 );
 
@@ -208,6 +208,10 @@ test.each([
   ["/german-live-class", "1246171816816642"],
 ])("no-script HTML for %s contains only the correct Pixel", (path, id) => {
   const rendered = renderMetaPixelHtml("<!-- META_PIXEL_NOSCRIPT -->", path);
+  if (id === MEMORY_PIXEL_ID) {
+    expect(rendered).not.toContain("facebook.com");
+    return;
+  }
   expect(rendered).toContain(`tr?id=${id}&amp;ev=PageView`);
   expect(rendered.match(/tr\?id=/g)).toHaveLength(1);
 });

@@ -12,6 +12,7 @@ import {
 const mockOrderCreate = jest.fn();
 
 const mockPrisma = {
+  memoryMetaConsent: { findUnique: jest.fn() },
   memoryAssessmentSession: {
     findUnique: jest.fn(),
   },
@@ -83,6 +84,11 @@ const purchaserSnapshot = {
 
 beforeEach(() => {
   jest.resetAllMocks();
+  mockPrisma.memoryMetaConsent.findUnique.mockResolvedValue({
+    id: "consent-fixture", granted: true, adultConfirmed: true, revision: 1,
+    source: "memory_funnel_adult_opt_in", version: "memory_meta_v1",
+    recordedAt: new Date(), expiresAt: new Date("2099-01-01"),
+  });
 
   process.env.RAZORPAY_KEY_ID = "rzp_test_public_key";
   process.env.RAZORPAY_KEY_SECRET = "rzp_test_secret_key";
@@ -145,7 +151,7 @@ describe("public standalone Memory checkout", () => {
         eventStartsAt: new Date("2026-10-18T11:30:00Z"),
         eventEndsAt: new Date("2026-10-18T13:30:00Z"),
         eventTimezone: "Asia/Kolkata",
-        visitorId: "current-device", utmCampaign: "whatsapp-video",
+        visitorId: null, utmCampaign: "whatsapp-video",
         fbc: null, fbp: null,
       }),
     });
@@ -290,6 +296,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
         ...purchaserInput,
 
         visitorId: "visitor_memory_123",
+        memoryMetaConsentReceipt: "a".repeat(64),
         fbclid: "fbclid_memory_123",
         fbc: "fb.1.123456789.fbclid_memory_123",
         fbp: "fb.1.123456789.987654321",
@@ -386,7 +393,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
         landingPage:
           "https://www.fluencyjet.com/memory-challenge/result",
 
-        clientIp: "49.12.34.56",
+        clientIp: null,
         clientUserAgent: "FluencyJet-Test-Browser/1.0",
       }),
     });

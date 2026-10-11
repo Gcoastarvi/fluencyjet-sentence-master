@@ -9,6 +9,8 @@
 .DS_Store
 .env
 .env.*
+**/.env
+**/.env.*
 
 # Build outputs & caches
 dist

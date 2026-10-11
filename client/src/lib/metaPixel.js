@@ -1,3 +1,4 @@
+import { memoryConsentGranted } from "./memoryMetaConsent.js";
 export const FJ_PIXEL_ID = "1246171816816642";
 export const MEMORY_PIXEL_ID = "1998316064175555";
 
@@ -56,6 +57,7 @@ export function restoreMetaDocumentView(w = window) {
 export function initializeMetaDocument(w = window) {
   if (typeof w.fbq !== "function" || w.fjMetaConsent === false) return false;
   const state = stateFor(w);
+  if (state.memory && !memoryConsentGranted(w)) return false;
   if (state.memory !== isMemoryRoute(w.location.pathname)) return false;
   try { initializePixel(w, state); return true; } catch {
     console.warn("[meta] document initialization failed");
@@ -78,6 +80,7 @@ export function dispatchMetaEvent(eventName, params = {}, {
 } = {}) {
   const w = typeof window === "undefined" ? null : window;
   if (!w || typeof w.fbq !== "function" || w.fjMetaConsent === false) return false;
+  if (memory && !memoryConsentGranted(w)) return false;
   // Explicit funnel identity also rejects stale callbacks from an unmounted
   // English page on a memory URL (and vice versa).
   if (isMemoryRoute(w.location.pathname) !== memory) return false;

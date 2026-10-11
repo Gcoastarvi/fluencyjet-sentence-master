@@ -328,6 +328,13 @@ model MemoryAssessmentSession {
   whatsappConsentSource  String?   @db.VarChar(150)
   whatsappConsentVersion String?   @db.VarChar(80)
 
+  metaConsentId      String?
+  metaConsentGranted Boolean @default(false)
+  metaConsentAt      DateTime?
+  metaConsentVersion String? @db.VarChar(80)
+  metaConsentSource  String? @db.VarChar(100)
+  metaConsentRevision Int?
+
   // Study Memory Score WhatsApp delivery
   whatsappScoreDeliveryStatus        String?  @db.VarChar(30)
   whatsappScoreDeliveryAttempts      Int      @default(0)
@@ -615,6 +622,13 @@ model MemoryMasterclassCheckoutIntent {
 
   razorpayOrderId String @unique
 
+  metaConsentId      String?
+  metaConsentGranted Boolean @default(false)
+  metaConsentAt      DateTime?
+  metaConsentVersion String? @db.VarChar(80)
+  metaConsentSource  String? @db.VarChar(100)
+  metaConsentRevision Int?
+
   // Normalized purchaser snapshot; nullable for historical checkout intents.
   purchaserName  String? @db.VarChar(100)
   purchaserEmail String? @db.VarChar(191)
@@ -696,9 +710,38 @@ model MemoryMasterclassPurchase {
   metaEventId   String?  @unique @db.VarChar(191)
   metaDelivered Boolean  @default(false)
 
+  metaConsentId      String?
+  metaConsentGranted Boolean @default(false)
+  metaConsentAt      DateTime?
+  metaConsentVersion String? @db.VarChar(80)
+  metaConsentSource  String? @db.VarChar(100)
+  metaConsentRevision Int?
+  metaDeliveryStatus String? @db.VarChar(40)
+  metaEventTime      DateTime?
+  metaAttempts       Int @default(0)
+  metaNextAttemptAt   DateTime?
+  metaLeaseToken     String? @db.VarChar(64)
+  metaLeaseExpiresAt DateTime?
+  metaLastErrorCode  String? @db.VarChar(80)
+  metaDeliveredAt    DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([createdAt])
   @@index([paymentId])
+  @@index([metaDeliveryStatus, metaNextAttemptAt])
+}
+
+model MemoryMetaConsent {
+  id             String @id @default(cuid())
+  tokenHash      String @unique @db.VarChar(64)
+  granted        Boolean @default(false)
+  adultConfirmed Boolean @default(false)
+  version        String @db.VarChar(80)
+  source         String @db.VarChar(100)
+  recordedAt     DateTime @default(now())
+  revokedAt      DateTime?
+  expiresAt      DateTime
+  revision       Int @default(1)
 }

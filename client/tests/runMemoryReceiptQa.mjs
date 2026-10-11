@@ -48,6 +48,7 @@ async function run(command, args, env, detached = false) {
 
 async function main() {
   const phase = process.argv[2];
+  const regression = process.argv.includes("--regression");
   if (["--isolated", "--sealed"].includes(phase)) {
     const [scratch, parent] = process.argv.slice(3);
     const env = qaEnvironment(scratch, process.env.PATH);
@@ -60,6 +61,7 @@ async function main() {
       const code = await run("setpriv", [
         "--bounding-set=-all", "--inh-caps=-all", "--ambient-caps=-all", "--no-new-privs",
         process.execPath, runner, "--sealed", scratch, parent,
+        ...(regression ? ["--regression"] : []),
       ], env);
       if (code !== 0) throw new Error("Sealed mock receipt QA failed; no fallback");
       return;
@@ -70,6 +72,44 @@ async function main() {
       status: () => readFile("/proc/self/status", "utf8"), start,
     });
     await verify(async () => {});
+    if (regression) {
+      const files = [
+        "client/tests/runMemoryQa.test.mjs", "client/tests/memoryNavigationDiagnostics.test.mjs",
+        "client/tests/memoryReceiptPolicy.test.mjs",
+        "client/src/lib/metaPixel.test.js", "client/src/lib/funnelDocument.test.js",
+        "client/src/lib/memoryMetaConsent.test.js",
+        "client/src/components/memory/memoryScoreBand.test.js", "client/src/data/memory/masterclassConfig.test.js",
+      ];
+      if (await verify(() => run(process.execPath, ["--test", ...files], env))) throw new Error("Offline Node checks failed");
+      if (await verify(() => run("python3", ["-B", "client/tests/memoryQaNetwork.test.py"], env))) throw new Error("Parser checks failed");
+      const config = JSON.stringify({
+        rootDir: fileURLToPath(new URL("server/", root)), testEnvironment: "node",
+        transform: {}, testTimeout: 15000, cacheDirectory: `${scratch}/regression-jest`,
+      });
+      const suites = [
+        "metaTracking", "razorpayPurchaseAttribution", "memoryMasterclassCheckout",
+        "memoryMasterclassEvent", "memoryLeadRoute", "memoryScoreWhatsApp", "memorySessionRoute",
+        "memoryRoute", "memoryAdvancedRoute", "memorySchoolAdvancedRoute",
+        "memoryAssessmentScorer", "memorySchoolAdvancedScorer", "memoryAdvancedScorer",
+        "whatsappNumber", "whatsappProvider", "webhookWhatsAppInbound",
+        "memoryMetaConsent", "memoryMetaDelivery",
+      ].map(name => fileURLToPath(new URL(`server/__tests__/${name}.test.js`, root)));
+      const jest = fileURLToPath(new URL("server/node_modules/jest/bin/jest.js", root));
+      if (await verify(() => run(process.execPath, [
+        "--experimental-vm-modules", jest, "--config", config, "--runInBand", "--runTestsByPath", ...suites,
+      ], env))) throw new Error("Backend regression failed");
+      const prisma = fileURLToPath(new URL("server/node_modules/prisma/build/index.js", root));
+      const schemaEnv = { ...env, DATABASE_URL: "postgresql://offline:offline@127.0.0.1:1/offline" };
+      if (await verify(() => run(process.execPath, [prisma, "validate", "--schema", "server/prisma/schema.prisma"], schemaEnv))) throw new Error("Schema invalid");
+      await verify(async () => {
+        const { build } = await import("vite");
+        const { memoryQaViteConfig } = await import("./memoryQa.vite.config.mjs");
+        process.env.NODE_ENV = "production";
+        try { await build({ ...memoryQaViteConfig(scratch),
+          build: { outDir: `${scratch}/dist`, emptyOutDir: true } }); }
+        finally { process.env.NODE_ENV = "test"; }
+      });
+    }
     // Actual Vite is imported only after namespace and capability validation.
     const { createServer } = await import("vite");
     const { memoryQaViteConfig } = await import("./memoryQa.vite.config.mjs");
@@ -104,7 +144,7 @@ async function main() {
     return;
   }
   // No default launch and no live/secret flags. Importing this file never starts.
-  assertMockLaunch(process.argv.slice(2));
+  assertMockLaunch(process.argv.slice(2).filter(arg => arg !== "--regression"));
   if (process.platform !== "linux") throw new Error("Linux network namespaces required");
   const scratch = await mkdtemp("/tmp/memory-receipt-qa-");
   try {
@@ -113,6 +153,7 @@ async function main() {
     const code = await run("unshare", [
       "--user", "--map-root-user", "--net", "--fork",
       process.execPath, runner, "--isolated", scratch, parent,
+      ...(regression ? ["--regression"] : []),
     ], qaEnvironment(scratch, process.env.PATH), true);
     if (code !== 0) throw new Error("Isolated mock receipt QA failed; refusing nonisolated execution");
   } finally { await rm(scratch, { recursive: true, force: true }); }

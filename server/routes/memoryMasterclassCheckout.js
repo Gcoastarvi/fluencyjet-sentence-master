@@ -1,4 +1,5 @@
 import express from "express";
+import { memoryConsentSnapshot } from "../services/memoryMetaConsent.js";
 import Razorpay from "razorpay";
 import prisma from "../db/client.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
@@ -39,13 +40,8 @@ function cleanString(value, maxLength = 500) {
 }
 
 function getClientIp(req) {
-  const forwarded = req.headers["x-forwarded-for"];
-
-  if (typeof forwarded === "string" && forwarded.trim()) {
-    return forwarded.split(",")[0].trim().slice(0, 100);
-  }
-
-  return cleanString(req.ip, 100);
+  // Omit until the production proxy chain is verified.
+  return null;
 }
 
 export function validatePurchaserDetails(body) {
@@ -236,9 +232,11 @@ router.post("/create-order", async (req, res) => {
       },
     });
 
+    const consent = await memoryConsentSnapshot(body.memoryMetaConsentReceipt);
     const checkoutIntent =
       await prisma.memoryMasterclassCheckoutIntent.create({
         data: {
+          ...consent,
           memoryAssessmentSessionId: session.id,
 
           razorpayOrderId: order.id,
@@ -257,11 +255,11 @@ router.post("/create-order", async (req, res) => {
 
           trackId: session.trackId,
 
-          visitorId: cleanString(body.visitorId, 191),
+          visitorId: consent.metaConsentGranted ? cleanString(body.visitorId, 191) : null,
 
-          fbclid: cleanString(body.fbclid, 2000),
-          fbc: cleanString(body.fbc, 2000),
-          fbp: cleanString(body.fbp, 2000),
+          fbclid: consent.metaConsentGranted ? cleanString(body.fbclid, 2000) : null,
+          fbc: consent.metaConsentGranted ? cleanString(body.fbc, 2000) : null,
+          fbp: consent.metaConsentGranted ? cleanString(body.fbp, 2000) : null,
 
           utmSource:
             cleanString(body.utmSource, 150) ||
@@ -292,10 +290,10 @@ router.post("/create-order", async (req, res) => {
 
           clientIp: getClientIp(req),
 
-          clientUserAgent: cleanString(
+          clientUserAgent: consent.metaConsentGranted ? cleanString(
             req.headers["user-agent"],
             2000,
-          ),
+          ) : null,
         },
       });
 

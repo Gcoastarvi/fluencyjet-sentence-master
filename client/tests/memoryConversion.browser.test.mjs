@@ -45,6 +45,7 @@ async function fixture({
   failCheckout = false,
   navigationProbe = false,
   shortViewport = false,
+  advertisingConsent = true,
 } = {}) {
   const target = await (await fetch(`${debug}/json/new?about:blank`, { method: "PUT" })).json();
   const socket = new WebSocket(target.webSocketDebuggerUrl);
@@ -123,6 +124,13 @@ async function fixture({
     }
     if (url.pathname.startsWith("/api/")) {
       apiRequests.push(url.pathname);
+      if (url.pathname.startsWith("/api/memory-meta/consent")) {
+        const body = JSON.parse(request.postData || "{}");
+        return fulfill(requestId, JSON.stringify({
+          ok: true, granted: body.granted ?? true, receipt: "a".repeat(64),
+          version: "memory_meta_v1", expiresAt: "2099-01-01",
+        }), "application/json");
+      }
       if (url.pathname === "/api/memory-masterclass/standalone/create-order" ||
           url.pathname === "/api/memory-masterclass/create-order") {
         checkoutRequests.push(JSON.parse(request.postData || "{}"));
@@ -247,6 +255,10 @@ async function fixture({
     // records across reloads to catch second-Pixel init/foreign DOM exposure.
     sessionStorage.setItem("fj_meta_qa_opt_in", "true");
     window.fixtureDocumentId = crypto.randomUUID();
+    window.memoryMetaConsentVerified = ${advertisingConsent};
+    ${advertisingConsent ? `localStorage.setItem("brainodad_meta_consent_v1", JSON.stringify({
+      granted: true, receipt: "a".repeat(64), version: "memory_meta_v1", expiresAt: "2099-01-01"
+    }));` : `localStorage.removeItem("brainodad_meta_consent_v1");`}
     window.fixtureNativePush = history.pushState.bind(history);
     window.metaCalls = [];
     window.fixtureCheckoutSequence = [];
@@ -374,12 +386,12 @@ async function fixture({
     assert.equal(await evaluate("window.fixtureDocumentId"), id, "Navigation changed during settled snapshot");
     return diagnostics.settle(id, frame);
   }
-  async function waitCommittedDocument(path, pixel, { freshFrom, probe = navigationProbe } = {}) {
+  async function waitCommittedDocument(path, pixel, { freshFrom, probe = navigationProbe, expectPixel = advertisingConsent } = {}) {
     const ready = `location.pathname === ${JSON.stringify(path)} &&
       document.readyState === "complete" &&
       ${freshFrom ? `window.fixtureDocumentId !== ${JSON.stringify(freshFrom)} &&` : ""}
-      window.metaCalls?.filter(c => c[0] === "init").length === 1 &&
-      window.metaCalls.some(c => c[0] === "init" && c[1] === ${JSON.stringify(pixel)}) &&
+      window.metaCalls?.filter(c => c[0] === "init").length === ${expectPixel ? 1 : 0} &&
+      ${expectPixel ? `window.metaCalls.some(c => c[0] === "init" && c[1] === ${JSON.stringify(pixel)}) &&` : ""}
       ${probe ? 'window.fixtureNavigate && window.fixtureOwnsRoute?.() &&' : ""}
       window.fixtureNavigationLifecycle?.some(e => e.event === "pageshow" &&
         e.trusted && e.path === ${JSON.stringify(path)})`;
@@ -1079,4 +1091,19 @@ test("unknown memory routes stay in memory's document, never the English Home fa
   await assertPixelDocuments(page);
   assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="Lead"||c[2]==="Purchase")'), false);
   await page.close();
+});
+
+for (const audience of ["school", "advanced"]) test(`Memory ${audience}: default deny, post-consent PageView, withdrawal`, async () => {
+  const page = await fixture({ path: `/memory-challenge/video/${audience}`, advertisingConsent: false });
+  try {
+    assert.equal(await page.evaluate('window.metaCalls.filter(c => c[0] === "init").length'), 0);
+    assert.equal(await page.evaluate('window.metaCalls.filter(c => /^trackSingle/.test(c[0])).length'), 0);
+    await page.evaluate(`Array.from(document.querySelectorAll("button")).find(b => b.textContent.includes("I am 18")).click()`);
+    await page.waitFor('window.metaCalls.some(c => c[0] === "trackSingle" && c[2] === "PageView")');
+    assert.equal(await page.evaluate('window.metaCalls.filter(c => c[0] === "init" && c[1] === "1998316064175555").length'), 1);
+    assert.equal(await page.evaluate('window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "PageView").length'), 1);
+    await page.evaluate(`Array.from(document.querySelectorAll("button")).find(b => b.textContent.includes("Withdraw measurement")).click()`);
+    await page.waitFor('window.memoryMetaConsentVerified === false');
+    assert.equal(await page.evaluate('window.metaCalls.filter(c => c[2] === "Lead" || c[2] === "InitiateCheckout" || c[2] === "Purchase").length'), 0);
+  } finally { await page.close(); }
 });

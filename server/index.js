@@ -2,6 +2,8 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import fs from "fs";
 import { renderMetaPixelHtml } from "./config/metaTracking.js";
+import memoryMetaConsentRouter from "./routes/memoryMetaConsent.js";
+import { startMemoryMetaDelivery } from "./services/memoryMetaDelivery.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -267,6 +269,7 @@ app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/vocabulary", vocabularyCheckoutRouter);
 app.use("/api/memory-masterclass", memoryMasterclassCheckoutRouter);
+app.use("/api/memory-meta", memoryMetaConsentRouter);
 app.use("/api/memory-masterclass/standalone", memoryMasterclassStandaloneCheckoutRouter);
 app.use("/api/diagnostic", diagnosticRoutes);
 // app.use("/api/shop", shopRouter);
@@ -312,6 +315,10 @@ const FALLBACK_PORT = 3005;
 const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 API running on port ${PORT}`);
 });
+const stopMemoryMetaDelivery = startMemoryMetaDelivery();
+// Preserve Node's existing signal termination behavior. Durable leases recover
+// interrupted attempts; do not swallow SIGTERM and keep Railway's server alive.
+server.once("close", stopMemoryMetaDelivery);
 server.on("error", (err) => {
   if (err.code === "EADDRINUSE") {
     console.warn(`⚠️  Port ${PORT} in use — retrying on port ${FALLBACK_PORT}`);

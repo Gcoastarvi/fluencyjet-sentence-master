@@ -22,7 +22,11 @@ function go(path) {
 }
 beforeEach(() => {
   calls = []; ga = []; storage = new Map();
+  storage.set("brainodad_meta_consent_v1", JSON.stringify({
+    granted: true, version: "memory_meta_v1", expiresAt: "2099-01-01",
+  }));
   globalThis.window = {
+    memoryMetaConsentVerified: true,
     location: new URL("https://www.fluencyjet.com/memory-challenge"),
     fbq: (...args) => calls.push(args),
     gtag: (...args) => ga.push(args), crypto: webcrypto,
@@ -173,7 +177,8 @@ test("Lead uses a stable opaque assessment ID and sends once across repeated sav
   globalThis.window = { ...window };
   await trackMemoryLead({ assessmentKey: "private-owner-token", track: "advanced" });
   assert.equal(events().length, 1);
-  storage.clear(); globalThis.window = { ...window };
+  for (const key of storage.keys()) if (key.startsWith("fj_meta_sent:")) storage.delete(key);
+  globalThis.window = { ...window };
   await trackMemoryLead({ assessmentKey: "private-owner-token", track: "advanced" });
   assert.equal(events()[1][4].eventID, id);
 });
@@ -217,6 +222,7 @@ test("production HTML no-script fallback is route-aware, not a global FJ leak", 
   const html = readFileSync(new URL("../../index.html", import.meta.url), "utf8");
   assert.ok(!html.includes('fbq("init"'));
   for (const [path, pixel] of [["/memory-retest/result", MEMORY_PIXEL_ID], ["/vocabulary-course", FJ_PIXEL_ID]]) {
-    assert.ok(renderMetaPixelHtml(html, path).includes(`tr?id=${pixel}&amp;ev=PageView`));
+    if (pixel === MEMORY_PIXEL_ID) assert.ok(!renderMetaPixelHtml(html, path).includes("facebook.com"));
+    else assert.ok(renderMetaPixelHtml(html, path).includes(`tr?id=${pixel}&amp;ev=PageView`));
   }
 });

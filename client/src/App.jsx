@@ -55,6 +55,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import RouteTracker from "./components/RouteTracker";
 import FunnelDocumentBoundary from "./components/FunnelDocumentBoundary";
+import MemoryMetaConsent from "./components/memory/MemoryMetaConsent";
 import Webinar from "./pages/Webinar";
 import SpokenEnglishThankYou from "./pages/marketing/SpokenEnglishThankYou";
 import GermanLiveClass from "./pages/GermanLiveClass";
@@ -255,6 +256,7 @@ export default function App() {
     <AuthProvider>
       <Router>
         <FunnelDocumentBoundary>
+        <MemoryMetaConsent />
         <RouteTracker />
         <Suspense fallback={<PageLoader />}>
           <Routes>

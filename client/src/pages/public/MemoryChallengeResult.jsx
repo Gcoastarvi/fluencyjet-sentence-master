@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
 import { trackMemoryLead } from "../../lib/metaPixel";
+import { memoryConsentReceipt } from "../../lib/memoryMetaConsent";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 import MemoryMasterclassOffer from "../../components/memory/MemoryMasterclassOffer";
 import MemoryVslModal from "../../components/memory/MemoryVslModal";
@@ -311,6 +312,7 @@ export default function MemoryChallengeResult() {
         },
         body: JSON.stringify({
           ownerToken,
+          memoryMetaConsentReceipt: memoryConsentReceipt(),
           ...leadForm,
         }),
       });

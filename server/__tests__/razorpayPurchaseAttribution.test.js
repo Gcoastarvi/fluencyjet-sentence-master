@@ -12,6 +12,7 @@ import {
 } from "@jest/globals";
 
 const mockPrisma = {
+  memoryMetaConsent: { findUnique: jest.fn() },
   $executeRaw: jest.fn(),
   $transaction: jest.fn(),
   sentenceMasterCheckoutIntent: {
@@ -112,6 +113,8 @@ function makeIntent(overrides = {}) {
 
 function makeMemoryIntent(overrides = {}) {
   return {
+    metaConsentGranted: true, metaConsentId: "offline-consent", metaConsentRevision: 1,
+    metaConsentVersion: "memory_meta_v1",
     id: "memory-intent-1",
     memoryAssessmentSessionId: "memory-session-1",
     razorpayOrderId: "order_memory_123",
@@ -139,6 +142,15 @@ function makeMemoryIntent(overrides = {}) {
 
 beforeEach(() => {
   jest.resetAllMocks();
+  mockPrisma.memoryMetaConsent.findUnique.mockResolvedValue({
+    granted: true, adultConfirmed: true, revision: 1, version: "memory_meta_v1",
+    expiresAt: new Date("2099-01-01"),
+  });
+  mockPrisma.memoryMasterclassPurchase.updateMany = jest.fn().mockResolvedValue({ count: 1 });
+  mockPrisma.memoryMasterclassPurchase.findUnique = jest.fn().mockImplementation(async () => ({
+    ...mockPrisma.memoryMasterclassPurchase.create.mock.calls.at(-1)[0].data,
+    metaAttempts: 1, checkoutIntent: await mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mock.results.at(-1).value,
+  }));
   process.env.RAZORPAY_WEBHOOK_SECRET = WEBHOOK_SECRET;
   delete process.env.META_PIXEL_ID;
   delete process.env.META_CAPI_ACCESS_TOKEN;
@@ -187,6 +199,17 @@ beforeEach(() => {
     id: "purchase-1",
     ...data,
   }));
+});
+
+test.each([false, undefined])("verified Memory capture records payment with no advertising consent (%s)", async choice => {
+  process.env.MEMORY_META_CAPI_ACCESS_TOKEN = "memory-test-only";
+  mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent({ metaConsentGranted: choice }));
+  const response = await postWebhook(makeApp(), makePayload({
+    id: "pay_memory_consent", order_id: "order_memory_123", amount: 9900,
+  }), "consent-denied-fixture");
+  expect(response.status).toBe(200);
+  expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalled();
+  expect(mockSendCapiPurchase).not.toHaveBeenCalled();
 });
 
 afterEach(() => {
@@ -501,8 +524,9 @@ describe("verified Razorpay Memory Masterclass capture", () => {
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({ capiDelivered: false });
       expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledTimes(1);
-      expect(mockPrisma.memoryMasterclassPurchase.update).toHaveBeenCalledWith({
-        where: expect.any(Object), data: { metaDelivered: false },
+      expect(mockPrisma.memoryMasterclassPurchase.updateMany).toHaveBeenCalledWith({
+        where: expect.objectContaining({ metaDeliveryStatus: "SENDING", metaLeaseToken: expect.any(String) }),
+        data: expect.objectContaining({ metaDeliveryStatus: "FAILED", metaLastErrorCode: "HTTP_400" }),
       });
       mockPrisma.memoryMasterclassPurchase.findFirst.mockResolvedValue({ id: "purchase_fixture" });
       expect((await postWebhook(makeApp(), payload, "event_memory_v26_rejected")).body.duplicate).toBe(true);
@@ -613,8 +637,8 @@ describe("verified Razorpay Memory Masterclass capture", () => {
     expect(mockSendCapiPurchase).toHaveBeenCalledWith(expect.objectContaining({
       pixelId: "1998316064175555", accessToken: "memory-test-only",
       testEventCode: "MEMORY_TEST",
-      email: "provider@example.test",
-      phone: "+919999999999",
+      email: "buyer@example.test",
+      phone: "+919123456789",
       externalId: "memory-visitor-1",
       fbc: "fb.1.123456789.memory-fbclid-1",
       fbp: "fb.1.123456789.987654321",

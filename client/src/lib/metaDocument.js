@@ -1,12 +1,16 @@
 import { captureMetaDocument, initializeMetaDocument, restoreMetaDocumentView } from "./metaPixel.js";
 import { installFunnelDocumentBoundary, ownsFunnelRoute } from "./funnelDocument.js";
 import { trackPageView } from "./tracking.js";
+import { memoryConsentGranted } from "./memoryMetaConsent.js";
+import { isMemoryRoute } from "./metaPixel.js";
 
 const restoreListeners = new WeakSet();
 
 export function bootMetaDocument(w = window) {
   installFunnelDocumentBoundary(w);
   captureMetaDocument(w);
+  if (isMemoryRoute(w.location.pathname) &&
+      (!memoryConsentGranted(w) || w.fjMetaConsent === false)) return false;
   if (!restoreListeners.has(w)) {
     restoreListeners.add(w);
     w.addEventListener("pageshow", event => {

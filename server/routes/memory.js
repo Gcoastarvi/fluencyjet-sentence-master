@@ -1,6 +1,7 @@
 // server/routes/memory.js
 import express from "express";
 import prisma from "../db/client.js";
+import { memoryConsentSnapshot } from "../services/memoryMetaConsent.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
 import {
   scoreAdvancedFormA,
@@ -627,6 +628,7 @@ router.patch("/session/lead", async (req, res) => {
     }
 
     const capturedAt = new Date();
+    const metaConsent = await memoryConsentSnapshot(req.body?.memoryMetaConsentReceipt);
 
     const updated =
       await prisma.memoryAssessmentSession.updateMany({
@@ -637,6 +639,7 @@ router.patch("/session/lead", async (req, res) => {
 
         data: {
           learnerName,
+          ...metaConsent,
           ...trackLeadData,
 
           whatsappNumber,

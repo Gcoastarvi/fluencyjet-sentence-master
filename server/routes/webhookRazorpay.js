@@ -1,4 +1,5 @@
 import express from "express";
+import { deliverMemoryPurchase } from "../services/memoryMetaDelivery.js";
 import crypto from "crypto";
 import prisma from "../db/client.js";
 import { sendCapiPurchase } from "../lib/metaCapi.js";
@@ -139,6 +140,12 @@ router.post(
               id: true,
               memoryAssessmentSessionId: true,
               checkoutSource: true,
+              metaConsentId: true,
+              metaConsentGranted: true,
+              metaConsentAt: true,
+              metaConsentVersion: true,
+              metaConsentSource: true,
+              metaConsentRevision: true,
               razorpayOrderId: true,
 
               amount: true,
@@ -279,6 +286,17 @@ router.post(
 
               metaEventId: memoryMetaEventId,
               metaDelivered: false,
+              metaConsentId: memoryIntent.metaConsentId ?? null,
+              metaConsentGranted: memoryIntent.metaConsentGranted === true,
+              metaConsentAt: memoryIntent.metaConsentAt ?? null,
+              metaConsentVersion: memoryIntent.metaConsentVersion ?? null,
+              metaConsentSource: memoryIntent.metaConsentSource ?? null,
+              metaConsentRevision: memoryIntent.metaConsentRevision ?? null,
+              metaDeliveryStatus: memoryIntent.metaConsentGranted === true ? "PENDING" : "SKIPPED_CONSENT",
+              metaNextAttemptAt: new Date(),
+              metaEventTime: Number.isInteger(payload.created_at) &&
+                payload.created_at > 0 && payload.created_at * 1000 <= Date.now() + 60000
+                ? new Date(payload.created_at * 1000) : new Date(),
             },
           });
 
@@ -342,67 +360,18 @@ router.post(
         });
       }
 
-      const memoryCapiResult = await sendCapiPurchase({
-        pixelId: memoryDestination.pixelId,
-        accessToken: memoryDestination.accessToken,
-        apiVersion: memoryDestination.apiVersion,
-        testEventCode: memoryDestination.testEventCode,
-
-        eventId: memoryMetaEventId,
-        eventTime: Date.now(),
-
-        eventSourceUrl:
-          MEMORY_MASTERCLASS_EVENT_SOURCE_URL,
-
-        value: MEMORY_MASTERCLASS_VALUE,
-        currency: EXPECTED_CURRENCY,
-
-        contentName: MEMORY_MASTERCLASS_CONTENT_NAME,
-        contentIds: [MEMORY_MASTERCLASS_PRODUCT_KEY],
-
-        email: customerEmail,
-        phone: customerContact,
-
-        externalId: memoryIntent.visitorId || null,
-        fbc: memoryIntent.fbc || null,
-        fbp: memoryIntent.fbp || null,
-
-        clientIpAddress: memoryIntent.clientIp || null,
-        clientUserAgent:
-          memoryIntent.clientUserAgent || null,
-      });
-
-      try {
-        await prisma.memoryMasterclassPurchase.update({
-          where: {
-            id: memoryRecord.id,
-          },
-          data: {
-            metaDelivered: memoryCapiResult.ok,
-          },
-        });
-      } catch (err) {
-        console.error(
-          "[webhook/rzp] Failed to update Memory CAPI status:",
-          err.message,
-        );
+      if (memoryRecord.metaConsentGranted !== true) {
+        return res.status(200).json({ ok: true, capiSkipped: true, capiSkipReason: "consent_missing" });
       }
-
-      if (memoryCapiResult.ok) {
-        console.log(
-          `[webhook/rzp] Memory CAPI Purchase delivered eventId=${memoryMetaEventId} status=${memoryCapiResult.status}`,
-        );
-      } else {
-        console.warn(
-          `[webhook/rzp] Memory CAPI delivery failed status=${memoryCapiResult.status}`,
-        );
-      }
+      let memoryCapiResult;
+      try { memoryCapiResult = await deliverMemoryPurchase(memoryRecord.id); }
+      catch { console.warn("[memory-meta] Immediate delivery unavailable; persisted queue retained"); }
 
       return res.status(200).json({
         ok: true,
         product: MEMORY_MASTERCLASS_PRODUCT_KEY,
         paymentId,
-        capiDelivered: memoryCapiResult.ok,
+        capiDelivered: memoryCapiResult?.delivered === true,
       });
     }
 

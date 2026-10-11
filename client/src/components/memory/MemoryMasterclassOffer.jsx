@@ -6,6 +6,7 @@ import { MEMORY_MASTERCLASS_CONFIG, getMemoryVslId } from "../../data/memory/mas
 import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent";
 import MemoryPurchaserDetails from "./MemoryPurchaserDetails";
 import MemoryOfferVisibility from "./MemoryOfferVisibility";
+import { memoryConsentReceipt, memoryConsentGranted } from "../../lib/memoryMetaConsent";
 
 const MEMORY_VISITOR_ID_KEY = "fj_memory_visitor_id";
 const MEMORY_FBC_KEY = "fj_memory_fbc";
@@ -111,11 +112,12 @@ export function buildMemoryCheckoutAttribution() {
   );
 
   return {
-    visitorId: getMemoryVisitorId(),
+    visitorId: memoryConsentGranted() ? getMemoryVisitorId() : null,
 
-    fbclid: searchParams.get("fbclid") || null,
-    fbc: getMemoryFbc(searchParams),
-    fbp: readCookie("_fbp"),
+    fbclid: memoryConsentGranted() ? searchParams.get("fbclid") || null : null,
+    fbc: memoryConsentGranted() ? getMemoryFbc(searchParams) : null,
+    fbp: memoryConsentGranted() ? readCookie("_fbp") : null,
+    memoryMetaConsentReceipt: memoryConsentReceipt(),
 
     utmSource: searchParams.get("utm_source") || null,
     utmMedium: searchParams.get("utm_medium") || null,

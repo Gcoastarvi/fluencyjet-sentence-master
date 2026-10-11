@@ -144,17 +144,20 @@ export async function sendCapiPurchase({
       method: "POST",
       headers,
       body: JSON.stringify(requestBody),
+      ...(memory ? { signal: AbortSignal.timeout(15000), redirect: "error" } : {}),
     });
 
     const responseText = await res.text();
     if (memory) {
-      let accepted = false;
+      let accepted = false, transient = false;
       try {
         const response = JSON.parse(responseText);
+        transient = response.error?.is_transient === true;
         accepted = Number.isInteger(response.events_received) &&
           response.events_received >= 1 && !response.error;
-      } catch {}
-      return { status: res.status, ok: res.ok && accepted, body: redact(responseText) };
+      } catch { transient = true; }
+      return { status: res.status, ok: res.ok && accepted,
+        ...(transient ? { transient: true } : {}), body: redact(responseText) };
     }
     return { status: res.status, ok: res.ok, body: responseText };
   } catch (err) {

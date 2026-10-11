@@ -16,6 +16,7 @@ requireMockReceipt(context);
 const mockPrisma = {
   memoryMasterclassCheckoutIntent: { findUnique: jest.fn() },
   memoryMasterclassPurchase: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+  memoryMetaConsent: { findUnique: jest.fn() },
   vocabularyCheckoutIntent: { findUnique: jest.fn() },
   sentenceMasterCheckoutIntent: { findMany: jest.fn() },
   spokenEnglishPurchase: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
@@ -31,6 +32,8 @@ let fetchMock;
 function intent(track = "school_foundation", standalone = false) {
   return {
     id: "offline_intent", razorpayOrderId: "order_offline_receipt",
+    metaConsentGranted: true, metaConsentId: "offline-consent", metaConsentRevision: 1,
+    metaConsentVersion: "memory_meta_v1",
     memoryAssessmentSessionId: standalone ? null : "offline_session",
     checkoutSource: standalone ? "standalone_vsl" : "assessment",
     productKey: "memory_masterclass_99", amount: 9900, currency: "INR",
@@ -72,6 +75,15 @@ beforeEach(() => {
   mockPrisma.memoryMasterclassPurchase.findFirst.mockResolvedValue(null);
   mockPrisma.memoryMasterclassPurchase.create.mockImplementation(async ({ data }) => ({ id: "offline_purchase", ...data }));
   mockPrisma.memoryMasterclassPurchase.update.mockResolvedValue({ id: "offline_purchase" });
+  mockPrisma.memoryMetaConsent.findUnique.mockResolvedValue({
+    granted: true, adultConfirmed: true, revision: 1, version: "memory_meta_v1",
+    expiresAt: new Date("2099-01-01"),
+  });
+  mockPrisma.memoryMasterclassPurchase.updateMany = jest.fn().mockResolvedValue({ count: 1 });
+  mockPrisma.memoryMasterclassPurchase.findUnique = jest.fn().mockImplementation(async () => ({
+    ...mockPrisma.memoryMasterclassPurchase.create.mock.calls.at(-1)[0].data,
+    metaAttempts: 1, checkoutIntent: await mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mock.results.at(-1).value,
+  }));
   fetchMock = jest.spyOn(globalThis, "fetch").mockImplementation(async (url, options) => {
     receipts.push(prepareMockGraphReceipt(url, options, context).summary);
     return { status: 200, ok: true, text: async () => '{"events_received":1}' };
