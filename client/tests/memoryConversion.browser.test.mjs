@@ -1,4 +1,4 @@
-// Run with the existing Vite workflow: node --test client/tests/memoryConversion.browser.test.mjs
+// Offline runner (mandatory network isolation): node client/tests/runMemoryQa.mjs
 // All API calls and external traffic are intercepted; no leads or payments are created.
 import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
@@ -19,6 +19,9 @@ before(async () => {
   const executable = existsSync("/repl/tools/bin/chromium") ? "/repl/tools/bin/chromium" : "chromium";
   browser = spawn(executable, [
     "--headless", "--no-sandbox", "--disable-dev-shm-usage",
+    "--disable-background-networking", "--disable-component-update",
+    "--no-first-run", "--no-default-browser-check",
+    "--remote-debugging-address=127.0.0.1",
     "--remote-debugging-port=9223", `--user-data-dir=${profile}`, "about:blank",
   ], { stdio: "ignore" });
   for (let i = 0; i < 100; i++) {
@@ -219,6 +222,8 @@ async function fixture({
     window.fixtureDocumentId = crypto.randomUUID();
     window.fixtureNativePush = history.pushState.bind(history);
     window.metaCalls = [];
+    window.fixtureCheckoutSequence = [];
+    window.fixtureOpenSucceeded = false;
     const record = {id:window.fixtureDocumentId, initialPath:location.pathname, calls:[], leaks:[]};
     const persist = () => {
       const records = JSON.parse(sessionStorage.getItem("fixture_pixel_documents"));
@@ -233,7 +238,13 @@ async function fixture({
       }
     };
     new MutationObserver(scan).observe(document, {childList:true,subtree:true});
-    window.fbq = (...args) => { window.metaCalls.push(args); record.calls.push(args); scan(); persist(); };
+    window.fbq = (...args) => {
+      if (args[0] === "trackSingle" && args[2] === "InitiateCheckout") {
+        window.fixtureCheckoutSequence.push("InitiateCheckout");
+        if (!window.fixtureOpenSucceeded) throw new Error("InitiateCheckout preceded successful open()");
+      }
+      window.metaCalls.push(args); record.calls.push(args); scan(); persist();
+    };
     persist();
     // Headless Chromium has no physical mouse. Model desktop hardware only;
     // leave viewport/reduced-motion queries and the production logic intact.
@@ -333,7 +344,11 @@ for (const [audience, schoolLevel, videoId] of [
       window.Razorpay = class {
         constructor(options) { window.fixturePayment = options; }
         on() {}
-        open() { window.fixtureCheckoutOpened = true; }
+        open() {
+          window.fixtureCheckoutOpened = true;
+          window.fixtureOpenSucceeded = true;
+          window.fixtureCheckoutSequence.push("open succeeded");
+        }
       };
       document.querySelector("[data-placement=below_video]").click();
     `);
@@ -360,6 +375,7 @@ for (const [audience, schoolLevel, videoId] of [
     await page.waitFor('window.fixtureCheckoutOpened === true');
     assert.deepEqual(await page.evaluate('window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "InitiateCheckout").map(c => [c[1], c[3].value, c[4].eventID])'),
       [["1998316064175555", 99, "memory_checkout_order_fixture_standalone"]]);
+    assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded", "InitiateCheckout"]);
     assert.equal(await page.evaluate('window.metaCalls.some(c => /^trackSingle/.test(c[0]) && c[1] === "1246171816816642")'), false);
     assert.equal(page.checkoutRequests.length, 1);
     assert.deepEqual(
@@ -782,7 +798,11 @@ test("assessment-linked checkout emits InitiateCheckout only after order creatio
   await page.evaluate(`window.Razorpay = function(options) {
     window.fixturePayment = options;
     this.on = function() {};
-    this.open = function() { window.fixtureCheckoutOpened = true; };
+    this.open = function() {
+      window.fixtureCheckoutOpened = true;
+      window.fixtureOpenSucceeded = true;
+      window.fixtureCheckoutSequence.push("open succeeded");
+    };
   }`);
   await page.evaluate('[...document.querySelectorAll("button")].find(b => b.textContent.includes("Book My Seat") && !b.disabled).click()');
   await page.waitFor('document.querySelector("dialog[open]")?.innerText.includes("Registration details")');
@@ -793,23 +813,44 @@ test("assessment-linked checkout emits InitiateCheckout only after order creatio
   assert.equal(events.length, 1);
   assert.equal(events[0][1], "1998316064175555");
   assert.equal(events[0][3].value, 99);
+  assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded", "InitiateCheckout"]);
   assert.equal(page.checkoutRequests[0].ownerToken, "fixture-owner-token");
   await page.close();
 });
 
 test("failed create-order or SDK open does not count a memory checkout", async () => {
+  for (const audience of ["school", "advanced", "assessment"]) {
   for (const failOrder of [true, false]) {
-    const page = await fixture({ path: "/memory-challenge/video/advanced", failCheckout: failOrder });
+    const page = await fixture({
+      path: audience === "assessment" ? "/memory-challenge/result" : `/memory-challenge/video/${audience}`,
+      saved: audience === "assessment", track: "advanced", failCheckout: failOrder,
+    });
     await page.evaluate(`window.Razorpay = function() {
       this.on = function() {};
-      this.open = function() { throw new Error("Fixture open failed"); };
+      this.open = function() {
+        window.fixtureCheckoutSequence.push("open throws");
+        throw new Error("Fixture open failed");
+      };
     }`);
-    await page.evaluate('document.querySelector("[data-placement=below_video]").click()');
+    if (audience === "assessment") {
+      await page.evaluate('[...document.querySelectorAll("button")].find(b => b.textContent.includes("Book My Seat") && !b.disabled).click()');
+    } else {
+      await page.evaluate('document.querySelector("[data-placement=below_video]").click()');
+    }
     await page.waitFor('!!document.querySelector("dialog[open]")');
+    if (audience === "school") {
+      await page.evaluate(`(() => {
+        const select = document.querySelector("dialog select");
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(select, "6-8");
+        select.dispatchEvent(new Event("change", {bubbles:true}));
+      })()`);
+    }
     await registerPurchaser(page);
     await page.waitFor(`document.body.innerText.includes(${JSON.stringify(failOrder ? "Fixture checkout unavailable" : "Fixture open failed")})`);
     assert.equal(await page.evaluate('window.metaCalls.some(c => c[2] === "InitiateCheckout" || c[2] === "memory_checkout_open")'), false);
+    assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), failOrder ? [] : ["open throws"]);
     await page.close();
+  }
   }
 });
 
