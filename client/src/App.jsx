@@ -271,8 +271,8 @@ export default function App() {
               element={<SpokenEnglishChallenge />}
             />
             <Route path="/memory-challenge" element={<MemoryChallenge />} />
-            <Route path="/memory-challenge/video/school" element={<MemoryChallengeVideo audience="school" />} />
-            <Route path="/memory-challenge/video/advanced" element={<MemoryChallengeVideo audience="advanced" />} />
+            <Route path="/memory-challenge/video/school" element={<MemoryChallengeVideo key="school" audience="school" />} />
+            <Route path="/memory-challenge/video/advanced" element={<MemoryChallengeVideo key="advanced" audience="advanced" />} />
             {/* Unknown memory URLs must not render the English Home fallback. */}
             {["memory-challenge", "memory-masterclass", "memory-retest", "memory-products"].map(prefix => (
               <Route key={prefix} path={`/${prefix}/*`} element={<MemoryRouteNotFound />} />

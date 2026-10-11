@@ -65,7 +65,7 @@ export function initializeMetaDocument(w = window) {
 
 function privateFieldsRemoved(params) {
   // Memory events never contain purchaser/learner contact details or tokens.
-  const forbidden = /name|email|phone|contact|token|password|authorization/i;
+  const forbidden = /name|email|phone|contact|token|password|authorization|score|answer|assessment(detail|result)|learner|student/i;
   if (Array.isArray(params)) return params.map(privateFieldsRemoved);
   if (!params || typeof params !== "object") return params;
   return Object.fromEntries(Object.entries(params)

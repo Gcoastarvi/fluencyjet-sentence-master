@@ -40,6 +40,7 @@ async function fixture({
   heroAvailable = false,
   failCheckout = false,
   navigationProbe = false,
+  shortViewport = false,
 } = {}) {
   const target = await (await fetch(`${debug}/json/new?about:blank`, { method: "PUT" })).json();
   const socket = new WebSocket(target.webSocketDebuggerUrl);
@@ -158,8 +159,10 @@ async function fixture({
       intercept(message.params).catch(error => {
         // StrictMode/unmount aborts the event fetch. Chromium can invalidate its
         // paused request before fulfillment; this is not an application error.
+        const requestUrl = new URL(message.params.request.url);
         if (error.message === "Invalid InterceptionId." &&
-            new URL(message.params.request.url).pathname === "/api/memory-masterclass/event") {
+            (requestUrl.pathname === "/api/memory-masterclass/event" ||
+             requestUrl.hostname === "player.vimeo.com")) {
           return;
         }
         errors.push(`${message.params.request.url}: ${error.message}`);
@@ -192,7 +195,7 @@ async function fixture({
   await send("Page.enable");
   await send("Fetch.enable", { patterns: [{ urlPattern: "*", requestStage: "Request" }] });
   await send("Emulation.setDeviceMetricsOverride", {
-    width: mobile ? 390 : 1280, height: mobile ? 844 : 900,
+    width: mobile ? 390 : 1280, height: shortViewport ? 400 : mobile ? 844 : 900,
     deviceScaleFactor: 1, mobile,
   });
   await send("Emulation.setTouchEmulationEnabled", { enabled: mobile });
@@ -668,6 +671,111 @@ async function registerPurchaser(page) {
   await page.evaluate('document.querySelector("dialog form").requestSubmit()');
 }
 
+test("result modal events and offer views reflect visibility, not mounting, for school and advanced", async () => {
+  for (const track of ["school_foundation", "school_advanced", "advanced"]) {
+    const page = await fixture({ track });
+    await page.submit();
+    await page.waitFor('!!document.querySelector("dialog[open] iframe")');
+    await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+    await pause(550);
+    assert.equal(await page.evaluate('window.metaCalls.filter(c => c[2] === "memory_offer_view").length'), 0);
+    const opened = await page.evaluate('window.metaCalls.filter(c => c[2] === "memory_vsl_open")');
+    assert.equal(opened.length, 1);
+    assert.equal(opened[0][3].opening, "automatic");
+    assert.equal(opened[0][3].track, track);
+    await page.escape();
+    await page.headlineVisible();
+    await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+    await page.waitFor('window.metaCalls.some(c => c[2] === "memory_offer_view")');
+    await page.evaluate('[...document.querySelectorAll("button")].find(b=>b.textContent.includes("video again")).click()');
+    await page.waitFor('!!document.querySelector("dialog[open] iframe")');
+    await page.evaluate('document.querySelector("dialog button[aria-label=Close]").click()');
+    await page.headlineVisible();
+    await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+    await pause(550);
+    const calls = await page.evaluate('window.metaCalls.filter(c=>/^trackSingle/.test(c[0]))');
+    assert.equal(calls.filter(c=>c[2]==="memory_offer_view").length, 1);
+    assert.deepEqual(calls.filter(c=>c[2]==="memory_vsl_open").map(c=>c[3].opening), ["automatic", "replay"]);
+    assert.deepEqual(calls.filter(c=>c[2]==="memory_vsl_close").map(c=>c[3].opening), ["automatic", "replay"]);
+    assert.equal(calls.filter(c=>c[2]==="Lead").length, 1);
+    assert.ok(calls.every(c=>c[1]==="1998316064175555"));
+    assert.ok(calls.every(c=>!("score" in c[3])));
+    assert.ok(!calls.some(c=>["InitiateCheckout","Purchase"].includes(c[2])));
+    await page.close();
+  }
+});
+
+test("standalone offers require viewport visibility, deduplicate scrolling, and count a refreshed visit", async () => {
+  for (const audience of ["school", "advanced"]) {
+    const page = await fixture({ path: `/memory-challenge/video/${audience}`, mobile: true, shortViewport: true });
+    // Keep the below-video CTA outside the viewport before testing visibility.
+    await page.evaluate('window.scrollTo(0,0)');
+    await pause(550);
+    assert.equal(await page.evaluate('window.metaCalls.filter(c=>c[2]==="memory_offer_view").length'), 0);
+    await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+    await page.waitFor('window.metaCalls.some(c=>c[2]==="memory_offer_view")');
+    await page.evaluate('window.scrollTo(0,0)');
+    await pause(100);
+    await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+    await pause(550);
+    const views = await page.evaluate('window.metaCalls.filter(c=>c[2]==="memory_offer_view")');
+    assert.equal(views.length, 1);
+    assert.equal(views[0][0], "trackSingleCustom");
+    assert.equal(views[0][1], "1998316064175555");
+    assert.deepEqual(views[0][3], {
+      funnel:"amaze_memory", source:"standalone_vsl", track:audience,
+      segment:audience, placement:"below_video", page_path:`/memory-challenge/video/${audience}`, price:99,
+    });
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>["Lead","InitiateCheckout","Purchase"].includes(c[2]))'), false);
+    await page.evaluate('location.reload()');
+    await page.waitFor('!!document.querySelector("[data-memory-offer-visibility]")');
+    await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+    await page.waitFor('window.metaCalls.some(c=>c[2]==="memory_offer_view")');
+    assert.equal(await page.evaluate('window.metaCalls.filter(c=>c[2]==="memory_offer_view").length'), 1);
+    await page.close();
+  }
+});
+
+test("result offer below the viewport is not a view or a conversion", async () => {
+  const page = await fixture({ saved: true, mobile: true });
+  await pause(550);
+  assert.equal(await page.evaluate('window.metaCalls.some(c=>["memory_offer_view","Lead","InitiateCheckout","Purchase"].includes(c[2]))'), false);
+  await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+  await page.waitFor('window.metaCalls.some(c=>c[2]==="memory_offer_view")');
+  const view = await page.evaluate('window.metaCalls.find(c=>c[2]==="memory_offer_view")[3]');
+  assert.equal(view.placement, "result_offer");
+  assert.equal(view.source, "assessment");
+  assert.equal(view.track, "school_foundation");
+  assert.equal(view.segment, "school");
+  await page.close();
+});
+
+test("standalone registration occludes offers; school to advanced SPA navigation starts a new offer visit", async () => {
+  const page = await fixture({
+    path: "/memory-challenge/video/school", mobile: true, shortViewport: true, navigationProbe: true,
+  });
+  const originalDocument = await page.evaluate("window.fixtureDocumentId");
+  await page.evaluate('document.querySelector("[data-placement=below_video]").click()');
+  await page.waitFor('!!document.querySelector("dialog[open]")');
+  await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+  await pause(550);
+  assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="memory_offer_view")'), false);
+  await page.escape();
+  await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+  await page.waitFor('window.metaCalls.some(c=>c[2]==="memory_offer_view")');
+  await page.evaluate('window.fixtureNavigate("/memory-challenge/video/advanced?utm_source=fixture")');
+  await page.waitFor('location.pathname.endsWith("/advanced") && document.body.innerText.includes("BOOK MY SEAT")');
+  await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
+  await page.waitFor('window.metaCalls.filter(c=>c[2]==="memory_offer_view").length===2');
+  assert.equal(await page.evaluate("window.fixtureDocumentId"), originalDocument);
+  assert.deepEqual(await page.evaluate('window.metaCalls.filter(c=>c[2]==="memory_offer_view").map(c=>[c[3].segment,c[3].page_path])'), [
+    ["school", "/memory-challenge/video/school"], ["advanced", "/memory-challenge/video/advanced"],
+  ]);
+  assert.equal(await page.evaluate('window.metaCalls.some(c=>["Lead","InitiateCheckout","Purchase"].includes(c[2]))'), false);
+  await assertPixelDocuments(page);
+  await page.close();
+});
+
 test("assessment-linked checkout emits InitiateCheckout only after order creation and SDK open", async () => {
   const page = await fixture({ saved: true, track: "advanced" });
   await page.waitFor(`document.body.innerText.includes(${JSON.stringify(getPublicMemoryMasterclassEvent().dateLabel)})`);
@@ -767,6 +875,9 @@ test("browser back/forward restores the correct document owner; legacy foreign p
   await page.evaluate("history.back()");
   await page.waitFor('location.pathname === "/memory-challenge/video/school" && document.querySelector("#fixture-fj-link") && window.metaCalls.some(c=>c[0]==="init"&&c[1]==="1998316064175555")');
   assert.ok(await page.evaluate('window.metaCalls.filter(c=>c[0]==="init").every(c=>c[1]==="1998316064175555")'));
+  // Let the real history restoration finish before simulating another
+  // pageshow and clicking; restored DOM can precede the navigation lifecycle.
+  await pause(300);
   // Exercise BFCache pageshow even if this Chromium/debugger evicts the page.
   await page.evaluate('window.dispatchEvent(new PageTransitionEvent("pageshow",{persisted:true})); document.querySelector("#fixture-fj-link").click()');
   await page.waitFor('location.pathname === "/vocabulary-vsl" && document.querySelector("#fixture-memory-link") && window.metaCalls.some(c=>c[0]==="init"&&c[1]==="1246171816816642")');

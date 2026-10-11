@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import MemoryStandaloneCheckout from "../../components/memory/MemoryStandaloneCheckout";
+import MemoryOfferVisibility from "../../components/memory/MemoryOfferVisibility";
 import { getMemoryVslId } from "../../data/memory/masterclassConfig";
 import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent";
 
@@ -37,6 +38,7 @@ export default function MemoryChallengeVideo({ audience = "school" }) {
   const [coachImageAvailable, setCoachImageAvailable] = useState(true);
   const [pastVideo, setPastVideo] = useState(false);
   const videoRef = useRef(null);
+  const offerVisit = useRef(false);
   const eventReady = isValidEvent(event);
   const vimeoId = getMemoryVslId(
     isAdvanced ? "advanced" : "school_foundation",
@@ -72,6 +74,11 @@ export default function MemoryChallengeVideo({ audience = "school" }) {
       {({ openCheckout, busy, dialogOpen }) => {
         const checkoutDisabled = !eventReady || busy;
         const checkoutButton = (placement) => (
+          <MemoryOfferVisibility
+            ready={eventReady} blocked={dialogOpen || busy} visit={offerVisit}
+            track={isAdvanced ? "advanced" : "school"}
+            source="standalone_vsl" placement={placement}
+          >
           <button
             type="button"
             disabled={checkoutDisabled}
@@ -81,6 +88,7 @@ export default function MemoryChallengeVideo({ audience = "school" }) {
           >
             <span>{busy ? "OPENING CHECKOUT…" : ctaLabel}</span>
           </button>
+          </MemoryOfferVisibility>
         );
 
         return (

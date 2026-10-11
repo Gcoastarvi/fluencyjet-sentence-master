@@ -134,6 +134,19 @@ test("memory custom engagement and assessment events never broadcast to FJ", () 
   assert.equal(events().filter(call => call[2] === "memory_offer_view").length, 1);
 });
 
+test("memory assessment scores and identity are stripped without changing English payloads", () => {
+  trackEvent("memory_result_viewed", {
+    track: "advanced", score: 23.5, totalScore: 23.5,
+    modules: { weightedScore: 10, answers: ["private"] },
+    learnerName: "Private", email: "private@example.test",
+  });
+  assert.deepEqual(events().at(-1)[3], { track: "advanced", modules: {} });
+  go("/vocabulary-course");
+  const params = { score: 7, source: "existing_english" };
+  trackEvent("vocabulary_test_complete", params);
+  assert.deepEqual(events().at(-1)[3], params);
+});
+
 test("stale cross-funnel callbacks are blocked, while English events preserve names/payloads", () => {
   trackMetaStandard("Lead", { content_name: "English" });
   trackEvent("vocabulary_payment_cta_click");
