@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import express from "express";
 import request from "supertest";
+import { sendCapiPurchase as actualSendCapiPurchase } from "../lib/metaCapi.js";
 import {
   afterEach,
   beforeEach,
@@ -141,6 +142,9 @@ beforeEach(() => {
   process.env.RAZORPAY_WEBHOOK_SECRET = WEBHOOK_SECRET;
   delete process.env.META_PIXEL_ID;
   delete process.env.META_CAPI_ACCESS_TOKEN;
+  delete process.env.MEMORY_META_CAPI_ACCESS_TOKEN;
+  delete process.env.MEMORY_META_PIXEL_ID;
+  delete process.env.MEMORY_META_TEST_EVENT_CODE;
   mockPrisma.$executeRaw.mockResolvedValue(1);
   mockPrisma.$transaction.mockImplementation(async (callback) =>
     callback(mockPrisma));
@@ -189,6 +193,9 @@ afterEach(() => {
   delete process.env.RAZORPAY_WEBHOOK_SECRET;
   delete process.env.META_PIXEL_ID;
   delete process.env.META_CAPI_ACCESS_TOKEN;
+  delete process.env.MEMORY_META_CAPI_ACCESS_TOKEN;
+  delete process.env.MEMORY_META_PIXEL_ID;
+  delete process.env.MEMORY_META_TEST_EVENT_CODE;
 });
 
 describe("verified Razorpay Sentence Master capture attribution", () => {
@@ -451,11 +458,89 @@ describe("verified Razorpay Sentence Master capture attribution", () => {
 });
 
 describe("verified Razorpay Memory Masterclass capture", () => {
+  test("signed Memory webhook reaches the real v26 HTTP helper once, including capture replay", async () => {
+    process.env.MEMORY_META_CAPI_ACCESS_TOKEN = "memory-test-only";
+    process.env.MEMORY_META_TEST_EVENT_CODE = "MEMORY_TEST";
+    process.env.META_PIXEL_ID = "1246171816816642";
+    process.env.META_CAPI_ACCESS_TOKEN = "english-test-only";
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent());
+    mockSendCapiPurchase.mockImplementation(actualSendCapiPurchase);
+    const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue({
+      status: 200, ok: true, text: async () => '{"events_received":1}',
+    });
+    try {
+      const payload = makePayload({ id: "pay_memory_v26", order_id: "order_memory_123", amount: 9900 });
+      const response = await postWebhook(makeApp(), payload, "event_memory_v26");
+      expect(response.body).toMatchObject({ ok: true, capiDelivered: true });
+      expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledTimes(1);
+      expect(fetchMock.mock.calls[0][0]).toBe("https://graph.facebook.com/v26.0/1998316064175555/events");
+      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(body.test_event_code).toBe("MEMORY_TEST");
+      expect(body.data[0]).toMatchObject({
+        event_name: "Purchase", event_id: "memory_masterclass_99_purchase_pay_memory_v26",
+        custom_data: { value: 99, currency: "INR", content_ids: ["memory_masterclass_99"] },
+      });
+      mockPrisma.memoryMasterclassPurchase.findFirst.mockResolvedValue({ id: "purchase_fixture" });
+      const replay = await postWebhook(makeApp(), payload, "event_memory_v26");
+      expect(replay.body).toMatchObject({ duplicate: true });
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledTimes(1);
+    } finally { fetchMock.mockRestore(); }
+  });
+
+  test("Memory auth rejection still records verified payment and cannot retry through FJ", async () => {
+    process.env.MEMORY_META_CAPI_ACCESS_TOKEN = "memory-test-only";
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent());
+    mockSendCapiPurchase.mockImplementation(actualSendCapiPurchase);
+    const fetchMock = jest.spyOn(globalThis, "fetch").mockResolvedValue({
+      status: 400, ok: false, text: async () => '{"error":{"code":190}}',
+    });
+    try {
+      const payload = makePayload({ id: "pay_memory_v26_rejected", order_id: "order_memory_123", amount: 9900 });
+      const response = await postWebhook(makeApp(), payload, "event_memory_v26_rejected");
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ capiDelivered: false });
+      expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledTimes(1);
+      expect(mockPrisma.memoryMasterclassPurchase.update).toHaveBeenCalledWith({
+        where: expect.any(Object), data: { metaDelivered: false },
+      });
+      mockPrisma.memoryMasterclassPurchase.findFirst.mockResolvedValue({ id: "purchase_fixture" });
+      expect((await postWebhook(makeApp(), payload, "event_memory_v26_rejected")).body.duplicate).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally { fetchMock.mockRestore(); }
+  });
+
+  test("configured English CAPI cannot receive a memory purchase when memory credentials are missing", async () => {
+    process.env.META_PIXEL_ID = "1246171816816642";
+    process.env.META_CAPI_ACCESS_TOKEN = "english-test-only";
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent());
+    const response = await postWebhook(makeApp(), makePayload({
+      id: "pay_memory_disabled", order_id: "order_memory_123", amount: 9900,
+    }), "event_memory_disabled");
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ capiSkipped: true, capiSkipReason: "memory_capi_token_missing" });
+    expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledTimes(1);
+    expect(mockSendCapiPurchase).not.toHaveBeenCalled();
+  });
+
+  test("an incorrect memory dataset disables CAPI without interrupting verified purchase persistence", async () => {
+    process.env.MEMORY_META_PIXEL_ID = "1246171816816642";
+    process.env.MEMORY_META_CAPI_ACCESS_TOKEN = "memory-test-only";
+    mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent());
+    const response = await postWebhook(makeApp(), makePayload({
+      id: "pay_memory_wrong_pixel", order_id: "order_memory_123", amount: 9900,
+    }), "event_memory_wrong_pixel");
+    expect(response.body).toMatchObject({ capiSkipped: true, capiSkipReason: "memory_pixel_mismatch" });
+    expect(mockPrisma.memoryMasterclassPurchase.create).toHaveBeenCalledTimes(1);
+    expect(mockSendCapiPurchase).not.toHaveBeenCalled();
+  });
+
   test.each(["school_foundation", "school_advanced", "advanced"])(
     "standalone %s capture persists source/track/identity without an assessment",
     async (trackId) => {
       process.env.META_PIXEL_ID = "test-pixel";
       process.env.META_CAPI_ACCESS_TOKEN = "test-token";
+      process.env.MEMORY_META_CAPI_ACCESS_TOKEN = "memory-test-only";
       mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent({
         memoryAssessmentSessionId: null,
         checkoutSource: "standalone_vsl",
@@ -479,6 +564,8 @@ describe("verified Razorpay Memory Masterclass capture", () => {
         }),
       });
       expect(mockSendCapiPurchase).toHaveBeenCalledWith(expect.objectContaining({
+        pixelId: "1998316064175555", accessToken: "memory-test-only",
+        testEventCode: null,
         value: 99, externalId: "memory-visitor-1",
       }));
     },
@@ -497,6 +584,8 @@ describe("verified Razorpay Memory Masterclass capture", () => {
   test("copies only the intent snapshot, preserving distinct Razorpay audit and CAPI identity", async () => {
     process.env.META_PIXEL_ID = "test-pixel";
     process.env.META_CAPI_ACCESS_TOKEN = "test-token";
+    process.env.MEMORY_META_CAPI_ACCESS_TOKEN = "memory-test-only";
+    process.env.MEMORY_META_TEST_EVENT_CODE = "MEMORY_TEST";
     mockPrisma.memoryMasterclassCheckoutIntent.findUnique.mockResolvedValue(makeMemoryIntent());
     const response = await postWebhook(makeApp(), makePayload({
       id: "pay_memory_snapshot",
@@ -522,6 +611,8 @@ describe("verified Razorpay Memory Masterclass capture", () => {
       }),
     });
     expect(mockSendCapiPurchase).toHaveBeenCalledWith(expect.objectContaining({
+      pixelId: "1998316064175555", accessToken: "memory-test-only",
+      testEventCode: "MEMORY_TEST",
       email: "provider@example.test",
       phone: "+919999999999",
       externalId: "memory-visitor-1",

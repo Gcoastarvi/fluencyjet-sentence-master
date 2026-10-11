@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "crypto";
 import prisma from "../db/client.js";
 import { sendCapiPurchase } from "../lib/metaCapi.js";
+import { getCapiDestination } from "../config/metaTracking.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
 import { acquireWhatsAppDestinationLock } from "../lib/whatsappDestinationLock.js";
 import {
@@ -325,12 +326,11 @@ router.post(
         });
       }
 
-      const pixelId = process.env.META_PIXEL_ID;
-      const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
+      const memoryDestination = getCapiDestination(MEMORY_MASTERCLASS_PRODUCT_KEY);
 
-      if (!pixelId || !accessToken) {
+      if (!memoryDestination.enabled) {
         console.warn(
-          "[webhook/rzp] META_PIXEL_ID or META_CAPI_ACCESS_TOKEN not set — Memory CAPI skipped",
+          `[webhook/rzp] Memory CAPI disabled: ${memoryDestination.reason}; configure MEMORY_META_CAPI_ACCESS_TOKEN for the BrainoDad dataset`,
         );
 
         return res.status(200).json({
@@ -338,12 +338,15 @@ router.post(
           product: MEMORY_MASTERCLASS_PRODUCT_KEY,
           paymentId,
           capiSkipped: true,
+          capiSkipReason: memoryDestination.reason,
         });
       }
 
       const memoryCapiResult = await sendCapiPurchase({
-        pixelId,
-        accessToken,
+        pixelId: memoryDestination.pixelId,
+        accessToken: memoryDestination.accessToken,
+        apiVersion: memoryDestination.apiVersion,
+        testEventCode: memoryDestination.testEventCode,
 
         eventId: memoryMetaEventId,
         eventTime: Date.now(),
@@ -602,12 +605,14 @@ router.post(
       return res.status(500).json({ ok: false, error: "DB error" });
     }
 
-    const pixelId = process.env.META_PIXEL_ID;
-    const accessToken = process.env.META_CAPI_ACCESS_TOKEN;
+    const destination = getCapiDestination(product.code);
+    const { pixelId, accessToken } = destination;
 
-    if (!pixelId || !accessToken) {
+    if (!destination.enabled) {
       console.warn(
-        "[webhook/rzp] META_PIXEL_ID or META_CAPI_ACCESS_TOKEN not set — CAPI skipped",
+        destination.reason
+          ? `[webhook/rzp] Memory CAPI disabled: ${destination.reason}; configure MEMORY_META_CAPI_ACCESS_TOKEN for the BrainoDad dataset`
+          : "[webhook/rzp] META_PIXEL_ID or META_CAPI_ACCESS_TOKEN not set — CAPI skipped",
       );
       return res.status(200).json({ ok: true, capiSkipped: true });
     }
@@ -615,6 +620,8 @@ router.post(
     const capiResult = await sendCapiPurchase({
       pixelId,
       accessToken,
+      apiVersion: destination.apiVersion,
+      testEventCode: destination.testEventCode,
       eventId: metaEventId,
       eventTime: Date.now(),
       eventSourceUrl: product.eventSourceUrl,

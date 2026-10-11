@@ -3,6 +3,7 @@ import { api } from "../../api/apiClient";
 import { buildMemoryCheckoutAttribution, loadRazorpayCheckout } from "./MemoryMasterclassOffer";
 import MemoryPurchaserDetails from "./MemoryPurchaserDetails";
 import { trackEvent } from "../../lib/tracking";
+import { trackMemoryCheckout } from "../../lib/metaPixel";
 
 export default function MemoryStandaloneCheckout({ audience, event, children }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -14,6 +15,7 @@ export default function MemoryStandaloneCheckout({ audience, event, children }) 
 
   function openCheckout() {
     if (!event || checkoutLock.current) return;
+    trackEvent("memory_offer_click", { funnel: "amaze_memory", source: "standalone_vsl", audience, price: 99 });
     trigger.current = document.activeElement;
     setMessage("");
     setDialogOpen(true);
@@ -70,6 +72,12 @@ export default function MemoryStandaloneCheckout({ audience, event, children }) 
       });
       setDialogOpen(false);
       checkout.open();
+      trackMemoryCheckout({
+        orderId: order.orderId, amount: order.amount, currency: order.currency,
+        track: audience === "advanced" ? "advanced" :
+          purchaser.schoolLevel === "6-8" ? "school_foundation" : "school_advanced",
+        source: "standalone_vsl",
+      });
       trackEvent("memory_checkout_open", {
         funnel: "amaze_memory", source: "standalone_vsl", audience,
         track: audience === "advanced" ? "advanced" :

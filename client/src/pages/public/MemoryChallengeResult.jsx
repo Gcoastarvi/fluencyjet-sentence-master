@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
+import { trackMemoryLead } from "../../lib/metaPixel";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 import MemoryMasterclassOffer from "../../components/memory/MemoryMasterclassOffer";
 import MemoryVslModal from "../../components/memory/MemoryVslModal";
@@ -108,14 +109,20 @@ export default function MemoryChallengeResult() {
   const savedScoreRef = useRef(null);
   const whatsappFormRef = useRef(null);
   const rescueShown = useRef(false);
+  const vslOpening = useRef("replay");
   const activeTrackId = result?.trackId || assessment?.trackId || selectedTrack;
   const isAdvancedLead = activeTrackId === "advanced";
   const vimeoId = getMemoryVslId(activeTrackId);
   const scoreBand = getMemoryScoreBand(result?.totalScore, isAdvancedLead);
 
-  function openVsl() {
+  function openVsl(opening = "replay") {
     setRescueOpen(false);
     if (vimeoId) {
+      vslOpening.current = opening;
+      trackEvent("memory_vsl_open", {
+        funnel: "amaze_memory", source: "assessment", placement: "result_modal",
+        track: activeTrackId, segment: isAdvancedLead ? "advanced" : "school", opening,
+      });
       setVslOpen(true);
     } else {
       setScrollAfterVideo(true);
@@ -123,6 +130,11 @@ export default function MemoryChallengeResult() {
   }
 
   function closeVsl() {
+    trackEvent("memory_vsl_close", {
+      funnel: "amaze_memory", source: "assessment", placement: "result_modal",
+      track: activeTrackId, segment: isAdvancedLead ? "advanced" : "school",
+      opening: vslOpening.current,
+    });
     setVslOpen(false);
     setScrollAfterVideo(true);
   }
@@ -328,7 +340,12 @@ export default function MemoryChallengeResult() {
         track: result?.trackId || assessment?.trackId || selectedTrack,
         form: result?.form || assessment?.form || "A",
       });
-      openVsl();
+      void trackMemoryLead({
+        assessmentKey: readSessionValue("memory_form_a_public_token") || ownerToken,
+        track: result?.trackId || assessment?.trackId || selectedTrack,
+        form: result?.form || assessment?.form || "A",
+      });
+      openVsl("automatic");
     } catch (error) {
       console.error("Memory lead capture failed:", error);
 
@@ -845,7 +862,8 @@ export default function MemoryChallengeResult() {
             score={result.totalScore}
             ownerToken={ownerToken}
             savedScoreRef={savedScoreRef}
-            onWatchVideo={openVsl}
+            onWatchVideo={() => openVsl("replay")}
+            vslOpen={vslOpen}
             leadDetails={{
               name: leadForm.learnerName,
               email: leadForm.email || "",

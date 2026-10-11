@@ -54,6 +54,7 @@ import WebinarPreviewComplete from "./pages/student/WebinarAttend";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute.jsx";
 import RouteTracker from "./components/RouteTracker";
+import FunnelDocumentBoundary from "./components/FunnelDocumentBoundary";
 import Webinar from "./pages/Webinar";
 import SpokenEnglishThankYou from "./pages/marketing/SpokenEnglishThankYou";
 import GermanLiveClass from "./pages/GermanLiveClass";
@@ -74,6 +75,17 @@ function PageLoader() {
         </p>
       </div>
     </div>
+  );
+}
+
+function MemoryRouteNotFound() {
+  return (
+    <main id="memory-route-not-found" className="mx-auto max-w-xl px-6 py-16 text-center">
+      <h1 className="text-2xl font-bold">Page not found</h1>
+      <a className="mt-6 inline-block font-bold text-indigo-700" href="/memory-challenge">
+        Return to Memory Challenge
+      </a>
+    </main>
   );
 }
 
@@ -242,6 +254,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Router>
+        <FunnelDocumentBoundary>
         <RouteTracker />
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -258,8 +271,12 @@ export default function App() {
               element={<SpokenEnglishChallenge />}
             />
             <Route path="/memory-challenge" element={<MemoryChallenge />} />
-            <Route path="/memory-challenge/video/school" element={<MemoryChallengeVideo audience="school" />} />
-            <Route path="/memory-challenge/video/advanced" element={<MemoryChallengeVideo audience="advanced" />} />
+            <Route path="/memory-challenge/video/school" element={<MemoryChallengeVideo key="school" audience="school" />} />
+            <Route path="/memory-challenge/video/advanced" element={<MemoryChallengeVideo key="advanced" audience="advanced" />} />
+            {/* Unknown memory URLs must not render the English Home fallback. */}
+            {["memory-challenge", "memory-masterclass", "memory-retest", "memory-products"].map(prefix => (
+              <Route key={prefix} path={`/${prefix}/*`} element={<MemoryRouteNotFound />} />
+            ))}
             <Route
               path="/memory-challenge/start"
               element={<MemoryChallengeStart />}
@@ -551,6 +568,7 @@ export default function App() {
         <Route path="/german-live-class/thank-you" element={<GermanLiveThankYou />} />
       </Routes>
         </Suspense>
+        </FunnelDocumentBoundary>
       </Router>
     </AuthProvider>
   );

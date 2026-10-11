@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { trackEvent } from "../../lib/tracking";
+import { trackMemoryCheckout } from "../../lib/metaPixel";
 import { api } from "../../api/apiClient";
 import { MEMORY_MASTERCLASS_CONFIG, getMemoryVslId } from "../../data/memory/masterclassConfig";
 import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent";
 import MemoryPurchaserDetails from "./MemoryPurchaserDetails";
+import MemoryOfferVisibility from "./MemoryOfferVisibility";
 
 const MEMORY_VISITOR_ID_KEY = "fj_memory_visitor_id";
 const MEMORY_FBC_KEY = "fj_memory_fbc";
@@ -202,6 +204,7 @@ export default function MemoryMasterclassOffer({
   leadDetails,
   savedScoreRef,
   onWatchVideo,
+  vslOpen = false,
 }) {
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [isCheckoutStarting, setIsCheckoutStarting] =
@@ -209,6 +212,7 @@ export default function MemoryMasterclassOffer({
   const [openFaq, setOpenFaq] = useState(0);
   const [checkoutPlacement, setCheckoutPlacement] = useState(null);
   const [purchaserDetails, setPurchaserDetails] = useState(null);
+  const offerVisit = useRef(false);
 
   const isAdvanced = trackId === "advanced";
 
@@ -218,6 +222,10 @@ export default function MemoryMasterclassOffer({
   } = MEMORY_MASTERCLASS_CONFIG;
 
   const { event, error: eventError, retry: retryEvent } = useMemoryMasterclassEvent();
+  const visibilityProps = {
+    ready: Boolean(event), blocked: vslOpen || Boolean(checkoutPlacement) || isCheckoutStarting,
+    track: trackId, source: "assessment", visit: offerVisit,
+  };
   const dateLabel = event?.dateLabel || (eventError ? "Class schedule unavailable" : "Loading class schedule…");
   const timeRange = event ? `${event.startTime}–${event.endTime} ${event.timezoneLabel}` : "";
   const scheduleSummary = event
@@ -229,17 +237,6 @@ export default function MemoryMasterclassOffer({
     ? `Book My Seat — ₹${price}`
     : `Book My Child's Seat — ₹${price}`;
 
-  useEffect(() => {
-    if (!event) return;
-    trackEvent("memory_offer_view", {
-      funnel: "amaze_memory",
-      track: trackId,
-      score,
-      event_date: event.dateISO,
-      price,
-    });
-  }, [trackId, score, price, event]);
-
   async function handleCheckout(placement) {
     if (isCheckoutStarting) return;
     if (!event) {
@@ -250,7 +247,6 @@ export default function MemoryMasterclassOffer({
     trackEvent("memory_offer_click", {
       funnel: "amaze_memory",
       track: trackId,
-      score,
       event_date: event.dateISO,
       price,
       placement,
@@ -374,16 +370,16 @@ export default function MemoryMasterclassOffer({
         setIsCheckoutStarting(false);
       });
 
+      checkout.open();
+      trackMemoryCheckout({ orderId, amount, currency, track: trackId, source: "assessment" });
       trackEvent("memory_checkout_open", {
         funnel: "amaze_memory",
         track: trackId,
-        score,
         event_date: event.dateISO,
         price,
         placement,
       });
 
-      checkout.open();
       setCheckoutPlacement(null);
     } catch (error) {
       console.error(
@@ -500,6 +496,7 @@ export default function MemoryMasterclassOffer({
         )}
 
         <div className="mx-auto mt-8 max-w-xl text-center">
+          <MemoryOfferVisibility {...visibilityProps} placement="result_offer">
           <button
             type="button"
             onClick={() => handleCheckout("vsl_cta")}
@@ -508,6 +505,7 @@ export default function MemoryMasterclassOffer({
           >
             {isCheckoutStarting ? "Opening secure checkout…" : ctaText}
           </button>
+          </MemoryOfferVisibility>
 
           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm font-bold text-slate-600">
             <span>✓ Live 2-hour class</span>
@@ -630,6 +628,7 @@ export default function MemoryMasterclassOffer({
           </div>
 
           <div className="mx-auto mt-8 max-w-xl text-center">
+            <MemoryOfferVisibility {...visibilityProps} placement="class_steps_cta">
             <button
               type="button"
               onClick={() => handleCheckout("class_steps_cta")}
@@ -638,6 +637,7 @@ export default function MemoryMasterclassOffer({
             >
               {isCheckoutStarting ? "Opening secure checkout…" : ctaText}
             </button>
+            </MemoryOfferVisibility>
 
             <p className="mt-3 text-sm font-bold text-slate-500">
               {scheduleSummary}
@@ -700,6 +700,7 @@ export default function MemoryMasterclassOffer({
           </div>
 
           <div className="mx-auto mt-10 max-w-xl text-center">
+            <MemoryOfferVisibility {...visibilityProps} placement="testimonials_cta">
             <button
               type="button"
               onClick={() => handleCheckout("testimonials_cta")}
@@ -708,6 +709,7 @@ export default function MemoryMasterclassOffer({
             >
               {isCheckoutStarting ? "Opening secure checkout…" : ctaText}
             </button>
+            </MemoryOfferVisibility>
 
             <p className="mt-3 text-sm font-bold text-white/60">
               {scheduleSummary}
@@ -815,6 +817,7 @@ export default function MemoryMasterclassOffer({
               </p>
             </div>
 
+            <MemoryOfferVisibility {...visibilityProps} placement="final_offer_cta">
             <button
               type="button"
               onClick={() => handleCheckout("final_offer_cta")}
@@ -823,6 +826,7 @@ export default function MemoryMasterclassOffer({
             >
               {isCheckoutStarting ? "Opening secure checkout…" : ctaText}
             </button>
+            </MemoryOfferVisibility>
 
             <p className="mt-4 text-sm font-bold text-slate-500">
               Secure checkout will open after you click the button.
@@ -913,6 +917,7 @@ export default function MemoryMasterclassOffer({
           </div>
 
           <div className="mx-auto mt-10 max-w-xl text-center">
+            <MemoryOfferVisibility {...visibilityProps} placement="faq_cta">
             <button
               type="button"
               onClick={() => handleCheckout("faq_cta")}
@@ -921,6 +926,7 @@ export default function MemoryMasterclassOffer({
             >
               {isCheckoutStarting ? "Opening secure checkout…" : ctaText}
             </button>
+            </MemoryOfferVisibility>
 
             <p className="mt-3 text-sm font-bold text-slate-500">
               {scheduleSummary}

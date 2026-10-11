@@ -1,6 +1,7 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import fs from "fs";
+import { renderMetaPixelHtml } from "./config/metaTracking.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -288,16 +289,19 @@ if (process.env.NODE_ENV === "production") {
   if (!fs.existsSync(distPath)) {
     console.warn("⚠️ dist/public not found:", distPath);
   } else {
-    app.use(express.static(distPath));
-
-    // SPA fallback (must be AFTER api routes)
-    app.get("*", (req, res) => {
+    const spaHtml = fs.readFileSync(path.join(distPath, "index.html"), "utf8");
+    const serveSpa = (req, res) => {
       // don’t hijack API routes
       if (req.path.startsWith("/api")) {
         return res.status(404).json({ ok: false, error: "Not found" });
       }
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+      res.set("Cache-Control", "no-cache").type("html").send(renderMetaPixelHtml(spaHtml, req.path));
+    };
+    app.get(["/", "/index.html"], serveSpa);
+    app.use(express.static(distPath, { index: false }));
+
+    // SPA fallback (must be AFTER api routes)
+    app.get("*", serveSpa);
   }
 }
 

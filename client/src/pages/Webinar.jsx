@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { trackMetaStandard } from "../lib/tracking";
+import { trackFjMetaCustom } from "../lib/metaPixel";
 
 function trackGA(eventName, params = {}) {
   try {
@@ -11,7 +12,7 @@ function trackGA(eventName, params = {}) {
 
 function trackMeta(eventName, params = {}) {
   try {
-    window.fbq?.("trackCustom", eventName, params);
+    trackFjMetaCustom(eventName, params);
   } catch {}
 }
 
