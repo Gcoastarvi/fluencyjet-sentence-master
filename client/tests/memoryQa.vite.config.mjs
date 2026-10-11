@@ -2,6 +2,7 @@
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
+import { disableQaHmrTransport } from "./memoryNavigationDiagnostics.mjs";
 
 export function memoryQaViteConfig(scratch) {
   return {
@@ -9,7 +10,15 @@ export function memoryQaViteConfig(scratch) {
     root: fileURLToPath(new URL("../", import.meta.url)),
     envDir: join(scratch, "empty-env"),
     cacheDir: join(scratch, "vite-cache"),
-    plugins: [react()],
+    plugins: [react(), {
+      name: "offline-memory-qa-no-hmr-transport",
+      enforce: "post",
+      transform(code, id) {
+        if (id.replaceAll("\\", "/").endsWith("/vite/dist/client/client.mjs")) {
+          return { code: disableQaHmrTransport(code), map: null };
+        }
+      },
+    }],
     base: "/",
     resolve: { alias: { "@": fileURLToPath(new URL("../src", import.meta.url)) } },
     server: {
@@ -17,6 +26,9 @@ export function memoryQaViteConfig(scratch) {
       port: 3000,
       strictPort: true,
       open: false,
+      // History/BFCache QA must not be raced by dev-client reconnect reloads.
+      // Production/application Vite config is deliberately not changed.
+      hmr: false,
       proxy: {},
       allowedHosts: ["127.0.0.1"],
     },

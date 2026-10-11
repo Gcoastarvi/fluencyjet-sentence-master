@@ -8,6 +8,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getPublicMemoryMasterclassEvent } from "../../server/config/memoryMasterclassEvent.js";
+import { NavigationDiagnostics, cancelledInterception } from "./memoryNavigationDiagnostics.mjs";
 
 const app = "http://127.0.0.1:3000";
 const debug = "http://127.0.0.1:9223";
@@ -54,6 +55,9 @@ async function fixture({
   const leadRequests = [];
   const apiRequests = [];
   const checkoutRequests = [];
+  const diagnostics = new NavigationDiagnostics(null);
+  const cancelledRequests = new Set();
+  const interceptionChecks = new Set();
 
   function send(method, params = {}) {
     return new Promise((resolve, reject) => {
@@ -82,9 +86,11 @@ async function fixture({
       return fulfill(requestId, `
         import React from ${JSON.stringify(react)};
         import {Link,useNavigate} from ${JSON.stringify(router)};
+        import {ownsFunnelRoute} from "/src/lib/funnelDocument.js";
         import Original from "/src/components/RouteTracker.jsx?fixture_original=1";
         export default function Probe() {
           window.fixtureNavigate = useNavigate();
+          window.fixtureOwnsRoute = () => ownsFunnelRoute(location.pathname);
           return React.createElement(React.Fragment, null, React.createElement(Original),
             React.createElement(Link, {id:"fixture-memory-link", to:"/memory-challenge/video/school?utm_source=fixture#video"}, "Fixture Memory"),
             React.createElement(Link, {id:"fixture-fj-link", to:"/vocabulary-vsl?utm_source=fixture#video"}, "Fixture English"));
@@ -151,6 +157,10 @@ async function fixture({
   }
   socket.addEventListener("message", event => {
     const message = JSON.parse(event.data);
+    if (message.method) {
+      try { diagnostics.receive(message.method, message.params); }
+      catch (error) { errors.push(`Navigation diagnostic: ${error.message}`); }
+    }
     if (message.id) {
       const operation = pending.get(message.id);
       if (!operation) return;
@@ -160,16 +170,29 @@ async function fixture({
       else operation.resolve(message.result);
     } else if (message.method === "Fetch.requestPaused") {
       intercept(message.params).catch(error => {
-        // StrictMode/unmount aborts the event fetch. Chromium can invalidate its
-        // paused request before fulfillment; this is not an application error.
+        // Navigation/unmount may invalidate a paused request before fulfillment.
+        // Only an independently confirmed browser abort is benign.
         const requestUrl = new URL(message.params.request.url);
-        if (error.message === "Invalid InterceptionId." &&
-            (requestUrl.pathname === "/api/memory-masterclass/event" ||
-             requestUrl.hostname === "player.vimeo.com")) {
+        if (error.message === "Invalid InterceptionId.") {
+          // Network.loadingFailed is delivered asynchronously with the abort.
+          // Accept only an independently confirmed cancellation, not a filename
+          // exception or a general suppression of transport/SDK errors.
+          const check = pause(100).then(() => {
+            if (cancelledInterception(error, message.params, cancelledRequests)) {
+              diagnostics.note("cancelled-interception", { path: requestUrl.pathname,
+                resourceType: message.params.resourceType });
+            } else {
+              errors.push(`${requestUrl.origin}${requestUrl.pathname}: ${error.message}`);
+            }
+          });
+          interceptionChecks.add(check);
+          check.finally(() => interceptionChecks.delete(check));
           return;
         }
-        errors.push(`${message.params.request.url}: ${error.message}`);
+        errors.push(`${requestUrl.origin}${requestUrl.pathname}: ${error.message}`);
       });
+    } else if (message.method === "Network.loadingFailed" && message.params.canceled) {
+      cancelledRequests.add(message.params.requestId);
     } else if (message.method === "Runtime.exceptionThrown") {
       errors.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);
     } else if (message.method === "Log.entryAdded" && message.params.entry.text.includes("module script")) {
@@ -193,9 +216,13 @@ async function fixture({
     const state = await evaluate('({url:location.href, text:document.body.innerText.slice(0,500), keys:Object.keys(sessionStorage), desktop:matchMedia("(min-width: 1024px) and (hover: hover) and (pointer: fine)").matches, pointer:matchMedia("(pointer: fine)").matches, hover:matchMedia("(hover: hover)").matches})');
     throw new Error(`Condition not met: ${expression}\n${JSON.stringify(state)}\n${errors.join("\n")}`);
   }
+  await send("Page.enable");
+  diagnostics.frameId = (await send("Page.getFrameTree")).frameTree.frame.id;
   await send("Runtime.enable");
   await send("Log.enable");
-  await send("Page.enable");
+  await send("Network.enable");
+  await send("Runtime.addBinding", { name: "fixtureNavigationDiagnostic" });
+  await send("Page.setLifecycleEventsEnabled", { enabled: true });
   await send("Fetch.enable", { patterns: [{ urlPattern: "*", requestStage: "Request" }] });
   await send("Emulation.setDeviceMetricsOverride", {
     width: mobile ? 390 : 1280, height: shortViewport ? 400 : mobile ? 844 : 900,
@@ -225,6 +252,11 @@ async function fixture({
     window.fixtureCheckoutSequence = [];
     window.fixtureOpenSucceeded = false;
     const record = {id:window.fixtureDocumentId, initialPath:location.pathname, calls:[], leaks:[]};
+    window.fixtureNavigationLifecycle = [];
+    const diagnostic = data => window.fixtureNavigationDiagnostic(JSON.stringify({
+      docId: record.id, initialPath: record.initialPath, path: location.pathname,
+      timeOrigin: performance.timeOrigin, readyState: document.readyState, ...data
+    }));
     const persist = () => {
       const records = JSON.parse(sessionStorage.getItem("fixture_pixel_documents"));
       const i = records.findIndex(r => r.id === record.id);
@@ -237,8 +269,21 @@ async function fixture({
         record.leaks.push("FJ could inspect memory DOM"); persist();
       }
     };
+    diagnostic({kind:"boot"});
+    for (const eventName of ["pageshow","pagehide","popstate","hashchange"]) {
+      window.addEventListener(eventName, event => {
+        const data = {kind:"lifecycle", event:event.type, trusted:event.isTrusted,
+          persisted:event.persisted, path:location.pathname};
+        window.fixtureNavigationLifecycle.push(data);
+        diagnostic(data);
+      }, true);
+    }
     new MutationObserver(scan).observe(document, {childList:true,subtree:true});
     window.fbq = (...args) => {
+      if (args[0] === "init" || args[0] === "set" || /^trackSingle/.test(args[0])) {
+        diagnostic({kind:"sdk", command:args[0], pixel:args[0] === "set" ? args[3] : args[1],
+          eventName:/^trackSingle/.test(args[0]) ? args[2] : undefined});
+      }
       if (args[0] === "trackSingle" && args[2] === "InitiateCheckout") {
         window.fixtureCheckoutSequence.push("InitiateCheckout");
         if (!window.fixtureOpenSucceeded) throw new Error("InitiateCheckout preceded successful open()");
@@ -270,14 +315,19 @@ async function fixture({
     await waitFor(saved ? '!!document.querySelector("#memory-masterclass-saved-score")' : '!!document.querySelector("#memory-whatsapp-form")');
   } else if (path.startsWith("/memory-masterclass/thank-you")) {
     await waitFor('document.body.innerText.toLowerCase().includes("registration received")');
-  } else if (navigationProbe) {
-    await waitFor('typeof window.fixtureNavigate === "function"');
   } else if (path.startsWith("/memory-products/")) {
     await waitFor('!!document.querySelector("#memory-route-not-found")');
   } else if (path.startsWith("/memory-challenge/video/")) {
+    // Router availability is not checkout readiness: eventReady is still false
+    // until the mocked public config has loaded. Even navigation-probe fixtures
+    // must wait for the committed owned realm AND the real enabled CTA.
+    await waitCommittedDocument(new URL(path, app).pathname, "1998316064175555");
     await waitFor(failEvent
       ? 'document.body.innerText.includes("Class details could not be loaded")'
-      : '!!document.querySelector("[data-placement=below_video]:not([disabled])")');
+      : `!!document.querySelector("[data-placement=below_video]:not([disabled])") &&
+         document.body.innerText.includes(${JSON.stringify(event.dateLabel)})`);
+  } else if (navigationProbe) {
+    await waitFor('typeof window.fixtureNavigate === "function"');
   } else {
     await waitFor('document.body.innerText.includes("Choose your class or study level")');
   }
@@ -313,11 +363,44 @@ async function fixture({
     assert.equal(await evaluate('document.body.style.overflow'), "");
   }
   async function close() {
+    await Promise.all([...interceptionChecks]);
     assert.deepEqual(errors, []);
     socket.close();
     await fetch(`${debug}/json/close/${target.id}`);
   }
-  return { evaluate, waitFor, submit, exit, escape, headlineVisible, close, leadRequests, apiRequests, checkoutRequests };
+  async function settleDocument() {
+    const id = await evaluate("window.fixtureDocumentId");
+    const frame = (await send("Page.getFrameTree")).frameTree.frame;
+    assert.equal(await evaluate("window.fixtureDocumentId"), id, "Navigation changed during settled snapshot");
+    return diagnostics.settle(id, frame);
+  }
+  async function waitCommittedDocument(path, pixel, { freshFrom, probe = navigationProbe } = {}) {
+    const ready = `location.pathname === ${JSON.stringify(path)} &&
+      document.readyState === "complete" &&
+      ${freshFrom ? `window.fixtureDocumentId !== ${JSON.stringify(freshFrom)} &&` : ""}
+      window.metaCalls?.filter(c => c[0] === "init").length === 1 &&
+      window.metaCalls.some(c => c[0] === "init" && c[1] === ${JSON.stringify(pixel)}) &&
+      ${probe ? 'window.fixtureNavigate && window.fixtureOwnsRoute?.() &&' : ""}
+      window.fixtureNavigationLifecycle?.some(e => e.event === "pageshow" &&
+        e.trusted && e.path === ${JSON.stringify(path)})`;
+    // Wait for two painted frames in the owned realm, not an arbitrary sleep or
+    // an early URL/old-DOM match during browser history restoration. Keep this
+    // inside the existing navigation-aware poll: CDP can detach a restored
+    // execution context while resolving an awaited animation frame.
+    await waitFor(`(async () => {
+      if (!(${ready})) return false;
+      const id = window.fixtureDocumentId;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      return window.fixtureDocumentId === id && (${ready});
+    })()`);
+    const commit = await settleDocument();
+    assert.equal(commit.expectedPixel, pixel, diagnostics.report());
+    assert.equal(await evaluate("location.pathname"), path, diagnostics.report());
+    if (probe) assert.equal(await evaluate("window.fixtureOwnsRoute()"), true, diagnostics.report());
+    return evaluate("window.fixtureDocumentId");
+  }
+  return { evaluate, waitFor, submit, exit, escape, headlineVisible, close,
+    leadRequests, apiRequests, checkoutRequests, diagnostics, settleDocument, waitCommittedDocument };
 }
 
 for (const [audience, schoolLevel, videoId] of [
@@ -743,7 +826,10 @@ test("standalone offers require viewport visibility, deduplicate scrolling, and 
       segment:audience, placement:"below_video", page_path:`/memory-challenge/video/${audience}`, price:99,
     });
     assert.equal(await page.evaluate('window.metaCalls.some(c=>["Lead","InitiateCheckout","Purchase"].includes(c[2]))'), false);
+    const beforeRefresh = await documentId(page);
     await page.evaluate('location.reload()');
+    await page.waitCommittedDocument(`/memory-challenge/video/${audience}`, "1998316064175555",
+      { freshFrom: beforeRefresh, probe: false });
     await page.waitFor('!!document.querySelector("[data-memory-offer-visibility]")');
     await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
     await page.waitFor('window.metaCalls.some(c=>c[2]==="memory_offer_view")');
@@ -771,7 +857,20 @@ test("standalone registration occludes offers; school to advanced SPA navigation
     path: "/memory-challenge/video/school", mobile: true, shortViewport: true, navigationProbe: true,
   });
   const originalDocument = await page.evaluate("window.fixtureDocumentId");
-  await page.evaluate('document.querySelector("[data-placement=below_video]").click()');
+  assert.ok(page.apiRequests.includes("/api/memory-masterclass/event"));
+  // Check again at the action boundary and observe the native click. Never
+  // enable a disabled control or substitute a dialog for the real React handler.
+  const clicked = await page.evaluate(`(() => {
+    const button = document.querySelector("[data-placement=below_video]");
+    if (window.fixtureDocumentId !== ${JSON.stringify(originalDocument)} ||
+        location.pathname !== "/memory-challenge/video/school" ||
+        !window.fixtureOwnsRoute() || !button?.isConnected || button.disabled) return false;
+    let clicked = false;
+    button.addEventListener("click", () => { clicked = true; }, { once: true });
+    button.click();
+    return clicked;
+  })()`);
+  assert.equal(clicked, true, "Registration must start from a successful enabled-CTA click");
   await page.waitFor('!!document.querySelector("dialog[open]")');
   await page.evaluate('document.querySelector("[data-memory-offer-visibility]").scrollIntoView({block:"center"})');
   await pause(550);
@@ -867,13 +966,18 @@ async function documentId(page) {
 }
 async function assertPixelDocuments(page) {
   await page.waitFor('window.metaCalls.some(c => c[0] === "init")');
+  await page.settleDocument();
   const records = await page.evaluate('JSON.parse(sessionStorage.getItem("fixture_pixel_documents"))');
+  // Independent committed-navigation ownership is ADDITIONAL to the original
+  // early-path assertions. Do not relabel a document based on observed SDK calls.
+  page.diagnostics.assertRecords(records);
   for (const record of records) {
     const path = record.initialPath.toLowerCase();
     const memory = ["/memory-challenge","/memory-masterclass","/memory-retest","/memory-products"]
       .some(prefix => path === prefix || path.startsWith(prefix + "/"));
     const pixel = memory ? "1998316064175555" : "1246171816816642";
-    assert.deepEqual(record.calls.filter(c => c[0] === "init"), [["init", pixel]]);
+    assert.deepEqual(record.calls.filter(c => c[0] === "init"), [["init", pixel]],
+      `Offending early-path record ${record.id}: ${page.diagnostics.report()}`);
     assert.deepEqual(record.calls.filter(c => c[0] === "set"), memory ? [["set","autoConfig",false,pixel]] : []);
     assert.ok(record.calls.filter(c => /^trackSingle/.test(c[0])).every(c => c[1] === pixel));
     assert.deepEqual(record.leaks, []);
@@ -919,25 +1023,41 @@ test("cross-funnel replace redirects preserve Router return state and URL withou
 
 test("browser back/forward restores the correct document owner; legacy foreign popstate reloads before DOM exposure", async () => {
   const page = await fixture({ path: "/memory-challenge/video/school", navigationProbe: true });
+  try {
+  await page.waitCommittedDocument("/memory-challenge/video/school", "1998316064175555");
+  const initial = await documentId(page);
   await page.evaluate('document.querySelector("#fixture-fj-link").click()');
-  await page.waitFor('location.pathname === "/vocabulary-vsl" && window.fixtureNavigate');
+  await page.waitCommittedDocument("/vocabulary-vsl", "1246171816816642", { freshFrom: initial });
   await page.evaluate("history.back()");
-  await page.waitFor('location.pathname === "/memory-challenge/video/school" && document.querySelector("#fixture-fj-link") && window.metaCalls.some(c=>c[0]==="init"&&c[1]==="1998316064175555")');
+  await page.waitCommittedDocument("/memory-challenge/video/school", "1998316064175555");
   assert.ok(await page.evaluate('window.metaCalls.filter(c=>c[0]==="init").every(c=>c[1]==="1998316064175555")'));
-  // Let the real history restoration finish before simulating another
-  // pageshow and clicking; restored DOM can precede the navigation lifecycle.
-  await pause(300);
-  // Exercise BFCache pageshow even if this Chromium/debugger evicts the page.
+  // This explicitly UNTRUSTED synthetic event covers the restore handler;
+  // only CDP and trusted browser pageshow events prove actual restoration.
+  const restored = await documentId(page);
   await page.evaluate('window.dispatchEvent(new PageTransitionEvent("pageshow",{persisted:true})); document.querySelector("#fixture-fj-link").click()');
-  await page.waitFor('location.pathname === "/vocabulary-vsl" && document.querySelector("#fixture-memory-link") && window.metaCalls.some(c=>c[0]==="init"&&c[1]==="1246171816816642")');
+  await page.waitCommittedDocument("/vocabulary-vsl", "1246171816816642", { freshFrom: restored });
   await page.evaluate("history.back()");
-  await page.waitFor('location.pathname === "/memory-challenge/video/school" && document.querySelector("#fixture-fj-link") && window.metaCalls.some(c=>c[0]==="init"&&c[1]==="1998316064175555")');
+  await page.waitCommittedDocument("/memory-challenge/video/school", "1998316064175555");
   await page.evaluate("history.forward()");
-  await page.waitFor('location.pathname === "/vocabulary-vsl" && window.fixtureNavigate');
-  const fj = await documentId(page);
+  const fj = await page.waitCommittedDocument("/vocabulary-vsl", "1246171816816642");
+  const beforeReplacement = await page.settleDocument();
   await page.evaluate('window.fixtureNativePush({}, "", "/memory-challenge/result"); window.dispatchEvent(new PopStateEvent("popstate"))');
-  await page.waitFor(`window.fixtureDocumentId !== ${JSON.stringify(fj)} && location.pathname === "/memory-challenge/result"`);
+  await page.waitCommittedDocument("/memory-challenge/result", "1998316064175555", { freshFrom: fj });
+  const afterReplacement = await page.settleDocument();
+  assert.notEqual(afterReplacement.loaderId, beforeReplacement.loaderId, page.diagnostics.report());
   await assertPixelDocuments(page);
+  console.info("[memory history diagnostics]", JSON.stringify({
+    commits: [...page.diagnostics.commits.values()],
+    documents: [...page.diagnostics.documents.values()].map(d => ({
+      docId: d.docId, initialPath: d.initialPath, loaderId: d.loaderId,
+      sdkInit: d.sdk.filter(e => e.command === "init").map(e => e.pixel),
+      lifecycle: d.lifecycle,
+    })),
+  }));
+  } catch (error) {
+    console.error("[memory history failure]", page.diagnostics.report());
+    throw error;
+  }
   await page.close();
 });
 

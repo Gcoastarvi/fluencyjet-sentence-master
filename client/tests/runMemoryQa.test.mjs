@@ -136,6 +136,7 @@ test("test Vite config is loopback only, proxy free and uses scratch env/cache",
   assert.equal(config.configFile, false);
   assert.equal(config.server.host, "127.0.0.1");
   assert.equal(config.server.strictPort, true);
+  assert.equal(config.server.hmr, false);
   assert.deepEqual(config.server.proxy, {});
   assert.equal(config.envDir, "/tmp/fixture/empty-env");
   assert.equal(config.cacheDir, "/tmp/fixture/vite-cache");
