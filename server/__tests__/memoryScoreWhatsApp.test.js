@@ -17,6 +17,17 @@ jest.unstable_mockModule("../db/client.js", () => ({
   default: mockPrisma,
 }));
 
+const mockSyncMemoryLeadToWanotifier =
+  jest.fn();
+
+jest.unstable_mockModule(
+  "../services/wanotifierMemoryContact.js",
+  () => ({
+    syncMemoryLeadToWanotifier:
+      mockSyncMemoryLeadToWanotifier,
+  }),
+);
+
 const {
   deliverMemoryScoreWhatsApp,
 } = await import("../services/memoryScoreWhatsApp.js");
@@ -26,6 +37,11 @@ const ORIGINAL_URL =
 
 beforeEach(() => {
   jest.clearAllMocks();
+
+  mockSyncMemoryLeadToWanotifier.mockResolvedValue({
+    skipped: true,
+    reason: "TEST",
+  });
 
   process.env.WANOTIFIER_MEMORY_SCORE_URL =
     "https://example.test/wanotifier?key=test-secret";
@@ -275,4 +291,52 @@ describe("deliverMemoryScoreWhatsApp", () => {
 
     expect(global.fetch).not.toHaveBeenCalled();
   });
+  test("keeps successful score delivery accepted when nurture sync unexpectedly throws", async () => {
+    mockPrisma.memoryAssessmentSession.updateMany
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 1 });
+
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        error: false,
+        status: "attempted",
+      }),
+    });
+
+    mockSyncMemoryLeadToWanotifier
+      .mockRejectedValueOnce(
+        new Error("contact sync exploded"),
+      );
+
+    const result =
+      await deliverMemoryScoreWhatsApp({
+        ownerToken:
+          "11111111-2222-4333-8444-555555555555",
+        trackId: "school_foundation",
+        learnerName: "Arun",
+        parentGuardianName: "Kumar",
+        whatsappContactRole:
+          "PARENT_GUARDIAN",
+        whatsappNumberNormalized:
+          "+919876543210",
+        formAScore: 68,
+      });
+
+    expect(result).toEqual({
+      ok: true,
+      providerStatus: "attempted",
+    });
+
+    const acceptedUpdate =
+      mockPrisma.memoryAssessmentSession
+        .updateMany.mock.calls[1][0];
+
+    expect(
+      acceptedUpdate.data
+        .whatsappScoreDeliveryStatus,
+    ).toBe("ACCEPTED");
+  });
+
 });

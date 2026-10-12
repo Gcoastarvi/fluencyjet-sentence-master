@@ -92,7 +92,7 @@ async function main() {
         "memoryRoute", "memoryAdvancedRoute", "memorySchoolAdvancedRoute",
         "memoryAssessmentScorer", "memorySchoolAdvancedScorer", "memoryAdvancedScorer",
         "whatsappNumber", "whatsappProvider", "webhookWhatsAppInbound",
-        "memoryMetaConsent", "memoryMetaDelivery",
+        "memoryMetaConsent", "memoryMetaDelivery", "wanotifierMemoryContact",
       ].map(name => fileURLToPath(new URL(`server/__tests__/${name}.test.js`, root)));
       const jest = fileURLToPath(new URL("server/node_modules/jest/bin/jest.js", root));
       if (await verify(() => run(process.execPath, [
