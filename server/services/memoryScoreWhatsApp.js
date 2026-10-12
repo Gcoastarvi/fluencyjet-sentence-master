@@ -225,12 +225,20 @@ export async function deliverMemoryScoreWhatsApp({
     // Marketing nurture is deliberately secondary to score delivery.
     // A WANotifier contact-sync failure must never turn a successfully
     // delivered Study Memory Score into a failed lead experience.
-    await syncMemoryLeadToWanotifier({
-      trackId,
-      learnerName,
-      whatsappNumberNormalized,
-      score,
-    });
+    try {
+      await syncMemoryLeadToWanotifier({
+        trackId,
+        learnerName,
+        whatsappNumberNormalized,
+        score,
+      });
+    } catch (error) {
+      console.warn(
+        `[memory/wanotifier-contact] unexpected sync error track=${trackId} error=${safeError(
+          error?.message || error,
+        )}`,
+      );
+    }
 
     return result;
   }
