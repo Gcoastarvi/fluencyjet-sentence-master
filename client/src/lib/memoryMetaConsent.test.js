@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { memoryConsentGranted, memoryConsentReceipt } from "./memoryMetaConsent.js";
+import { memoryConsentGranted, memoryConsentReceipt, isMemoryConsentStorageEvent, MEMORY_CONSENT_KEY } from "./memoryMetaConsent.js";
 import { bootMetaDocument } from "./metaDocument.js";
 
 test("Memory default-deny blocks SDK loading, not the FJ boundary", () => {
@@ -25,4 +25,15 @@ for (const [name, record, verified] of [
   const w = { memoryMetaConsentVerified: verified, localStorage: { getItem: () => JSON.stringify(record) } };
   assert.equal(memoryConsentGranted(w), false);
   assert.equal(memoryConsentReceipt(w), null);
+});
+test("only real localStorage consent changes and clear require revalidation", () => {
+  const w = { localStorage: {}, sessionStorage: {} };
+  for (const key of [MEMORY_CONSENT_KEY, null]) {
+    assert.equal(isMemoryConsentStorageEvent({ key, storageArea: w.localStorage }, w), true);
+    assert.equal(isMemoryConsentStorageEvent({ key, storageArea: w.sessionStorage }, w), false);
+  }
+  for (const key of ["fj_meta_sent:1998316064175555:Lead:fixture", "other", "memory_track", undefined]) {
+    assert.equal(isMemoryConsentStorageEvent({ key, storageArea: w.localStorage }, w), false);
+  }
+  assert.equal(isMemoryConsentStorageEvent({ key: MEMORY_CONSENT_KEY, storageArea: null }, w), false);
 });

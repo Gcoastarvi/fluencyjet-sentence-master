@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { api } from "../../api/apiClient";
-import { isMemoryRoute, restoreMetaDocumentView } from "../../lib/metaPixel";
+import { isMemoryRoute } from "../../lib/metaPixel";
 import { bootMetaDocument } from "../../lib/metaDocument";
 import { trackPageView } from "../../lib/tracking";
-import { MEMORY_CONSENT_VERSION, readMemoryConsent, saveMemoryConsent, memoryConsentGranted } from "../../lib/memoryMetaConsent";
+import { MEMORY_CONSENT_VERSION, readMemoryConsent, saveMemoryConsent, memoryConsentGranted, isMemoryConsentStorageEvent } from "../../lib/memoryMetaConsent";
 
 function hasCurrentChoice(record) {
   return Boolean(record?.receipt) && record.version === MEMORY_CONSENT_VERSION &&
@@ -20,6 +20,7 @@ export default function MemoryMetaConsent() {
   const [expanded, setExpanded] = useState(false);
   const reviewButton = useRef(null);
   const summary = useRef(null);
+  const requestVersion = useRef(0);
   const closeChoices = () => {
     setExpanded(false);
     window.requestAnimationFrame(() => reviewButton.current?.focus());
@@ -34,7 +35,7 @@ export default function MemoryMetaConsent() {
     if (next?.granted && !wasGranted) {
       if (bootMetaDocument()) {
         window.fbq?.("consent", "grant");
-        restoreMetaDocumentView();
+        // RouteTracker owns visit deduplication. Revalidation is not a new visit.
         trackPageView(window.location.pathname + window.location.search);
       }
     } else if (!next?.granted) window.fbq?.("consent", "revoke");
@@ -42,41 +43,70 @@ export default function MemoryMetaConsent() {
   useEffect(() => {
     if (!memory) return;
     let mounted = true;
-    const stored = readMemoryConsent();
-    if (stored?.receipt) {
-      const request = stored.granted
-        ? api.post("/memory-meta/consent/status", { receipt: stored.receipt })
-        : api.post("/memory-meta/consent", { receipt: stored.receipt, granted: false });
-      request.then(response => {
-        if (mounted) {
-          activate({ ...stored, granted: stored.granted && response.ok && response.data?.granted === true });
-          if (!response.ok && !stored.granted) setError("Withdrawal is off on this device but not yet confirmed by the server. Please retry.");
-        }
-      });
-    }
-    const changed = () => {
-      const next = readMemoryConsent();
+    async function validate(stored) {
+      const version = ++requestVersion.current;
       window.memoryMetaConsentVerified = false;
+      if (!hasCurrentChoice(stored) || !stored.granted) window.fbq?.("consent", "revoke");
+      if (!stored?.receipt) return;
+      const current = () => mounted && version === requestVersion.current &&
+        JSON.stringify(readMemoryConsent()) === JSON.stringify(stored);
+      try {
+        const response = stored.granted
+          ? await api.post("/memory-meta/consent/status", { receipt: stored.receipt })
+          : await api.post("/memory-meta/consent", { receipt: stored.receipt, granted: false });
+        if (!current()) return;
+        if (!response.ok || !response.data?.ok) {
+          // An outage is not a user's withdrawal. Keep the receipt but deny tracking.
+          setError("Your privacy choice could not be verified. Meta measurement stays off. Please try again.");
+          return;
+        }
+        activate({ ...stored, granted: hasCurrentChoice(stored) && stored.granted &&
+          response.data.granted === true });
+        setError("");
+      } catch {
+        if (current()) setError("Your privacy choice could not be verified. Meta measurement stays off. Please try again.");
+      }
+    }
+    void validate(readMemoryConsent());
+    const storageChanged = event => {
+      if (!isMemoryConsentStorageEvent(event, window)) return;
+      const next = readMemoryConsent();
       setRecord(next);
       setExpanded(false);
-      if (!next?.granted) window.fbq?.("consent", "revoke");
+      setBusy(false);
+      void validate(next);
     };
-    window.addEventListener("storage", changed);
-    return () => { mounted = false; window.removeEventListener("storage", changed); };
+    window.addEventListener("storage", storageChanged);
+    return () => {
+      mounted = false;
+      ++requestVersion.current;
+      window.removeEventListener("storage", storageChanged);
+    };
   }, [memory]);
   async function choose(granted) {
+    const version = ++requestVersion.current;
     setBusy(true); setError("");
+    window.memoryMetaConsentVerified = false;
     // Withdrawal is immediate locally even if the server temporarily fails.
     if (!granted) activate({ ...readMemoryConsent(), granted: false });
-    const response = await api.post("/memory-meta/consent", {
-      receipt: readMemoryConsent()?.receipt, granted, adultConfirmed: granted,
-    });
-    if (response.ok && response.data?.ok) {
-      activate(response.data);
-      closeChoices();
+    const stored = readMemoryConsent();
+    const current = () => version === requestVersion.current &&
+      JSON.stringify(readMemoryConsent()) === JSON.stringify(stored);
+    try {
+      const response = await api.post("/memory-meta/consent", {
+        receipt: stored?.receipt, granted, adultConfirmed: granted,
+      });
+      if (!current()) return;
+      if (response.ok && response.data?.ok && hasCurrentChoice(response.data) &&
+          response.data.granted === granted) {
+        activate(response.data);
+        closeChoices();
+      } else setError("Your choice could not be saved. Meta measurement stays off. Please try again.");
+    } catch {
+      if (current()) setError("Your choice could not be saved. Meta measurement stays off. Please try again.");
+    } finally {
+      if (version === requestVersion.current) setBusy(false);
     }
-    else setError("Your choice could not be saved. Meta measurement stays off. Please try again.");
-    setBusy(false);
   }
   if (!memory) return null;
   const currentChoice = hasCurrentChoice(record);

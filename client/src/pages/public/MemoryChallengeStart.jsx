@@ -1,8 +1,17 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
 
 export default function MemoryChallengeStart() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const heading = useRef(null);
+  useEffect(() => {
+    if (location.state?.fromTrackSelection) {
+      window.scrollTo(0, 0);
+      heading.current?.focus({ preventScroll: true });
+    }
+  }, [location.key]);
 
   let selectedTrack = null;
 
@@ -54,7 +63,7 @@ export default function MemoryChallengeStart() {
             {levelLabel}
           </p>
 
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+          <h1 ref={heading} tabIndex={-1} className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
             Ready to test your memory? 🧠
           </h1>
 

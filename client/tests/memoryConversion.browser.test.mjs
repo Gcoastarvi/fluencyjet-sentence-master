@@ -46,6 +46,9 @@ async function fixture({
   navigationProbe = false,
   shortViewport = false,
   advertisingConsent = true,
+  consentInitiallyVerified = advertisingConsent,
+  holdConsentStatus = false,
+  failConsentStatus = false,
 } = {}) {
   const target = await (await fetch(`${debug}/json/new?about:blank`, { method: "PUT" })).json();
   const socket = new WebSocket(target.webSocketDebuggerUrl);
@@ -56,6 +59,7 @@ async function fixture({
   const leadRequests = [];
   const apiRequests = [];
   const checkoutRequests = [];
+  const consentStatusRequests = [];
   const diagnostics = new NavigationDiagnostics(null);
   const cancelledRequests = new Set();
   const interceptionChecks = new Set();
@@ -126,8 +130,15 @@ async function fixture({
       apiRequests.push(url.pathname);
       if (url.pathname.startsWith("/api/memory-meta/consent")) {
         const body = JSON.parse(request.postData || "{}");
+        if (url.pathname.endsWith("/status")) {
+          consentStatusRequests.push({ requestId, body });
+          if (holdConsentStatus) return;
+          if (failConsentStatus) return fulfill(requestId, JSON.stringify({
+            ok: false, granted: false,
+          }), "application/json", 503);
+        }
         return fulfill(requestId, JSON.stringify({
-          ok: true, granted: body.granted ?? true, receipt: "a".repeat(64),
+          ok: true, granted: body.granted ?? true, receipt: body.receipt || "a".repeat(64),
           version: "memory_meta_v1", expiresAt: "2099-01-01",
         }), "application/json");
       }
@@ -255,12 +266,13 @@ async function fixture({
     // records across reloads to catch second-Pixel init/foreign DOM exposure.
     sessionStorage.setItem("fj_meta_qa_opt_in", "true");
     window.fixtureDocumentId = crypto.randomUUID();
-    window.memoryMetaConsentVerified = ${advertisingConsent};
+    window.memoryMetaConsentVerified = ${consentInitiallyVerified};
     ${advertisingConsent ? `localStorage.setItem("brainodad_meta_consent_v1", JSON.stringify({
       granted: true, receipt: "a".repeat(64), version: "memory_meta_v1", expiresAt: "2099-01-01"
     }));` : `localStorage.removeItem("brainodad_meta_consent_v1");`}
     window.fixtureNativePush = history.pushState.bind(history);
     window.metaCalls = [];
+    window.fixturePageViews = [];
     window.fixtureCheckoutSequence = [];
     window.fixtureOpenSucceeded = false;
     const record = {id:window.fixtureDocumentId, initialPath:location.pathname, calls:[], leaks:[]};
@@ -292,6 +304,9 @@ async function fixture({
     }
     new MutationObserver(scan).observe(document, {childList:true,subtree:true});
     window.fbq = (...args) => {
+      if (args[0] === "trackSingle" && args[2] === "PageView") {
+        window.fixturePageViews.push({ pixel:args[1], href:location.href });
+      }
       if (args[0] === "init" || args[0] === "set" || /^trackSingle/.test(args[0])) {
         diagnostic({kind:"sdk", command:args[0], pixel:args[0] === "set" ? args[3] : args[1],
           eventName:/^trackSingle/.test(args[0]) ? args[2] : undefined});
@@ -413,6 +428,28 @@ async function fixture({
   }
   return { evaluate, waitFor, submit, exit, escape, headlineVisible, close,
     leadRequests, apiRequests, checkoutRequests, diagnostics, settleDocument, waitCommittedDocument,
+    consentStatusRequests,
+    tapClass: async text => {
+      const point = await evaluate(`(() => {
+        const button = Array.from(document.querySelectorAll("button")).find(b => b.textContent.includes(${JSON.stringify(text)}));
+        if (!button || button.disabled) throw new Error("Class button unavailable");
+        button.scrollIntoView({block:"center",behavior:"instant"});
+        const r = button.getBoundingClientRect();
+        return {x:r.x+r.width/2,y:r.y+r.height/2};
+      })()`);
+      await send("Input.dispatchTouchEvent", {type:"touchStart",touchPoints:[point]});
+      await send("Input.dispatchTouchEvent", {type:"touchEnd",touchPoints:[]});
+    },
+    pressEnter: async () => {
+      await send("Page.bringToFront");
+      await send("Input.dispatchKeyEvent", {type:"keyDown",key:"Enter",code:"Enter",text:"\r",unmodifiedText:"\r",windowsVirtualKeyCode:13});
+      await send("Input.dispatchKeyEvent", {type:"keyUp",key:"Enter",code:"Enter",windowsVirtualKeyCode:13});
+    },
+    releaseConsentStatus: async (index, granted = true) => {
+      const request = consentStatusRequests[index];
+      assert.ok(request, "Expected intercepted consent status request");
+      await fulfill(request.requestId, JSON.stringify({ ok:true, granted }));
+    },
     screenshot: async file => {
       const image = await send("Page.captureScreenshot", { format: "png" });
       await writeFile(file, Buffer.from(image.data, "base64"));
@@ -730,7 +767,7 @@ test("landing hero gracefully handles the pending portrait and preserves level s
     await page.waitFor('!document.querySelector("img[src=\\"/images/memory-challenge-hero.webp\\"]")');
     assert.equal(await page.evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
     await page.evaluate('[...document.querySelectorAll("button")].find(b => b.textContent.includes("Class 6–8")).click()');
-    await page.waitFor('!!document.querySelector("a[href=\\"/memory-challenge/start\\"]")');
+    await page.waitFor('location.pathname === "/memory-challenge/start" && document.activeElement?.tagName === "H1"');
     assert.equal(await page.evaluate('sessionStorage.getItem("memory_track")'), "school_foundation");
     assert.equal(page.leadRequests.length, 0);
     await page.close();
@@ -1162,6 +1199,136 @@ for (const [path, mobile] of [["/memory-challenge", false], ["/memory-challenge/
     } finally { await page.close(); }
   });
 }
+for (const [label, track] of [
+  ["Class 6–8", "school_foundation"],
+  ["Class 9–12", "school_advanced"],
+  ["College & Competitive Exams", "advanced"],
+]) test(`mobile ${label}: one real tap saves track, clears old assessment and navigates to instructions`, async () => {
+  const page = await fixture({path:"/memory-challenge",mobile:true,navigationProbe:true});
+  try {
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    const document = await page.evaluate("window.fixtureDocumentId");
+    await page.tapClass(label);
+    await page.waitFor('location.pathname === "/memory-challenge/start" && document.activeElement?.tagName === "H1"');
+    assert.equal(await page.evaluate("sessionStorage.getItem('memory_track')"), track);
+    assert.equal(await page.evaluate("sessionStorage.getItem('memory_form_a_result')"), null);
+    assert.equal(await page.evaluate("sessionStorage.getItem('memory_form_a_owner_token')"), null);
+    assert.equal(await page.evaluate("window.fixtureDocumentId"), document, "Same-memory navigation stays SPA");
+    assert.equal(await page.evaluate('document.body.innerText.includes("Ready to test your memory?")'), true);
+    assert.equal(await page.evaluate('window.metaCalls.filter(c=>c[2]==="memory_track_selected").length'), 1);
+    assert.deepEqual(await page.evaluate('window.fixturePageViews.map(v=>new URL(v.href).pathname)'), ["/memory-challenge","/memory-challenge/start"]);
+    await page.evaluate('window.fixtureNavigate("/memory-challenge/start?utm_source=fixture");');
+    await pause(100);
+    assert.equal(await page.evaluate('window.fixturePageViews.length'), 2, "Query-only change is not another PageView");
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="Lead"||c[2]==="InitiateCheckout"||c[2]==="Purchase")'), false);
+    await page.evaluate('history.back()');
+    await page.waitFor('location.pathname === "/memory-challenge/start" && !location.search');
+    await page.evaluate('history.back()');
+    await page.waitFor('location.pathname === "/memory-challenge" && document.body.innerText.includes("Choose your class")');
+    assert.equal(await page.evaluate('window.fixturePageViews.length'), 3, "Returning to landing is a new visit");
+    await assertPixelDocuments(page);
+  } finally { await page.close(); }
+});
+
+test("keyboard class selection is not consent; grant on start emits only the current PageView", async () => {
+  const page = await fixture({path:"/memory-challenge",advertisingConsent:false});
+  try {
+    await page.evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.textContent.includes("Class 6–8")).focus()');
+    await page.pressEnter();
+    await page.waitFor('location.pathname === "/memory-challenge/start" && document.activeElement?.tagName === "H1"');
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init"||/^trackSingle/.test(c[0]))'), false);
+    await page.evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.textContent.includes("I am 18")).click()');
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    assert.deepEqual(await page.evaluate('window.fixturePageViews.map(v=>new URL(v.href).pathname)'), ["/memory-challenge/start"]);
+    await page.evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.textContent.trim()==="Privacy choices").click()');
+    await page.evaluate('Array.from(document.querySelectorAll("button")).find(b=>b.textContent.includes("I am 18")).click()');
+    await page.waitFor('window.memoryMetaConsentVerified === true && !Array.from(document.querySelectorAll("button")).some(b=>b.textContent.includes("I am 18"))');
+    assert.equal(await page.evaluate('window.fixturePageViews.length'), 1, "Review/regrant is not a new page visit");
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="Lead"||c[2]==="InitiateCheckout"||c[2]==="Purchase")'), false);
+  } finally { await page.close(); }
+});
+
+test("real other-context unrelated storage writes preserve verified consent and saved-only Lead", async () => {
+  const page = await fixture();
+  try {
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    const count = page.consentStatusRequests.length;
+    await page.evaluate(`window.fixtureStorageEvents=[]; addEventListener("storage",e=>window.fixtureStorageEvents.push({key:e.key,trusted:e.isTrusted}));
+      window.fixtureStorageFrame=document.createElement("iframe"); document.body.append(window.fixtureStorageFrame);
+      window.fixtureStorageFrame.contentWindow.localStorage.setItem("fj_meta_sent:1998316064175555:InitiateCheckout:fixture","1");`);
+    await page.waitFor('window.fixtureStorageEvents.some(e=>e.key?.startsWith("fj_meta_sent:") && e.trusted)');
+    assert.equal(await page.evaluate('window.memoryMetaConsentVerified'), true);
+    assert.equal(page.consentStatusRequests.length, count);
+    await page.evaluate('dispatchEvent(new StorageEvent("storage",{key:"brainodad_meta_consent_v1",storageArea:sessionStorage}));');
+    assert.equal(await page.evaluate('window.memoryMetaConsentVerified'), true, "sessionStorage is not advertising consent");
+    await page.submit();
+    await page.waitFor('window.metaCalls.some(c=>c[0]==="trackSingle" && c[2]==="Lead")');
+    assert.equal(await page.evaluate('window.metaCalls.filter(c=>c[2]==="Lead").length'), 1);
+    assert.equal(await page.evaluate('window.fixturePageViews.length'), 1);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="InitiateCheckout"||c[2]==="Purchase")'), false);
+  } finally { await page.close(); }
+});
+
+test("changed cross-context grant is server-verified; repeated revalidation does not duplicate PageView", async () => {
+  const page = await fixture({holdConsentStatus:true,consentInitiallyVerified:false});
+  try {
+    await page.waitFor('window.memoryMetaConsentVerified === false');
+    await page.waitFor('document.readyState === "complete"');
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init"||/^trackSingle/.test(c[0]))'), false);
+    // StrictMode intentionally repeats the mount effect; only the current
+    // request may activate. Fulfill all initial mocked requests, not just the stale first.
+    assert.ok(page.consentStatusRequests.length > 0);
+    for (let i=0;i<page.consentStatusRequests.length;i++) await page.releaseConsentStatus(i);
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    const initialRequests = page.consentStatusRequests.length;
+    await page.evaluate(`window.fixtureStorageFrame=document.createElement("iframe"); document.body.append(window.fixtureStorageFrame);
+      const r=JSON.parse(localStorage.getItem("brainodad_meta_consent_v1")); r.receipt="b".repeat(64);
+      window.fixtureStorageFrame.contentWindow.localStorage.setItem("brainodad_meta_consent_v1",JSON.stringify(r));`);
+    await page.waitFor('window.memoryMetaConsentVerified === false');
+    for (let i=0;i<100 && page.consentStatusRequests.length<=initialRequests;i++) await pause(20);
+    assert.equal(page.consentStatusRequests.length,initialRequests+1);
+    await page.releaseConsentStatus(initialRequests);
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    assert.equal(await page.evaluate('window.fixturePageViews.length'), 1);
+    assert.equal(await page.evaluate('window.metaCalls.filter(c=>c[0]==="init").length'), 1);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="Lead"||c[2]==="InitiateCheckout"||c[2]==="Purchase")'), false);
+  } finally { await page.close(); }
+});
+
+for (const clear of [false,true]) test(`late status replies cannot undo cross-context ${clear ? "clear" : "withdrawal"}`, async () => {
+  const page = await fixture({holdConsentStatus:true,consentInitiallyVerified:false});
+  try {
+    await page.waitFor('document.readyState === "complete" && window.memoryMetaConsentVerified === false');
+    await page.evaluate(`(() => { window.fixtureStorageFrame=document.createElement("iframe"); document.body.append(window.fixtureStorageFrame);
+      const r=JSON.parse(localStorage.getItem("brainodad_meta_consent_v1")); r.receipt="b".repeat(64);
+      window.fixtureStorageFrame.contentWindow.localStorage.setItem("brainodad_meta_consent_v1",JSON.stringify(r)); })()`);
+    for (let i=0;i<100 && !page.consentStatusRequests.some(r=>r.body.receipt==="b".repeat(64));i++) await pause(20);
+    assert.ok(page.consentStatusRequests.some(r=>r.body.receipt==="b".repeat(64)));
+    await page.evaluate(clear
+      ? 'window.fixtureStorageFrame.contentWindow.localStorage.clear()'
+      : `(() => { const r=JSON.parse(localStorage.getItem("brainodad_meta_consent_v1")); r.granted=false;
+         window.fixtureStorageFrame.contentWindow.localStorage.setItem("brainodad_meta_consent_v1",JSON.stringify(r)); })()`);
+    await page.waitFor('window.metaCalls.some(c=>c[0]==="consent"&&c[1]==="revoke") && window.memoryMetaConsentVerified===false');
+    await pause(100);
+    for (let i=page.consentStatusRequests.length-1;i>=0;i--) await page.releaseConsentStatus(i);
+    await pause(150);
+    assert.equal(await page.evaluate('window.memoryMetaConsentVerified'), false);
+    assert.equal(await page.evaluate('JSON.parse(localStorage.getItem("brainodad_meta_consent_v1")||"null")?.granted===true'), false);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init"||/^trackSingle/.test(c[0]))'), false);
+  } finally { await page.close(); }
+});
+
+test("status outage fails closed without persisting a withdrawal", async () => {
+  const page = await fixture({failConsentStatus:true,consentInitiallyVerified:false});
+  try {
+    await page.waitFor('document.body.innerText.includes("could not be verified")');
+    assert.equal(await page.evaluate('window.memoryMetaConsentVerified'), false);
+    assert.equal(await page.evaluate('JSON.parse(localStorage.getItem("brainodad_meta_consent_v1")).granted'), true);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init"||/^trackSingle/.test(c[0]))'), false);
+    assert.equal(page.apiRequests.filter(p=>p==="/api/memory-meta/consent").length, 0);
+  } finally { await page.close(); }
+});
+
 test("English pages never display the Memory disclaimer or privacy footer", async () => {
   const page = await fixture({ path: "/vocabulary-vsl", navigationProbe: true });
   try {

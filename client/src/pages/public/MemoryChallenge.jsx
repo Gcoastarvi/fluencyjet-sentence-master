@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
 
 const FORM_A_SESSION_KEYS = [
@@ -48,12 +49,9 @@ const TRACKS = [
 ];
 
 export default function MemoryChallenge() {
-  const [selectedTrack, setSelectedTrack] = useState(null);
   const [coachImageAvailable, setCoachImageAvailable] = useState(true);
   const trackedLandingView = useRef(false);
-
-  const selectedTrackConfig =
-    TRACKS.find((track) => track.id === selectedTrack) || null;
+  const navigate = useNavigate();
 
   useEffect(() => {
     document.title = "Free Study Memory Test | BrainoDad";
@@ -71,7 +69,6 @@ export default function MemoryChallenge() {
     if (!track.available) return;
 
     clearPreviousFormAAssessment();
-    setSelectedTrack(track.id);
 
     try {
       window.sessionStorage.setItem("memory_track", track.id);
@@ -84,6 +81,8 @@ export default function MemoryChallenge() {
       track: track.id,
       source: "memory_challenge",
     });
+
+    navigate("/memory-challenge/start", { state: { fromTrackSelection: true } });
   }
 
   return (
@@ -142,20 +141,17 @@ export default function MemoryChallenge() {
 
           <div className="space-y-3">
             {TRACKS.map((track) => {
-              const isSelected = selectedTrack === track.id;
-
               return (
                 <button
                   key={track.id}
                   type="button"
                   disabled={!track.available}
                   onClick={() => handleTrackSelect(track)}
+                  aria-label={`Choose ${track.title}`}
                   className={`w-full rounded-[1.5rem] border p-5 text-left transition ${
-                    isSelected
-                      ? "border-indigo-500 bg-indigo-50 shadow-sm"
-                      : track.available
-                        ? "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md"
-                        : "cursor-not-allowed border-slate-200 bg-slate-50 opacity-65"
+                    track.available
+                      ? "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md"
+                      : "cursor-not-allowed border-slate-200 bg-slate-50 opacity-65"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -168,16 +164,10 @@ export default function MemoryChallenge() {
                       </p>
                     </div>
 
-                    {isSelected ? (
-                      <span className="shrink-0 rounded-full bg-indigo-100 px-3 py-1 text-xs font-black text-indigo-700">
-                        ✓ Selected
+                    {!track.available && (
+                      <span className="shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-500">
+                        {track.badge}
                       </span>
-                    ) : (
-                      !track.available && (
-                        <span className="shrink-0 rounded-full bg-slate-200 px-3 py-1 text-xs font-black text-slate-500">
-                          {track.badge}
-                        </span>
-                      )
                     )}
                   </div>
 
@@ -186,30 +176,6 @@ export default function MemoryChallenge() {
             })}
           </div>
 
-          {selectedTrackConfig?.available && (
-            <>
-              <div className="mt-6 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-5">
-                <p className="text-lg font-black text-emerald-900">
-                  Great! Your Memory Test is ready 🎯
-                </p>
-
-                <p className="mt-2 font-black text-emerald-900">
-                  5 quick challenges. One Study Memory Score.
-                </p>
-
-                <p className="mt-1 text-sm font-medium leading-6 text-emerald-800">
-                  See how much you can remember without notes or help.
-                </p>
-              </div>
-
-              <a
-                href="/memory-challenge/start"
-                className="mt-5 flex w-full items-center justify-center rounded-2xl bg-indigo-600 px-6 py-4 text-base font-black text-white transition hover:bg-indigo-700"
-              >
-                START MY FREE TEST →
-              </a>
-            </>
-          )}
         </section>
 
         <section className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-5 text-sm leading-6 text-slate-600">

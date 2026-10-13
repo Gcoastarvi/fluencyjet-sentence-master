@@ -1,5 +1,11 @@
 export const MEMORY_CONSENT_KEY = "brainodad_meta_consent_v1";
 export const MEMORY_CONSENT_VERSION = "memory_meta_v1";
+export function isMemoryConsentStorageEvent(event, w = window) {
+  // storage events include sessionStorage and unrelated cross-tab writes.
+  // key=null denotes a real localStorage.clear(), which must fail closed.
+  return event.storageArea === w.localStorage &&
+    (event.key === MEMORY_CONSENT_KEY || event.key === null);
+}
 export function readMemoryConsent(w = window) {
   try { return JSON.parse(w.localStorage.getItem(MEMORY_CONSENT_KEY) || "null"); } catch { return null; }
 }
