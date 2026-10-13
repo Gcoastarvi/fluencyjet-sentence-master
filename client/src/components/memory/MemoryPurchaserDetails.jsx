@@ -206,11 +206,9 @@ export default function MemoryPurchaserDetails({
             {message || prefillMessage}
           </p>
         )}
-        <section aria-label="Optional purchaser advertising measurement" className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
-          {verifiedGrant ? (
+        <section aria-label="Optional purchaser advertising measurement" className={reviewPrivacy ? "rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700" : "text-xs leading-relaxed text-slate-600"}>
+          {reviewPrivacy && (verifiedGrant ? (
             <p>Optional Meta measurement is allowed. You can review or withdraw it in Privacy choices below.</p>
-          ) : savedDecline && !reviewPrivacy ? (
-            <p>Your choice is saved: Meta measurement is off. Booking is unaffected.</p>
           ) : (
             <label className="flex items-start gap-2" htmlFor="memory-purchaser-measurement">
               <input id="memory-purchaser-measurement" type="checkbox"
@@ -219,17 +217,17 @@ export default function MemoryPurchaserDetails({
                 className="mt-0.5 h-4 w-4 shrink-0" />
               <span>I am the purchaser, aged 18 or older, and I allow optional Meta ad measurement using my adult purchaser details. Booking works without this.</span>
             </label>
-          )}
-          <button type="button" disabled={paymentBusy} aria-controls="memory-purchaser-privacy"
+          ))}
+          <button type="button" disabled={paymentBusy} aria-controls="memory-purchaser-privacy" aria-expanded={reviewPrivacy}
             onClick={() => {
               setReviewPrivacy(true);
               consentDetails.current.open = true;
               consentDetails.current.querySelector("summary")?.focus();
             }}
-            className="mt-2 rounded underline underline-offset-2 focus-visible:outline focus-visible:outline-2">
+            className="rounded underline underline-offset-2 focus-visible:outline focus-visible:outline-2">
             Privacy choices
           </button>
-          <details ref={consentDetails} id="memory-purchaser-privacy" className="mt-2">
+          <details ref={consentDetails} id="memory-purchaser-privacy" className={reviewPrivacy ? "mt-2" : "hidden"}>
             <summary className="cursor-pointer rounded underline focus-visible:outline focus-visible:outline-2">What is shared?</summary>
             <p className="mt-2">BrainoDad shares limited browser and consenting adult purchaser details with Meta to measure ads. No student names, scores or answers are shared. Your choice lasts up to 30 days. You can change or withdraw it in the page footer. This is separate from WhatsApp consent.</p>
           </details>
