@@ -4,7 +4,7 @@ import { after, before, test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { getPublicMemoryMasterclassEvent } from "../../server/config/memoryMasterclassEvent.js";
@@ -412,7 +412,11 @@ async function fixture({
     return evaluate("window.fixtureDocumentId");
   }
   return { evaluate, waitFor, submit, exit, escape, headlineVisible, close,
-    leadRequests, apiRequests, checkoutRequests, diagnostics, settleDocument, waitCommittedDocument };
+    leadRequests, apiRequests, checkoutRequests, diagnostics, settleDocument, waitCommittedDocument,
+    screenshot: async file => {
+      const image = await send("Page.captureScreenshot", { format: "png" });
+      await writeFile(file, Buffer.from(image.data, "base64"));
+    } };
 }
 
 for (const [audience, schoolLevel, videoId] of [
@@ -1102,8 +1106,67 @@ for (const audience of ["school", "advanced"]) test(`Memory ${audience}: default
     await page.waitFor('window.metaCalls.some(c => c[0] === "trackSingle" && c[2] === "PageView")');
     assert.equal(await page.evaluate('window.metaCalls.filter(c => c[0] === "init" && c[1] === "1998316064175555").length'), 1);
     assert.equal(await page.evaluate('window.metaCalls.filter(c => c[0] === "trackSingle" && c[2] === "PageView").length'), 1);
+    await page.waitFor('!!Array.from(document.querySelectorAll("button")).find(b => b.textContent.trim() === "Privacy choices")');
+    assert.equal(await page.evaluate('!!Array.from(document.querySelectorAll("button")).find(b => b.textContent.includes("I am 18"))'), false);
+    await page.evaluate(`Array.from(document.querySelectorAll("button")).find(b => b.textContent.trim() === "Privacy choices").click()`);
+    await page.waitFor('document.activeElement?.textContent.trim() === "Read the full disclosure"');
     await page.evaluate(`Array.from(document.querySelectorAll("button")).find(b => b.textContent.includes("Withdraw measurement")).click()`);
     await page.waitFor('window.memoryMetaConsentVerified === false');
     assert.equal(await page.evaluate('window.metaCalls.filter(c => c[2] === "Lead" || c[2] === "InitiateCheckout" || c[2] === "Purchase").length'), 0);
+  } finally { await page.close(); }
+});
+
+const disclaimer = "This website is independently operated by BrainoDad and is not affiliated with, sponsored by, or endorsed by Meta Platforms, Inc., Facebook, or Instagram. Facebook and Instagram are trademarks of Meta Platforms, Inc.";
+for (const [path, mobile] of [["/memory-challenge", false], ["/memory-challenge/video/advanced", true]]) {
+  test(`${path}: disclaimer and equal-choice consent are at bottom without covering content`, async () => {
+    const page = await fixture({ path, mobile, advertisingConsent: false });
+    try {
+      assert.equal(await page.evaluate(`(() => {
+        const f = document.querySelector('footer[aria-label="Privacy choices"]');
+        return f && f === document.querySelector("#root").lastElementChild &&
+          f.textContent.includes(${JSON.stringify(disclaimer)}) &&
+          !["fixed","sticky"].includes(getComputedStyle(f).position);
+      })()`), true);
+      const styles = await page.evaluate('Array.from(document.querySelectorAll("#memory-measurement-choices button")).map(b=>b.className)');
+      assert.equal(styles.length, 2); assert.equal(styles[0], styles[1]);
+      assert.equal(await page.evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+      assert.equal(await page.evaluate('window.metaCalls.filter(c=>c[0]==="init" || /^trackSingle/.test(c[0])).length'), 0);
+      await page.evaluate('document.querySelector("#memory-measurement-choices summary").click()');
+      assert.equal(await page.evaluate('document.querySelector("#memory-measurement-choices details").open'), true);
+      assert.equal(await page.evaluate('document.querySelector("#memory-measurement-choices details").innerText.includes("Your choice is remembered for 30 days.")'), true);
+      await page.evaluate('document.querySelector("#memory-measurement-choices summary").click(); document.querySelector(\'footer[aria-label="Privacy choices"]\').scrollIntoView({block:"end",behavior:"instant"})');
+      if (mobile) {
+        // Crossing the video mounts the existing sticky CTA and its h-24 spacer.
+        // Wait for that real layout change before taking the final footer position.
+        await page.waitFor('!!document.querySelector("[data-placement=sticky_mobile]")');
+        await page.evaluate('document.querySelector(\'footer[aria-label="Privacy choices"]\').scrollIntoView({block:"end",behavior:"instant"})');
+      }
+      await pause(100);
+      await page.waitFor('document.querySelector(\'footer[aria-label="Privacy choices"]\').getBoundingClientRect().bottom <= innerHeight + 1');
+      await page.screenshot(join(tmpdir(), `memory-footer-${mobile ? "mobile" : "desktop"}.png`));
+      if (mobile) {
+        const bounds = await page.evaluate(`(() => {
+          const footer = document.querySelector('footer[aria-label="Privacy choices"]');
+          const sticky = document.querySelector("[data-placement=sticky_mobile]")?.closest(".fixed.bottom-0");
+          return {legalBottom:footer.lastElementChild.getBoundingClientRect().bottom,
+            stickyTop:sticky?.getBoundingClientRect().top, padding:getComputedStyle(footer).paddingBottom,
+            bottomLayers:Array.from(document.querySelectorAll(".fixed.bottom-0")).map(e=>({classes:e.className,top:e.getBoundingClientRect().top}))};
+        })()`);
+        assert.ok(bounds.stickyTop === undefined || bounds.legalBottom <= bounds.stickyTop,
+          `Existing sticky checkout must not cover privacy: ${JSON.stringify(bounds)}`);
+      }
+      await page.evaluate('Array.from(document.querySelectorAll("#memory-measurement-choices button")).find(b=>b.textContent.includes("Decline")).click()');
+      await page.waitFor('!!Array.from(document.querySelectorAll("button")).find(b=>b.textContent.trim()==="Privacy choices")');
+      assert.equal(await page.evaluate('window.metaCalls.filter(c=>/^trackSingle/.test(c[0])).length'), 0);
+      assert.equal(page.checkoutRequests.length, 0);
+    } finally { await page.close(); }
+  });
+}
+test("English pages never display the Memory disclaimer or privacy footer", async () => {
+  const page = await fixture({ path: "/vocabulary-vsl", navigationProbe: true });
+  try {
+    assert.equal(await page.evaluate('!!document.querySelector("footer[aria-label=\\"Privacy choices\\"]")'), false);
+    assert.equal(await page.evaluate(`document.body.innerText.includes(${JSON.stringify(disclaimer)})`), false);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" && c[1]==="1998316064175555")'), false);
   } finally { await page.close(); }
 });

@@ -256,7 +256,6 @@ export default function App() {
     <AuthProvider>
       <Router>
         <FunnelDocumentBoundary>
-        <MemoryMetaConsent />
         <RouteTracker />
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -570,6 +569,7 @@ export default function App() {
         <Route path="/german-live-class/thank-you" element={<GermanLiveThankYou />} />
       </Routes>
         </Suspense>
+        <MemoryMetaConsent />
         </FunnelDocumentBoundary>
       </Router>
     </AuthProvider>
