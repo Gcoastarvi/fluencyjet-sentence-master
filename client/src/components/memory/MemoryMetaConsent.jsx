@@ -76,11 +76,19 @@ export default function MemoryMetaConsent() {
       setBusy(false);
       void validate(next);
     };
+    // Checkout publishes only a server-confirmed choice. Keep footer controls
+    // synchronized without launching a second grant or resetting verification.
+    const localChoiceChanged = () => {
+      setRecord(readMemoryConsent());
+      setError("");
+    };
     window.addEventListener("storage", storageChanged);
+    window.addEventListener("memory-meta-consent", localChoiceChanged);
     return () => {
       mounted = false;
       ++requestVersion.current;
       window.removeEventListener("storage", storageChanged);
+      window.removeEventListener("memory-meta-consent", localChoiceChanged);
     };
   }, [memory]);
   async function choose(granted) {

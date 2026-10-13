@@ -35,6 +35,7 @@ export default function MemoryStandaloneCheckout({ audience, event, children }) 
       const attribution = buildMemoryCheckoutAttribution();
       const response = await api.post("/memory-masterclass/standalone/create-order", {
         ...attribution,
+        memoryMetaConsentReceipt: purchaser.memoryMetaConsentReceipt ?? null,
         audience,
         ...(audience === "school" ? { schoolLevel: purchaser.schoolLevel } : {}),
         purchaserName: purchaser.name,

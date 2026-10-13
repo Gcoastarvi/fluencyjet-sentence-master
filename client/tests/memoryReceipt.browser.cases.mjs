@@ -11,6 +11,9 @@ for (const track of ["school_foundation", "school_advanced", "advanced"]) {
       await page.waitFor('!!document.querySelector("dialog[open] iframe") && document.activeElement === document.querySelector(\'dialog[open] button[aria-label="Close"]\')');
       await page.escape();
       await page.waitFor('!document.querySelector("dialog[open]")');
+      // The result's inline CTA mounts before its shared schedule is loaded.
+      // A usable registration click requires that real UI prerequisite too.
+      await page.waitFor(`document.body.innerText.includes(${JSON.stringify(getPublicMemoryMasterclassEvent().dateLabel)})`);
       await page.waitFor('[...document.querySelectorAll("button")].some(b => /Book My (Child.s )?Seat/i.test(b.textContent) && !b.disabled)');
       await page.evaluate(`
         window.Razorpay = class {

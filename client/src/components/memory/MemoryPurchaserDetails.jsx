@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../api/apiClient";
+import { readMemoryConsent, memoryConsentGranted, memoryConsentReceipt, isMemoryConsentStorageEvent } from "../../lib/memoryMetaConsent";
+import { currentMemoryChoice, grantMemoryCheckoutConsent } from "../../lib/memoryCheckoutConsent";
+import { bootMetaDocument } from "../../lib/metaDocument";
+import { trackPageView } from "../../lib/tracking";
 
 export default function MemoryPurchaserDetails({
   ownerToken,
@@ -20,6 +24,31 @@ export default function MemoryPurchaserDetails({
   }));
   const [prefillMessage, setPrefillMessage] = useState("");
   const [schoolLevel, setSchoolLevel] = useState(initialDetails?.schoolLevel || "");
+  const [consentRecord, setConsentRecord] = useState(() => readMemoryConsent());
+  const [reviewPrivacy, setReviewPrivacy] = useState(false);
+  const [allowMeasurement, setAllowMeasurement] = useState(false);
+  const [savingConsent, setSavingConsent] = useState(false);
+  const submitting = useRef(false);
+  const consentDetails = useRef(null);
+  const paymentBusy = busy || savingConsent;
+  const verifiedGrant = memoryConsentGranted();
+  const savedDecline = currentMemoryChoice(consentRecord) && !consentRecord.granted;
+
+  useEffect(() => {
+    const refresh = () => {
+      setConsentRecord(readMemoryConsent());
+      setAllowMeasurement(false);
+    };
+    const storageChanged = event => {
+      if (isMemoryConsentStorageEvent(event)) refresh();
+    };
+    window.addEventListener("memory-meta-consent", refresh);
+    window.addEventListener("storage", storageChanged);
+    return () => {
+      window.removeEventListener("memory-meta-consent", refresh);
+      window.removeEventListener("storage", storageChanged);
+    };
+  }, []);
 
   useEffect(() => {
     dialogRef.current.showModal();
@@ -55,9 +84,9 @@ export default function MemoryPurchaserDetails({
     setDetails((current) => ({ ...current, [name]: value }));
   }
 
-  function submit(event) {
+  async function submit(event) {
     event.preventDefault();
-    if (busy) return;
+    if (paymentBusy || submitting.current) return;
     const purchaser = Object.fromEntries(
       Object.entries(details).map(([field, value]) => [field, value.trim()]),
     );
@@ -70,7 +99,26 @@ export default function MemoryPurchaserDetails({
       return;
     }
     if (standaloneSchool && !schoolLevel) return;
-    onSubmit(standaloneSchool ? { ...purchaser, schoolLevel } : purchaser);
+    submitting.current = true;
+    setSavingConsent(true);
+    try {
+      // A checked box explicitly confirms adulthood and optional measurement.
+      // Already verified grants need no repeat prompt; saved declines are never
+      // changed unless the purchaser opens choices and explicitly checks it.
+      const receipt = allowMeasurement && (!savedDecline || reviewPrivacy)
+        ? await grantMemoryCheckoutConsent({
+          adultConfirmed: true, post: (...args) => api.post(...args),
+          boot: () => bootMetaDocument(), pageView: path => trackPageView(path),
+        })
+        : memoryConsentReceipt();
+      await onSubmit({
+        ...purchaser, ...(standaloneSchool ? { schoolLevel } : {}),
+        memoryMetaConsentReceipt: receipt,
+      });
+    } finally {
+      submitting.current = false;
+      setSavingConsent(false);
+    }
   }
 
   return (
@@ -79,7 +127,7 @@ export default function MemoryPurchaserDetails({
       aria-labelledby="memory-purchaser-title"
       onCancel={(event) => {
         event.preventDefault();
-        if (!busy) onClose(standaloneSchool ? { ...details, schoolLevel } : details);
+        if (!paymentBusy) onClose(standaloneSchool ? { ...details, schoolLevel } : details);
       }}
       className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl bg-white p-6 text-slate-950 shadow-2xl backdrop:bg-slate-950/70 sm:p-8"
     >
@@ -96,7 +144,7 @@ export default function MemoryPurchaserDetails({
               required
               value={schoolLevel}
               onChange={(event) => setSchoolLevel(event.target.value)}
-              disabled={busy}
+              disabled={paymentBusy}
               className="mt-2 block w-full rounded-xl border border-slate-300 px-4 py-3 font-medium"
             >
               <option value="">Choose class</option>
@@ -117,7 +165,7 @@ export default function MemoryPurchaserDetails({
             pattern=".*\S.*"
             value={details.name}
             onChange={updateField}
-            disabled={busy}
+            disabled={paymentBusy}
             className="mt-2 block w-full rounded-xl border border-slate-300 px-4 py-3 font-medium"
           />
         </label>
@@ -132,7 +180,7 @@ export default function MemoryPurchaserDetails({
             maxLength={191}
             value={details.email}
             onChange={updateField}
-            disabled={busy}
+            disabled={paymentBusy}
             className="mt-2 block w-full rounded-xl border border-slate-300 px-4 py-3 font-medium"
           />
         </label>
@@ -149,7 +197,7 @@ export default function MemoryPurchaserDetails({
             title="Enter a phone number with 7–15 digits, optionally including a country code."
             value={details.phone}
             onChange={updateField}
-            disabled={busy}
+            disabled={paymentBusy}
             className="mt-2 block w-full rounded-xl border border-slate-300 px-4 py-3 font-medium"
           />
         </label>
@@ -158,16 +206,44 @@ export default function MemoryPurchaserDetails({
             {message || prefillMessage}
           </p>
         )}
+        <section aria-label="Optional purchaser advertising measurement" className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
+          {verifiedGrant ? (
+            <p>Optional Meta measurement is allowed. You can review or withdraw it in Privacy choices below.</p>
+          ) : savedDecline && !reviewPrivacy ? (
+            <p>Your choice is saved: Meta measurement is off. Booking is unaffected.</p>
+          ) : (
+            <label className="flex items-start gap-2" htmlFor="memory-purchaser-measurement">
+              <input id="memory-purchaser-measurement" type="checkbox"
+                checked={allowMeasurement} disabled={paymentBusy}
+                onChange={event => setAllowMeasurement(event.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>I am the purchaser, aged 18 or older, and I allow optional Meta ad measurement using my adult purchaser details. Booking works without this.</span>
+            </label>
+          )}
+          <button type="button" disabled={paymentBusy} aria-controls="memory-purchaser-privacy"
+            onClick={() => {
+              setReviewPrivacy(true);
+              consentDetails.current.open = true;
+              consentDetails.current.querySelector("summary")?.focus();
+            }}
+            className="mt-2 rounded underline underline-offset-2 focus-visible:outline focus-visible:outline-2">
+            Privacy choices
+          </button>
+          <details ref={consentDetails} id="memory-purchaser-privacy" className="mt-2">
+            <summary className="cursor-pointer rounded underline focus-visible:outline focus-visible:outline-2">What is shared?</summary>
+            <p className="mt-2">BrainoDad shares limited browser and consenting adult purchaser details with Meta to measure ads. No student names, scores or answers are shared. Your choice lasts up to 30 days. You can change or withdraw it in the page footer. This is separate from WhatsApp consent.</p>
+          </details>
+        </section>
         <button
           type="submit"
-          disabled={busy}
+          disabled={paymentBusy}
           className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-black text-white disabled:opacity-60"
         >
-          {busy ? "Opening secure checkout…" : "Continue to Payment — ₹99"}
+          {paymentBusy ? "Opening secure checkout…" : "Continue to Payment — ₹99"}
         </button>
         <button
           type="button"
-          disabled={busy}
+          disabled={paymentBusy}
           onClick={() => onClose(standaloneSchool ? { ...details, schoolLevel } : details)}
           className="w-full rounded-xl px-4 py-2 font-bold text-slate-600 disabled:opacity-60"
         >

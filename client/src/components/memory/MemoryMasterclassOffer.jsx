@@ -282,6 +282,7 @@ export default function MemoryMasterclassOffer({
         {
           ownerToken,
           ...attribution,
+          memoryMetaConsentReceipt: purchaser.memoryMetaConsentReceipt ?? null,
           purchaserName: purchaser.name,
           purchaserEmail: purchaser.email,
           purchaserPhone: purchaser.phone,
