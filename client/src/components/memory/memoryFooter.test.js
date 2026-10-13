@@ -14,5 +14,5 @@ test("consent follows routed content inside Memory document boundary", () => {
   assert.ok(app.indexOf("<MemoryMetaConsent />")<app.lastIndexOf("</FunnelDocumentBoundary>"));
 });
 test("footer is Memory-only with explicit adult opt-in and withdrawal", () => {
-  for (const text of ["if (!memory) return null","I am 18 or older — allow measurement","Withdraw measurement consent","Decline measurement","Your choice is remembered for 30 days."]) assert.ok(consent.includes(text));
+  for (const text of ['if (!memory || pathname !== "/memory-challenge") return null',"I am 18 or older — allow measurement","Withdraw measurement consent","Decline measurement","Your choice is remembered for 30 days."]) assert.ok(consent.includes(text));
 });

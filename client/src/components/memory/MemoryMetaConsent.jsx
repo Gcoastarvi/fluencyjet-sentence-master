@@ -116,7 +116,7 @@ export default function MemoryMetaConsent() {
       if (version === requestVersion.current) setBusy(false);
     }
   }
-  if (!memory) return null;
+  if (!memory || pathname !== "/memory-challenge") return null;
   const currentChoice = hasCurrentChoice(record);
   const showControls = expanded || !currentChoice;
   const actionStyle = "min-h-11 rounded-lg border border-slate-400 bg-transparent px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60";
