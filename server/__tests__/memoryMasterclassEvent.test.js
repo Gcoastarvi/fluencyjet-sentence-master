@@ -8,17 +8,27 @@ import {
 
 describe("server-owned weekly Memory Masterclass event", () => {
   test("derives the current IST schedule and public allowlisted fields", () => {
+    const event = MEMORY_MASTERCLASS_EVENT;
+    expect(event.startsAt.toISOString()).toBe(
+      new Date(MEMORY_MASTERCLASS_WEEKLY_SETTINGS.startsAt).toISOString(),
+    );
+    expect(event.endsAt.toISOString()).toBe(
+      new Date(MEMORY_MASTERCLASS_WEEKLY_SETTINGS.endsAt).toISOString(),
+    );
+    expect(event.whatsappGroupUrl).toBe(
+      new URL(MEMORY_MASTERCLASS_WEEKLY_SETTINGS.whatsappGroupUrl).href,
+    );
     expect(getPublicMemoryMasterclassEvent()).toEqual({
-      key: "2026-10-18_1700_ist",
-      startsAt: "2026-10-18T11:30:00.000Z",
-      endsAt: "2026-10-18T13:30:00.000Z",
+      key: event.key,
+      startsAt: event.startsAt.toISOString(),
+      endsAt: event.endsAt.toISOString(),
       timezone: "Asia/Kolkata",
-      dateISO: "2026-10-18",
-      dateLabel: "Sunday, 18 October",
-      startTime: "5:00 PM",
-      endTime: "7:00 PM",
+      dateISO: event.dateISO,
+      dateLabel: event.dateLabel,
+      startTime: event.startTime,
+      endTime: event.endTime,
       timezoneLabel: "IST",
-      whatsappGroupUrl: "https://chat.whatsapp.com/IUwQal62p4kDvJxIS9892s",
+      whatsappGroupUrl: event.whatsappGroupUrl,
     });
   });
 
@@ -30,6 +40,9 @@ describe("server-owned weekly Memory Masterclass event", () => {
       whatsappGroupUrl: "https://chat.whatsapp.com/NextWeekInvite",
     });
     expect(next.key).toBe("2026-10-25_1800_ist");
+    expect(next.dateISO).toBe("2026-10-25");
+    expect(next.startsAt.toISOString()).toBe("2026-10-25T12:30:00.000Z");
+    expect(next.endsAt.toISOString()).toBe("2026-10-25T14:30:00.000Z");
     expect(next.dateLabel).toBe("Sunday, 25 October");
     expect(next.startTime).toBe("6:00 PM");
     expect(next.endTime).toBe("8:00 PM");
@@ -40,7 +53,7 @@ describe("server-owned weekly Memory Masterclass event", () => {
 
   test.each([
     { startsAt: "invalid" },
-    { endsAt: "2026-10-18T16:00:00+05:30" },
+    { endsAt: MEMORY_MASTERCLASS_WEEKLY_SETTINGS.startsAt },
     { whatsappGroupUrl: "http://chat.whatsapp.com/Invite" },
     { whatsappGroupUrl: "https://example.com/Invite" },
     { whatsappGroupUrl: "https://chat.whatsapp.com/" },
