@@ -777,6 +777,7 @@ export default function MemoryMasterclassParents() {
               <p>
                 Educational training and activity-specific memory tests.
                 Results vary; no improvement guaranteed.
+                <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="mt-2 block w-fit rounded py-2 underline underline-offset-4 focus-visible:outline focus-visible:outline-2">Privacy choices (opens in a new tab)</a>
               </p>
             </footer>
 
