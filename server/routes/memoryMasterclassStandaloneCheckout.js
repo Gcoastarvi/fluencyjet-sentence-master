@@ -21,6 +21,10 @@ const clean = (value, limit) =>
 // Audience/level are selections, not arbitrary track or pricing instructions.
 export function deriveStandaloneTrack(body) {
   if (body.audience === "school") {
+    if (body.checkoutContext === "parents") {
+      if (body.schoolLevel != null) return null;
+      return "school_unspecified";
+    }
     if (body.schoolLevel === "6-8") return "school_foundation";
     if (body.schoolLevel === "9-12") return "school_advanced";
     return null;
