@@ -5,7 +5,7 @@ import MemoryPurchaserDetails from "./MemoryPurchaserDetails";
 import { trackEvent } from "../../lib/tracking";
 import { trackMemoryCheckout } from "../../lib/metaPixel";
 
-export default function MemoryStandaloneCheckout({ audience, event, children }) {
+export default function MemoryStandaloneCheckout({ audience, event, children, parentsMode = false }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -37,7 +37,8 @@ export default function MemoryStandaloneCheckout({ audience, event, children }) 
         ...attribution,
         memoryMetaConsentReceipt: purchaser.memoryMetaConsentReceipt ?? null,
         audience,
-        ...(audience === "school" ? { schoolLevel: purchaser.schoolLevel } : {}),
+        ...(parentsMode ? { checkoutContext: "parents" } : {}),
+      ...(audience === "school" && !parentsMode ? { schoolLevel: purchaser.schoolLevel } : {}),
         purchaserName: purchaser.name,
         purchaserEmail: purchaser.email,
         purchaserPhone: purchaser.phone,
@@ -76,12 +77,14 @@ export default function MemoryStandaloneCheckout({ audience, event, children }) 
       trackMemoryCheckout({
         orderId: order.orderId, amount: order.amount, currency: order.currency,
         track: audience === "advanced" ? "advanced" :
+          parentsMode ? "school_unspecified" :
           purchaser.schoolLevel === "6-8" ? "school_foundation" : "school_advanced",
         source: "standalone_vsl",
       });
       trackEvent("memory_checkout_open", {
         funnel: "amaze_memory", source: "standalone_vsl", audience,
         track: audience === "advanced" ? "advanced" :
+          parentsMode ? "school_unspecified" :
           purchaser.schoolLevel === "6-8" ? "school_foundation" : "school_advanced",
         event_date: event.dateISO, price: 99,
       });
@@ -100,7 +103,7 @@ export default function MemoryStandaloneCheckout({ audience, event, children }) 
         <MemoryPurchaserDetails
           initialDetails={details}
           hasEditedDetails={Boolean(details)}
-          standaloneSchool={audience === "school"}
+          standaloneSchool={audience === "school" && !parentsMode}
           busy={busy}
           message={message}
           onSubmit={submit}
