@@ -18,6 +18,8 @@ export function qaEnvironment(scratch, path) {
     XDG_CACHE_HOME: scratch,
     LANG: "C.UTF-8",
     NODE_ENV: "test",
+    ...(process.env.MEMORY_QA_PARENTS_ONLY === "1"
+      ? { MEMORY_QA_PARENTS_ONLY: "1" } : {}),
   };
 }
 
@@ -115,7 +117,12 @@ async function sealed(scratch, parentNamespace) {
   try {
     await server.listen();
     console.log("Isolated frontend QA: loopback only; no backend or internet.");
-    const result = await verify(() => runProcess(process.execPath, ["--test", suite], env));
+    const result = await verify(() => runProcess(process.execPath, [
+      "--test",
+      ...(env.MEMORY_QA_PARENTS_ONLY === "1"
+        ? ["--test-name-pattern=^Parents compact consent"] : []),
+      suite,
+    ], env));
     if (result !== 0) throw new Error(`Browser suite failed (exit ${result}).`);
   } finally {
     await server.close();

@@ -104,6 +104,7 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
           initialDetails={details}
           hasEditedDetails={Boolean(details)}
           standaloneSchool={audience === "school" && !parentsMode}
+          showMeasurementChoiceImmediately={parentsMode}
           busy={busy}
           message={message}
           onSubmit={submit}

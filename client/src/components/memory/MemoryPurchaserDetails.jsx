@@ -14,6 +14,7 @@ export default function MemoryPurchaserDetails({
   onClose,
   onSubmit,
   standaloneSchool = false,
+  showMeasurementChoiceImmediately = false,
 }) {
   const dialogRef = useRef(null);
   const editedFields = useRef(new Set());
@@ -26,6 +27,7 @@ export default function MemoryPurchaserDetails({
   const [schoolLevel, setSchoolLevel] = useState(initialDetails?.schoolLevel || "");
   const [consentRecord, setConsentRecord] = useState(() => readMemoryConsent());
   const [reviewPrivacy, setReviewPrivacy] = useState(false);
+  const [showMeasurementDetails, setShowMeasurementDetails] = useState(false);
   const [allowMeasurement, setAllowMeasurement] = useState(false);
   const [savingConsent, setSavingConsent] = useState(false);
   const submitting = useRef(false);
@@ -105,7 +107,7 @@ export default function MemoryPurchaserDetails({
       // A checked box explicitly confirms adulthood and optional measurement.
       // Already verified grants need no repeat prompt; saved declines are never
       // changed unless the purchaser opens choices and explicitly checks it.
-      const receipt = allowMeasurement && (!savedDecline || reviewPrivacy)
+      const receipt = allowMeasurement && (!savedDecline || reviewPrivacy || showMeasurementChoiceImmediately)
         ? await grantMemoryCheckoutConsent({
           adultConfirmed: true, post: (...args) => api.post(...args),
           boot: () => bootMetaDocument(), pageView: path => trackPageView(path),
@@ -206,18 +208,23 @@ export default function MemoryPurchaserDetails({
             {message || prefillMessage}
           </p>
         )}
-        <section aria-label="Optional purchaser advertising measurement" className={reviewPrivacy ? "rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700" : "text-xs leading-relaxed text-slate-600"}>
-          {reviewPrivacy && (verifiedGrant ? (
+        <section aria-label="Optional purchaser advertising measurement" className={showMeasurementChoiceImmediately ? "flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-relaxed text-slate-700" : reviewPrivacy ? "rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700" : "text-xs leading-relaxed text-slate-600"}>
+          {(reviewPrivacy || showMeasurementChoiceImmediately) && (verifiedGrant ? (
+            showMeasurementChoiceImmediately ? (
+              <p>Meta ad tracking allowed · <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Change / withdraw</a></p>
+            ) : (
             <p>Optional Meta measurement is allowed. You can change or withdraw it through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>.</p>
+            )
           ) : (
-            <label className="flex items-start gap-2" htmlFor="memory-purchaser-measurement">
+            <label className={showMeasurementChoiceImmediately ? "inline-flex items-center gap-1.5" : "flex items-start gap-2"} htmlFor="memory-purchaser-measurement">
               <input id="memory-purchaser-measurement" type="checkbox"
                 checked={allowMeasurement} disabled={paymentBusy}
                 onChange={event => setAllowMeasurement(event.target.checked)}
                 className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>I am the purchaser, aged 18 or older, and I allow optional Meta ad measurement using my adult purchaser details. Booking works without this.</span>
+              <span>{showMeasurementChoiceImmediately ? "I'm 18+ · Allow Meta ad tracking." : "I am the purchaser, aged 18 or older, and I allow optional Meta ad measurement using my adult purchaser details. Booking works without this."}</span>
             </label>
           ))}
+          {!showMeasurementChoiceImmediately && (
           <button type="button" disabled={paymentBusy} aria-controls="memory-purchaser-privacy" aria-expanded={reviewPrivacy}
             onClick={() => {
               setReviewPrivacy(true);
@@ -227,7 +234,21 @@ export default function MemoryPurchaserDetails({
             className="rounded underline underline-offset-2 focus-visible:outline focus-visible:outline-2">
             Privacy choices
           </button>
-          <details ref={consentDetails} id="memory-purchaser-privacy" className={reviewPrivacy ? "mt-2" : "hidden"}>
+          )}
+          {showMeasurementChoiceImmediately && !verifiedGrant && (
+            <button type="button" disabled={paymentBusy}
+              aria-controls="memory-purchaser-privacy"
+              aria-expanded={showMeasurementDetails}
+              onClick={() => {
+                setShowMeasurementDetails(true);
+                consentDetails.current.open = true;
+                consentDetails.current.querySelector("summary")?.focus();
+              }}
+              className="rounded font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">
+              Details
+            </button>
+          )}
+          <details ref={consentDetails} id="memory-purchaser-privacy" className={reviewPrivacy || showMeasurementDetails ? "mt-2 w-full" : "hidden"}>
             <summary className="cursor-pointer rounded underline focus-visible:outline focus-visible:outline-2">What is shared?</summary>
             <p className="mt-2">BrainoDad shares limited browser and consenting adult purchaser details with Meta to measure ads. No student names, scores or answers are shared. Your choice lasts up to 30 days. You can change or withdraw it through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>. This is separate from WhatsApp consent.</p>
           </details>
