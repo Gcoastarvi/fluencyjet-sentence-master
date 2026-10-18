@@ -120,7 +120,7 @@ async function sealed(scratch, parentNamespace) {
     const result = await verify(() => runProcess(process.execPath, [
       "--test",
       ...(env.MEMORY_QA_PARENTS_ONLY === "1"
-        ? ["--test-name-pattern=^Parents compact consent"] : []),
+        ? ["--test-name-pattern=^Parents privacy management"]:[]),
       suite,
     ], env));
     if (result !== 0) throw new Error(`Browser suite failed (exit ${result}).`);

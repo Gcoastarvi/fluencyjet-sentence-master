@@ -354,8 +354,6 @@ async function fixture({
     await waitFor('document.body.innerText.toLowerCase().includes("registration received")');
   } else if (path.startsWith("/memory-products/")) {
     await waitFor('!!document.querySelector("#memory-route-not-found")');
-  } else if (path === "/memory-masterclass/parents") {
-    await waitFor('!!document.querySelector(".bdp-buy-hero:not([disabled])")');
   } else if (path.startsWith("/memory-challenge/video/")) {
     // Router availability is not checkout readiness: eventReady is still false
     // until the mocked public config has loaded. Even navigation-probe fixtures
@@ -365,6 +363,10 @@ async function fixture({
       ? 'document.body.innerText.includes("Class details could not be loaded")'
       : `!!document.querySelector("[data-placement=below_video]:not([disabled])") &&
          document.body.innerText.includes(${JSON.stringify(event.dateLabel)})`);
+  } else if (path === "/memory-masterclass/parents") {
+    await waitFor(`location.pathname === "/memory-masterclass/parents" &&
+      !!document.querySelector(".bdp-buy-hero:not([disabled])") &&
+      document.body.innerText.includes(${JSON.stringify(event.dateLabel)})`);
   } else if (navigationProbe) {
     await waitFor('typeof window.fixtureNavigate === "function"');
   } else {
@@ -474,6 +476,167 @@ async function fixture({
       await writeFile(file, Buffer.from(image.data, "base64"));
     } };
 }
+
+// Run through the unchanged network/capability gates in runMemoryQa.mjs.
+// No real SDK, backend, consent record, order or payment is used.
+async function parentsPrivacyFixture({ openThrows = false, ...options } = {}) {
+  const page = await fixture({
+    path: "/memory-masterclass/parents",
+    advertisingConsent: false,
+    ...options,
+  });
+  await page.evaluate(`window.Razorpay = function(options) {
+    window.fixturePayment = options;
+    this.on = function() {};
+    this.open = function() {
+      if (${openThrows}) throw new Error("Fixture open failed");
+      window.fixtureCheckoutOpened = true;
+      window.fixtureOpenSucceeded = true;
+      window.fixtureCheckoutSequence.push("open succeeded");
+    };
+  }`);
+  await page.evaluate('document.querySelector(".bdp-buy-hero:not([disabled])").click()');
+  await page.waitFor('!!document.querySelector("dialog[open] #memory-purchaser-name")');
+  return page;
+}
+
+test("Parents privacy management has no checkbox on desktop/mobile, even after review", async () => {
+  for (const mobile of [false, true]) {
+    const page = await parentsPrivacyFixture({ mobile });
+    try {
+      assert.equal(await page.evaluate('!!document.querySelector("dialog input[type=checkbox],dialog select")'), false);
+      assert.equal(await page.evaluate('document.querySelector("dialog button[type=submit]").innerText'), "Continue to Payment — ₹99");
+      await page.evaluate('document.querySelector("dialog button[aria-controls=memory-purchaser-privacy]").click()');
+      await page.waitFor('document.activeElement?.tagName === "SUMMARY"');
+      const result = await page.evaluate(`(() => {
+        const d = document.querySelector("dialog[open]");
+        const link = d.querySelector('a[href="/memory-challenge"]');
+        return {
+          fields: [...d.querySelectorAll("input")].map(i=>i.name),
+          checkbox: !!d.querySelector("input[type=checkbox]"),
+          explanation: d.innerText.includes("Payment does not give permission"),
+          details: d.querySelector("details").open,
+          focused: document.activeElement.tagName,
+          link: {href:link.getAttribute("href"),target:link.target,rel:link.rel},
+        };
+      })()`);
+      assert.deepEqual(result.fields, ["name", "email", "phone"]);
+      assert.equal(result.checkbox, false);
+      assert.equal(result.explanation, true);
+      assert.equal(result.details, true);
+      assert.equal(result.focused, "SUMMARY");
+      assert.deepEqual(result.link, {href:"/memory-challenge",target:"_blank",rel:"noopener noreferrer"});
+      assert.equal(page.consentGrantRequests.length, 0);
+      assert.equal(page.checkoutRequests.length, 0);
+      assert.equal(await page.evaluate('window.metaCalls.some(c=>/^(Lead|InitiateCheckout|Purchase)$/.test(c[2]))'), false);
+      assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" || /^track/.test(c[0]))'), false,
+        "An unconsented document must not initialize or dispatch to either Pixel");
+    } finally { await page.close(); }
+  }
+});
+
+test("Parents privacy management preserves no-choice/decline checkout without sharing", async () => {
+  for (const declinedConsent of [false, true]) {
+    const page = await parentsPrivacyFixture({ declinedConsent });
+    try {
+      const before = await page.evaluate('localStorage.getItem("brainodad_meta_consent_v1")');
+      await registerPurchaser(page);
+      await page.waitFor('window.fixtureCheckoutOpened === true');
+      assert.equal(page.consentGrantRequests.length, 0);
+      assert.equal(page.checkoutRequests.length, 1);
+      const order = page.checkoutRequests[0];
+      assert.equal(order.memoryMetaConsentReceipt, null);
+      assert.equal(order.checkoutContext, "parents");
+      assert.equal(order.audience, "school");
+      assert.equal(Object.hasOwn(order, "schoolLevel"), false);
+      assert.equal(Object.hasOwn(order, "amount"), false);
+      assert.equal(Object.hasOwn(order, "formAScore"), false);
+      assert.equal(Object.hasOwn(order, "responses"), false);
+      assert.equal(await page.evaluate('localStorage.getItem("brainodad_meta_consent_v1")'), before);
+      assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded"]);
+      assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" || /^track/.test(c[0]))'), false);
+    } finally { await page.close(); }
+  }
+});
+
+test("Parents privacy management reuses only an existing verified receipt; never browser Purchase", async () => {
+  const page = await parentsPrivacyFixture({ advertisingConsent: true });
+  try {
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    await registerPurchaser(page);
+    await page.waitFor('window.fixtureCheckoutOpened === true');
+    assert.equal(page.consentGrantRequests.length, 0);
+    assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, "a".repeat(64));
+    assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded", "InitiateCheckout"]);
+    assert.equal(await page.evaluate('window.fixturePayment.amount'), 9900);
+    assert.equal(await page.evaluate('window.fixturePayment.currency'), "INR");
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[1]==="1246171816816642" || c[2]==="Purchase" || c[2]==="Lead")'), false);
+    await assertPixelDocuments(page);
+  } finally { await page.close(); }
+});
+
+test("Parents privacy management respects withdrawal while registration stays open", async () => {
+  const page = await parentsPrivacyFixture({ advertisingConsent: true });
+  try {
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    await page.evaluate(`(() => {
+      localStorage.removeItem("brainodad_meta_consent_v1");
+      window.dispatchEvent(new StorageEvent("storage", {
+        key:"brainodad_meta_consent_v1",storageArea:localStorage,newValue:null
+      }));
+    })()`);
+    await page.waitFor('window.memoryMetaConsentVerified === false');
+    await registerPurchaser(page);
+    await page.waitFor('window.fixtureCheckoutOpened === true');
+    assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, null);
+    assert.equal(page.consentGrantRequests.length, 0);
+    assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded"]);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="Purchase" || c[2]==="Lead")'), false);
+  } finally { await page.close(); }
+});
+
+test("Parents privacy management status outage fails closed without blocking booking", async () => {
+  const page = await parentsPrivacyFixture({
+    advertisingConsent: true, consentInitiallyVerified: false, failConsentStatus: true,
+  });
+  try {
+    await registerPurchaser(page);
+    await page.waitFor('window.fixtureCheckoutOpened === true');
+    assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, null);
+    assert.equal(page.consentGrantRequests.length, 0);
+    assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded"]);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" || /^track/.test(c[0]))'), false);
+  } finally { await page.close(); }
+});
+
+test("Parents privacy management failed order or thrown checkout.open emits no conversion", async () => {
+  for (const options of [{ failCheckout: true }, { openThrows: true }]) {
+    const page = await parentsPrivacyFixture({ advertisingConsent: true, ...options });
+    try {
+      await page.waitFor('window.memoryMetaConsentVerified === true');
+      await registerPurchaser(page);
+      await page.waitFor('!!document.querySelector("dialog[open] [role=alert]")');
+      assert.equal(page.consentGrantRequests.length, 0);
+      assert.equal(page.checkoutRequests.length, 1);
+      assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), []);
+      assert.equal(await page.evaluate('window.metaCalls.some(c=>/^(Lead|InitiateCheckout|Purchase)$/.test(c[2]))'), false);
+    } finally { await page.close(); }
+  }
+});
+
+test("Parents privacy management leaves school/advanced/result consent controls unchanged", async () => {
+  for (const audience of ["school", "advanced", "assessment"]) {
+    const page = await checkoutConsentFixture(audience);
+    try {
+      assert.equal(await page.evaluate('!!document.querySelector("dialog #memory-purchaser-measurement")'), false);
+      await revealPurchaserMeasurement(page);
+      assert.equal(await page.evaluate('!!document.querySelector("dialog #memory-purchaser-measurement")'), true);
+      assert.equal(await page.evaluate('document.querySelector("#memory-purchaser-measurement").checked'), false);
+      assert.equal(page.consentGrantRequests.length, 0);
+      assert.equal(page.checkoutRequests.length, 0);
+    } finally { await page.close(); }
+  }
+});
 
 for (const [audience, schoolLevel, videoId] of [
   ["school", "6-8", "1234364593"],
@@ -1501,208 +1664,4 @@ test("English pages never display the Memory disclaimer or privacy footer", asyn
     assert.equal(await page.evaluate(`document.body.innerText.includes(${JSON.stringify(disclaimer)})`), false);
     assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" && c[1]==="1998316064175555")'), false);
   } finally { await page.close(); }
-});
-
-
-// Isolated Parents-only regression tests.
-// Execute through runMemoryQa.mjs with MEMORY_QA_PARENTS_ONLY=1.
-// Never execute this browser file directly outside the hardened runner.
-
-async function parentsCompactFixture(options = {}) {
-  const page = await fixture({
-    path: "/memory-masterclass/parents",
-    advertisingConsent: false,
-    ...options,
-  });
-
-  await page.evaluate(`window.Razorpay = function(options) {
-    window.fixturePayment = options;
-    this.on = function() {};
-    this.open = function() {
-      window.fixtureCheckoutOpened = true;
-      window.fixtureOpenSucceeded = true;
-      window.fixtureCheckoutSequence.push("open succeeded");
-    };
-  }`);
-
-  await page.evaluate(
-    'document.querySelector(".bdp-buy-hero:not([disabled])").click()'
-  );
-
-  await page.waitFor(
-    '!!document.querySelector("dialog[open] #memory-purchaser-name")'
-  );
-
-  return page;
-}
-
-test("Parents compact consent is visible and unchecked", async () => {
-  const page = await parentsCompactFixture();
-  try {
-    const result = await page.evaluate(`(() => {
-      const dialog = document.querySelector("dialog[open]");
-      const input = dialog.querySelector("#memory-purchaser-measurement");
-      const text = dialog.innerText;
-      return {
-        present: !!input,
-        visible: !!input && input.getClientRects().length > 0,
-        checked: input?.checked,
-        label: text.includes("I'm 18+ · Allow Meta ad tracking."),
-        details: !!dialog.querySelector(
-          "button[aria-controls=memory-purchaser-privacy]"
-        ),
-        classSelector: !!dialog.querySelector("select"),
-        canPay: !dialog.querySelector("button[type=submit]").disabled,
-      };
-    })()`);
-
-    assert.equal(result.present, true);
-    assert.equal(result.visible, true);
-    assert.equal(result.checked, false);
-    assert.equal(result.label, true);
-    assert.equal(result.details, true);
-    assert.equal(result.classSelector, false);
-    assert.equal(result.canPay, true);
-    assert.equal(page.consentGrantRequests.length, 0);
-  } finally {
-    await page.close();
-  }
-});
-
-test("Parents compact consent Details does not grant", async () => {
-  const page = await parentsCompactFixture();
-  try {
-    await page.evaluate(
-      'document.querySelector("dialog[open] button[aria-controls=memory-purchaser-privacy]").click()'
-    );
-
-    await page.waitFor(
-      'document.querySelector("#memory-purchaser-privacy").open === true'
-    );
-
-    assert.equal(
-      await page.evaluate(
-        'document.querySelector("#memory-purchaser-measurement").checked'
-      ), false
-    );
-
-    assert.equal(page.consentGrantRequests.length, 0);
-  } finally {
-    await page.close();
-  }
-});
-
-test("Parents compact consent unchecked allows payment without tracking", async () => {
-  const page = await parentsCompactFixture();
-  try {
-    await registerPurchaser(page);
-    await page.waitFor("window.fixtureCheckoutOpened === true");
-
-    assert.equal(page.checkoutRequests.length, 1);
-    assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, null);
-    assert.equal(page.consentGrantRequests.length, 0);
-
-    assert.equal(
-      await page.evaluate(
-        'window.metaCalls.some(c => c[0] === "init" || /^trackSingle/.test(c[0]))'
-      ), false
-    );
-  } finally {
-    await page.close();
-  }
-});
-
-test("Parents compact consent checked grants before order", async () => {
-  const page = await parentsCompactFixture({
-    holdConsentGrant: true,
-  });
-  try {
-    await page.evaluate(
-      'document.querySelector("#memory-purchaser-measurement").click()'
-    );
-
-    assert.equal(
-      await page.evaluate(
-        'document.querySelector("#memory-purchaser-measurement").checked'
-      ), true
-    );
-
-    await registerPurchaser(page);
-
-    await page.waitFor(
-      'document.querySelector("dialog[open] button[type=submit]").disabled'
-    );
-
-    for (let i = 0;
-      i < 100 && page.consentGrantRequests.length === 0; i++) {
-      await pause(20);
-    }
-
-    assert.equal(page.consentGrantRequests.length, 1);
-    assert.equal(page.checkoutRequests.length, 0);
-    assert.equal(page.consentGrantRequests[0].body.granted, true);
-    assert.equal(page.consentGrantRequests[0].body.adultConfirmed, true);
-
-    await page.releaseConsentGrant(0);
-    await page.waitFor("window.fixtureCheckoutOpened === true");
-
-    assert.equal(page.checkoutRequests.length, 1);
-    assert.equal(
-      page.checkoutRequests[0].memoryMetaConsentReceipt,
-      "a".repeat(64)
-    );
-  } finally {
-    await page.close();
-  }
-});
-
-test("Parents compact consent respects saved decline and grant", async () => {
-  const declined = await parentsCompactFixture({
-    declinedConsent: true,
-    advertisingConsent: false,
-  });
-
-  try {
-    assert.equal(
-      await declined.evaluate(
-        'document.querySelector("#memory-purchaser-measurement").checked'
-      ), false
-    );
-
-    await registerPurchaser(declined);
-    await declined.waitFor("window.fixtureCheckoutOpened === true");
-
-    assert.equal(
-      declined.checkoutRequests[0].memoryMetaConsentReceipt,
-      null
-    );
-    assert.equal(declined.consentGrantRequests.length, 0);
-  } finally {
-    await declined.close();
-  }
-
-  const granted = await parentsCompactFixture({
-    advertisingConsent: true,
-    consentInitiallyVerified: true,
-  });
-
-  try {
-    await granted.waitFor(
-      'document.querySelector("dialog[open]").innerText.includes("Meta ad tracking allowed")'
-    );
-
-    assert.equal(
-      await granted.evaluate(
-        'document.querySelector("dialog[open] #memory-purchaser-measurement") === null'
-      ), true
-    );
-
-    assert.equal(
-      await granted.evaluate(
-        '!!document.querySelector("dialog[open] a[href=\\"/memory-challenge\\"]")'
-      ), true
-    );
-  } finally {
-    await granted.close();
-  }
 });

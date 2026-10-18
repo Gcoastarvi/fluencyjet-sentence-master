@@ -23,6 +23,19 @@ test("child environment has only explicit non-secret test settings", () => {
   });
 });
 
+test("Parents selection accepts only a fixed switch, not arbitrary test arguments", () => {
+  const previous = process.env.MEMORY_QA_PARENTS_ONLY;
+  try {
+    process.env.MEMORY_QA_PARENTS_ONLY = "--unsafe-extra-options";
+    assert.equal(qaEnvironment("/tmp/fixture", "/fixture/bin").MEMORY_QA_PARENTS_ONLY, undefined);
+    process.env.MEMORY_QA_PARENTS_ONLY = "1";
+    assert.equal(qaEnvironment("/tmp/fixture", "/fixture/bin").MEMORY_QA_PARENTS_ONLY, "1");
+  } finally {
+    if (previous === undefined) delete process.env.MEMORY_QA_PARENTS_ONLY;
+    else process.env.MEMORY_QA_PARENTS_ONLY = previous;
+  }
+});
+
 test("network gate accepts genuine loopback with optional inert SIT, before/after setup", () => {
   assert.doesNotThrow(() => assertNetworkIsolation("net:[1]", base(), { configured: true }));
   const unconfigured = base();
