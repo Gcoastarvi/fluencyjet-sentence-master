@@ -788,7 +788,7 @@ export default function MemoryMasterclassParents() {
                   className="bdp-buy bdp-buy-sticky"
                   onClick={() => navigate("/memory-challenge")}
                 >
-                  Try Free Memory Test →
+                  Try the Free Memory Test →
                 </button>
               </div>
             )}
