@@ -786,7 +786,14 @@ export default function MemoryMasterclassParents() {
                 <button
                   type="button"
                   className="bdp-buy bdp-buy-sticky"
-                  onClick={() => navigate("/memory-challenge")}
+                  onClick={() => {
+                    document.getElementById("choose-grade")?.scrollIntoView({
+                      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                        ? "auto"
+                        : "smooth",
+                      block: "start",
+                    });
+                  }}
                 >
                   Try the Free Memory Test →
                 </button>
