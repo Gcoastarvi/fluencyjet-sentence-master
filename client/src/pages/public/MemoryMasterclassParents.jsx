@@ -783,11 +783,13 @@ export default function MemoryMasterclassParents() {
 
             {!dialogOpen && (
               <div className="bdp-sticky">
-                <span>
-                  <strong>₹99</strong>
-                  <small>25 Oct · 5–7 PM</small>
-                </span>
-                {booking("bdp-buy-sticky")}
+                <button
+                  type="button"
+                  className="bdp-buy bdp-buy-sticky"
+                  onClick={() => navigate("/memory-challenge")}
+                >
+                  Try Free Memory Test →
+                </button>
               </div>
             )}
 
