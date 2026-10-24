@@ -1,10 +1,10 @@
 import express from "express";
 import jwt from "jsonwebtoken";
+import { requireJwtSecret } from "../config/auth.js";
 import prisma from "../db/client.js"; // 🎯 Connect to your DB
 import bcrypt from "bcryptjs"; // 🎯 Use bcryptjs for better compatibility
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
 
 router.post("/login", async (req, res) => {
   try {
@@ -50,7 +50,7 @@ router.post("/login", async (req, res) => {
         isAdmin: true,
         role: "admin",
       },
-      JWT_SECRET,
+      requireJwtSecret(),
       { expiresIn: "30d" },
     );
 
@@ -64,7 +64,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Admin login error:", err);
+    console.error("Admin login error");
     return res
       .status(500)
       .json({ ok: false, message: "Internal server error" });

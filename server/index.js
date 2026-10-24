@@ -7,6 +7,7 @@ import { startMemoryMetaDelivery } from "./services/memoryMetaDelivery.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import { requireJwtSecret } from "./config/auth.js";
 import adminRouter from "./routes/admin.js";
 import webhookRazorpayRouter from "./routes/webhookRazorpay.js";
 import webhookWhatsAppRouter from "./routes/webhookWhatsApp.js";
@@ -16,6 +17,9 @@ const __dirname = path.dirname(__filename);
 
 // Force-load ROOT .env (workspace/.env)
 dotenv.config({ path: path.join(__dirname, "..", ".env") });
+
+// Fail before serving requests, after dotenv has populated the environment.
+requireJwtSecret();
 
 // Routes
 import healthRouter from "./routes/health.js";
@@ -242,16 +246,6 @@ app.options("*", (req, res) => res.sendStatus(204));
    Auth middleware (AFTER cors, BEFORE routes)
 -------------------------------------------------- */
 app.use(authMiddleware);
-
-// 🎯 THE SNIPER: Add this to Line 160
-app.use((req, res, next) => {
-  if (req.url.startsWith("/api/admin")) {
-    console.log(
-      `[ADMIN-DEBUG] Request Path: ${req.url} | Method: ${req.method} | User: ${req.user?.email || "None"}`,
-    );
-  }
-  next();
-});
 
 // 🎯 THE HEADQUARTERS: One door, properly authenticated
 app.use("/api/admin", adminRouter);
