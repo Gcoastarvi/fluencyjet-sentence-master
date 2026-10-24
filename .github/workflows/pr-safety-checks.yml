@@ -1,0 +1,60 @@
+name: FluencyJet PR safety checks
+
+on:
+  pull_request:
+    branches:
+      - release/brainodad-parents-oct25
+  workflow_dispatch:
+
+# This workflow never deploys and does not need production secrets.
+permissions:
+  contents: read
+
+concurrency:
+  group: fluencyjet-pr-checks-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-auth-and-funnel:
+    name: Backend auth, funnel and WhatsApp tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install backend dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Generate Prisma client (no database connection)
+        run: npx --no-install prisma generate
+      - name: Run focused regression tests
+        run: npm test -- authSecurity funnel.test whatsappAdmin.test
+
+  frontend-build:
+    name: Frontend production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build frontend
+        run: npm run build
