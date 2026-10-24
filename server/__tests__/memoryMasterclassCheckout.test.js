@@ -9,6 +9,8 @@ import {
   test,
 } from "@jest/globals";
 
+import { MEMORY_MASTERCLASS_EVENT } from "../config/memoryMasterclassEvent.js";
+
 const mockOrderCreate = jest.fn();
 
 const mockPrisma = {
@@ -115,6 +117,84 @@ afterEach(() => {
 });
 
 describe("public standalone Memory checkout", () => {
+
+  test("parents checkout uses school_unspecified and locks the payment amount", async () => {
+    const response = await request(makeApp())
+      .post("/api/memory-masterclass/standalone/create-order")
+      .send({
+        audience: "school",
+        checkoutContext: "parents",
+        ...purchaserInput,
+        amount: 1,
+        currency: "USD",
+        productKey: "fake",
+        trackId: "advanced",
+        eventKey: "fake",
+        checkoutSource: "fake",
+        source: "fake",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      amount: 9900,
+      currency: "INR",
+    });
+
+    expect(mockPrisma.memoryAssessmentSession.findUnique)
+      .not.toHaveBeenCalled();
+
+    expect(mockOrderCreate).toHaveBeenCalledTimes(1);
+    expect(mockOrderCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amount: 9900,
+        currency: "INR",
+        notes: expect.objectContaining({
+          productKey: "memory_masterclass_99",
+          eventKey: MEMORY_MASTERCLASS_EVENT.key,
+          trackId: "school_unspecified",
+          checkoutSource: "standalone_vsl",
+          ...purchaserSnapshot,
+        }),
+      })
+    );
+
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create)
+      .toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          memoryAssessmentSessionId: null,
+          trackId: "school_unspecified",
+          checkoutSource: "standalone_vsl",
+          source: "whatsapp_vsl",
+          amount: 9900,
+          currency: "INR",
+          eventKey: MEMORY_MASTERCLASS_EVENT.key,
+          ...purchaserSnapshot,
+        }),
+      });
+  });
+
+  test.each(["6-8", "9-12"])(
+    "parents checkout rejects conflicting schoolLevel %s",
+    async (schoolLevel) => {
+      const response = await request(makeApp())
+        .post("/api/memory-masterclass/standalone/create-order")
+        .send({
+          audience: "school",
+          checkoutContext: "parents",
+          schoolLevel,
+          ...purchaserInput,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe("MEMORY_AUDIENCE_INVALID");
+
+      expect(mockOrderCreate).not.toHaveBeenCalled();
+
+      expect(mockPrisma.memoryMasterclassCheckoutIntent.create)
+        .not.toHaveBeenCalled();
+    }
+  );
+
   test.each([
     ["school", "6-8", "school_foundation"],
     ["school", "9-12", "school_advanced"],
@@ -137,7 +217,7 @@ describe("public standalone Memory checkout", () => {
     expect(mockOrderCreate).toHaveBeenCalledWith(expect.objectContaining({
       amount: 9900, currency: "INR",
       notes: {
-        productKey: "memory_masterclass_99", eventKey: "2026-10-18_1700_ist",
+        productKey: "memory_masterclass_99", eventKey: MEMORY_MASTERCLASS_EVENT.key,
         trackId, checkoutSource: "standalone_vsl", ...purchaserSnapshot,
       },
     }));
@@ -147,9 +227,9 @@ describe("public standalone Memory checkout", () => {
         trackId, checkoutSource: "standalone_vsl", source: "whatsapp_vsl",
         amount: 9900, currency: "INR", productKey: "memory_masterclass_99",
         ...purchaserSnapshot,
-        eventKey: "2026-10-18_1700_ist",
-        eventStartsAt: new Date("2026-10-18T11:30:00Z"),
-        eventEndsAt: new Date("2026-10-18T13:30:00Z"),
+        eventKey: MEMORY_MASTERCLASS_EVENT.key,
+        eventStartsAt: new Date(MEMORY_MASTERCLASS_EVENT.startsAt),
+        eventEndsAt: new Date(MEMORY_MASTERCLASS_EVENT.endsAt),
         eventTimezone: "Asia/Kolkata",
         visitorId: null, utmCampaign: "whatsapp-video",
         fbc: null, fbp: null,
@@ -207,7 +287,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
       "key", "startsAt", "endsAt", "timezone", "dateISO", "dateLabel",
       "startTime", "endTime", "timezoneLabel", "whatsappGroupUrl",
     ].sort());
-    expect(response.body.event.key).toBe("2026-10-18_1700_ist");
+    expect(response.body.event.key).toBe(MEMORY_MASTERCLASS_EVENT.key);
     expect(response.body.event.whatsappGroupUrl).toBe("https://chat.whatsapp.com/IUwQal62p4kDvJxIS9892s");
     expect(mockOrderCreate).not.toHaveBeenCalled();
     expect(mockPrisma.memoryAssessmentSession.findUnique).not.toHaveBeenCalled();
@@ -344,7 +424,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
         currency: "INR",
         notes: {
           productKey: "memory_masterclass_99",
-          eventKey: "2026-10-18_1700_ist",
+          eventKey: MEMORY_MASTERCLASS_EVENT.key,
           trackId: "school_foundation",
           ...purchaserSnapshot,
         },
@@ -368,9 +448,9 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
         currency: "INR",
         productKey: "memory_masterclass_99",
 
-        eventKey: "2026-10-18_1700_ist",
-        eventStartsAt: new Date("2026-10-18T11:30:00.000Z"),
-        eventEndsAt: new Date("2026-10-18T13:30:00.000Z"),
+        eventKey: MEMORY_MASTERCLASS_EVENT.key,
+        eventStartsAt: new Date(MEMORY_MASTERCLASS_EVENT.startsAt),
+        eventEndsAt: new Date(MEMORY_MASTERCLASS_EVENT.endsAt),
         eventTimezone: "Asia/Kolkata",
 
         // Must come from DB, not browser payload.
@@ -406,9 +486,9 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
       currency: "INR",
       checkoutIntentId: "intent_memory_123",
       event: {
-        key: "2026-10-18_1700_ist",
-        startsAt: "2026-10-18T11:30:00.000Z",
-        endsAt: "2026-10-18T13:30:00.000Z",
+        key: MEMORY_MASTERCLASS_EVENT.key,
+        startsAt: MEMORY_MASTERCLASS_EVENT.startsAt.toISOString(),
+        endsAt: MEMORY_MASTERCLASS_EVENT.endsAt.toISOString(),
         timezone: "Asia/Kolkata",
       },
     });
@@ -578,7 +658,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
         currency: "INR",
         notes: {
           productKey: "memory_masterclass_99",
-          eventKey: "2026-10-18_1700_ist",
+          eventKey: MEMORY_MASTERCLASS_EVENT.key,
           trackId: "school_foundation",
           ...purchaserSnapshot,
         },
@@ -592,7 +672,7 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
         amount: 9900,
         currency: "INR",
         productKey: "memory_masterclass_99",
-        eventKey: "2026-10-18_1700_ist",
+        eventKey: MEMORY_MASTERCLASS_EVENT.key,
         trackId: "school_foundation",
       }),
     });

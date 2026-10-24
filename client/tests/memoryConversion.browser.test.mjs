@@ -488,7 +488,8 @@ for (const [audience, schoolLevel, videoId] of [
     assert.ok(await page.evaluate(`document.querySelector("h1").textContent.includes(${JSON.stringify(
       audience === "school" ? "Your child’s Study Memory Score" : "Your Study Memory Score",
     )})`));
-    assert.ok(await page.evaluate('document.body.innerText.includes("Sunday, 18 October")'));
+    const expectedDateLabel = getPublicMemoryMasterclassEvent().dateLabel;
+    assert.ok(await page.evaluate('document.body.innerText.includes(' + JSON.stringify(expectedDateLabel) + ')'));
     assert.ok(await page.evaluate('document.body.innerText.includes("270")'));
     assert.ok(await page.evaluate('document.body.innerText.includes("2011")'));
     assert.equal(page.leadRequests.length, 0);
@@ -840,6 +841,20 @@ async function registerPurchaser(page) {
   await page.evaluate('document.querySelector("dialog form").requestSubmit()');
 }
 
+async function revealPurchaserMeasurement(page) {
+  await page.waitFor(
+    '!!document.querySelector("dialog[open] button[aria-controls=memory-purchaser-privacy]")'
+  );
+
+  await page.evaluate(
+    'document.querySelector("dialog[open] button[aria-controls=memory-purchaser-privacy]").click()'
+  );
+
+  await page.waitFor(
+    '!!document.querySelector("dialog[open] #memory-purchaser-measurement")'
+  );
+}
+
 async function checkoutConsentFixture(audience, options = {}) {
   const path = audience === "assessment" ? "/memory-challenge/result"
     : `/memory-challenge/video/${audience}`;
@@ -874,6 +889,7 @@ async function checkoutConsentFixture(audience, options = {}) {
 for (const audience of ["assessment", "school", "advanced"]) {
   test(`optional adult checkout grant confirms BEFORE ${audience} order, no duplicate PageView`, async () => {
     const page = await checkoutConsentFixture(audience, { holdConsentGrant: true });
+    await revealPurchaserMeasurement(page);
     assert.equal(await page.evaluate('document.querySelector("#memory-purchaser-measurement").checked'), false);
     assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init")'), false);
     await page.evaluate('document.querySelector("#memory-purchaser-measurement").click()');
@@ -903,7 +919,10 @@ for (const audience of ["assessment", "school", "advanced"]) {
   test(`unchecked or failed optional consent never blocks ${audience} checkout; no Meta`, async () => {
     for (const failure of [false, true]) {
       const page = await checkoutConsentFixture(audience, { failConsentGrant: failure });
-      if (failure) await page.evaluate('document.querySelector("#memory-purchaser-measurement").click()');
+      if (failure) {
+        await revealPurchaserMeasurement(page);
+        await page.evaluate('document.querySelector("#memory-purchaser-measurement").click()');
+      }
       await registerPurchaser(page);
       await page.waitFor('window.fixtureCheckoutOpened === true');
       assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, null);
@@ -942,6 +961,7 @@ test("verified adult grant needs no repeated checkout prompt or grant request", 
 });
 test("withdrawal during pending checkout grant defeats late reply; booking remains available without Meta", async () => {
   const page = await checkoutConsentFixture("advanced", { holdConsentGrant: true });
+  await revealPurchaserMeasurement(page);
   await page.evaluate('document.querySelector("#memory-purchaser-measurement").click()');
   await registerPurchaser(page);
   for (let i = 0; i < 50 && !page.consentGrantRequests.length; i++) await pause(20);
