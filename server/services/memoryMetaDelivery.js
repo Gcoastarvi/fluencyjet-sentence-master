@@ -44,7 +44,6 @@ export async function deliverMemoryPurchase(id, {
       await finish({ metaDeliveryStatus: "SKIPPED_CONSENT", metaLastErrorCode: "CONSENT_INACTIVE" });
       return { skipped: true, reason: "consent_inactive" };
     }
-    const intent = row.checkoutIntent;
     // Only the explicitly consenting adult purchaser, never a student or
     // another payer's provider identity. Checkout snapshots are server-validated.
     const result = await send({
@@ -52,8 +51,10 @@ export async function deliverMemoryPurchase(id, {
       eventSourceUrl: MEMORY_MASTERCLASS_EVENT_SOURCE_URL, value: 99, currency: "INR",
       contentName: MEMORY_MASTERCLASS_CONTENT_NAME, contentIds: [PRODUCT],
       email: row.purchaserEmail, phone: row.purchaserPhone,
-      externalId: intent?.visitorId, fbc: intent?.fbc, fbp: intent?.fbp,
-      clientIpAddress: null, clientUserAgent: intent?.clientUserAgent,
+      // Browser identifiers may originate from a child's assessment session.
+      // Adult purchaser contact matching is sufficient for this existing policy.
+      externalId: null, fbc: null, fbp: null,
+      clientIpAddress: null, clientUserAgent: null,
     });
     if (result.ok) {
       await finish({ metaDelivered: true, metaDeliveryStatus: "DELIVERED",
@@ -106,3 +107,4 @@ export function startMemoryMetaDelivery() {
   timer = setTimeout(tick, 1000); timer.unref();
   return () => { stopped = true; clearTimeout(timer); };
 }
+
