@@ -10,7 +10,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-async function fixture({ granted = true, adult = true, revoked = false, responseStatus = 200, alternative = false } = {}) {
+async function fixture({ granted = true, adult = true, revoked = false, responseStatus = 200, alternative = false, adultEvidence = true } = {}) {
   const calls = [], rows = [], handlers = [], claims = [], logs = [], authorizations = [];
   let clock = Date.now(), policy;
   class ClockDate extends Date { constructor(...args) { super(...(args.length ? args : [clock])); } static now() { return clock; } }
@@ -29,9 +29,11 @@ async function fixture({ granted = true, adult = true, revoked = false, response
   const db = {
     memoryAdultPurchasePolicy: { findUnique: async ({where}) => policy?.id === where.id ? policy : null },
     memoryAdultPurchaseAuthorization: {
-      findFirst: async ({where}) => authorizations.find(a => a.blockedAt && where.OR.some(part => Object.entries(part).every(([k,v]) => a[k] === v))) || null,
+      findFirst: async ({where}) => where.decision === "ADULT_EVIDENCE_VERIFIED"
+        ? authorizations.find(a => Object.entries(where).every(([k,v]) => a[k] === v)) || null
+        : authorizations.find(a => a.blockedAt && where.OR.some(part => Object.entries(part).every(([k,v]) => a[k] === v))) || null,
       findUnique: async ({where}) => authorizations.find(a => Object.entries(where).every(([k,v]) => a[k] === v)) || null,
-      create: async ({data}) => { const a = { id: `auth_${authorizations.length}`, createdAt: new Date(clock), ...data }; authorizations.push(a); return a; },
+      create: async ({data}) => { const a = { id: `auth_${authorizations.length}`, createdAt: new Date(clock), blockedAt: null, ...data }; authorizations.push(a); return a; },
       update: async ({where, data}) => { const a = authorizations.find(a => a.id === where.id); Object.assign(a, data); return a; },
     },
     memoryMetaConsent: { findUnique: async () => consent },
@@ -94,16 +96,21 @@ async function fixture({ granted = true, adult = true, revoked = false, response
   const delivery = cache.get(resolve(root, "services/memoryMetaDelivery.js")).namespace;
   const config = cache.get(resolve(root, "config/metaTracking.js")).namespace;
   const purchasePolicy = cache.get(resolve(root, "services/memoryAdultPurchasePolicy.js")).namespace;
-  policy = { id: "offline-reviewed-v1", enabled: true, scope: "IN_ADULT_PARENT_SELF_ATTESTED",
+  policy = { id: "offline-reviewed-v1", enabled: true, scope: "IN_ADULT_PARENT_PREVERIFIED_CONTACTS",
     effectiveAt: new Date(clock - 60000), expiresAt: new Date("2027-05-12T18:30:00Z"),
     reviewDueAt: new Date("2027-05-12T18:29:59Z"), restrictionsCleared: true,
     legalApprovalRef: "OFFLINE-LEGAL-FIXTURE", metaApprovalRef: "OFFLINE-META-TERMS-REVIEW",
     adultEvidenceApprovalRef: "OFFLINE-IDENTITY-REVIEW", authorizationSource: "OFFLINE-REVIEWED-BASIS",
     noticeVersion: purchasePolicy.ADULT_PURCHASE_NOTICE_VERSION, noticeHash: purchasePolicy.ADULT_PURCHASE_NOTICE_HASH };
+  if (alternative && adultEvidence) await purchasePolicy.recordVerifiedAdultEvidence({ ...intent,
+    adultParentOwnContactIndiaVerified: true, approvalRef: policy.adultEvidenceApprovalRef,
+    verificationRef: "OFFLINE-VERIFIED-ADULT-CONTACT-PROOF", verifiedBy: "OFFLINE-REVIEWER",
+    verifiedAt: new Date(clock - 60000).toISOString(), expiresAt: policy.reviewDueAt.toISOString(),
+  }, { db, env, now: new Date(clock) });
   async function authorize(extra = {}) {
     intent.metaConsentGranted = false; intent.metaConsentId = null;
     intent.memoryAssessmentSessionId = null; intent.trackId = "school_unspecified";
-    const body = { adultParentOwnContactIndia: true, policyId: policy.id, noticeVersion: policy.noticeVersion,
+    const body = { policyId: policy.id, noticeVersion: policy.noticeVersion,
       noticeHash: policy.noticeHash, ...extra };
     const response = await purchasePolicy.createAdultPurchaseAuthorization(body, intent, { db, env, now: new Date(clock) });
     intent.purchaseMeasurement = await purchasePolicy.checkoutPurchaseMeasurement({ ...body, purchaseAuthorizationToken: response.token, measurementRefused: extra.refused },
@@ -186,14 +193,14 @@ test("approved alternative: no legacy receipt, captured once, accepted CAPI log 
   assert.equal(e.custom_data.value, 99); assert.equal(e.custom_data.currency, "INR");
   assert.match(f.calls[0].url, /1998316064175555\/events$/);
   assert.ok(f.logs.some(l => l.includes("DELIVERED") && l.includes("value=99 currency=INR")));
-  assert.equal(f.authorizations[0].evidence.policyVersion, f.policy.id);
-  assert.equal(f.authorizations[0].evidence.refusalState, "NO_KNOWN_REFUSAL");
+  assert.equal(f.authorizations.find(a=>a.decision === "ALTERNATIVE_AUTHORIZED").evidence.policyVersion, f.policy.id);
+  assert.equal(f.authorizations.find(a=>a.decision === "ALTERNATIVE_AUTHORIZED").evidence.refusalState, "NO_KNOWN_REFUSAL");
   assert.ok(!JSON.stringify(f.calls).includes("PRIVATE_"));
   assert.ok(!JSON.stringify(f.calls).includes(a.token));
 });
 
-for (const adultParentOwnContactIndia of [false, undefined, "true"]) test(`child or unknown adult declaration blocked: ${adultParentOwnContactIndia}`, async () => {
-  const f = await fixture({ alternative: true });
+for (const adultParentOwnContactIndia of [false, undefined, "true", true]) test(`unknown adult cannot be promoted by browser declaration: ${adultParentOwnContactIndia}`, async () => {
+  const f = await fixture({ alternative: true, adultEvidence: false });
   assert.equal((await f.authorize({ adultParentOwnContactIndia })).eligible, false);
   await f.capture(); assert.equal(f.rows.length, 1); assert.equal(f.calls.length, 0);
 });
@@ -202,7 +209,7 @@ test("explicit refusal persists and blocks alternative AND later valid browser c
   const f = await fixture({ alternative: true }); await f.authorize({ refused: true });
   f.intent.metaConsentGranted = true; f.intent.metaConsentId = "receipt_fixture";
   await f.capture(); assert.equal(f.calls.length, 0);
-  assert.ok(f.authorizations[0].blockedAt);
+  assert.ok(f.authorizations.find(a=>a.decision === "REFUSED").blockedAt);
 });
 
 test("withdrawal between checkout and capture blocks without stopping payment accounting", async () => {
@@ -303,4 +310,29 @@ test("GPC blocks both paths and approved policy evidence cannot be changed after
   const g = await fixture({ alternative: true }); await g.authorize();
   g.policy.authorizationSource = "different-basis";
   await g.capture(); assert.equal(g.calls.length, 0);
+});
+
+
+for (const change of ["expired", "revoked", "child", "wrong_contact", "approval_changed", "forged_reference"]) test(`server adult evidence is rechecked at capture: ${change}`, async () => {
+  const f = await fixture({alternative:true}); await f.authorize();
+  const proof=f.authorizations.find(a=>a.decision === "ADULT_EVIDENCE_VERIFIED");
+  if(change === "expired") proof.evidence.expiresAt=new Date(0).toISOString();
+  if(change === "revoked") proof.blockedAt=new Date();
+  if(change === "child") proof.adultConfirmed=false;
+  if(change === "wrong_contact") proof.emailHash="not-the-buyer";
+  if(change === "approval_changed") proof.evidence.approvalRef="unapproved-review";
+  if(change === "forged_reference") proof.evidence.verificationRef="changed-proof";
+  await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0);
+});
+
+test("operator evidence registration requires reviewed proof, not client claims or payment",async()=>{
+  for(const fields of [{adultParentOwnContactIndiaVerified:false},{verificationRef:""},{verifiedBy:""},{verifiedAt:null},{approvalRef:"unapproved"}]) {
+    const f=await fixture({alternative:true,adultEvidence:false});
+    await assert.rejects(f.purchasePolicy.recordVerifiedAdultEvidence({...f.intent, adultParentOwnContactIndiaVerified:true,
+      approvalRef:f.policy.adultEvidenceApprovalRef,verificationRef:"OFFLINE-PROOF",verifiedBy:"OFFLINE-VERIFIER",
+      verifiedAt:new Date().toISOString(),expiresAt:f.policy.reviewDueAt.toISOString(),...fields},{db:f.db,env:f.env}));
+    assert.equal(f.authorizations.length,0);
+  }
+  const f=await fixture({alternative:true,adultEvidence:false});
+  assert.equal((await f.authorize({adultConfirmed:true,adultParentOwnContactIndia:true,adultEvidenceId:"forged",approved:true})).eligible,false);
 });

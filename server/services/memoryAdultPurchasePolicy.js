@@ -8,7 +8,7 @@ export const ADULT_PURCHASE_NOTICE_HASH = digest(ADULT_PURCHASE_NOTICE);
 // Fail closed at 00:00 IST on May 13. No database date can extend this release.
 export const ADULT_PURCHASE_DEADLINE = new Date("2027-05-13T00:00:00+05:30");
 const TOKEN = /^[a-f0-9]{64}$/;
-const SCOPE = "IN_ADULT_PARENT_SELF_ATTESTED";
+const SCOPE = "IN_ADULT_PARENT_PREVERIFIED_CONTACTS";
 function digest(value) { return crypto.createHash("sha256").update(value).digest("hex"); }
 function contacts(purchaser) {
   const email = String(purchaser?.purchaserEmail || "").trim().toLowerCase();
@@ -59,9 +59,37 @@ async function subjectRefused(identity, db, purchaser) {
   }, select: { id: true } }));
 }
 
-// Only this server endpoint creates evidence; callers cannot pass a policy snapshot.
-// Adult/own-contact/India is an explicit self-declaration, NOT verified identity.
-// Its adequacy MUST be separately approved in adultEvidenceApprovalRef.
+// Evidence is registered only by an authorized operator after an independently
+// approved verification process. No browser field or payment establishes age.
+const EVIDENCE_METHOD = "OUT_OF_BAND_VERIFIED_ADULT_OWN_CONTACTS_INDIA";
+function verifiedEvidence(row, identity, policy, now) {
+  const e = row?.evidence;
+  return Boolean(policy && row?.decision === "ADULT_EVIDENCE_VERIFIED" && row.adultConfirmed && !row.blockedAt &&
+    row.policyId === policy.id && row.emailHash === identity.emailHash && row.phoneHash === identity.phoneHash &&
+    e?.method === EVIDENCE_METHOD && e.approvalRef === policy.adultEvidenceApprovalRef &&
+    typeof e.verificationRef === "string" && e.verificationRef.trim() && typeof e.verifiedBy === "string" && e.verifiedBy.trim() &&
+    typeof e.verifiedAt === "string" && Boolean(e.verifiedAt.trim()) && new Date(e.verifiedAt) <= now && now < new Date(e.expiresAt) &&
+    new Date(e.expiresAt) <= new Date(policy.expiresAt) && new Date(e.expiresAt) <= new Date(policy.reviewDueAt));
+}
+
+export async function recordVerifiedAdultEvidence(input, { db = prisma, env = process.env, now = new Date() } = {}) {
+  const policy = await activeAdultPurchasePolicy({ db, env, now }), identity = contacts(input);
+  const rawPhone = String(input.purchaserPhone || "").replace(/\D/g, "");
+  if (!policy || !identity || !/^(91)?[6-9]\d{9}$/.test(rawPhone) || input.adultParentOwnContactIndiaVerified !== true)
+    throw new Error("ADULT_EVIDENCE_APPROVAL_REQUIRED");
+  const evidence = { method: EVIDENCE_METHOD, approvalRef: input.approvalRef,
+    verificationRef: input.verificationRef, verifiedBy: input.verifiedBy,
+    verifiedAt: input.verifiedAt, expiresAt: input.expiresAt, recordedAt: now.toISOString() };
+  const candidate = { decision: "ADULT_EVIDENCE_VERIFIED", adultConfirmed: true, policyId: policy.id, ...identity, evidence };
+  if (!verifiedEvidence(candidate, identity, policy, now) || await subjectRefused(identity, db, input))
+    throw new Error("ADULT_EVIDENCE_INVALID_OR_REFUSED");
+  const row = await db.memoryAdultPurchaseAuthorization.create({ data: {
+    ...candidate, tokenHash: digest(crypto.randomBytes(32).toString("hex")),
+  } });
+  return { id: row.id }; // No bearer or raw contact information is exposed.
+}
+
+// Public checkout creates an authorization from existing server evidence only.
 export async function createAdultPurchaseAuthorization(body, purchaser, {
   db = prisma, env = process.env, now = new Date(), gpc = false,
 } = {}) {
@@ -73,7 +101,10 @@ export async function createAdultPurchaseAuthorization(body, purchaser, {
   const refused = gpc || body.refused === true || choice?.granted === false || Boolean(choice?.revokedAt);
   const p = await activeAdultPurchasePolicy({ db, env, now });
   const rawPhone = String(purchaser.purchaserPhone || "").replace(/\D/g, "");
-  const adult = body.adultParentOwnContactIndia === true && /^(91)?[6-9]\d{9}$/.test(rawPhone);
+  const proof = p && await db.memoryAdultPurchaseAuthorization.findFirst({ where: {
+    ...identity, policyId: p.id, decision: "ADULT_EVIDENCE_VERIFIED", adultConfirmed: true, blockedAt: null,
+  }, orderBy: { createdAt: "desc" } });
+  const adult = body.adultParentOwnContactIndia !== false && /^(91)?[6-9]\d{9}$/.test(rawPhone) && verifiedEvidence(proof, identity, p, now);
   const approvedNotice = p && body.policyId === p.id && body.noticeVersion === p.noticeVersion && body.noticeHash === p.noticeHash;
   const blockedSubject = await subjectRefused(identity, db, purchaser);
   if (!refused && (!p || !adult || !approvedNotice || unknownReceipt || blockedSubject))
@@ -89,7 +120,8 @@ export async function createAdultPurchaseAuthorization(body, purchaser, {
       authorizationSource: p.authorizationSource, legalApprovalRef: p.legalApprovalRef,
       metaApprovalRef: p.metaApprovalRef, adultEvidenceApprovalRef: p.adultEvidenceApprovalRef,
       noticeVersion: p.noticeVersion, noticeHash: p.noticeHash, scope: p.scope,
-      adultEvidence: "explicit_parent_18_plus_own_contacts_india_declaration", recordedAt: now.toISOString(),
+      adultEvidenceId: proof?.id || null, adultEvidenceMethod: EVIDENCE_METHOD,
+      adultVerificationRef: proof?.evidence?.verificationRef || null, recordedAt: now.toISOString(),
       browserConsentRevision: choice?.revision || null, refusalState: refused ? "REFUSED" : "NO_KNOWN_REFUSAL" } : { refusalState: "REFUSED", recordedAt: now.toISOString() },
   } });
   return { token, eligible: record.decision === "ALTERNATIVE_AUTHORIZED", reason: refused ? "refused" : "alternative", expiresAt: p?.expiresAt || null };
@@ -134,6 +166,9 @@ async function alternativeActive(a, { db, env, now }) {
       a.evidence?.noticeHash !== p.noticeHash || a.evidence?.authorizationSource !== p.authorizationSource ||
       a.evidence?.legalApprovalRef !== p.legalApprovalRef || a.evidence?.metaApprovalRef !== p.metaApprovalRef ||
       a.evidence?.adultEvidenceApprovalRef !== p.adultEvidenceApprovalRef) return false;
+  const proof = a.evidence?.adultEvidenceId && await db.memoryAdultPurchaseAuthorization.findUnique({ where: { id: a.evidence.adultEvidenceId } });
+  if (!verifiedEvidence(proof, a, p, now) || a.evidence.adultEvidenceMethod !== EVIDENCE_METHOD ||
+      a.evidence.adultVerificationRef !== proof.evidence.verificationRef) return false;
   if (a.browserConsentId) {
     const choice = await db.memoryMetaConsent.findUnique({ where: { id: a.browserConsentId } });
     if (!choice?.granted || choice.revokedAt || choice.revision !== a.browserConsentRevision) return false;
