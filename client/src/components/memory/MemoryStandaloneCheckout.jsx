@@ -40,7 +40,6 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
         memoryMetaChoiceReceipt: purchaser.memoryMetaChoiceReceipt ?? null,
         purchaseAuthorizationToken: purchaser.purchaseAuthorizationToken ?? null,
         measurementRefused: purchaser.measurementRefused === true,
-        ...(purchaser.adultParentOwnContactIndia === false ? { adultParentOwnContactIndia: false } : {}),
         audience,
         ...(parentsMode ? { checkoutContext: "parents" } : {}),
       ...(audience === "school" && !parentsMode ? { schoolLevel: purchaser.schoolLevel } : {}),

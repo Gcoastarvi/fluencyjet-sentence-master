@@ -1,214 +1,251 @@
 # BrainoDad tracking review — 28 October 2026
 
-## Temporary adult-purchase policy — implemented, DISABLED pending approval
+## Current decision — clean Parents checkout; alternative policy remains DISABLED
 
-This section supersedes earlier consent-only proposal and no-migration statements
-below. Both existing PRs remain drafts. No production settings, records, secrets,
-migrations or deployments were accessed or changed. The owner has now confirmed
-the existing WhatsApp group; it is unchanged. The approved November 15, 2026,
-5–7 PM IST schedule and ₹99 price are preserved.
+This current section supersedes earlier dropdown/self-declaration and in-checkout
+consent-fallback descriptions below. Earlier audit/release sections are retained
+as history. Work stays in existing separate draft PRs #6 and #7. No merge,
+production migration, deployment, activation, customer lookup, consent-record
+change or historical event replay was performed.
 
-### Behavior and safeguards
+### Checkout and non-interactive eligibility
 
-Two independent server eligibility paths reuse the existing delivery worker:
-current verified adult consent, OR a currently approved alternative adult-purchase
-policy. Refusal, withdrawal, GPC, an explicit underage/other/uncertain declaration,
-identity mismatch or legal/platform restriction blocks sharing. A known refusal
-wins over either path. Buyer-linked existing declined/withdrawn receipts are
-looked up read-only; historical purchases are never requeued. Refusals recorded
-against normalized email/phone apply to either matching contact. An anonymous
-browser refusal cannot be linked to an unrelated device/identity without contact
-evidence; no system can promise otherwise. No public API can unblock refusals.
-A future renewed authorization after refusal needs a separately reviewed process.
+Parents registration shows Name, Email, Phone, Privacy Policy, a short measurement
+disclosure, accessible Privacy choices, Continue to Payment — ₹99 and the existing
+Cancel action. There is NO advertising checkbox, purchaser dropdown, replacement
+adult declaration, extra mandatory question or consent popup in this form,
+regardless of policy state. Privacy choices expands inline and allows refusal /
+withdrawal; it links to the existing voluntary controls on /memory-challenge.
+Those existing controls remain available when the policy is disabled or expires.
+No new browser grant is created by Parents checkout. Existing valid adult consent
+can still support the independent consent path. Pay and the Privacy Policy link
+never constitute advertising consent.
 
-Only Parents checkout can obtain a prospective alternative token. The adult
-explicitly declares parent/guardian, age 18+, India and use of their own contacts;
-this is self-attestation, NOT verified age, residency, identity or contact ownership.
-Unknown/other selections never qualify. Payment and visiting a Parents URL are
-not evidence of adult identity or advertising consent. If a reviewer requires
-stronger verification, this implementation must stay disabled until that narrow
-verification change is reviewed. Assessment-linked checkouts cannot use the
-alternative path; no assessment answers, scores, student identity or inherited
-fbc/fbp/external ID/UA/IP is sent to Meta.
+The server no longer accepts a client adult/India/own-contact assertion as positive
+evidence. The alternative path requires a previously recorded, operator-verified
+adult-parent/India/own-contact evidence record matching BOTH normalized email and
+phone. This is NOT an automatic age-verification system. The application currently
+has no approved evidence provider or populated registry for new buyers. Nothing
+in Name, Email, Phone, Razorpay payment, an Indian number, or a Parents URL proves
+adulthood. Unknown buyers therefore pay normally but do not acquire alternative
+CAPI authorization. Existing valid adult consent is a separate path.
 
-Policy presentation exposes only approved notice metadata, never approval records.
-Active mode removes the advertising checkbox, shows the exact short notice and
-Privacy Policy link, an optional adult/own-contact declaration, and accessible
-measurement refusal/withdrawal. Disabled, expired or unavailable policy restores
-the existing optional adult-consent control under Privacy choices. Payment works
-in either state without opting in. The alternative never grants browser consent
-or boots Pixel. An existing valid browser consent remains a separate browser rule.
-Withdrawal revokes retained bearer authorizations; failed server withdrawal is
-shown as pending, not falsely confirmed. Storage failure prevents using an
-alternative token. Cross-device withdrawal needs the existing support/privacy
-channel and contact verification; approval must cover that operational process.
+The small record uses the ALREADY PREPARED MemoryAdultPurchaseAuthorization table:
+decision=ADULT_EVIDENCE_VERIFIED, adultConfirmed=true only after operator-certified
+verification, matching contact hashes, policy ID, method, verification reference,
+verifier, verification date, evidence expiry and exact adultEvidenceApprovalRef.
+There is no new table or migration in this simplification. No real evidence is
+seeded. Old self-declarations and browser fields cannot become verified records.
+Policy scope is now IN_ADULT_PARENT_PREVERIFIED_CONTACTS, so an old self-attestation
+policy cannot silently enable the new method.
 
-The audit stores policy version/effective/expiry/review dates, authorization source,
-legal/Meta/adult-evidence approval references, notice version/hash, explicit adult
-self-declaration, receipt revision where supplied, and refusal/withdrawal state.
-Contact hashes are pseudonymous personal data, not anonymization. Approve access,
-retention/deletion and rights handling for these records before activation.
+An authorized operator must actually have reviewed evidence establishing adult
+parent/guardian status, applicable India scope and ownership of both contacts,
+under a specifically approved verification process. Record only a secure evidence
+REFERENCE, never student data or identity-document images in the measurement
+tables. Evidence collection/review happens outside checkout; this code does not
+perform that verification or invent its result. Any new evidence collection must
+itself be approved. A fake evidence reference or a generic lawyer approval does
+not establish adequacy.
 
-Signed payment.captured still creates exactly one accounting row per payment;
-authorized new purchases become PENDING and use the existing CAPI serializer,
-leases, retry window and stable payment-derived event ID. Authorization and the
-live DB switch are checked again before each transport attempt. Errors withhold
-measurement without stopping payment. Policy disable/expiry makes pending
-alternative-only rows SKIPPED_CONSENT; they are not revived later. A kill switch
-cannot recall an already in-flight or accepted event. Exactly-once HTTP delivery
-cannot be guaranteed after a lost response; the unchanged event ID supports Meta
-deduplication. Previously SKIPPED_CONSENT purchases, including October's two,
-remain excluded.
+Important limitation: matching two typed contacts is not authentication of the
+current browser operator. The reviewer must explicitly approve this linkage and
+its residual shared-device/impersonation risk for the particular arrangement.
+If an authenticated adult account, verified session or other stronger linkage is
+required, keep this path OFF until that narrowly scoped integration is implemented
+and tested. Approval alone cannot create missing evidence or authenticate a buyer.
+No claim is made that every new customer can be measured without further work.
 
-### Approval required BEFORE enabling
+The public checkout endpoint binds new authorization to the server evidence ID,
+verification reference and approved policy/notice snapshot. Evidence is rechecked
+at order creation and before every capture/delivery attempt. Evidence expiry,
+revocation, unknown or minor status, contact mismatch, policy/review expiry,
+refusals, withdrawals, GPC or restrictions withhold sharing. Revoking evidence
+blocks later matching sharing; it does not stop payments or recall accepted data.
+No public endpoint can verify adults, approve a policy or remove a refusal.
 
-1. A dated legal/privacy determination identifies the actual alternative lawful
-   authorization, its scope/jurisdiction and applicable restrictions. The Indian
-   commencement timetable alone is not such authorization; assess other currently
-   applicable duties as well. Approve self-declared adult/India/own-contact
-   evidence explicitly, or keep disabled pending stronger evidence.
-2. Review and retain the applicable current Meta Business Tools Terms, account /
-   dataset restrictions, required notices, choices and any consent requirements.
-   Confirm the actual proposed sharing and Meta's own advertising uses are
-   permitted. If those requirements require consent or prohibit this sharing,
-   the alternative must remain disabled. metaApprovalRef is a recorded qualified
-   terms-review reference, NOT an invented Meta approval or a Meta API permission.
-   Obtain any separate written platform permission if the applicable terms need it.
-3. Approve the exact implemented notice (including hashed adult email/phone,
-   purchase details, Meta own uses, no student data, optional measurement,
-   withdrawal, and separate browser policy), publish a matching full Privacy
-   Policy with controller/contact, purposes, recipients, authorization, rights,
-   retention and withdrawal/support information. The code's existing policy link
-   alone does not establish that the linked policy has been legally updated.
-   An approved text change requires matching code notice/hash/version and record.
-4. Owner separately approves activation and release. No policy record is seeded,
-   no approval references are fabricated, and no production switch is enabled.
+### Existing payment and privacy safeguards preserved
 
-Primary timing source: MeitY notification G.S.R.843(E), November 13, 2025:
+The genuine signed payment.captured flow, accounting uniqueness, ₹99 INR,
+memory_masterclass_99 product, payment-derived Purchase ID, BrainoDad dataset
+1998316064175555, lease/retry/deduplication and safe failure behavior are unchanged
+by this increment. Authorized new captures automatically queue through the
+existing CAPI transport. No browser Purchase, CTA Purchase or new Pixel is added.
+No assessment scores, answers, student identifiers or assessment-derived fbc/fbp /
+external ID / user agent / IP are sent to Meta. Known/refused/withdrawn identities
+remain blocked. Historical SKIPPED_CONSENT rows are neither modified nor replayed.
+
+Buyer-linked old declined/withdrawn receipts are checked read-only. A refusal
+matches either contact; adult evidence must match both. Anonymous refusals on
+unrelated devices cannot be identity-linked without evidence. Local retained
+bearers allow server withdrawal; failures are shown as pending rather than
+confirmed. Approve cross-device rights/support and evidence retention procedures.
+Pseudonymous contact hashes are personal data, not anonymous data.
+
+The approved Sunday November 15, 2026, 5–7 PM IST webinar and ₹99 price are
+unchanged. The existing WhatsApp group is owner-confirmed and unchanged. Existing
+other-product and WhatsApp flows are untouched. Earlier GA scope caveats below
+remain unchanged; this work makes no blanket claim about non-Meta analytics.
+
+### Exact remaining approval
+
+The owner reports legal advice allowing checkout without a separate checkbox or
+dropdown. No specific approved adult-evidence source/method, purchaser linkage,
+dated approval reference or current Meta terms review has been provided. Therefore
+this report does NOT mark alternative transmission as legally authorized.
+
+Before activation obtain a dated approval covering:
+
+1. The actual alternative lawful authorization and applicable jurisdiction /
+   restrictions, separately from browser consent. Indian commencement timing alone
+   is not that authorization. Keep any policy-required consent path separate.
+2. The specific out-of-band verification process and evidence source for adult
+   parent/guardian status, India scope and ownership of BOTH contacts; who verifies,
+   evidence freshness/expiry and revocation. Explicitly approve no extra checkout
+   interaction AND matching typed contact details to that evidence without browser
+   operator authentication. If inadequate, require the missing verification/linkage
+   integration; do not activate on the basis of wording alone.
+3. Current applicable Meta Business Tools Terms, dataset/account restrictions,
+   required permissions, notices and choices, including Meta's own uses. A stored
+   metaApprovalRef means qualified compliance review, not a fabricated Meta approval.
+   Obtain written platform permission separately if the actual terms require it.
+4. Exact short disclosure, full server notice/hash and matching published Privacy
+   Policy, including purposes, adult contact hashing, recipients/Meta uses,
+   authorization, rights/contact/support, retention and withdrawal. A policy link
+   alone does not prove the target policy is adequate. Approve the evidence-table
+   access/retention/deletion process and cross-device rights handling.
+5. Separate explicit owner approval for release and later activation.
+
+Official terms retrieval previously hit an access/sign-in barrier:
+https://www.facebook.com/legal/technology_terms
+https://www.facebook.com/legal/terms/businesstools
+Current compatibility must therefore be confirmed by the responsible reviewer.
+The earlier DPDP timing source remains:
 https://www.meity.gov.in/static/uploads/2025/11/c56ceae6c383460ca69577428d36828b.pdf
-The relevant staged commencement is eighteen months. This is timing evidence,
-not approval of Meta sharing. Current Meta terms pages
-https://www.facebook.com/legal/technology_terms and
-https://www.facebook.com/legal/terms/businesstools could not be retrieved without
-an access/sign-in barrier during review; a dated current terms review remains
-an explicit blocker. Do not substitute assumptions about their contents.
+No new legal exemption or platform eligibility is inferred from that timetable.
 
-### Exact configuration and operator actions — NOT executed
+### Configuration, evidence registration and rollback — NOT executed
 
-An additive migration is required: 20261028180000_memory_adult_purchase_policy.
-It adds purchaseMeasurement JSON to checkout intents and two policy/evidence
-tables. No historical updates, replay or enabled seed. At an approved release,
-review pending migrations, apply only the reviewed migration through the existing
-release process, regenerate Prisma client, then deploy backend before frontend.
-Do not start new code against an unmigrated schema. No production migration or
-production database integration test has been performed here.
+The previously prepared additive migration
+20261028180000_memory_adult_purchase_policy remains necessary before deploying
+new backend code: two policy/evidence tables and checkout purchaseMeasurement
+JSON. This increment does not change that SQL or Prisma schema. Review pending
+migrations, apply ONLY the approved migration via the existing release process,
+regenerate Prisma client and deploy the reviewed backend before frontend, only
+when separately authorized. No database migration has been run in this work.
 
-After the above approvals, an authorized operator prepares an approved JSON file
-with the following fields (the placeholders are not usable approvals):
-
-```json
-{
-  "id": "<approved-immutable-version>",
-  "scope": "IN_ADULT_PARENT_SELF_ATTESTED",
-  "effectiveAt": "<approved-ISO-date-with-timezone>",
-  "expiresAt": "<approved-ISO-date-no-later-than-2027-05-13T00:00:00+05:30>",
-  "reviewDueAt": "<approved-review-date-before-the-deadline>",
-  "legalApprovalRef": "<dated-legal-review-reference>",
-  "metaApprovalRef": "<dated-current-Meta-terms-review-reference>",
-  "adultEvidenceApprovalRef": "<explicit-self-attestation-adequacy-review>",
-  "authorizationSource": "<actual-approved-authorization>",
-  "noticeVersion": "memory_adult_purchase_v1",
-  "noticeHash": "<exact-hash-printed-by-notice-command>",
-  "restrictionsCleared": true
-}
-```
-
-Commands from repository root (operator-only; no public approval endpoint):
+Policy registration uses the existing operator CLI and an approved immutable
+version, now with scope IN_ADULT_PARENT_PREVERIFIED_CONTACTS, effectiveAt,
+expiresAt, reviewDueAt, legalApprovalRef, metaApprovalRef,
+adultEvidenceApprovalRef, authorizationSource, restrictionsCleared=true, and the
+exact noticeVersion/noticeHash printed by the notice command. Review date must be
+BEFORE the hard deadline; expiry cannot exceed it. No enabled record is seeded.
 
 ```sh
 node server/scripts/memoryAdultPurchasePolicy.js notice
 node server/scripts/memoryAdultPurchasePolicy.js register /secure/approved-policy.json
 ```
 
-Register always creates a new disabled version; it never replaces an existing
-record. Set the backend runtime configuration only after approval:
+After approval, both backend environment gates and the valid enabled policy row
+are mandatory:
 
 ```text
 MEMORY_META_ADULT_PURCHASE_ENABLED=true
 MEMORY_META_ADULT_PURCHASE_POLICY_ID=<approved-immutable-version>
 ```
 
-Retain existing dedicated CAPI destination/token configuration and existing
-MEMORY_META_DELIVERY_ENABLED=true worker setting for retries; never expose the
-token. MEMORY_META_PURCHASE_SHARING_BLOCKED must not be true. Restart/config
-rollout follows the existing hosting process. Then explicitly enable the approved
-row with `node server/scripts/memoryAdultPurchasePolicy.js enable <id>`.
-Environment flag alone cannot activate this feature: the enabled valid DB policy
-and all evidence/notice/time/restriction checks are also mandatory.
+Keep the existing dedicated CAPI token/destination and worker configuration; do
+not expose secrets. Existing MEMORY_META_DELIVERY_ENABLED=true is needed for the
+retry worker. MEMORY_META_PURCHASE_SHARING_BLOCKED must not be true. Runtime
+configuration rollout follows the existing hosting process. Explicitly enable
+the reviewed policy row using the existing `enable <id>` CLI action. A policy with
+zero verified adult evidence still cannot authorize unknown new purchasers.
 
-Immediate alternative-only stop (DB switch rechecked each attempt):
-`node server/scripts/memoryAdultPurchasePolicy.js disable <id>`.
-Also set MEMORY_META_ADULT_PURCHASE_ENABLED=false and restart as defense in depth.
-Ordinary valid consent-based reporting and payments continue. Emergency global
-MEMORY_META_PURCHASE_SHARING_BLOCKED=true with runtime config rollout blocks both
-purchase-sharing paths without stopping Razorpay. Do not execute these commands
-against production until expressly authorized.
+Only AFTER approved actual verification, an authorized operator can register an
+adult-evidence JSON through the same local CLI, never a public endpoint:
 
-### Deadline, reporting and rollback
+```json
+{
+  "purchaserEmail": "<verified-adult-own-email>",
+  "purchaserPhone": "<verified-adult-own-India-phone>",
+  "adultParentOwnContactIndiaVerified": true,
+  "approvalRef": "<exact-policy-adultEvidenceApprovalRef>",
+  "verificationRef": "<secure-reference-to-real-verification-evidence>",
+  "verifiedBy": "<accountable-authorized-verifier>",
+  "verifiedAt": "<actual-ISO-verification-date>",
+  "expiresAt": "<approved-ISO-evidence-expiry-no-later-than-policy-review-or-expiry>"
+}
+```
 
-Every authorization/delivery check falls back to consent-only at **00:00 IST
-May 13, 2027 (May 12, 18:30 UTC)** or the earlier review/expiry date. Database or
-environment changes cannot extend this release beyond the hard deadline. A newly
-reviewed compliant replacement requires a separate code/privacy review; the
-system does not auto-renew authorization. No scheduler or migration is needed
-for the deadline check. Existing valid consent still works after the deadline.
+```sh
+node server/scripts/memoryAdultPurchasePolicy.js register-adult-evidence /secure/verified-adult.json
+node server/scripts/memoryAdultPurchasePolicy.js revoke-adult-evidence <evidence-record-id>
+```
 
-Accepted mock log:
+These commands are an audited import/revocation mechanism, not proof that the
+verification occurred. No real entries were created or imported. The browser
+cannot supply these fields to obtain verified status. Do not register payment,
+URL, self-declaration or generic terms acceptance as independent verification.
+
+No further coding is needed for this specific approved preverified-record method
+and a matched purchaser once valid evidence has actually been registered. Unknown
+buyers stay ineligible. A future automatic verification provider, authenticated
+linkage or different method would require a separate small integration/review;
+it is not silently implemented or promised here.
+
+Immediate alternative kill: `node server/scripts/memoryAdultPurchasePolicy.js disable <id>`.
+Rechecked on every subsequent attempt, without stopping payments. Also set
+MEMORY_META_ADULT_PURCHASE_ENABLED=false with runtime rollout as defense in depth.
+Existing valid adult consent continues. Emergency
+MEMORY_META_PURCHASE_SHARING_BLOCKED=true with runtime rollout blocks BOTH purchase
+sharing paths. No switch was changed. An in-flight/accepted event cannot be recalled.
+
+All alternative checks stop by **May 13, 2027 00:00 IST (May 12 18:30 UTC)**,
+or earlier policy review/expiry/evidence expiry. Consent-only fallback remains;
+voluntary consent controls are outside the clean Parents form. DB dates or flags
+cannot extend the hard deadline. A newly reviewed compliant replacement requires
+separate code/privacy review. Expired/skipped purchases are not revived later.
+
+Rollback disables policy/evidence as appropriate, then reverts code using the
+existing separate service baselines. Leave the additive schema and audit evidence
+in place. Do not drop privacy evidence or roll back payment accounting.
+
+### Verification and release decision
+
+384 tests passed: 158 backend regressions, 164 frontend/unit/safety tests,
+46 actual-handler/component offline tests, 16 rendered production-browser tests.
+Production frontend build passed; inherited large-chunk warnings remain.
+Prisma schema remains unchanged from the already validated prepared migration.
+No real provider calls, production DB test or migration application occurred.
+
+Browser cases show no checkbox/dropdown in either policy mode, accessible notice /
+choices, ordinary Razorpay open, no auto-consent, refusal, unknown buyer payment,
+responsive layout, approved schedule and other-product dataset isolation. Actual
+signed webhook + existing serializer fixtures show preverified-adult alternative
+with no old receipt/no checkout declaration accepted once; missing/child/expired /
+revoked/mismatched evidence, disabled/expiry, failed/duplicate captures and retry
+safety are tested. No student markers or browser identifiers enter CAPI payloads.
+
+Accepted MOCK log:
 `[memory-meta] DELIVERED event=memory_masterclass_99_purchase_pay_fixture dataset=1998316064175555 value=99 currency=INR`
-The alternative fixture has metaConsentGranted=false and no old receipt. Mock
-transport returns events_received=1; no real Meta event was sent. Eligible live
-accepted events can appear in Events Manager; ad attribution and matching are
-not guaranteed. Only hashed adult email/phone are available for person matching;
-without fbc/fbp/browser provenance, direct-click attribution and match quality
-may be weaker. Meta can potentially match that adult to an account; hashed
-contacts do not make the purchase anonymous. Pixel/browser events retain their
-existing separate consent rules.
+metaConsentGranted remains false. Real Meta reporting was not exercised. Accepted
+live events may appear in Events Manager; identity matching/ad attribution is not
+guaranteed. Only approved adult email/phone matching is used; absence of fbc/fbp
+can reduce attribution signals. Hashed contacts may still match an adult account.
 
-Rollback: disable the DB policy, then environment switch; roll back the two
-services to their exact reviewed prior commits using the existing release
-process. Leave additive tables/column and audit records in place; do not drop
-privacy evidence. No historical payment reversal or WhatsApp change is needed.
-Recheck deployed SHA/source drift and auto-deploy settings before any release.
+Exact incremental files in this simplification:
 
-Exact incremental files (existing PRs only):
-
-- PR #6: client/src/components/memory/MemoryMetaConsent.jsx,
-  MemoryPurchaserDetails.jsx, MemoryStandaloneCheckout.jsx;
-  client/src/lib/memoryPurchaseMeasurement.js and its .test.js;
+- PR #6: client/src/components/memory/MemoryPurchaserDetails.jsx;
+  client/src/components/memory/MemoryStandaloneCheckout.jsx;
   client/tests/memoryRelease.rendered.mjs; this document.
-- PR #7: server/services/memoryAdultPurchasePolicy.js, memoryMetaConsent.js,
-  memoryMetaDelivery.js; server/routes/memoryMetaConsent.js,
-  memoryMasterclassCheckout.js, memoryMasterclassStandaloneCheckout.js,
-  webhookRazorpay.js; server/prisma/schema.prisma and the named migration SQL;
-  server/scripts/memoryAdultPurchasePolicy.js; server/__tests__/
-  memoryMasterclassCheckout.test.js, memoryMetaDelivery.test.js,
-  razorpayPurchaseAttribution.test.js, memoryFunnel.offline.mjs.
+- PR #7: server/services/memoryAdultPurchasePolicy.js;
+  server/scripts/memoryAdultPurchasePolicy.js;
+  server/__tests__/memoryFunnel.offline.mjs.
 
-Final checks for this incremental implementation: 158 backend regression tests,
-164 frontend/unit/safety tests, 38 actual-handler/component offline tests,
-15 rendered production-browser tests, production frontend build and Prisma schema
-validation. No test failures in final runs; inherited build chunk-size warnings
-remain. Browser covers both policy states, existing consent, refusal, layout,
-November schedule, mocked checkout and other product dataset isolation. Backend
-covers actual signed captures/serializer, stable ID/value/dataset, retries,
-refusal/withdrawal/GPC/history, unknown/child, fail/duplicate, live switches and
-May 13 fallback. These are offline mock results, not a live-provider, migration
-application or production-database test.
-
-**GO for review of the disabled implementation; NO-GO for activation/deployment
-until the approvals, matching Privacy Policy publication, reviewed migration,
-and explicit deployment approval are complete.**
-
+**GO for review of the clean checkout and disabled preverified-adult implementation.
+NO-GO for production deployment/activation until the specific approvals, genuine
+evidence source/process, matching published notice/Privacy Policy, migration
+review and explicit release/activation approvals are complete.**
 
 ## Verified production baselines (Railway metadata, read-only)
 

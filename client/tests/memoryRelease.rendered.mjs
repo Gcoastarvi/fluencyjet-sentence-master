@@ -26,7 +26,7 @@ const approved = { ...synthetic, key: "2026-11-15_1700_ist", startsAt: "2026-11-
   endsAt: "2026-11-15T13:30:00Z", dateISO: "2026-11-15", dateLabel: "Sunday, 15 November 2026" };
 const expired = { ...synthetic, startsAt: "2026-10-25T11:30:00Z", endsAt: "2026-10-25T13:30:00Z", dateISO: "2026-10-25", dateLabel: "EXPIRED TEST SCHEDULE" };
 
-async function fixture({ granted = true, schedule = synthetic, width = 390, failedOrder = false, policyMode = "consent" } = {}) {
+async function fixture({ granted = true, schedule = synthetic, width = 390, failedOrder = false, policyMode = "consent", adultEvidence = true } = {}) {
   const context = await browser.newContext({ viewport: { width, height: 844 }, serviceWorkers: "block" });
   const requests = [], errors = [];
   await context.route("**/*", async route => {
@@ -44,7 +44,7 @@ async function fixture({ granted = true, schedule = synthetic, width = 390, fail
         notice: "Approved alternative-policy notice fixture. Payment is not consent.", expiresAt: "2027-05-12T18:00:00Z" });
       if (url.pathname === "/api/memory-meta/purchase-authorization") {
         const body = request.postDataJSON();
-        const eligible = policyMode === "alternative" && body.adultParentOwnContactIndia === true && !body.refused;
+        const eligible = policyMode === "alternative" && adultEvidence && !body.refused;
         return reply({ ok: true, eligible, token: eligible ? "b".repeat(64) : null });
       }
       if (url.pathname === "/api/memory-meta/purchase-authorization/withdraw") return reply({ ok: true, blocked: true });
@@ -235,11 +235,10 @@ test("approved alternative UX removes the checkbox and submits adult authorizati
   try {
     await f.page.getByRole("button", { name: /Book My Child's Seat/ }).first().click();
     const d = f.page.getByRole("dialog");
-    await d.getByLabel(/Purchaser information/).waitFor();
     await d.getByRole("button", { name: "Privacy choices", exact: true }).click();
     assert.equal(await d.getByRole("checkbox").count(), 0);
+    assert.equal(await d.getByRole("combobox").count(), 0);
     assert.equal(await d.getByRole("link", { name: "Privacy Policy", exact: true }).count(), 1);
-    await d.getByLabel(/Purchaser information/).selectOption("adult_in");
     await d.getByLabel("Name", { exact: true }).fill("Adult Fixture");
     await d.getByLabel("Email", { exact: true }).fill("adult@example.test");
     await d.getByLabel("Phone", { exact: true }).fill("9111111111");
@@ -248,29 +247,29 @@ test("approved alternative UX removes the checkbox and submits adult authorizati
     const order = f.requests.find(r => r.path.endsWith("/create-order")).body;
     assert.equal(order.purchaseAuthorizationToken, "b".repeat(64));
     assert.equal(order.memoryMetaConsentReceipt, null);
+    assert.ok(f.requests.filter(r=>r.path.endsWith("purchase-authorization")).every(r=>!("adultParentOwnContactIndia" in r.body)));
     assert.equal(f.requests.some(r => r.path === "/api/memory-meta/consent" && r.body?.granted === true), false);
     assert.equal((await meta(f.page)).length, 0); // alternative never grants browser Pixel
   } finally { await f.close(); }
 });
 
-test("disabled policy retains accessible optional adult consent and can submit its verified receipt", async () => {
+test("disabled policy keeps clean checkout and links to existing optional privacy controls", async () => {
   const f = await fixture({ granted: false, policyMode: "consent" });
   try {
     await f.page.getByRole("button", { name: /Book My Child's Seat/ }).first().click();
     const d = f.page.getByRole("dialog");
     await d.getByRole("button", { name: "Privacy choices", exact: true }).click();
-    const choice = d.getByRole("checkbox");
-    assert.equal(await choice.count(), 1); assert.equal(await choice.getAttribute("required"), null);
-    await choice.check();
+    assert.equal(await d.getByRole("checkbox").count(), 0);
+    assert.equal(await d.getByRole("combobox").count(), 0);
+    assert.ok(await d.getByRole("link", { name: /Privacy choices on the Memory Challenge/ }).count() > 0);
     await d.getByLabel("Name", { exact: true }).fill("Adult Fixture");
     await d.getByLabel("Email", { exact: true }).fill("adult@example.test");
     await d.getByLabel("Phone", { exact: true }).fill("9111111111");
     await d.getByRole("button", { name: /Continue to Payment/ }).click();
     await f.page.waitForFunction(() => window.offlineOpens === 1);
     const order = f.requests.find(r => r.path.endsWith("/create-order")).body;
-    assert.equal(order.memoryMetaConsentReceipt, "a".repeat(64));
-    assert.equal(order.purchaseAuthorizationToken, null);
-    assert.ok(f.requests.some(r => r.path === "/api/memory-meta/consent" && r.body?.adultConfirmed === true));
+    assert.equal(order.memoryMetaConsentReceipt, null); assert.equal(order.purchaseAuthorizationToken, null);
+    assert.equal(f.requests.some(r=>r.path === "/api/memory-meta/consent" && r.body?.granted === true),false);
   } finally { await f.close(); }
 });
 
@@ -279,7 +278,6 @@ test("alternative mode still respects an explicit purchaser refusal and permits 
   try {
     await f.page.getByRole("button", { name: /Book My Child's Seat/ }).first().click();
     const d = f.page.getByRole("dialog");
-    await d.getByLabel(/Purchaser information/).selectOption("adult_in");
     await d.getByRole("button", { name: "Privacy choices", exact: true }).click();
     await d.getByRole("button", { name: /Don't share purchase measurement/ }).click();
     await d.getByLabel("Name", { exact: true }).fill("Adult Fixture");
@@ -290,5 +288,24 @@ test("alternative mode still respects an explicit purchaser refusal and permits 
     const order = f.requests.find(r => r.path.endsWith("/create-order")).body;
     assert.equal(order.measurementRefused, true); assert.equal(order.purchaseAuthorizationToken, null);
     assert.equal((await meta(f.page)).length, 0);
+  } finally { await f.close(); }
+});
+
+
+test("unknown adult pays through clean checkout without an alternative authorization token", async()=>{
+  const f=await fixture({granted:false,policyMode:"alternative",adultEvidence:false});
+  try {
+    await f.page.getByRole("button", {name:/Book My Child's Seat/}).first().click();
+    const d=f.page.getByRole("dialog");
+    await d.getByRole("button", {name:"Privacy choices",exact:true}).click();
+    assert.equal(await d.getByRole("checkbox").count(),0); assert.equal(await d.getByRole("combobox").count(),0);
+    await d.getByLabel("Name",{exact:true}).fill("Unknown Fixture");
+    await d.getByLabel("Email",{exact:true}).fill("unknown@example.test");
+    await d.getByLabel("Phone",{exact:true}).fill("9111111111");
+    await d.getByRole("button",{name:/Continue to Payment/}).click();
+    await f.page.waitForFunction(()=>window.offlineOpens === 1);
+    const order=f.requests.find(r=>r.path.endsWith("/create-order")).body;
+    assert.equal(order.purchaseAuthorizationToken,null); assert.equal(order.memoryMetaConsentReceipt,null);
+    assert.equal((await meta(f.page)).length,0); assert.deepEqual(f.errors,[]);
   } finally { await f.close(); }
 });
