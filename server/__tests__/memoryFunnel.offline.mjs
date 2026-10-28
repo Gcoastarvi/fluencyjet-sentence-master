@@ -10,12 +10,11 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-async function fixture({ granted = true, adult = true, revoked = false, responseStatus = 200, alternative = false, adultEvidence = true } = {}) {
-  const calls = [], rows = [], handlers = [], claims = [], logs = [], authorizations = [];
-  let clock = Date.now(), policy;
+async function fixture({ granted = true, adult = true, revoked = false, responseStatus = 200 } = {}) {
+  const calls = [], rows = [], handlers = [], claims = [], logs = [];
+  let clock = Date.now();
   class ClockDate extends Date { constructor(...args) { super(...(args.length ? args : [clock])); } static now() { return clock; } }
   const env = { RAZORPAY_WEBHOOK_SECRET: "offline-webhook-fixture", MEMORY_META_CAPI_ACCESS_TOKEN: "offline-not-a-real-token" };
-  if (alternative) { env.MEMORY_META_ADULT_PURCHASE_ENABLED = "true"; env.MEMORY_META_ADULT_PURCHASE_POLICY_ID = "offline-reviewed-v1"; }
   const intent = { id: "intent_fixture", razorpayOrderId: "order_fixture", productKey: "memory_masterclass_99",
     amount: 9900, currency: "INR", trackId: "school_foundation", checkoutSource: "standalone_parents",
     purchaserName: "Adult Fixture", purchaserEmail: "adult@example.test", purchaserPhone: "+919111111111",
@@ -27,15 +26,6 @@ async function fixture({ granted = true, adult = true, revoked = false, response
   const consent = { granted, adultConfirmed: adult, version: "memory_meta_v1", revision: 1,
     expiresAt: new Date(Date.now() + 86400000), revokedAt: revoked ? new Date() : null };
   const db = {
-    memoryAdultPurchasePolicy: { findUnique: async ({where}) => policy?.id === where.id ? policy : null },
-    memoryAdultPurchaseAuthorization: {
-      findFirst: async ({where}) => where.decision === "ADULT_EVIDENCE_VERIFIED"
-        ? authorizations.find(a => Object.entries(where).every(([k,v]) => a[k] === v)) || null
-        : authorizations.find(a => a.blockedAt && where.OR.some(part => Object.entries(part).every(([k,v]) => a[k] === v))) || null,
-      findUnique: async ({where}) => authorizations.find(a => Object.entries(where).every(([k,v]) => a[k] === v)) || null,
-      create: async ({data}) => { const a = { id: `auth_${authorizations.length}`, createdAt: new Date(clock), blockedAt: null, ...data }; authorizations.push(a); return a; },
-      update: async ({where, data}) => { const a = authorizations.find(a => a.id === where.id); Object.assign(a, data); return a; },
-    },
     memoryMetaConsent: { findUnique: async () => consent },
     memoryMasterclassCheckoutIntent: { findMany: async () => [], findUnique: async ({where}) => where.razorpayOrderId === intent.razorpayOrderId ? intent : null },
     memoryMasterclassPurchase: {
@@ -95,28 +85,7 @@ async function fixture({ granted = true, adult = true, revoked = false, response
   await webhook.evaluate();
   const delivery = cache.get(resolve(root, "services/memoryMetaDelivery.js")).namespace;
   const config = cache.get(resolve(root, "config/metaTracking.js")).namespace;
-  const purchasePolicy = cache.get(resolve(root, "services/memoryAdultPurchasePolicy.js")).namespace;
-  policy = { id: "offline-reviewed-v1", enabled: true, scope: "IN_ADULT_PARENT_PREVERIFIED_CONTACTS",
-    effectiveAt: new Date(clock - 60000), expiresAt: new Date("2027-05-12T18:30:00Z"),
-    reviewDueAt: new Date("2027-05-12T18:29:59Z"), restrictionsCleared: true,
-    legalApprovalRef: "OFFLINE-LEGAL-FIXTURE", metaApprovalRef: "OFFLINE-META-TERMS-REVIEW",
-    adultEvidenceApprovalRef: "OFFLINE-IDENTITY-REVIEW", authorizationSource: "OFFLINE-REVIEWED-BASIS",
-    noticeVersion: purchasePolicy.ADULT_PURCHASE_NOTICE_VERSION, noticeHash: purchasePolicy.ADULT_PURCHASE_NOTICE_HASH };
-  if (alternative && adultEvidence) await purchasePolicy.recordVerifiedAdultEvidence({ ...intent,
-    adultParentOwnContactIndiaVerified: true, approvalRef: policy.adultEvidenceApprovalRef,
-    verificationRef: "OFFLINE-VERIFIED-ADULT-CONTACT-PROOF", verifiedBy: "OFFLINE-REVIEWER",
-    verifiedAt: new Date(clock - 60000).toISOString(), expiresAt: policy.reviewDueAt.toISOString(),
-  }, { db, env, now: new Date(clock) });
-  async function authorize(extra = {}) {
-    intent.metaConsentGranted = false; intent.metaConsentId = null;
-    intent.memoryAssessmentSessionId = null; intent.trackId = "school_unspecified";
-    const body = { policyId: policy.id, noticeVersion: policy.noticeVersion,
-      noticeHash: policy.noticeHash, ...extra };
-    const response = await purchasePolicy.createAdultPurchaseAuthorization(body, intent, { db, env, now: new Date(clock) });
-    intent.purchaseMeasurement = await purchasePolicy.checkoutPurchaseMeasurement({ ...body, purchaseAuthorizationToken: response.token, measurementRefused: extra.refused },
-      intent, { db, env, parents: true, now: new Date(clock) });
-    return response;
-  }
+  const consentService = cache.get(resolve(root, "services/memoryMetaConsent.js")).namespace;
   async function capture({ event = "payment.captured", status = "captured", amount = 9900, signature = true } = {}) {
     const body = Buffer.from(JSON.stringify({ event, created_at: Math.floor(clock/1000), payload: { payment: { entity: {
       id: "pay_fixture", order_id: "order_fixture", amount, currency: "INR", status,
@@ -127,7 +96,7 @@ async function fixture({ granted = true, adult = true, revoked = false, response
     const res = { code: 200, status(n) { this.code = n; return this; }, json(data) { this.data = data; return this; } };
     await handlers[0](req, res); return res;
   }
-  return { calls, rows, claims, intent, consent, db, env, delivery, config, capture, logs, policy, purchasePolicy, authorizations, authorize, setClock: value => { clock = +new Date(value); } };
+  return { calls, rows, claims, intent, consent, db, env, delivery, config, capture, logs, consentService, setClock: value => { clock = +new Date(value); } };
 }
 
 test("signed capture records once; webhook repeats send one stable adult Purchase to BrainoDad", async () => {
@@ -182,157 +151,47 @@ test("BrainoDad never falls back to the FluencyJet dataset or token", async () =
   assert.equal(f.config.getCapiDestination("memory_masterclass_99", { ...f.env, MEMORY_META_PIXEL_ID: "1246171816816642" }).enabled, false);
 });
 
-test("approved alternative: no legacy receipt, captured once, accepted CAPI log and audit evidence", async () => {
-  const f = await fixture({ alternative: true });
-  const a = await f.authorize(); assert.equal(a.eligible, true);
-  await f.capture(); await f.capture();
-  assert.equal(f.rows.length, 1); assert.equal(f.rows[0].metaConsentGranted, false);
-  assert.equal(f.calls.length, 1); assert.equal(f.rows[0].metaDeliveryStatus, "DELIVERED");
-  const e = f.calls[0].body.data[0];
-  assert.equal(e.event_id, "memory_masterclass_99_purchase_pay_fixture");
-  assert.equal(e.custom_data.value, 99); assert.equal(e.custom_data.currency, "INR");
-  assert.match(f.calls[0].url, /1998316064175555\/events$/);
-  assert.ok(f.logs.some(l => l.includes("DELIVERED") && l.includes("value=99 currency=INR")));
-  assert.equal(f.authorizations.find(a=>a.decision === "ALTERNATIVE_AUTHORIZED").evidence.policyVersion, f.policy.id);
-  assert.equal(f.authorizations.find(a=>a.decision === "ALTERNATIVE_AUTHORIZED").evidence.refusalState, "NO_KNOWN_REFUSAL");
-  assert.ok(!JSON.stringify(f.calls).includes("PRIVATE_"));
-  assert.ok(!JSON.stringify(f.calls).includes(a.token));
-});
 
-for (const adultParentOwnContactIndia of [false, undefined, "true", true]) test(`unknown adult cannot be promoted by browser declaration: ${adultParentOwnContactIndia}`, async () => {
-  const f = await fixture({ alternative: true, adultEvidence: false });
-  assert.equal((await f.authorize({ adultParentOwnContactIndia })).eligible, false);
-  await f.capture(); assert.equal(f.rows.length, 1); assert.equal(f.calls.length, 0);
-});
-
-test("explicit refusal persists and blocks alternative AND later valid browser consent", async () => {
-  const f = await fixture({ alternative: true }); await f.authorize({ refused: true });
-  f.intent.metaConsentGranted = true; f.intent.metaConsentId = "receipt_fixture";
-  await f.capture(); assert.equal(f.calls.length, 0);
-  assert.ok(f.authorizations.find(a=>a.decision === "REFUSED").blockedAt);
-});
-
-test("withdrawal between checkout and capture blocks without stopping payment accounting", async () => {
-  const f = await fixture({ alternative: true }); const a = await f.authorize();
-  await f.purchasePolicy.withdrawAdultPurchaseAuthorization(a.token, { db: f.db });
-  await f.capture(); assert.equal(f.rows.length, 1); assert.equal(f.calls.length, 0);
-});
-
-test("alternative retry rechecks live policy and retains stable ID/time", async () => {
-  const f = await fixture({ alternative: true, responseStatus: 503 }); await f.authorize(); await f.capture();
-  assert.equal(f.rows[0].metaDeliveryStatus, "RETRY");
-  const first = f.calls[0].body.data[0]; let accepted;
-  await f.delivery.deliverMemoryPurchase("purchase_fixture", { db: f.db, env: f.env,
-    now: () => new Date(Date.now() + 120000), send: async input => { accepted = input; return { ok: true }; } });
-  assert.equal(accepted.eventId, first.event_id); assert.equal(Math.floor(accepted.eventTime/1000), first.event_time);
-});
-
-for (const disable of ["environment", "database", "global", "deadline"]) test(`live disable/expiry blocks pending alternative: ${disable}`, async () => {
-  const f = await fixture({ alternative: true, responseStatus: 503 }); await f.authorize(); await f.capture();
-  if (disable === "environment") f.env.MEMORY_META_ADULT_PURCHASE_ENABLED = "false";
-  if (disable === "database") f.policy.enabled = false;
-  if (disable === "global") f.env.MEMORY_META_PURCHASE_SHARING_BLOCKED = "true";
-  const now = disable === "deadline" ? new Date("2027-05-13T00:00:00+05:30") : new Date(Date.now() + 120000);
-  if (disable === "deadline") f.rows[0].metaEventTime = new Date(now.getTime() - 120000);
-  let sent = 0;
-  await f.delivery.deliverMemoryPurchase("purchase_fixture", { db: f.db, env: f.env, now: () => now,
-    send: async () => { sent++; return { ok: true }; } });
-  assert.equal(sent, 0); assert.equal(f.rows[0].metaDeliveryStatus, "SKIPPED_CONSENT");
-});
-
-test("May 13 deadline falls back to still-valid existing adult consent", async () => {
-  const f = await fixture({ alternative: true });
-  f.consent.expiresAt = new Date("2027-06-01");
-  f.setClock("2027-05-13T00:00:00+05:30");
-  await f.capture(); assert.equal(f.calls.length, 1);
-});
-
-test("alternative disabled without consent does not queue; cannot manufacture approval", async () => {
-  const f = await fixture(); assert.equal((await f.authorize({ approved: true })).eligible, false);
-  await f.capture(); assert.equal(f.calls.length, 0); assert.equal(f.rows[0].metaAttempts, 0);
-});
-
-test("missing legal/Meta/adult-evidence approval, altered notice or review expiry fails closed", async () => {
-  for (const field of ["legalApprovalRef", "metaApprovalRef", "adultEvidenceApprovalRef", "noticeHash", "restrictionsCleared"]) {
-    const f = await fixture({ alternative: true }); f.policy[field] = field === "restrictionsCleared" ? false : "";
-    assert.equal((await f.authorize()).eligible, false, field);
+// Ten independent new buyers: each genuine capture is recorded once, no permission
+// is inferred from their details, the Parents route, payment or abandoned flags.
+test("ten first-time captures without authorization: ten accounting rows, zero CAPI events", async()=>{
+  let recorded=0, delivered=0;
+  for(let i=0;i<10;i++) {
+    const f=await fixture({granted:false}); f.intent.metaConsentId=null; f.intent.metaConsentVersion=null;
+    f.env.MEMORY_META_ADULT_PURCHASE_ENABLED="true"; // abandoned flags have no effect
+    await f.capture(); await f.capture();
+    recorded+=f.rows.length; delivered+=f.calls.length;
+    assert.equal(f.rows[0].metaDeliveryStatus,"SKIPPED_CONSENT"); assert.equal(f.rows[0].metaAttempts,0);
   }
-  const f = await fixture({ alternative: true }); f.policy.reviewDueAt = new Date(0);
-  assert.equal((await f.authorize()).eligible, false);
+  assert.equal(recorded,10); assert.equal(delivered,0);
 });
-
-test("wrong contact, stale token and assessment-linked checkout cannot use alternative authorization", async () => {
-  const f = await fixture({ alternative: true }); const a = await f.authorize();
-  f.intent.purchaserEmail = "someone-else@example.test";
-  await f.capture(); assert.equal(f.calls.length, 0);
-  const g = await fixture({ alternative: true }); await g.authorize(); g.intent.memoryAssessmentSessionId = "child-session";
-  await g.capture(); assert.equal(g.calls.length, 0);
-  const h = await fixture({ alternative: true }); const token = (await h.authorize()).token;
-  assert.equal((await h.purchasePolicy.checkoutPurchaseMeasurement({ purchaseAuthorizationToken: token }, h.intent,
-    { db: h.db, env: h.env, parents: true, now: new Date(Date.now()+3600000) })).alternativeId, null);
-});
-
-test("alternative eligibility never turns failed payment into Purchase", async () => {
-  const f = await fixture({ alternative: true }); await f.authorize(); await f.capture({ event: "payment.failed" });
-  assert.equal(f.rows.length, 0); assert.equal(f.calls.length, 0);
-});
-
-test("enabling an alternative policy never revives historical skipped captures", async () => {
-  const f = await fixture({ granted: false }); await f.capture();
-  f.env.MEMORY_META_ADULT_PURCHASE_ENABLED = "true"; f.env.MEMORY_META_ADULT_PURCHASE_POLICY_ID = f.policy.id;
-  await f.authorize(); await f.delivery.runMemoryMetaDelivery({ db: f.db, env: f.env });
-  assert.equal(f.calls.length, 0); assert.equal(f.rows[0].metaAttempts, 0);
-});
-
-
-test("buyer-linked historical declines block a new alternative without changing old records", async () => {
-  const f = await fixture({ alternative: true });
-  f.db.memoryMasterclassCheckoutIntent.findMany = async () => [{ metaConsentId: "old-decline" }];
-  f.db.memoryMetaConsent.findFirst = async () => ({ id: "old-decline" });
-  assert.equal((await f.authorize()).eligible, false);
-  await f.capture(); assert.equal(f.calls.length, 0); assert.equal(f.rows.length, 1);
-});
-
-test("unknown or declined supplied receipt cannot authorize an alternative", async () => {
-  for (const choice of [null, { granted: false }, { granted: true, revokedAt: new Date() }]) {
-    const f = await fixture({ alternative: true });
-    f.db.memoryMetaConsent.findUnique = async () => choice;
-    assert.equal((await f.authorize({ memoryMetaChoiceReceipt: "a".repeat(64) })).eligible, false);
-    await f.capture(); assert.equal(f.calls.length, 0);
+test("explicit checkout refusal and GPC cannot reuse an existing grant",async()=>{
+  for(const options of [{measurementRefused:true},{adultParentOwnContactIndia:false},{gpc:true}]){
+    const f=await fixture();
+    const snapshot=await f.consentService.memoryPurchaseConsentSnapshot({memoryMetaConsentReceipt:"a".repeat(64),...options},f.intent,
+      {db:f.db,env:f.env,gpc:options.gpc});
+    Object.assign(f.intent,snapshot); await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0);
   }
 });
-
-test("GPC blocks both paths and approved policy evidence cannot be changed after checkout", async () => {
-  const f = await fixture({ alternative: true }); await f.authorize();
-  const audit = await f.purchasePolicy.checkoutPurchaseMeasurement({}, f.intent, {db:f.db, env:f.env, gpc:true});
-  assert.equal(audit.blocked, true);
-  f.intent.purchaseMeasurement = audit; await f.capture(); assert.equal(f.calls.length, 0);
-  const g = await fixture({ alternative: true }); await g.authorize();
-  g.policy.authorizationSource = "different-basis";
-  await g.capture(); assert.equal(g.calls.length, 0);
-});
-
-
-for (const change of ["expired", "revoked", "child", "wrong_contact", "approval_changed", "forged_reference"]) test(`server adult evidence is rechecked at capture: ${change}`, async () => {
-  const f = await fixture({alternative:true}); await f.authorize();
-  const proof=f.authorizations.find(a=>a.decision === "ADULT_EVIDENCE_VERIFIED");
-  if(change === "expired") proof.evidence.expiresAt=new Date(0).toISOString();
-  if(change === "revoked") proof.blockedAt=new Date();
-  if(change === "child") proof.adultConfirmed=false;
-  if(change === "wrong_contact") proof.emailHash="not-the-buyer";
-  if(change === "approval_changed") proof.evidence.approvalRef="unapproved-review";
-  if(change === "forged_reference") proof.evidence.verificationRef="changed-proof";
+test("buyer-linked declined receipt blocks sharing without rewriting history",async()=>{
+  const f=await fixture();
+  f.db.memoryMasterclassCheckoutIntent.findMany=async()=>[{metaConsentId:"old-decline"}];
+  f.db.memoryMetaConsent.findFirst=async()=>({id:"old-decline"});
   await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0);
 });
-
-test("operator evidence registration requires reviewed proof, not client claims or payment",async()=>{
-  for(const fields of [{adultParentOwnContactIndiaVerified:false},{verificationRef:""},{verifiedBy:""},{verifiedAt:null},{approvalRef:"unapproved"}]) {
-    const f=await fixture({alternative:true,adultEvidence:false});
-    await assert.rejects(f.purchasePolicy.recordVerifiedAdultEvidence({...f.intent, adultParentOwnContactIndiaVerified:true,
-      approvalRef:f.policy.adultEvidenceApprovalRef,verificationRef:"OFFLINE-PROOF",verifiedBy:"OFFLINE-VERIFIER",
-      verifiedAt:new Date().toISOString(),expiresAt:f.policy.reviewDueAt.toISOString(),...fields},{db:f.db,env:f.env}));
-    assert.equal(f.authorizations.length,0);
+test("withdrawal after an order is rechecked before delivery",async()=>{
+  const f=await fixture(); f.consent.revokedAt=new Date(); f.consent.granted=false;
+  await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0);
+});
+test("emergency sharing block withholds even valid consent, payment still recorded",async()=>{
+  const f=await fixture(); f.env.MEMORY_META_PURCHASE_SHARING_BLOCKED="true";
+  await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0);
+});
+test("May 13 deadline cannot enable an alternative; existing adult consent still works",async()=>{
+  for(const granted of [true,false]) {
+    const f=await fixture({granted}); f.consent.expiresAt=new Date("2027-06-01");
+    f.setClock("2027-05-13T00:00:00+05:30");
+    f.env.MEMORY_META_ADULT_PURCHASE_ENABLED="true";
+    await f.capture(); assert.equal(f.calls.length,granted?1:0);
   }
-  const f=await fixture({alternative:true,adultEvidence:false});
-  assert.equal((await f.authorize({adultConfirmed:true,adultParentOwnContactIndia:true,adultEvidenceId:"forged",approved:true})).eligible,false);
 });

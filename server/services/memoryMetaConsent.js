@@ -60,12 +60,42 @@ export async function memoryConsentSnapshot(receipt, db = prisma) {
   };
 }
 
-export async function purchaseConsentActive(purchase, db = prisma, now = new Date()) {
+// No alternative sharing policy is implemented. These checks reuse existing
+// receipt/checkout tables and never create permissions or backfill purchases.
+async function buyerRefused(purchaser, db) {
+  if (!purchaser?.purchaserEmail || !purchaser?.purchaserPhone) return false;
+  const prior = await db.memoryMasterclassCheckoutIntent.findMany({ where: {
+    OR: [{ purchaserEmail: purchaser.purchaserEmail.trim().toLowerCase() }, { purchaserPhone: purchaser.purchaserPhone }],
+    metaConsentId: { not: null },
+  }, select: { metaConsentId: true } });
+  const ids = [...new Set(prior.map(x => x.metaConsentId).filter(Boolean))];
+  if (!ids.length) return false;
+  return Boolean(await db.memoryMetaConsent.findFirst({ where: { id: { in: ids },
+    OR: [{ granted: false }, { revokedAt: { not: null } }],
+  }, select: { id: true } }));
+}
+
+export async function memoryPurchaseConsentSnapshot(body, purchaser, {
+  db = prisma, gpc = false, env = process.env,
+} = {}) {
+  let snapshot = await memoryConsentSnapshot(body.memoryMetaConsentReceipt, db);
+  if (body.memoryMetaChoiceReceipt) {
+    const choice = await memoryConsentSnapshot(body.memoryMetaChoiceReceipt, db);
+    if (!choice.metaConsentGranted) snapshot = choice;
+  }
+  if (gpc || body.measurementRefused === true || body.adultParentOwnContactIndia === false ||
+      env.MEMORY_META_PURCHASE_SHARING_BLOCKED === "true" || await buyerRefused(purchaser, db))
+    snapshot = { ...snapshot, metaConsentGranted: false };
+  return snapshot;
+}
+
+export async function purchaseConsentActive(purchase, db = prisma, now = new Date(), env = process.env) {
+  if (env.MEMORY_META_PURCHASE_SHARING_BLOCKED === "true") return false;
   if (purchase.metaConsentGranted !== true || !purchase.metaConsentId ||
       purchase.metaConsentVersion !== MEMORY_META_CONSENT_VERSION) return false;
   const record = await db.memoryMetaConsent.findUnique({
     where: { id: purchase.metaConsentId },
   });
-  return consentActive(record, now) && record.revision === purchase.metaConsentRevision;
+  return consentActive(record, now) && record.revision === purchase.metaConsentRevision && !await buyerRefused(purchase, db);
 }
 

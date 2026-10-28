@@ -12,7 +12,6 @@ import {
 } from "@jest/globals";
 
 const mockPrisma = {
-  memoryAdultPurchaseAuthorization: { findFirst: async () => null, findUnique: async () => null },
   memoryMetaConsent: { findUnique: jest.fn() },
   $executeRaw: jest.fn(),
   $transaction: jest.fn(),

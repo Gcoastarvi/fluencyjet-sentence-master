@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import prisma from "../db/client.js";
 import { sendCapiPurchase } from "../lib/metaCapi.js";
 import { getCapiDestination } from "../config/metaTracking.js";
-import { purchaseMeasurementAuthorized } from "./memoryAdultPurchasePolicy.js";
+import { purchaseConsentActive } from "./memoryMetaConsent.js";
 const MEMORY_MASTERCLASS_EVENT_SOURCE_URL = "https://www.fluencyjet.com/memory-masterclass/thank-you";
 const MEMORY_MASTERCLASS_CONTENT_NAME = "Amaze Memory Live Study Memory Class";
 
@@ -40,7 +40,7 @@ export async function deliverMemoryPurchase(id, {
       await finish({ metaDeliveryStatus: "EXPIRED", metaLastErrorCode: "EVENT_WINDOW" });
       return { skipped: true, reason: "expired" };
     }
-    if (!await purchaseMeasurementAuthorized(row, { db, env, now: now() })) {
+    if (!await purchaseConsentActive(row, db, now(), env)) {
       await finish({ metaDeliveryStatus: "SKIPPED_CONSENT", metaLastErrorCode: "CONSENT_INACTIVE" });
       return { skipped: true, reason: "consent_inactive" };
     }

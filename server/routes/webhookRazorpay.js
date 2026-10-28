@@ -1,4 +1,3 @@
-import { purchaseMeasurementAuthorized } from "../services/memoryAdultPurchasePolicy.js";
 import express from "express";
 import { deliverMemoryPurchase } from "../services/memoryMetaDelivery.js";
 import crypto from "crypto";
@@ -141,7 +140,6 @@ router.post(
               id: true,
               memoryAssessmentSessionId: true,
               checkoutSource: true,
-              purchaseMeasurement: true,
               metaConsentId: true,
               metaConsentGranted: true,
               metaConsentAt: true,
@@ -259,10 +257,8 @@ router.post(
       const memoryMetaEventId =
         `${MEMORY_MASTERCLASS_PRODUCT_KEY}_purchase_${paymentId}`;
 
-      let measurementAuthorized = memoryIntent.metaConsentGranted === true && !memoryIntent.purchaseMeasurement?.blocked;
-      if (!measurementAuthorized && memoryIntent.purchaseMeasurement?.alternativeId) {
-        try { measurementAuthorized = await purchaseMeasurementAuthorized(memoryIntent); } catch { /* capture accounting still proceeds */ }
-      }
+      const measurementAuthorized = memoryIntent.metaConsentGranted === true &&
+        process.env.MEMORY_META_PURCHASE_SHARING_BLOCKED !== "true";
       let memoryRecord;
 
       try {

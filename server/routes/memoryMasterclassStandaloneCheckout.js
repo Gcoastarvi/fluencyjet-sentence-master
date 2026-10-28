@@ -1,8 +1,7 @@
-import { checkoutPurchaseMeasurement } from "../services/memoryAdultPurchasePolicy.js";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import prisma from "../db/client.js";
-import { memoryConsentSnapshot } from "../services/memoryMetaConsent.js";
+import { memoryConsentSnapshot, memoryPurchaseConsentSnapshot } from "../services/memoryMetaConsent.js";
 import { getRazorpayClient, validatePurchaserDetails } from "./memoryMasterclassCheckout.js";
 import { MEMORY_MASTERCLASS_EVENT, memoryMasterclassBookingOpen } from "../config/memoryMasterclassEvent.js";
 
@@ -55,10 +54,9 @@ router.post("/create-order", orderLimiter, async (req, res) => {
     });
   }
   try {
-    const consent = await memoryConsentSnapshot(body.memoryMetaConsentReceipt);
-    let measurement;
-    try { measurement = await checkoutPurchaseMeasurement(body, purchaser, { parents: body.checkoutContext === "parents", gpc: req.headers["sec-gpc"] === "1" }); }
-    catch { measurement = { blocked: true, blockSource: "AUTHORIZATION_UNAVAILABLE", alternativeId: null }; }
+    let consent;
+    try { consent = await memoryPurchaseConsentSnapshot(body, purchaser, { gpc: req.headers["sec-gpc"] === "1" }); }
+    catch { consent = await memoryConsentSnapshot(null); } // payment works; measurement denied
     const order = await getRazorpayClient().orders.create({
       amount: 9900, currency: "INR", receipt: `memory_vsl_${Date.now().toString(36)}`,
       notes: {
@@ -70,7 +68,6 @@ router.post("/create-order", orderLimiter, async (req, res) => {
     const intent = await prisma.memoryMasterclassCheckoutIntent.create({
       data: {
         ...consent,
-        purchaseMeasurement: measurement,
         memoryAssessmentSessionId: null,
         checkoutSource: "standalone_vsl",
         source: "whatsapp_vsl",

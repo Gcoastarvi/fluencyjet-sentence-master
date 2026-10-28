@@ -1,6 +1,5 @@
-import { checkoutPurchaseMeasurement } from "../services/memoryAdultPurchasePolicy.js";
 import express from "express";
-import { memoryConsentSnapshot } from "../services/memoryMetaConsent.js";
+import { memoryConsentSnapshot, memoryPurchaseConsentSnapshot } from "../services/memoryMetaConsent.js";
 import Razorpay from "razorpay";
 import prisma from "../db/client.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
@@ -238,15 +237,13 @@ router.post("/create-order", async (req, res) => {
       },
     });
 
-    const consent = await memoryConsentSnapshot(body.memoryMetaConsentReceipt);
-    let measurement;
-    try { measurement = await checkoutPurchaseMeasurement(body, purchaser, { parents: false, gpc: req.headers["sec-gpc"] === "1" }); }
-    catch { measurement = { blocked: true, blockSource: "AUTHORIZATION_UNAVAILABLE", alternativeId: null }; }
+    let consent;
+    try { consent = await memoryPurchaseConsentSnapshot(body, purchaser, { gpc: req.headers["sec-gpc"] === "1" }); }
+    catch { consent = await memoryConsentSnapshot(null); } // payment works; measurement denied
     const checkoutIntent =
       await prisma.memoryMasterclassCheckoutIntent.create({
         data: {
           ...consent,
-          purchaseMeasurement: measurement,
           memoryAssessmentSessionId: session.id,
 
           razorpayOrderId: order.id,

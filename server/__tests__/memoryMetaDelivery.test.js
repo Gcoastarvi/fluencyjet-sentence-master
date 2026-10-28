@@ -1,7 +1,6 @@
 import { jest, test, expect, beforeEach } from "@jest/globals";
 const db = {
   memoryMasterclassCheckoutIntent: { findMany: async () => [] },
-  memoryAdultPurchaseAuthorization: { findFirst: async () => null, findUnique: async () => null },
   memoryMasterclassPurchase: { updateMany: jest.fn(), findUnique: jest.fn(), findMany: jest.fn() },
   memoryMetaConsent: { findUnique: jest.fn() },
 };
