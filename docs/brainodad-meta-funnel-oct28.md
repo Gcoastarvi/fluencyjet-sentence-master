@@ -107,51 +107,144 @@ assessment/browser identity. Restrict to new intents after activation; never sca
 or requeue historical SKIPPED_CONSENT/declined rows. Keep stable event IDs and
 existing delivery outcomes/retries. No flag or authorization path is added here.
 
-## Verification actually performed
+## Final release review — verified test results
 
-75 focused offline tests pass:
+This section supersedes the initial 75-test review. No production settings,
+consent records or customer data were accessed or modified. Production SHAs
+were rechecked and remain exactly the baselines above.
 
-- 57 browser-API/consent/navigation/dataset/dedup tests using mocked window/SDK.
-- 6 actual component-handler/observer tests with mocked React hooks, DOM,
-  Razorpay and API: open ordering, failed order/open, no-choice booking and
-  visibility. These are NOT a rendered Chromium end-to-end suite.
-- 12 dependency-free VM tests execute the actual backend webhook, delivery,
-  consent and CAPI serializer with mocked Prisma, Express router and HTTP.
-  They cover signatures, captures, duplicates, permission/age/refusal, retries,
-  claims, stable values/IDs/destination, child-field exclusion and no backfill.
-- Three modified JSX components parse successfully with the existing runtime's
-  Babel parser. This is not a full Vite build.
+| Check | Result | Scope |
+|---|---|---|
+| Full frontend production build | PASS | Exact repository client lockfile, npm ci without lifecycle scripts in scratch, sanitized environment, npm run build; all 916 modules compiled |
+| Existing/new frontend unit and safety regressions | 161 PASS | All fetched lib/memory/config tests, QA isolation/receipt policy/navigation tests |
+| Existing backend Jest regressions | 156 PASS | Six suites: schedule, checkout, consent, delivery, destination and Razorpay attribution; includes expired-event rejection for both order routes |
+| Actual component-handler and CAPI/webhook VM tests | 18 PASS | Existing PR tests; all provider/DB operations mocked |
+| Network parser tests | 9 PASS | Existing Python parser suite |
+| Rendered production-bundle Chromium tests | 11 PASS | Desktop 1280px, mobile 390px, schedule/expiry, Pixel owner, privacy, CTA, class selection/navigation, popup, mocked Razorpay, failed order, other three products |
 
-Commands from repository root (sanitized shell / test fixtures only):
+Total: **355 passing tests**, plus the successful full production build.
+The final rendered run uses the lockfile-built production bundle. No real
+payment or Meta HTTP request is made. Three legacy attribution test expectations
+were parameterized over school/advanced tracks; four old assertions expecting
+browser identifiers were updated to assert their deliberate removal, while
+adult-contact and payment assertions remain. Checkout tests freeze a test clock
+before the configured class; two new tests advance beyond it and verify 409
+before either provider or assessment-database access. Fake dates are test-only.
+
+Commands from repository root:
 
 ```sh
-node --test client/src/lib/memorySavedCompletion.test.js client/src/lib/memoryBrowserPolicy.test.js client/src/lib/metaPixel.test.js client/src/lib/memoryMetaConsent.test.js client/src/lib/memoryCheckoutConsent.test.js client/src/lib/funnelDocument.test.js
-node --experimental-vm-modules --test server/__tests__/memoryFunnel.offline.mjs
-node --experimental-vm-modules --test client/tests/memoryFunnelComponents.offline.mjs
+npm --prefix client ci --ignore-scripts --no-audit --no-fund
+npm --prefix client run build
+node --test client/src/lib/*.test.js client/src/components/memory/*.test.js client/src/data/memory/*.test.js client/tests/runMemoryQa.test.mjs client/tests/memoryNavigationDiagnostics.test.mjs client/tests/memoryReceiptPolicy.test.mjs
+node --experimental-vm-modules server/node_modules/.bin/jest --config server/jest.config.js --runInBand memoryMasterclassEvent memoryMasterclassCheckout memoryMetaConsent memoryMetaDelivery metaTracking razorpayPurchaseAttribution
+node --experimental-vm-modules --test client/tests/memoryFunnelComponents.offline.mjs server/__tests__/memoryFunnel.offline.mjs
+python client/tests/memoryQaNetwork.test.py
+# Explicit test-tool locations, not production settings:
+BRAINODAD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs BRAINODAD_CHROMIUM=/path/to/chromium node --test client/tests/memoryRelease.rendered.mjs
 ```
 
-Component tests use the project's installed Vite transformer. In the inspection
-workspace, where project packages were unavailable, an existing runtime Babel
-bundle was supplied via BRAINODAD_QA_BABEL_BUNDLE. No new dependency is required.
-An attempted isolated test-package download was stopped when unavailable; no
-application packages or lockfiles changed. The full inherited Jest suite,
-rendered browser suite, build, live Meta matching and production worker settings
-are NOT verified. Mocked leases/uniqueness are not a real PostgreSQL concurrency
-test. Storage-blocked browsers may have weaker browser dedup; server payment
-dedup remains authoritative. These limitations are release-review blockers for
-claiming complete end-to-end validation, not evidence that the focused tests failed.
+All application test executions used sanitized environments and fixtures.
+Dependencies/tools were installed in scratch; manifests/lockfiles were not
+modified. Prisma Client generation used --no-engine, with no DB connection or
+migration. Existing namespace runner cannot launch in this host because Linux
+user-namespace mapping is denied. It was not weakened. Instead the new rendered
+suite serves the real production bundle entirely through request interception,
+blocks service workers, fulfills every page request from local files/fixtures,
+and forces browser background traffic through a closed proxy. There is no live
+HTTP application server or external request continuation. The existing inherited
+Chromium suite is not claimed green; the 11 new rendered cases cover this
+release's stated requirements. External media/images are mocked or use the
+application's fallback layout. Visual desktop/mobile screenshots were inspected.
 
-## Additional production issue, intentionally unchanged
+Build warnings about large chunks, confetti imports and old browser metadata
+are non-fatal and outside this patch. A real PostgreSQL concurrency test, actual
+Meta acceptance/matching, and production delivery-worker flags remain untested.
+The mocks cannot prove real provider availability or exactly-once network delivery.
 
-Parents currently checks EVENT_DATE = 2026-10-25. Today is October 28. A newer
-event response can leave paid buttons disabled through the existing date guard.
-Confirm scheduling separately; do not remove that guard or silently change the
-class date in a tracking patch.
+## Scheduling correction and actual production impact
+
+Production frontend has EVENT_DATE = 2026-10-25 and literal October 25 copy;
+production backend's sole approved settings also remain October 25, 5–7 PM IST.
+The old page can accept that same expired date and show enabled booking; old
+order routes do not reject expiry. This is established from deployed source,
+not a real booking attempt. If the backend date were updated alone, the old
+frontend would reject it because of its fixed-date comparison.
+
+PR #6 now derives all four date/time labels and CTA eligibility from the existing
+server-owned event endpoint. Valid start/end and a future start are required.
+No rolling-next-Sunday rule or new date is introduced. PR #7 adds the matching
+server guard to both Memory create-order routes: no new orders once the approved
+class has started. This explicitly closes registration at start time, before
+Razorpay is called; previously issued captured payments still use the unchanged
+webhook/accounting flow. No other product is affected.
+
+**No approved future event was found.** The actual schedule constants are NOT
+changed. An operator must supply/approve the next start/end and confirm its
+existing group destination before reopening sales. Both expired-real-schedule
+and synthetic future-schedule behavior pass tests. The future fixture is clearly
+labelled MOCK and never used as a production setting.
+
+## Matching provenance decision
+
+Keep PR #7's removal. getMemoryVisitorId reuses the origin's stored visitor ID;
+getMemoryFbc prefers shared _fbc cookies and cached click IDs; _fbp is also shared.
+Standalone parent and assessment checkouts use the same attribution helper.
+Neither receipt nor checkout intent records an independently verified adult-only
+browser-identity provenance chain. A parents URL, checkoutContext or school track
+is not sufficient to prove an inherited cookie belongs to the adult purchaser.
+User agent identifies a browser, not its adult operator. No new provenance model
+or tracking architecture is introduced in this review.
+
+Eligible CAPI Purchases still send hashed adult purchaser email/phone, fixed
+product/value/currency, stable event ID/time and safe fixed event-source URL.
+Without fbc/fbp/external_id/user agent, Meta has fewer matching and direct-click
+signals; event match quality and ad attribution may be lower. Delivery success,
+identity matching and Ads Manager attribution are distinct, with no guaranteed
+match rate. Do not restore child-originated identifiers to improve a score.
+A future optional provenance design would require an approved adult-specific
+purpose and auditable journey binding, separate from assessment IDs/cookies,
+plus a fresh review. It is not necessary to deliver currently eligible Purchases.
+
+## Plain-English measurement answers
+
+1. Meta can receive PageView, memory_offer_click, memory_track_selected,
+   memory_offer_view, memory_checkout_open and InitiateCheckout on the allowlisted
+   adult marketing routes, only with current verified adult authorization. A
+   valid captured eligible payment produces the existing server CAPI Purchase.
+2. No student test/module/result/retest or assessment-derived Lead event goes to
+   Meta. Saved sessions, answers and scores remain in the application's database.
+   IMPORTANT: the unchanged tracking.js helper also invokes existing Google
+   Analytics gtag for custom events/page views. Thus these PRs establish
+   **Meta exclusion, not a blanket first-party-only guarantee for all analytics**.
+   A strict first-party-only assessment-analytics requirement needs a separate,
+   explicitly scoped GA decision/change; this review does not silently redesign GA.
+3. Both previously skipped October Purchases remain excluded; no records were
+   inspected, requeued or sent, and no backfill path was added.
+4. Yes, a new purchaser without eligible authorization is still excluded from
+   CAPI, even if Razorpay captured and accounting recorded the payment.
+5. Existing consent-based reporting needs no new legal-basis policy to send an
+   already eligible purchase, but production dedicated-token/worker operation
+   must be verified separately without exposing secrets. To broaden eligibility,
+   the responsible reviewer must approve the exact basis, geography, adult
+   evidence, notice, opt-out/withdrawal and Meta requirements, followed by a
+   separately reviewed prospective authorization implementation. A business
+   owner's approval to deploy code is not itself the missing legal basis.
+6. Evidence is the exact-source baselines, successful lockfile production build,
+   355 passing tests and reviewed screenshots. This supports the tested code,
+   not an approved future schedule, new eligibility policy or live attribution.
+
+**Recommendation: NO-GO for reopening the paid funnel.** The next approved
+schedule is missing. The code review/build/tests are complete; both PRs remain
+separate drafts and nothing has been merged or deployed. A separate deployment
+approval is also required. If strict first-party-only assessment analytics is a
+release requirement, the existing GA behavior must be scoped before release.
 
 ## Release instructions — requires separate explicit deployment approval
 
-1. Keep both PRs draft until rendered-browser QA/full client build and scheduling
-   review are complete. Use only mocked APIs/providers and isolated test envs.
+1. Build and the targeted rendered/regression checks above are complete. Keep
+   both PRs draft until the approved future schedule is supplied and the desired
+   assessment GA scope is resolved. Obtain separate deployment approval.
 2. Re-read Railway deployed SHAs. Reconcile drift; do not merge main or deploy a
    frontend branch wholesale as backend. Do not touch the WhatsApp branch.
 3. Frontend PR targets feature/brainodad-sticky-scroll-tiles-oct19; backend PR
