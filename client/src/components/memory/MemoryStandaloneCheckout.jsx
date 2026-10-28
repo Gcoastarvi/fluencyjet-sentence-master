@@ -37,6 +37,10 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
       const response = await api.post("/memory-masterclass/standalone/create-order", {
         ...attribution,
         memoryMetaConsentReceipt: purchaser.memoryMetaConsentReceipt ?? null,
+        memoryMetaChoiceReceipt: purchaser.memoryMetaChoiceReceipt ?? null,
+        purchaseAuthorizationToken: purchaser.purchaseAuthorizationToken ?? null,
+        measurementRefused: purchaser.measurementRefused === true,
+        ...(purchaser.adultParentOwnContactIndia === false ? { adultParentOwnContactIndia: false } : {}),
         audience,
         ...(parentsMode ? { checkoutContext: "parents" } : {}),
       ...(audience === "school" && !parentsMode ? { schoolLevel: purchaser.schoolLevel } : {}),
