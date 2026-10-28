@@ -1,3 +1,4 @@
+import { purchaseMeasurementAuthorized } from "../services/memoryAdultPurchasePolicy.js";
 import express from "express";
 import { deliverMemoryPurchase } from "../services/memoryMetaDelivery.js";
 import crypto from "crypto";
@@ -140,6 +141,7 @@ router.post(
               id: true,
               memoryAssessmentSessionId: true,
               checkoutSource: true,
+              purchaseMeasurement: true,
               metaConsentId: true,
               metaConsentGranted: true,
               metaConsentAt: true,
@@ -257,6 +259,10 @@ router.post(
       const memoryMetaEventId =
         `${MEMORY_MASTERCLASS_PRODUCT_KEY}_purchase_${paymentId}`;
 
+      let measurementAuthorized = memoryIntent.metaConsentGranted === true && !memoryIntent.purchaseMeasurement?.blocked;
+      if (!measurementAuthorized && memoryIntent.purchaseMeasurement?.alternativeId) {
+        try { measurementAuthorized = await purchaseMeasurementAuthorized(memoryIntent); } catch { /* capture accounting still proceeds */ }
+      }
       let memoryRecord;
 
       try {
@@ -292,7 +298,7 @@ router.post(
               metaConsentVersion: memoryIntent.metaConsentVersion ?? null,
               metaConsentSource: memoryIntent.metaConsentSource ?? null,
               metaConsentRevision: memoryIntent.metaConsentRevision ?? null,
-              metaDeliveryStatus: memoryIntent.metaConsentGranted === true ? "PENDING" : "SKIPPED_CONSENT",
+              metaDeliveryStatus: measurementAuthorized ? "PENDING" : "SKIPPED_CONSENT",
               metaNextAttemptAt: new Date(),
               metaEventTime: Number.isInteger(payload.created_at) &&
                 payload.created_at > 0 && payload.created_at * 1000 <= Date.now() + 60000
@@ -360,7 +366,7 @@ router.post(
         });
       }
 
-      if (memoryRecord.metaConsentGranted !== true) {
+      if (!measurementAuthorized) {
         return res.status(200).json({ ok: true, capiSkipped: true, capiSkipReason: "consent_missing" });
       }
       let memoryCapiResult;
@@ -685,3 +691,4 @@ router.get("/spoken-english/status", async (req, res) => {
 });
 
 export default router;
+

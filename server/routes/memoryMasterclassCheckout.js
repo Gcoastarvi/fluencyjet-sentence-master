@@ -1,3 +1,4 @@
+import { checkoutPurchaseMeasurement } from "../services/memoryAdultPurchasePolicy.js";
 import express from "express";
 import { memoryConsentSnapshot } from "../services/memoryMetaConsent.js";
 import Razorpay from "razorpay";
@@ -238,10 +239,14 @@ router.post("/create-order", async (req, res) => {
     });
 
     const consent = await memoryConsentSnapshot(body.memoryMetaConsentReceipt);
+    let measurement;
+    try { measurement = await checkoutPurchaseMeasurement(body, purchaser, { parents: false, gpc: req.headers["sec-gpc"] === "1" }); }
+    catch { measurement = { blocked: true, blockSource: "AUTHORIZATION_UNAVAILABLE", alternativeId: null }; }
     const checkoutIntent =
       await prisma.memoryMasterclassCheckoutIntent.create({
         data: {
           ...consent,
+          purchaseMeasurement: measurement,
           memoryAssessmentSessionId: session.id,
 
           razorpayOrderId: order.id,

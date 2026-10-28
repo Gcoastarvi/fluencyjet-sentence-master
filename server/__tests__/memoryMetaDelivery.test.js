@@ -1,5 +1,7 @@
 import { jest, test, expect, beforeEach } from "@jest/globals";
 const db = {
+  memoryMasterclassCheckoutIntent: { findMany: async () => [] },
+  memoryAdultPurchaseAuthorization: { findFirst: async () => null, findUnique: async () => null },
   memoryMasterclassPurchase: { updateMany: jest.fn(), findUnique: jest.fn(), findMany: jest.fn() },
   memoryMetaConsent: { findUnique: jest.fn() },
 };
@@ -101,3 +103,4 @@ test("worker claims only bounded Memory records, never WhatsApp or FJ jobs", asy
     where: expect.objectContaining({ productKey: "memory_masterclass_99", metaDelivered: false }), take: 5,
   }));
 });
+

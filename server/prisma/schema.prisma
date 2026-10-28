@@ -615,6 +615,9 @@ enum ReconciliationDecision {
 model MemoryMasterclassCheckoutIntent {
   id String @id @default(cuid())
 
+  // New orders only: separate purchase authorization, never fabricated consent.
+  purchaseMeasurement Json?
+
   memoryAssessmentSessionId String?
   memoryAssessmentSession   MemoryAssessmentSession? @relation(fields: [memoryAssessmentSessionId], references: [id], onDelete: Restrict)
 
@@ -744,4 +747,45 @@ model MemoryMetaConsent {
   revokedAt      DateTime?
   expiresAt      DateTime
   revision       Int @default(1)
+}
+
+
+
+model MemoryAdultPurchasePolicy {
+  id String @id @db.VarChar(80)
+  enabled Boolean @default(false)
+  scope String @db.VarChar(80)
+  effectiveAt DateTime
+  expiresAt DateTime
+  reviewDueAt DateTime
+  legalApprovalRef String @db.VarChar(200)
+  metaApprovalRef String @db.VarChar(200)
+  adultEvidenceApprovalRef String @db.VarChar(200)
+  authorizationSource String @db.VarChar(200)
+  noticeVersion String @db.VarChar(80)
+  noticeHash String @db.VarChar(64)
+  restrictionsCleared Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  authorizations MemoryAdultPurchaseAuthorization[]
+}
+
+model MemoryAdultPurchaseAuthorization {
+  id String @id @default(cuid())
+  tokenHash String @unique @db.VarChar(64)
+  emailHash String @db.VarChar(64)
+  phoneHash String @db.VarChar(64)
+  adultConfirmed Boolean @default(false)
+  policyId String? @db.VarChar(80)
+  policy MemoryAdultPurchasePolicy? @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  decision String @db.VarChar(40)
+  evidence Json
+  browserConsentId String?
+  browserConsentRevision Int?
+  blockedAt DateTime?
+  blockReason String? @db.VarChar(80)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([emailHash, blockedAt])
+  @@index([phoneHash, blockedAt])
 }

@@ -60,11 +60,12 @@ export async function memoryConsentSnapshot(receipt, db = prisma) {
   };
 }
 
-export async function purchaseConsentActive(purchase, db = prisma) {
+export async function purchaseConsentActive(purchase, db = prisma, now = new Date()) {
   if (purchase.metaConsentGranted !== true || !purchase.metaConsentId ||
       purchase.metaConsentVersion !== MEMORY_META_CONSENT_VERSION) return false;
   const record = await db.memoryMetaConsent.findUnique({
     where: { id: purchase.metaConsentId },
   });
-  return consentActive(record) && record.revision === purchase.metaConsentRevision;
+  return consentActive(record, now) && record.revision === purchase.metaConsentRevision;
 }
+

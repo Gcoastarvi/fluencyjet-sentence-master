@@ -14,11 +14,13 @@ import { MEMORY_MASTERCLASS_EVENT } from "../config/memoryMasterclassEvent.js";
 const mockOrderCreate = jest.fn();
 
 const mockPrisma = {
+  memoryAdultPurchaseAuthorization: { findFirst: async () => null, findUnique: async () => null },
   memoryMetaConsent: { findUnique: jest.fn() },
   memoryAssessmentSession: {
     findUnique: jest.fn(),
   },
   memoryMasterclassCheckoutIntent: {
+    findMany: async () => [],
     create: jest.fn(),
   },
 };
