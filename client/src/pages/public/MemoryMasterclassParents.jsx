@@ -1,4 +1,5 @@
-import { useState } from "react";
+import MemoryOfferVisibility from "../../components/memory/MemoryOfferVisibility";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
 import MemoryStandaloneCheckout from "../../components/memory/MemoryStandaloneCheckout";
@@ -115,6 +116,7 @@ function Step({ number, title, detail, tone }) {
 
 export default function MemoryMasterclassParents() {
   const navigate = useNavigate();
+  const offerVisit = useRef(false);
   const { event, error, retry } = useMemoryMasterclassEvent();
 
   const [grade, setGrade] = useState(null);
@@ -214,6 +216,8 @@ export default function MemoryMasterclassParents() {
         const bookingDisabled = !expectedEvent || busy;
 
         const booking = (extraClass = "") => (
+          <MemoryOfferVisibility ready={expectedEvent} blocked={dialogOpen || busy}
+            visit={offerVisit} source="memory_masterclass_parents" placement="parents">
           <button
             type="button"
             className={`bdp-buy ${extraClass}`}
@@ -223,6 +227,7 @@ export default function MemoryMasterclassParents() {
             Book My Child's Seat <span aria-hidden="true">—</span> ₹99
             <span aria-hidden="true"> →</span>
           </button>
+          </MemoryOfferVisibility>
         );
 
         return (
@@ -832,3 +837,4 @@ export default function MemoryMasterclassParents() {
     </MemoryStandaloneCheckout>
   );
 }
+

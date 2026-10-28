@@ -1,3 +1,4 @@
+import { reportSavedMemoryCompletion } from "../../lib/memorySavedCompletion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
@@ -461,6 +462,7 @@ export default function MemoryChallengeTest() {
 
     try {
       let result = null;
+      let savedSessionKey = null;
 
       if (MEMORY_SESSION_PERSISTENCE_ENABLED) {
         try {
@@ -494,6 +496,7 @@ export default function MemoryChallengeTest() {
           }
 
           result = sessionPayload.session.result;
+          savedSessionKey = sessionPayload.session.publicToken;
 
           try {
             window.sessionStorage.setItem(
@@ -549,12 +552,11 @@ export default function MemoryChallengeTest() {
         // Navigation can continue even if result persistence fails.
       }
 
-      trackEvent("memory_test_completed", {
-        funnel: "amaze_memory",
+      reportSavedMemoryCompletion({
+        savedSessionKey,
         track: assessmentConfig.trackId,
         form: assessmentConfig.form,
-        score: result.totalScore,
-      });
+      }, trackEvent);
 
       navigate("/memory-challenge/result");
     } catch (error) {
@@ -2111,3 +2113,4 @@ export default function MemoryChallengeTest() {
 
   return null;
 }
+

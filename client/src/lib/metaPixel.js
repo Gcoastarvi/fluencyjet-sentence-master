@@ -1,3 +1,4 @@
+import { memoryBrowserRouteEligible, MEMORY_BROWSER_EVENTS, memoryCommercialParams } from "./memoryBrowserPolicy.js";
 import { memoryConsentGranted } from "./memoryMetaConsent.js";
 export const FJ_PIXEL_ID = "1246171816816642";
 export const MEMORY_PIXEL_ID = "1998316064175555";
@@ -57,7 +58,7 @@ export function restoreMetaDocumentView(w = window) {
 export function initializeMetaDocument(w = window) {
   if (typeof w.fbq !== "function" || w.fjMetaConsent === false) return false;
   const state = stateFor(w);
-  if (state.memory && !memoryConsentGranted(w)) return false;
+  if (state.memory && (!memoryConsentGranted(w) || !memoryBrowserRouteEligible(w.location))) return false;
   if (state.memory !== isMemoryRoute(w.location.pathname)) return false;
   try { initializePixel(w, state); return true; } catch {
     console.warn("[meta] document initialization failed");
@@ -65,22 +66,13 @@ export function initializeMetaDocument(w = window) {
   }
 }
 
-function privateFieldsRemoved(params) {
-  // Memory events never contain purchaser/learner contact details or tokens.
-  const forbidden = /name|email|phone|contact|token|password|authorization|score|answer|assessment(detail|result)|learner|student/i;
-  if (Array.isArray(params)) return params.map(privateFieldsRemoved);
-  if (!params || typeof params !== "object") return params;
-  return Object.fromEntries(Object.entries(params)
-    .filter(([key]) => key === "content_name" || !forbidden.test(key))
-    .map(([key, value]) => [key, privateFieldsRemoved(value)]));
-}
-
 export function dispatchMetaEvent(eventName, params = {}, {
   memory = false, custom = false, eventID, once = false, view = false,
 } = {}) {
   const w = typeof window === "undefined" ? null : window;
   if (!w || typeof w.fbq !== "function" || w.fjMetaConsent === false) return false;
-  if (memory && !memoryConsentGranted(w)) return false;
+  if (memory && (!memoryConsentGranted(w) || !memoryBrowserRouteEligible(w.location) ||
+      !MEMORY_BROWSER_EVENTS.has(eventName))) return false;
   // Explicit funnel identity also rejects stale callbacks from an unmounted
   // English page on a memory URL (and vice versa).
   if (isMemoryRoute(w.location.pathname) !== memory) return false;
@@ -92,13 +84,23 @@ export function dispatchMetaEvent(eventName, params = {}, {
     if (state.conversions.has(key)) return false;
     try { if (w.localStorage.getItem(`fj_meta_sent:${key}`)) return false; } catch {}
   }
-  const viewKey = `${key}:${JSON.stringify(params)}`;
+  const cleanParams = memory ? memoryCommercialParams(params) : params;
+  const viewKey = `${key}:${JSON.stringify(cleanParams)}`;
+  const sessionKey = `memory_meta_view:${w.location.pathname}:${viewKey}`;
+  if (memory && view) {
+    try { if (Date.now() - Number(w.sessionStorage?.getItem(sessionKey)) < 1800000) return false; } catch {}
+  }
+  // Suppress rapid duplicate CTA callbacks without blocking later real clicks.
+  const clickKey = `${key}:${JSON.stringify(cleanParams)}`;
+  if (memory && /(_click|_selected)$/.test(eventName)) {
+    if (state.lastClick?.key === clickKey && Date.now() - state.lastClick.at < 1500) return false;
+  }
   if (view && state.views.has(viewKey)) return false;
   try {
     initializePixel(w, state);
     const args = [
       custom ? "trackSingleCustom" : "trackSingle", pixelId, eventName,
-      memory ? privateFieldsRemoved(params) : params,
+      cleanParams,
     ];
     if (eventID) args.push({ eventID });
     w.fbq(...args);
@@ -106,7 +108,11 @@ export function dispatchMetaEvent(eventName, params = {}, {
       state.conversions.add(key);
       try { w.localStorage.setItem(`fj_meta_sent:${key}`, "1"); } catch {}
     }
-    if (view) state.views.add(viewKey);
+    if (view) {
+      state.views.add(viewKey);
+      if (memory) { try { w.sessionStorage?.setItem(sessionKey, String(Date.now())); } catch {} }
+    }
+    if (memory && /(_click|_selected)$/.test(eventName)) state.lastClick = { key: clickKey, at: Date.now() };
     return true;
   } catch {
     // Tracking must never prevent registration or payment.
@@ -126,7 +132,7 @@ export function dispatchMetaPageView(path) {
   // Keep prior manually coded FJ PageView semantics, including repeated calls.
   // Only memory applies the new duplicate/query-only suppression.
   if (memory && state.lastPageView === key) return false;
-  if (!dispatchMetaEvent("PageView", {}, { memory })) return false;
+  if (!dispatchMetaEvent("PageView", {}, { memory, view: memory })) return false;
   state.lastPageView = key;
   return true;
 }
@@ -135,22 +141,9 @@ export function trackFjMetaCustom(eventName, params = {}) {
   return dispatchMetaEvent(eventName, params, { custom: true });
 }
 
-export async function trackMemoryLead({ assessmentKey, track, form = "A" }) {
-  if (!assessmentKey) return false;
-  try {
-    // Stable across retries/tabs; never send the public/owner token itself.
-    const digest = await window.crypto.subtle.digest(
-      "SHA-256", new TextEncoder().encode(assessmentKey),
-    );
-    const hash = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
-    return dispatchMetaEvent("Lead", {
-      content_name: "Study Memory Assessment Saved",
-      funnel: "amaze_memory", track, form,
-    }, { memory: true, eventID: `memory_lead_${hash}`, once: true });
-  } catch {
-    console.warn("[meta] memory Lead identity unavailable; event skipped");
-    return false;
-  }
+export async function trackMemoryLead() {
+  // Assessment-derived IDs (even hashed) are student identifiers. Never send.
+  return false;
 }
 
 export function trackMemoryCheckout({ orderId, amount, currency, track, source }) {
@@ -175,3 +168,4 @@ export function setMetaConsent(granted) {
     console.warn("[meta] SDK consent update failed; local consent gate remains active");
   }
 }
+
