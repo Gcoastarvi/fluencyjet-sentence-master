@@ -1,3 +1,4 @@
+import { memoryScheduleLabel } from "../src/lib/memorySchedule.js";
 // Mocked React hooks/DOM and providers, executing real component handlers.
 // No HTTP server, database, payment SDK download or network access.
 import { test } from "node:test";
@@ -36,6 +37,7 @@ async function fixture({ failedOrder = false, failedOpen = false, consent = true
   const modules = new Map();
   const jsx = (type, props) => ({ type, props });
   const mocks = {
+    "../../lib/memorySchedule": { memoryScheduleLabel },
     react, "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: "fragment" },
     "../../api/apiClient": { api: { post: async (...args) => {
       orderCalls.push(args); return failedOrder ? { ok: false } : { ok: true, data: { orderId: "order_mock", amount: 9900, currency: "INR", keyId: "offline" } };

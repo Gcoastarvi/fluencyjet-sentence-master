@@ -117,12 +117,12 @@ were rechecked and remain exactly the baselines above.
 |---|---|---|
 | Full frontend production build | PASS | Exact repository client lockfile, npm ci without lifecycle scripts in scratch, sanitized environment, npm run build; all 916 modules compiled |
 | Existing/new frontend unit and safety regressions | 161 PASS | All fetched lib/memory/config tests, QA isolation/receipt policy/navigation tests |
-| Existing backend Jest regressions | 156 PASS | Six suites: schedule, checkout, consent, delivery, destination and Razorpay attribution; includes expired-event rejection for both order routes |
+| Existing backend Jest regressions | 158 PASS | Six suites: schedule, checkout, consent, delivery, destination and Razorpay attribution; includes expired-event rejection for both order routes |
 | Actual component-handler and CAPI/webhook VM tests | 18 PASS | Existing PR tests; all provider/DB operations mocked |
 | Network parser tests | 9 PASS | Existing Python parser suite |
-| Rendered production-bundle Chromium tests | 11 PASS | Desktop 1280px, mobile 390px, schedule/expiry, Pixel owner, privacy, CTA, class selection/navigation, popup, mocked Razorpay, failed order, other three products |
+| Rendered production-bundle Chromium tests | 12 PASS | Desktop 1280px, mobile 390px, schedule/expiry, Pixel owner, privacy, CTA, class selection/navigation, popup, mocked Razorpay, failed order, other three products |
 
-Total: **355 passing tests**, plus the successful full production build.
+Total: **358 passing tests**, plus the successful full production build.
 The final rendered run uses the lockfile-built production bundle. No real
 payment or Meta HTTP request is made. Three legacy attribution test expectations
 were parameterized over school/advanced tracks; four old assertions expecting
@@ -153,7 +153,7 @@ suite serves the real production bundle entirely through request interception,
 blocks service workers, fulfills every page request from local files/fixtures,
 and forces browser background traffic through a closed proxy. There is no live
 HTTP application server or external request continuation. The existing inherited
-Chromium suite is not claimed green; the 11 new rendered cases cover this
+Chromium suite is not claimed green; the 12 rendered cases cover this
 release's stated requirements. External media/images are mocked or use the
 application's fallback layout. Visual desktop/mobile screenshots were inspected.
 
@@ -179,11 +179,15 @@ class has started. This explicitly closes registration at start time, before
 Razorpay is called; previously issued captured payments still use the unchanged
 webhook/accounting flow. No other product is affected.
 
-**No approved future event was found.** The actual schedule constants are NOT
-changed. An operator must supply/approve the next start/end and confirm its
-existing group destination before reopening sales. Both expired-real-schedule
-and synthetic future-schedule behavior pass tests. The future fixture is clearly
-labelled MOCK and never used as a production setting.
+**Approved schedule update (owner confirmation received):** The owner has now explicitly approved Sunday, November 15, 2026,
+5:00 PM–7:00 PM IST at ₹99. PR #7 settings use exactly
+2026-11-15T17:00:00+05:30 and 2026-11-15T19:00:00+05:30. The
+existing WhatsApp group URL is unchanged and still needs owner confirmation.
+PR #6 displays the approved server label including the year; both existing
+Razorpay descriptions now include the complete date and time range. The rendered
+check verifies the exact label, ₹99/INR checkout, and confirmation page with the
+actual approved schedule served as a mock API response. A separate synthetic
+fixture still tests independence from any hardcoded date.
 
 ## Matching provenance decision
 
@@ -231,20 +235,22 @@ plus a fresh review. It is not necessary to deliver currently eligible Purchases
    separately reviewed prospective authorization implementation. A business
    owner's approval to deploy code is not itself the missing legal basis.
 6. Evidence is the exact-source baselines, successful lockfile production build,
-   355 passing tests and reviewed screenshots. This supports the tested code,
-   not an approved future schedule, new eligibility policy or live attribution.
+   358 passing tests and reviewed screenshots. This supports the tested code,
+   not live provider availability, a new eligibility policy or live attribution.
 
-**Recommendation: NO-GO for reopening the paid funnel.** The next approved
-schedule is missing. The code review/build/tests are complete; both PRs remain
-separate drafts and nothing has been merged or deployed. A separate deployment
-approval is also required. If strict first-party-only assessment analytics is a
-release requirement, the existing GA behavior must be scoped before release.
+**Recommendation: GO for the reviewed schedule/checkout code; HOLD deployment.**
+The approved November 15 date is implemented and all tests pass. Owner confirmation
+of the unchanged WhatsApp destination and explicit deployment approval remain.
+Both PRs stay separate drafts; production is unchanged. Earlier GA/authorization
+limits remain documented and are not altered by this scheduling update.
 
 ## Release instructions — requires separate explicit deployment approval
 
-1. Build and the targeted rendered/regression checks above are complete. Keep
-   both PRs draft until the approved future schedule is supplied and the desired
-   assessment GA scope is resolved. Obtain separate deployment approval.
+1. The November 15 schedule, full build and targeted rendered/regression checks
+   are complete. Confirm the unchanged WhatsApp group destination and obtain
+   explicit deployment approval; keep both PRs draft meanwhile. If strict
+   first-party-only assessment analytics is required, resolve the existing GA
+   scope separately before that claim is made.
 2. Re-read Railway deployed SHAs. Reconcile drift; do not merge main or deploy a
    frontend branch wholesale as backend. Do not touch the WhatsApp branch.
 3. Frontend PR targets feature/brainodad-sticky-scroll-tiles-oct19; backend PR
@@ -277,3 +283,25 @@ later without exposing secrets. An adult receipt is self-attestation, not an
 identity/age-verification system. This change does not promise every payment in
 Ads Manager or guarantee identity matching, ad attribution, or exactly-once
 network transport; stable IDs support deduplication across retries.
+
+
+## Exact incremental files for the approved schedule update
+
+PR #6:
+- client/src/components/memory/MemoryStandaloneCheckout.jsx
+- client/src/components/memory/MemoryMasterclassOffer.jsx
+- client/tests/memoryFunnelComponents.offline.mjs
+- client/tests/memoryRelease.rendered.mjs
+- docs/brainodad-meta-funnel-oct28.md
+
+PR #7:
+- server/config/memoryMasterclassEvent.js
+- server/__tests__/memoryMasterclassEvent.test.js
+
+The only runtime changes in this incremental update are the approved start/end,
+year-inclusive shared date label, and full Razorpay description in the two
+existing Memory checkout components. The pre-start booking guard is preserved.
+Pixel 1998316064175555, CAPI eligibility, captured-payment verification, price,
+other products and WhatsApp workflows remain unchanged. Zero tests failed in
+the final run; initial missing local test dependencies were restored in scratch
+without changing app manifests or lockfiles. No real provider calls were made.

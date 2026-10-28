@@ -20,6 +20,10 @@ after(async () => { await browser?.close(); });
 const synthetic = { key: "MOCK_ONLY_2030", startsAt: "2030-01-02T11:30:00Z", endsAt: "2030-01-02T13:30:00Z",
   dateISO: "2030-01-02", dateLabel: "MOCK APPROVED TEST SCHEDULE", startTime: "5:00 PM", endTime: "7:00 PM",
   timezone: "Asia/Kolkata", timezoneLabel: "IST", whatsappGroupUrl: "https://chat.whatsapp.com/OfflineFixture" };
+// Owner-approved schedule fixture. Frontend and backend PRs have distinct bases;
+// backend tests separately assert the actual config yields these same fields.
+const approved = { ...synthetic, key: "2026-11-15_1700_ist", startsAt: "2026-11-15T11:30:00Z",
+  endsAt: "2026-11-15T13:30:00Z", dateISO: "2026-11-15", dateLabel: "Sunday, 15 November 2026" };
 const expired = { ...synthetic, startsAt: "2026-10-25T11:30:00Z", endsAt: "2026-10-25T13:30:00Z", dateISO: "2026-10-25", dateLabel: "EXPIRED TEST SCHEDULE" };
 
 async function fixture({ granted = true, schedule = synthetic, width = 390, failedOrder = false } = {}) {
@@ -59,13 +63,13 @@ async function fixture({ granted = true, schedule = synthetic, width = 390, fail
     if (granted) localStorage.setItem("brainodad_meta_consent_v1", JSON.stringify({ granted: true,
       receipt: "a".repeat(64), version: "memory_meta_v1", expiresAt: "2099-01-01" }));
     window.offlineOpens = 0;
-    window.Razorpay = class { on() {} open() { window.offlineOpens++; } };
+    window.Razorpay = class { constructor(options) { window.offlineCheckoutOptions = options; } on() {} open() { window.offlineOpens++; } };
   }, { granted });
   const page = await context.newPage();
   page.on("pageerror", e => errors.push(e.message));
   await page.goto("http://brainodad.test/memory-masterclass/parents");
   await page.locator(".bdp-header").waitFor();
-  await page.waitForFunction(() => document.body.textContent.includes("TEST SCHEDULE"));
+  await page.waitForFunction(label => document.body.textContent.includes(label), schedule.dateLabel);
   if (granted) await page.waitForFunction(() => window.memoryMetaConsentVerified === true);
   return { context, page, requests, errors, close: () => context.close() };
 }
@@ -184,6 +188,34 @@ for (const path of ["/spoken-english-vsl", "/vocabulary-vsl", "/german-live-clas
     const calls = await f.page.evaluate(() => window.metaCalls);
     assert.deepEqual(calls.filter(c => c[0] === "init"), [["init", "1246171816816642"]]);
     assert.equal(await f.page.getByRole("contentinfo", { name: "Privacy choices" }).count(), 0);
+    assert.deepEqual(f.errors, []);
+  } finally { await f.close(); }
+});
+
+
+test("approved November schedule is consistent across Parents, Razorpay and confirmation", async () => {
+  const event = approved;
+  const label = "Sunday, 15 November 2026 · 5:00 PM–7:00 PM IST";
+  const f = await fixture({ schedule: event });
+  try {
+    const text = await f.page.locator("body").innerText();
+    assert.ok(text.includes(label));
+    assert.ok(!text.includes("25 October"));
+    assert.equal(await f.page.getByRole("button", { name: /Book My Child's Seat/ }).first().isEnabled(), true);
+    await f.page.getByRole("button", { name: /Book My Child's Seat/ }).first().click();
+    const dialog = f.page.getByRole("dialog");
+    await dialog.getByLabel("Name", { exact: true }).fill("Adult Fixture");
+    await dialog.getByLabel("Email", { exact: true }).fill("adult@example.test");
+    await dialog.getByLabel("Phone", { exact: true }).fill("9111111111");
+    await dialog.getByRole("button", { name: /Continue to Payment/ }).click();
+    await f.page.waitForFunction(() => window.offlineOpens === 1);
+    const checkout = await f.page.evaluate(() => window.offlineCheckoutOptions);
+    assert.equal(checkout.description, `Live Study Memory Class — ${label}`);
+    assert.equal(checkout.amount, 9900); assert.equal(checkout.currency, "INR");
+    await f.page.goto("http://brainodad.test/memory-masterclass/thank-you?source=standalone_vsl");
+    await f.page.getByText(label, { exact: true }).waitFor();
+    assert.equal(await f.page.getByRole("link", { name: /JOIN THE WHATSAPP GROUP/ }).getAttribute("href"), event.whatsappGroupUrl);
+    assert.ok((await meta(f.page)).every(c => c[2] !== "Purchase"));
     assert.deepEqual(f.errors, []);
   } finally { await f.close(); }
 });

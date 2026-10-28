@@ -1,3 +1,4 @@
+import { memoryScheduleLabel } from "../../lib/memorySchedule";
 import { useRef, useState } from "react";
 import { api } from "../../api/apiClient";
 import { buildMemoryCheckoutAttribution, loadRazorpayCheckout } from "./MemoryMasterclassOffer";
@@ -52,7 +53,7 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
         key: order.keyId, order_id: order.orderId,
         amount: order.amount, currency: order.currency,
         name: "Amaze Memory",
-        description: `Live Study Memory Class — ${event.dateLabel}, ${event.startTime} ${event.timezoneLabel}`,
+        description: `Live Study Memory Class — ${memoryScheduleLabel(event)}`,
         prefill: { name: purchaser.name, email: purchaser.email, contact: purchaser.phone },
         handler(payment) {
           const query = new URLSearchParams({ source: "standalone_vsl" });
@@ -119,3 +120,4 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
     </>
   );
 }
+
