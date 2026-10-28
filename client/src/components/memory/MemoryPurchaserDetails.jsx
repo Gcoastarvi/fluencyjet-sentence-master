@@ -1,4 +1,4 @@
-import { purchaseMeasurementRefused, rememberPurchaseAuthorization, refusePurchaseMeasurement } from "../../lib/memoryPurchaseMeasurement";
+import { purchaseMeasurementRefused, refusePurchaseMeasurement } from "../../lib/memoryPurchaseMeasurement";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../api/apiClient";
 import { readMemoryConsent, memoryConsentGranted, memoryConsentReceipt, isMemoryConsentStorageEvent } from "../../lib/memoryMetaConsent";
@@ -32,23 +32,9 @@ export default function MemoryPurchaserDetails({
   const [savingConsent, setSavingConsent] = useState(false);
   const submitting = useRef(false);
   const consentDetails = useRef(null);
-  const [purchasePolicy, setPurchasePolicy] = useState(null);
   const [purchaseRefused, setPurchaseRefused] = useState(() => purchaseMeasurementRefused());
   const [choiceError, setChoiceError] = useState("");
   const paymentBusy = busy || savingConsent;
-  const alternativeMode = measurementManagementOnly && purchasePolicy?.mode === "alternative" &&
-    Date.parse(purchasePolicy.expiresAt) > Date.now();
-  useEffect(() => {
-    if (!measurementManagementOnly) return;
-    let mounted = true, timer;
-    api.get("/memory-meta/purchase-policy").then(response => {
-      if (!mounted || !response.ok || !response.data?.ok) return;
-      setPurchasePolicy(response.data);
-      const delay = Date.parse(response.data.expiresAt) - Date.now();
-      if (Number.isFinite(delay) && delay > 0) timer = setTimeout(() => setPurchasePolicy(null), Math.min(delay, 2147483647));
-    }).catch(() => {}); // existing optional consent remains the safe fallback
-    return () => { mounted = false; clearTimeout(timer); };
-  }, [measurementManagementOnly]);
   const verifiedGrant = memoryConsentGranted();
   const savedDecline = currentMemoryChoice(consentRecord) && !consentRecord.granted;
 
@@ -135,22 +121,10 @@ export default function MemoryPurchaserDetails({
           boot: () => bootMetaDocument(), pageView: path => trackPageView(path),
         })
         : memoryConsentReceipt();
-      let purchaseAuthorizationToken = null;
       const choiceReceipt = readMemoryConsent()?.receipt || null;
-      if (measurementManagementOnly && (alternativeMode || purchaseRefused || savedDecline)) {
-        try {
-          const response = await api.post("/memory-meta/purchase-authorization", {
-            purchaserName: purchaser.name, purchaserEmail: purchaser.email, purchaserPhone: purchaser.phone,
-            policyId: purchasePolicy?.policyId, noticeVersion: purchasePolicy?.noticeVersion, noticeHash: purchasePolicy?.noticeHash,
-            refused: purchaseRefused || savedDecline, memoryMetaChoiceReceipt: choiceReceipt,
-          });
-          if (response.ok && response.data?.ok && response.data.token && rememberPurchaseAuthorization(response.data.token))
-            purchaseAuthorizationToken = response.data.eligible ? response.data.token : null;
-        } catch { /* measurement failure must not stop legitimate payment */ }
-      }
       await onSubmit({
         ...purchaser,
-        purchaseAuthorizationToken, memoryMetaChoiceReceipt: choiceReceipt,
+        memoryMetaChoiceReceipt: choiceReceipt,
         measurementRefused: purchaseRefused || savedDecline,
         ...(standaloneSchool ? { schoolLevel } : {}),
         memoryMetaConsentReceipt: receipt,
@@ -283,8 +257,7 @@ export default function MemoryPurchaserDetails({
             }}>Don't share purchase measurement / withdraw</button>}
           <details ref={consentDetails} id="memory-purchaser-privacy" className={reviewPrivacy ? "mt-2" : "hidden"}>
             <summary className="cursor-pointer rounded underline focus-visible:outline focus-visible:outline-2">What is shared?</summary>
-            {measurementManagementOnly && purchasePolicy?.notice && <p className="mt-2">{purchasePolicy.notice}</p>}
-            <p className="mt-2">{alternativeMode ? "The separate adult purchase policy applies only to authorized payment measurement until its stated expiry. Browser tracking still requires its own valid consent. " : "BrainoDad shares limited browser and consenting adult purchaser details with Meta to measure ads. Your consent choice lasts up to 30 days. "}No student names, scores or answers are shared. You can decline or withdraw through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>. This is separate from WhatsApp consent.</p>
+            <p className="mt-2">BrainoDad shares limited browser and consenting adult purchaser details with Meta to measure ads. Your consent choice lasts up to 30 days. No student names, scores or answers are shared. You can decline or withdraw through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>. This is separate from WhatsApp consent.</p>
           </details>
         </section>
         <button

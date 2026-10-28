@@ -38,7 +38,6 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
         ...attribution,
         memoryMetaConsentReceipt: purchaser.memoryMetaConsentReceipt ?? null,
         memoryMetaChoiceReceipt: purchaser.memoryMetaChoiceReceipt ?? null,
-        purchaseAuthorizationToken: purchaser.purchaseAuthorizationToken ?? null,
         measurementRefused: purchaser.measurementRefused === true,
         audience,
         ...(parentsMode ? { checkoutContext: "parents" } : {}),

@@ -1,553 +1,214 @@
-# BrainoDad tracking review — 28 October 2026
+# BrainoDad final simplified release review — 28 October 2026
 
-## Current decision — clean Parents checkout; alternative policy remains DISABLED
+## Decision and business outcome
 
-This current section supersedes earlier dropdown/self-declaration and in-checkout
-consent-fallback descriptions below. Earlier audit/release sections are retained
-as history. Work stays in existing separate draft PRs #6 and #7. No merge,
-production migration, deployment, activation, customer lookup, consent-record
-change or historical event replay was performed.
+Existing PR #6 (frontend) and PR #7 (backend) remain separate drafts. The
+preverified-record approach is abandoned and REMOVED, rather than replaced with
+another verification or authorization architecture. This document supersedes
+all earlier policy proposals and activation instructions.
 
-### Checkout and non-interactive eligibility
+Parents checkout remains Name, Email, Phone, short privacy disclosure, Privacy
+Policy link, accessible inline Privacy choices, Continue to Payment — ₹99 and
+the existing Cancel action. There is no advertising checkbox, purchaser dropdown,
+replacement declaration, mandatory question, account requirement or verification
+workflow. Existing voluntary measurement controls remain accessible through the
+linked Memory Challenge privacy page. The Parents form never grants consent.
 
-Parents registration shows Name, Email, Phone, Privacy Policy, a short measurement
-disclosure, accessible Privacy choices, Continue to Payment — ₹99 and the existing
-Cancel action. There is NO advertising checkbox, purchaser dropdown, replacement
-adult declaration, extra mandatory question or consent popup in this form,
-regardless of policy state. Privacy choices expands inline and allows refusal /
-withdrawal; it links to the existing voluntary controls on /memory-challenge.
-Those existing controls remain available when the policy is disabled or expires.
-No new browser grant is created by Parents checkout. Existing valid adult consent
-can still support the independent consent path. Pay and the Privacy Policy link
-never constitute advertising consent.
+For ten first-time buyers with no valid measurement authorization and ten genuine
+captured payments: TEN internal payment records, ZERO Meta Purchase transmissions.
+Repeated webhooks do not add records. This is the demonstrated mock outcome,
+not an inspection of ten production customers. An individual buyer who separately
+provides valid adult measurement consent through existing choices can qualify;
+being new does not itself exclude them. Payment never grants permission.
 
-The server no longer accepts a client adult/India/own-contact assertion as positive
-evidence. The alternative path requires a previously recorded, operator-verified
-adult-parent/India/own-contact evidence record matching BOTH normalized email and
-phone. This is NOT an automatic age-verification system. The application currently
-has no approved evidence provider or populated registry for new buyers. Nothing
-in Name, Email, Phone, Razorpay payment, an Indian number, or a Parents URL proves
-adulthood. Unknown buyers therefore pay normally but do not acquire alternative
-CAPI authorization. Existing valid adult consent is a separate path.
+Automatic CAPI delivery for currently authorized adult purchases is retained.
+A new alternative authorization for ordinary new buyers WITHOUT individual opt-in
+has NOT been established or implemented. No environment flag can enable it.
+A generic lawyer approval to remove checkout controls does not establish that
+Meta may receive purchaser identity and payment data for advertising purposes.
+There is no newly invented adult classification or evidence requirement here.
 
-The small record uses the ALREADY PREPARED MemoryAdultPurchaseAuthorization table:
-decision=ADULT_EVIDENCE_VERIFIED, adultConfirmed=true only after operator-certified
-verification, matching contact hashes, policy ID, method, verification reference,
-verifier, verification date, evidence expiry and exact adultEvidenceApprovalRef.
-There is no new table or migration in this simplification. No real evidence is
-seeded. Old self-declarations and browser fields cannot become verified records.
-Policy scope is now IN_ADULT_PARENT_PREVERIFIED_CONTACTS, so an old self-attestation
-policy cannot silently enable the new method.
+## Removed draft-only functionality; no migration needed
 
-An authorized operator must actually have reviewed evidence establishing adult
-parent/guardian status, applicable India scope and ownership of both contacts,
-under a specifically approved verification process. Record only a secure evidence
-REFERENCE, never student data or identity-document images in the measurement
-tables. Evidence collection/review happens outside checkout; this code does not
-perform that verification or invent its result. Any new evidence collection must
-itself be approved. A fake evidence reference or a generic lawyer approval does
-not establish adequacy.
+Deleted entirely:
 
-Important limitation: matching two typed contacts is not authentication of the
-current browser operator. The reviewer must explicitly approve this linkage and
-its residual shared-device/impersonation risk for the particular arrangement.
-If an authenticated adult account, verified session or other stronger linkage is
-required, keep this path OFF until that narrowly scoped integration is implemented
-and tested. Approval alone cannot create missing evidence or authenticate a buyer.
-No claim is made that every new customer can be measured without further work.
+- server/services/memoryAdultPurchasePolicy.js
+- server/scripts/memoryAdultPurchasePolicy.js
+- server/prisma/migrations/20261028180000_memory_adult_purchase_policy/migration.sql
+- Draft MemoryAdultPurchasePolicy and MemoryAdultPurchaseAuthorization models.
+- Draft checkout purchaseMeasurement JSON field.
+- Purchase-policy / authorization / evidence registration / withdrawal endpoints,
+  tokens, client requests and operator commands.
 
-The public checkout endpoint binds new authorization to the server evidence ID,
-verification reference and approved policy/notice snapshot. Evidence is rechecked
-at order creation and before every capture/delivery attempt. Evidence expiry,
-revocation, unknown or minor status, contact mismatch, policy/review expiry,
-refusals, withdrawals, GPC or restrictions withhold sharing. Revoking evidence
-blocks later matching sharing; it does not stop payments or recall accepted data.
-No public endpoint can verify adults, approve a policy or remove a refusal.
+Prisma schema is restored to the exact pre-policy PR #7 schema. Offline
+schema-to-schema diff reports an EMPTY migration. No database migration is
+necessary for this final increment. Nothing was migrated previously in this
+session, so removal only removes draft source; no production tables, records or
+consent history were altered or dropped. If a release operator discovers an
+independently applied version elsewhere, stop and reconcile schema drift; do not
+infer authorization to drop tables or evidence.
 
-### Existing payment and privacy safeguards preserved
+Existing consent, checkout-intent, purchase and delivery outcome fields remain.
+Refusal/GPC handling now uses those existing fields and receipt revisions. Current
+buyer-linked declined/withdrawn receipts are checked read-only. Explicit future
+user withdrawal uses the EXISTING consent endpoint, not a new record registry.
+No consent is manufactured, silently granted, or bulk-rewritten.
 
-The genuine signed payment.captured flow, accounting uniqueness, ₹99 INR,
-memory_masterclass_99 product, payment-derived Purchase ID, BrainoDad dataset
-1998316064175555, lease/retry/deduplication and safe failure behavior are unchanged
-by this increment. Authorized new captures automatically queue through the
-existing CAPI transport. No browser Purchase, CTA Purchase or new Pixel is added.
-No assessment scores, answers, student identifiers or assessment-derived fbc/fbp /
-external ID / user agent / IP are sent to Meta. Known/refused/withdrawn identities
-remain blocked. Historical SKIPPED_CONSENT rows are neither modified nor replayed.
+## What remains working
 
-Buyer-linked old declined/withdrawn receipts are checked read-only. A refusal
-matches either contact; adult evidence must match both. Anonymous refusals on
-unrelated devices cannot be identity-linked without evidence. Local retained
-bearers allow server withdrawal; failures are shown as pending rather than
-confirmed. Approve cross-device rights/support and evidence retention procedures.
-Pseudonymous contact hashes are personal data, not anonymous data.
+The existing signed Razorpay payment.captured webhook records genuine matching
+payments once, with its stable payment-derived event ID. Eligible adult consent
+queues the existing CAPI worker; that worker checks current consent again before
+sending, preserves lease/concurrency handling, bounded retry and delivery outcomes.
 
-The approved Sunday November 15, 2026, 5–7 PM IST webinar and ₹99 price are
-unchanged. The existing WhatsApp group is owner-confirmed and unchanged. Existing
-other-product and WhatsApp flows are untouched. Earlier GA scope caveats below
-remain unchanged; this work makes no blanket claim about non-Meta analytics.
+Fixed event: Purchase; value 99; currency INR; product memory_masterclass_99;
+dataset 1998316064175555. No fallback to FluencyJet dataset 1246171816816642.
+No browser Purchase, booking-click Purchase, failed-payment Purchase or
+thank-you-page Purchase is added. No student scores/answers/identifiers or
+assessment-derived fbc/fbp/external ID/UA/IP enter the CAPI payload.
 
-### Exact remaining approval
+Missing/expired/non-adult/refused/withdrawn permission is withheld. Known checkout
+refusal, GPC and compatible explicit minor/uncertain markers deny an order's
+measurement snapshot. A consent-service failure denies measurement while allowing
+normal order creation. Current consent revision/adult status is checked again at
+delivery; old permission cannot authorize an order after withdrawal/regrant.
+Historical SKIPPED_CONSENT rows remain outside the worker's pending/retry query.
+No historical events are sent, modified or replayed.
 
-The owner reports legal advice allowing checkout without a separate checkbox or
-dropdown. No specific approved adult-evidence source/method, purchaser linkage,
-dated approval reference or current Meta terms review has been provided. Therefore
-this report does NOT mark alternative transmission as legally authorized.
+The existing purchase emergency configuration remains:
+MEMORY_META_PURCHASE_SHARING_BLOCKED=true blocks both new queue eligibility and
+subsequent delivery without stopping Razorpay payments. Apply only via an approved
+runtime configuration rollout. This cannot recall already accepted/in-flight data.
+Existing dedicated CAPI destination/token and MEMORY_META_DELIVERY_ENABLED worker
+configuration remain unchanged; no production variables or secrets were read.
 
-Before activation obtain a dated approval covering:
+The abandoned MEMORY_META_ADULT_PURCHASE_ENABLED / POLICY_ID settings have no
+code path and cannot authorize anything. The system is consent-only NOW and on
+May 13, 2027. Thus no alternative can continue beyond that deadline. Any future
+specifically approved prospective policy needs a small separately reviewed
+implementation, including expiry/May transition safeguards; it cannot be activated
+by flipping a leftover flag. Do not resurrect the discarded verification system.
 
-1. The actual alternative lawful authorization and applicable jurisdiction /
-   restrictions, separately from browser consent. Indian commencement timing alone
-   is not that authorization. Keep any policy-required consent path separate.
-2. The specific out-of-band verification process and evidence source for adult
-   parent/guardian status, India scope and ownership of BOTH contacts; who verifies,
-   evidence freshness/expiry and revocation. Explicitly approve no extra checkout
-   interaction AND matching typed contact details to that evidence without browser
-   operator authentication. If inadequate, require the missing verification/linkage
-   integration; do not activate on the basis of wording alone.
-3. Current applicable Meta Business Tools Terms, dataset/account restrictions,
-   required permissions, notices and choices, including Meta's own uses. A stored
-   metaApprovalRef means qualified compliance review, not a fabricated Meta approval.
-   Obtain written platform permission separately if the actual terms require it.
-4. Exact short disclosure, full server notice/hash and matching published Privacy
-   Policy, including purposes, adult contact hashing, recipients/Meta uses,
-   authorization, rights/contact/support, retention and withdrawal. A policy link
-   alone does not prove the target policy is adequate. Approve the evidence-table
-   access/retention/deletion process and cross-device rights handling.
-5. Separate explicit owner approval for release and later activation.
+The approved webinar stays Sunday November 15, 2026, 5:00 PM–7:00 PM IST, ₹99.
+Both existing order routes still stop new bookings once the event starts. Existing
+captured payments are still accounted for. Owner-confirmed WhatsApp group and
+other FluencyJet products/workflows are unchanged.
 
-Official terms retrieval previously hit an access/sign-in barrier:
+## Exact missing authorization — no new workflow proposed
+
+The reported legal advice covers omitting checkout controls. Before any different
+prospective sharing rule is implemented or enabled, obtain a dated determination
+answering this concrete question:
+
+May BrainoDad send a NEW purchaser's hashed email/phone and verified ₹99 Purchase
+to Meta for advertising measurement without individual opt-in? If yes, what
+specific authorization, applicable jurisdiction/scope, required notices/choices,
+and implementable purchaser/child-exclusion criteria make that permitted?
+
+The determination must cover Meta's applicable current Business Tools Terms,
+account/dataset restrictions and Meta's uses of that data, not only Indian privacy
+law or checkout design. It must specify how the rule avoids transmitting known
+or reasonably apparent children's information without assuming adulthood from
+Pay, a phone number, policy acknowledgement or the Parents URL. No manual
+verification, registry, login or declaration is proposed as a replacement.
+If the approved arrangement cannot supply a supportable rule, continue withholding
+unconsented/unauthorized purchases while accepting payments normally.
+
+Approve the exact short disclosure and full Privacy Policy, including controller /
+contact, advertising purpose, Meta recipient/uses, actual authorization, rights,
+withdrawal and retention. A link alone is not approval of its destination text.
+The owner must separately approve deployment and any future activation.
+
+Official Meta terms pages previously hit an access/sign-in barrier, so current
+terms compatibility has NOT been verified by this implementation:
 https://www.facebook.com/legal/technology_terms
 https://www.facebook.com/legal/terms/businesstools
-Current compatibility must therefore be confirmed by the responsible reviewer.
-The earlier DPDP timing source remains:
+The staged Indian commencement notification is timing information, not Meta
+sharing authorization:
 https://www.meity.gov.in/static/uploads/2025/11/c56ceae6c383460ca69577428d36828b.pdf
-No new legal exemption or platform eligibility is inferred from that timetable.
 
-### Configuration, evidence registration and rollback — NOT executed
+## Funnel and test matrix
 
-The previously prepared additive migration
-20261028180000_memory_adult_purchase_policy remains necessary before deploying
-new backend code: two policy/evidence tables and checkout purchaseMeasurement
-JSON. This increment does not change that SQL or Prisma schema. Review pending
-migrations, apply ONLY the approved migration via the existing release process,
-regenerate Prisma client and deploy the reviewed backend before frontend, only
-when separately authorized. No database migration has been run in this work.
+| Surface/action | Event | Current Meta eligibility and evidence |
+|---|---|---|
+| Parents landing | PageView | Existing verified adult consent, dedicated Pixel; responsive rendered tests |
+| Book My Child's Seat / ₹99 CTA | memory_offer_click | Existing handler, authorized adult routes; no Purchase |
+| Parents class CTA | memory_track_selected | Existing name retained; grade/student fields excluded |
+| Visible Parents/VSL priced offer | memory_offer_view | Existing observer, route/consent gates and dedup |
+| Adult marketing VSL routes | PageView and offer events | Existing verified adult consent only |
+| Selector/start/test/results/retest | Assessment/result events | Withheld from Meta; underlying assessment preserved |
+| Saved legitimate assessment completion | memory_test_completed | Existing application analytics only after persistence; withheld from Meta |
+| Adult marketing Razorpay opening | InitiateCheckout | Existing order plus successful mocked open required, per-order dedup |
+| Assessment route checkout opening | InitiateCheckout | Withheld from Meta on student route |
+| Click/open/abandon/fail/thank-you | Purchase | Never emitted |
+| Signed captured authorized payment | Purchase CAPI | Actual webhook/serializer mock: accepted stable ID, correct value/product/dataset |
+| Signed captured unauthorized payment | None to Meta | Accounting preserved, SKIPPED_CONSENT; ten-buyer test |
+| Duplicate webhook / concurrent delivery | Same event ID | One accounting row; lease/retry/dedup regression tests |
+| Consent withdrawal / refusal / GPC / minor | No Purchase | Existing receipt state/revision checks and mocked captures |
+| Historical skipped purchases | No backfill | Actual worker query excludes them |
+| Spoken English / Vocabulary / German | Existing events | Rendered isolation checks retain FluencyJet Pixel only |
+| WhatsApp | Existing workflow | No workflow change; VM harness rejects non-Memory side effects |
 
-Policy registration uses the existing operator CLI and an approved immutable
-version, now with scope IN_ADULT_PARENT_PREVERIFIED_CONTACTS, effectiveAt,
-expiresAt, reviewDueAt, legalApprovalRef, metaApprovalRef,
-adultEvidenceApprovalRef, authorizationSource, restrictionsCleared=true, and the
-exact noticeVersion/noticeHash printed by the notice command. Review date must be
-BEFORE the hard deadline; expiry cannot exceed it. No enabled record is seeded.
+Meta exclusion is not a blanket first-party-only guarantee for other analytics:
+the existing tracking helper also invokes Google Analytics. That unchanged GA
+scope is not redesigned or represented as first-party-only by these PRs.
 
-```sh
-node server/scripts/memoryAdultPurchasePolicy.js notice
-node server/scripts/memoryAdultPurchasePolicy.js register /secure/approved-policy.json
-```
+## Final focused verification
 
-After approval, both backend environment gates and the valid enabled policy row
-are mandatory:
+| Check | Final result |
+|---|---|
+| Six backend Jest regression suites | 166 passed |
+| Frontend unit/privacy/safety tests | 164 passed |
+| Actual signed-handler/CAPI serializer and component offline tests | 24 passed |
+| Rendered production-bundle browser tests | 15 passed |
+| Existing network parser tests | 9 passed |
+| Full frontend production build | PASS; inherited chunk-size warnings |
+| Prisma schema validation | PASS |
+| Schema diff vs exact pre-policy PR #7 schema | EMPTY; no migration required |
 
-```text
-MEMORY_META_ADULT_PURCHASE_ENABLED=true
-MEMORY_META_ADULT_PURCHASE_POLICY_ID=<approved-immutable-version>
-```
+Total 378 passing tests, zero final failures. The removed approach's tests were
+removed with its code; test totals are not a claim that abandoned functionality
+is retained. No real Razorpay/Meta calls, customer records or production DB tests.
+Mocks cannot prove live acceptance, provider availability or ad attribution.
+Browser requests are intercepted from the production build/fixtures; service
+workers are blocked and background traffic uses a closed proxy. Test environments
+are sanitized. No manifests or lockfiles changed.
 
-Keep the existing dedicated CAPI token/destination and worker configuration; do
-not expose secrets. Existing MEMORY_META_DELIVERY_ENABLED=true is needed for the
-retry worker. MEMORY_META_PURCHASE_SHARING_BLOCKED must not be true. Runtime
-configuration rollout follows the existing hosting process. Explicitly enable
-the reviewed policy row using the existing `enable <id>` CLI action. A policy with
-zero verified adult evidence still cannot authorize unknown new purchasers.
-
-Only AFTER approved actual verification, an authorized operator can register an
-adult-evidence JSON through the same local CLI, never a public endpoint:
-
-```json
-{
-  "purchaserEmail": "<verified-adult-own-email>",
-  "purchaserPhone": "<verified-adult-own-India-phone>",
-  "adultParentOwnContactIndiaVerified": true,
-  "approvalRef": "<exact-policy-adultEvidenceApprovalRef>",
-  "verificationRef": "<secure-reference-to-real-verification-evidence>",
-  "verifiedBy": "<accountable-authorized-verifier>",
-  "verifiedAt": "<actual-ISO-verification-date>",
-  "expiresAt": "<approved-ISO-evidence-expiry-no-later-than-policy-review-or-expiry>"
-}
-```
-
-```sh
-node server/scripts/memoryAdultPurchasePolicy.js register-adult-evidence /secure/verified-adult.json
-node server/scripts/memoryAdultPurchasePolicy.js revoke-adult-evidence <evidence-record-id>
-```
-
-These commands are an audited import/revocation mechanism, not proof that the
-verification occurred. No real entries were created or imported. The browser
-cannot supply these fields to obtain verified status. Do not register payment,
-URL, self-declaration or generic terms acceptance as independent verification.
-
-No further coding is needed for this specific approved preverified-record method
-and a matched purchaser once valid evidence has actually been registered. Unknown
-buyers stay ineligible. A future automatic verification provider, authenticated
-linkage or different method would require a separate small integration/review;
-it is not silently implemented or promised here.
-
-Immediate alternative kill: `node server/scripts/memoryAdultPurchasePolicy.js disable <id>`.
-Rechecked on every subsequent attempt, without stopping payments. Also set
-MEMORY_META_ADULT_PURCHASE_ENABLED=false with runtime rollout as defense in depth.
-Existing valid adult consent continues. Emergency
-MEMORY_META_PURCHASE_SHARING_BLOCKED=true with runtime rollout blocks BOTH purchase
-sharing paths. No switch was changed. An in-flight/accepted event cannot be recalled.
-
-All alternative checks stop by **May 13, 2027 00:00 IST (May 12 18:30 UTC)**,
-or earlier policy review/expiry/evidence expiry. Consent-only fallback remains;
-voluntary consent controls are outside the clean Parents form. DB dates or flags
-cannot extend the hard deadline. A newly reviewed compliant replacement requires
-separate code/privacy review. Expired/skipped purchases are not revived later.
-
-Rollback disables policy/evidence as appropriate, then reverts code using the
-existing separate service baselines. Leave the additive schema and audit evidence
-in place. Do not drop privacy evidence or roll back payment accounting.
-
-### Verification and release decision
-
-384 tests passed: 158 backend regressions, 164 frontend/unit/safety tests,
-46 actual-handler/component offline tests, 16 rendered production-browser tests.
-Production frontend build passed; inherited large-chunk warnings remain.
-Prisma schema remains unchanged from the already validated prepared migration.
-No real provider calls, production DB test or migration application occurred.
-
-Browser cases show no checkbox/dropdown in either policy mode, accessible notice /
-choices, ordinary Razorpay open, no auto-consent, refusal, unknown buyer payment,
-responsive layout, approved schedule and other-product dataset isolation. Actual
-signed webhook + existing serializer fixtures show preverified-adult alternative
-with no old receipt/no checkout declaration accepted once; missing/child/expired /
-revoked/mismatched evidence, disabled/expiry, failed/duplicate captures and retry
-safety are tested. No student markers or browser identifiers enter CAPI payloads.
+A–F requested demonstrations: new clean checkout opens mocked Razorpay; signed
+capture records once; authorized adult consent delivers accepted mocked CAPI;
+no authorization records payment but sends nothing; refusals/withdrawal/minor /
+failed/duplicate cases are protected; historical skips remain excluded.
 
 Accepted MOCK log:
 `[memory-meta] DELIVERED event=memory_masterclass_99_purchase_pay_fixture dataset=1998316064175555 value=99 currency=INR`
-metaConsentGranted remains false. Real Meta reporting was not exercised. Accepted
-live events may appear in Events Manager; identity matching/ad attribution is not
-guaranteed. Only approved adult email/phone matching is used; absence of fbc/fbp
-can reduce attribution signals. Hashed contacts may still match an adult account.
+This accepted fixture has genuine valid adult consent. It is NOT an alternative
+no-opt-in acceptance and is NOT evidence of a real Meta transmission. Live
+accepted events may appear in Events Manager; matching and ad attribution are
+not guaranteed. The serializer uses hashed adult contact matching without child
+browser identifiers. Hashes are pseudonymous, not anonymous.
 
-Exact incremental files in this simplification:
+## Source baselines, release and rollback
 
-- PR #6: client/src/components/memory/MemoryPurchaserDetails.jsx;
-  client/src/components/memory/MemoryStandaloneCheckout.jsx;
-  client/tests/memoryRelease.rendered.mjs; this document.
-- PR #7: server/services/memoryAdultPurchasePolicy.js;
-  server/scripts/memoryAdultPurchasePolicy.js;
-  server/__tests__/memoryFunnel.offline.mjs.
+Previously verified production metadata (not refreshed or changed in this cleanup):
 
-**GO for review of the clean checkout and disabled preverified-adult implementation.
-NO-GO for production deployment/activation until the specific approvals, genuine
-evidence source/process, matching published notice/Privacy Policy, migration
-review and explicit release/activation approvals are complete.**
-
-## Verified production baselines (Railway metadata, read-only)
-
-| Service | Source branch | Deployed commit | Deployment |
-|---|---|---|---|
-| Frontend | feature/brainodad-sticky-scroll-tiles-oct19 | 6e15446706bff98ce494140ee07d951ff72cc0f5 | d372278a-80e3-46f1-9d3d-163c0eb98807 SUCCESS |
-| Backend | release/brainodad-parents-oct25 | 5b825a6f1bbf7ecce2592d45fe0f0d282f9f78da | c804a2bf-a0b1-42ac-88cf-8fa78fc16998 SUCCESS |
-
-Work uses separately fetched exact source snapshots, not main. The webhook,
-delivery, consent, CAPI serializer and destination files have identical Git blob
-SHAs in these two baselines. Frontend and backend patches must remain separate;
-deploying the old frontend snapshot as the backend would lose security fixes.
-No production variables, credentials, customer records or database were read.
-
-## Existing behavior and real gaps
-
-Already present in source: route-aware PageView, single-dataset dispatch,
-fresh-document cross-funnel boundary, consent validation and withdrawal,
-memory_track_selected, memory_offer_click, offer visibility on VSL/result
-surfaces, InitiateCheckout after Razorpay open, signed captured-payment
-verification, unique purchase identifiers, stable payment-derived CAPI identity,
-lease-protected delivery, bounded retries, delivery outcome fields and no skipped
-purchase backfill. These are source findings and mock results, not a live Events
-Manager audit. Reported October SKIPPED_CONSENT records were not queried.
-
-Gaps repaired:
-
-1. Parents page did not use the existing offer-visibility observer.
-2. A remembered adult receipt could enable student assessment Meta events.
-   Hashed assessment tokens were also used as Lead identities. Hashing does not
-   make a student identifier appropriate to share.
-3. Completion was emitted after a scoring-only fallback, not only a saved session.
-4. Custom-event key filtering still allowed arbitrary nested fields/values.
-5. Browser views could repeat on reload; rapid duplicate CTA callbacks were not
-   centrally suppressed. Memory now uses a 30-minute, per-tab view window and a
-   1.5-second identical-click cooldown. Intentional later clicks still count.
-6. Memory CAPI could reuse a visitor ID, cookies or user agent from a child's
-   browser. The backend patch removes those fields, retaining adult contact
-   matching. This can reduce matching quality; it does not increase eligibility.
-
-The existing event is **memory_track_selected**. `memory_track` is a browser
-selection-storage key. No second tracking event is introduced.
-
-## Funnel matrix
-
-All allowed browser events still require a current server-verified adult opt-in.
-No permission, expired/revoked permission or consent-service failure means no
-Memory SDK initialization/events. A parent's saved choice does not authorize
-assessment telemetry. Known student/unknown assessment contexts are withheld.
-
-| Page / action | Event | Result / coverage |
+| Service | Source branch | Deployed commit |
 |---|---|---|
-| /memory-masterclass/parents | PageView | Allowed with verified adult receipt; mocked policy/dedup tests |
-| Book My Child's Seat | memory_offer_click | Existing handler reused; real component handler tested with mock hooks |
-| Parents class-selection CTA | memory_track_selected | Existing name retained; grade/track excluded from Meta; policy test |
-| Priced Parents offer visible | memory_offer_view | Existing observer added; visibility/permission mock tests |
-| /memory-challenge/video/school and /advanced | PageView, memory_offer_view, memory_offer_click | Adult marketing surfaces only with verified adult receipt; policy/dispatch tests |
-| /memory-challenge selector | PageView, memory_track_selected | Withheld from Meta: mixed student context; application selection preserved |
-| /memory-challenge/start and /test | PageView, test/module events | Withheld from Meta: student context; scoring unchanged |
-| Saved assessment completion | memory_test_completed | Existing application analytics only after successful session persistence; Meta withheld |
-| Scoring-only fallback | memory_test_completed | No completion event; result remains available |
-| /memory-challenge/result, including embedded offer | PageView, result/Lead/offer events | Withheld from Meta; no hashed student identifier; UI/booking still work |
-| Assessment-linked Razorpay opening | InitiateCheckout | Withheld in student route, even with inherited receipt |
-| Adult marketing Razorpay opening | InitiateCheckout | Existing server order, 9900 paise/INR and successful open required; per-order dedup |
-| Opening/abandoning/failing checkout | Purchase | Never emitted by browser; mocked component and webhook tests |
-| /memory-masterclass/thank-you | Purchase / PageView | Neither sent by browser; redirects and query payment IDs are not proof |
-| Signed verified captured payment | Purchase via CAPI | Existing captured-payment and permission gates; actual webhook/serializer with mocks |
-| CAPI failure/retry | Same Purchase event_id/time | Bounded retry and concurrent claim tests |
-| Retest / unknown future Memory route | Any Meta event | Withheld by default |
-| Vocabulary / Spoken English / German | Existing events | Existing baseline output and boundary tests; no product code changed |
-| WhatsApp | Existing workflows | No workflow code changed; backend harness throws on unexpected non-Memory side effects |
+| Frontend | feature/brainodad-sticky-scroll-tiles-oct19 | 6e15446706bff98ce494140ee07d951ff72cc0f5 |
+| Backend | release/brainodad-parents-oct25 | 5b825a6f1bbf7ecce2592d45fe0f0d282f9f78da |
 
-Commercial browser payloads are allowlisted: fixed funnel/source/product,
-99/INR/one item and the fixed content name. No grade, student identity, scores,
-answers, assessment IDs, owner tokens or arbitrary nested fields. URLs with
-private/unknown query parameters or unknown fragments are withheld because Pixel
-also includes the document URL. Public anchors top/choose-grade/booking are safe.
-Do not add student IDs to UTMs; their values are still part of the page URL.
+PR branches/bases remain separate. Before a separately approved controlled release,
+recheck deployed SHAs, source drift, pinned/auto-deploy settings and existing
+schema/Prisma generation. Do not deploy main or one service's whole branch to the
+other. No migration command is needed or authorized for this final policy cleanup.
+Deploy only separately approved reviewed commits through the existing process.
+Smoke-test schedule/privacy/booking with no real charge; real payment/event tests
+need separate approval. Do not replay old captures or alter worker records.
 
-## Purchase policy: existing consent remains the only implemented authorization
+Rollback restores each service's own previously deployed/reviewed SHA. No schema
+rollback or payment reversal is required. Restore pinned source configuration so
+future auto-deploy cannot undo rollback. Emergency sharing block remains available.
 
-The patch does not set consent true, introduce a policy flag, change price or
-product, modify webhook/accounting, migrate schema, alter retries or resend old
-records. Purchase remains memory_masterclass_99_purchase_<Razorpay payment ID>,
-value 99, INR, product memory_masterclass_99, destination 1998316064175555.
-FluencyJet destination 1246171816816642 is never a Memory fallback.
-
-### Conditional proposal — NOT IMPLEMENTED OR ENABLED
-
-A separate server-only purchase policy is technically possible, but cannot be
-approved by an engineering change. Before implementation, the responsible
-privacy reviewer must confirm applicable jurisdictions, legal basis, notices,
-Meta requirements, opt-outs and how the current adult purchaser is established.
-Successful payment, a privacy-policy acknowledgement or Razorpay usage is not
-advertising consent.
-
-If approved later, add an independent prospective authorization decision at
-checkout-intent creation and recheck before each send. Store its policy version,
-source, decision time, adult-purchaser evidence and refusal/withdrawal revision
-separately from browser consent. Do not overload metaConsentGranted. A proposed
-policy flag must default off and require a version plus activation timestamp;
-missing evidence, known minor, restriction, refusal or withdrawal wins. Do not
-claim this can be switched on without any subsequent design/schema review.
-Allow only the captured adult purchase and approved adult matching fields, never
-assessment/browser identity. Restrict to new intents after activation; never scan
-or requeue historical SKIPPED_CONSENT/declined rows. Keep stable event IDs and
-existing delivery outcomes/retries. No flag or authorization path is added here.
-
-## Final release review — verified test results
-
-This section supersedes the initial 75-test review. No production settings,
-consent records or customer data were accessed or modified. Production SHAs
-were rechecked and remain exactly the baselines above.
-
-| Check | Result | Scope |
-|---|---|---|
-| Full frontend production build | PASS | Exact repository client lockfile, npm ci without lifecycle scripts in scratch, sanitized environment, npm run build; all 916 modules compiled |
-| Existing/new frontend unit and safety regressions | 161 PASS | All fetched lib/memory/config tests, QA isolation/receipt policy/navigation tests |
-| Existing backend Jest regressions | 158 PASS | Six suites: schedule, checkout, consent, delivery, destination and Razorpay attribution; includes expired-event rejection for both order routes |
-| Actual component-handler and CAPI/webhook VM tests | 18 PASS | Existing PR tests; all provider/DB operations mocked |
-| Network parser tests | 9 PASS | Existing Python parser suite |
-| Rendered production-bundle Chromium tests | 12 PASS | Desktop 1280px, mobile 390px, schedule/expiry, Pixel owner, privacy, CTA, class selection/navigation, popup, mocked Razorpay, failed order, other three products |
-
-Total: **358 passing tests**, plus the successful full production build.
-The final rendered run uses the lockfile-built production bundle. No real
-payment or Meta HTTP request is made. Three legacy attribution test expectations
-were parameterized over school/advanced tracks; four old assertions expecting
-browser identifiers were updated to assert their deliberate removal, while
-adult-contact and payment assertions remain. Checkout tests freeze a test clock
-before the configured class; two new tests advance beyond it and verify 409
-before either provider or assessment-database access. Fake dates are test-only.
-
-Commands from repository root:
-
-```sh
-npm --prefix client ci --ignore-scripts --no-audit --no-fund
-npm --prefix client run build
-node --test client/src/lib/*.test.js client/src/components/memory/*.test.js client/src/data/memory/*.test.js client/tests/runMemoryQa.test.mjs client/tests/memoryNavigationDiagnostics.test.mjs client/tests/memoryReceiptPolicy.test.mjs
-node --experimental-vm-modules server/node_modules/.bin/jest --config server/jest.config.js --runInBand memoryMasterclassEvent memoryMasterclassCheckout memoryMetaConsent memoryMetaDelivery metaTracking razorpayPurchaseAttribution
-node --experimental-vm-modules --test client/tests/memoryFunnelComponents.offline.mjs server/__tests__/memoryFunnel.offline.mjs
-python client/tests/memoryQaNetwork.test.py
-# Explicit test-tool locations, not production settings:
-BRAINODAD_PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs BRAINODAD_CHROMIUM=/path/to/chromium node --test client/tests/memoryRelease.rendered.mjs
-```
-
-All application test executions used sanitized environments and fixtures.
-Dependencies/tools were installed in scratch; manifests/lockfiles were not
-modified. Prisma Client generation used --no-engine, with no DB connection or
-migration. Existing namespace runner cannot launch in this host because Linux
-user-namespace mapping is denied. It was not weakened. Instead the new rendered
-suite serves the real production bundle entirely through request interception,
-blocks service workers, fulfills every page request from local files/fixtures,
-and forces browser background traffic through a closed proxy. There is no live
-HTTP application server or external request continuation. The existing inherited
-Chromium suite is not claimed green; the 12 rendered cases cover this
-release's stated requirements. External media/images are mocked or use the
-application's fallback layout. Visual desktop/mobile screenshots were inspected.
-
-Build warnings about large chunks, confetti imports and old browser metadata
-are non-fatal and outside this patch. A real PostgreSQL concurrency test, actual
-Meta acceptance/matching, and production delivery-worker flags remain untested.
-The mocks cannot prove real provider availability or exactly-once network delivery.
-
-## Scheduling correction and actual production impact
-
-Production frontend has EVENT_DATE = 2026-10-25 and literal October 25 copy;
-production backend's sole approved settings also remain October 25, 5–7 PM IST.
-The old page can accept that same expired date and show enabled booking; old
-order routes do not reject expiry. This is established from deployed source,
-not a real booking attempt. If the backend date were updated alone, the old
-frontend would reject it because of its fixed-date comparison.
-
-PR #6 now derives all four date/time labels and CTA eligibility from the existing
-server-owned event endpoint. Valid start/end and a future start are required.
-No rolling-next-Sunday rule or new date is introduced. PR #7 adds the matching
-server guard to both Memory create-order routes: no new orders once the approved
-class has started. This explicitly closes registration at start time, before
-Razorpay is called; previously issued captured payments still use the unchanged
-webhook/accounting flow. No other product is affected.
-
-**Approved schedule update (owner confirmation received):** The owner has now explicitly approved Sunday, November 15, 2026,
-5:00 PM–7:00 PM IST at ₹99. PR #7 settings use exactly
-2026-11-15T17:00:00+05:30 and 2026-11-15T19:00:00+05:30. The
-existing WhatsApp group URL is unchanged and has now been confirmed by the owner.
-PR #6 displays the approved server label including the year; both existing
-Razorpay descriptions now include the complete date and time range. The rendered
-check verifies the exact label, ₹99/INR checkout, and confirmation page with the
-actual approved schedule served as a mock API response. A separate synthetic
-fixture still tests independence from any hardcoded date.
-
-## Matching provenance decision
-
-Keep PR #7's removal. getMemoryVisitorId reuses the origin's stored visitor ID;
-getMemoryFbc prefers shared _fbc cookies and cached click IDs; _fbp is also shared.
-Standalone parent and assessment checkouts use the same attribution helper.
-Neither receipt nor checkout intent records an independently verified adult-only
-browser-identity provenance chain. A parents URL, checkoutContext or school track
-is not sufficient to prove an inherited cookie belongs to the adult purchaser.
-User agent identifies a browser, not its adult operator. No new provenance model
-or tracking architecture is introduced in this review.
-
-Eligible CAPI Purchases still send hashed adult purchaser email/phone, fixed
-product/value/currency, stable event ID/time and safe fixed event-source URL.
-Without fbc/fbp/external_id/user agent, Meta has fewer matching and direct-click
-signals; event match quality and ad attribution may be lower. Delivery success,
-identity matching and Ads Manager attribution are distinct, with no guaranteed
-match rate. Do not restore child-originated identifiers to improve a score.
-A future optional provenance design would require an approved adult-specific
-purpose and auditable journey binding, separate from assessment IDs/cookies,
-plus a fresh review. It is not necessary to deliver currently eligible Purchases.
-
-## Plain-English measurement answers
-
-1. Meta can receive PageView, memory_offer_click, memory_track_selected,
-   memory_offer_view, memory_checkout_open and InitiateCheckout on the allowlisted
-   adult marketing routes, only with current verified adult authorization. A
-   valid captured eligible payment produces the existing server CAPI Purchase.
-2. No student test/module/result/retest or assessment-derived Lead event goes to
-   Meta. Saved sessions, answers and scores remain in the application's database.
-   IMPORTANT: the unchanged tracking.js helper also invokes existing Google
-   Analytics gtag for custom events/page views. Thus these PRs establish
-   **Meta exclusion, not a blanket first-party-only guarantee for all analytics**.
-   A strict first-party-only assessment-analytics requirement needs a separate,
-   explicitly scoped GA decision/change; this review does not silently redesign GA.
-3. Both previously skipped October Purchases remain excluded; no records were
-   inspected, requeued or sent, and no backfill path was added.
-4. Yes, a new purchaser without eligible authorization is still excluded from
-   CAPI, even if Razorpay captured and accounting recorded the payment.
-5. Existing consent-based reporting needs no new legal-basis policy to send an
-   already eligible purchase, but production dedicated-token/worker operation
-   must be verified separately without exposing secrets. To broaden eligibility,
-   the responsible reviewer must approve the exact basis, geography, adult
-   evidence, notice, opt-out/withdrawal and Meta requirements, followed by a
-   separately reviewed prospective authorization implementation. A business
-   owner's approval to deploy code is not itself the missing legal basis.
-6. Evidence is the exact-source baselines, successful lockfile production build,
-   358 passing tests and reviewed screenshots. This supports the tested code,
-   not live provider availability, a new eligibility policy or live attribution.
-
-**Recommendation: GO for the reviewed schedule/checkout code; HOLD deployment.**
-The approved November 15 date is implemented and all tests pass. The owner has confirmed the unchanged WhatsApp destination; explicit deployment approval remains.
-Both PRs stay separate drafts; production is unchanged. Earlier GA/authorization
-limits remain documented and are not altered by this scheduling update.
-
-## Release instructions — requires separate explicit deployment approval
-
-1. The November 15 schedule, full build and targeted rendered/regression checks
-   are complete. The unchanged WhatsApp group is owner-confirmed; obtain
-   explicit deployment approval; keep both PRs draft meanwhile. If strict
-   first-party-only assessment analytics is required, resolve the existing GA
-   scope separately before that claim is made.
-2. Re-read Railway deployed SHAs. Reconcile drift; do not merge main or deploy a
-   frontend branch wholesale as backend. Do not touch the WhatsApp branch.
-3. Frontend PR targets feature/brainodad-sticky-scroll-tiles-oct19; backend PR
-   targets release/brainodad-parents-oct25. Keep source auto-deploy disabled/pinned
-   before merging anything; branch configuration must be checked at release time.
-4. After approval, deploy the reviewed frontend SHA to service
-   7a8cd65f-a44d-428a-ad42-9fd2557ce017 in project
-   3531ed7f-57cf-471a-9c01-0454b3f26ff5, environment
-   110a9f93-6843-4a53-b88a-9d5dd4f2125f.
-5. Deploy only the reviewed backend SHA to service
-   fd85733a-8287-4bf3-b7e3-fbe73879e970 in project
-   4eb7ea00-3958-457a-93ac-e43dc377a8e9, environment
-   9e9c0086-d0fa-4131-8339-a26213f42d90. Inspect startup migration behavior first:
-   the temporary policy update now requires the additive migration documented above; unrelated migrations are not authorized.
-6. Observe Railway SUCCESS, verify privacy/booking without a real purchase, and
-   separately approve any live test event/payment. Do not replay old payments.
-7. Roll back frontend to 6e15446706bff98ce494140ee07d951ff72cc0f5 /
-   d372278a-80e3-46f1-9d3d-163c0eb98807 and backend to
-   5b825a6f1bbf7ecce2592d45fe0f0d282f9f78da /
-   c804a2bf-a0b1-42ac-88cf-8fa78fc16998. Leave the additive policy schema and audit evidence intact on rollback. Restore
-   matching pinned source settings so a future push cannot undo rollback.
-
-## Remaining unmeasurable activity
-
-No/expired/withdrawn/unverified permission, known children or uncertain student
-assessment activity, sensitive URL contexts, blocked SDKs, missing dedicated
-CAPI configuration, exhausted/expired delivery windows and historical skipped
-purchases remain unmeasured by Meta. Server worker enablement must be verified
-later without exposing secrets. An adult receipt is self-attestation, not an
-identity/age-verification system. This change does not promise every payment in
-Ads Manager or guarantee identity matching, ad attribution, or exactly-once
-network transport; stable IDs support deduplication across retries.
-
-
-## Exact incremental files for the approved schedule update
-
-PR #6:
-- client/src/components/memory/MemoryStandaloneCheckout.jsx
-- client/src/components/memory/MemoryMasterclassOffer.jsx
-- client/tests/memoryFunnelComponents.offline.mjs
-- client/tests/memoryRelease.rendered.mjs
-- docs/brainodad-meta-funnel-oct28.md
-
-PR #7:
-- server/config/memoryMasterclassEvent.js
-- server/__tests__/memoryMasterclassEvent.test.js
-
-The only runtime changes in this incremental update are the approved start/end,
-year-inclusive shared date label, and full Razorpay description in the two
-existing Memory checkout components. The pre-start booking guard is preserved.
-Pixel 1998316064175555, CAPI eligibility, captured-payment verification, price,
-other products and WhatsApp workflows remain unchanged. Zero tests failed in
-the final run; initial missing local test dependencies were restored in scratch
-without changing app manifests or lockfiles. No real provider calls were made.
+**GO for review/controlled deployment of clean checkout + consent-only reporting,
+subject to explicit deployment approval and normal baseline/schema drift checks.
+NO-GO for new automatic no-opt-in sharing: specific authorization is unresolved,
+and that alternative path has deliberately not been implemented or activated.**

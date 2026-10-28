@@ -102,7 +102,11 @@ export default function MemoryMetaConsent() {
     const current = () => version === requestVersion.current &&
       JSON.stringify(readMemoryConsent()) === JSON.stringify(stored);
     try {
-      if (!granted) await refusePurchaseMeasurement((...args) => api.post(...args));
+      if (!granted) {
+        await refusePurchaseMeasurement((...args) => api.post(...args));
+        if (version === requestVersion.current) closeChoices();
+        return;
+      }
       const response = await api.post("/memory-meta/consent", {
         receipt: stored?.receipt, granted, adultConfirmed: granted,
       });
