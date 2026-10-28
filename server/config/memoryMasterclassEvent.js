@@ -69,3 +69,9 @@ export function getPublicMemoryMasterclassEvent() {
     whatsappGroupUrl: event.whatsappGroupUrl,
   };
 }
+
+
+// Stop new orders once the approved class starts; never roll dates forward.
+export function memoryMasterclassBookingOpen(now = new Date()) {
+  return MEMORY_MASTERCLASS_EVENT.startsAt.getTime() > new Date(now).getTime();
+}

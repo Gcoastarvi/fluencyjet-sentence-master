@@ -3,7 +3,7 @@ import rateLimit from "express-rate-limit";
 import prisma from "../db/client.js";
 import { memoryConsentSnapshot } from "../services/memoryMetaConsent.js";
 import { getRazorpayClient, validatePurchaserDetails } from "./memoryMasterclassCheckout.js";
-import { MEMORY_MASTERCLASS_EVENT } from "../config/memoryMasterclassEvent.js";
+import { MEMORY_MASTERCLASS_EVENT, memoryMasterclassBookingOpen } from "../config/memoryMasterclassEvent.js";
 
 const router = express.Router();
 // Limit public order creation without affecting the assessment checkout.
@@ -35,6 +35,10 @@ export function deriveStandaloneTrack(body) {
 
 router.post("/create-order", orderLimiter, async (req, res) => {
   res.set("Cache-Control", "no-store");
+  if (!memoryMasterclassBookingOpen()) {
+    return res.status(409).json({ ok: false, code: "MEMORY_EVENT_UNAVAILABLE",
+      message: "Booking is paused until the next approved live class schedule is confirmed." });
+  }
   const body = req.body || {};
   const trackId = deriveStandaloneTrack(body);
   if (!trackId) {
@@ -109,3 +113,4 @@ router.post("/create-order", orderLimiter, async (req, res) => {
 });
 
 export default router;
+

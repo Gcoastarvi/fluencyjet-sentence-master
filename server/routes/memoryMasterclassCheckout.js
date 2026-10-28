@@ -5,6 +5,7 @@ import prisma from "../db/client.js";
 import { normalizeWhatsAppNumber } from "../lib/whatsappNumber.js";
 import {
   MEMORY_MASTERCLASS_EVENT,
+  memoryMasterclassBookingOpen,
   getPublicMemoryMasterclassEvent,
 } from "../config/memoryMasterclassEvent.js";
 
@@ -150,6 +151,10 @@ router.post("/checkout-details", async (req, res) => {
 // - Checkout is only available after lead capture is complete.
 router.post("/create-order", async (req, res) => {
   try {
+    if (!memoryMasterclassBookingOpen()) {
+      return res.status(409).json({ ok: false, code: "MEMORY_EVENT_UNAVAILABLE",
+        message: "Booking is paused until the next approved live class schedule is confirmed." });
+    }
     const body = req.body || {};
 
     const ownerToken = cleanString(body.ownerToken, 100);
@@ -334,3 +339,4 @@ router.post("/create-order", async (req, res) => {
 });
 
 export default router;
+

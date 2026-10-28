@@ -86,6 +86,8 @@ const purchaserSnapshot = {
 
 beforeEach(() => {
   jest.resetAllMocks();
+  jest.useFakeTimers({ doNotFake: ["nextTick", "setImmediate", "setTimeout", "clearTimeout"] });
+  jest.setSystemTime(new Date(MEMORY_MASTERCLASS_EVENT.startsAt.getTime() - 3600000));
   mockPrisma.memoryMetaConsent.findUnique.mockResolvedValue({
     id: "consent-fixture", granted: true, adultConfirmed: true, revision: 1,
     source: "memory_funnel_adult_opt_in", version: "memory_meta_v1",
@@ -112,6 +114,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.useRealTimers();
   delete process.env.RAZORPAY_KEY_ID;
   delete process.env.RAZORPAY_KEY_SECRET;
 });
@@ -701,5 +704,18 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
     expect(
       mockPrisma.memoryMasterclassCheckoutIntent.create,
     ).not.toHaveBeenCalled();
+  });
+});
+
+
+
+describe("expired approved event", () => {
+  test.each(["/api/memory-masterclass/standalone/create-order", "/api/memory-masterclass/create-order"])("rejects %s before provider or database access", async path => {
+    jest.setSystemTime(new Date(MEMORY_MASTERCLASS_EVENT.endsAt.getTime() + 1));
+    const response = await request(makeApp()).post(path).send({ audience: "school", checkoutContext: "parents", ...purchaserInput });
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe("MEMORY_EVENT_UNAVAILABLE");
+    expect(mockOrderCreate).not.toHaveBeenCalled();
+    expect(mockPrisma.memoryAssessmentSession.findUnique).not.toHaveBeenCalled();
   });
 });
