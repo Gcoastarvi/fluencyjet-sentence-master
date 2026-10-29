@@ -16,6 +16,7 @@ const mockOrderCreate = jest.fn();
 const mockPrisma = {
   memoryMetaConsent: { findUnique: jest.fn() },
   memoryAssessmentSession: {
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
   },
   memoryMasterclassCheckoutIntent: {
@@ -87,6 +88,9 @@ const purchaserSnapshot = {
 
 beforeEach(() => {
   jest.resetAllMocks();
+  mockPrisma.memoryAssessmentSession.findFirst.mockResolvedValue(null);
+  delete process.env.MEMORY_META_ADULT_PURCHASE_ENABLED;
+  delete process.env.MEMORY_META_ADULT_PURCHASE_POLICY_JSON;
   jest.useFakeTimers({ doNotFake: ["nextTick", "setImmediate", "setTimeout", "clearTimeout"] });
   jest.setSystemTime(new Date(MEMORY_MASTERCLASS_EVENT.startsAt.getTime() - 3600000));
   mockPrisma.memoryMetaConsent.findUnique.mockResolvedValue({
@@ -149,7 +153,7 @@ describe("public standalone Memory checkout", () => {
     expect(mockPrisma.memoryAssessmentSession.findUnique)
       .not.toHaveBeenCalled();
     const audit = mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data.purchaseAuthorization;
-    expect(audit).toMatchObject({ version: 1, alternative: null });
+    expect(audit).toMatchObject({ version: 2, alternative: null });
     expect(mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data.metaConsentGranted).toBe(false);
     expect(audit.purchaseKey).toMatch(/^[a-f0-9]{64}$/);
 
@@ -726,4 +730,21 @@ describe("expired approved event", () => {
     expect(mockOrderCreate).not.toHaveBeenCalled();
     expect(mockPrisma.memoryAssessmentSession.findUnique).not.toHaveBeenCalled();
   });
+});
+
+describe("server Parents purchase context",()=>{
+ test("server derives signed context from request provenance and contacts, not a caller flag/token",async()=>{
+   const app=makeApp();
+   const bad=await request(app).post("/api/memory-masterclass/standalone/create-order")
+     .send({audience:"school",checkoutContext:"parents",parentsPurchaseContext:"forged",...purchaserInput});
+   expect(bad.status).toBe(200);
+   expect(mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data.purchaseAuthorization.serverContext).toBeNull();
+   const good=await request(app).post("/api/memory-masterclass/standalone/create-order")
+     .set("Origin","https://www.fluencyjet.com").set("Referer","https://www.fluencyjet.com/memory-masterclass/parents")
+     .send({audience:"school",checkoutContext:"parents",...purchaserInput});
+   expect(good.status).toBe(200);expect(good.body.measurementChoice.token).toMatch(/^[a-f0-9]{64}$/);
+   const audit=mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[1][0].data.purchaseAuthorization;
+   expect(audit.serverContext).toMatch(/\.[a-f0-9]{64}$/);expect(audit.alternative).toBeNull();expect(audit).not.toHaveProperty("choicesReadyAt");
+   expect(JSON.stringify(audit)).not.toContain(good.body.measurementChoice.token);
+ });
 });

@@ -259,15 +259,15 @@ router.post(
       const memoryMetaEventId =
         `${MEMORY_MASTERCLASS_PRODUCT_KEY}_purchase_${paymentId}`;
 
-      let measurementAuthorized = false, measurementReason = "AUTHORIZATION_UNAVAILABLE";
+      let measurementCandidate = false, measurementReason = "AUTHORIZATION_UNAVAILABLE";
       try {
-        const decision = await memoryPurchaseEligibility(memoryIntent);
-        measurementAuthorized = decision.authorized; measurementReason = decision.reason || null;
+        const decision = await memoryPurchaseEligibility(memoryIntent, {verifiedCapture:{status:paymentStatus,paymentId,razorpayOrderId,amount,currency}});
+        measurementCandidate = decision.authorized || decision.retryable === true; measurementReason = decision.reason || null;
       }
       catch {
         // Preserve an existing prospective candidate through an authorization
         // outage. The worker must recheck before ANY transport and retries errors.
-        measurementAuthorized = process.env.MEMORY_META_PURCHASE_SHARING_BLOCKED !== "true" &&
+        measurementCandidate = process.env.MEMORY_META_PURCHASE_SHARING_BLOCKED !== "true" &&
           (memoryIntent.metaConsentGranted === true || Boolean(memoryIntent.purchaseAuthorization?.alternative));
       }
       let memoryRecord;
@@ -305,8 +305,8 @@ router.post(
               metaConsentVersion: memoryIntent.metaConsentVersion ?? null,
               metaConsentSource: memoryIntent.metaConsentSource ?? null,
               metaConsentRevision: memoryIntent.metaConsentRevision ?? null,
-              metaDeliveryStatus: measurementAuthorized ? "PENDING" : "SKIPPED_CONSENT",
-              metaLastErrorCode: measurementAuthorized ? null : measurementReason,
+              metaDeliveryStatus: measurementCandidate ? "PENDING" : "SKIPPED_CONSENT",
+              metaLastErrorCode: measurementReason,
               metaNextAttemptAt: new Date(),
               metaEventTime: Number.isInteger(payload.created_at) &&
                 payload.created_at > 0 && payload.created_at * 1000 <= Date.now() + 60000
@@ -374,7 +374,7 @@ router.post(
         });
       }
 
-      if (!measurementAuthorized) {
+      if (!measurementCandidate) {
         return res.status(200).json({ ok: true, capiSkipped: true, capiSkipReason: measurementReason });
       }
       let memoryCapiResult;

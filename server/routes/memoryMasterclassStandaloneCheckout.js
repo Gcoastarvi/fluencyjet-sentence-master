@@ -1,3 +1,5 @@
+import crypto from "node:crypto";
+import { issueParentsPurchaseContext } from "../services/memoryPurchaseRule.js";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import prisma from "../db/client.js";
@@ -66,13 +68,23 @@ router.post("/create-order", orderLimiter, async (req, res) => {
       },
     });
     let purchaseAuthorization = null;
+    let measurementChoice = null;
     if (body.checkoutContext === "parents") {
-      try { purchaseAuthorization = await memoryPurchaseAuthorizationSnapshot(body, {
+      let parentsPurchaseContext=null;
+      try { parentsPurchaseContext=issueParentsPurchaseContext(purchaser,req.headers,body); } catch {}
+      // Never accept a caller's claim/token as proof of flow or contact provenance.
+      try { purchaseAuthorization = await memoryPurchaseAuthorizationSnapshot({...body,parentsPurchaseContext}, {
         ...purchaser, ...consent, razorpayOrderId: order.id, productKey: "memory_masterclass_99",
         amount: 9900, currency: "INR", trackId, memoryAssessmentSessionId: null,
+        checkoutSource:"standalone_vsl", eventKey:MEMORY_MASTERCLASS_EVENT.key,
       }, { gpc: req.headers["sec-gpc"] === "1" }); }
       catch { purchaseAuthorization = { version: 1, blocked: body.measurementRefused === true ||
         body.adultParentOwnContactIndia === false || req.headers["sec-gpc"] === "1", reason: "AUTHORIZATION_UNAVAILABLE" }; }
+    }
+    if(purchaseAuthorization) {
+      const token=crypto.randomBytes(32).toString("hex");
+      purchaseAuthorization.withdrawalTokenHash=crypto.createHash("sha256").update(token).digest("hex");
+      measurementChoice={orderId:order.id,token};
     }
     const intent = await prisma.memoryMasterclassCheckoutIntent.create({
       data: {
@@ -107,6 +119,7 @@ router.post("/create-order", orderLimiter, async (req, res) => {
       ok: true, keyId: process.env.RAZORPAY_KEY_ID,
       orderId: order.id, amount: 9900, currency: "INR",
       checkoutIntentId: intent.id,
+      ...(measurementChoice ? {measurementChoice} : {}),
       event: {
         key: MEMORY_MASTERCLASS_EVENT.key,
         startsAt: MEMORY_MASTERCLASS_EVENT.startsAt.toISOString(),

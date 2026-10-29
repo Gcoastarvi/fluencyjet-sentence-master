@@ -42,6 +42,11 @@ export async function deliverMemoryPurchase(id, {
     }
     const eligibility = await memoryPurchaseEligibility(row, { db, env, now: now() });
     if (!eligibility.authorized) {
+      if(eligibility.retryable) {
+        const delay=RETRY_DELAYS[row.metaAttempts-1];
+        await finish({metaDeliveryStatus:delay?"RETRY":"FAILED",metaNextAttemptAt:delay?new Date(+now()+delay):null,metaLastErrorCode:eligibility.reason});
+        return {skipped:true,reason:eligibility.reason,status:delay?"RETRY":"FAILED"};
+      }
       await finish({ metaDeliveryStatus: "SKIPPED_CONSENT", metaLastErrorCode: eligibility.reason });
       return { skipped: true, reason: "consent_inactive" };
     }
