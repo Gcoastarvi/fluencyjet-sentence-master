@@ -613,6 +613,8 @@ enum ReconciliationDecision {
 }
 
 model MemoryMasterclassCheckoutIntent {
+  // Prospective policy decision/refusal audit only; never a consent grant.
+  purchaseAuthorization Json?
   id String @id @default(cuid())
 
   memoryAssessmentSessionId String?

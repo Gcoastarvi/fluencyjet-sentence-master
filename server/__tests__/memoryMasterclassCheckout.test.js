@@ -16,9 +16,11 @@ const mockOrderCreate = jest.fn();
 const mockPrisma = {
   memoryMetaConsent: { findUnique: jest.fn() },
   memoryAssessmentSession: {
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
   },
   memoryMasterclassCheckoutIntent: {
+    findMany: async () => [],
     create: jest.fn(),
   },
 };
@@ -86,6 +88,11 @@ const purchaserSnapshot = {
 
 beforeEach(() => {
   jest.resetAllMocks();
+  mockPrisma.memoryAssessmentSession.findFirst.mockResolvedValue(null);
+  delete process.env.MEMORY_META_ADULT_PURCHASE_ENABLED;
+  delete process.env.MEMORY_META_ADULT_PURCHASE_POLICY_JSON;
+  jest.useFakeTimers({ doNotFake: ["nextTick", "setImmediate", "setTimeout", "clearTimeout"] });
+  jest.setSystemTime(new Date(MEMORY_MASTERCLASS_EVENT.startsAt.getTime() - 3600000));
   mockPrisma.memoryMetaConsent.findUnique.mockResolvedValue({
     id: "consent-fixture", granted: true, adultConfirmed: true, revision: 1,
     source: "memory_funnel_adult_opt_in", version: "memory_meta_v1",
@@ -112,6 +119,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.useRealTimers();
   delete process.env.RAZORPAY_KEY_ID;
   delete process.env.RAZORPAY_KEY_SECRET;
 });
@@ -124,6 +132,8 @@ describe("public standalone Memory checkout", () => {
       .send({
         audience: "school",
         checkoutContext: "parents",
+        metaConsentGranted: true, adultConfirmed: true,
+        purchaseAuthorization: { alternative: { authorizationSource: "forged-browser-policy" } },
         ...purchaserInput,
         amount: 1,
         currency: "USD",
@@ -142,6 +152,11 @@ describe("public standalone Memory checkout", () => {
 
     expect(mockPrisma.memoryAssessmentSession.findUnique)
       .not.toHaveBeenCalled();
+    const audit = mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data.purchaseAuthorization;
+    expect(audit).toMatchObject({ version: 2, alternative: null });
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data.metaConsentGranted).toBe(false);
+    expect(audit.purchaseKey).toMatch(/^[a-f0-9]{64}$/);
+
 
     expect(mockOrderCreate).toHaveBeenCalledTimes(1);
     expect(mockOrderCreate).toHaveBeenCalledWith(
@@ -702,4 +717,34 @@ describe("Memory Masterclass ₹99 Razorpay checkout", () => {
       mockPrisma.memoryMasterclassCheckoutIntent.create,
     ).not.toHaveBeenCalled();
   });
+});
+
+
+
+describe("expired approved event", () => {
+  test.each(["/api/memory-masterclass/standalone/create-order", "/api/memory-masterclass/create-order"])("rejects %s before provider or database access", async path => {
+    jest.setSystemTime(new Date(MEMORY_MASTERCLASS_EVENT.endsAt.getTime() + 1));
+    const response = await request(makeApp()).post(path).send({ audience: "school", checkoutContext: "parents", ...purchaserInput });
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe("MEMORY_EVENT_UNAVAILABLE");
+    expect(mockOrderCreate).not.toHaveBeenCalled();
+    expect(mockPrisma.memoryAssessmentSession.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("server Parents purchase context",()=>{
+ test("server derives signed context from request provenance and contacts, not a caller flag/token",async()=>{
+   const app=makeApp();
+   const bad=await request(app).post("/api/memory-masterclass/standalone/create-order")
+     .send({audience:"school",checkoutContext:"parents",parentsPurchaseContext:"forged",...purchaserInput});
+   expect(bad.status).toBe(200);
+   expect(mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data.purchaseAuthorization.serverContext).toBeNull();
+   const good=await request(app).post("/api/memory-masterclass/standalone/create-order")
+     .set("Origin","https://www.fluencyjet.com").set("Referer","https://www.fluencyjet.com/memory-masterclass/parents")
+     .send({audience:"school",checkoutContext:"parents",...purchaserInput});
+   expect(good.status).toBe(200);expect(good.body.measurementChoice.token).toMatch(/^[a-f0-9]{64}$/);
+   const audit=mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[1][0].data.purchaseAuthorization;
+   expect(audit.serverContext).toMatch(/\.[a-f0-9]{64}$/);expect(audit.alternative).toBeNull();expect(audit).not.toHaveProperty("choicesReadyAt");
+   expect(JSON.stringify(audit)).not.toContain(good.body.measurementChoice.token);
+ });
 });

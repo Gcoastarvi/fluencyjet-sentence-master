@@ -1,8 +1,8 @@
 // Weekly operator settings: change these three values, then redeploy/restart.
 // Payment amount, product identity, and authorization are intentionally elsewhere.
 export const MEMORY_MASTERCLASS_WEEKLY_SETTINGS = Object.freeze({
-  startsAt: "2026-10-25T17:00:00+05:30",
-  endsAt: "2026-10-25T19:00:00+05:30",
+  startsAt: "2026-11-15T17:00:00+05:30",
+  endsAt: "2026-11-15T19:00:00+05:30",
   whatsappGroupUrl: "https://chat.whatsapp.com/IUwQal62p4kDvJxIS9892s",
 });
 
@@ -42,7 +42,7 @@ export function buildMemoryMasterclassEvent(settings) {
     endsAt,
     timezone,
     dateISO,
-    dateLabel: `${weekday}, ${Number(parts.day)} ${month}`,
+    dateLabel: `${weekday}, ${Number(parts.day)} ${month} ${parts.year}`,
     startTime: timeFormat.format(startsAt),
     endTime: timeFormat.format(endsAt),
     timezoneLabel: "IST",
@@ -68,4 +68,10 @@ export function getPublicMemoryMasterclassEvent() {
     timezoneLabel: event.timezoneLabel,
     whatsappGroupUrl: event.whatsappGroupUrl,
   };
+}
+
+
+// Stop new orders once the approved class starts; never roll dates forward.
+export function memoryMasterclassBookingOpen(now = new Date()) {
+  return MEMORY_MASTERCLASS_EVENT.startsAt.getTime() > new Date(now).getTime();
 }
