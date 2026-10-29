@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { memoryBookingOpen, memoryScheduleLabel } from "../../lib/memorySchedule";
+import MemoryOfferVisibility from "../../components/memory/MemoryOfferVisibility";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { trackEvent } from "../../lib/tracking";
 import MemoryStandaloneCheckout from "../../components/memory/MemoryStandaloneCheckout";
@@ -6,7 +8,6 @@ import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent
 import { getMemoryVslId } from "../../data/memory/masterclassConfig";
 import "./MemoryMasterclassParents.css";
 
-const EVENT_DATE = "2026-10-25";
 
 const GRADES = [
   { label: "6th", grade: "6", track: "school_foundation" },
@@ -115,6 +116,7 @@ function Step({ number, title, detail, tone }) {
 
 export default function MemoryMasterclassParents() {
   const navigate = useNavigate();
+  const offerVisit = useRef(false);
   const { event, error, retry } = useMemoryMasterclassEvent();
 
   const [grade, setGrade] = useState(null);
@@ -124,9 +126,8 @@ export default function MemoryMasterclassParents() {
 
   const activeGrade = GRADES.find((item) => item.grade === grade);
 
-  const expectedEvent = Boolean(
-    event && String(event.dateISO).slice(0, 10) === EVENT_DATE
-  );
+  const expectedEvent = memoryBookingOpen(event);
+  const scheduleLabel = memoryScheduleLabel(event);
 
   const videoCandidate = getMemoryVslId("school");
   const videoId = /^\d+$/.test(String(videoCandidate ?? ""))
@@ -214,6 +215,8 @@ export default function MemoryMasterclassParents() {
         const bookingDisabled = !expectedEvent || busy;
 
         const booking = (extraClass = "") => (
+          <MemoryOfferVisibility ready={expectedEvent} blocked={dialogOpen || busy}
+            visit={offerVisit} source="memory_masterclass_parents" placement="parents">
           <button
             type="button"
             className={`bdp-buy ${extraClass}`}
@@ -223,13 +226,14 @@ export default function MemoryMasterclassParents() {
             Book My Child's Seat <span aria-hidden="true">—</span> ₹99
             <span aria-hidden="true"> →</span>
           </button>
+          </MemoryOfferVisibility>
         );
 
         return (
           <div className="bdp" id="top">
 
             <div className="bdp-topline">
-              LIVE ONLINE · SUNDAY, 25 OCTOBER 2026 · 5–7 PM IST
+              LIVE ONLINE · {scheduleLabel}
             </div>
 
             <header className="bdp-header bdp-wrap">
@@ -271,7 +275,7 @@ export default function MemoryMasterclassParents() {
 
                   <p className="bdp-date">
                     <span aria-hidden="true">◷</span>
-                    Sunday, 25 October · 5–7 PM IST
+                    {scheduleLabel}
                     <span className="bdp-live">LIVE ONLINE</span>
                   </p>
 
@@ -706,7 +710,7 @@ export default function MemoryMasterclassParents() {
 
                   <div className="bdp-offer-summary">
                     <span>
-                      Sunday, 25 October 2026 · 5–7 PM IST
+                      {scheduleLabel}
                     </span>
 
                     <strong>₹99</strong>
@@ -763,7 +767,7 @@ export default function MemoryMasterclassParents() {
                   <h2>Give Your Child a Smarter Way to Study.</h2>
 
                   <p>
-                    Sunday, 25 October · 5–7 PM IST · Live Online
+                    {scheduleLabel} · Live Online
                   </p>
 
                   {booking()}
@@ -804,7 +808,7 @@ export default function MemoryMasterclassParents() {
               <div className="bdp-event-status" role="status">
                 <strong>
                   {event && !expectedEvent
-                    ? "Booking paused: class date differs"
+                    ? "Booking paused: schedule needs confirmation"
                     : error
                     ? "Booking details unavailable"
                     : "Checking class schedule…"}
@@ -812,7 +816,7 @@ export default function MemoryMasterclassParents() {
 
                 <span>
                   {event && !expectedEvent
-                    ? "Confirm the October 25 event in the existing scheduling system."
+                    ? "Please wait for the next approved live class schedule. Booking is unavailable for an expired or invalid schedule."
                     : error
                     ? "Please retry to load the schedule."
                     : "The ₹99 buttons activate after schedule verification."}
@@ -832,3 +836,4 @@ export default function MemoryMasterclassParents() {
     </MemoryStandaloneCheckout>
   );
 }
+

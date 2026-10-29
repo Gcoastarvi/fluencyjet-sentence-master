@@ -3,7 +3,7 @@ import LegalLayout from "./LegalLayout";
 
 export default function PrivacyPolicy() {
   return (
-    <LegalLayout title="Privacy Policy" updated="April 25, 2026">
+    <LegalLayout title="Privacy Policy" updated="October 29, 2026">
       <p>
         This Privacy Policy explains how FluencyJet Sentence Master collects,
         uses, stores, and protects information when you use our website and web
@@ -45,6 +45,39 @@ export default function PrivacyPolicy() {
         to collect information about page views, clicks, device details, browser
         details, and website interactions.
       </p>
+
+      <section id="brainodad-purchase-measurement" aria-labelledby="brainodad-purchase-heading">
+        <h3 id="brainodad-purchase-heading">BrainoDad webinar purchase measurement</h3>
+        <p>
+          Where permitted by the applicable authorization and Meta requirements,
+          BrainoDad shares limited confirmed-purchase information through Meta's
+          Conversions API: hashed purchaser email and phone, product, amount,
+          currency, event time, a payment-based event identifier and a fixed
+          confirmation-page address. Hashing does not make these details anonymous;
+          Meta may match them to an account and process them for matching,
+          measurement and advertising under its own terms and privacy policy.
+        </p>
+        <p>
+          The Parents booking flow is directed to parents; it does not verify age.
+          The separate notice-based Parents purchase policy excludes assessment-linked
+          bookings, known assessment-contact conflicts and other restricted contexts. We do not include student names, answers,
+          scores, assessment identifiers or inherited browser identifiers in these
+          Purchase events. Browser tracking has its own separate privacy choices.
+          Booking, paying or reading this policy is not advertising consent.
+        </p>
+        <p>
+          Booking works without measurement. Use Privacy choices in registration
+          or <a href="/memory-challenge" className="underline">Memory privacy choices</a>
+          {" "}to decline or withdraw. Saved purchase choices allow withdrawal of
+          measurement of these purchases from this browser. For another device,
+          unavailable saved choices, access, correction, deletion or retention
+          questions, contact us using the details below. A failed withdrawal is
+          shown as pending; please retry or contact support. A recorded withdrawal
+          stops subsequent sharing, but cannot recall an event already accepted or
+          in flight. We retain payment and limited measurement-decision/delivery
+          records for accounting, rights handling and reconciliation.
+        </p>
+      </section>
 
       <h2>4. Cookies and tracking</h2>
       <p>
@@ -104,3 +137,4 @@ export default function PrivacyPolicy() {
     </LegalLayout>
   );
 }
+
