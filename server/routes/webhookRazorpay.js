@@ -1,3 +1,4 @@
+import { memoryPurchaseEligibility } from "../services/memoryMetaConsent.js";
 import express from "express";
 import { deliverMemoryPurchase } from "../services/memoryMetaDelivery.js";
 import crypto from "crypto";
@@ -140,6 +141,7 @@ router.post(
               id: true,
               memoryAssessmentSessionId: true,
               checkoutSource: true,
+              purchaseAuthorization: true,
               metaConsentId: true,
               metaConsentGranted: true,
               metaConsentAt: true,
@@ -257,8 +259,17 @@ router.post(
       const memoryMetaEventId =
         `${MEMORY_MASTERCLASS_PRODUCT_KEY}_purchase_${paymentId}`;
 
-      const measurementAuthorized = memoryIntent.metaConsentGranted === true &&
-        process.env.MEMORY_META_PURCHASE_SHARING_BLOCKED !== "true";
+      let measurementAuthorized = false, measurementReason = "AUTHORIZATION_UNAVAILABLE";
+      try {
+        const decision = await memoryPurchaseEligibility(memoryIntent);
+        measurementAuthorized = decision.authorized; measurementReason = decision.reason || null;
+      }
+      catch {
+        // Preserve an existing prospective candidate through an authorization
+        // outage. The worker must recheck before ANY transport and retries errors.
+        measurementAuthorized = process.env.MEMORY_META_PURCHASE_SHARING_BLOCKED !== "true" &&
+          (memoryIntent.metaConsentGranted === true || Boolean(memoryIntent.purchaseAuthorization?.alternative));
+      }
       let memoryRecord;
 
       try {
@@ -295,6 +306,7 @@ router.post(
               metaConsentSource: memoryIntent.metaConsentSource ?? null,
               metaConsentRevision: memoryIntent.metaConsentRevision ?? null,
               metaDeliveryStatus: measurementAuthorized ? "PENDING" : "SKIPPED_CONSENT",
+              metaLastErrorCode: measurementAuthorized ? null : measurementReason,
               metaNextAttemptAt: new Date(),
               metaEventTime: Number.isInteger(payload.created_at) &&
                 payload.created_at > 0 && payload.created_at * 1000 <= Date.now() + 60000
@@ -363,7 +375,7 @@ router.post(
       }
 
       if (!measurementAuthorized) {
-        return res.status(200).json({ ok: true, capiSkipped: true, capiSkipReason: "consent_missing" });
+        return res.status(200).json({ ok: true, capiSkipped: true, capiSkipReason: measurementReason });
       }
       let memoryCapiResult;
       try { memoryCapiResult = await deliverMemoryPurchase(memoryRecord.id); }

@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import prisma from "../db/client.js";
-import { memoryConsentSnapshot, memoryPurchaseConsentSnapshot } from "../services/memoryMetaConsent.js";
+import { memoryConsentSnapshot, memoryPurchaseConsentSnapshot, memoryPurchaseAuthorizationSnapshot } from "../services/memoryMetaConsent.js";
 import { getRazorpayClient, validatePurchaserDetails } from "./memoryMasterclassCheckout.js";
 import { MEMORY_MASTERCLASS_EVENT, memoryMasterclassBookingOpen } from "../config/memoryMasterclassEvent.js";
 
@@ -65,9 +65,19 @@ router.post("/create-order", orderLimiter, async (req, res) => {
         trackId, checkoutSource: "standalone_vsl", ...purchaser,
       },
     });
+    let purchaseAuthorization = null;
+    if (body.checkoutContext === "parents") {
+      try { purchaseAuthorization = await memoryPurchaseAuthorizationSnapshot(body, {
+        ...purchaser, ...consent, razorpayOrderId: order.id, productKey: "memory_masterclass_99",
+        amount: 9900, currency: "INR", trackId, memoryAssessmentSessionId: null,
+      }, { gpc: req.headers["sec-gpc"] === "1" }); }
+      catch { purchaseAuthorization = { version: 1, blocked: body.measurementRefused === true ||
+        body.adultParentOwnContactIndia === false || req.headers["sec-gpc"] === "1", reason: "AUTHORIZATION_UNAVAILABLE" }; }
+    }
     const intent = await prisma.memoryMasterclassCheckoutIntent.create({
       data: {
         ...consent,
+        ...(purchaseAuthorization ? { purchaseAuthorization } : {}),
         memoryAssessmentSessionId: null,
         checkoutSource: "standalone_vsl",
         source: "whatsapp_vsl",

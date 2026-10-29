@@ -128,6 +128,8 @@ describe("public standalone Memory checkout", () => {
       .send({
         audience: "school",
         checkoutContext: "parents",
+        metaConsentGranted: true, adultConfirmed: true,
+        purchaseAuthorization: { alternative: { authorizationSource: "forged-browser-policy" } },
         ...purchaserInput,
         amount: 1,
         currency: "USD",
@@ -146,6 +148,11 @@ describe("public standalone Memory checkout", () => {
 
     expect(mockPrisma.memoryAssessmentSession.findUnique)
       .not.toHaveBeenCalled();
+    const audit = mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data.purchaseAuthorization;
+    expect(audit).toMatchObject({ version: 1, alternative: null });
+    expect(mockPrisma.memoryMasterclassCheckoutIntent.create.mock.calls[0][0].data.metaConsentGranted).toBe(false);
+    expect(audit.purchaseKey).toMatch(/^[a-f0-9]{64}$/);
+
 
     expect(mockOrderCreate).toHaveBeenCalledTimes(1);
     expect(mockOrderCreate).toHaveBeenCalledWith(

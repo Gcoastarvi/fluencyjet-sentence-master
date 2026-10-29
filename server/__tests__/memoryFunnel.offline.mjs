@@ -10,12 +10,14 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-async function fixture({ granted = true, adult = true, revoked = false, responseStatus = 200 } = {}) {
-  const calls = [], rows = [], handlers = [], claims = [], logs = [];
+async function fixture({ granted = true, adult = true, revoked = false, responseStatus = 200, alternative = false, mockRule = false, fixtureId = "fixture", ledger = [] } = {}) {
+  const calls = [], rows = ledger, handlers = [], claims = [], logs = [];
   let clock = Date.now();
+  const eligibilityState = { eligible: true, adultPurchaserEstablished: true, ownPurchaserContacts: true, childrenExcluded: true, refusalWithdrawalChecked: true, platformPermitted: true, authorizationEvidenceRef: "OFFLINE-SYNTHETIC-RULE-EVALUATION" };
+  const ruleInputs = [];
   class ClockDate extends Date { constructor(...args) { super(...(args.length ? args : [clock])); } static now() { return clock; } }
   const env = { RAZORPAY_WEBHOOK_SECRET: "offline-webhook-fixture", MEMORY_META_CAPI_ACCESS_TOKEN: "offline-not-a-real-token" };
-  const intent = { id: "intent_fixture", razorpayOrderId: "order_fixture", productKey: "memory_masterclass_99",
+  const intent = { id: `intent_${fixtureId}`, razorpayOrderId: `order_${fixtureId}`, productKey: "memory_masterclass_99",
     amount: 9900, currency: "INR", trackId: "school_foundation", checkoutSource: "standalone_parents",
     purchaserName: "Adult Fixture", purchaserEmail: "adult@example.test", purchaserPhone: "+919111111111",
     metaConsentGranted: granted, metaConsentId: "receipt_fixture", metaConsentVersion: "memory_meta_v1", metaConsentRevision: 1,
@@ -29,13 +31,13 @@ async function fixture({ granted = true, adult = true, revoked = false, response
     memoryMetaConsent: { findUnique: async () => consent },
     memoryMasterclassCheckoutIntent: { findMany: async () => [], findUnique: async ({where}) => where.razorpayOrderId === intent.razorpayOrderId ? intent : null },
     memoryMasterclassPurchase: {
-      findFirst: async () => rows[0] || null,
-      create: async ({data}) => { const row = { id: "purchase_fixture", metaAttempts: 0, ...data }; rows.push(row); return row; },
-      findUnique: async () => rows[0] ? { ...rows[0], checkoutIntent: intent } : null,
+      findFirst: async ({where}) => rows.find(r=>where.OR.some(part=>Object.entries(part).every(([k,v])=>r[k]===v))) || null,
+      create: async ({data}) => { const row = { id: `purchase_${fixtureId}`, metaAttempts: 0, ...data }; rows.push(row); return row; },
+      findUnique: async ({where}) => {const row=rows.find(r=>r.id===where.id);return row?{...row,checkoutIntent:intent}:null;},
       findMany: async () => rows.filter(r => ["PENDING", "RETRY"].includes(r.metaDeliveryStatus) && r.metaAttempts < 6).map(r => ({ id: r.id })),
       updateMany: async ({where, data}) => {
         claims.push(where);
-        const r = rows[0];
+        const r = rows.find(r=>r.id===where.id);
         if (!r || !where.id) return { count: 0 };
         if (where.metaLeaseToken && r.metaLeaseToken !== where.metaLeaseToken) return { count: 0 };
         if (data.metaAttempts) {
@@ -67,7 +69,11 @@ async function fixture({ granted = true, adult = true, revoked = false, response
   async function load(key) {
     if (cache.has(key)) return cache.get(key);
     let m;
-    if (["crypto", "node:crypto"].includes(key)) m = synthetic(key, { default: crypto });
+    if (mockRule && key.endsWith("/services/memoryPurchaseRule.js")) m = synthetic(key, {
+      MEMORY_PURCHASE_RULE_VERSION: "offline-fixture-rule-v1",
+      evaluateApprovedMemoryPurchaseRule: async input => { ruleInputs.push(input); return {...eligibilityState}; },
+    });
+    else if (["crypto", "node:crypto"].includes(key)) m = synthetic(key, { default: crypto });
     else if (key === "express") m = synthetic(key, { default: express });
     else if (key.endsWith("/db/client.js")) m = synthetic(key, { default: db });
     else if (key.endsWith("/lib/whatsappDestinationLock.js")) m = synthetic(key, { acquireWhatsAppDestinationLock: forbidden });
@@ -86,17 +92,32 @@ async function fixture({ granted = true, adult = true, revoked = false, response
   const delivery = cache.get(resolve(root, "services/memoryMetaDelivery.js")).namespace;
   const config = cache.get(resolve(root, "config/metaTracking.js")).namespace;
   const consentService = cache.get(resolve(root, "services/memoryMetaConsent.js")).namespace;
+  const policy = { version: "OFFLINE-POLICY-V1", ruleVersion: "offline-fixture-rule-v1",
+    authorizationSource: "OFFLINE-ONLY-NOT-A-REAL-LEGAL-BASIS", legalApprovalRef: "OFFLINE-LEGAL-REVIEW",
+    metaTermsReviewRef: "OFFLINE-META-REVIEW", noticeApprovalRef: "OFFLINE-NOTICE-REVIEW",
+    childExclusionApprovalRef: "OFFLINE-CHILD-EXCLUSION-REVIEW", noticeHash: consentService.MEMORY_PURCHASE_NOTICE_HASH,
+    effectiveAt: new Date(clock-60000).toISOString(), expiresAt:"2027-05-12T18:30:00Z", reviewDueAt:"2027-05-01T00:00:00Z" };
+  if(alternative) {
+    env.MEMORY_META_ADULT_PURCHASE_ENABLED="true"; env.MEMORY_META_ADULT_PURCHASE_POLICY_JSON=JSON.stringify(policy);
+    intent.metaConsentGranted=false; intent.metaConsentId=null; intent.metaConsentVersion=null;
+    intent.trackId="school_unspecified";
+  }
+  async function prepare(body={}, options={}) {
+    intent.purchaseAuthorization=await consentService.memoryPurchaseAuthorizationSnapshot(body,intent,{db,env,now:new Date(clock),...options});
+    return intent.purchaseAuthorization;
+  }
+  if(alternative) await prepare();
   async function capture({ event = "payment.captured", status = "captured", amount = 9900, signature = true } = {}) {
     const body = Buffer.from(JSON.stringify({ event, created_at: Math.floor(clock/1000), payload: { payment: { entity: {
-      id: "pay_fixture", order_id: "order_fixture", amount, currency: "INR", status,
+      id: `pay_${fixtureId}`, order_id: `order_${fixtureId}`, amount, currency: "INR", status,
       email: "PRIVATE_PROVIDER_IDENTITY", contact: "PRIVATE_PROVIDER_CONTACT",
     } } } }));
-    const req = { body, headers: { "x-razorpay-event-id": "webhook_fixture",
+    const req = { body, headers: { "x-razorpay-event-id": `webhook_${fixtureId}`,
       "x-razorpay-signature": signature ? crypto.createHmac("sha256", env.RAZORPAY_WEBHOOK_SECRET).update(body).digest("hex") : "bad" } };
     const res = { code: 200, status(n) { this.code = n; return this; }, json(data) { this.data = data; return this; } };
     await handlers[0](req, res); return res;
   }
-  return { calls, rows, claims, intent, consent, db, env, delivery, config, capture, logs, consentService, setClock: value => { clock = +new Date(value); } };
+  return { calls, rows, claims, intent, consent, db, env, delivery, config, capture, logs, consentService, policy, prepare, eligibilityState, ruleInputs, setClock: value => { clock = +new Date(value); } };
 }
 
 test("signed capture records once; webhook repeats send one stable adult Purchase to BrainoDad", async () => {
@@ -194,4 +215,102 @@ test("May 13 deadline cannot enable an alternative; existing adult consent still
     f.env.MEMORY_META_ADULT_PURCHASE_ENABLED="true";
     await f.capture(); assert.equal(f.calls.length,granted?1:0);
   }
+});
+
+test("MOCK approved rule: ten unique new captures without receipts produce ten accepted CAPI attempts",async()=>{
+  const events=new Set(), payments=new Set(), ledger=[]; let attempts=0;
+  for(let i=0;i<10;i++) {
+    const f=await fixture({alternative:true,mockRule:true,fixtureId:`new_${i}`,ledger});
+    assert.equal(f.intent.metaConsentGranted,false); assert.equal(f.intent.metaConsentId,null);
+    await f.capture(); await f.capture();
+    assert.equal(f.rows.length,i+1); attempts+=f.calls.length;
+    payments.add(f.rows[i].paymentId); events.add(f.calls[0].body.data[0].event_id);
+    assert.equal(f.rows[i].metaDeliveryStatus,"DELIVERED");
+    assert.equal(f.calls[0].body.data[0].custom_data.value,99);
+    assert.equal(f.calls[0].body.data[0].custom_data.currency,"INR");
+    assert.match(f.calls[0].url,/1998316064175555\/events$/);
+    assert.equal(f.rows[i].metaConsentGranted,false);
+    assert.ok(!JSON.stringify(f.calls).includes("PRIVATE_"));
+    assert.ok(!JSON.stringify(f.ruleInputs).includes("PRIVATE_"));
+    assert.ok(f.logs.some(x=>x.includes("source=approved_alternative")));
+  }
+  assert.equal(ledger.length,10); assert.equal(attempts,10); assert.equal(events.size,10); assert.equal(payments.size,10);
+});
+test("ten unqualified mock-rule buyers: payments are accounted for, sharing withheld",async()=>{
+  const ledger=[]; let sent=0;
+  for(let i=0;i<10;i++) {
+    const f=await fixture({alternative:true,mockRule:true,fixtureId:`unknown_${i}`,ledger});
+    f.eligibilityState.eligible=false; await f.prepare(); await f.capture();
+    sent+=f.calls.length;
+  }
+  assert.equal(ledger.length,10); assert.equal(new Set(ledger.map(r=>r.paymentId)).size,10); assert.equal(sent,0);
+});
+for(const field of ["adultPurchaserEstablished","ownPurchaserContacts","childrenExcluded","refusalWithdrawalChecked","platformPermitted"]) test(`mock-rule missing safety evidence withholds: ${field}`,async()=>{
+  const f=await fixture({alternative:true,mockRule:true}); f.eligibilityState[field]=false;
+  await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0);
+});
+for(const mode of ["disabled","deadline","review_due","changed_policy","missing_approval","refusal","withdrawn","assessment"]) test(`alternative is rechecked at capture: ${mode}`,async()=>{
+  const f=await fixture({alternative:true,mockRule:true});
+  if(mode==="disabled") f.env.MEMORY_META_ADULT_PURCHASE_ENABLED="false";
+  if(mode==="deadline") f.setClock("2027-05-13T00:00:00+05:30");
+  if(mode==="review_due") f.setClock(f.policy.reviewDueAt);
+  if(mode==="changed_policy") f.policy.version="different-policy";
+  if(mode==="missing_approval") f.policy.metaTermsReviewRef="";
+  f.env.MEMORY_META_ADULT_PURCHASE_POLICY_JSON=JSON.stringify(f.policy);
+  if(mode==="refusal") await f.prepare({measurementRefused:true});
+  if(mode==="withdrawn") {
+    f.db.memoryMasterclassCheckoutIntent.findMany=async()=>[{metaConsentId:"withdrawn"}];
+    f.db.memoryMetaConsent.findFirst=async()=>({id:"withdrawn"});
+  }
+  if(mode==="assessment") f.intent.memoryAssessmentSessionId="child-assessment";
+  await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0);
+});
+test("alternative transient retry uses existing worker and stable identity, then kill switch stops another attempt",async()=>{
+  const f=await fixture({alternative:true,mockRule:true,responseStatus:503}); await f.capture();
+  assert.equal(f.rows[0].metaDeliveryStatus,"RETRY");
+  const first=f.calls[0].body.data[0]; let retry;
+  await f.delivery.deliverMemoryPurchase("purchase_fixture",{db:f.db,env:f.env,now:()=>new Date(Date.now()+120000),send:async e=>{retry=e;return {ok:true};}});
+  assert.equal(retry.eventId,first.event_id); assert.equal(f.rows[0].metaDeliveryStatus,"DELIVERED");
+  const g=await fixture({alternative:true,mockRule:true,responseStatus:503}); await g.capture();
+  g.env.MEMORY_META_ADULT_PURCHASE_ENABLED="false"; let sent=0;
+  await g.delivery.deliverMemoryPurchase("purchase_fixture",{db:g.db,env:g.env,send:async()=>{sent++;return {ok:true};}});
+  assert.equal(sent,0);
+});
+test("production rule remains unimplemented even with configuration, and history cannot acquire a prospective snapshot",async()=>{
+  const f=await fixture({alternative:true}); await f.capture();
+  assert.equal(f.intent.purchaseAuthorization.alternative,null); assert.equal(f.calls.length,0);
+  const g=await fixture({alternative:true,mockRule:true}); delete g.intent.purchaseAuthorization;
+  await g.capture(); await g.delivery.runMemoryMetaDelivery({db:g.db,env:g.env});
+  assert.equal(g.calls.length,0); assert.equal(g.rows[0].metaAttempts,0);
+});
+test("failed payment is never a Purchase even under an eligible mock alternative",async()=>{
+  const f=await fixture({alternative:true,mockRule:true}); await f.capture({event:"payment.failed"});
+  assert.equal(f.rows.length,0); assert.equal(f.calls.length,0);
+});
+
+test("authorization outage preserves payment and retry candidate but never sends unchecked",async()=>{
+  const f=await fixture(); f.db.memoryMetaConsent.findUnique=async()=>{throw Error("OFFLINE-AUTH-OUTAGE");};
+  await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0); assert.equal(f.rows[0].metaDeliveryStatus,"RETRY");
+  f.db.memoryMetaConsent.findUnique=async()=>f.consent; let sent=0;
+  await f.delivery.deliverMemoryPurchase("purchase_fixture",{db:f.db,env:f.env,send:async()=>{sent++;return {ok:true};}});
+  assert.equal(sent,1);
+});
+test("prospective audit is bound to the actual purchaser and order",async()=>{
+  const f=await fixture({alternative:true,mockRule:true}); f.intent.razorpayOrderId="another-order";
+  const result=await f.consentService.memoryPurchaseEligibility(f.intent,{db:f.db,env:f.env});
+  assert.equal(result.authorized,false);
+});
+
+test("missing approval references and notice mismatch fail closed despite an eligible mock rule",async()=>{
+  for(const key of ["legalApprovalRef","metaTermsReviewRef","noticeApprovalRef","childExclusionApprovalRef","authorizationSource","noticeHash"]) {
+    const f=await fixture({alternative:true,mockRule:true}); f.policy[key]="";
+    f.env.MEMORY_META_ADULT_PURCHASE_POLICY_JSON=JSON.stringify(f.policy);
+    await f.capture(); assert.equal(f.calls.length,0,key);
+  }
+});
+test("hard alternative expiry leaves independent current adult consent available",async()=>{
+  const f=await fixture({alternative:true,mockRule:true});
+  Object.assign(f.intent,{metaConsentGranted:true,metaConsentId:"receipt_fixture",metaConsentVersion:"memory_meta_v1",metaConsentRevision:1});
+  f.consent.expiresAt=new Date("2027-06-01"); f.setClock("2027-05-13T00:00:00+05:30");
+  await f.capture(); assert.equal(f.calls.length,1); assert.ok(f.logs.some(x=>x.includes("source=adult_consent")));
 });
