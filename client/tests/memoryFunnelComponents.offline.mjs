@@ -37,9 +37,11 @@ async function fixture({ failedOrder = false, failedOpen = false, consent = true
   const modules = new Map();
   const jsx = (type, props) => ({ type, props });
   const mocks = {
+    "../../lib/memoryPurchaseMeasurement": {rememberPurchaseChoice:()=>true,measurementPost:(post,...args)=>post(...args)},
     "../../lib/memorySchedule": { memoryScheduleLabel },
     react, "react/jsx-runtime": { jsx, jsxs: jsx, Fragment: "fragment" },
     "../../api/apiClient": { api: { post: async (...args) => {
+      if(args[0].endsWith("/parents-context")) return {ok:true,data:{parentsPurchaseContext:"offline-context"}};
       orderCalls.push(args); return failedOrder ? { ok: false } : { ok: true, data: { orderId: "order_mock", amount: 9900, currency: "INR", keyId: "offline" } };
     } } },
     "./MemoryMasterclassOffer": { buildMemoryCheckoutAttribution: () => ({}), loadRazorpayCheckout: async () => {} },

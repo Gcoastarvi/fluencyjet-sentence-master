@@ -1,3 +1,4 @@
+import { rememberPurchaseChoice, measurementPost } from "../../lib/memoryPurchaseMeasurement";
 import { memoryScheduleLabel } from "../../lib/memorySchedule";
 import { useRef, useState } from "react";
 import { api } from "../../api/apiClient";
@@ -45,9 +46,16 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
         purchaserName: purchaser.name,
         purchaserEmail: purchaser.email,
         purchaserPhone: purchaser.phone,
-      });
+      }, parentsMode && window.location.pathname === "/memory-masterclass/parents"
+        ? {referrer:window.location.origin+"/memory-masterclass/parents",referrerPolicy:"no-referrer-when-downgrade"} : {});
       if (!response.ok || !response.data?.orderId) {
         throw new Error(response.error || "Unable to start secure checkout.");
+      }
+      if(parentsMode && response.data.measurementChoice) {
+        const choice=response.data.measurementChoice;
+        if(rememberPurchaseChoice(choice)) {
+          try { await measurementPost((...args)=>api.post(...args), "/memory-meta/purchase-choice", {...choice,action:"ready"}); } catch {}
+        } // Without successful storage + server readiness, alternative sending stays off.
       }
       await loadRazorpayCheckout();
       const order = response.data;

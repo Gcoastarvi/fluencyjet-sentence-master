@@ -62,7 +62,7 @@ export default function MemoryPurchaserDetails({
 
   useEffect(() => {
     dialogRef.current.showModal();
-    if (hasEditedDetails || !ownerToken) return;
+    if (measurementManagementOnly || hasEditedDetails || !ownerToken) return;
     let active = true;
     api.post("/memory-masterclass/checkout-details", { ownerToken })
       .then((result) => {
@@ -85,7 +85,7 @@ export default function MemoryPurchaserDetails({
         }
       });
     return () => { active = false; };
-  }, [ownerToken, hasEditedDetails]);
+  }, [ownerToken, hasEditedDetails, measurementManagementOnly]);
 
   function updateField(event) {
     const { name, value } = event.target;

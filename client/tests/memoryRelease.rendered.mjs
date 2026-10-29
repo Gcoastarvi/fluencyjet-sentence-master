@@ -26,7 +26,7 @@ const approved = { ...synthetic, key: "2026-11-15_1700_ist", startsAt: "2026-11-
   endsAt: "2026-11-15T13:30:00Z", dateISO: "2026-11-15", dateLabel: "Sunday, 15 November 2026" };
 const expired = { ...synthetic, startsAt: "2026-10-25T11:30:00Z", endsAt: "2026-10-25T13:30:00Z", dateISO: "2026-10-25", dateLabel: "EXPIRED TEST SCHEDULE" };
 
-async function fixture({ granted = true, schedule = synthetic, width = 390, failedOrder = false } = {}) {
+async function fixture({ granted = true, schedule = synthetic, width = 390, failedOrder = false, readyFailure = false } = {}) {
   const context = await browser.newContext({ viewport: { width, height: 844 }, serviceWorkers: "block" });
   const requests = [], errors = [];
   await context.route("**/*", async route => {
@@ -38,6 +38,7 @@ async function fixture({ granted = true, schedule = synthetic, width = 390, fail
     }
     if (url.pathname.startsWith("/api/")) {
       requests.push({ path: url.pathname, body: request.postData() ? JSON.parse(request.postData()) : null });
+      if(url.pathname === "/api/memory-meta/purchase-choice") return readyFailure && request.postDataJSON().action === "ready"?reply({ok:false},503):reply({ok:true});
       if (url.pathname === "/api/memory-masterclass/event") return reply({ ok: true, event: schedule });
       if (url.pathname.startsWith("/api/memory-meta/consent")) {
         const body = request.postDataJSON();
@@ -45,7 +46,7 @@ async function fixture({ granted = true, schedule = synthetic, width = 390, fail
       }
       if (url.pathname.endsWith("/create-order")) return failedOrder
         ? reply({ ok: false, message: "Mock payment unavailable" }, 503)
-        : reply({ ok: true, keyId: "offline-public-fixture", orderId: "order_offline", amount: 9900, currency: "INR" });
+        : reply({ ok: true, keyId: "offline-public-fixture", orderId: "order_offline", amount: 9900, currency: "INR",measurementChoice:{orderId:"order_offline",token:"f".repeat(64)} });
       return reply({ ok: false }, 401);
     }
     if (url.pathname.startsWith("/assets/")) {
@@ -261,4 +262,33 @@ for(const granted of [false,true]) test(`Parents inline refusal/withdrawal reuse
     assert.ok(f.requests.some(r=>r.path==="/api/memory-meta/consent"&&r.body?.granted===false));
     assert.ok((await meta(f.page)).every(c=>c[2]!=="Purchase")); assert.deepEqual(f.errors,[]);
   } finally { await f.close(); }
+});
+
+for(const readyFailure of [false,true]) test(`silent readiness does not add controls or stop payment: readyFailure=${readyFailure}`,async()=>{
+ const f=await fixture({granted:false,readyFailure});
+ try {
+  await f.page.getByRole('button',{name:/Book My Child's Seat/}).first().click();const d=f.page.getByRole('dialog');
+  assert.equal(await d.getByRole('checkbox').count(),0);assert.equal(await d.getByRole('combobox').count(),0);
+  await d.getByLabel('Name',{exact:true}).fill('New Parent');await d.getByLabel('Email',{exact:true}).fill('parent@example.test');await d.getByLabel('Phone',{exact:true}).fill('9111111111');
+  await d.getByRole('button',{name:/Continue to Payment/}).click();await f.page.waitForFunction(()=>window.offlineOpens===1);
+  const order=f.requests.find(r=>r.path.endsWith('/create-order')).body;
+  assert.ok(!("parentsPurchaseContext" in order));assert.equal(order.memoryMetaConsentReceipt,null);
+  assert.ok(f.requests.some(r=>r.path.endsWith('/purchase-choice')&&r.body.action==='ready'));
+  assert.ok(!f.requests.some(r=>r.path.endsWith('/checkout-details')));
+  await f.page.evaluate(()=>window.offlineCheckoutOptions.modal.ondismiss());
+  await f.page.getByRole('button',{name:/Book My Child's Seat/}).first().click();
+  await d.getByRole('button',{name:'Privacy choices',exact:true}).click();await d.getByRole('button',{name:/Don't share purchase measurement/}).click();
+  await f.page.waitForFunction(()=>JSON.parse(localStorage.getItem('brainodad_meta_consent_v1')||'null')?.granted===false);
+  assert.ok(f.requests.some(r=>r.path.endsWith('/purchase-choice')&&r.body.action==='withdraw'));
+  assert.equal((await meta(f.page)).length,0);assert.deepEqual(f.errors,[]);
+ }finally{await f.close();}
+});
+test('BrainoDad-specific privacy notice describes CAPI contacts and accessible choices',async()=>{
+ const f=await fixture({granted:false});try{
+  await f.page.goto('http://brainodad.test/privacy-policy');
+  await f.page.getByRole('heading',{name:'BrainoDad webinar purchase measurement'}).waitFor();
+  const text=await f.page.locator('#brainodad-purchase-measurement').innerText();
+  assert.ok(text.includes('hashed purchaser email and phone'));assert.ok(text.includes('does not verify age'));
+  assert.ok(text.includes('is not advertising consent'));assert.deepEqual(f.errors,[]);
+ }finally{await f.close();}
 });
