@@ -1,3 +1,7 @@
+import {
+  submitMemoryFormB,
+} from "../services/memoryFormBSubmission.js";
+
 import express from "express";
 import rateLimit from "express-rate-limit";
 import prisma from "../db/client.js";
@@ -202,5 +206,85 @@ router.get("/session", async (req, res) => {
     });
   }
 });
+
+
+/*
+ * POST /api/memory-retest/submit
+ *
+ * Authenticated one-time Form B submission.
+ * The session comes exclusively from the HttpOnly cookie.
+ * Scores and assessment track are determined by the server.
+ */
+const submitLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 12,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    ok: false,
+    code: "RETEST_RATE_LIMITED",
+  },
+});
+
+router.post(
+  "/submit",
+  requireTrustedOrigin,
+  submitLimiter,
+  async (req, res) => {
+    try {
+      const sessionToken =
+        req.cookies?.[COOKIE_NAME];
+
+      const result = await submitMemoryFormB(
+        {
+          sessionToken,
+          responses: req.body?.responses,
+        },
+        { prisma },
+      );
+
+      if (!result?.saved) {
+        const code =
+          result?.code || "FORM_B_SUBMISSION_FAILED";
+
+        const statusByCode = {
+          INVALID_RETEST_SESSION: 401,
+          INVALID_FORM_B_RESPONSES: 400,
+          BASELINE_UNAVAILABLE: 409,
+          FORM_B_ALREADY_COMPLETED: 409,
+          SUBMISSION_CONFLICT_RETRY: 503,
+        };
+
+        return res.status(
+          statusByCode[code] || 500,
+        ).json({
+          ok: false,
+          code,
+        });
+      }
+
+      return res.status(201).json({
+        ok: true,
+        trackId: result.trackId,
+        formAScore: result.formAScore,
+        formBScore: result.formBScore,
+        improvementPoints:
+          result.improvementPoints,
+        formBCompletedAt:
+          result.formBCompletedAt,
+      });
+    } catch (error) {
+      console.error(
+        "Form B submission failed:",
+        error?.code || error?.name || "UNKNOWN_ERROR",
+      );
+
+      return res.status(500).json({
+        ok: false,
+        code: "FORM_B_SUBMISSION_FAILED",
+      });
+    }
+  },
+);
 
 export default router;
