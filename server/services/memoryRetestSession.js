@@ -129,6 +129,7 @@ export async function validateMemoryRetestSession(
 
   return {
     valid: true,
+    purchaseId: grant.purchaseId,
     assessmentSessionId: grant.assessmentSessionId,
     trackId: eligibility.trackId,
   };

@@ -263,6 +263,7 @@ describe("Authenticated session without Form A", () => {
 
     expect(result).toMatchObject({
       valid: true,
+      purchaseId: PURCHASE,
       assessmentSessionId: null,
       trackId: "school_foundation",
     });
@@ -279,6 +280,7 @@ describe("Authenticated session without Form A", () => {
 
     expect(result).toMatchObject({
       valid: true,
+      purchaseId: PURCHASE,
       assessmentSessionId: "form-a-1",
       trackId: "school_foundation",
     });

@@ -80,6 +80,7 @@ describe("Secure Form B session validation", () => {
 
     expect(result).toEqual({
       valid: true,
+      purchaseId: "purchase-1",
       assessmentSessionId: "assessment-1",
       trackId: track,
     });
