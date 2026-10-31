@@ -122,6 +122,7 @@ const ResetPassword = lazy(() => import("./pages/student/ResetPassword"));
 const Admin = lazy(() => import("./pages/admin/Admin.jsx"));
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin.jsx"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.jsx"));
+const AdminMemoryRetestInvitations = lazy(() => import("./pages/admin/AdminMemoryRetestInvitations.jsx"));
 // const AdminLessons = lazy(() => import("./pages/admin/AdminLessons.jsx"));
 const AdminLessonCreate = lazy(
   () => import("./pages/admin/AdminLessonCreate.jsx"),
@@ -479,6 +480,14 @@ export default function App() {
                 element={
                   <ProtectedAdminRoute>
                     <AdminDashboard />
+                  </ProtectedAdminRoute>
+                }
+              />
+              <Route
+                path="/admin/memory-retest-invitations"
+                element={
+                  <ProtectedAdminRoute>
+                    <AdminMemoryRetestInvitations />
                   </ProtectedAdminRoute>
                 }
               />
