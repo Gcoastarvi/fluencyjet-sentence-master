@@ -8,6 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import adminRouter from "./routes/admin.js";
+import memoryRetestAdminRouter from "./routes/memoryRetestAdmin.js";
 import webhookRazorpayRouter from "./routes/webhookRazorpay.js";
 import webhookWhatsAppRouter from "./routes/webhookWhatsApp.js";
 
@@ -255,6 +256,7 @@ app.use((req, res, next) => {
 });
 
 // 🎯 THE HEADQUARTERS: One door, properly authenticated
+app.use("/api/admin/memory-retest", memoryRetestAdminRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/admin/whatsapp", whatsappAdminRouter);
 
