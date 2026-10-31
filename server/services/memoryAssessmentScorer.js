@@ -637,6 +637,11 @@ export function scoreSchoolAdvancedFormA({
 export {
   conceptMatches,
   normalizeText,
+  round,
+  scoreConceptRecall,
+  scoreOrderedRecall,
+  scoreAssociationRecall,
+  scoreAcademicRecall,
 };
 
 export function scoreAdvancedFormA({
