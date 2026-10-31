@@ -287,4 +287,108 @@ router.post(
   },
 );
 
+
+/*
+ * GET /api/memory-retest/result
+ *
+ * Uses only the validated HttpOnly-cookie session.
+ * No browser-provided assessment ID, track or score.
+ */
+router.get("/result", async (req, res) => {
+  try {
+    const sessionToken = req.cookies?.[COOKIE_NAME];
+
+    const verification = await validateMemoryRetestSession(
+      { sessionToken },
+      { prisma },
+    );
+
+    if (
+      !verification?.valid ||
+      !verification.assessmentSessionId ||
+      !verification.trackId
+    ) {
+      return res.status(401).json({
+        ok: false,
+        code: "INVALID_RETEST_SESSION",
+      });
+    }
+
+    const assessment =
+      await prisma.memoryAssessmentSession.findUnique({
+        where: {
+          id: verification.assessmentSessionId,
+        },
+        select: {
+          trackId: true,
+          formAScore: true,
+          formBScore: true,
+          formBCompletedAt: true,
+        },
+      });
+
+    if (
+      !assessment ||
+      assessment.trackId !== verification.trackId
+    ) {
+      return res.status(404).json({
+        ok: false,
+        code: "RETEST_RESULT_UNAVAILABLE",
+      });
+    }
+
+    if (
+      !assessment.formBCompletedAt ||
+      assessment.formAScore == null ||
+      assessment.formBScore == null
+    ) {
+      return res.status(404).json({
+        ok: false,
+        code: "FORM_B_RESULT_NOT_READY",
+      });
+    }
+
+    const formAScore = Number(assessment.formAScore);
+    const formBScore = Number(assessment.formBScore);
+    const completedAt = new Date(assessment.formBCompletedAt);
+
+    if (
+      !Number.isFinite(formAScore) ||
+      !Number.isFinite(formBScore) ||
+      formAScore < 0 ||
+      formAScore > 100 ||
+      formBScore < 0 ||
+      formBScore > 100 ||
+      !Number.isFinite(completedAt.getTime())
+    ) {
+      return res.status(500).json({
+        ok: false,
+        code: "RETEST_RESULT_UNAVAILABLE",
+      });
+    }
+
+    const improvementPoints =
+      Math.round((formBScore - formAScore) * 100) / 100;
+
+    return res.json({
+      ok: true,
+      trackId: verification.trackId,
+      formAScore,
+      formBScore,
+      improvementPoints,
+      formBCompletedAt: completedAt.toISOString(),
+    });
+  } catch (error) {
+    console.error(
+      "Memory retest result retrieval failed:",
+      error?.code || error?.name || "UNKNOWN_ERROR",
+    );
+
+    return res.status(500).json({
+      ok: false,
+      code: "RETEST_RESULT_UNAVAILABLE",
+    });
+  }
+});
+
 export default router;
