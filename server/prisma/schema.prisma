@@ -373,6 +373,7 @@ model MemoryAssessmentSession {
   @@index([whatsappScoreDeliveryStatus])
   @@index([trackId, createdAt])
   @@index([createdAt])
+  retestAccessGrants MemoryRetestAccessGrant[]
 }
 
 model UserProfile {
@@ -731,6 +732,7 @@ model MemoryMasterclassPurchase {
   @@index([createdAt])
   @@index([paymentId])
   @@index([metaDeliveryStatus, metaNextAttemptAt])
+  retestAccessGrants MemoryRetestAccessGrant[]
 }
 
 model MemoryMetaConsent {
@@ -744,4 +746,30 @@ model MemoryMetaConsent {
   revokedAt      DateTime?
   expiresAt      DateTime
   revision       Int @default(1)
+}
+
+model MemoryRetestAccessGrant {
+  id                  String   @id @default(cuid())
+
+  purchaseId          String
+  purchase            MemoryMasterclassPurchase @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+
+  assessmentSessionId String
+  assessmentSession   MemoryAssessmentSession @relation(fields: [assessmentSessionId], references: [id], onDelete: Restrict)
+
+  tokenHash           String   @unique @db.VarChar(64)
+  linkExpiresAt       DateTime
+  redeemedAt          DateTime?
+  revokedAt           DateTime?
+
+  sessionTokenHash    String?  @unique @db.VarChar(64)
+  sessionExpiresAt    DateTime?
+  lastUsedAt          DateTime?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([purchaseId, createdAt])
+  @@index([assessmentSessionId])
+  @@index([linkExpiresAt])
 }
