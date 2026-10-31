@@ -22,6 +22,7 @@ import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import funnelRouter from "./routes/funnel.js";
 import memoryRouter from "./routes/memory.js";
+import memoryRetestRouter from "./routes/memoryRetest.js";
 import billingRouter from "./routes/billing.js";
 import vocabularyCheckoutRouter from "./routes/vocabularyCheckout.js";
 import memoryMasterclassCheckoutRouter from "./routes/memoryMasterclassCheckout.js";
@@ -265,6 +266,7 @@ app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/funnel", funnelRouter);
 app.use("/api/memory", memoryRouter);
+app.use("/api/memory-retest", memoryRetestRouter);
 app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/vocabulary", vocabularyCheckoutRouter);
