@@ -10,6 +10,11 @@ const TRACKS = new Set([
   "advanced",
 ]);
 
+const ASSIGNABLE_SCHOOL_TRACKS = new Set([
+  "school_foundation",
+  "school_advanced",
+]);
+
 const SESSION_STATUSES = new Set([
   "FORM_A_COMPLETED",
   "LEAD_CAPTURED",
@@ -94,10 +99,55 @@ export async function resolveMemoryFormBEligibility(
     return deny("CHECKOUT_INTENT_MISMATCH");
   }
 
+  // Preserve the original checkout track and purchase snapshot.
   if (
-    !TRACKS.has(intent.trackId) ||
-    (purchase.trackId != null && purchase.trackId !== intent.trackId)
+    purchase.trackId != null &&
+    purchase.trackId !== intent.trackId
   ) {
+    return deny("TRACK_MISMATCH");
+  }
+
+  let effectiveTrackId = intent.trackId;
+
+  // The Parents checkout intentionally collects no school level.
+  // Resolve that choice from a separate, purchase-bound assignment.
+  if (intent.trackId === "school_unspecified") {
+    if (purchase.checkoutSource !== "standalone_vsl") {
+      return deny("TRACK_MISMATCH");
+    }
+
+    if (
+      typeof prisma.memoryRetestTrackAssignment?.findUnique !==
+      "function"
+    ) {
+      return deny("TRACK_ASSIGNMENT_REQUIRED");
+    }
+
+    const assignment =
+      await prisma.memoryRetestTrackAssignment.findUnique({
+        where: { purchaseId: purchase.id },
+        select: {
+          purchaseId: true,
+          trackId: true,
+          assignedByAdminId: true,
+        },
+      });
+
+    if (!assignment) {
+      return deny("TRACK_ASSIGNMENT_REQUIRED");
+    }
+
+    if (
+      assignment.purchaseId !== purchase.id ||
+      !ASSIGNABLE_SCHOOL_TRACKS.has(assignment.trackId) ||
+      !Number.isInteger(assignment.assignedByAdminId) ||
+      assignment.assignedByAdminId <= 0
+    ) {
+      return deny("TRACK_ASSIGNMENT_INVALID");
+    }
+
+    effectiveTrackId = assignment.trackId;
+  } else if (!TRACKS.has(intent.trackId)) {
     return deny("TRACK_MISMATCH");
   }
 
@@ -121,7 +171,7 @@ export async function resolveMemoryFormBEligibility(
       purchaseId: purchase.id,
       checkoutIntentId: intent.id,
       assessmentSessionId: null,
-      trackId: intent.trackId,
+      trackId: effectiveTrackId,
       formAScore: null,
       formACompletedAt: null,
     };
