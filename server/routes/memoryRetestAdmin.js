@@ -130,6 +130,247 @@ export function createMemoryRetestAdminRouter({
     },
   });
 
+
+  /*
+   * Read-only operator lookup for captured Memory Masterclass
+   * purchases. Search terms are sent in a POST body rather than
+   * URL parameters to avoid exposing email/phone in URL logs.
+   *
+   * The browser's admin token is not proof of DB authorization:
+   * look up isAdmin freshly for every search.
+   */
+  const purchaseSearchLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 20,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: {
+      ok: false,
+      code: "ADMIN_PURCHASE_SEARCH_RATE_LIMITED",
+    },
+  });
+
+  router.post(
+    "/purchases/search",
+    purchaseSearchLimiter,
+    async (req, res) => {
+      if (!trustedOrigin(req.get("origin"))) {
+        return res.status(403).json({
+          ok: false,
+          code: "ADMIN_PURCHASE_SEARCH_ORIGIN_DENIED",
+        });
+      }
+
+      const secret = jwtSecretProvider();
+
+      if (
+        typeof secret !== "string" ||
+        secret.length < 32 ||
+        secret === "dev-secret" ||
+        secret === "fluencyjet_secret_2025"
+      ) {
+        return res.status(503).json({
+          ok: false,
+          code: "ADMIN_INVITATION_AUTH_NOT_CONFIGURED",
+        });
+      }
+
+      const authorization =
+        req.get("authorization") || "";
+
+      const bearer = /^Bearer ([A-Za-z0-9._~-]+)$/.exec(
+        authorization,
+      );
+
+      if (!bearer) {
+        return res.status(401).json({
+          ok: false,
+          code: "ADMIN_AUTH_REQUIRED",
+        });
+      }
+
+      let claims;
+
+      try {
+        claims = jwt.verify(bearer[1], secret, {
+          algorithms: ["HS256"],
+        });
+      } catch {
+        return res.status(401).json({
+          ok: false,
+          code: "ADMIN_AUTH_INVALID",
+        });
+      }
+
+      if (
+        !claims ||
+        !Number.isSafeInteger(claims.id) ||
+        claims.id <= 0 ||
+        claims.isAdmin !== true ||
+        claims.role !== "admin"
+      ) {
+        return res.status(403).json({
+          ok: false,
+          code: "ADMIN_NOT_AUTHORIZED",
+        });
+      }
+
+      const search = req.body?.search;
+
+      if (
+        typeof search !== "string" ||
+        search.trim().length < 3 ||
+        search.trim().length > 100
+      ) {
+        return res.status(400).json({
+          ok: false,
+          code: "PURCHASE_SEARCH_INVALID",
+        });
+      }
+
+      const term = search.trim();
+
+      try {
+        // The database is authoritative even if the token
+        // contains valid-looking administrator claims.
+        const admin = await prismaClient.user.findUnique({
+          where: { id: claims.id },
+          select: {
+            id: true,
+            isAdmin: true,
+          },
+        });
+
+        if (
+          !admin ||
+          admin.id !== claims.id ||
+          admin.isAdmin !== true
+        ) {
+          return res.status(403).json({
+            ok: false,
+            code: "ADMIN_NOT_AUTHORIZED",
+          });
+        }
+
+        const purchases =
+          await prismaClient.memoryMasterclassPurchase.findMany({
+            where: {
+              status: "captured",
+              productKey: "memory_masterclass_99",
+              amount: 9900,
+              currency: "INR",
+              checkoutSource: {
+                in: ["standalone_vsl", "assessment"],
+              },
+              OR: [
+                { id: term },
+                {
+                  purchaserEmail: {
+                    equals: term,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  purchaserPhone: {
+                    contains: term,
+                  },
+                },
+                {
+                  purchaserName: {
+                    contains: term,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  customerEmail: {
+                    equals: term,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  customerContact: {
+                    contains: term,
+                  },
+                },
+              ],
+            },
+            select: {
+              id: true,
+              checkoutSource: true,
+              trackId: true,
+              purchaserName: true,
+              purchaserEmail: true,
+              purchaserPhone: true,
+              customerEmail: true,
+              customerContact: true,
+              createdAt: true,
+              checkoutIntent: {
+                select: {
+                  eventKey: true,
+                  eventStartsAt: true,
+                  eventEndsAt: true,
+                  trackId: true,
+                },
+              },
+              retestTrackAssignment: {
+                select: {
+                  trackId: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: "desc",
+            },
+            take: 10,
+          });
+
+        // Explicit output allowlist: no Razorpay IDs,
+        // payment identifiers, tokens or Meta data.
+        return res.json({
+          ok: true,
+          purchases: purchases.map(purchase => ({
+            purchaseId: purchase.id,
+            purchaserName: purchase.purchaserName ?? null,
+            purchaserEmail:
+              purchase.purchaserEmail ??
+              purchase.customerEmail ??
+              null,
+            purchaserPhone:
+              purchase.purchaserPhone ??
+              purchase.customerContact ??
+              null,
+            checkoutSource: purchase.checkoutSource,
+            originalTrackId: purchase.trackId,
+            assignedTrackId:
+              purchase.retestTrackAssignment?.trackId ??
+              null,
+            eventKey:
+              purchase.checkoutIntent?.eventKey ??
+              null,
+            eventStartsAt:
+              purchase.checkoutIntent?.eventStartsAt ??
+              null,
+            eventEndsAt:
+              purchase.checkoutIntent?.eventEndsAt ??
+              null,
+            purchasedAt: purchase.createdAt,
+          })),
+        });
+      } catch (error) {
+        // Do not log customer identity or submitted search text.
+        console.error(
+          "Memory purchase lookup failed:",
+          error?.code || error?.name || "UNKNOWN_ERROR",
+        );
+
+        return res.status(500).json({
+          ok: false,
+          code: "ADMIN_PURCHASE_SEARCH_FAILED",
+        });
+      }
+    },
+  );
+
   router.post(
     "/invitations",
     invitationLimiter,
