@@ -167,17 +167,34 @@ export async function issueMemoryRetestAdminInvitation(
           }
 
           let eligibility = originalEligibility;
+          let assignmentCreated = false;
+
+          // A normal denial response commits a Prisma transaction.
+          // After creating an assignment, throw an internal error
+          // so PostgreSQL rolls back before returning the denial.
+          const denyAfterPossibleAssignment = (reason) => {
+            if (assignmentCreated) {
+              const rollback = new Error(
+                "Retest track assignment must roll back",
+              );
+              rollback.name = "MemoryRetestAssignmentRollback";
+              rollback.denialReason = reason;
+              throw rollback;
+            }
+
+            return deny(reason);
+          };
 
           if (needsAssignment) {
             if (
               intent.checkoutSource !== "standalone_vsl" ||
               intent.trackId !== "school_unspecified"
             ) {
-              return deny("TRACK_ASSIGNMENT_NOT_ALLOWED");
+              return denyAfterPossibleAssignment("TRACK_ASSIGNMENT_NOT_ALLOWED");
             }
 
             if (!schoolTrackId) {
-              return deny("SCHOOL_TRACK_REQUIRED");
+              return denyAfterPossibleAssignment("SCHOOL_TRACK_REQUIRED");
             }
 
             // A track must never be assigned after a link
@@ -188,7 +205,7 @@ export async function issueMemoryRetestAdminInvitation(
               });
 
             if (previousGrants !== 0) {
-              return deny("TRACK_ALREADY_LOCKED");
+              return denyAfterPossibleAssignment("TRACK_ALREADY_LOCKED");
             }
 
             await tx.memoryRetestTrackAssignment.create({
@@ -199,6 +216,8 @@ export async function issueMemoryRetestAdminInvitation(
               },
             });
 
+            assignmentCreated = true;
+
             eligibility = await eligibilityResolver(
               { trustedPurchaseId },
               { prisma: tx },
@@ -206,7 +225,7 @@ export async function issueMemoryRetestAdminInvitation(
           }
 
           if (!eligibility?.eligible) {
-            return deny(
+            return denyAfterPossibleAssignment(
               eligibility?.reason || "NOT_ELIGIBLE",
             );
           }
@@ -215,7 +234,7 @@ export async function issueMemoryRetestAdminInvitation(
             schoolTrackId !== null &&
             eligibility.trackId !== schoolTrackId
           ) {
-            return deny("TRACK_SELECTION_MISMATCH");
+            return denyAfterPossibleAssignment("TRACK_SELECTION_MISMATCH");
           }
 
           if (eligibility.assessmentSessionId === null) {
@@ -226,7 +245,7 @@ export async function issueMemoryRetestAdminInvitation(
               });
 
             if (completed) {
-              return deny("FORM_B_ALREADY_COMPLETED");
+              return denyAfterPossibleAssignment("FORM_B_ALREADY_COMPLETED");
             }
           } else {
             const assessment =
@@ -240,11 +259,11 @@ export async function issueMemoryRetestAdminInvitation(
               });
 
             if (!assessment) {
-              return deny("ASSESSMENT_NOT_FOUND");
+              return denyAfterPossibleAssignment("ASSESSMENT_NOT_FOUND");
             }
 
             if (assessment.formBCompletedAt !== null) {
-              return deny("FORM_B_ALREADY_COMPLETED");
+              return denyAfterPossibleAssignment("FORM_B_ALREADY_COMPLETED");
             }
           }
 
@@ -302,6 +321,13 @@ export async function issueMemoryRetestAdminInvitation(
         },
       );
     } catch (error) {
+      if (
+        error?.name === "MemoryRetestAssignmentRollback" &&
+        typeof error.denialReason === "string"
+      ) {
+        return deny(error.denialReason);
+      }
+
       if (
         error?.code === "P2034" &&
         attempt < MAX_ATTEMPTS - 1
