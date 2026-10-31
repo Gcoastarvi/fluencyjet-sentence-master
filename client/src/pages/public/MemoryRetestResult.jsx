@@ -1,3 +1,4 @@
+import { isValidMemoryRetestResult } from "./memoryRetestResultValidation.mjs";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -16,23 +17,6 @@ const formatScore = (value) =>
     maximumFractionDigits: 2,
   }).format(value);
 
-function isValidResult(payload) {
-  return (
-    payload?.ok === true &&
-    Object.hasOwn(TRACK_LABELS, payload.trackId) &&
-    Number.isFinite(payload.formAScore) &&
-    Number.isFinite(payload.formBScore) &&
-    Number.isFinite(payload.improvementPoints) &&
-    payload.formAScore >= 0 &&
-    payload.formAScore <= 100 &&
-    payload.formBScore >= 0 &&
-    payload.formBScore <= 100 &&
-    typeof payload.formBCompletedAt === "string" &&
-    Number.isFinite(
-      Date.parse(payload.formBCompletedAt)
-    )
-  );
-}
 
 export default function MemoryRetestResult() {
   const [status, setStatus] = useState("loading");
@@ -77,7 +61,7 @@ export default function MemoryRetestResult() {
 
         if (
           !response.ok ||
-          !isValidResult(payload)
+          !isValidMemoryRetestResult(payload)
         ) {
           setStatus("error");
           return;

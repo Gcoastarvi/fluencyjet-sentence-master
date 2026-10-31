@@ -1,3 +1,4 @@
+import { isValidMemoryRetestResult } from "./memoryRetestResultValidation.mjs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
@@ -499,11 +500,8 @@ export default function MemoryChallengeTest({
 
         if (
           !response.ok ||
-          !payload?.ok ||
-          payload.trackId !== assessmentConfig.trackId ||
-          !Number.isFinite(payload.formAScore) ||
-          !Number.isFinite(payload.formBScore) ||
-          !Number.isFinite(payload.improvementPoints)
+          !isValidMemoryRetestResult(payload) ||
+          payload.trackId !== assessmentConfig.trackId
         ) {
           throw new Error(
             payload?.code || "FORM_B_SUBMISSION_FAILED",
