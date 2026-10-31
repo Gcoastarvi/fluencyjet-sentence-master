@@ -12,10 +12,14 @@ import request from "supertest";
 
 const validateSession = jest.fn();
 const findAssessment = jest.fn();
+const findFormBOnly = jest.fn();
 
 const mockPrisma = {
   memoryAssessmentSession: {
     findUnique: findAssessment,
+  },
+  memoryFormBOnlyResult: {
+    findUnique: findFormBOnly,
   },
 };
 
@@ -65,6 +69,8 @@ function getResult() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+
+  findFormBOnly.mockResolvedValue(null);
 
   validateSession.mockResolvedValue({
     valid: true,
@@ -378,6 +384,260 @@ describe("Authenticated Form B results endpoint", () => {
       expect(findAssessment).not.toHaveBeenCalled();
       expect(response.text).not.toContain(
         "Simulated validator failure",
+      );
+    } finally {
+      log.mockRestore();
+    }
+  });
+});
+
+describe("Authenticated Form B-only results endpoint", () => {
+  function authorizePurchaseOnly(
+    trackId = "school_foundation",
+    purchaseId = "verified-purchase-123",
+  ) {
+    validateSession.mockResolvedValueOnce({
+      valid: true,
+      purchaseId,
+      assessmentSessionId: null,
+      trackId,
+    });
+  }
+
+  function savedResult(overrides = {}) {
+    return {
+      trackId: "school_foundation",
+      formBScore: "82.50",
+      formBCompletedAt: new Date(COMPLETED_AT),
+      ...overrides,
+    };
+  }
+
+  test.each([
+    "school_foundation",
+    "school_advanced",
+    "advanced",
+  ])(
+    "returns a Form B-only score for %s",
+    async (trackId) => {
+      authorizePurchaseOnly(trackId);
+
+      findFormBOnly.mockResolvedValueOnce(
+        savedResult({ trackId }),
+      );
+
+      const response = await getResult();
+
+      expect(response.status).toBe(200);
+
+      expect(response.body).toEqual({
+        ok: true,
+        trackId,
+        formAScore: null,
+        formBScore: 82.5,
+        improvementPoints: null,
+        formBCompletedAt: COMPLETED_AT,
+      });
+
+      expect(findFormBOnly).toHaveBeenCalledWith({
+        where: {
+          purchaseId: "verified-purchase-123",
+        },
+        select: {
+          trackId: true,
+          formBScore: true,
+          formBCompletedAt: true,
+        },
+      });
+
+      expect(findAssessment).not.toHaveBeenCalled();
+
+      expect(response.text).not.toContain(
+        "verified-purchase-123",
+      );
+
+      expect(response.text).not.toContain(TOKEN);
+    },
+  );
+
+  test("accepts a genuine zero Form B score", async () => {
+    authorizePurchaseOnly();
+
+    findFormBOnly.mockResolvedValueOnce(
+      savedResult({ formBScore: "0" }),
+    );
+
+    const response = await getResult();
+
+    expect(response.status).toBe(200);
+    expect(response.body.formBScore).toBe(0);
+    expect(response.body.formAScore).toBeNull();
+    expect(response.body.improvementPoints).toBeNull();
+  });
+
+  test("ignores forged browser purchase and score", async () => {
+    authorizePurchaseOnly();
+
+    findFormBOnly.mockResolvedValueOnce(savedResult());
+
+    const response = await request(app)
+      .get("/api/memory-retest/result")
+      .query({
+        purchaseId: "another-purchase",
+        assessmentSessionId: "another-assessment",
+        trackId: "advanced",
+        formAScore: 100,
+        formBScore: 100,
+      })
+      .set("Cookie", COOKIE);
+
+    expect(response.status).toBe(200);
+
+    expect(findFormBOnly).toHaveBeenCalledWith({
+      where: {
+        purchaseId: "verified-purchase-123",
+      },
+      select: expect.any(Object),
+    });
+
+    expect(response.body.trackId)
+      .toBe("school_foundation");
+
+    expect(response.body.formBScore).toBe(82.5);
+    expect(response.body.formAScore).toBeNull();
+  });
+
+  test("reports not ready before Form B completion", async () => {
+    authorizePurchaseOnly();
+
+    const response = await getResult();
+
+    expect(response.status).toBe(404);
+
+    expect(response.body.code)
+      .toBe("FORM_B_RESULT_NOT_READY");
+
+    expect(findAssessment).not.toHaveBeenCalled();
+  });
+
+  test("rejects a saved result with mismatched track", async () => {
+    authorizePurchaseOnly();
+
+    findFormBOnly.mockResolvedValueOnce(
+      savedResult({ trackId: "advanced" }),
+    );
+
+    const response = await getResult();
+
+    expect(response.status).toBe(404);
+
+    expect(response.body.code)
+      .toBe("RETEST_RESULT_UNAVAILABLE");
+  });
+
+  test("rejects missing Form B score", async () => {
+    authorizePurchaseOnly();
+
+    findFormBOnly.mockResolvedValueOnce(
+      savedResult({ formBScore: null }),
+    );
+
+    const response = await getResult();
+
+    expect(response.status).toBe(404);
+
+    expect(response.body.code)
+      .toBe("FORM_B_RESULT_NOT_READY");
+  });
+
+  test("rejects scores outside the valid range", async () => {
+    authorizePurchaseOnly();
+
+    findFormBOnly.mockResolvedValueOnce(
+      savedResult({ formBScore: 120 }),
+    );
+
+    const response = await getResult();
+
+    expect(response.status).toBe(500);
+
+    expect(response.body.code)
+      .toBe("RETEST_RESULT_UNAVAILABLE");
+  });
+
+  test("rejects invalid completion date", async () => {
+    authorizePurchaseOnly();
+
+    findFormBOnly.mockResolvedValueOnce(
+      savedResult({ formBCompletedAt: "invalid-date" }),
+    );
+
+    const response = await getResult();
+
+    expect(response.status).toBe(500);
+  });
+
+  test("rejects missing authenticated purchase ID", async () => {
+    validateSession.mockResolvedValueOnce({
+      valid: true,
+      assessmentSessionId: null,
+      trackId: "school_foundation",
+    });
+
+    const response = await getResult();
+
+    expect(response.status).toBe(401);
+
+    expect(findFormBOnly).not.toHaveBeenCalled();
+    expect(findAssessment).not.toHaveBeenCalled();
+  });
+
+  test("rejects undefined baseline association", async () => {
+    validateSession.mockResolvedValueOnce({
+      valid: true,
+      purchaseId: "verified-purchase-123",
+      trackId: "school_foundation",
+    });
+
+    const response = await getResult();
+
+    expect(response.status).toBe(401);
+
+    expect(findFormBOnly).not.toHaveBeenCalled();
+  });
+
+  test("rejects invalid session even with purchase ID", async () => {
+    validateSession.mockResolvedValueOnce({
+      valid: false,
+      purchaseId: "verified-purchase-123",
+      assessmentSessionId: null,
+      trackId: "school_foundation",
+    });
+
+    const response = await getResult();
+
+    expect(response.status).toBe(401);
+
+    expect(findFormBOnly).not.toHaveBeenCalled();
+  });
+
+  test("does not expose database failures", async () => {
+    authorizePurchaseOnly();
+
+    findFormBOnly.mockRejectedValueOnce(
+      new Error("Private database failure"),
+    );
+
+    const log = jest.spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    try {
+      const response = await getResult();
+
+      expect(response.status).toBe(500);
+
+      expect(response.text).not.toContain(
+        "Private database failure",
       );
     } finally {
       log.mockRestore();

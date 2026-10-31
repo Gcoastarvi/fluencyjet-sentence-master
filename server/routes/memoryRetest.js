@@ -303,10 +303,32 @@ router.get("/result", async (req, res) => {
       { prisma },
     );
 
+    /*
+     * Accept either:
+     * - A verified assessment-linked session, or
+     * - A verified purchase-linked session with explicit
+     *   null Form A baseline.
+     *
+     * Undefined and malformed baseline identifiers
+     * are never treated as optional baselines.
+     */
+    const hasAssessment =
+      typeof verification?.assessmentSessionId === "string" &&
+      verification.assessmentSessionId.trim().length > 0;
+
+    const hasPurchaseOnly =
+      verification?.assessmentSessionId === null &&
+      typeof verification?.purchaseId === "string" &&
+      verification.purchaseId.trim().length > 0;
+
     if (
       !verification?.valid ||
-      !verification.assessmentSessionId ||
-      !verification.trackId
+      ![
+        "school_foundation",
+        "school_advanced",
+        "advanced",
+      ].includes(verification.trackId) ||
+      !(hasAssessment || hasPurchaseOnly)
     ) {
       return res.status(401).json({
         ok: false,
@@ -314,6 +336,78 @@ router.get("/result", async (req, res) => {
       });
     }
 
+    /*
+     * Form B-only result:
+     * Locate it strictly through the purchase ID
+     * supplied by the validated HttpOnly-cookie session.
+     */
+    if (hasPurchaseOnly) {
+      const saved =
+        await prisma.memoryFormBOnlyResult.findUnique({
+          where: {
+            purchaseId: verification.purchaseId,
+          },
+          select: {
+            trackId: true,
+            formBScore: true,
+            formBCompletedAt: true,
+          },
+        });
+
+      if (!saved) {
+        return res.status(404).json({
+          ok: false,
+          code: "FORM_B_RESULT_NOT_READY",
+        });
+      }
+
+      if (saved.trackId !== verification.trackId) {
+        return res.status(404).json({
+          ok: false,
+          code: "RETEST_RESULT_UNAVAILABLE",
+        });
+      }
+
+      if (
+        saved.formBScore == null ||
+        !saved.formBCompletedAt
+      ) {
+        return res.status(404).json({
+          ok: false,
+          code: "FORM_B_RESULT_NOT_READY",
+        });
+      }
+
+      const formBScore = Number(saved.formBScore);
+      const completedAt =
+        new Date(saved.formBCompletedAt);
+
+      if (
+        !Number.isFinite(formBScore) ||
+        formBScore < 0 ||
+        formBScore > 100 ||
+        !Number.isFinite(completedAt.getTime())
+      ) {
+        return res.status(500).json({
+          ok: false,
+          code: "RETEST_RESULT_UNAVAILABLE",
+        });
+      }
+
+      return res.json({
+        ok: true,
+        trackId: verification.trackId,
+        formAScore: null,
+        formBScore,
+        improvementPoints: null,
+        formBCompletedAt: completedAt.toISOString(),
+      });
+    }
+
+    /*
+     * Original assessment-linked result.
+     * Preserve its existing Before/After logic.
+     */
     const assessment =
       await prisma.memoryAssessmentSession.findUnique({
         where: {
