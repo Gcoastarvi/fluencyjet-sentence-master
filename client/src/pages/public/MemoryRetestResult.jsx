@@ -98,10 +98,12 @@ export default function MemoryRetestResult() {
   };
 
   if (status === "ready" && result) {
+    const hasBaseline = result.formAScore !== null;
     const difference = result.improvementPoints;
 
-    const differenceText =
-      `${difference > 0 ? "+" : ""}${formatScore(difference)}`;
+    const differenceText = hasBaseline
+      ? `${difference > 0 ? "+" : ""}${formatScore(difference)}`
+      : null;
 
     const differenceColor =
       difference > 0
@@ -122,56 +124,81 @@ export default function MemoryRetestResult() {
           </h1>
 
           <p className="mt-3 text-center text-slate-600">
-            Before and After Score Comparison
+            {hasBaseline
+              ? "Before and After Score Comparison"
+              : "Your Post-Training Memory Assessment"}
           </p>
 
           <p className="mt-2 text-center text-sm text-slate-500">
             {TRACK_LABELS[result.trackId]}
           </p>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-xl bg-slate-100 p-6 text-center">
-              <p className="text-sm font-medium text-slate-600">
-                Before — Form A
-              </p>
+          {hasBaseline ? (
+            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-xl bg-slate-100 p-6 text-center">
+                <p className="text-sm font-medium text-slate-600">
+                  Before — Form A
+                </p>
 
-              <p className="mt-3 text-4xl font-bold text-slate-900">
-                {formatScore(result.formAScore)}
-              </p>
+                <p className="mt-3 text-4xl font-bold text-slate-900">
+                  {formatScore(result.formAScore)}
+                </p>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Out of 100
-              </p>
+                <p className="mt-1 text-sm text-slate-500">
+                  Out of 100
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-blue-50 p-6 text-center">
+                <p className="text-sm font-medium text-slate-600">
+                  After — Form B
+                </p>
+
+                <p className="mt-3 text-4xl font-bold text-slate-900">
+                  {formatScore(result.formBScore)}
+                </p>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Out of 100
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-slate-100 p-6 text-center">
+                <p className="text-sm font-medium text-slate-600">
+                  Score Difference
+                </p>
+
+                <p className={`mt-3 text-4xl font-bold ${differenceColor}`}>
+                  {differenceText}
+                </p>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  Points
+                </p>
+              </div>
             </div>
-
-            <div className="rounded-xl bg-blue-50 p-6 text-center">
-              <p className="text-sm font-medium text-slate-600">
-                After — Form B
+          ) : (
+            <div
+              className="mx-auto mt-8 max-w-sm rounded-xl bg-blue-50 p-8 text-center"
+              aria-label="Post-training memory assessment score"
+            >
+              <p className="text-sm font-semibold text-blue-800">
+                Your Form B Score
               </p>
 
-              <p className="mt-3 text-4xl font-bold text-slate-900">
+              <p className="mt-4 text-5xl font-bold text-slate-900">
                 {formatScore(result.formBScore)}
               </p>
 
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-2 text-sm text-slate-600">
                 Out of 100
               </p>
-            </div>
 
-            <div className="rounded-xl bg-slate-100 p-6 text-center">
-              <p className="text-sm font-medium text-slate-600">
-                Score Difference
-              </p>
-
-              <p className={`mt-3 text-4xl font-bold ${differenceColor}`}>
-                {differenceText}
-              </p>
-
-              <p className="mt-1 text-sm text-slate-500">
-                Points
+              <p className="mt-5 text-sm leading-6 text-slate-600">
+                You have completed your post-training memory assessment.
               </p>
             </div>
-          </div>
+          )}
 
           <div className="mt-8 rounded-xl border border-slate-200 p-5">
             <h2 className="font-semibold text-slate-900">
@@ -179,11 +206,9 @@ export default function MemoryRetestResult() {
             </h2>
 
             <p className="mt-3 leading-7 text-slate-700">
-              These scores show how you performed in two
-              different memory assessments. A higher second
-              score is encouraging, but the difference alone
-              does not establish how much your memory ability
-              has improved.
+              {hasBaseline
+                ? "These scores show how you performed in two different memory assessments. A higher second score is encouraging, but the difference alone does not establish how much your memory ability has improved."
+                : "This is your result from the post-training memory assessment. Because no initial Form A score is linked to this test, a Before/After score difference cannot be calculated."}
             </p>
           </div>
 
