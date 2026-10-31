@@ -15,6 +15,11 @@ const SESSION_STATUSES = new Set([
   "LEAD_CAPTURED",
 ]);
 
+const CHECKOUT_SOURCES = new Set([
+  "assessment",
+  "standalone_vsl",
+]);
+
 const PRODUCT = "memory_masterclass_99";
 const AMOUNT = 9900;
 const CURRENCY = "INR";
@@ -64,7 +69,7 @@ export async function resolveMemoryFormBEligibility(
     purchase.productKey !== PRODUCT ||
     purchase.amount !== AMOUNT ||
     purchase.currency !== CURRENCY ||
-    purchase.checkoutSource !== "assessment" ||
+    !CHECKOUT_SOURCES.has(purchase.checkoutSource) ||
     !hasText(purchase.paymentId) ||
     !hasText(purchase.razorpayOrderId) ||
     !hasText(purchase.checkoutIntentId)
@@ -84,13 +89,9 @@ export async function resolveMemoryFormBEligibility(
     intent.productKey !== PRODUCT ||
     intent.amount !== AMOUNT ||
     intent.currency !== CURRENCY ||
-    intent.checkoutSource !== "assessment"
+    intent.checkoutSource !== purchase.checkoutSource
   ) {
     return deny("CHECKOUT_INTENT_MISMATCH");
-  }
-
-  if (!hasText(intent.memoryAssessmentSessionId)) {
-    return deny("ASSESSMENT_NOT_LINKED");
   }
 
   if (
@@ -98,6 +99,40 @@ export async function resolveMemoryFormBEligibility(
     (purchase.trackId != null && purchase.trackId !== intent.trackId)
   ) {
     return deny("TRACK_MISMATCH");
+  }
+
+  /*
+   * Verified direct Parents checkout:
+   *
+   * A persisted Form A baseline is not required.
+   * This is eligibility only; no browser access or
+   * invitation is issued by this function.
+   *
+   * Standalone checkouts must not claim an assessment
+   * association that was not established at checkout.
+   */
+  if (purchase.checkoutSource === "standalone_vsl") {
+    if (intent.memoryAssessmentSessionId !== null) {
+      return deny("CHECKOUT_INTENT_MISMATCH");
+    }
+
+    return {
+      eligible: true,
+      purchaseId: purchase.id,
+      checkoutIntentId: intent.id,
+      assessmentSessionId: null,
+      trackId: intent.trackId,
+      formAScore: null,
+      formACompletedAt: null,
+    };
+  }
+
+  /*
+   * Assessment-linked checkout:
+   * Preserve the original strict Form A validation.
+   */
+  if (!hasText(intent.memoryAssessmentSessionId)) {
+    return deny("ASSESSMENT_NOT_LINKED");
   }
 
   const assessment = await prisma.memoryAssessmentSession.findUnique({
