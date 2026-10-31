@@ -1,6 +1,15 @@
 import advancedFormA from "./advancedFormA";
 import schoolFoundationFormA from "./schoolFoundationFormA";
 import schoolAdvancedFormA from "./schoolAdvancedFormA";
+import {
+  schoolFoundationFormB,
+} from "./schoolFoundationFormB.js";
+import {
+  schoolAdvancedFormB,
+} from "./schoolAdvancedFormB.js";
+import {
+  advancedFormB,
+} from "./advancedFormB.js";
 
 const MEMORY_ASSESSMENTS = {
   school_foundation: {
@@ -45,8 +54,30 @@ const MEMORY_ASSESSMENTS = {
   },
 };
 
-export function getMemoryAssessment(trackId) {
-  return MEMORY_ASSESSMENTS[trackId] || null;
+const FORM_B_CONFIGS = {
+  school_foundation: schoolFoundationFormB,
+  school_advanced: schoolAdvancedFormB,
+  advanced: advancedFormB,
+};
+
+export function getMemoryAssessment(trackId, form = "A") {
+  const assessment = MEMORY_ASSESSMENTS[trackId];
+
+  if (!assessment) return null;
+
+  if (form === "A") {
+    return assessment;
+  }
+
+  if (form !== "B") {
+    return null;
+  }
+
+  return {
+    ...assessment,
+    form: "B",
+    config: FORM_B_CONFIGS[trackId],
+  };
 }
 
 export default MEMORY_ASSESSMENTS;
