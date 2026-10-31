@@ -83,9 +83,22 @@ export async function replaceMemoryRetestGrant(
             };
           }
 
+          /*
+           * Explicit null means a verified direct purchase
+           * without a Form A baseline.
+           *
+           * Reject undefined, blank or malformed identifiers.
+           * Purchase identity must match exactly.
+           */
           if (
             eligibility.purchaseId !== trustedPurchaseId ||
-            !eligibility.assessmentSessionId
+            !(
+              eligibility.assessmentSessionId === null ||
+              (
+                typeof eligibility.assessmentSessionId === "string" &&
+                eligibility.assessmentSessionId.trim().length > 0
+              )
+            )
           ) {
             throw new Error(
               "Inconsistent retest purchase eligibility",
