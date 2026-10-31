@@ -65,9 +65,25 @@ export async function issueMemoryRetestGrant(
     };
   }
 
+  /*
+   * The eligibility resolver has already verified
+   * the purchase and its checkout intent.
+   *
+   * An explicit null baseline is permitted for
+   * verified direct-parent purchases.
+   *
+   * Undefined, blank or malformed assessment IDs
+   * are not valid.
+   */
   if (
-    !eligibility.purchaseId ||
-    !eligibility.assessmentSessionId
+    eligibility.purchaseId !== trustedPurchaseId ||
+    (
+      eligibility.assessmentSessionId !== null &&
+      (
+        typeof eligibility.assessmentSessionId !== "string" ||
+        !eligibility.assessmentSessionId.trim()
+      )
+    )
   ) {
     throw new Error("Incomplete eligibility result");
   }
