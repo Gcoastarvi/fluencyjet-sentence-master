@@ -239,7 +239,101 @@ export async function submitMemoryFormB(
 
         const track = TRACKS[session.trackId];
 
-        if (!track || !session.assessmentSessionId) {
+        if (!track) {
+          return failure("INVALID_RETEST_SESSION");
+        }
+
+        /*
+         * Form B-only journey:
+         * The verified purchaser has no Form A baseline.
+         *
+         * purchaseId comes only from the authenticated
+         * server-side session validator.
+         */
+        if (session.assessmentSessionId === null) {
+          if (
+            typeof session.purchaseId !== "string" ||
+            !session.purchaseId.trim()
+          ) {
+            return failure("INVALID_RETEST_SESSION");
+          }
+
+          if (
+            typeof tx.memoryFormBOnlyResult?.findUnique !== "function" ||
+            typeof tx.memoryFormBOnlyResult?.create !== "function"
+          ) {
+            throw new TypeError(
+              "Form B-only persistence model required",
+            );
+          }
+
+          const existing =
+            await tx.memoryFormBOnlyResult.findUnique({
+              where: {
+                purchaseId: session.purchaseId,
+              },
+              select: {
+                id: true,
+              },
+            });
+
+          if (existing) {
+            return failure("FORM_B_ALREADY_COMPLETED");
+          }
+
+          const storedResponses =
+            sanitizeResponses(responses, track);
+
+          const result = track.score(storedResponses);
+
+          if (
+            result.form !== "B" ||
+            result.trackId !== session.trackId ||
+            !Number.isFinite(result.totalScore) ||
+            result.totalScore < 0 ||
+            result.totalScore > 100
+          ) {
+            throw new Error(
+              "Invalid authoritative Form B scorer result",
+            );
+          }
+
+          /*
+           * purchaseId has a unique database constraint.
+           * This protects against concurrent submissions
+           * and against submissions using replacement links.
+           */
+          await tx.memoryFormBOnlyResult.create({
+            data: {
+              purchaseId: session.purchaseId,
+              trackId: session.trackId,
+              formBAnswers: storedResponses,
+              formBResult: result,
+              formBScore: result.totalScore,
+              formBRetentionRatio: result.retentionRatio,
+              formBCompletedAt: completedAt,
+            },
+          });
+
+          return {
+            saved: true,
+            trackId: session.trackId,
+            formAScore: null,
+            formBScore: result.totalScore,
+            improvementPoints: null,
+            formBCompletedAt:
+              completedAt.toISOString(),
+          };
+        }
+
+        /*
+         * Original assessment-linked journey.
+         * A missing or malformed ID must not select it.
+         */
+        if (
+          typeof session.assessmentSessionId !== "string" ||
+          !session.assessmentSessionId.trim()
+        ) {
           return failure("INVALID_RETEST_SESSION");
         }
 
@@ -352,6 +446,31 @@ export async function submitMemoryFormB(
       },
     );
   } catch (error) {
+    /*
+     * A competing submission may win the unique
+     * purchaseId constraint before this request commits.
+     */
+    const target = error?.meta?.target;
+
+    if (
+      error?.code === "P2002" &&
+      (
+        error?.meta?.modelName === "MemoryFormBOnlyResult" ||
+        (
+          Array.isArray(target) &&
+          target.includes("purchaseId")
+        ) ||
+        (
+          typeof target === "string" &&
+          target.includes(
+            "MemoryFormBOnlyResult_purchaseId"
+          )
+        )
+      )
+    ) {
+      return failure("FORM_B_ALREADY_COMPLETED");
+    }
+
     if (error?.code === "P2034") {
       return failure("SUBMISSION_CONFLICT_RETRY");
     }
