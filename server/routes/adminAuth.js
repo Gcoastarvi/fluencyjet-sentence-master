@@ -1,13 +1,20 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import prisma from "../db/client.js"; // 🎯 Connect to your DB
-import bcrypt from "bcryptjs"; // 🎯 Use bcryptjs for better compatibility
+import bcrypt from "bcryptjs";
+import { getAdminJwtSecret } from "../utils/adminJwtSecret.js"; // 🎯 Use bcryptjs for better compatibility
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "fluencyjet_secret_2025";
 
 router.post("/login", async (req, res) => {
   try {
+    const jwtSecret = getAdminJwtSecret();
+    if (!jwtSecret) {
+      return res.status(503).json({
+        ok: false,
+        message: "Admin authentication is temporarily unavailable",
+      });
+    }
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -50,7 +57,7 @@ router.post("/login", async (req, res) => {
         isAdmin: true,
         role: "admin",
       },
-      JWT_SECRET,
+      jwtSecret,
       { expiresIn: "30d" },
     );
 
