@@ -1,3 +1,4 @@
+import { isValidMemoryRetestResult } from "./memoryRetestResultValidation.mjs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMemoryAssessment } from "../../data/memory/assessmentRegistry";
@@ -48,22 +49,30 @@ function makeOrderedRecallTiles(module) {
     .filter(Boolean);
 }
 
-export default function MemoryChallengeTest() {
+export default function MemoryChallengeTest({
+  form = "A",
+  verifiedTrackId = null,
+} = {}) {
   const navigate = useNavigate();
 
   const [scoringError, setScoringError] = useState("");
 
-  const [selectedTrack] = useState(() => getSelectedTrack());
+  const [selectedTrack] = useState(() =>
+    form === "B" ? verifiedTrackId : getSelectedTrack()
+  );
+
+  const answerStorageKey = (suffix) =>
+    `${form === "B" ? "memory_form_b" : "memory_form_a"}_${suffix}`;
 
   const assessment = useMemo(
-    () => getMemoryAssessment(selectedTrack),
-    [selectedTrack],
+    () => getMemoryAssessment(selectedTrack, form),
+    [selectedTrack, form],
   );
 
   // Use the foundation config only as a safe initialization fallback.
   // Unsupported tracks are blocked before the assessment UI is rendered.
   const assessmentConfig =
-    assessment?.config || getMemoryAssessment("school_foundation").config;
+    assessment?.config || getMemoryAssessment("school_foundation", form).config;
 
   const immediateModule = useMemo(
     () =>
@@ -317,11 +326,23 @@ export default function MemoryChallengeTest() {
 
   function startImmediateStudy() {
     try {
-      window.sessionStorage.removeItem("memory_form_a_public_token");
-      window.sessionStorage.removeItem("memory_form_a_owner_token");
-      window.sessionStorage.removeItem("memory_form_a_lead_saved");
+      if (form === "B") {
+        for (const suffix of [
+          "immediate_answers",
+          "ordered_answers",
+          "association_answers",
+          "academic_answers",
+          "delayed_answers",
+        ]) {
+          window.sessionStorage.removeItem(answerStorageKey(suffix));
+        }
+      } else {
+        window.sessionStorage.removeItem("memory_form_a_public_token");
+        window.sessionStorage.removeItem("memory_form_a_owner_token");
+        window.sessionStorage.removeItem("memory_form_a_lead_saved");
+      }
     } catch {
-      // The benchmark can continue even if sessionStorage is unavailable.
+      // The assessment can continue if sessionStorage is unavailable.
     }
 
     setStudySecondsRemaining(immediateModule.studySeconds);
@@ -438,28 +459,72 @@ export default function MemoryChallengeTest() {
 
     const responses = {
       immediateAnswers: readSessionJson(
-        "memory_form_a_immediate_answers",
+        answerStorageKey("immediate_answers"),
         [],
       ),
       orderedAnswers: readSessionJson(
-        "memory_form_a_ordered_answers",
+        answerStorageKey("ordered_answers"),
         [],
       ),
       associationAnswers: readSessionJson(
-        "memory_form_a_association_answers",
+        answerStorageKey("association_answers"),
         {},
       ),
       academicAnswers: readSessionJson(
-        "memory_form_a_academic_answers",
+        answerStorageKey("academic_answers"),
         {},
       ),
       delayedAnswers: readSessionJson(
-        "memory_form_a_delayed_answers",
+        answerStorageKey("delayed_answers"),
         [],
       ),
     };
 
     try {
+      if (form === "B") {
+        const response = await fetch(
+          `${API_BASE}/api/memory-retest/submit`,
+          {
+            method: "POST",
+            credentials: "include",
+            cache: "no-store",
+            referrerPolicy: "no-referrer",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ responses }),
+          },
+        );
+
+        const payload = await response.json().catch(() => null);
+
+        if (
+          !response.ok ||
+          !isValidMemoryRetestResult(payload) ||
+          payload.trackId !== assessmentConfig.trackId
+        ) {
+          throw new Error(
+            payload?.code || "FORM_B_SUBMISSION_FAILED",
+          );
+        }
+
+        trackEvent("memory_test_completed", {
+          funnel: "amaze_memory",
+          track: assessmentConfig.trackId,
+          form: "B",
+          score: payload.formBScore,
+        });
+
+        navigate("/memory-retest/result", {
+          replace: true,
+          state: {
+            formBSubmission: payload,
+          },
+        });
+
+        return;
+      }
+
       let result = null;
 
       if (MEMORY_SESSION_PERSISTENCE_ENABLED) {
@@ -573,7 +638,7 @@ export default function MemoryChallengeTest() {
 
     try {
       window.sessionStorage.setItem(
-        "memory_form_a_delayed_answers",
+        answerStorageKey("delayed_answers"),
         JSON.stringify(delayedRecalledItems),
       );
     } catch {
@@ -615,7 +680,7 @@ export default function MemoryChallengeTest() {
 
     try {
       window.sessionStorage.setItem(
-        "memory_form_a_academic_answers",
+        answerStorageKey("academic_answers"),
         JSON.stringify(cleanAnswers),
       );
     } catch {
@@ -667,7 +732,7 @@ export default function MemoryChallengeTest() {
 
     try {
       window.sessionStorage.setItem(
-        "memory_form_a_association_answers",
+        answerStorageKey("association_answers"),
         JSON.stringify(cleanAnswers),
       );
     } catch {
@@ -730,7 +795,7 @@ export default function MemoryChallengeTest() {
 
     try {
       window.sessionStorage.setItem(
-        "memory_form_a_ordered_answers",
+        answerStorageKey("ordered_answers"),
         JSON.stringify(submittedOrder),
       );
     } catch {
@@ -757,7 +822,7 @@ export default function MemoryChallengeTest() {
 
     try {
       window.sessionStorage.setItem(
-        "memory_form_a_immediate_answers",
+        answerStorageKey("immediate_answers"),
         JSON.stringify(recalledItems),
       );
     } catch {

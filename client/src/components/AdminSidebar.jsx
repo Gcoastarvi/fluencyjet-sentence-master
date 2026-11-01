@@ -49,6 +49,13 @@ export default function AdminSidebar() {
         </NavLink>
 
         <NavLink
+          to="/admin/memory-retest-invitations"
+          className={({ isActive }) => (isActive ? activeStyle : linkStyle)}
+        >
+          Memory Retest Invitations
+        </NavLink>
+
+        <NavLink
           to="/admin/whatsapp-broadcast"
           className={({ isActive }) => (isActive ? activeStyle : linkStyle)}
         >
