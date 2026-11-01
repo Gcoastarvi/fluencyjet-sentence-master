@@ -783,11 +783,20 @@ export default function MemoryMasterclassParents() {
 
             {!dialogOpen && (
               <div className="bdp-sticky">
-                <span>
-                  <strong>₹99</strong>
-                  <small>25 Oct · 5–7 PM</small>
-                </span>
-                {booking("bdp-buy-sticky")}
+                <button
+                  type="button"
+                  className="bdp-buy bdp-buy-sticky"
+                  onClick={() => {
+                    document.getElementById("choose-grade")?.scrollIntoView({
+                      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                        ? "auto"
+                        : "smooth",
+                      block: "start",
+                    });
+                  }}
+                >
+                  Try the Free Memory Test →
+                </button>
               </div>
             )}
 

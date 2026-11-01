@@ -14,6 +14,7 @@ export default function MemoryPurchaserDetails({
   onClose,
   onSubmit,
   standaloneSchool = false,
+  measurementManagementOnly = false,
 }) {
   const dialogRef = useRef(null);
   const editedFields = useRef(new Set());
@@ -33,6 +34,12 @@ export default function MemoryPurchaserDetails({
   const paymentBusy = busy || savingConsent;
   const verifiedGrant = memoryConsentGranted();
   const savedDecline = currentMemoryChoice(consentRecord) && !consentRecord.granted;
+
+  useEffect(() => {
+    if (measurementManagementOnly && reviewPrivacy) {
+      consentDetails.current?.querySelector("summary")?.focus();
+    }
+  }, [measurementManagementOnly, reviewPrivacy]);
 
   useEffect(() => {
     const refresh = () => {
@@ -105,7 +112,7 @@ export default function MemoryPurchaserDetails({
       // A checked box explicitly confirms adulthood and optional measurement.
       // Already verified grants need no repeat prompt; saved declines are never
       // changed unless the purchaser opens choices and explicitly checks it.
-      const receipt = allowMeasurement && (!savedDecline || reviewPrivacy)
+      const receipt = !measurementManagementOnly && allowMeasurement && (!savedDecline || reviewPrivacy)
         ? await grantMemoryCheckoutConsent({
           adultConfirmed: true, post: (...args) => api.post(...args),
           boot: () => bootMetaDocument(), pageView: path => trackPageView(path),
@@ -209,6 +216,8 @@ export default function MemoryPurchaserDetails({
         <section aria-label="Optional purchaser advertising measurement" className={reviewPrivacy ? "rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700" : "text-xs leading-relaxed text-slate-600"}>
           {reviewPrivacy && (verifiedGrant ? (
             <p>Optional Meta measurement is allowed. You can change or withdraw it through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>.</p>
+          ) : measurementManagementOnly ? (
+            <p>Booking works without Meta ad measurement. You can review, decline or change your choice through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>. Payment does not give permission for ad measurement.</p>
           ) : (
             <label className="flex items-start gap-2" htmlFor="memory-purchaser-measurement">
               <input id="memory-purchaser-measurement" type="checkbox"
