@@ -2,6 +2,7 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { requireJwtSecret } from "../config/auth.js";
 import prisma from "../db/client.js";
 import { authRequired } from "../middleware/authMiddleware.js";
 import crypto from "crypto";
@@ -17,7 +18,7 @@ function normalizeEmail(email) {
 }
 
 function signToken(user) {
-  return jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
+  return jwt.sign({ id: user.id, email: user.email }, requireJwtSecret(), {
     expiresIn: "7d",
   });
 }
@@ -97,7 +98,7 @@ router.post("/signup", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Signup error:", err);
+    console.error("Signup error:");
     res.status(500).json({ ok: false, message: "Signup failed" });
   }
 });
@@ -169,7 +170,7 @@ router.post("/login", express.json({ limit: "1mb" }), async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Login error:", err);
+    console.error("Login error:");
     return res.status(500).json({ ok: false, message: "Login failed" });
   }
 });
@@ -219,15 +220,11 @@ router.post(
         },
       });
 
-      const resetUrl = `${process.env.APP_URL || "https://fluencyjet.com"}/reset-password?token=${rawToken}`;
-
-      // TODO: replace with real email sending
-      console.log("[FORGOT PASSWORD] Send reset link to:", user.email);
-      console.log("[FORGOT PASSWORD] Reset URL:", resetUrl);
+      // TODO: implement email delivery. Never log reset tokens or URLs.
 
       return res.json({ ok: true, message: successMessage });
     } catch (err) {
-      console.error("Forgot password error:", err);
+      console.error("Forgot password error:");
       return res
         .status(500)
         .json({ ok: false, message: "Unable to process request right now." });
@@ -243,11 +240,6 @@ async function updateAvatarHandler(req, res) {
   try {
     const userId = req.user?.id;
     const { avatar_url } = req.body;
-
-    console.log("[AUTH AVATAR DEBUG]", {
-      userId,
-      avatar_url,
-    });
 
     if (!userId) {
       return res.status(401).json({
@@ -293,7 +285,7 @@ async function updateAvatarHandler(req, res) {
       user,
     });
   } catch (error) {
-    console.error("[AUTH AVATAR UPDATE ERROR]", error);
+    console.error("[AUTH AVATAR UPDATE ERROR]");
     return res.status(500).json({
       ok: false,
       message: "Failed to update avatar",
@@ -362,7 +354,7 @@ router.post(
         message: "Password updated successfully. Please log in.",
       });
     } catch (err) {
-      console.error("Reset password error:", err);
+      console.error("Reset password error:");
       return res
         .status(500)
         .json({ ok: false, message: "Reset failed. Please try again." });
@@ -426,7 +418,7 @@ router.post(
         expiresAt,
       });
     } catch (err) {
-      console.error("Admin generate reset link error:", err);
+      console.error("Admin generate reset link error:");
       return res
         .status(500)
         .json({ ok: false, message: "Unable to generate reset link" });

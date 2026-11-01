@@ -1,20 +1,13 @@
 import express from "express";
 import jwt from "jsonwebtoken";
+import { getAdminJwtSecret } from "../utils/adminJwtSecret.js";
 import prisma from "../db/client.js"; // 🎯 Connect to your DB
-import bcrypt from "bcryptjs";
-import { getAdminJwtSecret } from "../utils/adminJwtSecret.js"; // 🎯 Use bcryptjs for better compatibility
+import bcrypt from "bcryptjs"; // 🎯 Use bcryptjs for better compatibility
 
 const router = express.Router();
 
 router.post("/login", async (req, res) => {
   try {
-    const jwtSecret = getAdminJwtSecret();
-    if (!jwtSecret) {
-      return res.status(503).json({
-        ok: false,
-        message: "Admin authentication is temporarily unavailable",
-      });
-    }
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -50,6 +43,10 @@ router.post("/login", async (req, res) => {
     }
 
     // 🎯 4. Create proper Admin Token
+    const jwtSecret = getAdminJwtSecret();
+    if (!jwtSecret) {
+      throw new Error("Admin signing key unavailable");
+    }
     const token = jwt.sign(
       {
         id: user.id,
@@ -71,7 +68,7 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Admin login error:", err);
+    console.error("Admin login error");
     return res
       .status(500)
       .json({ ok: false, message: "Internal server error" });
