@@ -6,7 +6,7 @@ import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent
 import { getMemoryVslId } from "../../data/memory/masterclassConfig";
 import "./MemoryMasterclassParents.css";
 
-const EVENT_DATE = "2026-10-25";
+const EVENT_DATE = "2026-11-15";
 
 const GRADES = [
   { label: "6th", grade: "6", track: "school_foundation" },
@@ -229,7 +229,7 @@ export default function MemoryMasterclassParents() {
           <div className="bdp" id="top">
 
             <div className="bdp-topline">
-              LIVE ONLINE · SUNDAY, 25 OCTOBER 2026 · 5–7 PM IST
+              LIVE ONLINE · SUNDAY, 15 NOVEMBER 2026 · 5–7 PM IST
             </div>
 
             <header className="bdp-header bdp-wrap">
@@ -271,7 +271,7 @@ export default function MemoryMasterclassParents() {
 
                   <p className="bdp-date">
                     <span aria-hidden="true">◷</span>
-                    Sunday, 25 October · 5–7 PM IST
+                    Sunday, 15 November · 5–7 PM IST
                     <span className="bdp-live">LIVE ONLINE</span>
                   </p>
 
@@ -706,7 +706,7 @@ export default function MemoryMasterclassParents() {
 
                   <div className="bdp-offer-summary">
                     <span>
-                      Sunday, 25 October 2026 · 5–7 PM IST
+                      Sunday, 15 November 2026 · 5–7 PM IST
                     </span>
 
                     <strong>₹99</strong>
@@ -763,7 +763,7 @@ export default function MemoryMasterclassParents() {
                   <h2>Give Your Child a Smarter Way to Study.</h2>
 
                   <p>
-                    Sunday, 25 October · 5–7 PM IST · Live Online
+                    Sunday, 15 November · 5–7 PM IST · Live Online
                   </p>
 
                   {booking()}
@@ -803,7 +803,7 @@ export default function MemoryMasterclassParents() {
 
                 <span>
                   {event && !expectedEvent
-                    ? "Confirm the October 25 event in the existing scheduling system."
+                    ? "Confirm the November 15 event in the existing scheduling system."
                     : error
                     ? "Please retry to load the schedule."
                     : "The ₹99 buttons activate after schedule verification."}
