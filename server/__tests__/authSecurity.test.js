@@ -24,7 +24,7 @@ const { default: authRouter } = await import('../routes/auth.js');
 const { default: adminRouter } = await import('../routes/adminAuth.js');
 const originalSecret = process.env.JWT_SECRET;
 const originalReset = process.env.ADMIN_RESET_SECRET;
-const secret = 'isolated-auth-security-test-key';
+const secret = 'isolated-auth-security-test-key-2026';
 const user = {
   id: 'security-test-user', email: 'security@example.invalid', name: 'Test',
   username: 'test', password: bcrypt.hashSync('test-password', 4),
@@ -64,6 +64,15 @@ afterEach(() => {
 });
 
 describe('authentication hardening', () => {
+  test('admin login rejects a short nonempty JWT secret', async () => {
+    process.env.JWT_SECRET = 'short-test-key';
+    const res = await request(app())
+      .post('/api/admin/auth/login')
+      .send({ email: user.email, password: 'test-password' });
+    expect(res.status).toBe(500);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.token).toBeUndefined();
+  });
   test.each([undefined, '', '   '])('missing/blank secret fails signing and verification: %p', async value => {
     if (value === undefined) delete process.env.JWT_SECRET;
     else process.env.JWT_SECRET = value;

@@ -9,6 +9,7 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { requireJwtSecret } from "./config/auth.js";
 import adminRouter from "./routes/admin.js";
+import memoryRetestAdminRouter from "./routes/memoryRetestAdmin.js";
 import webhookRazorpayRouter from "./routes/webhookRazorpay.js";
 import webhookWhatsAppRouter from "./routes/webhookWhatsApp.js";
 
@@ -26,6 +27,7 @@ import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.js";
 import funnelRouter from "./routes/funnel.js";
 import memoryRouter from "./routes/memory.js";
+import memoryRetestRouter from "./routes/memoryRetest.js";
 import billingRouter from "./routes/billing.js";
 import vocabularyCheckoutRouter from "./routes/vocabularyCheckout.js";
 import memoryMasterclassCheckoutRouter from "./routes/memoryMasterclassCheckout.js";
@@ -248,6 +250,7 @@ app.options("*", (req, res) => res.sendStatus(204));
 app.use(authMiddleware);
 
 // 🎯 THE HEADQUARTERS: One door, properly authenticated
+app.use("/api/admin/memory-retest", memoryRetestAdminRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/admin/whatsapp", whatsappAdminRouter);
 
@@ -259,6 +262,7 @@ app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/funnel", funnelRouter);
 app.use("/api/memory", memoryRouter);
+app.use("/api/memory-retest", memoryRetestRouter);
 app.use("/api/me", meRouter); // Moved up for quicker auth checks
 app.use("/api/billing", billingRouter);
 app.use("/api/vocabulary", vocabularyCheckoutRouter);

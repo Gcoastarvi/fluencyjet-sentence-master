@@ -1,6 +1,6 @@
 import express from "express";
 import jwt from "jsonwebtoken";
-import { requireJwtSecret } from "../config/auth.js";
+import { getAdminJwtSecret } from "../utils/adminJwtSecret.js";
 import prisma from "../db/client.js"; // 🎯 Connect to your DB
 import bcrypt from "bcryptjs"; // 🎯 Use bcryptjs for better compatibility
 
@@ -43,6 +43,10 @@ router.post("/login", async (req, res) => {
     }
 
     // 🎯 4. Create proper Admin Token
+    const jwtSecret = getAdminJwtSecret();
+    if (!jwtSecret) {
+      throw new Error("Admin signing key unavailable");
+    }
     const token = jwt.sign(
       {
         id: user.id,
@@ -50,7 +54,7 @@ router.post("/login", async (req, res) => {
         isAdmin: true,
         role: "admin",
       },
-      requireJwtSecret(),
+      jwtSecret,
       { expiresIn: "30d" },
     );
 

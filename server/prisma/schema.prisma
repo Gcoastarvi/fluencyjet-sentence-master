@@ -18,6 +18,7 @@ model User {
   tier_level                    String                         @default("free")
   created_at                    DateTime                       @default(now())
   isAdmin                       Boolean                        @default(false)
+  memoryRetestTrackAssignments MemoryRetestTrackAssignment[] @relation("MemoryRetestTrackAssignedBy")
   lastActiveAt                  DateTime?
   xpTotal                       Int                            @default(0)
   league                        String                         @default("BRONZE")
@@ -373,6 +374,7 @@ model MemoryAssessmentSession {
   @@index([whatsappScoreDeliveryStatus])
   @@index([trackId, createdAt])
   @@index([createdAt])
+  retestAccessGrants MemoryRetestAccessGrant[]
 }
 
 model UserProfile {
@@ -731,6 +733,9 @@ model MemoryMasterclassPurchase {
   @@index([createdAt])
   @@index([paymentId])
   @@index([metaDeliveryStatus, metaNextAttemptAt])
+  retestAccessGrants MemoryRetestAccessGrant[]
+  formBOnlyResult     MemoryFormBOnlyResult?
+  retestTrackAssignment MemoryRetestTrackAssignment?
 }
 
 model MemoryMetaConsent {
@@ -744,4 +749,64 @@ model MemoryMetaConsent {
   revokedAt      DateTime?
   expiresAt      DateTime
   revision       Int @default(1)
+}
+
+model MemoryRetestAccessGrant {
+  id                  String   @id @default(cuid())
+
+  purchaseId          String
+  purchase            MemoryMasterclassPurchase @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+
+  assessmentSessionId String?
+  assessmentSession   MemoryAssessmentSession? @relation(fields: [assessmentSessionId], references: [id], onDelete: Restrict)
+
+  tokenHash           String   @unique @db.VarChar(64)
+  linkExpiresAt       DateTime
+  redeemedAt          DateTime?
+  revokedAt           DateTime?
+
+  sessionTokenHash    String?  @unique @db.VarChar(64)
+  sessionExpiresAt    DateTime?
+  lastUsedAt          DateTime?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([purchaseId, createdAt])
+  @@index([assessmentSessionId])
+  @@index([linkExpiresAt])
+}
+
+
+model MemoryFormBOnlyResult {
+  id String @id @default(cuid())
+
+  purchaseId String @unique
+  purchase   MemoryMasterclassPurchase @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+
+  trackId String @db.VarChar(50)
+
+  formBAnswers        Json
+  formBResult         Json
+  formBScore          Decimal  @db.Decimal(5, 2)
+  formBRetentionRatio Decimal? @db.Decimal(6, 3)
+  formBCompletedAt    DateTime @default(now())
+
+  createdAt DateTime @default(now())
+
+  @@index([trackId, formBCompletedAt])
+}
+
+model MemoryRetestTrackAssignment {
+  purchaseId String @id
+  purchase   MemoryMasterclassPurchase @relation(fields: [purchaseId], references: [id], onDelete: Restrict)
+
+  trackId String @db.VarChar(50)
+
+  assignedByAdminId Int
+  assignedByAdmin   User @relation("MemoryRetestTrackAssignedBy", fields: [assignedByAdminId], references: [id], onDelete: Restrict)
+
+  assignedAt DateTime @default(now())
+
+  @@index([assignedByAdminId, assignedAt])
 }

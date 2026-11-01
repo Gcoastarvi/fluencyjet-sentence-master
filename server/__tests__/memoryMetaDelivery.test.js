@@ -19,7 +19,7 @@ beforeEach(() => {
   };
   db.memoryMetaConsent.findUnique.mockResolvedValue({
     granted: true, adultConfirmed: true, version: "memory_meta_v1", revision: 1,
-    expiresAt: new Date("2026-11-01"), revokedAt: null,
+    expiresAt: new Date(Date.now() + 30 * 86400000), revokedAt: null,
   });
   db.memoryMasterclassPurchase.findUnique.mockImplementation(async () => ({ ...row }));
   db.memoryMasterclassPurchase.findMany.mockResolvedValue([{ id: row.id }]);

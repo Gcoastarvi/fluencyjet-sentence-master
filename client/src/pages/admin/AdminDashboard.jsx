@@ -412,6 +412,12 @@ function AdminDashboard() {
     <div className="p-8 bg-slate-50 min-h-screen font-sans">
       <div className="max-w-7xl mx-auto">
         <header className="mb-10">
+          <a
+            href="/admin/memory-retest-invitations"
+            className="mb-5 inline-flex rounded-xl border border-purple-200 bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-800 hover:bg-purple-100"
+          >
+            Memory Retest Invitations
+          </a>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">
             Command Center
           </h2>
