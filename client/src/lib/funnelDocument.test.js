@@ -85,16 +85,16 @@ test("restored documents can cross again; FJ referrer policy is restored and mem
   assert.equal(memory.moves.length, 0);
 });
 
-test("BFCache restoration emits one new owned PageView, without duplicate listeners or conversions", () => {
-  const f = fixture("/memory-challenge");
+test("BFCache restoration does not duplicate a recent owned PageView or conversions", () => {
+  const f = fixture("/memory-masterclass/parents");
   globalThis.window = f.w;
   f.w.fbq = (...args) => f.calls.push(args);
   bootMetaDocument(f.w); bootMetaDocument(f.w);
-  dispatchMetaPageView("/memory-challenge");
+  dispatchMetaPageView("/memory-masterclass/parents");
   f.emit("pageshow", { persisted: false });
   assert.equal(f.calls.filter(c => c[2] === "PageView").length, 1);
   f.emit("pageshow", { persisted: true });
-  assert.equal(f.calls.filter(c => c[2] === "PageView").length, 2);
+  assert.equal(f.calls.filter(c => c[2] === "PageView").length, 1);
   assert.equal(f.calls.filter(c => c[0] === "init").length, 1);
   assert.ok(f.calls.every(c => !["Lead", "Purchase"].includes(c[2])));
 });
@@ -163,7 +163,7 @@ test("invalid/cross-origin history URLs retain native exceptions; meaningful blo
 });
 
 test("document bootstrap registers only its Pixel; FJ is not forced into manual-only mode", () => {
-  for (const [path, pixel] of [["/german-live-class", "1246171816816642"], ["/memory-challenge", "1998316064175555"]]) {
+  for (const [path, pixel] of [["/german-live-class", "1246171816816642"], ["/memory-masterclass/parents", "1998316064175555"]]) {
     const f = fixture(path);
     f.w.fbq = (...args) => f.calls.push(args);
     bootMetaDocument(f.w); bootMetaDocument(f.w);
@@ -179,7 +179,7 @@ test("document bootstrap registers only its Pixel; FJ is not forced into manual-
 });
 
 test("Preview boots no real SDK by default; per-tab opt-in loads one queue after the boundary", () => {
-  const offline = fixture("/memory-challenge", new Map(), "spock.replit.dev");
+  const offline = fixture("/memory-masterclass/parents", new Map(), "spock.replit.dev");
   assert.equal(bootMetaDocument(offline.w), false);
   assert.equal(offline.scripts.length, 0);
   assert.equal(offline.w.fbq, undefined);
@@ -191,3 +191,4 @@ test("Preview boots no real SDK by default; per-tab opt-in loads one queue after
     ["set", "autoConfig", false, "1998316064175555"], ["init", "1998316064175555"],
   ]);
 });
+

@@ -1,3 +1,4 @@
+import { memoryBrowserRouteEligible } from "./memoryBrowserPolicy.js";
 import { captureMetaDocument, initializeMetaDocument, restoreMetaDocumentView } from "./metaPixel.js";
 import { installFunnelDocumentBoundary, ownsFunnelRoute } from "./funnelDocument.js";
 import { trackPageView } from "./tracking.js";
@@ -10,7 +11,7 @@ export function bootMetaDocument(w = window) {
   installFunnelDocumentBoundary(w);
   captureMetaDocument(w);
   if (isMemoryRoute(w.location.pathname) &&
-      (!memoryConsentGranted(w) || w.fjMetaConsent === false)) return false;
+      (!memoryConsentGranted(w) || !memoryBrowserRouteEligible(w.location) || w.fjMetaConsent === false)) return false;
   if (!restoreListeners.has(w)) {
     restoreListeners.add(w);
     w.addEventListener("pageshow", event => {
@@ -46,3 +47,4 @@ export function bootMetaDocument(w = window) {
   // PageView/Lead/Purchase. Only the active document's Pixel is registered.
   return initializeMetaDocument(w);
 }
+

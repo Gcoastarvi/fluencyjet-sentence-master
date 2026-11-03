@@ -1,3 +1,4 @@
+import { memoryScheduleLabel } from "../../lib/memorySchedule";
 import { useRef, useState } from "react";
 import { trackEvent } from "../../lib/tracking";
 import { trackMemoryCheckout } from "../../lib/metaPixel";
@@ -318,7 +319,7 @@ export default function MemoryMasterclassOffer({
         order_id: orderId,
 
         name: "Amaze Memory",
-        description: `${name} — ${event.dateLabel}, ${event.startTime} ${event.timezoneLabel}`,
+        description: `${name} — ${memoryScheduleLabel(event)}`,
         prefill: {
           name: purchaser.name,
           email: purchaser.email,
@@ -940,3 +941,4 @@ export default function MemoryMasterclassOffer({
     </section>
   );
 }
+

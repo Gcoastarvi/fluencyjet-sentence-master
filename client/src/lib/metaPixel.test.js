@@ -27,7 +27,7 @@ beforeEach(() => {
   }));
   globalThis.window = {
     memoryMetaConsentVerified: true,
-    location: new URL("https://www.fluencyjet.com/memory-challenge"),
+    location: new URL("https://www.fluencyjet.com/memory-masterclass/parents"),
     fbq: (...args) => calls.push(args),
     gtag: (...args) => ga.push(args), crypto: webcrypto,
     localStorage: { getItem: key => storage.get(key), setItem: (key, value) => storage.set(key, value) },
@@ -56,7 +56,7 @@ test("memory routes, retests, and products have strict prefix boundaries", () =>
 });
 
 test("fresh memory/FJ documents each initialize only their owner; FJ PageView calls retain prior semantics", () => {
-  for (const path of ["/memory-challenge", "/vocabulary-course", "/memory-challenge/result", "/german"]) {
+  for (const path of ["/memory-masterclass/parents", "/vocabulary-course", "/memory-challenge/video/advanced", "/german"]) {
     go(path); trackPageView(path); trackPageView(path); // StrictMode duplicate
   }
   assert.deepEqual(events().map(call => [call[1], call[2]]), [
@@ -121,10 +121,10 @@ test("coded FJ Lead/PageView/Vocabulary/English checkout events match the pre-fe
 });
 
 test("memory query-only views deduplicate; going away and returning counts a new visit", () => {
-  trackPageView("/memory-challenge");
-  go("/memory-challenge?utm_source=wa"); trackPageView("/memory-challenge?utm_source=wa");
+  trackPageView("/memory-masterclass/parents");
+  go("/memory-masterclass/parents?utm_source=wa"); trackPageView("/memory-masterclass/parents?utm_source=wa");
   go("/vocabulary-course"); trackPageView("/vocabulary-course");
-  go("/memory-challenge"); trackPageView("/memory-challenge");
+  go("/memory-masterclass/parents"); trackPageView("/memory-masterclass/parents");
   assert.equal(events().filter(call => call[1] === MEMORY_PIXEL_ID).length, 2);
 });
 
@@ -144,7 +144,7 @@ test("memory assessment scores and identity are stripped without changing Englis
     modules: { weightedScore: 10, answers: ["private"] },
     learnerName: "Private", email: "private@example.test",
   });
-  assert.deepEqual(events().at(-1)[3], { track: "advanced", modules: {} });
+  assert.equal(events().length, 0);
   go("/vocabulary-course");
   const params = { score: 7, source: "existing_english" };
   trackEvent("vocabulary_test_complete", params);
@@ -165,22 +165,10 @@ test("stale cross-funnel callbacks are blocked, while English events preserve na
   ]);
 });
 
-test("Lead uses a stable opaque assessment ID and sends once across repeated saved callbacks", async () => {
-  await trackMemoryLead({ assessmentKey: "private-owner-token", track: "advanced" });
-  await trackMemoryLead({ assessmentKey: "private-owner-token", track: "advanced" });
-  assert.equal(events().length, 1);
-  assert.equal(events()[0][2], "Lead");
-  assert.match(events()[0][4].eventID, /^memory_lead_[a-f0-9]{64}$/);
+test("assessment Lead never shares hashed student tokens, including on adult pages", async () => {
+  assert.equal(await trackMemoryLead({ assessmentKey: "private-owner-token", track: "advanced" }), false);
+  assert.equal(events().length, 0);
   assert.ok(!JSON.stringify(calls).includes("private-owner-token"));
-  const id = events()[0][4].eventID;
-  // New tab/module state with the same origin storage still suppresses repeats.
-  globalThis.window = { ...window };
-  await trackMemoryLead({ assessmentKey: "private-owner-token", track: "advanced" });
-  assert.equal(events().length, 1);
-  for (const key of storage.keys()) if (key.startsWith("fj_meta_sent:")) storage.delete(key);
-  globalThis.window = { ...window };
-  await trackMemoryLead({ assessmentKey: "private-owner-token", track: "advanced" });
-  assert.equal(events()[1][4].eventID, id);
 });
 
 test("checkout is required, fixed ₹99, and deduplicated per server order", () => {
@@ -196,11 +184,11 @@ test("checkout is required, fixed ₹99, and deduplicated per server order", () 
 });
 
 test("privacy filtering and consent opt-out do not expose contacts or block the application", () => {
-  dispatchMetaEvent("memory_test", {
+  dispatchMetaEvent("memory_offer_view", {
     content_name: "Memory", purchaserName: "Private", ownerToken: "secret",
     details: { email: "private@example.test", phone: "123", track: "advanced" },
   }, { memory: true, custom: true });
-  assert.deepEqual(events()[0][3], { content_name: "Memory", details: { track: "advanced" } });
+  assert.deepEqual(events()[0][3], {});
   setMetaConsent(false); trackEvent("memory_offer_click");
   assert.equal(events().length, 1);
   setMetaConsent(true); trackEvent("memory_offer_click");
@@ -214,7 +202,7 @@ test("privacy filtering and consent opt-out do not expose contacts or block the 
 test("thank-you PageView is not Purchase; future purchase IDs match the server convention", () => {
   go("/memory-masterclass/thank-you?razorpay_payment_id=unverified");
   trackPageView(window.location.pathname + window.location.search);
-  assert.deepEqual(events().map(call => call[2]), ["PageView"]);
+  assert.deepEqual(events().map(call => call[2]), []);
   assert.equal(memoryPurchaseEventId("pay_a"), "memory_masterclass_99_purchase_pay_a");
 });
 
@@ -226,3 +214,4 @@ test("production HTML no-script fallback is route-aware, not a global FJ leak", 
     else assert.ok(renderMetaPixelHtml(html, path).includes(`tr?id=${pixel}&amp;ev=PageView`));
   }
 });
+

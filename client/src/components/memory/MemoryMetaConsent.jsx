@@ -1,3 +1,4 @@
+import { refusePurchaseMeasurement } from "../../lib/memoryPurchaseMeasurement";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { api } from "../../api/apiClient";
@@ -101,6 +102,11 @@ export default function MemoryMetaConsent() {
     const current = () => version === requestVersion.current &&
       JSON.stringify(readMemoryConsent()) === JSON.stringify(stored);
     try {
+      if (!granted) {
+        await refusePurchaseMeasurement((...args) => api.post(...args));
+        if (version === requestVersion.current) closeChoices();
+        return;
+      }
       const response = await api.post("/memory-meta/consent", {
         receipt: stored?.receipt, granted, adultConfirmed: granted,
       });
@@ -149,3 +155,4 @@ export default function MemoryMetaConsent() {
     <p className="mt-3 text-xs leading-relaxed text-slate-500">This website is independently operated by BrainoDad and is not affiliated with, sponsored by, or endorsed by Meta Platforms, Inc., Facebook, or Instagram. Facebook and Instagram are trademarks of Meta Platforms, Inc.</p>
   </footer>;
 }
+

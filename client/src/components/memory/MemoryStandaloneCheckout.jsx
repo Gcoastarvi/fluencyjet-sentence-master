@@ -1,3 +1,5 @@
+import { rememberPurchaseChoice, measurementPost } from "../../lib/memoryPurchaseMeasurement";
+import { memoryScheduleLabel } from "../../lib/memorySchedule";
 import { useRef, useState } from "react";
 import { api } from "../../api/apiClient";
 import { buildMemoryCheckoutAttribution, loadRazorpayCheckout } from "./MemoryMasterclassOffer";
@@ -36,15 +38,24 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
       const response = await api.post("/memory-masterclass/standalone/create-order", {
         ...attribution,
         memoryMetaConsentReceipt: purchaser.memoryMetaConsentReceipt ?? null,
+        memoryMetaChoiceReceipt: purchaser.memoryMetaChoiceReceipt ?? null,
+        measurementRefused: purchaser.measurementRefused === true,
         audience,
         ...(parentsMode ? { checkoutContext: "parents" } : {}),
       ...(audience === "school" && !parentsMode ? { schoolLevel: purchaser.schoolLevel } : {}),
         purchaserName: purchaser.name,
         purchaserEmail: purchaser.email,
         purchaserPhone: purchaser.phone,
-      });
+      }, parentsMode && window.location.pathname === "/memory-masterclass/parents"
+        ? {referrer:window.location.origin+"/memory-masterclass/parents",referrerPolicy:"no-referrer-when-downgrade"} : {});
       if (!response.ok || !response.data?.orderId) {
         throw new Error(response.error || "Unable to start secure checkout.");
+      }
+      if(parentsMode && response.data.measurementChoice) {
+        const choice=response.data.measurementChoice;
+        if(rememberPurchaseChoice(choice)) {
+          try { await measurementPost((...args)=>api.post(...args), "/memory-meta/purchase-choice", {...choice,action:"ready"}); } catch {}
+        } // Without successful storage + server readiness, alternative sending stays off.
       }
       await loadRazorpayCheckout();
       const order = response.data;
@@ -52,7 +63,7 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
         key: order.keyId, order_id: order.orderId,
         amount: order.amount, currency: order.currency,
         name: "Amaze Memory",
-        description: `Live Study Memory Class — ${event.dateLabel}, ${event.startTime} ${event.timezoneLabel}`,
+        description: `Live Study Memory Class — ${memoryScheduleLabel(event)}`,
         prefill: { name: purchaser.name, email: purchaser.email, contact: purchaser.phone },
         handler(payment) {
           const query = new URLSearchParams({ source: "standalone_vsl" });
@@ -119,3 +130,4 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
     </>
   );
 }
+

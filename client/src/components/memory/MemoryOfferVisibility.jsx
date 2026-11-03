@@ -1,3 +1,4 @@
+import { memoryConsentGranted } from "../../lib/memoryMetaConsent";
 import { useEffect, useRef } from "react";
 import { trackEvent } from "../../lib/tracking";
 
@@ -17,7 +18,7 @@ export default function MemoryOfferVisibility({ children, blocked, ready, track,
       if (!visible || document.visibilityState !== "visible") return;
       timer = setTimeout(() => {
         const node = target.current;
-        if (!node || reported.current || document.visibilityState !== "visible") return;
+        if (!node || reported.current || document.visibilityState !== "visible" || !memoryConsentGranted()) return;
         const box = node.getBoundingClientRect();
         const hit = document.elementFromPoint(
           box.left + box.width / 2,
@@ -38,12 +39,15 @@ export default function MemoryOfferVisibility({ children, blocked, ready, track,
     }, { threshold: [0, 0.5] });
     observer.observe(target.current);
     document.addEventListener("visibilitychange", check);
+    window.addEventListener("memory-meta-consent", check);
     return () => {
       observer.disconnect();
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", check);
+      window.removeEventListener("memory-meta-consent", check);
     };
   }, [blocked, ready, track, source, placement, reported]);
 
   return <div ref={target} data-memory-offer-visibility={placement}>{children}</div>;
 }
+

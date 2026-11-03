@@ -1,3 +1,4 @@
+import { purchaseMeasurementRefused, refusePurchaseMeasurement } from "../../lib/memoryPurchaseMeasurement";
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../api/apiClient";
 import { readMemoryConsent, memoryConsentGranted, memoryConsentReceipt, isMemoryConsentStorageEvent } from "../../lib/memoryMetaConsent";
@@ -31,6 +32,8 @@ export default function MemoryPurchaserDetails({
   const [savingConsent, setSavingConsent] = useState(false);
   const submitting = useRef(false);
   const consentDetails = useRef(null);
+  const [purchaseRefused, setPurchaseRefused] = useState(() => purchaseMeasurementRefused());
+  const [choiceError, setChoiceError] = useState("");
   const paymentBusy = busy || savingConsent;
   const verifiedGrant = memoryConsentGranted();
   const savedDecline = currentMemoryChoice(consentRecord) && !consentRecord.granted;
@@ -59,7 +62,7 @@ export default function MemoryPurchaserDetails({
 
   useEffect(() => {
     dialogRef.current.showModal();
-    if (hasEditedDetails || !ownerToken) return;
+    if (measurementManagementOnly || hasEditedDetails || !ownerToken) return;
     let active = true;
     api.post("/memory-masterclass/checkout-details", { ownerToken })
       .then((result) => {
@@ -82,7 +85,7 @@ export default function MemoryPurchaserDetails({
         }
       });
     return () => { active = false; };
-  }, [ownerToken, hasEditedDetails]);
+  }, [ownerToken, hasEditedDetails, measurementManagementOnly]);
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -118,8 +121,12 @@ export default function MemoryPurchaserDetails({
           boot: () => bootMetaDocument(), pageView: path => trackPageView(path),
         })
         : memoryConsentReceipt();
+      const choiceReceipt = readMemoryConsent()?.receipt || null;
       await onSubmit({
-        ...purchaser, ...(standaloneSchool ? { schoolLevel } : {}),
+        ...purchaser,
+        memoryMetaChoiceReceipt: choiceReceipt,
+        measurementRefused: purchaseRefused || savedDecline,
+        ...(standaloneSchool ? { schoolLevel } : {}),
         memoryMetaConsentReceipt: receipt,
       });
     } finally {
@@ -213,6 +220,12 @@ export default function MemoryPurchaserDetails({
             {message || prefillMessage}
           </p>
         )}
+        {measurementManagementOnly && <div className="space-y-2 text-xs leading-relaxed text-slate-700">
+          <p><a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline">Privacy Policy</a>. Payment does not grant advertising consent.</p>
+          <p>Where authorized, we share limited adult purchase details with Meta to measure ads. You can decline or withdraw through Privacy choices. Booking works without measurement.</p>
+          {purchaseRefused && <p role="status">Purchase measurement declined. Booking still works.</p>}
+          {choiceError && <p role="alert">{choiceError}</p>}
+        </div>}
         <section aria-label="Optional purchaser advertising measurement" className={reviewPrivacy ? "rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-700" : "text-xs leading-relaxed text-slate-600"}>
           {reviewPrivacy && (verifiedGrant ? (
             <p>Optional Meta measurement is allowed. You can change or withdraw it through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>.</p>
@@ -236,9 +249,15 @@ export default function MemoryPurchaserDetails({
             className="rounded underline underline-offset-2 focus-visible:outline focus-visible:outline-2">
             Privacy choices
           </button>
+          {reviewPrivacy && measurementManagementOnly && <button type="button" disabled={paymentBusy}
+            className="ml-3 rounded underline" onClick={async () => {
+              setPurchaseRefused(true); setChoiceError("");
+              try { await refusePurchaseMeasurement((...args) => api.post(...args)); }
+              catch (error) { setChoiceError(error.message); }
+            }}>Don't share purchase measurement / withdraw</button>}
           <details ref={consentDetails} id="memory-purchaser-privacy" className={reviewPrivacy ? "mt-2" : "hidden"}>
             <summary className="cursor-pointer rounded underline focus-visible:outline focus-visible:outline-2">What is shared?</summary>
-            <p className="mt-2">BrainoDad shares limited browser and consenting adult purchaser details with Meta to measure ads. No student names, scores or answers are shared. Your choice lasts up to 30 days. You can change or withdraw it through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>. This is separate from WhatsApp consent.</p>
+            <p className="mt-2">BrainoDad shares limited browser and consenting adult purchaser details with Meta to measure ads. Your consent choice lasts up to 30 days. No student names, scores or answers are shared. You can decline or withdraw through <a href="/memory-challenge" target="_blank" rel="noopener noreferrer" className="font-medium underline underline-offset-2 focus-visible:outline focus-visible:outline-2">Privacy choices on the Memory Challenge page (opens in a new tab)</a>. This is separate from WhatsApp consent.</p>
           </details>
         </section>
         <button
@@ -260,3 +279,4 @@ export default function MemoryPurchaserDetails({
     </dialog>
   );
 }
+
