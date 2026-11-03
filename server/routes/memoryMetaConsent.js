@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
-import { recordMemoryConsent, memoryConsentSnapshot } from "../services/memoryMetaConsent.js";
+import { recordMemoryConsent, memoryConsentSnapshot, updateMemoryPurchaseChoice } from "../services/memoryMetaConsent.js";
 const router = express.Router();
 router.use(rateLimit({ windowMs: 60000, limit: 30, standardHeaders: "draft-7", legacyHeaders: false }));
 router.post("/consent", async (req, res) => {
@@ -21,5 +21,10 @@ router.post("/consent/status", async (req, res) => {
   } catch {
     res.status(503).json({ ok: false, granted: false });
   }
+});
+router.post("/purchase-choice",async(req,res)=>{
+  res.set("Cache-Control","no-store");
+  try { res.json(await updateMemoryPurchaseChoice(req.body || {})); }
+  catch { res.status(503).json({ok:false,code:"PURCHASE_CHOICE_UNAVAILABLE"}); }
 });
 export default router;

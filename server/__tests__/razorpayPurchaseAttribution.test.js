@@ -22,6 +22,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
   },
   memoryMasterclassCheckoutIntent: {
+    findMany: async () => [],
     findUnique: jest.fn(),
   },
   memoryMasterclassPurchase: {
@@ -590,7 +591,7 @@ describe("verified Razorpay Memory Masterclass capture", () => {
       expect(mockSendCapiPurchase).toHaveBeenCalledWith(expect.objectContaining({
         pixelId: "1998316064175555", accessToken: "memory-test-only",
         testEventCode: null,
-        value: 99, externalId: "memory-visitor-1",
+        value: 99, externalId: null, fbc: null, fbp: null, clientUserAgent: null,
       }));
     },
   );
@@ -639,9 +640,10 @@ describe("verified Razorpay Memory Masterclass capture", () => {
       testEventCode: "MEMORY_TEST",
       email: "buyer@example.test",
       phone: "+919123456789",
-      externalId: "memory-visitor-1",
-      fbc: "fb.1.123456789.memory-fbclid-1",
-      fbp: "fb.1.123456789.987654321",
+      externalId: null,
+      fbc: null,
+      fbp: null,
+      clientUserAgent: null,
     }));
   });
 
@@ -893,3 +895,4 @@ describe("verified Razorpay Memory Masterclass capture", () => {
     ).not.toHaveBeenCalled();
   });
 });
+

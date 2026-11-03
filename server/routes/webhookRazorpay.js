@@ -1,3 +1,4 @@
+import { memoryPurchaseEligibility } from "../services/memoryMetaConsent.js";
 import express from "express";
 import { deliverMemoryPurchase } from "../services/memoryMetaDelivery.js";
 import crypto from "crypto";
@@ -140,6 +141,7 @@ router.post(
               id: true,
               memoryAssessmentSessionId: true,
               checkoutSource: true,
+              purchaseAuthorization: true,
               metaConsentId: true,
               metaConsentGranted: true,
               metaConsentAt: true,
@@ -257,6 +259,17 @@ router.post(
       const memoryMetaEventId =
         `${MEMORY_MASTERCLASS_PRODUCT_KEY}_purchase_${paymentId}`;
 
+      let measurementCandidate = false, measurementReason = "AUTHORIZATION_UNAVAILABLE";
+      try {
+        const decision = await memoryPurchaseEligibility(memoryIntent, {verifiedCapture:{status:paymentStatus,paymentId,razorpayOrderId,amount,currency}});
+        measurementCandidate = decision.authorized || decision.retryable === true; measurementReason = decision.reason || null;
+      }
+      catch {
+        // Preserve an existing prospective candidate through an authorization
+        // outage. The worker must recheck before ANY transport and retries errors.
+        measurementCandidate = process.env.MEMORY_META_PURCHASE_SHARING_BLOCKED !== "true" &&
+          (memoryIntent.metaConsentGranted === true || Boolean(memoryIntent.purchaseAuthorization?.alternative));
+      }
       let memoryRecord;
 
       try {
@@ -292,7 +305,8 @@ router.post(
               metaConsentVersion: memoryIntent.metaConsentVersion ?? null,
               metaConsentSource: memoryIntent.metaConsentSource ?? null,
               metaConsentRevision: memoryIntent.metaConsentRevision ?? null,
-              metaDeliveryStatus: memoryIntent.metaConsentGranted === true ? "PENDING" : "SKIPPED_CONSENT",
+              metaDeliveryStatus: measurementCandidate ? "PENDING" : "SKIPPED_CONSENT",
+              metaLastErrorCode: measurementReason,
               metaNextAttemptAt: new Date(),
               metaEventTime: Number.isInteger(payload.created_at) &&
                 payload.created_at > 0 && payload.created_at * 1000 <= Date.now() + 60000
@@ -360,8 +374,8 @@ router.post(
         });
       }
 
-      if (memoryRecord.metaConsentGranted !== true) {
-        return res.status(200).json({ ok: true, capiSkipped: true, capiSkipReason: "consent_missing" });
+      if (!measurementCandidate) {
+        return res.status(200).json({ ok: true, capiSkipped: true, capiSkipReason: measurementReason });
       }
       let memoryCapiResult;
       try { memoryCapiResult = await deliverMemoryPurchase(memoryRecord.id); }
@@ -685,3 +699,4 @@ router.get("/spoken-english/status", async (req, res) => {
 });
 
 export default router;
+

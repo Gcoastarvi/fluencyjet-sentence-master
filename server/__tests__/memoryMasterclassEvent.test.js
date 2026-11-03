@@ -1,6 +1,7 @@
 import { describe, expect, test } from "@jest/globals";
 import {
   MEMORY_MASTERCLASS_EVENT,
+  memoryMasterclassBookingOpen,
   MEMORY_MASTERCLASS_WEEKLY_SETTINGS,
   buildMemoryMasterclassEvent,
   getPublicMemoryMasterclassEvent,
@@ -43,7 +44,7 @@ describe("server-owned weekly Memory Masterclass event", () => {
     expect(next.dateISO).toBe("2026-10-25");
     expect(next.startsAt.toISOString()).toBe("2026-10-25T12:30:00.000Z");
     expect(next.endsAt.toISOString()).toBe("2026-10-25T14:30:00.000Z");
-    expect(next.dateLabel).toBe("Sunday, 25 October");
+    expect(next.dateLabel).toBe("Sunday, 25 October 2026");
     expect(next.startTime).toBe("6:00 PM");
     expect(next.endTime).toBe("8:00 PM");
     expect(next.whatsappGroupUrl).toBe("https://chat.whatsapp.com/NextWeekInvite");
@@ -64,4 +65,24 @@ describe("server-owned weekly Memory Masterclass event", () => {
       ...MEMORY_MASTERCLASS_WEEKLY_SETTINGS, ...invalid,
     })).toThrow();
   });
+});
+
+
+
+test("approved November 15 schedule, year and unchanged group destination", () => {
+  const event = getPublicMemoryMasterclassEvent();
+  expect(MEMORY_MASTERCLASS_WEEKLY_SETTINGS.startsAt).toBe("2026-11-15T17:00:00+05:30");
+  expect(MEMORY_MASTERCLASS_WEEKLY_SETTINGS.endsAt).toBe("2026-11-15T19:00:00+05:30");
+  expect(event.dateLabel).toBe("Sunday, 15 November 2026");
+  expect(event.startTime).toBe("5:00 PM");
+  expect(event.endTime).toBe("7:00 PM");
+  expect(event.key).toBe("2026-11-15_1700_ist");
+  expect(event.whatsappGroupUrl).toBe("https://chat.whatsapp.com/IUwQal62p4kDvJxIS9892s");
+});
+
+
+test("approved booking opens before 5 PM IST and closes exactly at the start", () => {
+  expect(memoryMasterclassBookingOpen("2026-11-15T16:59:59+05:30")).toBe(true);
+  expect(memoryMasterclassBookingOpen("2026-11-15T17:00:00+05:30")).toBe(false);
+  expect(memoryMasterclassBookingOpen("2026-11-15T19:00:00+05:30")).toBe(false);
 });

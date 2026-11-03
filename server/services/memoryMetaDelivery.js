@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import prisma from "../db/client.js";
 import { sendCapiPurchase } from "../lib/metaCapi.js";
 import { getCapiDestination } from "../config/metaTracking.js";
-import { purchaseConsentActive } from "./memoryMetaConsent.js";
+import { memoryPurchaseEligibility } from "./memoryMetaConsent.js";
 const MEMORY_MASTERCLASS_EVENT_SOURCE_URL = "https://www.fluencyjet.com/memory-masterclass/thank-you";
 const MEMORY_MASTERCLASS_CONTENT_NAME = "Amaze Memory Live Study Memory Class";
 
@@ -40,24 +40,32 @@ export async function deliverMemoryPurchase(id, {
       await finish({ metaDeliveryStatus: "EXPIRED", metaLastErrorCode: "EVENT_WINDOW" });
       return { skipped: true, reason: "expired" };
     }
-    if (!await purchaseConsentActive(row, db)) {
-      await finish({ metaDeliveryStatus: "SKIPPED_CONSENT", metaLastErrorCode: "CONSENT_INACTIVE" });
+    const eligibility = await memoryPurchaseEligibility(row, { db, env, now: now() });
+    if (!eligibility.authorized) {
+      if(eligibility.retryable) {
+        const delay=RETRY_DELAYS[row.metaAttempts-1];
+        await finish({metaDeliveryStatus:delay?"RETRY":"FAILED",metaNextAttemptAt:delay?new Date(+now()+delay):null,metaLastErrorCode:eligibility.reason});
+        return {skipped:true,reason:eligibility.reason,status:delay?"RETRY":"FAILED"};
+      }
+      await finish({ metaDeliveryStatus: "SKIPPED_CONSENT", metaLastErrorCode: eligibility.reason });
       return { skipped: true, reason: "consent_inactive" };
     }
-    const intent = row.checkoutIntent;
-    // Only the explicitly consenting adult purchaser, never a student or
+    // Only the currently authorized adult purchaser, never a student or
     // another payer's provider identity. Checkout snapshots are server-validated.
     const result = await send({
       ...destination, eventId: row.metaEventId, eventTime: new Date(row.metaEventTime).getTime(),
       eventSourceUrl: MEMORY_MASTERCLASS_EVENT_SOURCE_URL, value: 99, currency: "INR",
       contentName: MEMORY_MASTERCLASS_CONTENT_NAME, contentIds: [PRODUCT],
       email: row.purchaserEmail, phone: row.purchaserPhone,
-      externalId: intent?.visitorId, fbc: intent?.fbc, fbp: intent?.fbp,
-      clientIpAddress: null, clientUserAgent: intent?.clientUserAgent,
+      // Browser identifiers may originate from a child's assessment session.
+      // Only approved adult purchaser contacts are used for matching.
+      externalId: null, fbc: null, fbp: null,
+      clientIpAddress: null, clientUserAgent: null,
     });
     if (result.ok) {
       await finish({ metaDelivered: true, metaDeliveryStatus: "DELIVERED",
         metaDeliveredAt: now(), metaLastErrorCode: null });
+      console.log(`[memory-meta] DELIVERED event=${row.metaEventId} dataset=1998316064175555 value=99 currency=INR source=${eligibility.source}`);
       return { delivered: true };
     }
     const retryable = result.transient === true || result.status === 0 ||
@@ -106,3 +114,4 @@ export function startMemoryMetaDelivery() {
   timer = setTimeout(tick, 1000); timer.unref();
   return () => { stopped = true; clearTimeout(timer); };
 }
+
