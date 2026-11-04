@@ -39,7 +39,7 @@ import SpokenEnglishOffer from "./pages/marketing/SpokenEnglishOffer";
 import SpokenEnglishOfferV2 from "./pages/marketing/SpokenEnglishOfferV2";
 import SpokenEnglishChallenge from "./pages/public/SpokenEnglishChallenge";
 import MemoryChallenge from "./pages/public/MemoryChallenge";
-import MemoryMasterclassParents from "./pages/public/MemoryMasterclassParents";
+import MemoryMasterclassParentsAB from "./pages/public/MemoryMasterclassParentsAB";
 import MemoryChallengeStart from "./pages/public/MemoryChallengeStart";
 import MemoryChallengeTest from "./pages/public/MemoryChallengeTest";
 import MemoryChallengeResult from "./pages/public/MemoryChallengeResult";
@@ -275,7 +275,8 @@ export default function App() {
             <Route path="/memory-challenge" element={<MemoryChallenge />} />
             <Route path="/memory-challenge/video/school" element={<MemoryChallengeVideo key="school" audience="school" />} />
             <Route path="/memory-challenge/video/advanced" element={<MemoryChallengeVideo key="advanced" audience="advanced" />} />
-            <Route path="/memory-masterclass/parents" element={<MemoryMasterclassParents />} />
+            {/* A/B test: utm_content=parents_b shows variant B on this same path */}
+            <Route path="/memory-masterclass/parents" element={<MemoryMasterclassParentsAB />} />
             {/* Unknown memory URLs must not render the English Home fallback. */}
             {["memory-challenge", "memory-masterclass", "memory-retest", "memory-products"].map(prefix => (
               <Route key={prefix} path={`/${prefix}/*`} element={<MemoryRouteNotFound />} />
