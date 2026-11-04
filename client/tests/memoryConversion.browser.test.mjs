@@ -363,8 +363,8 @@ async function fixture({
       ? 'document.body.innerText.includes("Class details could not be loaded")'
       : `!!document.querySelector("[data-placement=below_video]:not([disabled])") &&
          document.body.innerText.includes(${JSON.stringify(event.dateLabel)})`);
-  } else if (path === "/memory-masterclass/parents" || path === "/memory-masterclass/parents-v2") {
-    await waitFor(`location.pathname === ${JSON.stringify(path)} &&
+  } else if (path === "/memory-masterclass/parents") {
+    await waitFor(`location.pathname === "/memory-masterclass/parents" &&
       !!document.querySelector(".bdp-buy-hero:not([disabled])") &&
       document.body.innerText.includes(${JSON.stringify(event.dateLabel)})`);
   } else if (navigationProbe) {
@@ -500,136 +500,129 @@ async function parentsPrivacyFixture({ openThrows = false, ...options } = {}) {
   return page;
 }
 
-// Run every Parents privacy check against both A/B variants.
-for (const [parentsPath, parentsLabel] of [
-  ["/memory-masterclass/parents", "Parents "],
-  ["/memory-masterclass/parents-v2", "Parents v2 "],
-]) {
-  test(`${parentsLabel}privacy management has no checkbox on desktop/mobile, even after review`, async () => {
-    for (const mobile of [false, true]) {
-      const page = await parentsPrivacyFixture({ path: parentsPath, mobile });
-      try {
-        assert.equal(await page.evaluate('!!document.querySelector("dialog input[type=checkbox],dialog select")'), false);
-        assert.equal(await page.evaluate('document.querySelector("dialog button[type=submit]").innerText'), "Continue to Payment — ₹99");
-        await page.evaluate('document.querySelector("dialog button[aria-controls=memory-purchaser-privacy]").click()');
-        await page.waitFor('document.activeElement?.tagName === "SUMMARY"');
-        const result = await page.evaluate(`(() => {
-          const d = document.querySelector("dialog[open]");
-          const link = d.querySelector('a[href="/memory-challenge"]');
-          return {
-            fields: [...d.querySelectorAll("input")].map(i=>i.name),
-            checkbox: !!d.querySelector("input[type=checkbox]"),
-            explanation: d.innerText.includes("Payment does not give permission"),
-            details: d.querySelector("details").open,
-            focused: document.activeElement.tagName,
-            link: {href:link.getAttribute("href"),target:link.target,rel:link.rel},
-          };
-        })()`);
-        assert.deepEqual(result.fields, ["name", "email", "phone"]);
-        assert.equal(result.checkbox, false);
-        assert.equal(result.explanation, true);
-        assert.equal(result.details, true);
-        assert.equal(result.focused, "SUMMARY");
-        assert.deepEqual(result.link, {href:"/memory-challenge",target:"_blank",rel:"noopener noreferrer"});
-        assert.equal(page.consentGrantRequests.length, 0);
-        assert.equal(page.checkoutRequests.length, 0);
-        assert.equal(await page.evaluate('window.metaCalls.some(c=>/^(Lead|InitiateCheckout|Purchase)$/.test(c[2]))'), false);
-        assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" || /^track/.test(c[0]))'), false,
-          "An unconsented document must not initialize or dispatch to either Pixel");
-      } finally { await page.close(); }
-    }
-  });
-
-  test(`${parentsLabel}privacy management preserves no-choice/decline checkout without sharing`, async () => {
-    for (const declinedConsent of [false, true]) {
-      const page = await parentsPrivacyFixture({ path: parentsPath, declinedConsent });
-      try {
-        const before = await page.evaluate('localStorage.getItem("brainodad_meta_consent_v1")');
-        await registerPurchaser(page);
-        await page.waitFor('window.fixtureCheckoutOpened === true');
-        assert.equal(page.consentGrantRequests.length, 0);
-        assert.equal(page.checkoutRequests.length, 1);
-        const order = page.checkoutRequests[0];
-        assert.equal(order.memoryMetaConsentReceipt, null);
-        assert.equal(order.checkoutContext, "parents");
-        assert.equal(order.audience, "school");
-        assert.equal(Object.hasOwn(order, "schoolLevel"), false);
-        assert.equal(Object.hasOwn(order, "amount"), false);
-        assert.equal(Object.hasOwn(order, "formAScore"), false);
-        assert.equal(Object.hasOwn(order, "responses"), false);
-        assert.equal(await page.evaluate('localStorage.getItem("brainodad_meta_consent_v1")'), before);
-        assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded"]);
-        assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" || /^track/.test(c[0]))'), false);
-      } finally { await page.close(); }
-    }
-  });
-
-  test(`${parentsLabel}privacy management reuses only an existing verified receipt; never browser Purchase`, async () => {
-    const page = await parentsPrivacyFixture({ path: parentsPath, advertisingConsent: true });
+test("Parents privacy management has no checkbox on desktop/mobile, even after review", async () => {
+  for (const mobile of [false, true]) {
+    const page = await parentsPrivacyFixture({ mobile });
     try {
-      await page.waitFor('window.memoryMetaConsentVerified === true');
-      await registerPurchaser(page);
-      await page.waitFor('window.fixtureCheckoutOpened === true');
-      assert.equal(page.consentGrantRequests.length, 0);
-      assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, "a".repeat(64));
-      assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded", "InitiateCheckout"]);
-      assert.equal(await page.evaluate('window.fixturePayment.amount'), 9900);
-      assert.equal(await page.evaluate('window.fixturePayment.currency'), "INR");
-      assert.equal(await page.evaluate('window.metaCalls.some(c=>c[1]==="1246171816816642" || c[2]==="Purchase" || c[2]==="Lead")'), false);
-      await assertPixelDocuments(page);
-    } finally { await page.close(); }
-  });
-
-  test(`${parentsLabel}privacy management respects withdrawal while registration stays open`, async () => {
-    const page = await parentsPrivacyFixture({ path: parentsPath, advertisingConsent: true });
-    try {
-      await page.waitFor('window.memoryMetaConsentVerified === true');
-      await page.evaluate(`(() => {
-        localStorage.removeItem("brainodad_meta_consent_v1");
-        window.dispatchEvent(new StorageEvent("storage", {
-          key:"brainodad_meta_consent_v1",storageArea:localStorage,newValue:null
-        }));
+      assert.equal(await page.evaluate('!!document.querySelector("dialog input[type=checkbox],dialog select")'), false);
+      assert.equal(await page.evaluate('document.querySelector("dialog button[type=submit]").innerText'), "Continue to Payment — ₹99");
+      await page.evaluate('document.querySelector("dialog button[aria-controls=memory-purchaser-privacy]").click()');
+      await page.waitFor('document.activeElement?.tagName === "SUMMARY"');
+      const result = await page.evaluate(`(() => {
+        const d = document.querySelector("dialog[open]");
+        const link = d.querySelector('a[href="/memory-challenge"]');
+        return {
+          fields: [...d.querySelectorAll("input")].map(i=>i.name),
+          checkbox: !!d.querySelector("input[type=checkbox]"),
+          explanation: d.innerText.includes("Payment does not give permission"),
+          details: d.querySelector("details").open,
+          focused: document.activeElement.tagName,
+          link: {href:link.getAttribute("href"),target:link.target,rel:link.rel},
+        };
       })()`);
-      await page.waitFor('window.memoryMetaConsentVerified === false');
-      await registerPurchaser(page);
-      await page.waitFor('window.fixtureCheckoutOpened === true');
-      assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, null);
+      assert.deepEqual(result.fields, ["name", "email", "phone"]);
+      assert.equal(result.checkbox, false);
+      assert.equal(result.explanation, true);
+      assert.equal(result.details, true);
+      assert.equal(result.focused, "SUMMARY");
+      assert.deepEqual(result.link, {href:"/memory-challenge",target:"_blank",rel:"noopener noreferrer"});
       assert.equal(page.consentGrantRequests.length, 0);
-      assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded"]);
-      assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="Purchase" || c[2]==="Lead")'), false);
+      assert.equal(page.checkoutRequests.length, 0);
+      assert.equal(await page.evaluate('window.metaCalls.some(c=>/^(Lead|InitiateCheckout|Purchase)$/.test(c[2]))'), false);
+      assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" || /^track/.test(c[0]))'), false,
+        "An unconsented document must not initialize or dispatch to either Pixel");
     } finally { await page.close(); }
-  });
+  }
+});
 
-  test(`${parentsLabel}privacy management status outage fails closed without blocking booking`, async () => {
-    const page = await parentsPrivacyFixture({
-      path: parentsPath,
-      advertisingConsent: true, consentInitiallyVerified: false, failConsentStatus: true,
-    });
+test("Parents privacy management preserves no-choice/decline checkout without sharing", async () => {
+  for (const declinedConsent of [false, true]) {
+    const page = await parentsPrivacyFixture({ declinedConsent });
     try {
+      const before = await page.evaluate('localStorage.getItem("brainodad_meta_consent_v1")');
       await registerPurchaser(page);
       await page.waitFor('window.fixtureCheckoutOpened === true');
-      assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, null);
       assert.equal(page.consentGrantRequests.length, 0);
+      assert.equal(page.checkoutRequests.length, 1);
+      const order = page.checkoutRequests[0];
+      assert.equal(order.memoryMetaConsentReceipt, null);
+      assert.equal(order.checkoutContext, "parents");
+      assert.equal(order.audience, "school");
+      assert.equal(Object.hasOwn(order, "schoolLevel"), false);
+      assert.equal(Object.hasOwn(order, "amount"), false);
+      assert.equal(Object.hasOwn(order, "formAScore"), false);
+      assert.equal(Object.hasOwn(order, "responses"), false);
+      assert.equal(await page.evaluate('localStorage.getItem("brainodad_meta_consent_v1")'), before);
       assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded"]);
       assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" || /^track/.test(c[0]))'), false);
     } finally { await page.close(); }
-  });
+  }
+});
 
-  test(`${parentsLabel}privacy management failed order or thrown checkout.open emits no conversion`, async () => {
-    for (const options of [{ failCheckout: true }, { openThrows: true }]) {
-      const page = await parentsPrivacyFixture({ path: parentsPath, advertisingConsent: true, ...options });
-      try {
-        await page.waitFor('window.memoryMetaConsentVerified === true');
-        await registerPurchaser(page);
-        await page.waitFor('!!document.querySelector("dialog[open] [role=alert]")');
-        assert.equal(page.consentGrantRequests.length, 0);
-        assert.equal(page.checkoutRequests.length, 1);
-        assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), []);
-        assert.equal(await page.evaluate('window.metaCalls.some(c=>/^(Lead|InitiateCheckout|Purchase)$/.test(c[2]))'), false);
-      } finally { await page.close(); }
-    }
+test("Parents privacy management reuses only an existing verified receipt; never browser Purchase", async () => {
+  const page = await parentsPrivacyFixture({ advertisingConsent: true });
+  try {
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    await registerPurchaser(page);
+    await page.waitFor('window.fixtureCheckoutOpened === true');
+    assert.equal(page.consentGrantRequests.length, 0);
+    assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, "a".repeat(64));
+    assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded", "InitiateCheckout"]);
+    assert.equal(await page.evaluate('window.fixturePayment.amount'), 9900);
+    assert.equal(await page.evaluate('window.fixturePayment.currency'), "INR");
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[1]==="1246171816816642" || c[2]==="Purchase" || c[2]==="Lead")'), false);
+    await assertPixelDocuments(page);
+  } finally { await page.close(); }
+});
+
+test("Parents privacy management respects withdrawal while registration stays open", async () => {
+  const page = await parentsPrivacyFixture({ advertisingConsent: true });
+  try {
+    await page.waitFor('window.memoryMetaConsentVerified === true');
+    await page.evaluate(`(() => {
+      localStorage.removeItem("brainodad_meta_consent_v1");
+      window.dispatchEvent(new StorageEvent("storage", {
+        key:"brainodad_meta_consent_v1",storageArea:localStorage,newValue:null
+      }));
+    })()`);
+    await page.waitFor('window.memoryMetaConsentVerified === false');
+    await registerPurchaser(page);
+    await page.waitFor('window.fixtureCheckoutOpened === true');
+    assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, null);
+    assert.equal(page.consentGrantRequests.length, 0);
+    assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded"]);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[2]==="Purchase" || c[2]==="Lead")'), false);
+  } finally { await page.close(); }
+});
+
+test("Parents privacy management status outage fails closed without blocking booking", async () => {
+  const page = await parentsPrivacyFixture({
+    advertisingConsent: true, consentInitiallyVerified: false, failConsentStatus: true,
   });
-}
+  try {
+    await registerPurchaser(page);
+    await page.waitFor('window.fixtureCheckoutOpened === true');
+    assert.equal(page.checkoutRequests[0].memoryMetaConsentReceipt, null);
+    assert.equal(page.consentGrantRequests.length, 0);
+    assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), ["open succeeded"]);
+    assert.equal(await page.evaluate('window.metaCalls.some(c=>c[0]==="init" || /^track/.test(c[0]))'), false);
+  } finally { await page.close(); }
+});
+
+test("Parents privacy management failed order or thrown checkout.open emits no conversion", async () => {
+  for (const options of [{ failCheckout: true }, { openThrows: true }]) {
+    const page = await parentsPrivacyFixture({ advertisingConsent: true, ...options });
+    try {
+      await page.waitFor('window.memoryMetaConsentVerified === true');
+      await registerPurchaser(page);
+      await page.waitFor('!!document.querySelector("dialog[open] [role=alert]")');
+      assert.equal(page.consentGrantRequests.length, 0);
+      assert.equal(page.checkoutRequests.length, 1);
+      assert.deepEqual(await page.evaluate('window.fixtureCheckoutSequence'), []);
+      assert.equal(await page.evaluate('window.metaCalls.some(c=>/^(Lead|InitiateCheckout|Purchase)$/.test(c[2]))'), false);
+    } finally { await page.close(); }
+  }
+});
 
 test("Parents privacy management leaves school/advanced/result consent controls unchanged", async () => {
   for (const audience of ["school", "advanced", "assessment"]) {

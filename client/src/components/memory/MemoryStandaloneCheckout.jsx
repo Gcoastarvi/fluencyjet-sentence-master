@@ -46,8 +46,8 @@ export default function MemoryStandaloneCheckout({ audience, event, children, pa
         purchaserName: purchaser.name,
         purchaserEmail: purchaser.email,
         purchaserPhone: purchaser.phone,
-      }, parentsMode && ["/memory-masterclass/parents", "/memory-masterclass/parents-v2"].includes(window.location.pathname)
-        ? {referrer:window.location.origin+window.location.pathname,referrerPolicy:"no-referrer-when-downgrade"} : {});
+      }, parentsMode && window.location.pathname === "/memory-masterclass/parents"
+        ? {referrer:window.location.origin+"/memory-masterclass/parents",referrerPolicy:"no-referrer-when-downgrade"} : {});
       if (!response.ok || !response.data?.orderId) {
         throw new Error(response.error || "Unable to start secure checkout.");
       }

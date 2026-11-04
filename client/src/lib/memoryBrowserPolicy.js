@@ -6,7 +6,6 @@ export function memoryBrowserRouteEligible(location) {
   catch { return false; }
   if (![
     "/memory-masterclass/parents",
-    "/memory-masterclass/parents-v2", // A/B variant B of the same adult-facing page
     "/memory-challenge/video/school",
     "/memory-challenge/video/advanced",
   ].includes(path)) return false;
@@ -25,7 +24,7 @@ export const MEMORY_BROWSER_EVENTS = new Set([
 export function memoryCommercialParams(params = {}) {
   const clean = {};
   if (params.funnel === "amaze_memory") clean.funnel = params.funnel;
-  if (["standalone_vsl", "memory_masterclass_parents", "memory_masterclass_parents_v2"].includes(params.source)) clean.source = params.source;
+  if (["standalone_vsl", "memory_masterclass_parents"].includes(params.source)) clean.source = params.source;
   if (params.price === 99) clean.price = 99;
   if (params.value === 99) clean.value = 99;
   if (params.currency === "INR") clean.currency = "INR";
