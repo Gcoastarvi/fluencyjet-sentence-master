@@ -3,7 +3,7 @@ import { MEMORY_MASTERCLASS_EVENT } from "../config/memoryMasterclassEvent.js";
 
 export const MEMORY_PURCHASE_RULE_VERSION = "parents-risk-scope-v1";
 export const MEMORY_PURCHASE_SCOPE = "IN_ADULT_DIRECTED_PARENTS_RISK_BASED";
-const ORIGIN = "https://www.fluencyjet.com";
+const PARENTS_ALLOWED_ORIGINS = new Set(["https://www.fluencyjet.com", "https://fluencyjet.com"]);
 const PATH = "/memory-masterclass/parents";
 const TTL = 15 * 60000;
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
@@ -27,7 +27,7 @@ export function requestDisqualified(body = {}) {
 }
 export function issueParentsPurchaseContext(purchaser, headers, body = {}, {env=process.env, now=new Date()} = {}) {
   let ref; try { ref = new URL(headers.referer || ""); } catch { throw new Error("PARENTS_CONTEXT_INVALID"); }
-  if (headers.origin !== ORIGIN || ref.origin !== ORIGIN || ref.pathname !== PATH ||
+  if (!PARENTS_ALLOWED_ORIGINS.has(headers.origin) || ref.origin !== headers.origin || ref.pathname !== PATH ||
       ref.search || ref.hash || requestDisqualified(body)) throw new Error("PARENTS_CONTEXT_INVALID");
   const payload = Buffer.from(JSON.stringify({v:1, nonce:crypto.randomBytes(16).toString("hex"),
     issuedAt:now.toISOString(), expiresAt:new Date(+now+TTL).toISOString(), flow:PATH,

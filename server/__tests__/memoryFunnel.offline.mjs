@@ -349,6 +349,20 @@ test("context issuance validates origin and exact Parents referrer, not a client
     {origin:"https://www.fluencyjet.com",referer:"https://www.fluencyjet.com/memory-challenge/test"}])
     assert.throws(()=>f.rule.issueParentsPurchaseContext(f.intent,headers,{checkoutContext:"parents"},{env:f.env}));
 });
+test("Parents context accepts both verified FluencyJet origins, never mixed or unknown origins",async()=>{
+  const f=await fixture();
+  const path="/memory-masterclass/parents";
+  for(const origin of ["https://www.fluencyjet.com","https://fluencyjet.com"]){
+    const token=f.rule.issueParentsPurchaseContext(f.intent,{origin,referer:origin+path},{checkoutContext:"parents"},{env:f.env});
+    assert.ok(typeof token==="string" && token.includes("."));
+  }
+  for(const headers of [
+    {origin:"https://fluencyjet.com",referer:"https://www.fluencyjet.com"+path},
+    {origin:"https://www.fluencyjet.com",referer:"https://fluencyjet.com"+path},
+    {origin:"https://evil.test",referer:"https://evil.test"+path},
+    {origin:"https://fluencyjet.com",referer:"https://fluencyjet.com"+path+"?studentId=1"},
+  ]) assert.throws(()=>f.rule.issueParentsPurchaseContext(f.intent,headers,{checkoutContext:"parents"},{env:f.env}));
+});
 test("new or historical assessment contact conflicts are rechecked before CAPI",async()=>{
   const f=await fixture({alternative:true}); f.eligibilityState.assessmentConflict=true;
   await f.capture(); assert.equal(f.rows.length,1); assert.equal(f.calls.length,0);
