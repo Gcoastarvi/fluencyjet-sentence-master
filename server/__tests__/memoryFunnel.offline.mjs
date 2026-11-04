@@ -408,3 +408,54 @@ test("late privacy-control readiness retries without sending, then delivers the 
  assert.equal(f.calls.length,1);assert.equal(f.calls[0].body.data[0].event_id,f.rows[0].metaEventId);
  assert.equal(f.rows[0].metaDeliveryStatus,"DELIVERED");
 });
+
+test("review-only contact provenance: school-track parent label remains unverified and excluded", async()=>{
+  const f=await fixture({alternative:true});
+  const rows=[{email:"other@example.test",whatsappNumberNormalized:f.intent.purchaserPhone,whatsappContactRole:"PARENT_GUARDIAN"}];
+  f.db.memoryAssessmentSession.findFirst=async({where,select})=>{
+    assert.deepEqual(Object.keys(select),["id"]);
+    const has=part=>Object.entries(part).every(([k,v])=>k==="OR"?v.some(has):
+      k==="email"?rows[0].email.toLowerCase()===v.equals.toLowerCase():
+      k==="whatsappNumberNormalized"?v.in.includes(rows[0].whatsappNumberNormalized):rows[0][k]===v);
+    return has(where)?{id:"PRIVATE_EXISTS_ONLY"}:null;
+  };
+  const evidence=await f.rule.classifyAssessmentContact(f.intent,f.db);
+  assert.equal(evidence.classification,"PARENT_GUARDIAN_LABEL_UNVERIFIED");
+  assert.equal(evidence.adultVerified,false);
+  await f.prepare();await f.capture();
+  assert.equal(f.rows.length,1);assert.equal(f.calls.length,0);
+  assert.equal(f.rows[0].metaDeliveryStatus,"SKIPPED_CONSENT");
+});
+for(const [role,label] of [["LEARNER","LEARNER_ROLE_MATCH"],[null,"UNKNOWN_ASSESSMENT_CONTACT"]]) test(
+  "review-only contact provenance: "+label+" remains excluded",async()=>{
+  const f=await fixture({alternative:true});
+  const rows=[{email:"different@example.test",whatsappNumberNormalized:f.intent.purchaserPhone,whatsappContactRole:role}];
+  f.db.memoryAssessmentSession.findFirst=async({where,select})=>{
+    assert.deepEqual(Object.keys(select),["id"]);
+    const matches=part=>Object.entries(part).every(([k,v])=>k==="OR"?v.some(matches):
+      k==="email"?rows[0].email.toLowerCase()===v.equals.toLowerCase():
+      k==="whatsappNumberNormalized"?v.in.includes(rows[0].whatsappNumberNormalized):rows[0][k]===v);
+    return matches(where)?{id:"PRIVATE_EXISTS_ONLY"}:null;
+  };
+  assert.equal((await f.rule.classifyAssessmentContact(f.intent,f.db)).classification,label);
+  await f.prepare();await f.capture();assert.equal(f.calls.length,0);
+  assert.equal(f.rows[0].metaDeliveryStatus,"SKIPPED_CONSENT");
+});
+test("review-only contact provenance: assessment email is unverified despite parent label",async()=>{
+  const f=await fixture({alternative:true});
+  const row={email:f.intent.purchaserEmail,whatsappNumberNormalized:"+919999999999",whatsappContactRole:"PARENT_GUARDIAN"};
+  f.db.memoryAssessmentSession.findFirst=async({where,select})=>{
+    assert.deepEqual(Object.keys(select),["id"]);
+    const hit=p=>Object.entries(p).every(([k,v])=>k==="OR"?v.some(hit):k==="email"?
+      row.email===v.equals:k==="whatsappNumberNormalized"?v.in.includes(row.whatsappNumberNormalized):row[k]===v);
+    return hit(where)?{id:"PRIVATE_EXISTS_ONLY"}:null;
+  };
+  assert.equal((await f.rule.classifyAssessmentContact(f.intent,f.db)).classification,
+    "ASSESSMENT_EMAIL_OWNER_UNVERIFIED");
+  await f.prepare();await f.capture();assert.equal(f.calls.length,0);
+});
+test("review-only provenance: an assessment database outage never becomes a no-match",async()=>{
+  const f=await fixture({alternative:true});
+  f.db.memoryAssessmentSession.findFirst=async()=>{throw Error("ASSESSMENT_DB_UNAVAILABLE");};
+  await assert.rejects(f.rule.assessmentContactConflict(f.intent,f.db),/ASSESSMENT_DB_UNAVAILABLE/);
+});

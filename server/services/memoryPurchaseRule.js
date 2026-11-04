@@ -49,11 +49,29 @@ function readContext(token, purchaser, recordedAt, {env,now}) {
     at<new Date(p.expiresAt)) || +new Date(p.expiresAt)-+new Date(p.issuedAt)!==TTL) return null;
   return p;
 }
+// Diagnostic categories are NOT adult-age evidence or a measurement permission.
+// In the current assessment route PARENT_GUARDIAN is assigned by school track,
+// not verified as the contact owner's identity or age. Assessment email has no
+// separately verified adult owner. Every matched category remains excluded.
+export async function classifyAssessmentContact(input, db) {
+  const email = String(input.purchaserEmail || "").trim().toLowerCase();
+  const phone = String(input.purchaserPhone || "");
+  if (!email || !phone) return { matched:true, classification:"PURCHASER_CONTACT_INCOMPLETE", adultVerified:false };
+  const numberMatch = {whatsappNumberNormalized:{in:[phone,phone.replace(/\D/g, "")]}};
+  const emailMatch = {email:{equals:email,mode:"insensitive"}};
+  const exists = where => db.memoryAssessmentSession.findFirst({where,select:{id:true}});
+  if (!await exists({OR:[emailMatch,numberMatch]}))
+    return {matched:false,classification:"NO_ASSESSMENT_MATCH",adultVerified:false};
+  if (await exists({OR:[emailMatch,numberMatch],whatsappContactRole:"LEARNER"}))
+    return {matched:true,classification:"LEARNER_ROLE_MATCH",adultVerified:false};
+  if (await exists(emailMatch))
+    return {matched:true,classification:"ASSESSMENT_EMAIL_OWNER_UNVERIFIED",adultVerified:false};
+  if (await exists({...numberMatch,whatsappContactRole:"PARENT_GUARDIAN"}))
+    return {matched:true,classification:"PARENT_GUARDIAN_LABEL_UNVERIFIED",adultVerified:false};
+  return {matched:true,classification:"UNKNOWN_ASSESSMENT_CONTACT",adultVerified:false};
+}
 export async function assessmentContactConflict(input, db) {
-  return Boolean(await db.memoryAssessmentSession.findFirst({where:{OR:[
-    {email:{equals:input.purchaserEmail.trim().toLowerCase(),mode:"insensitive"}},
-    {whatsappNumberNormalized:{in:[input.purchaserPhone,input.purchaserPhone.replace(/\D/g, "")]}}
-  ]},select:{id:true}}));
+  return (await classifyAssessmentContact(input, db)).matched;
 }
 export async function evaluateApprovedMemoryPurchaseRule(input, {now=new Date(),env=process.env,db,policy,phase="order",verifiedCapture}={}) {
   const deny=reason=>({eligible:false,scopeEligible:false,ageVerified:false,reason});
@@ -71,8 +89,8 @@ export async function evaluateApprovedMemoryPurchaseRule(input, {now=new Date(),
     return deny("INDIA_CONTACT_SCOPE_UNKNOWN");
   // Conservative conflict check. Read only an existence indicator; never retrieve
   // or send answers, scores, student identity or assessment browser identifiers.
-  const conflict=await assessmentContactConflict(input,db);
-  if(conflict) return deny("ASSESSMENT_CONTACT_CONFLICT");
+  const contact=await classifyAssessmentContact(input,db);
+  if(contact.matched) return {...deny("ASSESSMENT_CONTACT_CONFLICT"), assessmentContactClass:contact.classification};
   if(phase!=="order") {
     const capture=verifiedCapture || input;
     if(capture.status!=="captured" || !capture.paymentId || capture.razorpayOrderId!==input.razorpayOrderId ||
