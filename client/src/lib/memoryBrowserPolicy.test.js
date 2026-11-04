@@ -15,7 +15,7 @@ function browser(path, { granted = true, verified = true, storage = new Map(), s
   return { calls, storage, session, events: () => calls.filter(c => /^trackSingle/.test(c[0])) };
 }
 
-for (const path of ["/memory-masterclass/parents", "/memory-challenge/video/school", "/memory-challenge/video/advanced"]) {
+for (const path of ["/memory-masterclass/parents", "/memory-masterclass/parents-v2", "/memory-challenge/video/school", "/memory-challenge/video/advanced"]) {
   test(`verified adult marketing events use only BrainoDad: ${path}`, () => {
     const f = browser(path);
     dispatchMetaPageView(path); dispatchMetaPageView(path);
