@@ -189,6 +189,7 @@ export default function MemoryMasterclassParentsV2() {
   const [faqOpen, setFaqOpen] = useState(-1);
   const [offerInView, setOfferInView] = useState(false);
   const [offerEl, setOfferEl] = useState(null);
+  const [passedGradeSection, setPassedGradeSection] = useState(false);
 
   // Hide the free-test sticky bar while the ₹99 offer is on screen,
   // so the two calls to action never compete.
@@ -197,13 +198,32 @@ export default function MemoryMasterclassParentsV2() {
     const observer = new IntersectionObserver(
       ([entry]) =>
         setOfferInView(
-          entry.isIntersecting || entry.boundingClientRect.top < 0
+          entry.isIntersecting
         ),
       { threshold: 0.15 }
     );
     observer.observe(offerEl);
     return () => observer.disconnect();
   }, [offerEl]);
+
+  // Keep the free-score CTA through the grade tiles, then promote
+  // the existing paid registration popup further down the page.
+  useEffect(() => {
+    const section = document.getElementById("choose-grade");
+    if (!section) return undefined;
+    const update = () => {
+      setPassedGradeSection(
+        section.getBoundingClientRect().bottom <= window.innerHeight - 88
+      );
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
 
   const scrollToTest = () => {
     try {
@@ -312,7 +332,7 @@ export default function MemoryMasterclassParentsV2() {
       {({ openCheckout, busy, dialogOpen }) => {
         const bookingDisabled = !expectedEvent || busy;
 
-        const booking = (extraClass = "") => (
+        const booking = (extraClass = "", label = null) => (
           <MemoryOfferVisibility ready={expectedEvent} blocked={dialogOpen || busy}
             visit={offerVisit} source="memory_masterclass_parents_v2" placement="parents">
           <button
@@ -321,7 +341,7 @@ export default function MemoryMasterclassParentsV2() {
             onClick={openCheckout}
             disabled={bookingDisabled}
           >
-            Book My Child's Seat <span aria-hidden="true">—</span> ₹99
+            {label || <>Book My Child's Seat <span aria-hidden="true">—</span> ₹99</>}
             <span aria-hidden="true"> →</span>
           </button>
           </MemoryOfferVisibility>
@@ -333,7 +353,7 @@ export default function MemoryMasterclassParentsV2() {
             className={`bdp-buy ${extraClass}`}
             onClick={scrollToTest}
           >
-            Start the Free Memory Test <span aria-hidden="true">→</span>
+            Check Memory Score for Free <span aria-hidden="true">→</span>
           </button>
         );
 
@@ -370,13 +390,13 @@ export default function MemoryMasterclassParentsV2() {
 
                   <h1 id="bdp-hero-title">
                     Your Child Studies Hard.
-                    <span> But How Much Do They Remember?</span>
+                    <span> But Forgets What They Studied in Exams?</span>
                   </h1>
 
                   <p className="bdp-hero-sub">
-                    Find out your child's memory score for free. Then join a
-                    2-hour live class with a Guinness World Record holder,
-                    and explore practical ways to remember more.
+                    Help your child remember better, revise smarter, and
+                    recall answers with confidence —{" "}
+                    <strong>guided by a Guinness World Record Holder.</strong>
                   </p>
 
                   {freeTest("bdp-free-hero")}
@@ -384,12 +404,6 @@ export default function MemoryMasterclassParentsV2() {
                   <p className="bdp-hero-micro">
                     Free · 5 memory activities · Score out of 100 · No payment needed
                   </p>
-
-                  <ul className="bdp-trust" aria-label="About the trainer">
-                    <li><span aria-hidden="true">🏆</span> Guinness World Record holder</li>
-                    <li><span aria-hidden="true">👨‍🎓</span> 35,000+ students trained</li>
-                    <li><span aria-hidden="true">📅</span> Memory trainer since 2011</li>
-                  </ul>
 
                   <p className="bdp-book-alt">
                     Child not at home right now?{" "}
@@ -536,7 +550,7 @@ export default function MemoryMasterclassParentsV2() {
                     onClick={goToTest}
                   >
                     {activeGrade
-                      ? "Start the Free Memory Test →"
+                      ? "Check Memory Score for Free →"
                       : "Choose a Class Above"}
                   </button>
 
@@ -563,22 +577,17 @@ export default function MemoryMasterclassParentsV2() {
             >
               <p className="bdp-v2-compare-eyebrow">HOW IT WORKS</p>
               <h2 id="bdp-v2-compare-title">
-                Test Before. Learn New Methods.
-                <span> Test Again.</span>
+                Did the Class Help Your Child?
+                <span> The Scores Will Show You.</span>
               </h2>
-              <p className="bdp-v2-compare-intro">
-                Start with a memory score, practise useful techniques,
-                and understand how a follow-up comparison works.
-              </p>
-
               <div className="bdp-v2-compare-steps">
                 <div className="bdp-v2-compare-step before">
                   <div className="bdp-v2-compare-step-top">
                     <span>01 · BEFORE CLASS</span>
                     <strong>FREE</strong>
                   </div>
-                  <h3>Test 1 — Starting Score</h3>
-                  <p>Discover your child's initial Study Memory Score.</p>
+                  <h3>Memory Check 1</h3>
+                  <p>Do 5 short activities. Get the first score.</p>
                 </div>
 
                 <div className="bdp-v2-compare-step training">
@@ -586,17 +595,17 @@ export default function MemoryMasterclassParentsV2() {
                     <span>02 · LIVE CLASS</span>
                     <strong>₹99</strong>
                   </div>
-                  <h3>2 Hours of Guided Training</h3>
-                  <p>Learn and practise practical memory techniques.</p>
+                  <h3>2-Hour Class</h3>
+                  <p>Learn and practise memory methods.</p>
                 </div>
 
                 <div className="bdp-v2-compare-step after">
                   <div className="bdp-v2-compare-step-top">
                     <span>03 · AFTER CLASS</span>
-                    <strong>PLANNED</strong>
+                    <strong>INCLUDED</strong>
                   </div>
-                  <h3>Test 2 — Follow-up Assessment</h3>
-                  <p>Compare scores once the follow-up test is available.</p>
+                  <h3>Memory Check 2</h3>
+                  <p>Do new activities. Get the second score.</p>
                 </div>
               </div>
 
@@ -605,18 +614,24 @@ export default function MemoryMasterclassParentsV2() {
                 aria-label="Illustrative before-and-after score display"
               >
                 <div>
-                  <span>TEST 1</span>
+                  <span>Before class</span>
                   <strong>? <small>/ 100</small></strong>
                 </div>
                 <span className="bdp-v2-compare-arrow" aria-hidden="true">
                   →
                 </span>
                 <div>
-                  <span>TEST 2</span>
+                  <span>After class</span>
                   <strong>? <small>/ 100</small></strong>
                 </div>
               </div>
 
+              <p className="bdp-v2-compare-claim">
+                Don’t just trust our words. <strong>Check the scores.</strong>
+              </p>
+              <p className="bdp-v2-compare-reassurance">
+                There is no pass or fail. Just try to beat your own score.
+              </p>
               <p className="bdp-v2-compare-disclaimer">
                 Illustrative scores, not actual student results.
                 The post-class retest is planned; improvement is not guaranteed.
@@ -887,10 +902,10 @@ export default function MemoryMasterclassParentsV2() {
 
                 <div className="bdp-offer-panel">
                   <ul>
-                    <li>Free starting memory score (Test 1)</li>
+                    <li>Free starting memory score</li>
                     <li>2-hour live class with Aravind Pasupathy</li>
                     <li>Practical memory techniques, practised live</li>
-                    <li>Planned post-class memory retest</li>
+                    <li>Planned follow-up memory check after class</li>
                     <li>Score comparison when the follow-up test is available</li>
                   </ul>
 
@@ -963,7 +978,7 @@ export default function MemoryMasterclassParentsV2() {
                     className="bdp-book-link bdp-final-alt"
                     onClick={scrollToTest}
                   >
-                    Or start with the free memory test →
+                    Or check memory score for free →
                   </button>
                 </div>
 
@@ -981,7 +996,9 @@ export default function MemoryMasterclassParentsV2() {
 
             {!dialogOpen && !offerInView && (
               <div className="bdp-sticky">
-                {freeTest("bdp-buy-sticky")}
+                {passedGradeSection
+                  ? booking("bdp-buy-sticky", "Join the Live Class for ₹99")
+                  : freeTest("bdp-buy-sticky")}
               </div>
             )}
 
