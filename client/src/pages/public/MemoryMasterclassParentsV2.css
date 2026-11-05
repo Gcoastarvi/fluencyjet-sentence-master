@@ -7,6 +7,28 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Version-B CTA typography and sticky wrapper only. */
+.bdp-v2 .bdp-buy,
+.bdp-v2 .bdp-test-button {
+  font-size: clamp(17px, 4.55vw, 19px);
+  line-height: 1.3;
+  font-weight: 700;
+}
+.bdp-v2 .bdp-sticky [data-memory-offer-visibility] {
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+.bdp-v2 .bdp-sticky .bdp-buy {
+  font-size: clamp(16px, 4.3vw, 18px);
+  min-height: 56px;
+  padding-inline: 10px;
+}
+.bdp-v2 .bdp-hero-sub strong {
+  font-weight: 800;
+  color: #0b1030;
+}
+
 .bdp-v2 .bdp-book-link {
   background: transparent;
   border: 0;
@@ -194,4 +216,57 @@
     min-height: 70px;
     padding: 10px 5px;
   }
+}
+
+/* Center the Version B hero after its decorative right column was hidden. */
+@media (min-width: 1025px) {
+  .bdp-v2 .bdp-hero-layout { justify-items: center; }
+  .bdp-v2 .bdp-hero-copy {
+    width: 100%;
+    max-width: 830px;
+    min-width: 0;
+    text-align: center;
+  }
+  .bdp-v2 .bdp-hero h1 { max-width: none; }
+  .bdp-v2 .bdp-hero-sub {
+    max-width: 735px;
+    margin: 18px auto !important;
+  }
+  .bdp-v2 .bdp-hero-copy .bdp-buy {
+    display: block;
+    margin-inline: auto;
+  }
+}
+
+/* The two unknown score circles are intentionally illustrative. */
+.bdp-v2 .bdp-v2-compare-scores strong {
+  width: min(100%, 102px);
+  height: 102px;
+  border: 4px dotted #5145e9;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
+}
+.bdp-v2 .bdp-v2-compare-scores > div:last-child strong {
+  border-color: #087f70;
+  color: #087f70;
+}
+.bdp-v2 .bdp-v2-compare-claim {
+  color: #ffffff;
+  font-size: clamp(19px, 3vw, 24px);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.3;
+  margin: 18px auto 5px;
+}
+.bdp-v2 .bdp-v2-compare-claim strong { color: #f9cb4b; }
+.bdp-v2 .bdp-v2-compare-reassurance {
+  color: #e4e6f2;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+  margin: 0 auto 10px;
 }
