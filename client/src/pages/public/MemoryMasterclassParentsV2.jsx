@@ -8,28 +8,20 @@ import { useMemoryMasterclassEvent } from "../../hooks/useMemoryMasterclassEvent
 import { getMemoryVslId } from "../../data/memory/masterclassConfig";
 // Variant B of /memory-masterclass/parents for A/B testing; shares its stylesheet.
 import "./MemoryMasterclassParents.css";
+import "./MemoryMasterclassParentsV2.css";
 
 
 // Three choices map one-to-one onto the three existing assessment tracks.
 const GRADES = [
-  {
-    label: "Class 6–8",
-    grade: "6-8",
-    track: "school_foundation",
-    sub: "Foundation memory challenge",
-  },
-  {
-    label: "Class 9–12",
-    grade: "9-12",
-    track: "school_advanced",
-    sub: "For the board-exam years",
-  },
-  {
-    label: "College & Competitive Exams",
-    grade: "advanced",
-    track: "advanced",
-    sub: "Advanced memory challenge",
-  },
+  { label: "6th", grade: "6", track: "school_foundation", sub: "" },
+  { label: "7th", grade: "7", track: "school_foundation", sub: "" },
+  { label: "8th", grade: "8", track: "school_foundation", sub: "" },
+  { label: "9th", grade: "9", track: "school_advanced", sub: "" },
+  { label: "10th", grade: "10", track: "school_advanced", sub: "" },
+  { label: "11th", grade: "11", track: "school_advanced", sub: "" },
+  { label: "12th", grade: "12", track: "school_advanced", sub: "" },
+  { label: "College", grade: "college", track: "advanced", sub: "" },
+  { label: "Competitive Exams", grade: "exams", track: "advanced", sub: "" },
 ];
 
 const PAINS = [
@@ -111,7 +103,7 @@ const QUESTIONS = [
   },
   {
     q: "Are the tests the same for every student?",
-    a: "No. Classes 6–8, Classes 9–12 and Advanced learners have three separate challenges. Each has its own matching second test."
+    a: "No. Classes 6–8, Classes 9–12 and Advanced learners have three separate challenges. A matching post-class retest is planned for each track."
   },
   {
     q: "Will my child's memory improve in two hours?",
@@ -378,13 +370,13 @@ export default function MemoryMasterclassParentsV2() {
 
                   <h1 id="bdp-hero-title">
                     Your Child Studies Hard.
-                    <span> But Forgets It by Exam Day.</span>
+                    <span> But How Much Do They Remember?</span>
                   </h1>
 
                   <p className="bdp-hero-sub">
                     Find out your child's memory score for free. Then join a
                     2-hour live class with a Guinness World Record holder,
-                    and see the score again after the class.
+                    and explore practical ways to remember more.
                   </p>
 
                   {freeTest("bdp-free-hero")}
@@ -481,69 +473,6 @@ export default function MemoryMasterclassParentsV2() {
               </div>
             </section>
 
-            {/* B2 - PROBLEM: the parent's daily reality */}
-
-            <section
-              className="bdp-section bdp-problem"
-              aria-labelledby="bdp-problem-title"
-            >
-              <div className="bdp-wrap">
-
-                <h2 className="bdp-center" id="bdp-problem-title">
-                  Does This Sound Familiar?
-                </h2>
-
-                <div className="bdp-pain-cards bdp-pain-grid">
-                  {PAINS.map((pain) => (
-                    <article className="bdp-pain" key={pain.title}>
-                      <span className="bdp-icon" aria-hidden="true">{pain.icon}</span>
-                      <h3>
-                        {pain.title}<br />
-                        <span className="bdp-pain-detail">{pain.detail}</span>
-                      </h3>
-                    </article>
-                  ))}
-                </div>
-
-                <div className="bdp-relief">
-                  <p className="bdp-relief-big">
-                    Your child isn't lazy, and isn't weak in studies.
-                  </p>
-                  <p>
-                    Nobody ever taught them <strong>how memory works</strong>.
-                    That can be learned, and you can see the difference in a score.
-                  </p>
-                </div>
-
-              </div>
-            </section>
-
-            {/* B2.5 - WHY THEY FORGET: a reason, not just a claim */}
-
-            <section
-              className="bdp-section bdp-why"
-              aria-labelledby="bdp-why-title"
-            >
-              <div className="bdp-wrap bdp-narrow">
-                <p className="bdp-eyebrow bdp-center">WHY CHILDREN FORGET</p>
-                <h2 className="bdp-center" id="bdp-why-title">
-                  Reading Again and Again Isn't Enough
-                </h2>
-
-                <ol className="bdp-why-list">
-                  {WHY_POINTS.map((point, index) => (
-                    <li key={point.title}>
-                      <span className="bdp-why-num" aria-hidden="true">{index + 1}</span>
-                      <div>
-                        <strong>{point.title}</strong>
-                        <p>{point.detail}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </section>
-
             {/* B3 - FREE MEMORY TEST SELECTOR */}
 
             <section
@@ -617,12 +546,143 @@ export default function MemoryMasterclassParentsV2() {
                 </div>
 
                 <p className="bdp-assessment-disclaimer">
-                  Each group has its own challenge and matching retest.
+                  Each group has its own challenge. A follow-up retest is planned.
                   Scores measure specific memory activities, not
                   intelligence. We don't promise marks. Results vary and
                   improvement is not guaranteed.
                 </p>
 
+              </div>
+            </section>
+
+
+            {/* B3.5 - ILLUSTRATIVE SCORE COMPARISON */}
+            <section
+              className="bdp-v2-compare"
+              aria-labelledby="bdp-v2-compare-title"
+            >
+              <p className="bdp-v2-compare-eyebrow">HOW IT WORKS</p>
+              <h2 id="bdp-v2-compare-title">
+                Test Before. Learn New Methods.
+                <span> Test Again.</span>
+              </h2>
+              <p className="bdp-v2-compare-intro">
+                Start with a memory score, practise useful techniques,
+                and understand how a follow-up comparison works.
+              </p>
+
+              <div className="bdp-v2-compare-steps">
+                <div className="bdp-v2-compare-step before">
+                  <div className="bdp-v2-compare-step-top">
+                    <span>01 · BEFORE CLASS</span>
+                    <strong>FREE</strong>
+                  </div>
+                  <h3>Test 1 — Starting Score</h3>
+                  <p>Discover your child's initial Study Memory Score.</p>
+                </div>
+
+                <div className="bdp-v2-compare-step training">
+                  <div className="bdp-v2-compare-step-top">
+                    <span>02 · LIVE CLASS</span>
+                    <strong>₹99</strong>
+                  </div>
+                  <h3>2 Hours of Guided Training</h3>
+                  <p>Learn and practise practical memory techniques.</p>
+                </div>
+
+                <div className="bdp-v2-compare-step after">
+                  <div className="bdp-v2-compare-step-top">
+                    <span>03 · AFTER CLASS</span>
+                    <strong>PLANNED</strong>
+                  </div>
+                  <h3>Test 2 — Follow-up Assessment</h3>
+                  <p>Compare scores once the follow-up test is available.</p>
+                </div>
+              </div>
+
+              <div
+                className="bdp-v2-compare-scores"
+                aria-label="Illustrative before-and-after score display"
+              >
+                <div>
+                  <span>TEST 1</span>
+                  <strong>? <small>/ 100</small></strong>
+                </div>
+                <span className="bdp-v2-compare-arrow" aria-hidden="true">
+                  →
+                </span>
+                <div>
+                  <span>TEST 2</span>
+                  <strong>? <small>/ 100</small></strong>
+                </div>
+              </div>
+
+              <p className="bdp-v2-compare-disclaimer">
+                Illustrative scores, not actual student results.
+                The post-class retest is planned; improvement is not guaranteed.
+              </p>
+            </section>
+
+            {/* B2 - PROBLEM: the parent's daily reality */}
+
+            <section
+              className="bdp-section bdp-problem"
+              aria-labelledby="bdp-problem-title"
+            >
+              <div className="bdp-wrap">
+
+                <h2 className="bdp-center" id="bdp-problem-title">
+                  Does This Sound Familiar?
+                </h2>
+
+                <div className="bdp-pain-cards bdp-pain-grid">
+                  {PAINS.map((pain) => (
+                    <article className="bdp-pain" key={pain.title}>
+                      <span className="bdp-icon" aria-hidden="true">{pain.icon}</span>
+                      <h3>
+                        {pain.title}<br />
+                        <span className="bdp-pain-detail">{pain.detail}</span>
+                      </h3>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="bdp-relief">
+                  <p className="bdp-relief-big">
+                    Your child isn't lazy, and isn't weak in studies.
+                  </p>
+                  <p>
+                    Nobody ever taught them <strong>how memory works</strong>.
+                    That can be learned, and you can see the difference in a score.
+                  </p>
+                </div>
+
+              </div>
+            </section>
+
+            {/* B2.5 - WHY THEY FORGET: a reason, not just a claim */}
+
+            <section
+              className="bdp-section bdp-why"
+              aria-labelledby="bdp-why-title"
+            >
+              <div className="bdp-wrap bdp-narrow">
+                <p className="bdp-eyebrow bdp-center">WHY CHILDREN FORGET</p>
+                <h2 className="bdp-center" id="bdp-why-title">
+                  Reading Again and Again Isn't Enough
+                </h2>
+
+                <ol className="bdp-why-list">
+                  {WHY_POINTS.map((point, index) => (
+                    <li key={point.title}>
+                      <span className="bdp-why-num" aria-hidden="true">{index + 1}</span>
+                      <div>
+                        <strong>{point.title}</strong>
+                        <p>{point.detail}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
               </div>
             </section>
 
@@ -830,8 +890,8 @@ export default function MemoryMasterclassParentsV2() {
                     <li>Free starting memory score (Test 1)</li>
                     <li>2-hour live class with Aravind Pasupathy</li>
                     <li>Practical memory techniques, practised live</li>
-                    <li>Second memory test after the class</li>
-                    <li>Before-and-after score comparison</li>
+                    <li>Planned post-class memory retest</li>
+                    <li>Score comparison when the follow-up test is available</li>
                   </ul>
 
                   <div className="bdp-offer-summary">
